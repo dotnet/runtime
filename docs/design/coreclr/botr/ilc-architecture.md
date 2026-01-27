@@ -185,21 +185,15 @@ When a program uses the same generic method or type with multiple reference type
 
 This sharing only applies to reference type instantiations. Value type instantiations (e.g. `List<int>`) require separate native code bodies because differences such as size affect code generation. When type arguments are themselves generic types with mixed value/reference components, the canonical form reflects this. For example, `List<KeyValuePair<int, string>>` canonicalizes to `List<KeyValuePair<int, __Canon>>`.
 
-When the dependency graph includes a method like `List<string>.Add`, ILC adds a dependency on the canonical method body `List<__Canon>.Add` and generates a *generic dictionary* for the `List<string>` instantiation. When ILC invokes RyuJIT to compile a method, it passes the canonical form (e.g. `List<__Canon>.Add`).
+When the dependency graph includes a method like `List<string>.Add`, ILC adds a dependency on the canonical method body `List<__Canon>.Add` and generates a *[generic dictionary](shared-generics.md)* for the `List<string>` instantiation. When ILC invokes RyuJIT to compile a method, it passes the canonical form (e.g. `List<__Canon>.Add`).
 
 ### Runtime-determined types
 
-When analyzing shared generic code, ILC uses *runtime-determined types* (`RuntimeDeterminedType`) to represent types with type arguments that will only be resolved at runtime. A runtime-determined type pairs the canonical type with the generic parameter it originated from.
+Neither the canonical form nor the uninstantiated form of a type alone is sufficient for dependency analysis of shared generic code. The canonical form loses parameter identity (both `T` and `U` become `__Canon`), while the uninstantiated form with signature variables (`!!0`, `!!1`) lacks concrete type information needed for operations like `sizeof(T)`.
 
-Neither the canonical form nor the uninstantiated form alone is sufficient for dependency analysis. The canonical form loses parameter identity (both `T` and `U` become `__Canon`), while the uninstantiated form with signature variables (`!!0`, `!!1`) lacks concrete type information needed for operations like `sizeof(T)`. Runtime-determined types preserve both: the parameter binding and the type's shape (size, GC layout). These types are used in dependency analysis and for communicating dictionary lookup requirements to the codegen backend.
+To solve this, ILC uses *runtime-determined types* (`RuntimeDeterminedType`) to represent types that will only be resolved at runtime. A `RuntimeDeterminedType` captures both the canonical type and the generic parameter it originated from: internally it holds a reference to both the `DefType` (e.g. `__Canon`) and the `GenericParameterDesc` (e.g. `T` from `Foo<T>`).
 
-### Generic dictionaries
-
-Canonical code cannot embed instantiation-specific information directly. Instead, it obtains type handles, method handles, field offsets, and other instantiation-specific data at runtime from a *generic dictionary*—an array of slots associated with each concrete instantiation.
-
-The dictionary is provided to the method via the MethodTable pointer from the object reference (for instance methods on generic reference types), a hidden MethodTable parameter (for static methods or methods on value types), or a hidden method dictionary parameter (for generic methods). See `GenericContextSource`.
-
-The dictionary *layout* (which slot holds what) is determined by the canonical form and shared across all instantiations. The layout is computed during compilation based on what lookups the code needs. In the dependency graph, `DictionaryLayoutNode` is associated with canonical types/methods, while `GenericDictionaryNode` and its subclasses are associated with concrete instantiations.
+For example, when analyzing `Foo<T>.Method()` that references `List<T>`, ILC represents this as `List<T_System.__Canon>` where the type argument is a `RuntimeDeterminedType` pairing `__Canon` with `T`.
 
 ### Generic virtual methods
 
@@ -217,7 +211,7 @@ class Derived : Base
 }
 ```
 
-At a call site like `baseRef.Method<string>()`, the compiler needs the runtime type of `baseRef` to determine which implementation to call.
+At a call site like `baseRef.Method<string>()`, the runtime needs both the runtime type of `baseRef`, and the type argument info, to determine which implementation to call.
 
 ILC handles GVMs using *dynamic dependencies* in the dependency graph. When the compiler sees a GVM call, it creates a `GVMDependenciesNode` for the canonical form of the called method. This node has dynamic dependencies - it observes which types are constructed in the program and, for each type that could potentially override the GVM, ensures the appropriate implementations are compiled.
 
@@ -227,9 +221,11 @@ This is one of the few places in ILC where dynamic dependencies are used, becaus
 
 ### Shadow method nodes
 
-Canonical code like `List<__Canon>.Add` is shared across instantiations, but its *dependencies* may differ per instantiation. For example, if the code references `List<T>`, then `List<string>.Add` needs `List<string>` while `List<object>.Add` needs `List<object>`.
+"Shadow" method nodes represent partially or fully instantiated generic methods for the purposes of dependency tracking only. These nodes on their own do not produce code.
 
-Shadow method nodes track these instantiation-specific dependencies without generating separate code. Both `ShadowConcreteMethodNode` and `ShadowNonConcreteMethodNode` extend `ShadowMethodNode`, which works by examining the canonical method's dependencies. Dependencies that implement `INodeWithRuntimeDeterminedDependencies` are *instantiated* with the shadow node's type/method arguments, converting abstract dependencies (e.g. "MethodTable for `List<T>`") into concrete ones (e.g. "MethodTable for `List<string>`").
+Code generation is always done for the canonical form of a method (such as `List<__Canon>.Add`). However, the compiler may need to produce instantiation-specific dependencies if there is a call to `List<string>.Add` or `List<object>.Add`. Shadow method nodes represent these specific method instantiations for dependency tracking purposes even though they don't contribute separate code.
+
+Both `ShadowConcreteMethodNode` and `ShadowNonConcreteMethodNode` extend `ShadowMethodNode`, which works by examining the canonical method's dependencies. Dependencies that implement `INodeWithRuntimeDeterminedDependencies` are *instantiated* with the shadow node's type/method arguments, converting abstract dependencies (e.g. "MethodTable for `List<T>`") into concrete ones (e.g. "MethodTable for `List<string>`").
 
 `ShadowConcreteMethodNode` represents fully instantiated methods like `List<string>.Add` for dependency analysis.
 
