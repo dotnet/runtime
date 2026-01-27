@@ -139,7 +139,6 @@ namespace System.Tests
             internal string GetStackTraceMethodC() => Environment.StackTrace;
         }
 
-
         [Fact]
         public void InterfaceHidden_CanApplyAttribute()
         {
