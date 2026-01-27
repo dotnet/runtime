@@ -659,7 +659,7 @@ struct RangeOps
         // For unsigned comparisons, we only support non-negative ranges.
         if (isUnsigned)
         {
-            if (!xLower.IsConstant() || !yUpper.IsConstant() || (xLower.GetConstant() < 0) ||
+            if (!xLower.IsConstant() || !yLower.IsConstant() || (xLower.GetConstant() < 0) ||
                 (yLower.GetConstant() < 0))
             {
                 // Relops always return either 0 or 1.
