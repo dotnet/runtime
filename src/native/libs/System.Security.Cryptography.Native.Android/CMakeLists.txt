@@ -39,7 +39,7 @@ add_library(System.Security.Cryptography.Native.Android
 
 add_library(System.Security.Cryptography.Native.Android-Static
     STATIC
-    ${NATIVECRYPTO_SOURCES}
+    ${NATIVECRYPTO_SOURCES} pal_jni_onload.c
 )
 
 set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Android CLEAN_DIRECT_OUTPUT 1)
