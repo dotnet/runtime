@@ -1,540 +1,585 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Runtime.CompilerServices;
-using static TestLibrary.Expect;
 using Xunit;
 
 namespace TestMultipleCasts
 {
     public class Program
     {
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        [Fact]
-        public static int CheckMultipleCasts()
-        {
-            bool fail = false;
-
-            // Cast int -> x
-            ExpectEqual(() => CastIntSbyte(0x11223344), 0x44, ref fail);
-            ExpectEqual(() => CastIntShort(-0x11223344), -0x3344, ref fail);
-            ExpectEqual(() => CastIntLong(0x11223344), 0x11223344, ref fail);
-
-            // Cast long -> x
-            ExpectEqual(() => CastLongSbyte(0xFFEEDDCCBBAAL), -0x56, ref fail);
-            ExpectEqual(() => CastLongShort(0xFFEEDDCCBBAAL), -0x4456, ref fail);
-            ExpectEqual(() => CastLongInt(0xFFEEDDCCBBAAL), -0x22334456, ref fail);
-
-            // Cast uint -> x
-            ExpectEqual<byte>(() => CastUIntByte(0x11223344u), 0x44, ref fail);
-            ExpectEqual<ushort>(() => CastUIntUShort(0x11223344u), 0x3344, ref fail);
-            ExpectEqual(() => CastUIntULong(0x11223344u), 0x11223344ul, ref fail);
-
-            // Cast ulong -> x
-            ExpectEqual<byte>(() => CastULongByte(0xFFEEDDCCBBAAul), 0xAA, ref fail);
-            ExpectEqual<ushort>(() => CastULongUShort(0xFFEEDDCCBBAAul), 0xBBAA, ref fail);
-            ExpectEqual(() => CastULongUInt(0xFFEEDDCCBBAAul), 0xDDCCBBAAu, ref fail);
-
-            // Cast int -> x -> int
-            ExpectEqual(() => CastIntSbyteInt(0xF0), -0x10, ref fail);
-            ExpectEqual(() => CastIntShortInt(0xFF8001), -0x7FFF, ref fail);
-            ExpectEqual(() => CastIntLongInt(0x11223344), 0x11223344, ref fail);
-
-            // Cast int -> x -> long
-            ExpectEqual(() => CastIntSbyteLong(0x12345678), 0x78, ref fail);
-            ExpectEqual(() => CastIntShortLong(0x12345678), 0x5678, ref fail);
-
-            // Cast long -> x -> int
-            ExpectEqual(() => CastLongSbyteInt(0xA7L), -0x59, ref fail);
-            ExpectEqual(() => CastLongShortInt(0xFFFFFFFF8003L), -0x7FFD, ref fail);
-
-            // Cast long -> x -> long
-            ExpectEqual(() => CastLongSbyteLong(0xFEL), -0x2L, ref fail);
-            ExpectEqual(() => CastLongShortLong(0xDEADL), -0x2153L, ref fail);
-            ExpectEqual(() => CastLongIntLong(0x1ABCDEF00L), -0x54321100L, ref fail);
-
-            // Cast uint -> x -> uint
-            ExpectEqual(() => CastUIntByteUInt(0xF0u), 0xF0u, ref fail);
-            ExpectEqual(() => CastUIntUShortUInt(0xFF8001u), 0x8001u, ref fail);
-
-            // Cast uint -> x -> ulong
-            ExpectEqual(() => CastUIntByteULong(0x12345678u), 0x78ul, ref fail);
-            ExpectEqual(() => CastUIntUShortULong(0x12345678u), 0x5678ul, ref fail);
-            ExpectEqual(() => CastUIntULongUInt(0x11223344u), 0x11223344u, ref fail);
-
-            // Cast ulong -> x -> uint
-            ExpectEqual(() => CastULongByteUInt(0xA7ul), 0xA7u, ref fail);
-            ExpectEqual(() => CastULongUShortUInt(0xFFFFFFFF8003ul), 0x8003u, ref fail);
-
-            // Cast ulong -> x -> ulong
-            ExpectEqual(() => CastULongByteULong(0xFEul), 0xFEul, ref fail);
-            ExpectEqual(() => CastULongUShortULong(0xDEADul), 0xDEADul, ref fail);
-            ExpectEqual(() => CastULongUIntULong(0x1ABCDEF00ul), 0xABCDEF00ul, ref fail);
-
-            // Cast int -> long -> x
-            ExpectEqual<sbyte>(() => CastIntLongSbyte(0x11223344), 0x44, ref fail);
-            ExpectEqual<short>(() => CastIntLongShort(0x11223344), 0x3344, ref fail);
-
-            // Cast uint -> ulong -> x
-            ExpectEqual<byte>(() => CastUIntULongByte(0x11223344u), 0x44, ref fail);
-            ExpectEqual<ushort>(() => CastUIntULongUShort(0x11223344u), 0x3344, ref fail);
-
-            // Cast long -> int -> short -> sbyte
-            ExpectEqual<sbyte>(() => CastLongIntShortSByte(0x11223344), 0x44, ref fail);
-
-            // Cast ulong -> uint -> ushort -> byte
-            ExpectEqual<byte>(() => CastULongUIntUShortByte(0x11223344u), 0x44, ref fail);
-
-            // Cast sbyte -> short -> int -> long
-            ExpectEqual(() => CastSByteShortIntLong(-0x59), -0x59L, ref fail);
-
-            // Cast byte -> ushort -> uint -> ulong
-            ExpectEqual(() => CastByteUShortUIntULong(0xA7), 0xA7ul, ref fail);
-
-            // Cast int -> long -> int -> long
-            ExpectEqual<sbyte>(() => CastIntSByteIntSByte(-0x15263748), -0x48, ref fail);
-            ExpectEqual<short>(() => CastIntShortIntShort(-0x15263748), -0x3748, ref fail);
-            ExpectEqual(() => CastIntLongIntLong(-0x15263748), -0x15263748l, ref fail);
-
-            // Cast uint -> x -> uint -> x
-            ExpectEqual<byte>(() => CastUIntByteUIntByte(0xF0u), 0xF0, ref fail);
-            ExpectEqual<ushort>(() => CastUIntUShortUIntUShort(0xFF8001u), 0x8001, ref fail);
-            ExpectEqual(() => CastUIntULongUIntULong(0x11223344u), 0x11223344ul, ref fail);
-
-            // Cast long -> x -> long -> x
-            ExpectEqual<sbyte>(() => CastLongSByteLongSByte(0xA7L), -0x59, ref fail);
-            ExpectEqual<short>(() => CastLongShortLongShort(0xFFFFFFFF8003L), -0x7FFD, ref fail);
-            ExpectEqual(() => CastLongIntLongInt(0x1ABCDEF00L), -0x54321100, ref fail);
-
-            // Cast ulong -> x -> ulong -> x
-            ExpectEqual<byte>(() => CastULongByteULongByte(0xA7ul), 0xA7, ref fail);
-            ExpectEqual<ushort>(() => CastULongUShortULongUShort(0xFFFFFFFF8003ul), 0x8003, ref fail);
-            ExpectEqual(() => CastULongUIntULongUInt(0x1ABCDEF00ul), 0xABCDEF00u, ref fail);
-
-            if (fail)
-            {
-                return 101;
-            }
-            return 100;
-        }
-
         // Cast int -> x
 
+        [Theory]
+        [InlineData(0x11223344, 0x44)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static sbyte CastIntSbyte(int x)
+        public static void CastIntSbyte(int x, sbyte expected)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (sbyte)x;
+            sbyte result = (sbyte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(-0x11223344, -0x3344)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static short CastIntShort(int x)
+        public static void CastIntShort(int x, short expected)
         {
             //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (short)x;
+            short result = (short)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x11223344, 0x11223344)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastIntLong(int x)
+        public static void CastIntLong(int x, long expected)
         {
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return (long)x;
+            long result = (long)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast long -> x
 
+        [Theory]
+        [InlineData(0xFFEEDDCCBBAAL, -0x56)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static sbyte CastLongSbyte(long x)
+        public static void CastLongSbyte(long x, sbyte expected)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (sbyte)x;
+            sbyte result = (sbyte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0xFFEEDDCCBBAAL, -0x4456)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static short CastLongShort(long x)
+        public static void CastLongShort(long x, short expected)
         {
             //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (short)x;
+            short result = (short)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0xFFEEDDCCBBAAL, -0x22334456)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastLongInt(long x)
+        public static void CastLongInt(long x, int expected)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
-            return (int)x;
+            int result = (int)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast uint -> x
 
+        [Theory]
+        [InlineData(0x11223344u, 0x44)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static byte CastUIntByte(uint x)
+        public static void CastUIntByte(uint x, byte expected)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (byte)x;
+            byte result = (byte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x11223344u, 0x3344)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ushort CastUIntUShort(uint x)
+        public static void CastUIntUShort(uint x, ushort expected)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (ushort)x;
+            ushort result = (ushort)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x11223344u, 0x11223344ul)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ulong CastUIntULong(uint x)
+        public static void CastUIntULong(uint x, ulong expected)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
-            return (ulong)x;
+            ulong result = (ulong)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast ulong -> x
 
+        [Theory]
+        [InlineData(0xFFEEDDCCBBAAul, 0xAA)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static byte CastULongByte(ulong x)
+        public static void CastULongByte(ulong x, byte expected)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (byte)x;
+            byte result = (byte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0xFFEEDDCCBBAAul, 0xBBAA)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ushort CastULongUShort(ulong x)
+        public static void CastULongUShort(ulong x, ushort expected)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (ushort)x;
+            ushort result = (ushort)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0xFFEEDDCCBBAAul, 0xDDCCBBAAu)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static uint CastULongUInt(ulong x)
+        public static void CastULongUInt(ulong x, uint expected)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
-            return (uint)x;
+            uint result = (uint)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast int -> x -> int
 
+        [Theory]
+        [InlineData(0xF0, -0x10)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastIntSbyteInt(int x)
+        public static void CastIntSbyteInt(int x, int expected)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (sbyte)x;
+            int result = (sbyte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0xFF8001, -0x7FFF)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastIntShortInt(int x)
+        public static void CastIntShortInt(int x, int expected)
         {
             //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (short)x;
+            int result = (short)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x11223344, 0x11223344)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastIntLongInt(int x)
+        public static void CastIntLongInt(int x, int expected)
         {
             //ARM64-NOT: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return (int)(long)x;
+            int result = (int)(long)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast int -> x -> long
 
+        [Theory]
+        [InlineData(0x12345678, 0x78)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastIntSbyteLong(int x)
+        public static void CastIntSbyteLong(int x, long expected)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return (sbyte)x;
+            long result = (sbyte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x12345678, 0x5678)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastIntShortLong(int x)
+        public static void CastIntShortLong(int x, long expected)
         {
             //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return (short)x;
+            long result = (short)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast long -> x -> int
 
+        [Theory]
+        [InlineData(0xA7L, -0x59)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastLongSbyteInt(long x)
+        public static void CastLongSbyteInt(long x, int expected)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (sbyte)x;
+            int result = (sbyte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0xFFFFFFFF8003L, -0x7FFD)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastLongShortInt(long x)
+        public static void CastLongShortInt(long x, int expected)
         {
             //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (short)x;
+            int result = (short)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast long -> x -> long
 
+        [Theory]
+        [InlineData(0xFEL, -0x2L)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastLongSbyteLong(long x)
+        public static void CastLongSbyteLong(long x, long expected)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return (sbyte)x;
+            long result = (sbyte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0xDEADL, -0x2153L)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastLongShortLong(long x)
+        public static void CastLongShortLong(long x, long expected)
         {
             //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return (short)x;
+            long result = (short)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x1ABCDEF00L, -0x54321100L)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastLongIntLong(long x)
+        public static void CastLongIntLong(long x, long expected)
         {
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return (int)x;
+            long result = (int)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast uint -> x -> uint
 
+        [Theory]
+        [InlineData(0xF0u, 0xF0u)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static uint CastUIntByteUInt(uint x)
+        public static void CastUIntByteUInt(uint x, uint expected)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (byte)x;
+            uint result = (byte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0xFF8001u, 0x8001u)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static uint CastUIntUShortUInt(uint x)
+        public static void CastUIntUShortUInt(uint x, uint expected)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (ushort)x;
+            uint result = (ushort)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast uint -> x -> ulong
 
+        [Theory]
+        [InlineData(0x12345678u, 0x78ul)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ulong CastUIntByteULong(uint x)
+        public static void CastUIntByteULong(uint x, ulong expected)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
-            return (byte)x;
+            ulong result = (byte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x12345678u, 0x5678ul)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ulong CastUIntUShortULong(uint x)
+        public static void CastUIntUShortULong(uint x, ulong expected)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
-            return (ushort)x;
+            ulong result = (ushort)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x11223344u, 0x11223344u)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static uint CastUIntULongUInt(uint x)
+        public static void CastUIntULongUInt(uint x, uint expected)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
-            return (uint)(ulong)x;
+            uint result = (uint)(ulong)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast ulong -> x -> uint
 
+        [Theory]
+        [InlineData(0xA7ul, 0xA7u)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static uint CastULongByteUInt(ulong x)
+        public static void CastULongByteUInt(ulong x, uint expected)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (byte)x;
+            uint result = (byte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0xFFFFFFFF8003ul, 0x8003u)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static uint CastULongUShortUInt(ulong x)
+        public static void CastULongUShortUInt(ulong x, uint expected)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (ushort)x;
+            uint result = (ushort)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast ulong -> x -> ulong
 
+        [Theory]
+        [InlineData(0xFEul, 0xFEul)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ulong CastULongByteULong(ulong x)
+        public static void CastULongByteULong(ulong x, ulong expected)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
-            return (byte)x;
+            ulong result = (byte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0xDEADul, 0xDEADul)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ulong CastULongUShortULong(ulong x)
+        public static void CastULongUShortULong(ulong x, ulong expected)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
-            return (ushort)x;
+            ulong result = (ushort)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x1ABCDEF00ul, 0xABCDEF00ul)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ulong CastULongUIntULong(ulong x)
+        public static void CastULongUIntULong(ulong x, ulong expected)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
-            return (uint)x;
+            ulong result = (uint)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast int -> long -> x
 
+        [Theory]
+        [InlineData(0x11223344, 0x44)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static sbyte CastIntLongSbyte(int x)
+        public static void CastIntLongSbyte(int x, sbyte expected)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (sbyte)(long)x;
+            sbyte result = (sbyte)(long)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x11223344, 0x3344)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static short CastIntLongShort(int x)
+        public static void CastIntLongShort(int x, short expected)
         {
             //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (short)(long)x;
+            short result = (short)(long)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast uint -> ulong -> x
 
+        [Theory]
+        [InlineData(0x11223344u, 0x44)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static byte CastUIntULongByte(uint x)
+        public static void CastUIntULongByte(uint x, byte expected)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (byte)(ulong)x;
+            byte result = (byte)(ulong)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x11223344u, 0x3344)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ushort CastUIntULongUShort(uint x)
+        public static void CastUIntULongUShort(uint x, ushort expected)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (ushort)(ulong)x;
+            ushort result = (ushort)(ulong)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast long -> int -> short -> sbyte
 
+        [Theory]
+        [InlineData(0x11223344L, 0x44)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static sbyte CastLongIntShortSByte(long x)
+        public static void CastLongIntShortSByte(long x, sbyte expected)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (sbyte)(short)(int)x;
+            sbyte result = (sbyte)(short)(int)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast ulong -> uint -> ushort -> byte
 
+        [Theory]
+        [InlineData(0x11223344ul, 0x44)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static byte CastULongUIntUShortByte(ulong x)
+        public static void CastULongUIntUShortByte(ulong x, byte expected)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (byte)(ushort)(uint)x;
+            byte result = (byte)(ushort)(uint)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast sbyte -> short -> int -> long
 
+        [Theory]
+        [InlineData(-0x59, -0x59L)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastSByteShortIntLong(sbyte x)
+        public static void CastSByteShortIntLong(sbyte x, long expected)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return (long)(int)(short)x;
+            long result = (long)(int)(short)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast byte -> ushort -> uint -> ulong
 
+        [Theory]
+        [InlineData(0xA7, 0xA7ul)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ulong CastByteUShortUIntULong(byte x)
+        public static void CastByteUShortUIntULong(byte x, ulong expected)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
-            return (ulong)(uint)(ushort)x;
+            ulong result = (ulong)(uint)(ushort)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast int -> x -> int -> x
 
+        [Theory]
+        [InlineData(-0x15263748, -0x48)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static sbyte CastIntSByteIntSByte(int x)
+        public static void CastIntSByteIntSByte(int x, sbyte expected)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (sbyte)(int)(sbyte)x;
+            sbyte result = (sbyte)(int)(sbyte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(-0x15263748, -0x3748)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static short CastIntShortIntShort(int x)
+        public static void CastIntShortIntShort(int x, short expected)
         {
             //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (short)(int)(short)x;
+            short result = (short)(int)(short)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(-0x15263748, -0x15263748L)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastIntLongIntLong(int x)
+        public static void CastIntLongIntLong(int x, long expected)
         {
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return (long)(int)(long)x;
+            long result = (long)(int)(long)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast uint -> x -> uint -> x
 
+        [Theory]
+        [InlineData(0xF0u, 0xF0)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static byte CastUIntByteUIntByte(uint x)
+        public static void CastUIntByteUIntByte(uint x, byte expected)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (byte)(uint)(byte)x;
+            byte result = (byte)(uint)(byte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0xFF8001u, 0x8001)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ushort CastUIntUShortUIntUShort(uint x)
+        public static void CastUIntUShortUIntUShort(uint x, ushort expected)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (ushort)(uint)(ushort)x;
+            ushort result = (ushort)(uint)(ushort)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x11223344u, 0x11223344ul)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ulong CastUIntULongUIntULong(uint x)
+        public static void CastUIntULongUIntULong(uint x, ulong expected)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
-            return (ulong)(uint)(ulong)x;
+            ulong result = (ulong)(uint)(ulong)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast long -> x -> long -> x
 
+        [Theory]
+        [InlineData(0xA7L, -0x59)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static sbyte CastLongSByteLongSByte(long x)
+        public static void CastLongSByteLongSByte(long x, sbyte expected)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (sbyte)(long)(sbyte)x;
+            sbyte result = (sbyte)(long)(sbyte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0xFFFFFFFF8003L, -0x7FFD)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static short CastLongShortLongShort(long x)
+        public static void CastLongShortLongShort(long x, short expected)
         {
             //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (short)(long)(short)x;
+            short result = (short)(long)(short)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x1ABCDEF00L, -0x54321100)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastLongIntLongInt(long x)
+        public static void CastLongIntLongInt(long x, int expected)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
-            return (int)(long)(int)x;
+            int result = (int)(long)(int)x;
+            Assert.Equal(expected, result);
         }
 
         // Cast ulong -> x -> ulong -> x
 
+        [Theory]
+        [InlineData(0xA7ul, 0xA7)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static byte CastULongByteULongByte(ulong x)
+        public static void CastULongByteULongByte(ulong x, byte expected)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
-            return (byte)(ulong)(byte)x;
+            byte result = (byte)(ulong)(byte)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0xFFFFFFFF8003ul, 0x8003)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ushort CastULongUShortULongUShort(ulong x)
+        public static void CastULongUShortULongUShort(ulong x, ushort expected)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
-            return (ushort)(ulong)(ushort)x;
+            ushort result = (ushort)(ulong)(ushort)x;
+            Assert.Equal(expected, result);
         }
 
+        [Theory]
+        [InlineData(0x1ABCDEF00ul, 0xABCDEF00u)]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static uint CastULongUIntULongUInt(ulong x)
+        public static void CastULongUIntULongUInt(ulong x, uint expected)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
-            return (uint)(ulong)(uint)x;
+            uint result = (uint)(ulong)(uint)x;
+            Assert.Equal(expected, result);
         }
     }
 }
