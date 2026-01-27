@@ -12,6 +12,7 @@
 #include "corjit.h"
 
 #if defined (TARGET_WASM)
+// TODO: Set this value to 0 for Wasm
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT (1024 - 1)
 #elif defined (TARGET_UNIX)
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((GetOsPageSize() / 2) - 1)

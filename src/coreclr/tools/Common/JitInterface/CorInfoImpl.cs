@@ -3383,6 +3383,7 @@ namespace Internal.JitInterface
 
             if (_compilation.NodeFactory.Target.IsWasm)
             {
+                // TODO: Set this value to 0 for Wasm
                 pEEInfoOut.maxUncheckedOffsetForNullObject = 1024 - 1;
             }
             else if (_compilation.NodeFactory.Target.IsWindows)
