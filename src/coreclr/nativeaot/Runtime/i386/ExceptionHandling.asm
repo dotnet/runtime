@@ -138,7 +138,7 @@ RhpThrowExImpl::
         mov         ebx, [ebp]
         push        ebx     ;; 'faulting' Rbp
         push        eax     ;; 'faulting' Rsp
-        mov         eax, [esp+28]    ;; get the throw site IP via the return address
+        mov         eax, [ebp+4]    ;; get the throw site IP via the return address
         push        eax     ;; 'faulting' IP
 ;;  };
 
@@ -146,7 +146,7 @@ RhpThrowExImpl::
 
         ;; -------------------------
 
-        lea                     ebx, [eax-4]    ;; ebx <- addr of return address
+        lea                     ebx, [ebp+4]    ;; ebx <- addr of return address
         INLINE_GETTHREAD        eax, edi        ;; eax <- thread, edi <- trashed
 
         ;; There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic.  So the return
