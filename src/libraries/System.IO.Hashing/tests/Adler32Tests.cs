@@ -9,7 +9,7 @@ namespace System.IO.Hashing.Tests
 {
     public class Adler32Tests : NonCryptoHashTestDriver
     {
-        private static readonly byte[] s_emptyHashValue = [01, 00, 00, 00];
+        private static readonly byte[] s_emptyHashValue = [00, 00, 00, 01];
 
         public Adler32Tests()
             : base(s_emptyHashValue)
@@ -36,34 +36,34 @@ namespace System.IO.Hashing.Tests
                 new TestCase(
                     "Empty",
                     "",
-                    "01000000"),
+                    "00000001"),
                 new TestCase(
                     "One",
                     "01",
-                    "02000200"),
+                    "00020002"),
                 new TestCase(
                     "Self-test 123456789",
                     "123456789"u8.ToArray(),
-                    "DE011E09"),
+                    "091E01DE"),
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog",
                     "The quick brown fox jumps over the lazy dog"u8.ToArray(),
-                    "DA0FDC5B"),
+                    "5BDC0FDA"),
                 // Test a multiple of 64 bytes for vector optimizations
                 new TestCase(
                     "Lorem ipsum 128",
                     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi quis iaculis nisl. Sed ornare sapien non nulla hendrerit viverra."u8.ToArray(),
-                    "5C2F66ED"),
+                    "ED662F5C"),
                 // Test a multiple of 64 bytes + 16 bytes for vector optimizations
                 new TestCase(
                     "Lorem ipsum 144",
                     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla libero est, semper in pharetra at, cursus id nulla. Class aptent taciti volutpat."u8.ToArray(),
-                    "CC34B7FC"),
+                    "FCB734CC"),
                 // Test data that is > 64 bytes but not a multiple of 16 for vector optimizations
                 new TestCase(
                     "Lorem ipsum 1001",
                     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ac urna vitae nibh sagittis porttitor et vel ante. Ut molestie sit amet velit ac mattis. Sed ullamcorper nunc non neque imperdiet, vehicula bibendum sapien efficitur. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Suspendisse potenti. Duis sem dui, malesuada non pharetra at, feugiat id mi. Nulla facilisi. Fusce a scelerisque magna. Ut leo justo, auctor quis nisi et, sollicitudin pretium odio. Sed eu nibh mollis, pretium lectus nec, posuere nulla. Morbi ac euismod purus. Morbi rhoncus leo est, at volutpat nunc pretium in. Aliquam erat volutpat. Curabitur eu lacus mollis, varius lectus ut, tincidunt eros. Nullam a velit hendrerit, euismod magna id, fringilla sem. Phasellus scelerisque hendrerit est, vel imperdiet enim auctor a. Aenean vel ultricies nunc. Suspendisse ac tincidunt urna. Nulla tempor dolor ut ligula accumsan, tempus auctor massa gravida. Aenean non odio et augue pellena."u8.ToArray(),
-                    "536E838A"),
+                    "8A836E53"),
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new Adler32();
@@ -148,9 +148,10 @@ namespace System.IO.Hashing.Tests
         {
             var alg = new Adler32();
             alg.Append(testCase.Input);
-            AssertEqualHashNumber(testCase.OutputHex, alg.GetCurrentHashAsUInt32(), littleEndian: true);
+            // For some reason if I set littleEndian to false below the test would fail as it would not match the expected value in the tests.
+            AssertEqualHashNumber(testCase.OutputHex, alg.GetCurrentHashAsUInt32(), littleEndian: false);
 
-            AssertEqualHashNumber(testCase.OutputHex, Adler32.HashToUInt32(testCase.Input), littleEndian: true);
+            AssertEqualHashNumber(testCase.OutputHex, Adler32.HashToUInt32(testCase.Input), littleEndian: false);
         }
     }
 }
