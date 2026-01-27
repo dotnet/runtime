@@ -43,25 +43,23 @@ bool FinalizerThread::IsCurrentThreadFinalizer()
 #ifdef TARGET_WASM
 
 extern "C" void SystemJS_ScheduleFinalization();
-extern "C"
-{
-    void SystemJS_ExecuteFinalizationCallback()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_TRIGGERS;
-            MODE_PREEMPTIVE;
-        }
-        CONTRACTL_END;
 
-        INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
-        {
-            GCX_COOP();
-            ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
-        }
-        UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+extern "C" void SystemJS_ExecuteFinalizationCallback()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
     }
+    CONTRACTL_END;
+
+    INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+    {
+        GCX_COOP();
+        ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
+    }
+    UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 }
 
 #endif // TARGET_WASM
