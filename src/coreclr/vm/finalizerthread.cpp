@@ -55,8 +55,6 @@ extern "C"
         }
         CONTRACTL_END;
 
-        HRESULT hr=S_OK;
-
         INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
         {
             GCX_COOP();
