@@ -447,7 +447,14 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
             PROCAbort(code, siginfo, context);
         }
     }
-    else if (IsSaSigInfo(action))
+
+    _ASSERTE(!IsSigDfl(action) && !IsSigIgn(action));
+
+    PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
+
+    PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
+
+    if (IsSaSigInfo(action))
     {
         // Directly call the previous handler.
         _ASSERTE(action->sa_sigaction != NULL);
@@ -459,10 +466,6 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         _ASSERTE(action->sa_handler != NULL);
         action->sa_handler(code);
     }
-
-    PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
-
-    PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
 }
 
 /*++
