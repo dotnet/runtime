@@ -144,6 +144,7 @@ namespace System.Buffers
         public bool IsNext(T next, bool advancePast = false) { throw null; }
         public void Rewind(long count) { }
         public bool TryAdvanceTo(T delimiter, bool advancePastDelimiter = true) { throw null; }
+        public bool TryAdvanceTo(scoped System.ReadOnlySpan<T> delimiter, bool advancePastDelimiter = true) { throw null; }
         public bool TryAdvanceToAny(scoped System.ReadOnlySpan<T> delimiters, bool advancePastDelimiter = true) { throw null; }
         public readonly bool TryCopyTo(System.Span<T> destination) { throw null; }
         public readonly bool TryPeek(out T value) { throw null; }
