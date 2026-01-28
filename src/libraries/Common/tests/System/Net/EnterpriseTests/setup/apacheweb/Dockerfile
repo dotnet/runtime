@@ -7,7 +7,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends apache2 procps krb5-user iputils-ping dnsutils nano \
                                                samba samba-dsdb-modules samba-vfs-modules \
                                                proftpd-basic proftpd-mod-crypto openssl \
-                                               apache2-dev libapache2-mod-auth-gssapi
+                                               apache2-dev libapache2-mod-auth-gssapi samba-ad-provision winbind
 WORKDIR /setup
 
 COPY ./common/krb5.conf /etc/
