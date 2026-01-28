@@ -641,7 +641,7 @@ int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength)
     int namelen = nameLength;
 #endif
 
-    return getdomainname((char*)name, namelen);
+    return getdomainname((char*)name, (size_t)namelen);
 #elif HAVE_UTSNAME_DOMAINNAME
     // On Android, there's no getdomainname but we can use uname to fetch the domain name
     // of the current device
