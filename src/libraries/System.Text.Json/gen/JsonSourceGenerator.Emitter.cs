@@ -502,7 +502,7 @@ namespace System.Text.Json.SourceGeneration
 
                 string creatorInvocation = FormatDefaultConstructorExpr(typeMetadata);
                 string parameterizedCreatorInvocation = constructionStrategy == ObjectConstructionStrategy.ParameterizedConstructor
-                    ? GetParameterizedCtorInvocationFunc(typeMetadata)
+                    ? GetParameterizedCtorInvocationFunc(contextSpec, typeMetadata)
                     : "null";
 
                 string? propInitMethodName = null;
@@ -972,14 +972,42 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine('}');
             }
 
-            private static string GetParameterizedCtorInvocationFunc(TypeGenerationSpec typeGenerationSpec)
+            private static string GetParameterizedCtorInvocationFunc(ContextGenerationSpec contextSpec, TypeGenerationSpec typeGenerationSpec)
             {
                 ImmutableEquatableArray<ParameterGenerationSpec> parameters = typeGenerationSpec.CtorParamGenSpecs;
                 ImmutableEquatableArray<PropertyInitializerGenerationSpec> propertyInitializers = typeGenerationSpec.PropertyInitializerSpecs;
 
+                // Check if the type has required members that need UnsafeAccessor to bypass C#'s required member validation
+                bool hasRequiredMembers = !typeGenerationSpec.ConstructorSetsRequiredParameters &&
+                    propertyInitializers.Any(p => p.IsRequired);
+
                 const string ArgsVarName = "args";
 
-                StringBuilder sb = new($"static {ArgsVarName} => new {typeGenerationSpec.TypeRef.FullyQualifiedName}(");
+                StringBuilder sb = new();
+
+                if (hasRequiredMembers && contextSpec.SupportsUnsafeAccessor)
+                {
+                    // Use UnsafeAccessor to invoke the constructor, bypassing required member validation
+                    string ctorAccessorName = GetUnsafeAccessorCtorName(typeGenerationSpec);
+                    sb.Append($"static {ArgsVarName} => {ctorAccessorName}(");
+                }
+                else if (hasRequiredMembers)
+                {
+                    // Fall back to reflection for older TFMs
+                    string argTypes = parameters.Count == 0
+                        ? EmptyTypeArray
+                        : $$"""new[] {{{string.Join(", ", parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}}}""";
+                    string argsArray = parameters.Count == 0
+                        ? "null"
+                        : $$"""new object?[] {{{string.Join(", ", parameters.Select(p => GetParamUnboxing(p.ParameterType, p.ParameterIndex)))}}}""";
+                    sb.Append($"static {ArgsVarName} => ({typeGenerationSpec.TypeRef.FullyQualifiedName})typeof({typeGenerationSpec.TypeRef.FullyQualifiedName}).GetConstructor({InstanceMemberBindingFlagsVariableName}, binder: null, {argTypes}, modifiers: null)!.Invoke({argsArray})");
+                    return sb.ToString();
+                }
+                else
+                {
+                    // Normal constructor invocation without required member concerns
+                    sb.Append($"static {ArgsVarName} => new {typeGenerationSpec.TypeRef.FullyQualifiedName}(");
+                }
 
                 if (parameters.Count > 0)
                 {
@@ -994,28 +1022,9 @@ namespace System.Text.Json.SourceGeneration
 
                 sb.Append(')');
 
-                // Only include required properties in the object initializer.
-                // Non-required init-only properties should be set via reflection-based setters
+                // Do not include any properties in the object initializer.
+                // Both required and init-only properties should be set via their setter delegates
                 // to preserve their default values when not specified in the JSON.
-                bool hasRequiredInitializers = false;
-                foreach (PropertyInitializerGenerationSpec property in propertyInitializers)
-                {
-                    if (property.IsRequired)
-                    {
-                        if (!hasRequiredInitializers)
-                        {
-                            sb.Append("{ ");
-                            hasRequiredInitializers = true;
-                        }
-                        sb.Append($"{property.Name} = {GetParamUnboxing(property.ParameterType, property.ParameterIndex)}, ");
-                    }
-                }
-
-                if (hasRequiredInitializers)
-                {
-                    sb.Length -= 2; // delete the last ", " token
-                    sb.Append(" }");
-                }
 
                 return sb.ToString();
 
@@ -1542,11 +1551,39 @@ namespace System.Text.Json.SourceGeneration
                 => $"__UnsafeAccessor_Set_{property.DeclaringType.Name}_{property.MemberName}";
 
             /// <summary>
-            /// Generates UnsafeAccessor methods for init-only properties in a type.
+            /// Gets the name of the UnsafeAccessor method for invoking a constructor.
+            /// </summary>
+            private static string GetUnsafeAccessorCtorName(TypeGenerationSpec typeSpec)
+                => $"__UnsafeAccessor_Ctor_{typeSpec.TypeRef.Name}";
+
+            /// <summary>
+            /// Generates UnsafeAccessor methods for init-only properties and constructors in a type.
             /// These methods use UnsafeAccessor on .NET 8+ for better performance.
             /// </summary>
             private static void GenerateUnsafeAccessorMethods(SourceWriter writer, TypeGenerationSpec typeGenerationSpec)
             {
+                // Check if we need UnsafeAccessor for the constructor (types with required members)
+                bool needsCtorAccessor = !typeGenerationSpec.ConstructorSetsRequiredParameters &&
+                    typeGenerationSpec.PropertyInitializerSpecs.Any(p => p.IsRequired);
+
+                // Generate constructor accessor if needed
+                if (needsCtorAccessor)
+                {
+                    string ctorAccessorName = GetUnsafeAccessorCtorName(typeGenerationSpec);
+                    string typeFQN = typeGenerationSpec.TypeRef.FullyQualifiedName;
+                    ImmutableEquatableArray<ParameterGenerationSpec> parameters = typeGenerationSpec.CtorParamGenSpecs;
+
+                    string paramList = parameters.Count == 0
+                        ? ""
+                        : string.Join(", ", parameters.Select(p => $"{p.ParameterType.FullyQualifiedName} {p.Name}"));
+
+                    writer.WriteLine($"""
+                        [{UnsafeAccessorTypeRef}({UnsafeAccessorKindTypeRef}.Constructor)]
+                        private static extern {typeFQN} {ctorAccessorName}({paramList});
+                        """);
+                }
+
+                // Generate property setter accessors for init-only properties
                 bool hasInitOnlyProperties = false;
                 foreach (PropertyGenerationSpec property in typeGenerationSpec.PropertyGenSpecs)
                 {
@@ -1557,7 +1594,7 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                if (!hasInitOnlyProperties)
+                if (!hasInitOnlyProperties && !needsCtorAccessor)
                 {
                     return;
                 }
