@@ -120,8 +120,6 @@ namespace ILCompiler
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
-            if (type is AsyncContinuationType)
-                return new AsyncContinuationLayoutAlgorithm();
             if (type.IsObject)
                 return _systemObjectFieldLayoutAlgorithm;
             else if (type == UniversalCanonType)

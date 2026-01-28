@@ -27,10 +27,10 @@ namespace ILCompiler
 
         // We don't lay these out using MetadataType metadata.
         // Autolayout (which we'd get due to GC pointers) would likely not match what codegen expects.
-        public override bool IsExplicitLayout => true;
-        public override bool IsSequentialLayout => false;
+        public override bool IsExplicitLayout => throw new NotImplementedException();
+        public override bool IsSequentialLayout => throw new NotImplementedException();
         public override bool IsExtendedLayout => throw new NotImplementedException();
-        public override bool IsAutoLayout => false;
+        public override bool IsAutoLayout => throw new NotImplementedException();
         public override ClassLayoutMetadata GetClassLayout() => throw new NotImplementedException();
 
         public override bool IsBeforeFieldInit => false;
@@ -81,70 +81,6 @@ namespace ILCompiler
             flags |= TypeFlags.AttributeCacheComputed;
 
             return flags;
-        }
-    }
-
-    internal sealed class AsyncContinuationLayoutAlgorithm : FieldLayoutAlgorithm
-    {
-        public override bool ComputeContainsByRefs(DefType type)
-        {
-            ValidateType(type);
-            return false;
-        }
-
-        public override bool ComputeContainsGCPointers(DefType type)
-        {
-            AsyncContinuationType act = (AsyncContinuationType)type;
-            foreach (var bit in act.PointerMap)
-            {
-                if (bit)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
-        {
-            AsyncContinuationType act = (AsyncContinuationType)type;
-            return new ComputedInstanceFieldLayout()
-            {
-                IsAutoLayoutOrHasAutoLayoutFields = false,
-                IsInt128OrHasInt128Fields = false,
-                IsVectorTOrHasVectorTFields = false,
-                LayoutAbiStable = true,
-                FieldSize = new LayoutInt(act.PointerMap.Size * act.Context.Target.PointerSize),
-                FieldAlignment = new LayoutInt(act.Context.Target.PointerSize),
-                ByteCountAlignment = new LayoutInt(act.Context.Target.PointerSize),
-                ByteCountUnaligned = new LayoutInt(act.PointerMap.Size * act.Context.Target.PointerSize),
-                Offsets = [],
-            };
-        }
-
-        public override bool ComputeIsUnsafeValueType(DefType type)
-        {
-            ValidateType(type);
-            return false;
-        }
-
-        private static void ValidateType(DefType type)
-        {
-            if (type is not AsyncContinuationType)
-                throw new InvalidOperationException();
-        }
-
-        public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind)
-        {
-            ValidateType(type);
-            return default;
-        }
-
-        public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
-        {
-            ValidateType(type);
-            return default;
         }
     }
 }
