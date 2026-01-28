@@ -17,8 +17,8 @@ set(ZSTD_BUILD_SHARED OFF)
 set(ZSTD_MULTITHREAD_SUPPORT OFF)
 set(ZSTD_LEGACY_SUPPORT OFF)
 
-# Pre-cache zstd CMake checks to speed up configure for browser/wasi
-if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+# Pre-cache zstd CMake checks to speed up configure for browser
+if (CLR_CMAKE_TARGET_BROWSER)
   set(C_FLAG_WALL 1 CACHE INTERNAL "")
   set(CXX_FLAG_WALL 1 CACHE INTERNAL "")
   set(C_FLAG_WEXTRA 1 CACHE INTERNAL "")

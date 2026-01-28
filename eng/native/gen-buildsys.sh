@@ -109,7 +109,7 @@ if [[ "$host_arch" == "wasm" ]]; then
         cmake_command="emcmake $cmake_command"
         # Use WASM-specific tryrun cache to speed up CMake configure
         # The -C flag must be early in the command line to be effective
-        cmake_extra_defines="-C $scriptroot/tryrun.wasm.cmake $cmake_extra_defines"
+        cmake_extra_defines="-C $scriptroot/tryrun.browser.cmake $cmake_extra_defines"
     elif [[ "$target_os" == "wasi" ]]; then
         if [[ -z "$WASI_SDK_PATH" ]]; then
             if [[ -d "$reporoot"/artifacts/wasi-sdk ]]; then

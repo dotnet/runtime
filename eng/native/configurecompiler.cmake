@@ -21,17 +21,17 @@ include(CheckLinkerFlag)
 include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 
 # Validate tryrun cache version matches current Emscripten version (browser-wasm only)
-if(CLR_CMAKE_TARGET_BROWSER AND DEFINED TRYRUN_WASM_EMSCRIPTEN_VERSION)
+if(CLR_CMAKE_TARGET_BROWSER AND DEFINED TRYRUN_BROWSER_EMSCRIPTEN_VERSION)
     file(READ "${CMAKE_CURRENT_LIST_DIR}/../../src/mono/browser/emscripten-version.txt" CURRENT_EMSCRIPTEN_VERSION)
     string(STRIP "${CURRENT_EMSCRIPTEN_VERSION}" CURRENT_EMSCRIPTEN_VERSION)
     
-    if(NOT TRYRUN_WASM_EMSCRIPTEN_VERSION STREQUAL CURRENT_EMSCRIPTEN_VERSION)
+    if(NOT TRYRUN_BROWSER_EMSCRIPTEN_VERSION STREQUAL CURRENT_EMSCRIPTEN_VERSION)
         message(WARNING 
             "Emscripten version mismatch detected!\n"
             "  Current Emscripten: ${CURRENT_EMSCRIPTEN_VERSION}\n"
-            "  Cached features for: ${TRYRUN_WASM_EMSCRIPTEN_VERSION}\n"
-            "  The CMake feature cache (eng/native/tryrun.wasm.cmake) may be outdated.\n"
-            "  Consider regenerating the cache - see instructions in eng/native/tryrun.wasm.cmake")
+            "  Cached features for: ${TRYRUN_BROWSER_EMSCRIPTEN_VERSION}\n"
+            "  The CMake feature cache (eng/native/tryrun.browser.cmake) may be outdated.\n"
+            "  Consider regenerating the cache - see instructions in eng/native/tryrun.browser.cmake")
     endif()
 endif()
 
