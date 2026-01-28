@@ -2,12 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO.Enumeration;
+using System.Reflection;
 using Xunit;
 
 namespace System.IO.Tests
 {
     public class FileSystemNameTests
     {
+        private static readonly MethodInfo? s_escapeExpressionMethodInfo = typeof(FileSystemName).GetMethod(
+            nameof(EscapeExpression),
+            BindingFlags.NonPublic | BindingFlags.Static);
+
         [Theory,
             MemberData(nameof(SimpleMatchData)),
             MemberData(nameof(EscapedSimpleMatchData)),
@@ -148,6 +153,26 @@ namespace System.IO.Tests
         {
             string longString = new string('a', 10_000_000);
             Assert.Equal(longString, FileSystemName.TranslateWin32Expression(longString));
+        }
+
+        [Theory,
+            InlineData("", ""),
+            InlineData("abc", "abc"),
+            InlineData("*?", "*?"),
+            InlineData("\\", "\\\\"),
+            InlineData("\"", "\\\""),
+            InlineData("<", "\\<"),
+            InlineData(">", "\\>"),
+            InlineData("a\\b\"c<d>e", "a\\\\b\\\"c\\<d\\>e")]
+        public void EscapeExpression(string expression, string expected)
+        {
+            if (s_escapeExpressionMethodInfo is null)
+            {
+                return;
+            }
+
+            object? result = s_escapeExpressionMethodInfo.Invoke(null, [expression]);
+            Assert.Equal(expected, result);
         }
     }
 }

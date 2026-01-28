@@ -63,7 +63,9 @@ namespace System.IO.Enumeration
                 // If the match type is simple, we need to escape the special DOS wildcard characters. If it is
                 // DOS style, the characters have already been escaped in the FileSystemEnumerableFactory.
 
-                if (expression.Length > 255 || expression == "*")
+                if (expression.Length > 255
+                    || expression == "*"
+                    || (_options.ReturnSpecialDirectories && (expression == "." || expression == "..")))
                 {
                     // Don't allow expressions longer than the maximum filename length. This comes back as
                     // STATUS_INVALID_PARAMETER from NtQueryDirectoryFile. We could catch that there, but
@@ -71,17 +73,14 @@ namespace System.IO.Enumeration
                     //
                     // Also, an expression of "*" is pointless as a filter- it matches everything. "*.*"
                     // should have been converted to "*" already in the case of MatchType.Win32.
+                    //
+                    // Finally, "." and ".." are invalid filter names on their own, but we allow having them
+                    // returned when Options.ReturnSpecialDirectories is set.
                     expression = null;
                 }
-                else if (_options.MatchType == MatchType.Simple && expression.AsSpan().ContainsAny(@"\""<>"))
+                else if (_options.MatchType == MatchType.Simple)
                 {
-                    // Escape the escaping literal first
-                    expression = expression.Replace("\\", "\\\\");
-
-                    // Also need to escape the other special wild characters ('"', '<', and '>')
-                    expression = expression.Replace("\"", "\\\"");
-                    expression = expression.Replace(">", "\\>");
-                    expression = expression.Replace("<", "\\<");
+                    expression = FileSystemName.EscapeExpression(expression);
                 }
             }
 
