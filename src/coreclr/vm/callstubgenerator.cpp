@@ -3238,37 +3238,25 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         while ((argType = sig.NextArg()) != ELEMENT_TYPE_END)
         {
             TypeHandle thArgType = sig.GetLastTypeHandleThrowing();
-            bool isByRef = (argType == ELEMENT_TYPE_BYREF);
+            MethodTable* pArgMT = nullptr;
 
-            if (isByRef)
+            if (argType == ELEMENT_TYPE_BYREF)
             {
                 sig.GetByRefType(&thArgType);
             }
 
+            // Extract the underlying MT for pointer types or unwrapped byrefs
             if (thArgType.IsTypeDesc() && !thArgType.AsTypeDesc()->GetTypeParam().IsNull())
             {
-                MethodTable* pArgMT = thArgType.AsTypeDesc()->GetTypeParam().AsMethodTable();
-                if (!pArgMT->IsValueType())
-                {
-                    COMPlusThrow(kInvalidProgramException);
-                }
-
-                if (isSwiftErrorType(pArgMT))
-                {
-                    swiftErrorCount++;
-                    if (swiftErrorCount > 1)
-                    {
-                        COMPlusThrow(kInvalidProgramException);
-                    }
-                    newArgCount++;
-                    continue;
-                }
+                pArgMT = thArgType.AsTypeDesc()->GetTypeParam().AsMethodTable();
+            }
+            else if (!thArgType.IsTypeDesc() && !thArgType.IsNull())
+            {
+                pArgMT = thArgType.AsMethodTable();
             }
 
-            if (!thArgType.IsNull() && !thArgType.IsTypeDesc())
+            if (pArgMT != nullptr)
             {
-                MethodTable* pArgMT = thArgType.AsMethodTable();
-
                 if (!pArgMT->IsValueType())
                 {
                     COMPlusThrow(kInvalidProgramException);
@@ -3283,6 +3271,17 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
                 {
                     swiftSelfCount++;
                     if (swiftSelfCount > 1)
+                    {
+                        COMPlusThrow(kInvalidProgramException);
+                    }
+                    newArgCount++;
+                    continue;
+                }
+
+                if (isSwiftErrorType(pArgMT))
+                {
+                    swiftErrorCount++;
+                    if (swiftErrorCount > 1)
                     {
                         COMPlusThrow(kInvalidProgramException);
                     }
@@ -3517,69 +3516,69 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         if (isSwiftCallConv)
         {
+            MethodTable* pArgMT = nullptr;
+
             if (corType == ELEMENT_TYPE_BYREF)
             {
                 sig.GetByRefType(&thArgTypeHandle);
             }
 
-            if ((corType == ELEMENT_TYPE_VALUETYPE || corType == ELEMENT_TYPE_BYREF) && !thArgTypeHandle.IsNull())
+            if (thArgTypeHandle.IsTypeDesc() && !thArgTypeHandle.AsTypeDesc()->GetTypeParam().IsNull())
             {
-                MethodTable* pArgMT = thArgTypeHandle.IsTypeDesc() ? nullptr : thArgTypeHandle.AsMethodTable();
-                if (pArgMT != nullptr && isSwiftSelfGenericType(pArgMT))
-                {
-                    Instantiation inst = pArgMT->GetInstantiation();
-                    _ASSERTE(inst.GetNumArgs() != 0);
-                    TypeHandle innerType = inst[0];
-                    _ASSERTE(!innerType.IsNull() && !innerType.IsTypeDesc());
-                    MethodTable* pInnerMT = innerType.AsMethodTable();
+                pArgMT = thArgTypeHandle.AsTypeDesc()->GetTypeParam().AsMethodTable();
+            }
+            else if (!thArgTypeHandle.IsTypeDesc() && !thArgTypeHandle.IsNull())
+            {
+                pArgMT = thArgTypeHandle.AsMethodTable();
+            }
+
+            if (pArgMT != nullptr && isSwiftSelfGenericType(pArgMT))
+            {
+                Instantiation inst = pArgMT->GetInstantiation();
+                _ASSERTE(inst.GetNumArgs() != 0);
+                TypeHandle innerType = inst[0];
+                _ASSERTE(!innerType.IsNull() && !innerType.IsTypeDesc());
+                MethodTable* pInnerMT = innerType.AsMethodTable();
 #if DEBUG
-                    CORINFO_SWIFT_LOWERING lowering = {};
-                    pInnerMT->GetNativeSwiftPhysicalLowering(&lowering, false);
-                    _ASSERTE(lowering.byReference);
+                CORINFO_SWIFT_LOWERING lowering = {};
+                pInnerMT->GetNativeSwiftPhysicalLowering(&lowering, false);
+                _ASSERTE(lowering.byReference);
 #endif // DEBUG
 
 #if LOG_COMPUTE_CALL_STUB
-                    printf("SwiftSelf<T> argument detected\n");
+                printf("SwiftSelf<T> argument detected\n");
 #endif
-                    TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftSelfByRef, pRoutines);
-                    m_currentRoutineType = RoutineType::SwiftSelfByRef;
+                TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftSelfByRef, pRoutines);
+                m_currentRoutineType = RoutineType::SwiftSelfByRef;
 
-                    int structSize = ALIGN_UP(pInnerMT->GetNumInstanceFieldBytes(), INTERP_STACK_SLOT_SIZE);
-                    m_swiftSelfByRefSize = structSize;
-                    interpreterStackOffset += structSize;
-                    continue;
-                }
-                if (pArgMT != nullptr && isSwiftSelfType(pArgMT))
-                {
-#if LOG_COMPUTE_CALL_STUB
-                    printf("Swift Self argument detected\n");
-#endif
-
-                    TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftSelf, pRoutines);
-                    m_currentRoutineType = RoutineType::SwiftSelf;
-                    interpreterStackOffset += interpStackSlotSize;
-                    continue;
-                }
+                int structSize = ALIGN_UP(pInnerMT->GetNumInstanceFieldBytes(), INTERP_STACK_SLOT_SIZE);
+                m_swiftSelfByRefSize = structSize;
+                interpreterStackOffset += structSize;
+                continue;
             }
 
-            if (corType == ELEMENT_TYPE_PTR)
+            if (pArgMT != nullptr && isSwiftSelfType(pArgMT))
             {
-                // Get the TypeHandle for the argument's type.
-                MetaSig *pSig = argIt.GetSig();
-                thArgTypeHandle = pSig->GetLastTypeHandleThrowing();
-                _ASSERTE(thArgTypeHandle.IsTypeDesc());
-                MethodTable* pArgMT = thArgTypeHandle.AsTypeDesc()->GetTypeParam().AsMethodTable();
-                if (isSwiftErrorType(pArgMT))
-                {
 #if LOG_COMPUTE_CALL_STUB
-                    printf("Swift Error argument detected\n");
+                printf("Swift Self argument detected\n");
 #endif
 
-                    TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftError, pRoutines);
-                    m_currentRoutineType = RoutineType::SwiftError;
-                    interpreterStackOffset += interpStackSlotSize;
-                    continue;
-                }
+                TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftSelf, pRoutines);
+                m_currentRoutineType = RoutineType::SwiftSelf;
+                interpreterStackOffset += interpStackSlotSize;
+                continue;
+            }
+
+            if (pArgMT != nullptr && isSwiftErrorType(pArgMT))
+            {
+#if LOG_COMPUTE_CALL_STUB
+                printf("Swift Error argument detected\n");
+#endif
+
+                TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftError, pRoutines);
+                m_currentRoutineType = RoutineType::SwiftError;
+                interpreterStackOffset += interpStackSlotSize;
+                continue;
             }
         }
 #endif // TARGET_APPLE && TARGET_ARM64

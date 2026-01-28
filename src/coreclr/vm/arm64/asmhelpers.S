@@ -748,8 +748,12 @@ LOCAL_LABEL(HaveInterpThreadContext):
     // Fill in the ContinuationContext register
     ldr x2, [sp, #(__PWTB_ArgumentRegister_FirstArg + 16)]
 
-    // Restore SwiftError to scratch reg
-    mov x10, x21
+    // Check if caller has SwiftError
+    ldr x11, [fp]
+    ldr x11, [x11, #40]
+    cbz x11, LOCAL_LABEL(InterpreterStub_NoSwiftError)
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
+LOCAL_LABEL(InterpreterStub_NoSwiftError):
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
 NESTED_END InterpreterStub, _TEXT
