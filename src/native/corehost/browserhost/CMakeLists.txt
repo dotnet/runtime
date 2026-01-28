@@ -121,7 +121,6 @@ target_link_options(browserhost PRIVATE
     -sEXPORTED_FUNCTIONS=${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
     -sENVIRONMENT=web,webview,worker,node,shell
-    -lnodefs.js
     -Wl,-error-limit=0)
 
 target_link_libraries(browserhost PRIVATE

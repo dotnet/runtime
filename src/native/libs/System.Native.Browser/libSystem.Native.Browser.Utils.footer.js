@@ -25,6 +25,7 @@
             "GetDotNetRuntimeContractDescriptor",
             "emscripten_force_exit",
             "_exit",
+            "__trap",
             "$readI53FromU64",
             "$readI53FromI64",
             "$writeI53ToI64"

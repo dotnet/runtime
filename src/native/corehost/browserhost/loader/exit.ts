@@ -7,7 +7,8 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, globalTh
 
 export const runtimeState = {
     creatingRuntime: false,
-    runtimeReady: false,
+    nativeReady: false,
+    dotnetReady: false,
     exitCode: undefined as number | undefined,
     exitReason: undefined as any,
     originalOnAbort: undefined as ((reason: any, extraJson?: string) => void) | undefined,
@@ -20,7 +21,7 @@ export function isExited() {
 }
 
 export function isRuntimeRunning() {
-    return runtimeState.runtimeReady && !isExited();
+    return runtimeState.dotnetReady && !isExited();
 }
 
 export function addOnExitListener(cb: OnExitListener) {
@@ -115,7 +116,7 @@ export function exit(exitCode: number, reason: any): void {
             }
             unregisterExit();
             if (!alreadySilent) {
-                if (runtimeState.onExitListeners.length === 0 && !runtimeState.runtimeReady) {
+                if (runtimeState.onExitListeners.length === 0 && !runtimeState.dotnetReady) {
                     dotnetLogger.error(`Exiting during runtime startup: ${message}`);
                     dotnetLogger.debug(() => stack);
                 }
@@ -129,7 +130,7 @@ export function exit(exitCode: number, reason: any): void {
                     }
                 }
             }
-            if (!runtimeState.runtimeReady) {
+            if (!runtimeState.dotnetReady) {
                 dotnetLogger.debug(() => `Aborting startup, reason: ${reason}`);
                 dotnetLoaderExports.abortStartup(reason);
             }
@@ -150,10 +151,10 @@ export function exit(exitCode: number, reason: any): void {
 }
 
 export function quitNow(exitCode: number, reason?: any): void {
-    if (runtimeState.runtimeReady) {
+    if (runtimeState.dotnetReady) {
         Module.runtimeKeepalivePop();
         if (dotnetBrowserUtilsExports && dotnetBrowserUtilsExports.abortPosix) {
-            dotnetBrowserUtilsExports.abortPosix(exitCode);
+            dotnetBrowserUtilsExports.abortPosix(exitCode, reason, runtimeState.dotnetReady);
         }
     }
     if (exitCode !== 0 || !ENVIRONMENT_IS_WEB) {

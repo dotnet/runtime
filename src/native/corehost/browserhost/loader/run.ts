@@ -76,6 +76,7 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         const runtimeModuleReady = runtimeModule.dotnetInitializeModule<void>(dotnetInternals);
 
         await nativeModulePromiseController.promise;
+        runtimeState.nativeReady = true;
         await coreAssembliesPromise;
         await coreVfsPromise;
         await vfsPromise;
@@ -112,14 +113,14 @@ export function abortStartup(reason: any): void {
 }
 
 function initializeCoreCLR(): void {
-    dotnetAssert.check(!runtimeState.runtimeReady, "CoreCLR should be initialized just once");
+    dotnetAssert.check(!runtimeState.dotnetReady, "CoreCLR should be initialized just once");
     const res = dotnetBrowserHostExports.initializeCoreCLR();
     if (res != 0) {
         const reason = new Error("Failed to initialize CoreCLR");
         runMainPromiseController.reject(reason);
         exit(res, reason);
     }
-    runtimeState.runtimeReady = true;
+    runtimeState.dotnetReady = true;
 }
 
 export function resolveRunMainPromise(exitCode: number): void {
