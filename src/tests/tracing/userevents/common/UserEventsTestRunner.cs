@@ -60,20 +60,20 @@ namespace Tracing.UserEvents.Tests.Common
             string baseDir = AppContext.BaseDirectory;
             bool isNativeAot = false;
             string userEventsScenarioDir = baseDir;
-            
+
             if (Path.GetFileName(baseDir.TrimEnd(Path.DirectorySeparatorChar)) == "native")
             {
                 // NativeAOT places its compiled test executables under a 'native' subdirectory.
                 isNativeAot = true;
                 userEventsScenarioDir = Path.GetFullPath(Path.Combine(baseDir, ".."));
             }
-            
+
             if (Path.GetFileName(userEventsScenarioDir.TrimEnd(Path.DirectorySeparatorChar)) != scenarioName)
             {
                 Console.Error.WriteLine($"Could not resolve the userevents test scenario directory. Expected directory to end with '{scenarioName}', but got: {userEventsScenarioDir}");
                 return -1;
             }
-            
+
             string recordTracePath = ResolveRecordTracePath(userEventsScenarioDir);
             string scriptFilePath = Path.Combine(userEventsScenarioDir, $"{scenarioName}.script");
 
@@ -129,22 +129,23 @@ namespace Tracing.UserEvents.Tests.Common
             Console.WriteLine($"record-trace started with PID: {recordTraceProcess.Id}");
 
             ProcessStartInfo traceeStartInfo = new();
-            traceeStartInfo.FileName = Environment.ProcessPath 
+            traceeStartInfo.FileName = Environment.ProcessPath
                 ?? throw new InvalidOperationException("Environment.ProcessPath is null");
-            
+
             // NativeAOT tests run the native executable directly.
             // CoreCLR tests run through corerun which loads the managed assembly.
             if (isNativeAot)
             {
-                traceeStartInfo.Arguments = "tracee";
+                traceeStartInfo.ArgumentList.Add("tracee");
             }
             else
             {
                 // For CoreCLR, construct the path to the assembly
                 string assemblyPath = Path.Combine(userEventsScenarioDir, $"{scenarioName}.dll");
-                traceeStartInfo.Arguments = $"{assemblyPath} tracee";
+                traceeStartInfo.ArgumentList.Add(assemblyPath);
+                traceeStartInfo.ArgumentList.Add("tracee");
             }
-            
+
             traceeStartInfo.WorkingDirectory = userEventsScenarioDir;
             traceeStartInfo.RedirectStandardOutput = true;
             traceeStartInfo.RedirectStandardError = true;
