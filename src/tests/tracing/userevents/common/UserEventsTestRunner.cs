@@ -160,7 +160,7 @@ namespace Tracing.UserEvents.Tests.Common
             // When https://github.com/microsoft/one-collect/issues/183 is fixed, this and the above TMPDIR should be removed.
             EnsureCleanDiagnosticPorts(diagnosticPortDir);
 
-            Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {traceeStartInfo.Arguments}");
+            Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {string.Join(" ", traceeStartInfo.ArgumentList)}");
             using Process traceeProcess = Process.Start(traceeStartInfo);
             int traceePid = traceeProcess.Id;
             Console.WriteLine($"Tracee process started with PID: {traceePid}");
