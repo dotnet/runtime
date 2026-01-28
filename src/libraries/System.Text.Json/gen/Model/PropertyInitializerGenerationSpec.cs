@@ -33,5 +33,13 @@ namespace System.Text.Json.SourceGeneration
         public required bool MatchesConstructorParameter { get; init; }
 
         public required bool IsNullable { get; init; }
+
+        /// <summary>
+        /// Indicates whether the property is a C# required member.
+        /// Required members must be set via object initializers,
+        /// while non-required init-only properties can preserve default values
+        /// by setting them via unsafe accessors after construction.
+        /// </summary>
+        public required bool IsRequired { get; init; }
     }
 }

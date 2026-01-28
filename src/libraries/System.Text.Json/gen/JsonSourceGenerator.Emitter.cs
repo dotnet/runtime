@@ -636,8 +636,11 @@ namespace System.Text.Json.SourceGeneration
                     string setterValue = property switch
                     {
                         { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "null",
+                        // For init-only properties, use reflection to invoke the setter since we can't
+                        // directly assign after the object is constructed. This preserves default values
+                        // for init-only properties when they're not specified in the JSON.
                         { CanUseSetter: true, IsInitOnlySetter: true }
-                            => $"""static (obj, value) => throw new {InvalidOperationExceptionTypeRef}("{ExceptionMessages.InitOnlyPropertySetterNotSupported}")""",
+                            => $"""static (obj, value) => typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)})!.SetValue(obj, value)""",
                         { CanUseSetter: true } when typeGenerationSpec.TypeRef.IsValueType
                             => $"""static (obj, value) => {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj).{propertyName} = value!""",
                         { CanUseSetter: true }
@@ -729,8 +732,17 @@ namespace System.Text.Json.SourceGeneration
             {
                 ImmutableEquatableArray<ParameterGenerationSpec> parameters = typeGenerationSpec.CtorParamGenSpecs;
                 ImmutableEquatableArray<PropertyInitializerGenerationSpec> propertyInitializers = typeGenerationSpec.PropertyInitializerSpecs;
-                int paramCount = parameters.Count + propertyInitializers.Count(propInit => !propInit.MatchesConstructorParameter);
-                Debug.Assert(paramCount > 0);
+                // Only count required property initializers that don't match constructor parameters.
+                // Non-required init-only properties are set via reflection setters, not the constructor delegate.
+                int requiredInitializerCount = propertyInitializers.Count(propInit => !propInit.MatchesConstructorParameter && propInit.IsRequired);
+                int paramCount = parameters.Count + requiredInitializerCount;
+
+                // If there are no parameters to emit, generate an empty array.
+                if (paramCount == 0)
+                {
+                    writer.WriteLine($"private static {JsonParameterInfoValuesTypeRef}[] {ctorParamMetadataInitMethodName}() => global::System.Array.Empty<{JsonParameterInfoValuesTypeRef}>();");
+                    return;
+                }
 
                 writer.WriteLine($"private static {JsonParameterInfoValuesTypeRef}[] {ctorParamMetadataInitMethodName}() => new {JsonParameterInfoValuesTypeRef}[]");
                 writer.WriteLine('{');
@@ -757,9 +769,11 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
+                // Only emit property initializers for required properties.
+                // Non-required init-only properties preserve default values and are set via reflection setters.
                 foreach (PropertyInitializerGenerationSpec spec in propertyInitializers)
                 {
-                    if (spec.MatchesConstructorParameter)
+                    if (spec.MatchesConstructorParameter || !spec.IsRequired)
                     {
                         continue;
                     }
@@ -950,14 +964,25 @@ namespace System.Text.Json.SourceGeneration
 
                 sb.Append(')');
 
-                if (propertyInitializers.Count > 0)
+                // Only include required properties in the object initializer.
+                // Non-required init-only properties should be set via unsafe accessors
+                // to preserve their default values when not specified in the JSON.
+                bool hasRequiredInitializers = false;
+                foreach (PropertyInitializerGenerationSpec property in propertyInitializers)
                 {
-                    sb.Append("{ ");
-                    foreach (PropertyInitializerGenerationSpec property in propertyInitializers)
+                    if (property.IsRequired)
                     {
+                        if (!hasRequiredInitializers)
+                        {
+                            sb.Append("{ ");
+                            hasRequiredInitializers = true;
+                        }
                         sb.Append($"{property.Name} = {GetParamUnboxing(property.ParameterType, property.ParameterIndex)}, ");
                     }
+                }
 
+                if (hasRequiredInitializers)
+                {
                     sb.Length -= 2; // delete the last ", " token
                     sb.Append(" }");
                 }
