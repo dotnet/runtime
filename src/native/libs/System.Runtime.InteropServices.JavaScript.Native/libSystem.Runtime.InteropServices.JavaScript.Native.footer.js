@@ -19,7 +19,8 @@
         const exports = {};
         libInteropJavaScriptNative(exports);
 
-        let commonDeps = ["$DOTNET",
+        let commonDeps = [
+            "$DOTNET",
             "SystemInteropJS_GetManagedStackTrace",
             "SystemInteropJS_CallDelegate",
             "SystemInteropJS_CompleteTask",

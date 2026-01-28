@@ -21,7 +21,8 @@
 
         let commonDeps = [
             "$BROWSER_UTILS",
-            "SystemJS_ExecuteTimerCallback", "SystemJS_ExecuteBackgroundJobCallback"
+            "SystemJS_ExecuteTimerCallback",
+            "SystemJS_ExecuteBackgroundJobCallback"
         ];
         const lib = {
             $DOTNET: {

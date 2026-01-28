@@ -21,10 +21,16 @@
 
         // libBrowserHostFn is too complex for acorn-optimizer.mjs to find the dependencies
         let explicitDeps = [
-            "wasm_load_icu_data", "BrowserHost_CreateHostContract", "BrowserHost_InitializeCoreCLR", "BrowserHost_ExecuteAssembly"
+            "wasm_load_icu_data",
+            "BrowserHost_CreateHostContract",
+            "BrowserHost_InitializeCoreCLR",
+            "BrowserHost_ExecuteAssembly"
         ];
         let commonDeps = [
-            "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS",
+            "$DOTNET",
+            "$DOTNET_INTEROP",
+            "$ENV",
+            "$FS",
             "$libBrowserHostFn",
             ...explicitDeps
         ];
@@ -53,13 +59,18 @@
                             ENV[key] = loaderConfig.environmentVariables[key];
                         }
 
-                        if (ENVIRONMENT_IS_NODE) {
-                            Module.preInit = [() => {
-                                FS.mkdir("/managed");
-                                FS.mount(NODEFS, { root: "." }, "/managed");
-                                FS.chdir("/managed");
-                            }];
-                        }
+                        Module.preInit = [() => {
+                            let vwdExists;
+                            try {
+                                vwdExists = !!FS.stat(loaderConfig.virtualWorkingDirectory);
+                            } catch {
+                                vwdExists = false;
+                            }
+                            if (!vwdExists) {
+                                Module.FS.createPath("/", loaderConfig.virtualWorkingDirectory, true, true);
+                            }
+                            FS.chdir(loaderConfig.virtualWorkingDirectory);
+                        }, ...(Module.preInit || [])];
                     }
                 },
             },
@@ -86,4 +97,21 @@
         addToLibrary(lib);
     }
     libFactory();
+
+    function trim() {
+        return 138; // EOPNOTSUPP;
+    }
+
+    // TODO-WASM: fix PAL https://github.com/dotnet/runtime/issues/122506
+    LibraryManager.library.__syscall_pipe = trim;
+    delete LibraryManager.library.__syscall_pipe__deps;
+
+    LibraryManager.library.__syscall_connect = trim;
+    delete LibraryManager.library.__syscall_connect__deps;
+
+    LibraryManager.library.__syscall_sendto = trim;
+    delete LibraryManager.library.__syscall_sendto__deps;
+
+    LibraryManager.library.__syscall_socket = trim;
+    delete LibraryManager.library.__syscall_socket__deps;
 })();
