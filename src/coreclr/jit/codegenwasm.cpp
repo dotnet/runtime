@@ -1515,7 +1515,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         {
             assert(call->IsR2ROrVirtualStubRelativeIndir());
 
-            // We have now generated code loading the target address from the indirection cell onto the stack.
             params.callType = EC_INDIR_R;
             // params.ireg     = targetAddrReg;
             genEmitCallWithCurrentGC(params);
