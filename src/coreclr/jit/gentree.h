@@ -717,13 +717,12 @@ public:
 
     bool operator==(const ValueSize& other) const
     {
-        if (m_kind == Kind::Exact)
+        if (m_kind == Kind::Exact && other.m_kind == Kind::Exact)
         {
             return (m_size == other.m_size);
         }
         else
         {
-            assert(m_size == 0 && other.m_size == 0);
             return (m_kind == other.m_kind);
         }
     }
