@@ -123,7 +123,6 @@ namespace System.Threading.Tasks
         // The delegate to invoke for a delegate-backed Task.
         // This field also may be used by async state machines to cache an Action.
         internal Delegate? m_action;
-
         private protected object? m_stateObject; // A state object that can be optionally supplied, passed to action.
         internal TaskScheduler? m_taskScheduler; // The task scheduler this task runs under.
 
@@ -180,6 +179,12 @@ namespace System.Threading.Tasks
 
         // These methods are a way to access the dictionary both from this class and for other classes that also
         // activate dummy tasks. Specifically the AsyncTaskMethodBuilder and AsyncTaskMethodBuilder<>
+
+        // Dictionary that relates Tasks to the tick count of the inflight task for debugging purposes
+        internal static System.Collections.Concurrent.ConcurrentDictionary<int, long>? s_runtimeAsyncTaskTicks;
+
+        // Dictionary that relates Continuations to their creation tick count for debugging purposes
+        internal static System.Collections.Concurrent.ConcurrentDictionary<Continuation, long>? s_runtimeAsyncContinuationTicks;
         internal static bool AddToActiveTasks(Task task)
         {
             Debug.Assert(task != null, "Null Task objects can't be added to the ActiveTasks collection");
@@ -209,6 +214,44 @@ namespace System.Threading.Tasks
             {
                 activeTasks.Remove(taskId);
             }
+        }
+
+        internal static void SetRuntimeAsyncContinuationTicks(Continuation continuation, long tickCount)
+        {
+            if (s_asyncDebuggingEnabled)
+            {
+                s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, long>(ContinuationEqualityComparer.Instance);
+                s_runtimeAsyncContinuationTicks.TryAdd(continuation, tickCount);
+            }
+        }
+
+        internal static bool GetRuntimeAsyncContinuationTicks(Continuation continuation, out long tickCount)
+        {
+            if (s_asyncDebuggingEnabled && s_runtimeAsyncContinuationTicks != null && s_runtimeAsyncContinuationTicks.TryGetValue(continuation, out tickCount))
+            {
+                return true;
+            }
+            tickCount = 0;
+            return false;
+        }
+
+        internal static void RemoveRuntimeAsyncContinuationTicks(Continuation continuation)
+        {
+            s_runtimeAsyncContinuationTicks?.Remove(continuation, out _);
+        }
+
+        internal static void UpdateRuntimeAsyncTaskTicks(Task task, long inflightTickCount)
+        {
+            if (s_asyncDebuggingEnabled)
+            {
+                s_runtimeAsyncTaskTicks ??= [];
+                s_runtimeAsyncTaskTicks[task.Id] = inflightTickCount;
+            }
+        }
+
+        internal static void RemoveRuntimeAsyncTaskTicks(Task task)
+        {
+            s_runtimeAsyncTaskTicks?.Remove(task.Id, out _);
         }
 
         // We moved a number of Task properties into this class.  The idea is that in most cases, these properties never

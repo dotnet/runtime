@@ -12,6 +12,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using System.Threading.Tasks.Sources;
 
 #if NATIVEAOT
@@ -146,6 +147,22 @@ namespace System.Runtime.CompilerServices
         }
     }
 
+    internal class ContinuationEqualityComparer : IEqualityComparer<Continuation>
+    {
+        internal static readonly ContinuationEqualityComparer Instance = new ContinuationEqualityComparer();
+
+        public bool Equals(Continuation? x, Continuation? y)
+        {
+            return ReferenceEquals(x, y);
+        }
+
+        public unsafe int GetHashCode([DisallowNull] Continuation obj)
+        {
+            object o = (object)obj;
+            return RuntimeHelpers.GetHashCode(o);
+        }
+    }
+
     [StructLayout(LayoutKind.Explicit)]
     internal unsafe ref struct AsyncDispatcherInfo
     {
@@ -161,6 +178,12 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(4)]
 #endif
         public Continuation? NextContinuation;
+#if TARGET_64BIT
+        [FieldOffset(16)]
+#else
+        [FieldOffset(8)]
+#endif
+        public Task Task;
 
         // Information about current task dispatching, to be used for async
         // stackwalking.
@@ -237,6 +260,7 @@ namespace System.Runtime.CompilerServices
             Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);
 #endif
             prevContinuation.Next = newContinuation;
+            Task.SetRuntimeAsyncContinuationTicks(newContinuation, Environment.TickCount64);
             return newContinuation;
         }
 
@@ -247,6 +271,7 @@ namespace System.Runtime.CompilerServices
             Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);
             Unsafe.As<byte, object?>(ref Unsafe.Add(ref RuntimeHelpers.GetRawData(newContinuation), keepAliveOffset)) = loaderAllocator;
             prevContinuation.Next = newContinuation;
+            Task.SetRuntimeAsyncContinuationTicks(newContinuation, Environment.TickCount64);
             return newContinuation;
         }
 
@@ -260,6 +285,7 @@ namespace System.Runtime.CompilerServices
             {
                 Unsafe.As<byte, object?>(ref Unsafe.Add(ref RuntimeHelpers.GetRawData(newContinuation), keepAliveOffset)) = GCHandle.FromIntPtr(loaderAllocatorHandle).Target;
             }
+            Task.SetRuntimeAsyncContinuationTicks(newContinuation, Environment.TickCount64);
             return newContinuation;
         }
 #endif
@@ -336,6 +362,7 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(m_stateObject == null);
                 m_stateObject = value;
+                Task.SetRuntimeAsyncContinuationTicks(value, Environment.TickCount64);
             }
 
             internal void HandleSuspended()
@@ -445,6 +472,12 @@ namespace System.Runtime.CompilerServices
                 asyncDispatcherInfo.Next = AsyncDispatcherInfo.t_current;
                 asyncDispatcherInfo.NextContinuation = MoveContinuationState();
                 AsyncDispatcherInfo.t_current = &asyncDispatcherInfo;
+                asyncDispatcherInfo.Task = this;
+
+                if (TplEventSource.Log.IsEnabled())
+                {
+                    TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
+                }
 
                 while (true)
                 {
@@ -456,15 +489,20 @@ namespace System.Runtime.CompilerServices
                         asyncDispatcherInfo.NextContinuation = nextContinuation;
 
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
+                        long tickCount = Task.GetRuntimeAsyncContinuationTicks(curContinuation, out long tickCountVal) ? tickCountVal : Environment.TickCount64;
+                        Task.UpdateRuntimeAsyncTaskTicks(this, tickCount);
                         Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
+
+                        Task.RemoveRuntimeAsyncContinuationTicks(curContinuation);
 
                         if (newContinuation != null)
                         {
+                            Task.SetRuntimeAsyncContinuationTicks(newContinuation, tickCount);
                             newContinuation.Next = nextContinuation;
                             HandleSuspended();
                             contexts.Pop();
                             AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
-                            return;
+                            break;
                         }
                     }
                     catch (Exception ex)
@@ -486,7 +524,7 @@ namespace System.Runtime.CompilerServices
                                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
                             }
 
-                            return;
+                            break;
                         }
 
                         handlerContinuation.SetException(ex);
@@ -495,6 +533,12 @@ namespace System.Runtime.CompilerServices
 
                     if (asyncDispatcherInfo.NextContinuation == null)
                     {
+                        if (TplEventSource.Log.IsEnabled())
+                        {
+                            TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
+                            Task.RemoveFromActiveTasks(this);
+                            Task.RemoveRuntimeAsyncTaskTicks(this);
+                        }
                         bool successfullySet = TrySetResult(m_result);
 
                         contexts.Pop();
@@ -506,15 +550,19 @@ namespace System.Runtime.CompilerServices
                             ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
                         }
 
-                        return;
+                        break;
                     }
 
                     if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation))
                     {
                         contexts.Pop();
                         AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
-                        return;
+                        break;
                     }
+                }
+                if (TplEventSource.Log.IsEnabled())
+                {
+                    TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
                 }
             }
 
@@ -614,6 +662,12 @@ namespace System.Runtime.CompilerServices
         private static Task<T?> FinalizeTaskReturningThunk<T>()
         {
             RuntimeAsyncTask<T?> result = new();
+            if (Task.s_asyncDebuggingEnabled)
+                Task.AddToActiveTasks(result);
+            if (TplEventSource.Log.IsEnabled())
+            {
+                TplEventSource.Log.TraceOperationBegin(result.Id, "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask", 0);
+            }
             result.HandleSuspended();
             return result;
         }
@@ -621,6 +675,12 @@ namespace System.Runtime.CompilerServices
         private static Task FinalizeTaskReturningThunk()
         {
             RuntimeAsyncTask<VoidTaskResult> result = new();
+            if (Task.s_asyncDebuggingEnabled)
+                Task.AddToActiveTasks(result);
+            if (TplEventSource.Log.IsEnabled())
+            {
+                TplEventSource.Log.TraceOperationBegin(result.Id, "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask", 0);
+            }
             result.HandleSuspended();
             return result;
         }
