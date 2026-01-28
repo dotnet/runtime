@@ -6557,12 +6557,6 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                  "DS::TSO: CallTailCallTarget frame.\n"));
             continue;
         }
-        else if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsAsyncThunkMethod())
-        {
-            LOG((LF_CORDB, LL_INFO10000,
-                 "DS::TSO: skipping async thunk method frame.\n"));
-            continue;
-        }
         else if (info->m_activeFrame.managed)
         {
             LOG((LF_CORDB, LL_INFO10000,
@@ -7647,7 +7641,7 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     // a step out, or if we step-next off the end of a method called by an IL stub.  In either case,
     // we'll get a single step in an IL stub, which we want to ignore.  We also want to enable trace
     // call here, just in case this IL stub is about to call the managed target (in the reverse interop case).
-    if (fd->IsDiagnosticsHidden())
+    if (fd->IsILStub())
     {
         LOG((LF_CORDB,LL_INFO10000, "DS::TSS: not in managed code, Returning false (case 0)!\n"));
         if (this->GetDCType() == DEBUGGER_CONTROLLER_STEPPER)
