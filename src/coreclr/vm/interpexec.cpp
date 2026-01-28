@@ -16,6 +16,147 @@
 #include <limits>
 #include <functional>
 
+struct InterpDispatchCacheEntry
+{
+    // MethodTable of the calling object
+    void* pMT;
+    size_t dispatchToken;
+    // Resolved target MethodDesc
+    MethodDesc* pTargetMD;
+    // Used for linking dead entries for cleanup during GC
+    InterpDispatchCacheEntry* pNextDead;
+};
+
+#define DISPATCH_CACHE_BITS 12
+#define DISPATCH_CACHE_SIZE (1 << DISPATCH_CACHE_BITS)
+#define DISPATCH_CACHE_MASK (DISPATCH_CACHE_SIZE - 1)
+
+// A simple hash table that caches virtual method dispatch results.
+// Maps (DispatchToken, MethodTable*) to MethodDesc*.
+struct InterpDispatchCache
+{
+    InterpDispatchCacheEntry* m_cache[DISPATCH_CACHE_SIZE];
+    // List of dead entries to be freed at GC time
+    InterpDispatchCacheEntry* m_pDeadList;
+
+    MethodDesc* Lookup(size_t dispatchToken, void* pMT)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        size_t idx = Hash(dispatchToken, pMT);
+
+        InterpDispatchCacheEntry* pEntry = m_cache[idx];
+        // Data dependency ensures field reads are ordered after loading of `pEntry`
+        // The entry struct is immutable once created, so these reads are safe
+        if (pEntry != nullptr && pEntry->pMT == pMT && pEntry->dispatchToken == dispatchToken)
+            return pEntry->pTargetMD;
+
+        return NULL;
+    }
+
+    void Insert(size_t dispatchToken, void* pMT, MethodDesc* pTargetMD)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        size_t idx = Hash(dispatchToken, pMT);
+
+        InterpDispatchCacheEntry* pNewEntry = new (nothrow) InterpDispatchCacheEntry();
+        if (pNewEntry == nullptr)
+            return;
+
+        // Except pNextDead, these fields never change
+        pNewEntry->pMT = pMT;
+        pNewEntry->dispatchToken = dispatchToken;
+        pNewEntry->pTargetMD = pTargetMD;
+        pNewEntry->pNextDead = nullptr;
+
+        // CAS has release semantics, so the fields of the entry have correct
+        // values once the entry is published. If CAS succeeds, we own the old
+        // entry for freeing
+        InterpDispatchCacheEntry* pOldEntry = InterlockedExchangeT(&m_cache[idx], pNewEntry);
+
+        if (pOldEntry != nullptr)
+            AddToDeadList(pOldEntry);
+    }
+
+    // Called during GC sync point to free dead entries
+    // At this point, no other threads are running, so it is safe to free
+    void ReclaimDeadEntries()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        InterpDispatchCacheEntry* pDeadList = m_pDeadList;
+
+        while (pDeadList != nullptr)
+        {
+            InterpDispatchCacheEntry* pNext = pDeadList->pNextDead;
+            delete pDeadList;
+            pDeadList = pNext;
+        }
+
+        m_pDeadList = nullptr;
+    }
+
+    // Add an entry to the dead list for later cleanup
+    void AddToDeadList(InterpDispatchCacheEntry* pEntry)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        InterpDispatchCacheEntry* pOldHead;
+        do
+        {
+            pOldHead = m_pDeadList;
+            pEntry->pNextDead = pOldHead;
+        }
+        while (InterlockedCompareExchangeT(&m_pDeadList, pEntry, pOldHead) != pOldHead);
+    }
+
+    // Same as VSD DispatchCache's HashToken + HashMT
+    static uint16_t Hash(size_t dispatchToken, void* pMT)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        uint16_t dispatchTokenHash = DispatchToken::From_SIZE_T(dispatchToken).GetHash();
+
+        size_t mtHash = (size_t)pMT;
+        mtHash = (((mtHash >> DISPATCH_CACHE_BITS) + mtHash) >> LOG2_PTRSIZE) & DISPATCH_CACHE_MASK;
+
+        uint16_t hash = (uint16_t)mtHash;
+        hash ^= (dispatchTokenHash & DISPATCH_CACHE_MASK);
+
+        return hash;
+    }
+};
+
+// Global interpreter dispatch cache instance
+static InterpDispatchCache g_InterpDispatchCache;
+
+// Called during GC, when we are guaranteed no entry is being used by any thread.
+void InterpDispatchCache_ReclaimAll()
+{
+    g_InterpDispatchCache.ReclaimDeadEntries();
+}
+
+static size_t CreateDispatchTokenForMethod(MethodDesc* pMD)
+{
+    WRAPPER_NO_CONTRACT;
+
+    uint32_t slotNumber = pMD->GetSlot();
+
+    if (pMD->IsInterface())
+    {
+        // For interface methods, get the interface's TypeID
+        MethodTable* pInterfaceMT = pMD->GetMethodTable();
+        uint32_t typeID = pInterfaceMT->GetTypeID();
+        return DispatchToken::CreateDispatchToken(typeID, slotNumber).To_SIZE_T();
+    }
+    else
+    {
+        // For non-interface virtual methods, use TYPE_ID_THIS_CLASS
+        return DispatchToken::CreateDispatchToken(slotNumber).To_SIZE_T();
+    }
+}
+
 #ifdef TARGET_WASM
 // Unused on WASM
 #define SAVE_THE_LOWEST_SP do {} while (0)
@@ -2686,15 +2827,30 @@ MAIN_LOOP:
                     OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset, OBJECTREF);
                     NULL_CHECK(*pThisArg);
 
-                    // Interpreter-TODO
-                    // This needs to be optimized, not operating at MethodDesc level, rather with ftnptr
-                    // slots containing the interpreter IR pointer
-                    targetMethod = CallWithSEHWrapper(
-                        [&pMD, &pThisArg]() {
-                            return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
-                        });
+                    MethodTable *pObjMT = (*pThisArg)->GetMethodTable();
 
-                    ip += 4;
+                    // Obtain the cached dispatch token or initialize it
+                    size_t dispatchToken = (size_t)pMethod->pDataItems[ip[4]];
+                    if (dispatchToken == 0)
+                    {
+                        dispatchToken = CreateDispatchTokenForMethod(pMD);
+                        pMethod->pDataItems[ip[4]] = (void*)dispatchToken;
+                    }
+
+                    // Try cache lookup first
+                    targetMethod = g_InterpDispatchCache.Lookup(dispatchToken, pObjMT);
+
+                    if (targetMethod == NULL)
+                    {
+                        // miss, resolve the virtual method and cache it
+                        targetMethod = CallWithSEHWrapper(
+                            [&pMD, &pThisArg]() {
+                                return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
+                            });
+                        g_InterpDispatchCache.Insert(dispatchToken, pObjMT, targetMethod);
+                    }
+
+                    ip += 5;
                     goto CALL_INTERP_METHOD;
                 }
 
@@ -2852,7 +3008,6 @@ MAIN_LOOP:
                                 [&targetMethod, &pThisArg]() {
                                     return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, targetMethod->GetMethodTable());
                                 });
-
                         }
                         else
                         {
