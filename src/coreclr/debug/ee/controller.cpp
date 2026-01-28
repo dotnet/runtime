@@ -2652,8 +2652,7 @@ bool DebuggerController::MatchPatch(Thread *thread,
     if (patch->controller->m_thread != NULL && patch->controller->m_thread != thread)
     {
         LOG((LF_CORDB, LL_INFO10000, "DC::MP: patches didn't match b/c threads\n"));
-        // TODO: consider if we want to limit this to only async methods.
-        //return false; We may be stepping a thread other than the one that set the step.
+        return false;
     }
 
     if (patch->fp != LEAF_MOST_FRAME)
@@ -7648,7 +7647,7 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     // a step out, or if we step-next off the end of a method called by an IL stub.  In either case,
     // we'll get a single step in an IL stub, which we want to ignore.  We also want to enable trace
     // call here, just in case this IL stub is about to call the managed target (in the reverse interop case).
-    if (fd->IsILStub())
+    if (fd->IsDiagnosticsHidden())
     {
         LOG((LF_CORDB,LL_INFO10000, "DS::TSS: not in managed code, Returning false (case 0)!\n"));
         if (this->GetDCType() == DEBUGGER_CONTROLLER_STEPPER)
