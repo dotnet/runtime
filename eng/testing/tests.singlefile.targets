@@ -19,6 +19,7 @@
   <PropertyGroup Condition="'$(TestReadyToRun)' == 'true'">
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishSingleFile>false</PublishSingleFile>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)tests.readytorun.targets</AfterMicrosoftNETSdkTargets>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
