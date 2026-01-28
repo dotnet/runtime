@@ -2212,7 +2212,7 @@ PCODE CallStubGenerator::GetSwiftStoreFPAtOffsetRoutine(int regIndex)
     static PCODE routines[] = {
         (PCODE)Store_D0_AtOffset, (PCODE)Store_D1_AtOffset, (PCODE)Store_D2_AtOffset, (PCODE)Store_D3_AtOffset
     };
-    _ASSERTE(regIndex >= 0 && regIndex < 4);
+    _ASSERTE(regIndex >= 0 && regIndex < ARRAY_SIZE(routines));
     return routines[regIndex];
 }
 #endif // TARGET_APPLE && TARGET_ARM64
