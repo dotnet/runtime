@@ -153,10 +153,6 @@ namespace Tracing.UserEvents.Tests.Common
             string diagnosticPortDir = "/tmp";
             traceeStartInfo.Environment["TMPDIR"] = diagnosticPortDir;
 
-            // Note: record-trace uses perfmap/doublemapper to discover .NET process PIDs and their diagnostic ports.
-            // NativeAOT apps do not use doublemapping, so they will not be discovered by record-trace even with TMPDIR set.
-            // See https://github.com/microsoft/one-collect/issues/226 for details.
-
             // TMPDIR is configured on Helix, but the diagnostic port is created outside of Helix's default temp datadisk path.
             // The diagnostic port should be automatically cleaned up when the tracee shuts down, but zombie sockets can be left
             // behind after catastrophic exits. Clean them before launching the tracee to avoid deleting sockets from a reused PID.
