@@ -546,7 +546,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(IsComObjectType());
-        POSTCONDITION(CheckPointer(RETVAL));
+        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
     CONTRACT_END;
 
