@@ -11268,6 +11268,8 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
     pContext->Rsi = pTransitionBlock->m_calleeSavedRegisters.Rsi;
 #endif
 
+    pContext->EFlags = 0x202; // Default flags
+
     // SP points just past the TransitionBlock (after return address)
     // Adjust for call simulation: OSR method expects SP as if a call just happened
     *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
