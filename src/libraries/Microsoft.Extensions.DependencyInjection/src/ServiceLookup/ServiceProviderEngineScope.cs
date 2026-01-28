@@ -120,30 +120,29 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public void Dispose()
         {
             List<object>? toDispose = BeginDispose();
-            List<Exception>? exceptions = null;
-            var index = (toDispose?.Count ?? 0) - 1;
+            if (toDispose is null)
+            {
+                return;
+            }
 
-            while (index >= 0)
+            List<Exception>? exceptions = null;
+            for (var i = toDispose.Count - 1; i >= 0; i--)
             {
                 try
                 {
-                    for (; index >= 0; index--)
+                    if (toDispose[i] is IDisposable disposable)
                     {
-                        if (toDispose![index] is IDisposable disposable)
-                        {
-                            disposable.Dispose();
-                        }
-                        else
-                        {
-                            throw new InvalidOperationException(SR.Format(SR.AsyncDisposableServiceDispose, TypeNameHelper.GetTypeDisplayName(toDispose[index])));
-                        }
+                        disposable.Dispose();
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.AsyncDisposableServiceDispose, TypeNameHelper.GetTypeDisplayName(toDispose[i])));
                     }
                 }
-                catch (Exception ex)
+                catch (Exception exception)
                 {
                     exceptions ??= new List<Exception>();
-                    exceptions.Add(ex);
-                    index--;
+                    exceptions.Add(exception);
                 }
             }
 
@@ -158,39 +157,38 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public ValueTask DisposeAsync()
         {
             List<object>? toDispose = BeginDispose();
-            List<Exception>? exceptions = null;
-            var index = (toDispose?.Count ?? 0) - 1;
+            if (toDispose is null)
+            {
+                return default;
+            }
 
-            while (index >= 0)
+            List<Exception>? exceptions = null;
+            for (var i = toDispose.Count - 1; i >= 0; i--)
             {
                 try
                 {
-                    for (; index >= 0; index--)
+                    object disposable = toDispose[i];
+                    if (disposable is IAsyncDisposable asyncDisposable)
                     {
-                        object disposable = toDispose![index];
-                        if (disposable is IAsyncDisposable asyncDisposable)
+                        ValueTask vt = asyncDisposable.DisposeAsync();
+                        if (!vt.IsCompletedSuccessfully)
                         {
-                            ValueTask vt = asyncDisposable.DisposeAsync();
-                            if (!vt.IsCompletedSuccessfully)
-                            {
-                                return Await(index, vt, toDispose);
-                            }
+                            return Await(i, vt, toDispose);
+                        }
 
-                            // If its a IValueTaskSource backed ValueTask,
-                            // inform it its result has been read so it can reset
-                            vt.GetAwaiter().GetResult();
-                        }
-                        else
-                        {
-                            ((IDisposable)disposable).Dispose();
-                        }
+                        // If its a IValueTaskSource backed ValueTask,
+                        // inform it its result has been read so it can reset
+                        vt.GetAwaiter().GetResult();
+                    }
+                    else
+                    {
+                        ((IDisposable)disposable).Dispose();
                     }
                 }
                 catch (Exception ex)
                 {
                     exceptions ??= new List<Exception>();
                     exceptions.Add(ex);
-                    index--;
                 }
             }
 
