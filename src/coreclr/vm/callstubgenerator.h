@@ -166,15 +166,6 @@ class CallStubGenerator
     int m_targetSlotIndex = -1;
     // The total stack size used for the arguments.
     int m_totalStackSize = 0;
-#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
-    // Size of struct for SwiftSelf<T>
-    int m_swiftSelfByRefSize = 0;
-    // Track if SwiftIndirectResult was used
-    bool m_hasSwiftIndirectResult = false;
-    // Swift return lowering info
-    CORINFO_SWIFT_LOWERING m_swiftReturnLowering = {};
-    bool m_hasSwiftReturnLowering = false;
-#endif // TARGET_APPLE && TARGET_ARM64
 
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
     bool m_interpreterToNative = false;
@@ -194,7 +185,13 @@ class CallStubGenerator
     PCODE GetFPReg128RangeRoutine(int x1, int x2);
     PCODE GetFPReg32RangeRoutine(int x1, int x2);
 #endif // TARGET_ARM64
-#if defined(TARGET_APPLE)
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+    // Swift calling convention state
+    int m_swiftSelfByRefSize = 0;
+    CORINFO_SWIFT_LOWERING m_swiftReturnLowering = {};
+    bool m_hasSwiftReturnLowering = false;
+
+    // Swift routine helpers
     PCODE GetSwiftSelfRoutine();
     PCODE GetSwiftSelfByRefRoutine();
     PCODE GetSwiftErrorRoutine();
@@ -203,7 +200,20 @@ class CallStubGenerator
     PCODE GetSwiftLoadFPAtOffsetRoutine(int regIndex);
     PCODE GetSwiftStoreGPAtOffsetRoutine(int regIndex);
     PCODE GetSwiftStoreFPAtOffsetRoutine(int regIndex);
-#endif // TARGET_APPLE
+
+    // Swift lowering info for expanded struct elements
+    struct SwiftLoweringElement {
+        uint16_t offset;        // Offset within struct
+        uint16_t structSize;    // If non-zero, this is the last element, advance x9 by this amount
+        bool isFloat;           // True if this element goes in FP register
+        bool isLowered;         // True if this is part of a lowered struct
+    };
+
+    void RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilder &swiftSigBuilder, CQuickArray<SwiftLoweringElement> &swiftLoweringInfo, int &swiftIndirectResultCount);
+    bool ProcessSwiftSpecialArgument(MethodTable* pArgMT, int interpStackSlotSize, int32_t &interpreterStackOffset, PCODE *pRoutines);
+    void EmitSwiftLoweredElementRoutine(SwiftLoweringElement &elem, ArgLocDesc &argLocDesc, PCODE *pRoutines);
+    void EmitSwiftReturnLoweringRoutines(PCODE *pRoutines);
+#endif // TARGET_APPLE && TARGET_ARM64
     PCODE GetGPRegRangeRoutine(int r1, int r2);
     template<typename ArgIteratorType>
     ReturnType GetReturnType(ArgIteratorType *pArgIt);
