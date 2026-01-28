@@ -60,6 +60,11 @@
 using std::isfinite;
 using std::isnan;
 
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+// Forward declaration for shadow stack support (defined in eetwain.cpp)
+size_t GetSSPForFrameOnCurrentStack(TADDR ip);
+#endif // HOST_AMD64 && HOST_WINDOWS
+
 //========================================================================
 //
 // This file contains implementation of all JIT helpers. The helpers are
@@ -1667,27 +1672,13 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         {
             pFrameContext->ContextFlags |= CONTEXT_XSTATE;
             SetXStateFeaturesMask(pFrameContext, XSTATE_MASK_CET_U);
-            PCODE* ssp = (PCODE*)_rdsspq();
 
-            // Pop the calls it took to get here from the shadow stack. This
-            // function won't return.
-            int toPop = 0;
-            while (ssp[toPop] != *pReturnAddress)
-            {
-                _ASSERTE(toPop < 10);
-                if (toPop >= 10)
-                {
-                    LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "Could not unwind shadow stack pointer: ssp %p expected to find %p\n",
-                            ssp, *pReturnAddress));
-                    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-                }
-
-                toPop++;
-            }
-
-            // Pop entries as if we never called into the patchpoint helper
-            ssp += toPop + 1;
-            SetSSP(pFrameContext, (DWORD64)ssp);
+            // Use existing helper to find the SSP for the return address on the shadow stack.
+            // This returns the SSP pointing one slot past the return address, which is exactly
+            // what we need for the OSR transition (popping all frames up to and including the
+            // patchpoint helper call).
+            size_t targetSSP = GetSSPForFrameOnCurrentStack(*pReturnAddress);
+            SetSSP(pFrameContext, (DWORD64)targetSSP);
         }
 #endif
 
