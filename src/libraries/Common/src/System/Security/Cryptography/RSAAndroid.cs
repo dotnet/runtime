@@ -657,7 +657,7 @@ namespace System.Security.Cryptography
                 Debug.Assert(padding != null);
                 signature = null;
 
-                if (padding != RSASignaturePadding.Pkcs1 && padding != RSASignaturePadding.Pss)
+                if (padding != RSASignaturePadding.Pkcs1 && padding.Mode != RSASignaturePaddingMode.Pss)
                 {
                     throw PaddingModeNotSupported();
                 }
@@ -688,7 +688,7 @@ namespace System.Security.Cryptography
                 }
                 else if (padding.Mode == RSASignaturePaddingMode.Pss)
                 {
-                    RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, encodedBytes, KeySize);
+                    RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, encodedBytes, KeySize, RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm));
                 }
                 else
                 {
@@ -726,7 +726,7 @@ namespace System.Security.Cryptography
             {
                 ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
                 ArgumentNullException.ThrowIfNull(padding);
-                if (padding != RSASignaturePadding.Pkcs1 && padding != RSASignaturePadding.Pss)
+                if (padding != RSASignaturePadding.Pkcs1 && padding.Mode != RSASignaturePaddingMode.Pss)
                 {
                     throw PaddingModeNotSupported();
                 }
@@ -772,9 +772,10 @@ namespace System.Security.Cryptography
                         CryptoPool.Return(repadRent, requiredBytes);
                         return valid;
                     }
-                    else if (padding == RSASignaturePadding.Pss)
+                    else if (padding.Mode == RSASignaturePaddingMode.Pss)
                     {
-                        return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, KeySize);
+                        int saltLength = RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm);
+                        return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, KeySize, saltLength);
                     }
                     else
                     {

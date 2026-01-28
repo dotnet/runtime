@@ -226,6 +226,32 @@ namespace System.Security.Cryptography.Tests
             Assert.False(RSASignaturePadding.Pkcs1.Equals((object)null));
             Assert.False(RSASignaturePadding.Pkcs1 == null);
             Assert.True(RSASignaturePadding.Pkcs1 != null);
+
+            Assert.Equal(RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthIsHashLength), RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthIsHashLength));
+            Assert.Equal(RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthMax), RSASignaturePadding.CreatePss(RSASignaturePadding.PssSaltLengthMax));
+            Assert.Equal(RSASignaturePadding.CreatePss(15), RSASignaturePadding.CreatePss(15));
+            Assert.NotEqual(RSASignaturePadding.CreatePss(15), RSASignaturePadding.CreatePss(16));
+            Assert.NotEqual(RSASignaturePadding.Pkcs1, RSASignaturePadding.CreatePss(16));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(2)]
+        [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData(RSASignaturePadding.PssSaltLengthMax)]
+        public void RSASignaturePadding_Constructor_ValidParameters(int saltLength)
+        {
+            RSASignaturePadding padding = RSASignaturePadding.CreatePss(saltLength);
+            Assert.Equal(RSASignaturePaddingMode.Pss, padding.Mode);
+            Assert.Equal(saltLength, padding.PssSaltLength);
+        }
+
+        [Theory]
+        [InlineData(-3)]
+        public void RSASignaturePadding_Constructor_InvalidParameters(int saltLength)
+        {
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => RSASignaturePadding.CreatePss(saltLength));
+            Assert.Equal("saltLength", exception.ParamName);
         }
 
         [Fact]

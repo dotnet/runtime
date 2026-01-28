@@ -14,6 +14,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
 {
     public static partial class SignedCmsTests
     {
+        private static bool AreCustomPssSaltLengthsSupported => PlatformDetection.IsWindows || PlatformDetection.IsLinux;
+
         [Fact]
         public static void CmsSignerKeyIsNullByDefault()
         {
@@ -684,15 +686,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Theory]
-        [InlineData(Oids.Sha256, true)]
-        [InlineData(Oids.Sha384, true)]
-        [InlineData(Oids.Sha512, true)]
-        [InlineData(Oids.Sha1, true)]
-        [InlineData(Oids.Sha256, false)]
-        [InlineData(Oids.Sha384, false)]
-        [InlineData(Oids.Sha512, false)]
-        [InlineData(Oids.Sha1, false)]
-        public static void CreateSignature_RsaPss(string digestOid, bool assignByConstructor)
+        [MemberData(nameof(CreateSignature_RsaPssTests))]
+        public static void CreateSignature_RsaPss(string digestOid, bool assignByConstructor, int saltLength)
         {
             ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
             SignedCms cms = new SignedCms(content);
@@ -704,12 +699,12 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
                 if (assignByConstructor)
                 {
-                    signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert, null, RSASignaturePadding.Pss);
+                    signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert, null, RSASignaturePadding.CreatePss(saltLength));
                 }
                 else
                 {
                     signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
-                    signer.SignaturePadding = RSASignaturePadding.Pss;
+                    signer.SignaturePadding = RSASignaturePadding.CreatePss(saltLength);
                 }
 
                 signer.DigestAlgorithm = new Oid(digestOid, null);
@@ -732,6 +727,14 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 }
             }
         }
+
+        public static IEnumerable<object[]> CreateSignature_RsaPssTests() =>
+            from oid in (string[])([Oids.Sha256, Oids.Sha384, Oids.Sha512, Oids.Sha1])
+            from byCtor in new[] { true, false }
+            from saltLength in AreCustomPssSaltLengthsSupported
+                ? new[] { 0, 63, RSASignaturePadding.PssSaltLengthMax, RSASignaturePadding.PssSaltLengthIsHashLength }
+                : new[] { RSASignaturePadding.PssSaltLengthIsHashLength }
+            select new object[] { oid, byCtor, saltLength };
 
         [Fact]
         public static void CreateSignature_RsaPss_SeparateKey()

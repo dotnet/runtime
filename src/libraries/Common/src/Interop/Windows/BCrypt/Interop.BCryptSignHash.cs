@@ -54,6 +54,7 @@ internal static partial class Interop
             ReadOnlySpan<byte> hash,
             Span<byte> destination,
             string hashAlgorithmName,
+            int saltLength,
             out int bytesWritten)
         {
             fixed (char* pHashAlgorithmName = hashAlgorithmName)
@@ -62,7 +63,7 @@ internal static partial class Interop
             {
                 BCRYPT_PSS_PADDING_INFO paddingInfo = default;
                 paddingInfo.pszAlgId = (IntPtr)pHashAlgorithmName;
-                paddingInfo.cbSalt = hash.Length;
+                paddingInfo.cbSalt = saltLength;
 
                 return BCryptSignHash(
                     key,
