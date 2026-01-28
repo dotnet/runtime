@@ -1014,7 +1014,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {
                 // If WorkingDirectory is supplied, the caller could be passing in a relative path
                 // Convert to absolute path to ensure long path support works correctly
-                assemblyPath = Path.IsPathRooted(assemblyItem.ItemSpec)
+                assemblyPath = Path.IsPathFullyQualified(assemblyItem.ItemSpec)
                     ? assemblyItem.ItemSpec
                     : Path.GetFullPath(Path.Combine(WorkingDirectory, assemblyItem.ItemSpec));
             }
