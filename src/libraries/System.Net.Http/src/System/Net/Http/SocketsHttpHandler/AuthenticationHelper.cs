@@ -17,6 +17,38 @@ namespace System.Net.Http
         private const string NtlmScheme = "NTLM";
         private const string NegotiateScheme = "Negotiate";
 
+        private const string EnableProactiveProxyAuthCtxSwitch = "System.Net.Http.EnableProactiveProxyAuth";
+        private const string EnableProactiveProxyAuthEnvironmentVariable = "DOTNET_SYSTEM_NET_HTTP_ENABLEPROACTIVEPROXYAUTH";
+
+        private static volatile int s_enableProactiveProxyAuth = -1;
+
+        private static bool EnableProactiveProxyAuth
+        {
+            get
+            {
+                int enableProactiveProxyAuth = s_enableProactiveProxyAuth;
+                if (enableProactiveProxyAuth != -1)
+                {
+                    return enableProactiveProxyAuth != 0;
+                }
+
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(EnableProactiveProxyAuthCtxSwitch, out bool value))
+                {
+                    s_enableProactiveProxyAuth = value ? 1 : 0;
+                }
+                else
+                {
+                    // AppContext switch wasn't used. Check the environment variable.
+                    s_enableProactiveProxyAuth =
+                        Environment.GetEnvironmentVariable(EnableProactiveProxyAuthEnvironmentVariable) is string envVar &&
+                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
+                }
+
+                return s_enableProactiveProxyAuth != 0;
+            }
+        }
+
         private enum AuthenticationType
         {
             Basic,
@@ -359,6 +391,18 @@ namespace System.Net.Http
 
         public static ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, bool async, ICredentials proxyCredentials, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
+            // When enabled via AppContext switch or environment variable, send Basic auth proactively
+            // on the first request. This is needed for proxies that don't send 407 challenges but instead
+            // drop or reject unauthenticated connections (e.g., some HTTPS CONNECT tunnel proxies).
+            if (EnableProactiveProxyAuth)
+            {
+                NetworkCredential? credential = proxyCredentials.GetCredential(proxyUri, BasicScheme);
+                if (credential != null && credential != CredentialCache.DefaultNetworkCredentials)
+                {
+                    SetBasicAuthToken(request, credential, isProxyAuth: true);
+                }
+            }
+
             return SendWithAuthAsync(request, proxyUri, async, proxyCredentials, preAuthenticate: false, isProxyAuth: true, doRequestAuth, pool, cancellationToken);
         }
 
