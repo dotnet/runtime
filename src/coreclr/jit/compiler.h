@@ -8480,7 +8480,7 @@ public:
         {
             if (mustExpand)
             {
-                implPrejitUnsupported();
+                implReadyToRunUnsupported();
             }
             return true;
         }
