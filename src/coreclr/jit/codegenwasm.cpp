@@ -1024,45 +1024,61 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 //
 void CodeGen::genCodeForConstant(GenTree* treeNode)
 {
-    instruction    ins;
-    cnsval_ssize_t bits;
+    instruction    ins  = INS_unreachable;
+    cnsval_ssize_t bits = 0;
     var_types      type = treeNode->TypeIs(TYP_REF, TYP_BYREF) ? TYP_I_IMPL : treeNode->TypeGet();
     static_assert(sizeof(cnsval_ssize_t) >= sizeof(double));
 
-    switch (type)
+    GenTreeIntConCommon* icon = nullptr;
+    if ((type == TYP_INT) || (type == TYP_LONG))
     {
-        case TYP_INT:
+        icon = treeNode->AsIntConCommon();
+        if (icon->ImmedValNeedsReloc(compiler))
         {
-            ins                      = INS_i32_const;
-            GenTreeIntConCommon* con = treeNode->AsIntConCommon();
-            bits                     = con->IntegralValue();
-            break;
+            // WASM-TODO: Generate reloc for this handle; 64-bit support
+            ins  = INS_i32_const;
+            bits = 0;
         }
-        case TYP_LONG:
+        else
         {
-            ins                      = INS_i64_const;
-            GenTreeIntConCommon* con = treeNode->AsIntConCommon();
-            bits                     = con->IntegralValue();
-            break;
+            bits = icon->IntegralValue();
         }
-        case TYP_FLOAT:
+    }
+
+    if (ins == INS_unreachable)
+    {
+        switch (type)
         {
-            ins                  = INS_f32_const;
-            GenTreeDblCon* con   = treeNode->AsDblCon();
-            double         value = con->DconValue();
-            memcpy(&bits, &value, sizeof(double));
-            break;
+            case TYP_INT:
+            {
+                ins = INS_i32_const;
+                assert(((INT64)(INT32)bits) == bits);
+                break;
+            }
+            case TYP_LONG:
+            {
+                ins = INS_i64_const;
+                break;
+            }
+            case TYP_FLOAT:
+            {
+                ins                  = INS_f32_const;
+                GenTreeDblCon* con   = treeNode->AsDblCon();
+                double         value = con->DconValue();
+                memcpy(&bits, &value, sizeof(double));
+                break;
+            }
+            case TYP_DOUBLE:
+            {
+                ins                  = INS_f64_const;
+                GenTreeDblCon* con   = treeNode->AsDblCon();
+                double         value = con->DconValue();
+                memcpy(&bits, &value, sizeof(double));
+                break;
+            }
+            default:
+                unreached();
         }
-        case TYP_DOUBLE:
-        {
-            ins                  = INS_f64_const;
-            GenTreeDblCon* con   = treeNode->AsDblCon();
-            double         value = con->DconValue();
-            memcpy(&bits, &value, sizeof(double));
-            break;
-        }
-        default:
-            unreached();
     }
 
     // The IF_ for the selected instruction, i.e. IF_F64, determines how these bits are emitted
