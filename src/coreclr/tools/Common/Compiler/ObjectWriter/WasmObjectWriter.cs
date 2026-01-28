@@ -29,6 +29,7 @@ namespace ILCompiler.ObjectWriter
         public static readonly ObjectNodeSection ExportSection = new ObjectNodeSection("wasm.export", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection MemorySection = new ObjectNodeSection("wasm.memory", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection TableSection = new ObjectNodeSection("wasm.table", SectionType.ReadOnly, needsAlign: false);
+        public static readonly ObjectNodeSection ImportSection = new ObjectNodeSection("wasm.import", SectionType.ReadOnly, needsAlign: false);
     }
 
     /// <summary>
@@ -98,6 +99,49 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128((ulong)signatureIndex);
         }
 
+
+        private int _numImports;
+        /// <summary>
+        /// Writes the common prefix for an import entry, which includes the module name, import name, and kind.
+        /// </summary>
+        private SectionWriter WriteImport(WasmImport import)
+        {
+            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.ImportSection);
+            writer.WriteUtf8WithLength(import.Module);
+            writer.WriteUtf8WithLength(import.Name);
+            writer.WriteByte((byte)import.Kind);
+
+            switch (import.Kind)
+            {
+                case WasmExternalKind.Function:
+                    // TODO-WASM: Handle function imports
+                    throw new NotImplementedException("Function imports are not yet implemented.");
+                case WasmExternalKind.Table:
+                    // TODO-WASM: Handle table imports
+                    throw new NotImplementedException("Table imports are not yet implemented.");
+
+                case WasmExternalKind.Memory:
+                {
+                    int size = import.WasmMemory.EncodeSize();
+                    import.WasmMemory.Encode(writer.Buffer.GetSpan(size));
+                    writer.Buffer.Advance(size);
+                    break;
+                }
+                case WasmExternalKind.Global:
+                {
+                    int size = import.WasmGlobal.EncodeSize();
+                    import.WasmGlobal.Encode(writer.Buffer.GetSpan(size));
+                    writer.Buffer.Advance(size);
+                    break;
+                }
+                default:
+                    throw new NotImplementedException($"Import kind not implemented: {import.Kind}");
+            }
+
+            _numImports++;
+            return writer;
+        }
+
         /// <summary>
         /// WebAssembly export descriptor kinds per the spec.
         /// </summary>
@@ -134,7 +178,6 @@ namespace ILCompiler.ObjectWriter
         private void WriteGlobalExport(string name, int globalIndex) =>
             WriteExport(name, WasmExportKind.Global, globalIndex);
 
-
         private List<WasmSection> _sections = new();
         private Dictionary<string, int> _sectionNameToIndex = new();
         private Dictionary<ObjectNodeSection, WasmSectionType> _sectionToType = new()
@@ -143,10 +186,10 @@ namespace ILCompiler.ObjectWriter
             { WasmObjectNodeSection.FunctionSection, WasmSectionType.Function },
             { WasmObjectNodeSection.TableSection, WasmSectionType.Table },
             { WasmObjectNodeSection.ExportSection, WasmSectionType.Export },
+            { WasmObjectNodeSection.ImportSection, WasmSectionType.Import },
             { WasmObjectNodeSection.TypeSection, WasmSectionType.Type },
             { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code }
         };
-
         private WasmSectionType GetWasmSectionType(ObjectNodeSection section)
         {
             if (!_sectionToType.ContainsKey(section))
@@ -239,8 +282,7 @@ namespace ILCompiler.ObjectWriter
         private protected override void EmitSectionsAndLayout()
         {
             GetOrCreateSection(WasmObjectNodeSection.CombinedDataSection);
-            ulong dataContentSize = (ulong)SectionByName(WasmObjectNodeSection.CombinedDataSection.Name).ContentSize;
-            WriteMemorySection(dataContentSize + DataStartOffset);
+            //WriteMemorySection(dataContentSize + DataStartOffset);
             WriteTableSection();
         }
 
@@ -271,12 +313,12 @@ namespace ILCompiler.ObjectWriter
 
             // Type section (1)
             SectionByName(WasmObjectNodeSection.TypeSection.Name).Emit(outputFileStream);
+            // Import section (2)
+            SectionByName(WasmObjectNodeSection.ImportSection.Name).Emit(outputFileStream);
             // Function section (3)
             SectionByName(WasmObjectNodeSection.FunctionSection.Name).Emit(outputFileStream);
             // Table section (4)
             SectionByName(WasmObjectNodeSection.TableSection.Name).Emit(outputFileStream);
-            // Memory section (5)
-            SectionByName(WasmObjectNodeSection.MemorySection.Name).Emit(outputFileStream);
             // Export section (7)
             SectionByName(WasmObjectNodeSection.ExportSection.Name).Emit(outputFileStream);
             // Code section (10)
@@ -292,12 +334,31 @@ namespace ILCompiler.ObjectWriter
             // This is a no-op for now under Wasm
         }
 
-        // For now, this function just prepares the function, exports, and type sections for emission by prepending the counts.
-        private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
+        private WasmImport[] _defaultImports = new[]
         {
-            WriteMemoryExport("memory", 0);
-            WriteTableExport("table", 0);
+            null, // placeholder for memory, which is set up dynamically in WriteImports()
+            new WasmImport("env", "__stack_pointer", new WasmGlobalType(WasmValueType.I32, WasmMutabilityType.Mut)),
+            new WasmImport("env", "__r2r_start", new WasmGlobalType(WasmValueType.I32, WasmMutabilityType.Const)),
+        };
 
+        private void WriteImports()
+        {
+            // Calculate the required memory size based on the combined data section size and data start offset
+            ulong contentSize = (ulong)SectionByName(WasmObjectNodeSection.CombinedDataSection.Name).ContentSize;
+            ulong numPages = (contentSize + (1<<16) - 1) >> 16;
+
+            _defaultImports[0] = new WasmImport("env", "memory",
+                new WasmMemoryType(0x00, (uint)numPages)); // memory limits: flags (0 = only minimum)
+
+            foreach (WasmImport import in _defaultImports)
+            {
+                WriteImport(import);
+            }
+        }
+
+        private void WriteExports()
+        {
+            WriteTableExport("table", 0);
             string[] functionExports = _uniqueSymbols.Keys.ToArray();
             // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
             // Also, see if we could leverage definedSymbols for this instead of doing our own bookkeeping in _uniqueSymbols.
@@ -305,6 +366,13 @@ namespace ILCompiler.ObjectWriter
             {
                 WriteFunctionExport(name, _uniqueSymbols[name]);
             }
+        }
+
+        // For now, this function just prepares the function, exports, and type sections for emission by prepending the counts.
+        private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
+        {
+            WriteImports();
+            WriteExports();
 
             int funcIdx = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
             PrependCount(_sections[funcIdx], _methodCount);
@@ -314,6 +382,8 @@ namespace ILCompiler.ObjectWriter
 
             int exportIdx = _sectionNameToIndex[WasmObjectNodeSection.ExportSection.Name];
             PrependCount(_sections[exportIdx], _numExports);
+
+            PrependCount(SectionByName(WasmObjectNodeSection.ImportSection.Name), _numImports);
         }
     }
 

@@ -51,6 +51,12 @@ namespace ILCompiler.ObjectWriter
         F64 = 0x7C
     }
 
+    public enum WasmMutabilityType : byte
+    {
+        Const = 0x00,
+        Mut = 0x01
+    }
+
     public static class WasmValueTypeExtensions
     {
         public static string ToTypeString(this WasmValueType valueType)
@@ -182,6 +188,7 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
+
     // Represents a WebAssembly expression used in simple contexts for address calculation
     enum WasmExprKind
     {
@@ -223,4 +230,121 @@ namespace ILCompiler.ObjectWriter
             return pos;
         }
     }
+
+    public enum WasmExternalKind : byte
+    {
+        Function = 0x00,
+        Table = 0x01,
+        Memory = 0x02,
+        Global = 0x03,
+        Tag = 0x04
+    }
+
+    public class WasmGlobalType
+    {
+        WasmValueType ValueType;
+        WasmMutabilityType Mutability;
+
+        public WasmGlobalType(WasmValueType valueType, WasmMutabilityType mutability)
+        {
+            ValueType = valueType;
+            Mutability = mutability;
+        }
+
+        public int Encode(Span<byte> buffer)
+        {
+            buffer[0] = (byte)ValueType;
+            buffer[1] = (byte)Mutability;
+            return 2;
+        }
+
+        public int EncodeSize() => 2;
+    }
+
+    public enum WasmLimitType : byte
+    {
+        HasMin = 0x00,
+        HasMinAndMax = 0x01
+    }
+
+    public class WasmMemoryType 
+    {
+        WasmLimitType LimitType;
+        uint Min;
+        uint? Max;
+
+        public WasmMemoryType(WasmLimitType limitType, uint min, uint? max = null)
+        {
+            if (LimitType == WasmLimitType.HasMinAndMax && !Max.HasValue)
+            {
+                throw new ArgumentException("Max must be provided when LimitType is HasMinAndMax");
+            }
+
+            LimitType = limitType;
+            Min = min;
+            Max = max;
+        }
+
+        public int Encode(Span<byte> buffer)
+        {
+            int pos = 0;
+            buffer[pos++] = (byte)LimitType;
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), Min);
+            if (LimitType == WasmLimitType.HasMinAndMax)
+            {
+                pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), Max!.Value);
+            }
+            return pos;
+        }
+
+        public int EncodeSize() => 2;
+    }
+
+    public class WasmImport
+    {
+        public string Module;
+        public string Name;
+        public WasmExternalKind Kind;
+
+        WasmMemoryType? _wasmMemory = null;
+        WasmGlobalType? _wasmGlobal = null;
+
+        public WasmMemoryType? WasmMemory
+        {
+            get
+            {
+                Debug.Assert(_wasmGlobal == null);
+                ArgumentNullException.ThrowIfNull(_wasmMemory, "WasmImport does not represent a WasmMemoryType");
+                return _wasmMemory;
+            }
+        }
+
+        public WasmGlobalType? WasmGlobal
+        {
+            get
+            {
+                Debug.Assert( _wasmMemory == null);
+                ArgumentNullException.ThrowIfNull(_wasmGlobal, "WasmImport does not represent a WasmGlobalType");
+                return _wasmGlobal;
+            }
+        }
+
+        public WasmImport(string module, string name, WasmMemoryType wasmMemory)
+        {
+            Module = module;
+            Name = name;
+            _wasmMemory = wasmMemory;
+            Kind = WasmExternalKind.Memory;
+        }
+
+        public WasmImport(string module, string name, WasmGlobalType wasmGlobal)
+        {
+            Module = module;
+            Name = name;
+            _wasmGlobal = wasmGlobal;
+            Kind = WasmExternalKind.Global;
+        }
+    }
+#nullable disable
+
 }
