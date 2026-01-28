@@ -345,6 +345,11 @@ namespace System
             return result.ToGuid();
         }
 
+        /// <summary>
+        /// Parses the specified sequence of UTF-8 encoded bytes and returns a new <see cref="Guid"/>.
+        /// </summary>
+        /// <param name="utf8Text">A span containing the UTF-8 encoded representation of the GUID to parse.</param>
+        /// <returns>The parsed <see cref="Guid"/>.</returns>
         public static Guid Parse(ReadOnlySpan<byte> utf8Text)
         {
             var result = new GuidResult(GuidParseThrowStyle.AllButOverflow);
@@ -380,6 +385,12 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Tries to parse the specified sequence of UTF-8 encoded bytes as a GUID.
+        /// </summary>
+        /// <param name="utf8Text">A span containing the UTF-8 encoded representation of the GUID to parse.</param>
+        /// <param name="result">When this method returns, contains the parsed <see cref="Guid"/>, if the parse succeeded; otherwise, the default value.</param>
+        /// <returns><see langword="true"/> if the parse operation succeeded; otherwise, <see langword="false"/>.</returns>
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, out Guid result)
         {
             var parseResult = new GuidResult(GuidParseThrowStyle.None);
@@ -562,6 +573,8 @@ namespace System
 
             static bool TryCompatParsing(ReadOnlySpan<TChar> guidString, ref GuidResult result)
             {
+                guidString = guidString.Slice(0, 36);
+
                 if (TryParseHex(guidString.Slice(0, 8), out result._a) && // _a
                     TryParseHex(guidString.Slice(9, 4), out uint uintTmp)) // _b
                 {
@@ -817,14 +830,13 @@ namespace System
         {
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
             Debug.Assert(lookup.Length == 256);
-            int upper = (sbyte)lookup[byte.CreateTruncating(ch1)];
-            int lower = (sbyte)lookup[byte.CreateTruncating(ch2)];
-            int result = (upper << 4) | lower;
 
-            uint c1 = TChar.CastToUInt32(ch1);
-            uint c2 = TChar.CastToUInt32(ch2);
-            // Result will be negative if ch1 or/and ch2 are greater than 0xFF
-            result = (c1 | c2) >> 8 == 0 ? result : -1;
+            uint c1 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch1) : Math.Min(TChar.CastToUInt32(ch1), 0x7F);
+            uint c2 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch2) : Math.Min(TChar.CastToUInt32(ch2), 0x7F);
+            int upper = (sbyte)lookup[(int)c1];
+            int lower = (sbyte)lookup[(int)c2];
+
+            int result = (upper << 4) | lower;
             invalidIfNegative |= result;
             return (byte)result;
         }

@@ -1437,5 +1437,125 @@ namespace System.Numerics.Tensors.Tests
                 """;
             Assert.Equal(expected, tensor.ToString([2, 0, 2]));
         }
+
+        [Fact]
+        public static void TensorReshapeTest()
+        {
+            int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            nint[] dims = [9];
+            var origTensor = Tensor.CreateFromShapeUninitialized<int>(dims.AsSpan(), false);
+            var span = a.AsTensorSpan(dims);
+            span.CopyTo(origTensor);
+            var tensor = origTensor.AsReadOnlyTensorSpan();
+
+            Assert.Equal(1, tensor.Rank);
+            Assert.Equal(9, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Strides.Length);
+            Assert.Equal(1, tensor.Strides[0]);
+            Assert.Equal(1, tensor[0]);
+            Assert.Equal(2, tensor[1]);
+            Assert.Equal(3, tensor[2]);
+            Assert.Equal(4, tensor[3]);
+            Assert.Equal(5, tensor[4]);
+            Assert.Equal(6, tensor[5]);
+            Assert.Equal(7, tensor[6]);
+            Assert.Equal(8, tensor[7]);
+            Assert.Equal(9, tensor[8]);
+
+            dims = [3, 3];
+            tensor = Tensor.Reshape(tensor, dims);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(3, tensor.Lengths[0]);
+            Assert.Equal(3, tensor.Lengths[1]);
+            Assert.Equal(2, tensor.Strides.Length);
+            Assert.Equal(3, tensor.Strides[0]);
+            Assert.Equal(1, tensor.Strides[1]);
+            Assert.Equal(1, tensor[0, 0]);
+            Assert.Equal(2, tensor[0, 1]);
+            Assert.Equal(3, tensor[0, 2]);
+            Assert.Equal(4, tensor[1, 0]);
+            Assert.Equal(5, tensor[1, 1]);
+            Assert.Equal(6, tensor[1, 2]);
+            Assert.Equal(7, tensor[2, 0]);
+            Assert.Equal(8, tensor[2, 1]);
+            Assert.Equal(9, tensor[2, 2]);
+
+            dims = [-1];
+            tensor = Tensor.Reshape(tensor, dims);
+            Assert.Equal(1, tensor.Rank);
+            Assert.Equal(9, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Strides.Length);
+            Assert.Equal(1, tensor.Strides[0]);
+            Assert.Equal(1, tensor[0]);
+            Assert.Equal(2, tensor[1]);
+            Assert.Equal(3, tensor[2]);
+            Assert.Equal(4, tensor[3]);
+            Assert.Equal(5, tensor[4]);
+            Assert.Equal(6, tensor[5]);
+            Assert.Equal(7, tensor[6]);
+            Assert.Equal(8, tensor[7]);
+            Assert.Equal(9, tensor[8]);
+
+            dims = [3, -1];
+            tensor = Tensor.Reshape(tensor, dims);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(3, tensor.Lengths[0]);
+            Assert.Equal(3, tensor.Lengths[1]);
+            Assert.Equal(2, tensor.Strides.Length);
+            Assert.Equal(3, tensor.Strides[0]);
+            Assert.Equal(1, tensor.Strides[1]);
+            Assert.Equal(1, tensor[0, 0]);
+            Assert.Equal(2, tensor[0, 1]);
+            Assert.Equal(3, tensor[0, 2]);
+            Assert.Equal(4, tensor[1, 0]);
+            Assert.Equal(5, tensor[1, 1]);
+            Assert.Equal(6, tensor[1, 2]);
+            Assert.Equal(7, tensor[2, 0]);
+            Assert.Equal(8, tensor[2, 1]);
+            Assert.Equal(9, tensor[2, 2]);
+
+            Assert.Throws<ArgumentException>(() => Tensor.Reshape(origTensor.AsReadOnlyTensorSpan(), [-1, -1]));
+
+            Assert.Throws<ArgumentException>(() => Tensor.Reshape(origTensor.AsReadOnlyTensorSpan(), [1, 2, 3, 4, 5]));
+
+            // Make sure reshape works correctly with 0 strides.
+            origTensor = Tensor.CreateFromShape<int>((ReadOnlySpan<nint>)[2], [0], false);
+            tensor = origTensor.AsReadOnlyTensorSpan();
+            tensor = Tensor.Reshape(tensor, [1, 2]);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+            Assert.Equal(0, tensor.Strides[0]);
+            Assert.Equal(0, tensor.Strides[1]);
+
+            origTensor = Tensor.CreateFromShape<int>((ReadOnlySpan<nint>)[2], [0], false);
+            tensor = origTensor.AsReadOnlyTensorSpan();
+            tensor = Tensor.Reshape(tensor, [2, 1]);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(2, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Lengths[1]);
+            Assert.Equal(0, tensor.Strides[0]);
+            Assert.Equal(0, tensor.Strides[1]);
+
+            tensor = Tensor.Reshape(tensor, [1, 2, 1]);
+            Assert.Equal(3, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+            Assert.Equal(1, tensor.Lengths[2]);
+            Assert.Equal(0, tensor.Strides[0]);
+            Assert.Equal(0, tensor.Strides[1]);
+            Assert.Equal(0, tensor.Strides[2]);
+
+            tensor = Tensor.Reshape(tensor, [1, 1, -1, 1]);
+            Assert.Equal(4, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Lengths[1]);
+            Assert.Equal(2, tensor.Lengths[2]);
+            Assert.Equal(1, tensor.Lengths[3]);
+            Assert.Equal(0, tensor.Strides[0]);
+            Assert.Equal(0, tensor.Strides[1]);
+            Assert.Equal(0, tensor.Strides[2]);
+            Assert.Equal(0, tensor.Strides[3]);
+        }
     }
 }

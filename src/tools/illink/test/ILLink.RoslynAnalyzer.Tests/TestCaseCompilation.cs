@@ -30,7 +30,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             IEnumerable<MetadataReference>? additionalReferences = null,
             IEnumerable<SyntaxTree>? additionalSources = null,
             IEnumerable<AdditionalText>? additionalFiles = null)
-            => CreateCompilation(CSharpSyntaxTree.ParseText(src), consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles);
+            => CreateCompilation(CSharpSyntaxTree.ParseText(src, new CSharpParseOptions(LanguageVersion.Preview)), consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles);
 
         public static (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics) CreateCompilation(
             SyntaxTree src,
@@ -58,7 +58,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 Path.Combine(sharedDir, "RequiresDynamicCodeAttribute.cs"),
             };
 
-            sources.AddRange(commonSourcePaths.Select(p => CSharpSyntaxTree.ParseText(File.ReadAllText(p), path: p)));
+            sources.AddRange(commonSourcePaths.Select(p => CSharpSyntaxTree.ParseText(File.ReadAllText(p), new CSharpParseOptions(languageVersion: LanguageVersion.Preview), path: p)));
             var comp = CSharpCompilation.Create(
                 assemblyName: "test",
                 syntaxTrees: sources,
@@ -67,7 +67,12 @@ namespace ILLink.RoslynAnalyzer.Tests
                     specificDiagnosticOptions: new Dictionary<string, ReportDiagnostic>
                     {
                         // Allow the polyfilled DynamicallyAccessedMembersAttribute to take precedence over the one in corelib.
-                        { "CS0436", ReportDiagnostic.Suppress }
+                        { "CS0436", ReportDiagnostic.Suppress },
+                        // Suppress assembly reference version mismatch warnings. The linker test assemblies are built against
+                        // NetCoreAppToolCurrent, but during test execution we recompile individual test files against the live
+                        // libraries along with a reference to one of the already-built linker test assemblies.
+                        { "CS1701", ReportDiagnostic.Suppress },
+                        { "CS1702", ReportDiagnostic.Suppress }
                     }));
             var analyzerOptions = new AnalyzerOptions(
                 additionalFiles: additionalFiles?.ToImmutableArray() ?? ImmutableArray<AdditionalText>.Empty,

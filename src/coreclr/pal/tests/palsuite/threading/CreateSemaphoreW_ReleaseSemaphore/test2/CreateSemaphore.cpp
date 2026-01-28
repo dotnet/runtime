@@ -95,13 +95,6 @@ down_CreateSemaphoreW_test2(HANDLE hSemaphore)
 			  * semaphore.
 			  */
 	break;
-    case WAIT_ABANDONED: /*
-			  * Object was mutex object whose owning
-			  * thread has terminated.  Shouldn't occur.
-			  */
-	Fail("WaitForSingleObject call returned 'WAIT_ABANDONED'.\n"
-	     "Failing Test.\n");
-	break;
     case WAIT_FAILED:    /* WaitForSingleObject function failed */
 	Fail("WaitForSingleObject call returned 'WAIT_FAILED'.\n"
 	     "GetLastError returned %d\nFailing Test.\n",GetLastError());

@@ -131,6 +131,8 @@ register_imethod_data_item (gpointer data, gpointer user_data)
 void
 mono_interp_clear_data_items_patch_sites (gpointer *data_items, int n_data_items)
 {
+	if (!enable_tiering)
+		return;
 	// data_items is part of the memory of a dynamic method that is being freed.
 	// slots within this memory can be registered as patch sites for other imethods
 	// We conservatively assume each slot could be an imethod slot, then look it up

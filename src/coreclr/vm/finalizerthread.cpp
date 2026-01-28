@@ -9,6 +9,7 @@
 #include "jithost.h"
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
+#include "dn-stdio.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -43,7 +44,9 @@ void FinalizerThread::EnableFinalization()
 {
     WRAPPER_NO_CONTRACT;
 
+#ifndef TARGET_WASM
     hEventFinalizer->Set();
+#endif // !TARGET_WASM
 }
 
 namespace
@@ -106,6 +109,10 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef TARGET_WASM
+    return false;
+
+#else // !TARGET_WASM
     Thread* finalizerThread = GetFinalizerThread();
     return finalizerThread->RequireSyncBlockCleanup()
         || SystemDomain::System()->RequireAppDomainCleanup()
@@ -114,6 +121,8 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
         || YieldProcessorNormalization::IsMeasurementScheduled()
         || HasDelayedDynamicMethod()
         || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
+
+#endif // TARGET_WASM
 }
 
 static void DoExtraWorkForFinalizer(Thread* finalizerThread)
@@ -129,13 +138,6 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    if (finalizerThread->RequiresCoInitialize())
-    {
-        finalizerThread->SetApartment(Thread::AS_InMTA);
-    }
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-
     if (finalizerThread->RequireSyncBlockCleanup())
     {
         SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocks();
@@ -145,11 +147,17 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
         SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
     }
 
-    if (Thread::m_DetachCount > 0
-        || Thread::CleanupNeededForFinalizedThread())
+    if (Thread::m_DetachCount > 0)
     {
         Thread::CleanupDetachedThreads();
     }
+
+    if (Thread::CleanupNeededForFinalizedThread())
+    {
+        Thread::CleanupFinalizedThreads();
+    }
+
+    ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
 
     if (YieldProcessorNormalization::IsMeasurementScheduled())
     {
@@ -162,8 +170,6 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
         GCX_PREEMP();
         CleanupDelayedDynamicMethods();
     }
-
-    ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
 }
 
 OBJECTREF FinalizerThread::GetNextFinalizableObject()
@@ -257,6 +263,23 @@ void FinalizerThread::FinalizeAllObjects()
     FireEtwGCFinalizersEnd_V1(count, GetClrInstanceId());
 }
 
+void FinalizerThread::RaiseShutdownEvents()
+{
+    WRAPPER_NO_CONTRACT;
+    fQuitFinalizer = TRUE;
+#ifndef TARGET_WASM
+    EnableFinalization();
+
+    // Do not wait for FinalizerThread if the current one is FinalizerThread.
+    if (GetThreadNULLOk() != GetFinalizerThread())
+    {
+        // This wait must be alertable to handle cases where the current
+        // thread's context is needed (i.e. RCW cleanup)
+        hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
+    }
+#endif // !TARGET_WASM
+}
+
 void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
 {
     // We don't want kLowMemoryNotification to starve out kFinalizer
@@ -269,12 +292,10 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
     {
     case (WAIT_OBJECT_0):
         return;
-    case (WAIT_ABANDONED):
-        return;
     case (WAIT_TIMEOUT):
         break;
     }
-    MHandles[kFinalizer] = event->GetHandleUNHOSTED();
+    MHandles[kFinalizer] = event->GetOSEvent();
     while (1)
     {
         // WaitForMultipleObjects will wait on the event handles in MHandles
@@ -331,8 +352,6 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             switch (event->Wait(2000, FALSE))
             {
             case (WAIT_OBJECT_0):
-                return;
-            case (WAIT_ABANDONED):
                 return;
             case (WAIT_TIMEOUT):
                 break;
@@ -430,7 +449,11 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             // Writing an empty file to indicate completion
             WCHAR outputPath[MAX_PATH];
             ReplacePid(GENAWARE_COMPLETION_FILE_NAME, outputPath, MAX_PATH);
-            fclose(_wfopen(outputPath, W("w+")));
+            FILE* fp = NULL;
+            if (fopen_lp(&fp, outputPath, W("w+")) == 0)
+            {
+                fclose(fp);
+            }
         }
 
         if (!bPriorityBoosted)
@@ -503,8 +526,6 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
     _ASSERTE(s_FinalizerThreadOK);
     _ASSERTE(GetThread() == GetFinalizerThread());
-
-    // finalizer should always park in default domain
 
     if (s_FinalizerThreadOK)
     {
@@ -620,6 +641,7 @@ void FinalizerThread::WaitForFinalizerThreadStart()
 // Wait for the finalizer thread to complete one pass.
 void FinalizerThread::FinalizerThreadWait()
 {
+#ifndef TARGET_WASM
     ASSERT(hEventFinalizerDone->IsValid());
     ASSERT(hEventFinalizer->IsValid());
     ASSERT(GetFinalizerThread());
@@ -673,4 +695,5 @@ void FinalizerThread::FinalizerThreadWait()
 
         _ASSERTE(status == WAIT_OBJECT_0);
     }
+#endif // !TARGET_WASM
 }

@@ -571,9 +571,6 @@ def call_msbuild(args):
                 "/p:Configuration=%s" % args.build_type,
                 "/p:__LogsDir=%s" % args.logs_dir]
 
-    if args.il_link:
-        command += ["/p:RunTestsViaIllink=true"]
-
     if args.limited_core_dumps:
         command += ["/p:LimitedCoreDumps=true"]
 
@@ -1100,7 +1097,7 @@ def find_test_from_name(host_os, test_location, test_name):
                 dir_contents[re.sub("[%s]" % string.punctuation, "_", item)] = item
 
             file_name_cache[test_path_dir] = dir_contents
-        
+
         return dir_contents
 
     def match_filename(test_path):
@@ -1286,7 +1283,7 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                     # This doesn't do anything in the merged model.
                     type = type.split("._")[0]
                     test_name = type + "::" + method
-                    
+
                     # The "name" is something like:
                     # 1. Merged model: "JIT\Regression\CLR-x86-JIT\V1.2-M02\b00719\b00719\b00719.dll" or
                     # "_CompareVectorWithZero_r::CompareVectorWithZero.TestVector64Equality()"

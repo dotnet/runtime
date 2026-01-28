@@ -941,8 +941,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
             [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
             [KeptBaseType(typeof(BaseWithField))]
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
-            [ExpectedWarning("IL2115", nameof(BaseWithField), nameof(BaseWithField.CompilerGeneratedProperty),
-                Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2628")]
+            [ExpectedWarning("IL2115", nameof(BaseWithField), nameof(BaseWithField.CompilerGeneratedProperty))]
             public class DerivedWithAnnotation : BaseWithField
             {
             }

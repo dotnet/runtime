@@ -296,8 +296,6 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             configurationBuilder.AddEnvironmentVariables();
             var config = configurationBuilder.Build();
 
-            MyOptions options = null;
-
             using (var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250)))
             {
                 void ReloadLoop()
@@ -310,14 +308,17 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
 
                 _ = Task.Run(ReloadLoop);
 
-                while (!cts.IsCancellationRequested)
+                MyOptions options;
+
+                do
                 {
                     options = config.Get<MyOptions>();
                 }
-            }
+                while (!cts.IsCancellationRequested);
 
-            Assert.Equal(-2, options.Number);
-            Assert.Equal("Foo", options.Text);
+                Assert.Equal(-2, options.Number);
+                Assert.Equal("Foo", options.Text);
+            }
         }
 
         private sealed class MyOptions

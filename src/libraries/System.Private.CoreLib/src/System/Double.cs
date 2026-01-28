@@ -162,6 +162,8 @@ namespace System
             return bits & TrailingSignificandMask;
         }
 
+        internal static double CreateDouble(bool sign, ushort exp, ulong sig) => BitConverter.UInt64BitsToDouble((sign ? SignMask : 0UL) + ((ulong)exp << BiasedExponentShift) + sig);
+
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
         [NonVersionable]

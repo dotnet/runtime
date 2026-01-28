@@ -165,14 +165,6 @@ public class DataDescriptorModel
             contract.Version = version;
         }
 
-        public void AddOrupdateContracts(IEnumerable<KeyValuePair<string, int>> contracts)
-        {
-            foreach (var (name, version) in contracts)
-            {
-                AddOrUpdateContract(name, version);
-            }
-        }
-
         public void SetBaseline(string baseline)
         {
             if (_baseline != string.Empty && _baseline != baseline)

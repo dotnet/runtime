@@ -266,6 +266,14 @@ FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* 
     return NULL;
 }
 
+FCIMPL1(MethodTable*, StubHelpers::GetComInterfaceFromMethodDesc, MethodDesc* pMD)
+{
+    FCALL_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    return CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
+}
+FCIMPLEND
+
 //==================================================================================================================
 // The GetCOMIPFromRCW helper exists in four specialized versions to optimize CLR->COM perf. Please be careful when
 // changing this code as one of these methods is executed as part of every CLR->COM call so every instruction counts.
@@ -480,29 +488,6 @@ FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
     return (PVOID)pEntryPoint;
 }
 FCIMPLEND
-
-#include <optsmallperfcritical.h>
-FCIMPL2(FC_BOOL_RET, StubHelpers::TryGetStringTrailByte, StringObject* thisRefUNSAFE, UINT8 *pbData)
-{
-    FCALL_CONTRACT;
-
-    STRINGREF thisRef = ObjectToSTRINGREF(thisRefUNSAFE);
-    FC_RETURN_BOOL(thisRef->GetTrailByte(pbData));
-}
-FCIMPLEND
-#include <optdefault.h>
-
-extern "C" void QCALLTYPE StubHelpers_SetStringTrailByte(QCall::StringHandleOnStack str, UINT8 bData)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-    str.Get()->SetTrailByte(bData);
-
-    END_QCALL;
-}
 
 extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx)
 {

@@ -49,6 +49,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             AnnotationOnByRefParameter.Test();
             WriteCapturedParameter.Test();
             OperatorParameters.Test();
+            NamedArgumentsWithAnnotations.Test();
         }
 
         // Validate the error message when annotated parameter is passed to another annotated parameter
@@ -511,6 +512,53 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         private static Type GetUnknownType()
         {
             return null;
+        }
+
+        // https://github.com/dotnet/runtime/issues/121629
+        class NamedArgumentsWithAnnotations
+        {
+            record BaseRecord(
+                string? OptionalParameter = null,
+                [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+                Type? AnnotatedParameter = null,
+                object? UnannotatedParameter = null
+            );
+
+            // This should not warn about 'UnannotatedParameter'
+            record DerivedRecord(
+                [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicConstructors)]
+                Type? AnnotatedParameter = default,
+                object? UnannotatedParameter = default
+            ) : BaseRecord(
+                AnnotatedParameter: AnnotatedParameter,
+                UnannotatedParameter: UnannotatedParameter
+            );
+
+            static void RequiresPublicConstructors(
+                string? optionalParameter = null,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+                Type? annotatedParameter = null,
+                object? unannotatedParameter = null)
+            {
+            }
+
+            // This should not warn about 'unannotatedParameter'
+            static void CallWithNamedArguments(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicConstructors)]
+                Type? annotatedParameter,
+                object? unannotatedParameter)
+            {
+                RequiresPublicConstructors(
+                    annotatedParameter: annotatedParameter,
+                    unannotatedParameter: unannotatedParameter);
+            }
+
+            public static void Test()
+            {
+                var x = new DerivedRecord(typeof(string), "data");
+                CallWithNamedArguments(typeof(string), "data");
+            }
         }
     }
 }

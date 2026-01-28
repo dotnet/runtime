@@ -237,7 +237,7 @@ inline PCODE GetLR(const T_CONTEXT * context) {
     return PCODE(context->Lr);
 }
 
-extern "C" LPVOID __stdcall GetCurrentSP();
+extern "C" void* GetCurrentSP();
 
 inline void SetSP(T_CONTEXT *context, TADDR esp) {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -332,7 +332,7 @@ inline int16_t decodeUnconditionalBranchThumb(LPBYTE pBuffer)
 }
 
 //------------------------------------------------------------------------
-inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
+inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -347,36 +347,15 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 }
 
 //------------------------------------------------------------------------
-//  Given the same pBuffer that was used by emitJump this method
+//  Given the same pBuffer that was used by emitBackToBackJump this method
 //  decodes the instructions and returns the jump target
-inline PCODE decodeJump(PCODE pCode)
+inline PCODE decodeBackToBackJump(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
 
     TADDR pInstr = PCODEToPINSTR(pCode);
 
     return *dac_cast<PTR_PCODE>(pInstr + sizeof(DWORD));
-}
-
-//
-// On IA64 back to back jumps should be separated by a nop bundle to get
-// the best performance from the hardware's branch prediction logic.
-// For all other platforms back to back jumps don't require anything special
-// That is why we have these two wrapper functions that call emitJump and decodeJump
-//
-
-//------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    WRAPPER_NO_CONTRACT;
-    emitJump(pBufferRX, pBufferRW, target);
-}
-
-//------------------------------------------------------------------------
-inline PCODE decodeBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    return decodeJump(pBuffer);
 }
 
 //----------------------------------------------------------------------

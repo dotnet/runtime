@@ -63,6 +63,7 @@
 /src/mono/dlls @thaystg @steveisok @vitek-karas
 
 /src/native/public/mono @steveisok @vitek-karas
+/src/native/eventpipe @noahfalk @lateralusX @mdh1418
 /src/native/external/libunwind @janvorli @AaronRobinsonMSFT @dotnet/dotnet-diag
 /src/native/external/libunwind_extras @janvorli @AaronRobinsonMSFT @dotnet/dotnet-diag
 

@@ -20,7 +20,7 @@ namespace System.IO.Tests
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path already exists as file
         public void ExtendedPathAlreadyExistsAsFile()
         {

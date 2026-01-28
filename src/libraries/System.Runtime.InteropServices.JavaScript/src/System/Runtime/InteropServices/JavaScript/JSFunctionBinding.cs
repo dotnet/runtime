@@ -417,7 +417,7 @@ namespace System.Runtime.InteropServices.JavaScript
             exc.slot.ReceiverShouldFree = true;
 
             var bytes = sizeof(JSMarshalerArgument) * arguments.Length;
-            void* cpy = (void*)Marshal.AllocHGlobal(bytes);
+            void* cpy = NativeMemory.Alloc((nuint)bytes);
             arguments.CopyTo(new Span<JSMarshalerArgument>(cpy, arguments.Length));
             var sig = (nint)signature.Header;
 
@@ -440,7 +440,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (exceptionPtr != IntPtr.Zero)
             {
                 var message = Marshal.PtrToStringUni(exceptionPtr)!;
-                Marshal.FreeHGlobal(exceptionPtr);
+                NativeMemory.Free((void*)exceptionPtr);
                 throw new JSException(message);
             }
 
@@ -478,9 +478,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 // meaning JS side needs to dispose it
                 exc.slot.ReceiverShouldFree = true;
 
-                // this copy is freed in mono_wasm_resolve_or_reject_promise
+                // this copy is freed in SystemInteropJS_ResolveOrRejectPromise
                 var bytes = sizeof(JSMarshalerArgument) * arguments.Length;
-                void* cpy = (void*)Marshal.AllocHGlobal(bytes);
+                void* cpy = NativeMemory.Alloc((nuint)bytes);
                 arguments.CopyTo(new Span<JSMarshalerArgument>(cpy, arguments.Length));
 
                 // async

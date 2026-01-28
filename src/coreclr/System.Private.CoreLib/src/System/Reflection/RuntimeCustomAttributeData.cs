@@ -1407,7 +1407,7 @@ namespace System.Reflection
             return IsCustomAttributeDefined(decoratedModule, decoratedMetadataToken, null, attributeCtorToken, false);
         }
 
-        private static bool IsCustomAttributeDefined(
+        internal static bool IsCustomAttributeDefined(
             RuntimeModule decoratedModule, int decoratedMetadataToken, RuntimeType? attributeFilterType)
         {
             return IsCustomAttributeDefined(decoratedModule, decoratedMetadataToken, attributeFilterType, 0, false);
@@ -2272,6 +2272,7 @@ namespace System.Reflection
                 case TypeAttributes.ExplicitLayout: layoutKind = LayoutKind.Explicit; break;
                 case TypeAttributes.AutoLayout: layoutKind = LayoutKind.Auto; break;
                 case TypeAttributes.SequentialLayout: layoutKind = LayoutKind.Sequential; break;
+                case TypeAttributes.ExtendedLayout: layoutKind = LayoutKind.Extended; break;
                 default: Debug.Fail("Unreachable code"); break;
             }
 

@@ -7,7 +7,7 @@ using System.Diagnostics;
 using Xunit;
 
 delegate void Void_VoidDelegate();
-public class TestClass
+public class Co6010DelegateEqualsTwo
 {
 	//coreclr doesn't have Delegate.Combine(Delegate[])
 	static Delegate DelegateCombine(params Delegate[] delegates) {
@@ -21,6 +21,7 @@ public class TestClass
 		return a;
 	}
 
+	[OuterLoop]
 	[Fact]
 	public static int TestEntryPoint() {
 		int iErrorCount = 0;
@@ -125,7 +126,7 @@ public class TestClass
 		{
 			iTestCount++;
 			Console.WriteLine( "test7: delegates point to different instance method with same signature" );
-			TestClass obj1 = new TestClass();
+			Co6010DelegateEqualsTwo obj1 = new();
 			Void_VoidDelegate sdg1 = new Void_VoidDelegate( obj1.instanceMethVoid_Void1 );
 			Void_VoidDelegate sdg2 = new Void_VoidDelegate( obj1.instanceMethVoid_Void2 );
 			if( sdg1.Equals( sdg2 ) )
@@ -138,8 +139,8 @@ public class TestClass
 		{
 			iTestCount++;
 			Console.WriteLine( "test8: delegates point to same instance method on different objects" );
-			TestClass obj1 = new TestClass();
-			TestClass obj2 = new TestClass();
+			Co6010DelegateEqualsTwo obj1 = new();
+			Co6010DelegateEqualsTwo obj2 = new();
 			Void_VoidDelegate sdg1 = new Void_VoidDelegate( obj1.instanceMethVoid_Void1 );
 			Void_VoidDelegate sdg2 = new Void_VoidDelegate( obj1.instanceMethVoid_Void2 );
 			if( sdg1.Equals( sdg2 ) )
@@ -151,7 +152,7 @@ public class TestClass
 		{
 			iTestCount++;
 			Console.WriteLine( "test9: delegates point to instance method with same name but in different classes " );
-			TestClass obj1 = new TestClass();
+			Co6010DelegateEqualsTwo obj1 = new();
 			Foo_Globİı obj2 = new Foo_Globİı();
 			Void_VoidDelegate sdg1 = new Void_VoidDelegate( obj1.instanceMethVoid_Void1 );
 			Void_VoidDelegate sdg2 = new Void_VoidDelegate( obj2.instanceMethVoid_Void1 );

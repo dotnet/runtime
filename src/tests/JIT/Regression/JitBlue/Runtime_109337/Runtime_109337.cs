@@ -7,6 +7,9 @@
 // Reduced from 241.5 KiB to 0.6 KiB in 00:05:21
 // Debug: Prints 0 line(s)
 // Release: Prints 1 line(s)
+
+namespace Runtime_109337;
+
 using Xunit;
 
 public class Runtime_109337

@@ -15,7 +15,6 @@
 #include "util.hpp"
 #include "syncblk.h"
 #include "gcdesc.h"
-#include "specialstatics.h"
 #include "sstring.h"
 #include "daccess.h"
 #include "fcall.h"
@@ -271,87 +270,6 @@ class Object
     INT32 GetHashCodeEx();
 #endif // #ifndef DACCESS_COMPILE
 
-    // Synchronization
-#ifndef DACCESS_COMPILE
-
-    void EnterObjMonitor()
-    {
-        WRAPPER_NO_CONTRACT;
-        GetHeader()->EnterObjMonitor();
-    }
-
-    BOOL TryEnterObjMonitor(INT32 timeOut = 0)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->TryEnterObjMonitor(timeOut);
-    }
-
-    bool TryEnterObjMonitorSpinHelper();
-
-    FORCEINLINE AwareLock::EnterHelperResult EnterObjMonitorHelper(Thread* pCurThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->EnterObjMonitorHelper(pCurThread);
-    }
-
-    FORCEINLINE AwareLock::EnterHelperResult EnterObjMonitorHelperSpin(Thread* pCurThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->EnterObjMonitorHelperSpin(pCurThread);
-    }
-
-    BOOL LeaveObjMonitor()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->LeaveObjMonitor();
-    }
-
-    // should be called only from unwind code; used in the
-    // case where EnterObjMonitor failed to allocate the
-    // sync-object.
-    BOOL LeaveObjMonitorAtException()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->LeaveObjMonitorAtException();
-    }
-
-    FORCEINLINE AwareLock::LeaveHelperAction LeaveObjMonitorHelper(Thread* pCurThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->LeaveObjMonitorHelper(pCurThread);
-    }
-
-    // Returns TRUE if the lock is owned and FALSE otherwise
-    // threadId is set to the ID (Thread::GetThreadId()) of the thread which owns the lock
-    // acquisitionCount is set to the number of times the lock needs to be released before
-    // it is unowned
-    BOOL GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisitionCount)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-        return GetHeader()->GetThreadOwningMonitorLock(pThreadId, pAcquisitionCount);
-    }
-
-#endif // #ifndef DACCESS_COMPILE
-
-    BOOL Wait(INT32 timeOut)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->Wait(timeOut);
-    }
-
-    void Pulse()
-    {
-        WRAPPER_NO_CONTRACT;
-        GetHeader()->Pulse();
-    }
-
-    void PulseAll()
-    {
-        WRAPPER_NO_CONTRACT;
-        GetHeader()->PulseAll();
-    }
-
    PTR_VOID UnBox();      // if it is a value class, get the pointer to the first field
 
     PTR_BYTE   GetData(void)
@@ -534,7 +452,6 @@ class ArrayBase : public Object
     friend class Object;
     friend OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags);
     friend OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 length);
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend struct _DacGlobals;
@@ -555,6 +472,14 @@ private:
     // INT32      lowerBounds[rank];  Valid indexes are lowerBounds[i] <= index[i] < lowerBounds[i] + bounds[i]
 
 public:
+#ifndef DACCESS_COMPILE
+    void SetNumComponents(INT32 length)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_NumComponents = length;
+    }
+#endif // !DACCESS_COMPILE
+
     // Get the element type for the array, this works whether the element
     // type is stored in the array or not
     inline TypeHandle GetArrayElementTypeHandle() const;
@@ -690,7 +615,6 @@ class PtrArray : public ArrayBase
 {
     friend class GCHeap;
     friend class ClrDataAccess;
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, DWORD flags);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
 
@@ -908,7 +832,6 @@ class StringObject : public Object
     // characters and the null terminator you should pass in 5 and NOT 6.
     //========================================================================
     static STRINGREF NewString(int length);
-    static STRINGREF NewString(int length, BOOL bHasTrailByte);
     static STRINGREF NewString(const WCHAR *pwsz);
     static STRINGREF NewString(const WCHAR *pwsz, int length);
     static STRINGREF NewString(LPCUTF8 psz);
@@ -918,10 +841,6 @@ class StringObject : public Object
     static STRINGREF* GetEmptyStringRefPtr(void** pinnedString);
 
     static STRINGREF* InitEmptyStringRefPtr();
-
-    BOOL HasTrailByte();
-    BOOL GetTrailByte(BYTE *bTrailByte);
-    BOOL SetTrailByte(BYTE bTrailByte);
 
     /*=================RefInterpretGetStringValuesDangerousForGC======================
     **N.B.: This performs no range checking and relies on the caller to have done this.
@@ -1219,38 +1138,37 @@ class ReflectModuleBaseObject : public Object
 };
 
 class ThreadBaseObject;
-class SynchronizationContextObject: public Object
+class ExecutionContextObject: public Object
 {
     friend class CoreLibBinder;
+
 private:
     // These field are also defined in the managed representation.  (SecurityContext.cs)If you
     // add or change these field you must also change the managed code so that
     // it matches these.  This is necessary so that the object is the proper
     // size.
-    CLR_BOOL _requireWaitNotification;
+    OBJECTREF m_localValues;
+    OBJECTREF m_localChangeNotifications;
+    CLR_BOOL m_isFlowSuppressed;
+
 public:
-    BOOL IsWaitNotificationRequired() const
+    bool IsFlowSuppressed() const
     {
         LIMITED_METHOD_CONTRACT;
-        return _requireWaitNotification;
+        return m_isFlowSuppressed;
     }
 };
-
-
-
-
 
 typedef DPTR(class CultureInfoBaseObject) PTR_CultureInfoBaseObject;
 
 #ifdef USE_CHECKED_OBJECTREFS
-typedef REF<SynchronizationContextObject> SYNCHRONIZATIONCONTEXTREF;
 typedef REF<ExecutionContextObject> EXECUTIONCONTEXTREF;
 typedef REF<CultureInfoBaseObject> CULTUREINFOBASEREF;
 typedef REF<ArrayBase> ARRAYBASEREF;
 
 #else
-typedef SynchronizationContextObject*     SYNCHRONIZATIONCONTEXTREF;
 typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
+typedef ExecutionContextObject* EXECUTIONCONTEXTREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
 #endif
 
@@ -1309,6 +1227,10 @@ private:
     OBJECTREF     m_SynchronizationContext;
     STRINGREF     m_Name;
     OBJECTREF     m_StartHelper;
+#ifdef TARGET_UNIX
+    OBJECTREF     m_WaitInfo;
+    OBJECTREF     m_joinEvent;
+#endif // TARGET_UNIX
 
     // The next field (m_InternalThread) is declared as IntPtr in the managed
     // definition of Thread.  The loader will sort it next.
@@ -1355,10 +1277,10 @@ public:
         return m_Name;
     }
 
-    OBJECTREF GetSynchronizationContext()
+    OBJECTREF GetExecutionContext()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_SynchronizationContext;
+        return m_ExecutionContext;
     }
 
     void      InitExisting();
@@ -1504,6 +1426,10 @@ public:
     uintptr_t m_taggedHandle;
 };
 
+
+typedef DPTR(class ContinuationObject) PTR_ContinuationObject;
+class ContinuationObject;
+
 #ifdef USE_CHECKED_OBJECTREFS
 
 typedef REF<ReflectModuleBaseObject> REFLECTMODULEBASEREF;
@@ -1521,6 +1447,10 @@ typedef REF<AssemblyBaseObject> ASSEMBLYREF;
 typedef REF<AssemblyLoadContextBaseObject> ASSEMBLYLOADCONTEXTREF;
 
 typedef REF<AssemblyNameBaseObject> ASSEMBLYNAMEREF;
+
+typedef REF<ThreadBaseObject> THREADBASEREF;
+
+typedef REF<ContinuationObject> CONTINUATIONREF;
 
 inline ARG_SLOT ObjToArgSlot(OBJECTREF objRef)
 {
@@ -1564,6 +1494,8 @@ typedef PTR_ThreadBaseObject THREADBASEREF;
 typedef PTR_AssemblyBaseObject ASSEMBLYREF;
 typedef PTR_AssemblyLoadContextBaseObject ASSEMBLYLOADCONTEXTREF;
 typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
+typedef PTR_ThreadBaseObject THREADBASEREF;
+typedef PTR_ContinuationObject CONTINUATIONREF;
 
 #define ObjToArgSlot(objref) ((ARG_SLOT)(SIZE_T)(objref))
 #define ArgSlotToObj(s) ((OBJECTREF)(SIZE_T)(s))
@@ -2222,6 +2154,98 @@ class GenericCacheStruct
     int32_t _lastFlushSize;
     int32_t _initialCacheSize;
     int32_t _maxCacheSize;
+};
+
+class ContinuationObject : public Object
+{
+    friend class CoreLibBinder;
+
+    public:
+    CorInfoContinuationFlags GetFlags() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (CorInfoContinuationFlags)Flags;
+    }
+
+    void SetFlags(CorInfoContinuationFlags flags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        Flags = (int32_t)flags;
+    }
+
+    void SetResumeInfo(void* resumeInfo)
+    {
+        LIMITED_METHOD_CONTRACT;
+        ResumeInfo = resumeInfo;
+    }
+
+    void* GetResumeInfo() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return ResumeInfo;
+    }
+
+    void SetState(int32_t state)
+    {
+        LIMITED_METHOD_CONTRACT;
+        State = state;
+    }
+
+    int32_t GetState() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return State;
+    }
+
+    PTR_BYTE GetResultStorage()
+    {
+        LIMITED_METHOD_CONTRACT;
+        PTR_BYTE dataAddress = dac_cast<PTR_BYTE>((dac_cast<TADDR>(this) + OFFSETOF__CORINFO_Continuation__data));
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_OSR_ILOFFSET)
+        {
+            dataAddress += sizeof(void*);
+        }
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_EXCEPTION)
+        {
+            dataAddress += sizeof(void*);
+        }
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT)
+        {
+            dataAddress += sizeof(void*);
+        }
+        return dataAddress;
+    }
+
+    PTR_OBJECTREF GetExceptionObjectStorage()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE((GetFlags() & CORINFO_CONTINUATION_HAS_EXCEPTION));
+
+        PTR_BYTE dataAddress = dac_cast<PTR_BYTE>((dac_cast<TADDR>(this) + OFFSETOF__CORINFO_Continuation__data));
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_OSR_ILOFFSET)
+        {
+            dataAddress += sizeof(void*);
+        }
+        return dac_cast<PTR_OBJECTREF>(dataAddress);
+    }
+
+#ifndef DACCESS_COMPILE
+    int32_t* GetFlagsAddress()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (int32_t*)&Flags;
+    }
+#endif // DACCESS_COMPILE
+
+private:
+    // README:
+    // If you modify the order of these fields, make sure to update the definition in
+    // BCL for this object.
+
+    CONTINUATIONREF Next;
+    void* ResumeInfo;
+    int32_t Flags;
+    int32_t State;
 };
 
 // This class corresponds to Exception on the managed side.

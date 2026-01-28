@@ -18,6 +18,7 @@ namespace System.Net.NetworkInformation
 
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public static event NetworkAddressChangedEventHandler? NetworkAddressChanged
         {
             add { throw new PlatformNotSupportedException(); }
@@ -26,6 +27,7 @@ namespace System.Net.NetworkInformation
 
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public static event NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged
         {
             add { throw new PlatformNotSupportedException(); }

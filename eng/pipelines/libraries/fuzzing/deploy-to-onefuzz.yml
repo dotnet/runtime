@@ -25,12 +25,13 @@ extends:
         timeoutInMinutes: 240
         pool:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals windows.vs2022.amd64
+          demands: ImageOverride -equals windows.vs2026preview.scout.amd64
 
         steps:
         - checkout: self
           clean: true
           fetchDepth: 1
+          fetchTags: false
           lfs: false
 
         - powershell: |
@@ -89,6 +90,14 @@ extends:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/Base64UrlFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send Base64UrlFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/Deflate64Fuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send Deflate64Fuzzer to OneFuzz
 
         - task: onefuzz-task@0
           inputs:

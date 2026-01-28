@@ -72,6 +72,11 @@ if /i "%1" == "--"                       (set processedArgs=!processedArgs! %1&s
 if /i "%1" == "x64"                      (set __BuildArch=x64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "x86"                      (set __BuildArch=x86&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "arm64"                    (set __BuildArch=arm64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "wasm"                     (set __BuildArch=wasm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+
+if /i "%1" == "os"                       (set __TargetOS=%2&set processedArgs=!processedArgs! %1&shift&shift&goto Arg_Loop)
+if /i "%1" == "browser"                  (set __TargetOS=browser&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "wasi"                     (set __TargetOS=wasi&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"                    (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "release"                  (set __BuildType=Release&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -262,18 +267,6 @@ if "%__CopyNativeTestBinaries%" == "1" goto skipnative
 echo %__MsgPrefix%Commencing build of native test components for %__BuildArch%/%__BuildType%
 
 REM Set the environment for the native build
-
-REM NumberOfCores is an WMI property providing number of physical cores on machine
-REM processor(s). It is used to set optimal level of CL parallelism during native build step
-if not defined NumberOfCores (
-    REM Determine number of physical processor cores available on machine
-    set TotalNumberOfCores=0
-    for /f "tokens=*" %%I in (
-        'wmic cpu get NumberOfCores /value ^| find "=" 2^>NUL'
-    ) do set %%I & set /a TotalNumberOfCores=TotalNumberOfCores+NumberOfCores
-    set NumberOfCores=!TotalNumberOfCores!
-)
-echo %__MsgPrefix%Number of processor cores %NumberOfCores%
 
 @if defined _echo @echo on
 

@@ -9,6 +9,9 @@
 //       to `nullptr` thinking that we just need to unassign. This was not
 //       needed and because of that we would see mismatch in assigned
 //       interval for those two registers.
+
+namespace GitHub_67102;
+
 using System;
 using Xunit;
 

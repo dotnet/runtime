@@ -2,6 +2,8 @@
   <PropertyGroup>
     <!-- Needed for CLRTestBatchEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Test enables GC stress C which is not compatible with the interpreter -->
+    <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>

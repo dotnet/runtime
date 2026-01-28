@@ -130,7 +130,7 @@ export async function getCacheEntry (cacheKey: string): Promise<ArrayBuffer | un
     }
 }
 
-export async function storeCacheEntry (cacheKey: string, memory: ArrayBuffer, mimeType: string): Promise<boolean> {
+export async function storeCacheEntry (cacheKey: string, memory: Uint8Array, mimeType: string): Promise<boolean> {
     try {
         const cache = await openCache();
         if (!cache) {
@@ -141,7 +141,7 @@ export async function storeCacheEntry (cacheKey: string, memory: ArrayBuffer, mi
             ? (new Uint8Array(memory)).slice(0)
             : memory;
 
-        const responseToCache = new Response(copy, {
+        const responseToCache = new Response(copy as BodyInit, {
             headers: {
                 "content-type": mimeType,
                 "content-length": memory.byteLength.toString(),
@@ -176,7 +176,7 @@ export async function cleanupCache (prefix: string, protectKey: string) {
 
 // calculate hash of things which affect config hash
 export async function getCacheKey (prefix: string): Promise<string | null> {
-    if (!runtimeHelpers.subtle) {
+    if (!globalThis.crypto?.subtle) {
         return null;
     }
     const inputs = Object.assign({}, runtimeHelpers.config) as MonoConfigInternal;
@@ -190,7 +190,7 @@ export async function getCacheKey (prefix: string): Promise<string | null> {
     // timezone is part of env variables, so it is already in the hash
 
     // some things are not relevant for config hash
-    delete inputs.forwardConsoleLogsToWS;
+    delete inputs.forwardConsole;
     delete inputs.diagnosticTracing;
     delete inputs.appendElementOnExit;
     delete inputs.interopCleanupOnExit;
@@ -211,7 +211,7 @@ export async function getCacheKey (prefix: string): Promise<string | null> {
     inputs.ProductVersion = ProductVersion;
 
     const inputsJson = JSON.stringify(inputs);
-    const sha256Buffer = await runtimeHelpers.subtle.digest("SHA-256", new TextEncoder().encode(inputsJson));
+    const sha256Buffer = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(inputsJson));
     const uint8ViewOfHash = new Uint8Array(sha256Buffer);
     const hashAsString = Array.from(uint8ViewOfHash).map((b) => b.toString(16).padStart(2, "0")).join("");
     return `${prefix}-${hashAsString}`;

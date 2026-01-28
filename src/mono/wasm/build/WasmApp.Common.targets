@@ -93,6 +93,8 @@
                                               - AppBundle/_content contains web files from nuget packages (css, js, etc)
       - $(WasmStripILAfterAOT)              - Set to true to enable trimming away AOT compiled methods body (IL code)
                                               Defaults to true.
+      - $(WasmEmitTypeScriptDefinitions)    - Controls whether TypeScript definitions (dotnet.d.ts) should be copied to the project's `wwwroot`. 
+                                              Defaults to false.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -172,6 +174,7 @@
     <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
     <!-- VS uses DeployOnBuild, and sdk sets _IsPublishing -->
     <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and ('$(DeployOnBuild)' == 'true' or '$(_IsPublishing)' == 'true')">true</WasmBuildOnlyAfterPublish>
+    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm'">false</WasmGenerateAppBundle>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and ('$(OutputType)' != 'Library' or '$(_IsLibraryMode)' == 'true')">true</WasmGenerateAppBundle>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
 
@@ -529,9 +532,11 @@
     </PropertyGroup>
 
     <!-- Default with nothing set: Build+relink+config=debug -->
-    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
-      <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' != 'false' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
       <WasmNativeStrip>false</WasmNativeStrip>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == 'false' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
+      <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -552,7 +557,17 @@
     </ItemGroup>
 
     <!-- for AOT builds we use llvm-size tool to collect size of the DATA segment in each object file -->
-    <Exec Command="llvm-size$(_ExeExt) -d --format=sysv @(_AOTObjectFile->'&quot;%(Identity)&quot;', ' ')"
+    <WriteLinesToFile
+        Condition="'$(_WasmShouldAOT)' == 'true'"
+        Lines="@(_AOTObjectFile->'&quot;%(Identity)&quot;')"
+        File="$(_WasmLlvmSizeRsp)"
+        Overwrite="true"
+        WriteOnlyWhenDifferent="true"
+        />
+    <ItemGroup Condition="'$(_WasmShouldAOT)' == 'true'">
+      <FileWrites Include="$(_WasmLlvmSizeRsp)" />
+    </ItemGroup>
+    <Exec Command='llvm-size$(_ExeExt) -d --format=sysv "@$(_WasmLlvmSizeRsp)"'
           Condition="'$(_WasmShouldAOT)' == 'true'"
           IgnoreStandardErrorWarningFormat="true"
           ConsoleToMsBuild="true"
@@ -909,7 +924,13 @@
   <Target Name="_RunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'">
     <Error Condition="'$(_WasmOutputFileName)' == ''" Text="Could not determine %24(_WasmOutputFileName)" />
 
-    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot; -o &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot;"
+    <PropertyGroup>
+      <_WasmOptPostLinkFileName>$(_WasmOutputFileName)</_WasmOptPostLinkFileName>
+      <_WasmOptPostLinkFileName Condition="'$([System.IO.Path]::IsPathRooted($(_WasmOptPostLinkFileName)))' != 'true'">$([System.IO.Path]::Combine($(_WasmIntermediateOutputPath), $(_WasmOptPostLinkFileName)))</_WasmOptPostLinkFileName>
+    </PropertyGroup>
+
+    <Message Text="Running wasm-opt with --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ')" Importance="High" />
+    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmOptPostLinkFileName)&quot; -o &quot;$(_WasmOptPostLinkFileName)&quot;"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(WasmToolchainEnvVars)" />
   </Target>

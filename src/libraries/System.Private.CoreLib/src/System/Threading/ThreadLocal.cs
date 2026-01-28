@@ -402,10 +402,7 @@ namespace System.Threading
                 linkedSlot._previous = _linkedSlot;
                 linkedSlot._value = value;
 
-                if (firstRealNode != null)
-                {
-                    firstRealNode._previous = linkedSlot;
-                }
+                firstRealNode?._previous = linkedSlot;
                 _linkedSlot._next = linkedSlot;
 
                 // Assigning the slot under a lock prevents a race condition with Dispose (dispose also acquires the lock).
@@ -742,10 +739,7 @@ namespace System.Threading
                                 idsThatDoNotTrackAllValuesCountRemaining--;
                             }
 
-                            if (linkedSlot._next != null)
-                            {
-                                linkedSlot._next._previous = linkedSlot._previous;
-                            }
+                            linkedSlot._next?._previous = linkedSlot._previous;
 
                             // Since the list uses a dummy head node, the Previous reference should never be null.
                             Debug.Assert(linkedSlot._previous != null);

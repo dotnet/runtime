@@ -3109,7 +3109,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 //    try {
                 //        try {
                 //            LEAVE L_OUTER; // this becomes a branch to a BBJ_CALLFINALLY in an outer try region
-                //                           // (in the UsesCallFinallyThunks case)
                 //        } catch {
                 //        }
                 //    } finally {
@@ -3120,8 +3119,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 if (ehDsc->ebdTryBeg == succBlock)
                 {
                     // The BBJ_CALLFINALLY is the first block of it's `try` region. Don't check the predecessor.
-                    // Note that this case won't occur in the UsesCallFinallyThunks case, since the
-                    // BBJ_CALLFINALLY in that case won't exist in the `try` region of the `finallyIndex`.
+                    // Note that this case won't occur since the BBJ_CALLFINALLY in that case won't exist in the
+                    // `try` region of the `finallyIndex`.
                 }
                 else
                 {
@@ -4739,18 +4738,36 @@ void Compiler::fgDebugCheckFlowGraphAnnotations()
 
     auto visitEdge = [](BasicBlock* block, BasicBlock* succ) {};
 
+    jitstd::vector<BasicBlock*> entryBlocks(getAllocator(CMK_DepthFirstSearch));
+
+    entryBlocks.push_back(fgFirstBB);
+
+    if (fgEntryBB != nullptr)
+    {
+        // OSR methods will early on create flow that looks like it goes to the
+        // patchpoint, but during morph we may transform to something that
+        // requires the original entry (fgEntryBB).
+        assert(opts.IsOSR());
+        entryBlocks.push_back(fgEntryBB);
+    }
+
+    if ((genReturnBB != nullptr) && !fgGlobalMorphDone)
+    {
+        // We introduce the merged return BB before morph and will redirect
+        // other returns to it as part of morph; keep it reachable.
+        entryBlocks.push_back(genReturnBB);
+    }
+
     unsigned count;
     if (m_dfsTree->IsProfileAware())
     {
-        count = fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), true>(visitPreorder,
-                                                                                                       visitPostorder,
-                                                                                                       visitEdge);
+        count = fgRunDfs<AllSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
+                         true>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
     }
     else
     {
-        count = fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), false>(visitPreorder,
-                                                                                                        visitPostorder,
-                                                                                                        visitEdge);
+        count = fgRunDfs<AllSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
+                         false>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
     }
 
     assert(m_dfsTree->GetPostOrderCount() == count);

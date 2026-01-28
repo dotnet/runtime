@@ -16,7 +16,7 @@
   <Target Name="UpdateKnownFrameworkReference" BeforeTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <KnownFrameworkReference Update="Microsoft.NETCore.App"
-                               RuntimePackRuntimeIdentifiers="%(KnownFrameworkReference.RuntimePackRuntimeIdentifiers);iossimulator-arm64;iossimulator-x64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-arm64;maccatalyst-x64"
+                               RuntimePackRuntimeIdentifiers="%(KnownFrameworkReference.RuntimePackRuntimeIdentifiers);ios-arm64;iossimulator-arm64;iossimulator-x64;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-arm64;maccatalyst-x64"
                                Condition="'$(UseMonoRuntime)' == 'false'" />
     </ItemGroup>
   </Target>

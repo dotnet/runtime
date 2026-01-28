@@ -107,6 +107,23 @@ namespace SerializationTestTypes
         public string Name;
     }
 
+    // Added for DateOnly / TimeOnly DataContractSerializer tests
+    [DataContract]
+    public class DateTimeOnlyWrapper
+    {
+        [DataMember]
+        public DateOnly Date { get; set; }
+
+        [DataMember]
+        public TimeOnly Time { get; set; }
+
+        [DataMember]
+        public DateOnly? NullableDate { get; set; }
+
+        [DataMember]
+        public TimeOnly? NullableTime { get; set; }
+    }
+
     [DataContract]
     public class CharClass
     {

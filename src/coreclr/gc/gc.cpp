@@ -29,6 +29,13 @@
 #include "gceventstatus.h"
 #include <minipal/memorybarrierprocesswide.h>
 
+// If FEATURE_INTERPRETER is set, always enable the GC side of FEATURE_CONSERVATIVE_GC
+#ifdef FEATURE_INTERPRETER
+#ifndef FEATURE_CONSERVATIVE_GC
+#define FEATURE_CONSERVATIVE_GC
+#endif
+#endif // FEATURE_INTERPRETER
+
 #ifdef __INTELLISENSE__
 #if defined(FEATURE_SVR_GC)
 
@@ -43,9 +50,13 @@
 #endif // defined(FEATURE_SVR_GC)
 #endif // __INTELLISENSE__
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 #include "vxsort/do_vxsort.h"
-#endif
+#define USE_VXSORT
+#else
+#define USE_INTROSORT
+#endif // TARGET_AMD64 || TARGET_ARM64
+#include "introsort.h"
 
 #ifdef SERVER_GC
 namespace SVR {
@@ -55,12 +66,6 @@ namespace WKS {
 
 #include "gcimpl.h"
 #include "gcpriv.h"
-
-#ifdef TARGET_AMD64
-#define USE_VXSORT
-#else
-#define USE_INTROSORT
-#endif
 
 #ifdef DACCESS_COMPILE
 #error this source file should not be compiled with DACCESS_COMPILE!
@@ -1984,7 +1989,16 @@ uint8_t* gc_heap::pad_for_alignment_large (uint8_t* newAlloc, int requiredAlignm
 #endif //BACKGROUND_GC && !USE_REGIONS
 
 // This is always power of 2.
+#ifdef HOST_64BIT
 const size_t min_segment_size_hard_limit = 1024*1024*16;
+#else //HOST_64BIT
+const size_t min_segment_size_hard_limit = 1024*1024*4;
+#endif //HOST_64BIT
+
+#ifndef HOST_64BIT
+// Max size of heap hard limit (2^31) to be able to be aligned and rounded up on power of 2 and not overflow
+const size_t max_heap_hard_limit = (size_t)2 * (size_t)1024 * (size_t)1024 * (size_t)1024;
+#endif //!HOST_64BIT
 
 inline
 size_t align_on_segment_hard_limit (size_t add)
@@ -5299,7 +5313,7 @@ struct initial_memory_details
             case 0: return block_size_normal;
             case 1: return block_size_large;
             case 2: return block_size_pinned;
-            default: __UNREACHABLE();
+            default: UNREACHABLE();
         }
     };
 
@@ -5312,7 +5326,7 @@ struct initial_memory_details
             case soh_gen2: return initial_normal_heap[h_number].memory_base;
             case loh_generation: return initial_large_heap[h_number].memory_base;
             case poh_generation: return initial_pinned_heap[h_number].memory_base;
-            default: __UNREACHABLE();
+            default: UNREACHABLE();
         }
     };
 
@@ -5325,7 +5339,7 @@ struct initial_memory_details
             case soh_gen2: return block_size_normal;
             case loh_generation: return block_size_large;
             case poh_generation: return block_size_pinned;
-            default: __UNREACHABLE();
+            default: UNREACHABLE();
         }
     };
 
@@ -7437,9 +7451,6 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
      *
      * Note  : We never commit into free directly, so bucket != recorded_committed_free_bucket
      */
-#ifndef HOST_64BIT
-    assert (heap_hard_limit == 0);
-#endif //!HOST_64BIT
 
     assert(0 <= bucket && bucket < recorded_committed_bucket_counts);
     assert(bucket < total_oh_count || h_number == -1);
@@ -7582,9 +7593,6 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
      * Case 2: This is for bookkeeping - the bucket will be recorded_committed_bookkeeping_bucket, and the h_number will be -1
      * Case 3: This is for free - the bucket will be recorded_committed_free_bucket, and the h_number will be -1
      */
-#ifndef HOST_64BIT
-    assert (heap_hard_limit == 0);
-#endif //!HOST_64BIT
 
     bool decommit_succeeded_p = ((bucket != recorded_committed_bookkeeping_bucket) && use_large_pages_p) ? true : GCToOSInterface::VirtualDecommit (address, size);
 
@@ -10317,179 +10325,6 @@ void qsort1( uint8_t* *low, uint8_t* *high, unsigned int depth)
     }
 }
 #endif //USE_INTROSORT
-void rqsort1( uint8_t* *low, uint8_t* *high)
-{
-    if ((low + 16) >= high)
-    {
-        //insertion sort
-        uint8_t **i, **j;
-        for (i = low+1; i <= high; i++)
-        {
-            uint8_t* val = *i;
-            for (j=i;j >low && val>*(j-1);j--)
-            {
-                *j=*(j-1);
-            }
-            *j=val;
-        }
-    }
-    else
-    {
-        uint8_t *pivot, **left, **right;
-
-        //sort low middle and high
-        if (*(low+((high-low)/2)) > *low)
-            swap (*(low+((high-low)/2)), *low);
-        if (*high > *low)
-            swap (*low, *high);
-        if (*high > *(low+((high-low)/2)))
-            swap (*(low+((high-low)/2)), *high);
-
-        swap (*(low+((high-low)/2)), *(high-1));
-        pivot =  *(high-1);
-        left = low; right = high-1;
-        while (1) {
-            while (*(--right) < pivot);
-            while (*(++left)  > pivot);
-            if (left < right)
-            {
-                swap(*left, *right);
-            }
-            else
-                break;
-        }
-        swap (*left, *(high-1));
-        rqsort1(low, left-1);
-        rqsort1(left+1, high);
-    }
-}
-
-// vxsort uses introsort as a fallback if the AVX2 instruction set is not supported
-#if defined(USE_INTROSORT) || defined(USE_VXSORT)
-class introsort
-{
-
-private:
-    static const int size_threshold = 64;
-    static const int max_depth = 100;
-
-
-inline static void swap_elements(uint8_t** i,uint8_t** j)
-    {
-        uint8_t* t=*i;
-        *i=*j;
-        *j=t;
-    }
-
-public:
-    static void sort (uint8_t** begin, uint8_t** end, int ignored)
-    {
-        ignored = 0;
-        introsort_loop (begin, end, max_depth);
-        insertionsort (begin, end);
-    }
-
-private:
-
-    static void introsort_loop (uint8_t** lo, uint8_t** hi, int depth_limit)
-    {
-        while (hi-lo >= size_threshold)
-        {
-            if (depth_limit == 0)
-            {
-                heapsort (lo, hi);
-                return;
-            }
-            uint8_t** p=median_partition (lo, hi);
-            depth_limit=depth_limit-1;
-            introsort_loop (p, hi, depth_limit);
-            hi=p-1;
-        }
-    }
-
-    static uint8_t** median_partition (uint8_t** low, uint8_t** high)
-    {
-        uint8_t *pivot, **left, **right;
-
-        //sort low middle and high
-        if (*(low+((high-low)/2)) < *low)
-            swap_elements ((low+((high-low)/2)), low);
-        if (*high < *low)
-            swap_elements (low, high);
-        if (*high < *(low+((high-low)/2)))
-            swap_elements ((low+((high-low)/2)), high);
-
-        swap_elements ((low+((high-low)/2)), (high-1));
-        pivot =  *(high-1);
-        left = low; right = high-1;
-        while (1) {
-            while (*(--right) > pivot);
-            while (*(++left)  < pivot);
-            if (left < right)
-            {
-                swap_elements(left, right);
-            }
-            else
-                break;
-        }
-        swap_elements (left, (high-1));
-        return left;
-    }
-
-
-    static void insertionsort (uint8_t** lo, uint8_t** hi)
-    {
-        for (uint8_t** i=lo+1; i <= hi; i++)
-        {
-            uint8_t** j = i;
-            uint8_t* t = *i;
-            while((j > lo) && (t <*(j-1)))
-            {
-                *j = *(j-1);
-                j--;
-            }
-            *j = t;
-        }
-    }
-
-    static void heapsort (uint8_t** lo, uint8_t** hi)
-    {
-        size_t n = hi - lo + 1;
-        for (size_t i=n / 2; i >= 1; i--)
-        {
-            downheap (i,n,lo);
-        }
-        for (size_t i = n; i > 1; i--)
-        {
-            swap_elements (lo, lo + i - 1);
-            downheap(1, i - 1,  lo);
-        }
-    }
-
-    static void downheap (size_t i, size_t n, uint8_t** lo)
-    {
-        uint8_t* d = *(lo + i - 1);
-        size_t child;
-        while (i <= n / 2)
-        {
-            child = 2*i;
-            if (child < n && *(lo + child - 1)<(*(lo + child)))
-            {
-                child++;
-            }
-            if (!(d<*(lo + child - 1)))
-            {
-                break;
-            }
-            *(lo + i - 1) = *(lo + child - 1);
-            i = child;
-        }
-        *(lo + i - 1) = d;
-    }
-
-};
-
-#endif //defined(USE_INTROSORT) || defined(USE_VXSORT)
 
 #ifdef USE_VXSORT
 static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* range_low, uint8_t* range_high)
@@ -10502,9 +10337,13 @@ static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* rang
     // despite possible downclocking on current devices
     const ptrdiff_t AVX512F_THRESHOLD_SIZE = 128 * 1024;
 
+    // above this threshold, using NEON for sorting will likely pay off
+    const ptrdiff_t NEON_THRESHOLD_SIZE = 1024;
+
     if (item_count <= 1)
         return;
 
+#if defined(TARGET_AMD64)
     if (IsSupportedInstructionSet (InstructionSet::AVX2) && (item_count > AVX2_THRESHOLD_SIZE))
     {
         dprintf(3, ("Sorting mark lists"));
@@ -10519,6 +10358,13 @@ static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* rang
             do_vxsort_avx2 (item_array, &item_array[item_count - 1], range_low, range_high);
         }
     }
+#elif defined(TARGET_ARM64)
+    if (IsSupportedInstructionSet (InstructionSet::NEON) && (item_count > NEON_THRESHOLD_SIZE))
+    {
+        dprintf(3, ("Sorting mark lists"));
+        do_vxsort_neon (item_array, &item_array[item_count - 1], range_low, range_high);
+    }
+#endif
     else
     {
         dprintf (3, ("Sorting mark lists"));
@@ -11159,21 +11005,18 @@ uint8_t** gc_heap::get_region_mark_list (BOOL& use_mark_list, uint8_t* start, ui
 void gc_heap::grow_mark_list ()
 {
     // with vectorized sorting, we can use bigger mark lists
-#ifdef USE_VXSORT
-#ifdef MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = IsSupportedInstructionSet (InstructionSet::AVX2) ?
-        (1000 * 1024) : (200 * 1024);
-#else //MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = IsSupportedInstructionSet (InstructionSet::AVX2) ?
-        (32 * 1024) : (16 * 1024);
-#endif //MULTIPLE_HEAPS
-#else //USE_VXSORT
-#ifdef MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = 200 * 1024;
-#else //MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = 16 * 1024;
-#endif //MULTIPLE_HEAPS
+    bool use_big_lists = false;
+#if defined(USE_VXSORT) && defined(TARGET_AMD64)
+    use_big_lists = IsSupportedInstructionSet (InstructionSet::AVX2);
+#elif defined(USE_VXSORT) && defined(TARGET_ARM64)
+    use_big_lists = IsSupportedInstructionSet (InstructionSet::NEON);
 #endif //USE_VXSORT
+
+#ifdef MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = use_big_lists ? (1000 * 1024) : (200 * 1024);
+#else //MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = use_big_lists ? (32 * 1024) : (16 * 1024);
+#endif //MULTIPLE_HEAPS
 
     size_t new_mark_list_size = min (mark_list_size * 2, MAX_MARK_LIST_SIZE);
     size_t new_mark_list_total_size = new_mark_list_size*n_heaps;
@@ -14602,6 +14445,11 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         return E_OUTOFMEMORY;
     if (use_large_pages_p)
     {
+#ifndef HOST_64BIT
+        // Large pages are not supported on 32bit
+        assert (false);
+#endif //!HOST_64BIT
+
         if (heap_hard_limit_oh[soh])
         {
             heap_hard_limit_oh[soh] = soh_segment_size * number_of_heaps;
@@ -21242,12 +21090,12 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_before_oom);
             full_compact_gc_p = true;
         }
-        else if ((current_total_committed * 10) >= (heap_hard_limit * 9))
+        else if (((uint64_t)current_total_committed * (uint64_t)10) >= ((uint64_t)heap_hard_limit * (uint64_t)9))
         {
             size_t loh_frag = get_total_gen_fragmentation (loh_generation);
 
             // If the LOH frag is >= 1/8 it's worth compacting it
-            if ((loh_frag * 8) >= heap_hard_limit)
+            if (loh_frag >= heap_hard_limit / 8)
             {
                 dprintf (GTC_LOG, ("loh frag: %zd > 1/8 of limit %zd", loh_frag, (heap_hard_limit / 8)));
                 gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_frag);
@@ -21258,7 +21106,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
                 // If there's not much fragmentation but it looks like it'll be productive to
                 // collect LOH, do that.
                 size_t est_loh_reclaim = get_total_gen_estimated_reclaim (loh_generation);
-                if ((est_loh_reclaim * 8) >= heap_hard_limit)
+                if (est_loh_reclaim >= heap_hard_limit / 8)
                 {
                     gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_reclaim);
                     full_compact_gc_p = true;
@@ -24753,7 +24601,7 @@ void gc_heap::garbage_collect (int n)
                 }
             }
 #else
-            do_concurrent_p = (!!bgc_thread && commit_mark_array_bgc_init());
+            do_concurrent_p = (bgc_thread_running && commit_mark_array_bgc_init());
             if (do_concurrent_p)
             {
                 background_saved_lowest_address = lowest_address;
@@ -27809,9 +27657,6 @@ void gc_heap::mark_object_simple1 (uint8_t* oo, uint8_t* start THREAD_NUMBER_DCL
     SERVER_SC_MARK_VOLATILE(uint8_t*)* mark_stack_tos = (SERVER_SC_MARK_VOLATILE(uint8_t*)*)mark_stack_array;
     SERVER_SC_MARK_VOLATILE(uint8_t*)* mark_stack_limit = (SERVER_SC_MARK_VOLATILE(uint8_t*)*)&mark_stack_array[mark_stack_array_length];
     SERVER_SC_MARK_VOLATILE(uint8_t*)* mark_stack_base = mark_stack_tos;
-#ifdef SORT_MARK_STACK
-    SERVER_SC_MARK_VOLATILE(uint8_t*)* sorted_tos = mark_stack_base;
-#endif //SORT_MARK_STACK
 
     // If we are doing a full GC we don't use mark list anyway so use m_boundary_fullgc that doesn't
     // update mark list.
@@ -28015,23 +27860,12 @@ more_to_do:
                     max_overflow_address = max (max_overflow_address, oo);
                 }
             }
-#ifdef SORT_MARK_STACK
-            if (mark_stack_tos > sorted_tos + mark_stack_array_length/8)
-            {
-                rqsort1 (sorted_tos, mark_stack_tos-1);
-                sorted_tos = mark_stack_tos-1;
-            }
-#endif //SORT_MARK_STACK
         }
     next_level:
         if (!(mark_stack_empty_p()))
         {
             oo = *(--mark_stack_tos);
             start = oo;
-
-#ifdef SORT_MARK_STACK
-            sorted_tos = min ((size_t)sorted_tos, (size_t)mark_stack_tos);
-#endif //SORT_MARK_STACK
         }
         else
             break;
@@ -28502,10 +28336,6 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
 {
     uint8_t** mark_stack_limit = &background_mark_stack_array[background_mark_stack_array_length];
 
-#ifdef SORT_MARK_STACK
-    uint8_t** sorted_tos = background_mark_stack_array;
-#endif //SORT_MARK_STACK
-
     background_mark_stack_tos = background_mark_stack_array;
 
     while (1)
@@ -28692,13 +28522,6 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
                 }
             }
         }
-#ifdef SORT_MARK_STACK
-        if (background_mark_stack_tos > sorted_tos + mark_stack_array_length/8)
-        {
-            rqsort1 (sorted_tos, background_mark_stack_tos-1);
-            sorted_tos = background_mark_stack_tos-1;
-        }
-#endif //SORT_MARK_STACK
 
 #ifdef COLLECTIBLE_CLASS
 next_level:
@@ -28708,10 +28531,6 @@ next_level:
         if (!(background_mark_stack_tos == background_mark_stack_array))
         {
             oo = *(--background_mark_stack_tos);
-
-#ifdef SORT_MARK_STACK
-            sorted_tos = (uint8_t**)min ((size_t)sorted_tos, (size_t)background_mark_stack_tos);
-#endif //SORT_MARK_STACK
         }
         else
             break;
@@ -44273,6 +44092,15 @@ void gc_heap::init_static_data()
         );
 #endif //MULTIPLE_HEAPS
 
+#ifndef HOST_64BIT
+    if (heap_hard_limit)
+    {
+        size_t gen1_max_size_seg = soh_segment_size / 2;
+        dprintf (GTC_LOG, ("limit gen1 max %zd->%zd", gen1_max_size, gen1_max_size_seg));
+        gen1_max_size = min (gen1_max_size, gen1_max_size_seg);
+    }
+#endif //!HOST_64BIT
+
     size_t gen1_max_size_config = (size_t)GCConfig::GetGCGen1MaxBudget();
 
     if (gen1_max_size_config)
@@ -49405,6 +49233,11 @@ HRESULT GCHeap::Initialize()
     {
         if (gc_heap::heap_hard_limit)
         {
+#ifndef HOST_64BIT
+            // Regions are not supported on 32bit
+            assert(false);
+#endif //!HOST_64BIT
+
             if (gc_heap::heap_hard_limit_oh[soh])
             {
                 gc_heap::regions_range = gc_heap::heap_hard_limit;
@@ -49446,12 +49279,32 @@ HRESULT GCHeap::Initialize()
     {
         if (gc_heap::heap_hard_limit_oh[soh])
         {
+            // On 32bit we have next guarantees:
+            //   0 <= seg_size_from_config <= 1Gb (from max_heap_hard_limit/2)
+            //   0 <= (heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh]) < 4Gb (from gc_heap::compute_hard_limit_from_heap_limits)
+            //   0 <= heap_hard_limit_oh[loh] <= 1Gb or < 2Gb
+            //   0 <= heap_hard_limit_oh[poh] <= 1Gb or < 2Gb
+            //   0 <= large_seg_size <= 1Gb or <= 2Gb (alignment and round up)
+            //   0 <= pin_seg_size <= 1Gb or <= 2Gb (alignment and round up)
+            //   0 <= soh_segment_size + large_seg_size + pin_seg_size <= 4Gb
+            // 4Gb overflow is ok, because 0 size allocation will fail
             large_seg_size = max (gc_heap::adjust_segment_size_hard_limit (gc_heap::heap_hard_limit_oh[loh], nhp), seg_size_from_config);
             pin_seg_size = max (gc_heap::adjust_segment_size_hard_limit (gc_heap::heap_hard_limit_oh[poh], nhp), seg_size_from_config);
         }
         else
         {
+            // On 32bit we have next guarantees:
+            //   0 <= heap_hard_limit <= 1Gb (from gc_heap::compute_hard_limit)
+            //   0 <= soh_segment_size <= 1Gb
+            //   0 <= large_seg_size <= 1Gb
+            //   0 <= pin_seg_size <= 1Gb
+            //   0 <= soh_segment_size + large_seg_size + pin_seg_size <= 3Gb
+#ifdef HOST_64BIT
             large_seg_size = gc_heap::use_large_pages_p ? gc_heap::soh_segment_size : gc_heap::soh_segment_size * 2;
+#else //HOST_64BIT
+            assert (!gc_heap::use_large_pages_p);
+            large_seg_size = gc_heap::soh_segment_size;
+#endif //HOST_64BIT
             pin_seg_size = large_seg_size;
         }
         if (gc_heap::use_large_pages_p)
@@ -53793,16 +53646,45 @@ int GCHeap::RefreshMemoryLimit()
     return gc_heap::refresh_memory_limit();
 }
 
+bool gc_heap::compute_hard_limit_from_heap_limits()
+{
+#ifndef HOST_64BIT
+    // need to consider overflows:
+    if (! ((heap_hard_limit_oh[soh] < max_heap_hard_limit && heap_hard_limit_oh[loh] <= max_heap_hard_limit / 2 && heap_hard_limit_oh[poh] <= max_heap_hard_limit / 2)
+           || (heap_hard_limit_oh[soh] <= max_heap_hard_limit / 2 && heap_hard_limit_oh[loh] < max_heap_hard_limit && heap_hard_limit_oh[poh] <= max_heap_hard_limit / 2)
+           || (heap_hard_limit_oh[soh] <= max_heap_hard_limit / 2 && heap_hard_limit_oh[loh] <= max_heap_hard_limit / 2 && heap_hard_limit_oh[poh] < max_heap_hard_limit)))
+    {
+        return false;
+    }
+#endif //!HOST_64BIT
+
+    heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+    return true;
+}
+
+// On 32bit we have next guarantees for limits:
+// 1) heap-specific limits:
+//   0 <= (heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh]) < 4Gb
+//   a) 0 <= heap_hard_limit_oh[soh] < 2Gb, 0 <= heap_hard_limit_oh[loh] <= 1Gb, 0 <= heap_hard_limit_oh[poh] <= 1Gb
+//   b) 0 <= heap_hard_limit_oh[soh] <= 1Gb, 0 <= heap_hard_limit_oh[loh] < 2Gb, 0 <= heap_hard_limit_oh[poh] <= 1Gb
+//   c) 0 <= heap_hard_limit_oh[soh] <= 1Gb, 0 <= heap_hard_limit_oh[loh] <= 1Gb, 0 <= heap_hard_limit_oh[poh] < 2Gb
+// 2) same limit for all heaps:
+//   0 <= heap_hard_limit <= 1Gb
+//
+// These ranges guarantee that calculation of soh_segment_size, loh_segment_size and poh_segment_size with alignment and round up won't overflow,
+// as well as calculation of sum of them (overflow to 0 is allowed, because allocation with 0 size will fail later).
 bool gc_heap::compute_hard_limit()
 {
     heap_hard_limit_oh[soh] = 0;
-#ifdef HOST_64BIT
+
     heap_hard_limit = (size_t)GCConfig::GetGCHeapHardLimit();
     heap_hard_limit_oh[soh] = (size_t)GCConfig::GetGCHeapHardLimitSOH();
     heap_hard_limit_oh[loh] = (size_t)GCConfig::GetGCHeapHardLimitLOH();
     heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
 
+#ifdef HOST_64BIT
     use_large_pages_p = GCConfig::GetGCLargePages();
+#endif //HOST_64BIT
 
     if (heap_hard_limit_oh[soh] || heap_hard_limit_oh[loh] || heap_hard_limit_oh[poh])
     {
@@ -53814,8 +53696,10 @@ bool gc_heap::compute_hard_limit()
         {
             return false;
         }
-        heap_hard_limit = heap_hard_limit_oh[soh] +
-            heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+        if (!compute_hard_limit_from_heap_limits())
+        {
+            return false;
+        }
     }
     else
     {
@@ -53843,9 +53727,22 @@ bool gc_heap::compute_hard_limit()
             heap_hard_limit_oh[soh] = (size_t)(total_physical_mem * (uint64_t)percent_of_mem_soh / (uint64_t)100);
             heap_hard_limit_oh[loh] = (size_t)(total_physical_mem * (uint64_t)percent_of_mem_loh / (uint64_t)100);
             heap_hard_limit_oh[poh] = (size_t)(total_physical_mem * (uint64_t)percent_of_mem_poh / (uint64_t)100);
-            heap_hard_limit = heap_hard_limit_oh[soh] +
-                heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+
+            if (!compute_hard_limit_from_heap_limits())
+            {
+                return false;
+            }
         }
+#ifndef HOST_64BIT
+        else
+        {
+            // need to consider overflows
+            if (heap_hard_limit > max_heap_hard_limit / 2)
+            {
+                return false;
+            }
+        }
+#endif //!HOST_64BIT
     }
 
     if (heap_hard_limit_oh[soh] && (!heap_hard_limit_oh[poh]) && (!use_large_pages_p))
@@ -53859,9 +53756,17 @@ bool gc_heap::compute_hard_limit()
         if ((percent_of_mem > 0) && (percent_of_mem < 100))
         {
             heap_hard_limit = (size_t)(total_physical_mem * (uint64_t)percent_of_mem / (uint64_t)100);
+
+#ifndef HOST_64BIT
+            // need to consider overflows
+            if (heap_hard_limit > max_heap_hard_limit / 2)
+            {
+                return false;
+            }
+#endif //!HOST_64BIT
         }
     }
-#endif //HOST_64BIT
+
     return true;
 }
 
@@ -53886,12 +53791,12 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
             }
         }
     }
+#endif //HOST_64BIT
 
     if (heap_hard_limit && (heap_hard_limit < new_current_total_committed))
     {
         return false;
     }
-#endif //HOST_64BIT
 
 #ifdef USE_REGIONS
     {
@@ -53910,9 +53815,24 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
             seg_size_from_config = (size_t)GCConfig::GetSegmentSize();
             if (seg_size_from_config)
             {
-                seg_size_from_config = adjust_segment_size_hard_limit_va (seg_size_from_config);
+                seg_size_from_config = use_large_pages_p ? align_on_segment_hard_limit (seg_size_from_config) :
+#ifdef HOST_64BIT
+                    round_up_power2 (seg_size_from_config);
+#else //HOST_64BIT
+                    round_down_power2 (seg_size_from_config);
+                seg_size_from_config = min (seg_size_from_config, max_heap_hard_limit / 2);
+#endif //HOST_64BIT
             }
 
+            // On 32bit we have next guarantees:
+            //   0 <= seg_size_from_config <= 1Gb (from max_heap_hard_limit/2)
+            // a) heap-specific limits:
+            //   0 <= (heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh]) < 4Gb (from gc_heap::compute_hard_limit_from_heap_limits)
+            //   0 <= heap_hard_limit_oh[soh] <= 1Gb or < 2Gb
+            //   0 <= soh_segment_size <= 1Gb or <= 2Gb (alignment and round up)
+            // b) same limit for all heaps:
+            //   0 <= heap_hard_limit <= 1Gb
+            //   0 <= soh_segment_size <= 1Gb
             size_t limit_to_check = (heap_hard_limit_oh[soh] ? heap_hard_limit_oh[soh] : heap_hard_limit);
             soh_segment_size = max (adjust_segment_size_hard_limit (limit_to_check, nhp), seg_size_from_config);
         }

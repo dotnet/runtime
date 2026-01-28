@@ -166,27 +166,9 @@ void minipal_memory_barrier_process_wide(void)
     // Iterate through each of the threads in the list.
     for (mach_msg_type_number_t i = 0; i < cThreads; i++)
     {
-        if (__builtin_available (macOS 10.14, iOS 12, tvOS 9, *))
-        {
-            // Request the threads pointer values to force the thread to emit a memory barrier
-            size_t registers = 128;
-            machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
-        }
-        else
-        {
-            // fallback implementation for older OS versions
-#if defined(HOST_AMD64)
-            x86_thread_state64_t threadState;
-            mach_msg_type_number_t count = x86_THREAD_STATE64_COUNT;
-            machret = thread_get_state(pThreads[i], x86_THREAD_STATE64, (thread_state_t)&threadState, &count);
-#elif defined(HOST_ARM64)
-            arm_thread_state64_t threadState;
-            mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
-            machret = thread_get_state(pThreads[i], ARM_THREAD_STATE64, (thread_state_t)&threadState, &count);
-#else
-            #error Unexpected architecture
-#endif
-        }
+        // Request the threads pointer values to force the thread to emit a memory barrier
+        size_t registers = 128;
+        machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
 
         if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
         {

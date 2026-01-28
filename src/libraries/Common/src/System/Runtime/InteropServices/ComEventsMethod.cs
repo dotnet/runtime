@@ -144,10 +144,7 @@ namespace System.Runtime.InteropServices
                     current = current._next;
                 }
 
-                if (current != null)
-                {
-                    current._next = method._next;
-                }
+                current?._next = method._next;
 
                 return methods;
             }
@@ -207,9 +204,7 @@ namespace System.Runtime.InteropServices
             do
             {
                 wrappers = _delegateWrappers;
-                List<DelegateWrapper> tmp = new(wrappers);
-                tmp.RemoveAll(w => condition(w.Delegate));
-                newWrappers = tmp.ToArray();
+                newWrappers = Array.FindAll(wrappers, w => !condition(w.Delegate));
             }
             while (!PublishNewWrappers(newWrappers, wrappers));
         }

@@ -234,7 +234,8 @@ namespace ILLink.RoslynAnalyzer.Tests
                 case nameof(UnexpectedWarningAttribute):
                 case nameof(LogContainsAttribute):
                     var args = LinkerTestBase.GetAttributeArguments(attribute);
-                    if (args.TryGetValue("ProducedBy", out var producedBy))
+                    if (args.TryGetValue("ProducedBy", out var producedBy)
+                        || args.TryGetValue("producedBy", out producedBy))
                     {
                         // Skip if this warning is not expected to be produced by any of the analyzers that we are currently testing.
                         return GetProducedBy(producedBy).HasFlag(Tool.Analyzer);

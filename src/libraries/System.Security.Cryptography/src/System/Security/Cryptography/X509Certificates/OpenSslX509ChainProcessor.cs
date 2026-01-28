@@ -1172,18 +1172,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static X509ChainStatusFlags MapOpenSsl102Code(Interop.Crypto.X509VerifyStatusCode code)
-        {
-            switch (code.Code102)
-            {
-                case Interop.Crypto.X509VerifyStatusCode102.X509_V_ERR_INVALID_CA:
-                    return X509ChainStatusFlags.InvalidBasicConstraints;
-                default:
-                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code.Code102);
-                    throw GetUnmappedCodeException(nameof(MapOpenSsl102Code), (int)code.Code102);
-            }
-        }
-
         private static X509ChainStatusFlags MapOpenSsl111Code(Interop.Crypto.X509VerifyStatusCode code)
         {
             switch (code.Code111)
@@ -1417,7 +1405,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return MapOpenSsl111Code;
             }
 
-            return MapOpenSsl102Code;
+            throw new CryptographicException();
         }
 
         private static CryptographicException GetUnmappedCodeException(string functionName, int code)
