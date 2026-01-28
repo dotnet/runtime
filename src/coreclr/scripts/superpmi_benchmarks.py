@@ -174,10 +174,22 @@ def build_and_run(coreclr_args, output_mch_name):
         shim_name = "%JitName%"
         corerun_exe = "CoreRun.exe"
         script_name = "run_benchmarks.bat"
+        python_exe = ["py", "-3"]
     else:
         shim_name = "$JitName"
         corerun_exe = "corerun"
         script_name = "run_benchmarks.sh"
+        python_exe = ["python3"]
+
+    with ChangeDir(performance_directory):
+        dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
+        dotnet_install_script = os.path.join(performance_directory, "scripts", "dotnet.py")
+        if not os.path.isfile(dotnet_install_script):
+            print("Missing " + dotnet_install_script)
+            return
+        run_command(
+            python_exe + [dotnet_install_script, "install", "--channels", "main", "--architecture", arch, "--install-dir",
+                                 dotnet_directory, "--verbose"])
 
     make_executable(dotnet_exe)
 
