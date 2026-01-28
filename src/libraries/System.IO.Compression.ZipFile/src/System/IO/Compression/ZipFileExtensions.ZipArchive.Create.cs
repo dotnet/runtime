@@ -77,6 +77,10 @@ namespace System.IO.Compression
                                                           string sourceFileName, string entryName, CompressionLevel compressionLevel) =>
             DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel);
 
+        public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination,
+                                                  string sourceFileName, string entryName, CompressionLevel compressionLevel, string password, ZipArchiveEntry.EncryptionMethod encryption) =>
+    DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel);
+
         internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
                                                               string sourceFileName, string entryName, CompressionLevel? compressionLevel)
         {
