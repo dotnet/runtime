@@ -11339,8 +11339,26 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
         UINT64 calleeSaveMask = pPatchpointInfo->CalleeSaveRegisters();
         TADDR calleeSaveBase = managedFrameFP + calleeSaveFpOffset;
 
+        // On ARM64, callee-saves are stored in this order (low to high addresses):
+        // 1. Float callee-saves (v8-v15) - register numbers 40-47 (VBASE + 8 to VBASE + 15)
+        // 2. Integer callee-saves (x19-x28) - register numbers 19-28
+        // 3. FP/LR - register numbers 29-30
+        //
+        // We need to skip past any saved float registers to get to the integer registers.
+        // Float registers are at bits 40-47 in the mask (VBASE=32, so v8=40, v15=47).
+        const UINT64 floatCalleeSaveMask = 0x0000FF0000000000ULL; // bits 40-47
+        int floatSaveCount = 0;
+        UINT64 floatMask = calleeSaveMask & floatCalleeSaveMask;
+        while (floatMask != 0)
+        {
+            floatSaveCount++;
+            floatMask &= (floatMask - 1); // Clear lowest set bit
+        }
+
+        // Integer registers start after float registers (each float save is 8 bytes)
+        int offset = floatSaveCount * 8;
+
         // Registers are saved in order x19, x20, ..., x28
-        int offset = 0;
         if (calleeSaveMask & (1ULL << 19)) { pContext->X19 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
         else { pContext->X19 = pTransitionBlock->m_calleeSavedRegisters.x19; }
         if (calleeSaveMask & (1ULL << 20)) { pContext->X20 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
