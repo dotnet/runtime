@@ -579,7 +579,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
         _ASSERTE(FindDynamicallyAddedInterface(pItfMT));
 
         // This interface was added to the class dynamically so it is implemented
-        // by the COM object. We treat this dynamically added interfaces the same
+        // by the COM object. We treat this dynamically added interface the same
         // way we treat COM objects. That is by using the interface vtable.
         RETURN(pItfMD);
     }
