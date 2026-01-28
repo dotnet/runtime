@@ -495,5 +495,159 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
             """;
             return VerifyRequiresUnreferencedCodeAnalyzer(source);
         }
+
+        [Fact]
+        public Task DebuggerDisplayReferencesRUCProperty()
+        {
+            var source = $$"""
+            using System.Diagnostics;
+            using System.Diagnostics.CodeAnalysis;
+
+            [DebuggerDisplay("{MyProperty}")]
+            class C
+            {
+                public string MyProperty
+                {
+                    [RequiresUnreferencedCode("Nope")]
+                    get => "Hello";
+                }
+            }
+            """;
+            return VerifyRequiresUnreferencedCodeAnalyzer(source,
+                // (4,2): warning IL2128: DebuggerDisplay attribute on 'C' references member 'C.MyProperty.get' which has 'RequiresUnreferencedCodeAttribute'. The member referenced by the attribute might be trimmed. Nope.
+                VerifyCS.Diagnostic(DiagnosticId.DebuggerDisplayReferencesRequiresUnreferencedCodeMember).WithSpan(4, 2, 4, 33).WithArguments("C", "C.MyProperty.get", " Nope.", ""));
+        }
+
+        [Fact]
+        public Task DebuggerDisplayReferencesRUCMethod()
+        {
+            var source = $$"""
+            using System.Diagnostics;
+            using System.Diagnostics.CodeAnalysis;
+
+            [DebuggerDisplay("{GetValue()}")]
+            class C
+            {
+                [RequiresUnreferencedCode("Message")]
+                public string GetValue() => "Hello";
+            }
+            """;
+            return VerifyRequiresUnreferencedCodeAnalyzer(source,
+                // (4,2): warning IL2128: DebuggerDisplay attribute on 'C' references member 'C.GetValue()' which has 'RequiresUnreferencedCodeAttribute'. The member referenced by the attribute might be trimmed. Message.
+                VerifyCS.Diagnostic(DiagnosticId.DebuggerDisplayReferencesRequiresUnreferencedCodeMember).WithSpan(4, 2, 4, 35).WithArguments("C", "C.GetValue()", " Message.", ""));
+        }
+
+        [Fact]
+        public Task DebuggerDisplayReferencesRUCField()
+        {
+            var source = $$"""
+            using System.Diagnostics;
+            using System.Diagnostics.CodeAnalysis;
+
+            [DebuggerDisplay("{MyField}")]
+            class C
+            {
+                [RequiresUnreferencedCode("FieldMessage")]
+                public string MyField = "Hello";
+            }
+            """;
+            return VerifyRequiresUnreferencedCodeAnalyzer(source,
+                // (4,2): warning IL2128: DebuggerDisplay attribute on 'C' references member 'C.MyField' which has 'RequiresUnreferencedCodeAttribute'. The member referenced by the attribute might be trimmed. FieldMessage.
+                VerifyCS.Diagnostic(DiagnosticId.DebuggerDisplayReferencesRequiresUnreferencedCodeMember).WithSpan(4, 2, 4, 30).WithArguments("C", "C.MyField", " FieldMessage.", ""));
+        }
+
+        [Fact]
+        public Task DebuggerDisplayWithNqSuffix()
+        {
+            var source = $$"""
+            using System.Diagnostics;
+            using System.Diagnostics.CodeAnalysis;
+
+            [DebuggerDisplay("{MyProperty,nq}")]
+            class C
+            {
+                public string MyProperty
+                {
+                    [RequiresUnreferencedCode("Nope")]
+                    get => "Hello";
+                }
+            }
+            """;
+            return VerifyRequiresUnreferencedCodeAnalyzer(source,
+                // (4,2): warning IL2128: DebuggerDisplay attribute on 'C' references member 'C.MyProperty.get' which has 'RequiresUnreferencedCodeAttribute'. The member referenced by the attribute might be trimmed. Nope.
+                VerifyCS.Diagnostic(DiagnosticId.DebuggerDisplayReferencesRequiresUnreferencedCodeMember).WithSpan(4, 2, 4, 36).WithArguments("C", "C.MyProperty.get", " Nope.", ""));
+        }
+
+        [Fact]
+        public Task DebuggerDisplayWithNameProperty()
+        {
+            var source = $$"""
+            using System.Diagnostics;
+            using System.Diagnostics.CodeAnalysis;
+
+            [DebuggerDisplay("Value", Name = "{MyName}")]
+            class C
+            {
+                [RequiresUnreferencedCode("NameMessage")]
+                public string MyName => "C";
+            }
+            """;
+            return VerifyRequiresUnreferencedCodeAnalyzer(source,
+                // (4,2): warning IL2128: DebuggerDisplay attribute on 'C' references member 'C.MyName.get' which has 'RequiresUnreferencedCodeAttribute'. The member referenced by the attribute might be trimmed. NameMessage.
+                VerifyCS.Diagnostic(DiagnosticId.DebuggerDisplayReferencesRequiresUnreferencedCodeMember).WithSpan(4, 2, 4, 50).WithArguments("C", "C.MyName.get", " NameMessage.", ""));
+        }
+
+        [Fact]
+        public Task DebuggerDisplayNoWarningForNonRUCMember()
+        {
+            var source = $$"""
+            using System.Diagnostics;
+
+            [DebuggerDisplay("{MyProperty}")]
+            class C
+            {
+                public string MyProperty => "Hello";
+            }
+            """;
+            return VerifyRequiresUnreferencedCodeAnalyzer(source);
+        }
+
+        [Fact]
+        public Task DebuggerDisplayNoWarningForComplexExpression()
+        {
+            var source = $$"""
+            using System.Diagnostics;
+            using System.Diagnostics.CodeAnalysis;
+
+            [DebuggerDisplay("{obj.Method()}")]
+            class C
+            {
+                [RequiresUnreferencedCode("Message")]
+                public string Method() => "Hello";
+                public object obj = null;
+            }
+            """;
+            // No warning because we can't fully understand the expression (it references obj.Method())
+            return VerifyRequiresUnreferencedCodeAnalyzer(source);
+        }
+
+        [Fact]
+        public Task DebuggerDisplayWithUrl()
+        {
+            var source = $$"""
+            using System.Diagnostics;
+            using System.Diagnostics.CodeAnalysis;
+
+            [DebuggerDisplay("{GetValue()}")]
+            class C
+            {
+                [RequiresUnreferencedCode("Message", Url = "https://example.com")]
+                public string GetValue() => "Hello";
+            }
+            """;
+            return VerifyRequiresUnreferencedCodeAnalyzer(source,
+                // (4,2): warning IL2128: DebuggerDisplay attribute on 'C' references member 'C.GetValue()' which has 'RequiresUnreferencedCodeAttribute'. The member referenced by the attribute might be trimmed. Message. https://example.com
+                VerifyCS.Diagnostic(DiagnosticId.DebuggerDisplayReferencesRequiresUnreferencedCodeMember).WithSpan(4, 2, 4, 35).WithArguments("C", "C.GetValue()", " Message.", " https://example.com"));
+        }
     }
 }
