@@ -51,15 +51,26 @@ namespace System.IO.Enumeration
         internal FileSystemEnumerator(string directory, bool isNormalized, EnumerationOptions? options, string? expression) :
             this(directory, isNormalized, options)
         {
-            // We need to ensure that the expression is prepped to be used as an NtQueryDirectoryFile filter.
-            // If the match type is simple, we need to escape the special DOS wildcard characters. If it is
-            // DOS style, the characters have already been escaped in the FileSystemEnumerableFactory.
-
-            if (expression is not null && !_options.RecurseSubdirectories)
+            if (_options.RecurseSubdirectories)
             {
-                if (expression is "." or "..")
+                // We can never filter when recursing, as we need to find all subdirectories to recurse into them.
+                expression = null;
+            }
+
+            if (expression is not null)
+            {
+                // We need to ensure that the expression is prepped to be used as an NtQueryDirectoryFile filter.
+                // If the match type is simple, we need to escape the special DOS wildcard characters. If it is
+                // DOS style, the characters have already been escaped in the FileSystemEnumerableFactory.
+
+                if (expression.Length > 255 || expression == "*")
                 {
-                    // Special directories are not valid expressions for OS-level filtering
+                    // Don't allow expressions longer than the maximum filename length. This comes back as
+                    // STATUS_INVALID_PARAMETER from NtQueryDirectoryFile. We could catch that there, but
+                    // don't want to mask other bad parameter issues.
+                    //
+                    // Also, an expression of "*" is pointless as a filter- it matches everything. "*.*"
+                    // should have been converted to "*" already in the case of MatchType.Win32.
                     expression = null;
                 }
                 else if (_options.MatchType == MatchType.Simple && expression.AsSpan().ContainsAny(@"\""<>"))
@@ -134,7 +145,7 @@ namespace System.IO.Enumeration
                 if (_isFirstGetData)
                 {
                     _isFirstGetData = false;
-                    if (!_options.RecurseSubdirectories && _expression is not null)
+                    if (_expression is not null)
                     {
                         fileNameStruct.Length = fileNameStruct.MaximumLength = (ushort)(_expression.Length * sizeof(char));
                         fileNameStruct.Buffer = (IntPtr)pBuffer;
@@ -158,14 +169,19 @@ namespace System.IO.Enumeration
 
             switch ((uint)status)
             {
-                case Interop.StatusOptions.STATUS_NO_MORE_FILES:
-                    DirectoryFinished();
-                    return false;
                 case Interop.StatusOptions.STATUS_SUCCESS:
                     Debug.Assert(statusBlock.Information.ToInt64() != 0);
                     return true;
+                case Interop.StatusOptions.STATUS_NO_MORE_FILES:
                 // FILE_NOT_FOUND can occur when there are NO files in a volume root (usually there are hidden system files).
                 case Interop.StatusOptions.STATUS_FILE_NOT_FOUND:
+                // STATUS_OBJECT_NAME_INVALID is returned when the FileName has characters the filesystem doesn't like. They
+                // never would have matched manually filtering the current directory, so we'll return no matches. It is
+                // better to let Windows tell us that we have an invalid name as opposed to guessing. We can't know which
+                // file system driver a given directory is going to be on- could even be a Unix type file system.
+                //
+                // This is also the error given back when trying to filter for "." or "..".
+                case Interop.StatusOptions.STATUS_OBJECT_NAME_INVALID:
                     DirectoryFinished();
                     return false;
                 default:
