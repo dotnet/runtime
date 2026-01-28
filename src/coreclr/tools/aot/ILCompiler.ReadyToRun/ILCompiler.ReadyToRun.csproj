@@ -306,7 +306,6 @@
     <Compile Include="IBC\IBCProfileParser.cs" />
     <Compile Include="IL\Stubs\InstanceCalliHelperIntrinsics.cs" />
     <Compile Include="IL\Stubs\PInvokeILEmitter.cs" />
-    <Compile Include="IL\Stubs\ILStubReferences.cs" />
     <Compile Include="Interop\IL\Marshaller.ReadyToRun.cs" />
     <Compile Include="Compiler\PerfEventSource.cs" />
     <Compile Include="ObjectWriter\ProfileFileBuilder.cs" />
@@ -318,6 +317,7 @@
     <Compile Include="IL\ReadyToRunILProvider.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
     <Compile Include="ObjectWriter\TargetExtensions.cs" />
+    <Compile Include="TypeSystem\MethodDescExtensions.cs" />
     <Compile Include="TypeSystem\Mutable\MutableModule.cs" />
     <Compile Include="TypeSystem\Mutable\MutableModule.Sorting.cs" />
     <Compile Include="TypeSystem\Mutable\MutableModule.Symbols.cs" />
