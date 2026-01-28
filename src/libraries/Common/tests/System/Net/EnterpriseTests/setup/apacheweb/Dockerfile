@@ -2,7 +2,7 @@ FROM mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Install Kerberos client, ProFTPD with SSL, and diagnostics
+# Install Kerberos client, ProFTPD with SSL and HTTP with NTLM and Negotiate
 RUN apt-get update && \
     apt-get install -y --no-install-recommends apache2 procps krb5-user iputils-ping dnsutils nano \
                                                samba samba-dsdb-modules samba-vfs-modules \
