@@ -4678,7 +4678,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     assert((unsigned)abs(params.argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
-    regMaskTP savedSet  = emitGetGCRegsSavedOrModified(params.methHnd);
+    // For tail calls, we don't trim registers since we're jumping to another function, not returning.
+    regMaskTP savedSet  = params.isJump ? RBM_ALLINT : emitGetGCRegsSavedOrModified(params.methHnd);
     regMaskTP gcrefRegs = params.gcrefRegs & savedSet;
     regMaskTP byrefRegs = params.byrefRegs & savedSet;
 
