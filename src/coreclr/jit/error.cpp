@@ -78,6 +78,12 @@ void DECLSPEC_NORETURN implLimitation()
 }
 
 /*****************************************************************************/
+void DECLSPEC_NORETURN implPrejitUnsupported()
+{
+    fatal(CORJIT_PREJIT_UNSUPPORTED);
+}
+
+/*****************************************************************************/
 void DECLSPEC_NORETURN NOMEM()
 {
 #if MEASURE_FATAL

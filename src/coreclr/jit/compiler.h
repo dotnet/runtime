@@ -8480,7 +8480,7 @@ public:
         {
             if (mustExpand)
             {
-                implLimitation();
+                implPrejitUnsupported();
             }
             return true;
         }
