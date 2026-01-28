@@ -236,7 +236,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Trim support for line number in stack traces by default -->
     <PropertyGroup>
-      <StackTraceLineNumberSupport Condition="'$(StackTraceLineNumberSupport)' == '' and ('$(StackTraceSupport)' == 'false' or '$(Configuration)' == 'Release')">false</StackTraceLineNumberSupport>
+      <StackTraceLineNumberSupport Condition="'$(StackTraceLineNumberSupport)' == '' and ('$(StackTraceSupport)' == 'false' or '$(DebugSymbols)' != 'true')">false</StackTraceLineNumberSupport>
     </PropertyGroup>
     <ItemGroup Condition="'$(StackTraceLineNumberSupport)' == 'false'">
       <RuntimeHostConfigurationOption Include="System.Diagnostics.StackTrace.IsLineNumberSupported" Value="false" Trim="true" />
