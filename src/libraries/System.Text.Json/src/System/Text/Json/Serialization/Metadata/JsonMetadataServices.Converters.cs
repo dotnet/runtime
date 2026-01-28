@@ -30,11 +30,21 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<byte>? s_byteConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Byte}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<byte>?> JsonValuePrimitiveByteConverter { get; } = new JsonValueConverter<JsonValuePrimitive<byte>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="char"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<char> CharConverter => s_charConverter ??= new CharConverter();
         private static JsonConverter<char>? s_charConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Char}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<char>?> JsonValuePrimitiveCharConverter { get; } = new JsonValueConverter<JsonValuePrimitive<char>>();
 
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="DateTime"/> values.
@@ -44,11 +54,21 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<DateTime>? s_dateTimeConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{DateTime}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<DateTime>?> JsonValuePrimitiveDateTimeConverter { get; } = new JsonValueConverter<JsonValuePrimitive<DateTime>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="DateTimeOffset"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<DateTimeOffset> DateTimeOffsetConverter => s_dateTimeOffsetConverter ??= new DateTimeOffsetConverter();
         private static JsonConverter<DateTimeOffset>? s_dateTimeOffsetConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{DateTimeOffset}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<DateTimeOffset>?> JsonValuePrimitiveDateTimeOffsetConverter { get; } = new JsonValueConverter<JsonValuePrimitive<DateTimeOffset>>();
 
 #if NET
         /// <summary>
@@ -59,11 +79,21 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<DateOnly>? s_dateOnlyConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{DateOnly}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<DateOnly>?> JsonValuePrimitiveDateOnlyConverter { get; } = new JsonValueConverter<JsonValuePrimitive<DateOnly>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="TimeOnly"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<TimeOnly> TimeOnlyConverter => s_timeOnlyConverter ??= new TimeOnlyConverter();
         private static JsonConverter<TimeOnly>? s_timeOnlyConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{TimeOnly}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<TimeOnly>?> JsonValuePrimitiveTimeOnlyConverter { get; } = new JsonValueConverter<JsonValuePrimitive<TimeOnly>>();
 #endif
 
         /// <summary>
@@ -74,11 +104,21 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<decimal>? s_decimalConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Decimal}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<decimal>?> JsonValuePrimitiveDecimalConverter { get; } = new JsonValueConverter<JsonValuePrimitive<decimal>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="double"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<double> DoubleConverter => s_doubleConverter ??= new DoubleConverter();
         private static JsonConverter<double>? s_doubleConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Double}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<double>?> JsonValuePrimitiveDoubleConverter { get; } = new JsonValueConverter<JsonValuePrimitive<double>>();
 
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="Guid"/> values.
@@ -88,11 +128,21 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<Guid>? s_guidConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Guid}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<Guid>?> JsonValuePrimitiveGuidConverter { get; } = new JsonValueConverter<JsonValuePrimitive<Guid>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="short"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<short> Int16Converter => s_int16Converter ??= new Int16Converter();
         private static JsonConverter<short>? s_int16Converter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Int16}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<short>?> JsonValuePrimitiveInt16Converter { get; } = new JsonValueConverter<JsonValuePrimitive<short>>();
 
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="int"/> values.
@@ -102,11 +152,21 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<int>? s_int32Converter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Int32}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<int>?> JsonValuePrimitiveInt32Converter { get; } = new JsonValueConverter<JsonValuePrimitive<int>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="long"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<long> Int64Converter => s_int64Converter ??= new Int64Converter();
         private static JsonConverter<long>? s_int64Converter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Int64}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<long>?> JsonValuePrimitiveInt64Converter { get; } = new JsonValueConverter<JsonValuePrimitive<long>>();
 
 #if NET
         /// <summary>
@@ -117,12 +177,22 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<Int128>? s_int128Converter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Int128}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<Int128>?> JsonValuePrimitiveInt128Converter { get; } = new JsonValueConverter<JsonValuePrimitive<Int128>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="UInt128"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         [CLSCompliant(false)]
         public static JsonConverter<UInt128> UInt128Converter => s_uint128Converter ??= new UInt128Converter();
         private static JsonConverter<UInt128>? s_uint128Converter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{UInt128}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<UInt128>?> JsonValuePrimitiveUInt128Converter { get; } = new JsonValueConverter<JsonValuePrimitive<UInt128>>();
 #endif
 
         /// <summary>
@@ -154,10 +224,10 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<JsonObject?>? s_jsonObjectConverter;
 
         /// <summary>
-        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonArray"/> values.
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValue"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
-        public static JsonConverter<JsonValue?> JsonValueConverter => s_jsonValueConverter ??= new JsonValueConverter();
+        public static JsonConverter<JsonValue?> JsonValueConverter => s_jsonValueConverter ??= new JsonValueConverter<JsonValue>();
         private static JsonConverter<JsonValue?>? s_jsonValueConverter;
 
         /// <summary>
@@ -195,6 +265,11 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<Half> HalfConverter => s_halfConverter ??= new HalfConverter();
         private static JsonConverter<Half>? s_halfConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Half}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<Half>?> JsonValuePrimitiveHalfConverter { get; } = new JsonValueConverter<JsonValuePrimitive<Half>>();
 #endif
 
         /// <summary>
@@ -205,12 +280,22 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<float>? s_singleConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Single}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<float>?> JsonValuePrimitiveSingleConverter { get; } = new JsonValueConverter<JsonValuePrimitive<float>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="sbyte"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         [CLSCompliant(false)]
         public static JsonConverter<sbyte> SByteConverter => s_sbyteConverter ??= new SByteConverter();
         private static JsonConverter<sbyte>? s_sbyteConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{SByte}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<sbyte>?> JsonValuePrimitiveSByteConverter { get; } = new JsonValueConverter<JsonValuePrimitive<sbyte>>();
 
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="string"/> values.
@@ -220,11 +305,21 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<string?>? s_stringConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{String}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<string>?> JsonValuePrimitiveStringConverter { get; } = new JsonValueConverter<JsonValuePrimitive<string>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="TimeSpan"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<TimeSpan> TimeSpanConverter => s_timeSpanConverter ??= new TimeSpanConverter();
         private static JsonConverter<TimeSpan>? s_timeSpanConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{TimeSpan}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<TimeSpan>?> JsonValuePrimitiveTimeSpanConverter { get; } = new JsonValueConverter<JsonValuePrimitive<TimeSpan>>();
 
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="ushort"/> values.
@@ -235,12 +330,22 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<ushort>? s_uint16Converter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{UInt16}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<ushort>?> JsonValuePrimitiveUInt16Converter { get; } = new JsonValueConverter<JsonValuePrimitive<ushort>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="uint"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         [CLSCompliant(false)]
         public static JsonConverter<uint> UInt32Converter => s_uint32Converter ??= new UInt32Converter();
         private static JsonConverter<uint>? s_uint32Converter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{UInt32}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<uint>?> JsonValuePrimitiveUInt32Converter { get; } = new JsonValueConverter<JsonValuePrimitive<uint>>();
 
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="ulong"/> values.
@@ -251,6 +356,11 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<ulong>? s_uint64Converter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{UInt64}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<ulong>?> JsonValuePrimitiveUInt64Converter { get; } = new JsonValueConverter<JsonValuePrimitive<ulong>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="Uri"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
@@ -258,11 +368,21 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<Uri?>? s_uriConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Uri}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<Uri>?> JsonValuePrimitiveUriConverter { get; } = new JsonValueConverter<JsonValuePrimitive<Uri>>();
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="Version"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<Version?> VersionConverter => s_versionConverter ??= new VersionConverter();
         private static JsonConverter<Version?>? s_versionConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonValuePrimitive{Version}"/> values.
+        /// </summary>
+        internal static JsonConverter<JsonValuePrimitive<Version>?> JsonValuePrimitiveVersionConverter { get; } = new JsonValueConverter<JsonValuePrimitive<Version>>();
 
         /// <summary>
         /// Creates a <see cref="JsonConverter{T}"/> instance that throws <see cref="NotSupportedException"/>.

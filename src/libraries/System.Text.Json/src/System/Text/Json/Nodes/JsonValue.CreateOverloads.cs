@@ -14,7 +14,7 @@ namespace System.Text.Json.Nodes
         /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
-        public static JsonValue Create(bool value, JsonNodeOptions? options = null) => new JsonValuePrimitive<bool>(value, JsonMetadataServices.BooleanConverter, options);
+        public static JsonValue Create(bool value, JsonNodeOptions? options = null) => new JsonValueOfJsonBool(value, JsonMetadataServices.BooleanConverter, options);
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
@@ -22,7 +22,7 @@ namespace System.Text.Json.Nodes
         /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
-        public static JsonValue? Create(bool? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValuePrimitive<bool>(value.Value, JsonMetadataServices.BooleanConverter, options) : null;
+        public static JsonValue? Create(bool? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueOfJsonBool(value.Value, JsonMetadataServices.BooleanConverter, options) : null;
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
@@ -56,6 +56,16 @@ namespace System.Text.Json.Nodes
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(char? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValuePrimitive<char>(value.Value, JsonMetadataServices.CharConverter, options) : null;
 
+#if NET
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        internal static JsonValue Create(DateOnly value, JsonNodeOptions? options = null) => new JsonValuePrimitive<DateOnly>(value, JsonMetadataServices.DateOnlyConverter, options);
+#endif
+
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
@@ -87,6 +97,64 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(DateTimeOffset? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValuePrimitive<DateTimeOffset>(value.Value, JsonMetadataServices.DateTimeOffsetConverter, options) : null;
+
+#if NET
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        internal static JsonValue Create(Half value, JsonNodeOptions? options = null) => new JsonValuePrimitive<Half>(value, JsonMetadataServices.HalfConverter, options);
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        internal static JsonValue Create(Int128 value, JsonNodeOptions? options = null) => new JsonValuePrimitive<Int128>(value, JsonMetadataServices.Int128Converter, options);
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        internal static JsonValue Create(TimeOnly value, JsonNodeOptions? options = null) => new JsonValuePrimitive<TimeOnly>(value, JsonMetadataServices.TimeOnlyConverter, options);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        internal static JsonValue Create(UInt128 value, JsonNodeOptions? options = null) => new JsonValuePrimitive<UInt128>(value, JsonMetadataServices.UInt128Converter, options);
+#endif
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        internal static JsonValue Create(TimeSpan value, JsonNodeOptions? options = null) => new JsonValuePrimitive<TimeSpan>(value, JsonMetadataServices.TimeSpanConverter, options);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        internal static JsonValue Create(Uri? value, JsonNodeOptions? options = null) => new JsonValuePrimitive<Uri?>(value, JsonMetadataServices.UriConverter, options);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
+        /// </summary>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
+        internal static JsonValue Create(Version? value, JsonNodeOptions? options = null) => new JsonValuePrimitive<Version?>(value, JsonMetadataServices.VersionConverter, options);
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.

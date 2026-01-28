@@ -40,46 +40,70 @@ namespace System.Text.Json.Serialization.Metadata
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
         {
-            const int NumberOfSimpleConverters = 31;
-            var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters);
+            const int NumberOfSimpleConverters = 55;
+            var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters, new SimpleConverterTypeComparer());
 
             // Use a dictionary for simple converters.
             // When adding to this, update NumberOfSimpleConverters above.
             Add(JsonMetadataServices.BooleanConverter);
             Add(JsonMetadataServices.ByteConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveByteConverter);
             Add(JsonMetadataServices.ByteArrayConverter);
             Add(JsonMetadataServices.CharConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveCharConverter);
             Add(JsonMetadataServices.DateTimeConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveDateTimeConverter);
             Add(JsonMetadataServices.DateTimeOffsetConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveDateTimeOffsetConverter);
 #if NET
             Add(JsonMetadataServices.DateOnlyConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveDateOnlyConverter);
             Add(JsonMetadataServices.TimeOnlyConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveTimeOnlyConverter);
             Add(JsonMetadataServices.HalfConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveHalfConverter);
 #endif
             Add(JsonMetadataServices.DoubleConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveDoubleConverter);
             Add(JsonMetadataServices.DecimalConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveDecimalConverter);
             Add(JsonMetadataServices.GuidConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveGuidConverter);
             Add(JsonMetadataServices.Int16Converter);
+            Add(JsonMetadataServices.JsonValuePrimitiveInt16Converter);
             Add(JsonMetadataServices.Int32Converter);
+            Add(JsonMetadataServices.JsonValuePrimitiveInt32Converter);
             Add(JsonMetadataServices.Int64Converter);
+            Add(JsonMetadataServices.JsonValuePrimitiveInt64Converter);
             Add(JsonMetadataServices.JsonElementConverter);
             Add(JsonMetadataServices.JsonDocumentConverter);
             Add(JsonMetadataServices.MemoryByteConverter);
             Add(JsonMetadataServices.ReadOnlyMemoryByteConverter);
             Add(JsonMetadataServices.ObjectConverter);
             Add(JsonMetadataServices.SByteConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveSByteConverter);
             Add(JsonMetadataServices.SingleConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveSingleConverter);
             Add(JsonMetadataServices.StringConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveStringConverter);
             Add(JsonMetadataServices.TimeSpanConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveTimeSpanConverter);
             Add(JsonMetadataServices.UInt16Converter);
+            Add(JsonMetadataServices.JsonValuePrimitiveUInt16Converter);
             Add(JsonMetadataServices.UInt32Converter);
+            Add(JsonMetadataServices.JsonValuePrimitiveUInt32Converter);
             Add(JsonMetadataServices.UInt64Converter);
+            Add(JsonMetadataServices.JsonValuePrimitiveUInt64Converter);
 #if NET
             Add(JsonMetadataServices.Int128Converter);
+            Add(JsonMetadataServices.JsonValuePrimitiveInt128Converter);
             Add(JsonMetadataServices.UInt128Converter);
+            Add(JsonMetadataServices.JsonValuePrimitiveUInt128Converter);
 #endif
             Add(JsonMetadataServices.UriConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveUriConverter);
             Add(JsonMetadataServices.VersionConverter);
+            Add(JsonMetadataServices.JsonValuePrimitiveVersionConverter);
 
             Debug.Assert(converters.Count <= NumberOfSimpleConverters);
 

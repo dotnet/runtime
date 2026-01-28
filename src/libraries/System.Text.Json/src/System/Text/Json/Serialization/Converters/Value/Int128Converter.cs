@@ -1,10 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
-using System.Text.Json.Nodes;
+using System.Text.Json.Extensions;
 using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
@@ -30,7 +29,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowInvalidOperationException_ExpectedNumber(reader.TokenType);
             }
 
-            return ReadCore(ref reader);
+            return reader.GetInt128();
         }
 
         public override void Write(Utf8JsonWriter writer, Int128 value, JsonSerializerOptions options)
@@ -44,29 +43,6 @@ namespace System.Text.Json.Serialization.Converters
             WriteCore(writer, value);
         }
 
-        private static Int128 ReadCore(ref Utf8JsonReader reader)
-        {
-            int bufferLength = reader.ValueLength;
-
-            byte[]? rentedBuffer = null;
-            Span<byte> buffer = bufferLength <= JsonConstants.StackallocByteThreshold
-                ? stackalloc byte[JsonConstants.StackallocByteThreshold]
-                : (rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferLength));
-
-            int written = reader.CopyValue(buffer);
-            if (!Int128.TryParse(buffer.Slice(0, written), CultureInfo.InvariantCulture, out Int128 result))
-            {
-                ThrowHelper.ThrowFormatException(NumericType.Int128);
-            }
-
-            if (rentedBuffer != null)
-            {
-                ArrayPool<byte>.Shared.Return(rentedBuffer);
-            }
-
-            return result;
-        }
-
         private static void WriteCore(Utf8JsonWriter writer, Int128 value)
         {
             Span<byte> buffer = stackalloc byte[MaxFormatLength];
@@ -77,7 +53,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override Int128 ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
-            return ReadCore(ref reader);
+            return reader.GetInt128();
         }
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Int128 value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
@@ -92,7 +68,7 @@ namespace System.Text.Json.Serialization.Converters
             if (reader.TokenType == JsonTokenType.String &&
                 (JsonNumberHandling.AllowReadingFromString & handling) != 0)
             {
-                return ReadCore(ref reader);
+                return reader.GetInt128();
             }
 
             if (reader.TokenType != JsonTokenType.Number)
