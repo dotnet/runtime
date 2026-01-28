@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -12,11 +12,8 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 using System.Text;
-using System.Xml.XPath;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
@@ -1766,7 +1763,7 @@ namespace ILAssembler
         public GrammarResult VisitErrorNode(IErrorNode node) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
 
         // esHead is '.line' or '#line' - this is just the keyword, actual parsing is in VisitExtSourceSpec.
-        public GrammarResult VisitEsHead(CILParser.EsHeadContext context) => GrammarResult.SentinelValue.Result;
+        public GrammarResult VisitEsHead(CILParser.EsHeadContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitEventAttr(CILParser.EventAttrContext context) => VisitEventAttr(context);
         public GrammarResult.Flag<EventAttributes> VisitEventAttr(CILParser.EventAttrContext context)
@@ -2206,7 +2203,8 @@ namespace ILAssembler
                 SerializationTypeCode.UInt64 => valueBytes.Length >= 8 ? BitConverter.ToUInt64(valueBytes) : 0uL,
                 SerializationTypeCode.Single => valueBytes.Length >= 4 ? BitConverter.ToSingle(valueBytes) : 0f,
                 SerializationTypeCode.Double => valueBytes.Length >= 8 ? BitConverter.ToDouble(valueBytes) : 0d,
-                SerializationTypeCode.String => System.Text.Encoding.Unicode.GetString(valueBytes),
+                SerializationTypeCode.String => Encoding.Unicode.GetString(valueBytes),
+                // TODO: Support arbitrary byte blobs that don't correspond to any currently-valid format.
                 _ => null
             };
         }
