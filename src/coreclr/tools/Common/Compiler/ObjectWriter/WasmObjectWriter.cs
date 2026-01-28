@@ -38,7 +38,6 @@ namespace ILCompiler.ObjectWriter
     internal sealed class WasmObjectWriter : ObjectWriter
     {
         protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
-        private const int DataStartOffset = 0x10000; // Start of linear memory for data segments (leaving 1 page for stack)
 
         public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
@@ -206,16 +205,25 @@ namespace ILCompiler.ObjectWriter
             // This is a no-op for now under Wasm
         }
 
-        private WasmDataSection CreateCombinedDataSection(int dataStartOffset)
+        private WasmDataSection CreateCombinedDataSection()
         {
+            WasmInstructionGroup GetR2StartOffset(int offset)
+            {
+                return new WasmInstructionGroup([
+                    new WasmConstExpr(WasmExprKind.GlobalGet, 1),     // global.get(__r2r_start)
+                    new WasmConstExpr(WasmExprKind.I32Const, offset), // i32.const offset
+                    new WasmBinaryExpr(WasmExprKind.I32Add),          // i32.add
+                ]);
+            }
+
             IEnumerable<WasmSection> dataSections = _sections.Where(s => s.Type == WasmSectionType.Data);
-            int offset = dataStartOffset;
+            int offset = 0;
             List<WasmDataSegment> segments = new();
             foreach (WasmSection wasmSection in dataSections)
             {
                 Debug.Assert(wasmSection.Type == WasmSectionType.Data);
                 WasmDataSegment segment = new WasmDataSegment(wasmSection.Stream, wasmSection.Name, WasmDataSectionType.Active,
-                    new WasmConstExpr(WasmExprKind.I32Const, (long)offset));
+                    GetR2StartOffset(offset));
                 segments.Add(segment);
                 offset += segment.ContentSize;
             }
@@ -255,7 +263,7 @@ namespace ILCompiler.ObjectWriter
             WasmSection wasmSection;
             if (section == WasmObjectNodeSection.CombinedDataSection)
             {
-                wasmSection = CreateCombinedDataSection(DataStartOffset);
+                wasmSection = CreateCombinedDataSection();
             }
             else
             {
@@ -282,7 +290,6 @@ namespace ILCompiler.ObjectWriter
         private protected override void EmitSectionsAndLayout()
         {
             GetOrCreateSection(WasmObjectNodeSection.CombinedDataSection);
-            //WriteMemorySection(dataContentSize + DataStartOffset);
             WriteTableSection();
         }
 
@@ -343,7 +350,7 @@ namespace ILCompiler.ObjectWriter
 
         private void WriteImports()
         {
-            // Calculate the required memory size based on the combined data section size and data start offset
+            // Calculate the required memory size based on the combined data section size
             ulong contentSize = (ulong)SectionByName(WasmObjectNodeSection.CombinedDataSection.Name).ContentSize;
             ulong numPages = (contentSize + (1<<16) - 1) >> 16;
 
@@ -628,9 +635,9 @@ namespace ILCompiler.ObjectWriter
         // The segments are not sections per se, but they represent data segments within the data section.
         Stream _stream;
         WasmDataSectionType _type;
-        WasmConstExpr _initExpr;
+        WasmInstructionGroup _initExpr;
 
-        public WasmDataSegment(Stream contents, Utf8String name, WasmDataSectionType type, WasmConstExpr initExpr)
+        public WasmDataSegment(Stream contents, Utf8String name, WasmDataSectionType type, WasmInstructionGroup initExpr)
         {
             _stream = contents;
             _type = type;

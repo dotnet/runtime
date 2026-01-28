@@ -8,6 +8,12 @@ using System.Collections.Generic;
 
 namespace ILCompiler.ObjectWriter
 {
+    public interface IWasmEncodable
+    {
+        int EncodeSize();
+        int Encode(Span<byte> buffer);
+    }
+
     public enum WasmSectionType
     {
         Custom = 0,
@@ -188,20 +194,85 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-
     // Represents a WebAssembly expression used in simple contexts for address calculation
-    enum WasmExprKind
+    public enum WasmExprKind
     {
         I32Const = 0x41,
-        I64Const = 0x42
+        I64Const = 0x42,
+        GlobalGet = 0x23,
+        I32Add = 0x6A,
     }
 
-    class WasmConstExpr
+    public static class WasmExprKindExtensions
+    {
+        public static bool IsConstExpr(this WasmExprKind kind)
+        {
+            return kind == WasmExprKind.I32Const || kind == WasmExprKind.I64Const;
+        }
+
+        public static bool IsBinaryExpr(this WasmExprKind kind)
+        {
+            return kind == WasmExprKind.I32Add;
+        }
+
+        public static bool IsGlobalVarExpr(this WasmExprKind kind)
+        {
+            return kind == WasmExprKind.GlobalGet;
+        }
+    }
+
+    class WasmInstructionGroup : IWasmEncodable
+    {
+        readonly WasmExpr[] WasmExprs;
+        public WasmInstructionGroup(WasmExpr[] wasmExprs)
+        {
+            WasmExprs = wasmExprs;
+        }
+
+        public int Encode(Span<byte> buffer)
+        {
+            int pos = 0;
+            foreach (var expr in WasmExprs)
+            {
+                pos += expr.Encode(buffer.Slice(pos));
+            }
+            buffer[pos++] = 0x0B; // end opcode
+            return pos;
+        }
+
+        public int EncodeSize()
+        {
+            int size = 0;
+            foreach (var expr in WasmExprs)
+            {
+                size += expr.EncodeSize();
+            }
+            // plus one for the end opcode
+            return size + 1;
+        }
+    }
+
+    public abstract class WasmExpr : IWasmEncodable
     {
         WasmExprKind _kind;
+        public WasmExpr(WasmExprKind kind)
+        {
+            _kind = kind;
+        }
+
+        public virtual int EncodeSize() => 1;
+        public virtual int Encode(Span<byte> buffer)
+        {
+            buffer[0] = (byte)_kind;
+            return 1;
+        }
+    }
+
+    class WasmConstExpr : WasmExpr
+    {
         long ConstValue;
 
-        public WasmConstExpr(WasmExprKind kind, long value)
+        public WasmConstExpr(WasmExprKind kind, long value): base(kind)
         {
             if (kind == WasmExprKind.I32Const)
             {
@@ -209,26 +280,56 @@ namespace ILCompiler.ObjectWriter
                 ArgumentOutOfRangeException.ThrowIfLessThan(value, int.MinValue);
             }
 
-            _kind = kind;
             ConstValue = value;
         }
 
-        public int EncodeSize()
+        public override int EncodeSize()
         {
            uint valSize = DwarfHelper.SizeOfSLEB128(ConstValue);
-           return 1 + (int)valSize + 1; // opcode + value + end opcode 
+           return base.EncodeSize() + (int)valSize;
         }
 
-        public int Encode(Span<byte> buffer)
+        public override int Encode(Span<byte> buffer)
         {
-            int pos = 0;
-            buffer[pos++] = (byte)_kind; // the kind is the opcode, either i32.const or i64.const
-
+            int pos = base.Encode(buffer);
             pos += DwarfHelper.WriteSLEB128(buffer.Slice(pos), ConstValue);
 
-            buffer[pos++] = 0x0B; // end opcode
             return pos;
         }
+    }
+
+    class WasmGlobalVarExpr : WasmExpr
+    {
+        public readonly int GlobalIndex;
+        public WasmGlobalVarExpr(WasmExprKind kind, int globalIndex): base(kind)
+        {
+            Debug.Assert(globalIndex >= 0);
+            Debug.Assert(kind.IsGlobalVarExpr());
+            GlobalIndex = globalIndex;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), (uint)GlobalIndex);
+            return pos;
+        }
+
+        public override int EncodeSize()
+        {
+            return base.EncodeSize() + (int)DwarfHelper.SizeOfULEB128((uint)GlobalIndex);
+        }
+    }
+
+    // Represents a binary expression (e.g., i32.add)
+    class WasmBinaryExpr : WasmExpr
+    {
+        public WasmBinaryExpr(WasmExprKind kind): base(kind)
+        {
+            Debug.Assert(kind.IsBinaryExpr());
+        }
+
+        // base class defaults are sufficient as the base class encodes just the opcode
     }
 
     public enum WasmExternalKind : byte
