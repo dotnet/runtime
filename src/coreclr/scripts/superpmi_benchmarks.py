@@ -191,12 +191,15 @@ def build_and_run(coreclr_args, output_mch_name):
             python_exe + [dotnet_install_script, "install", "--channels", "main", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
+    os.environ["PATH"] = dotnet_directory + os.pathsep + os.environ["PATH"]
+    os.environ["DOTNET_ROOT"] = dotnet_directory
+
     make_executable(dotnet_exe)
 
     # Start with a "dotnet --info" to see what we've got.
     run_command([dotnet_exe, "--info"])
 
-    tfm = "net11.0"
+    tfm = "net10.0" # revert once SDKs start to support net11.0 properly
     os.environ["PERFLAB_TARGET_FRAMEWORKS"] = tfm
 
     env_for_restore = os.environ.copy()
