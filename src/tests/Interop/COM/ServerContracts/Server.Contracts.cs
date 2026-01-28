@@ -184,6 +184,10 @@ namespace Server.Contract
         void Pass_Through_LCID(out int lcid);
     }
 
+    public interface Interface0
+    {
+    }
+
     [ComVisible(true)]
     [Guid("4242A2F9-995D-4302-A722-02058CF58158")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -194,7 +198,7 @@ namespace Server.Contract
     [ComVisible(true)]
     [Guid("7AC820FE-E227-4C4D-A8B0-FCA68C459B43")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface IInterface2 : IInterface1
+    public interface IInterface2 : IInterface1, Interface0
     {
     }
 
