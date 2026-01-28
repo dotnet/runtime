@@ -2194,7 +2194,7 @@ PCODE CallStubGenerator::GetSwiftLoadFPAtOffsetRoutine(int regIndex)
         (PCODE)Load_D0_AtOffset, (PCODE)Load_D1_AtOffset, (PCODE)Load_D2_AtOffset, (PCODE)Load_D3_AtOffset,
         (PCODE)Load_D4_AtOffset, (PCODE)Load_D5_AtOffset, (PCODE)Load_D6_AtOffset, (PCODE)Load_D7_AtOffset
     };
-    _ASSERTE(regIndex >= 0 && regIndex < 8);
+    _ASSERTE(regIndex >= 0 && regIndex < ARRAY_SIZE(routines));
     return routines[regIndex];
 }
 
