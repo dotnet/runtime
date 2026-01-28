@@ -257,9 +257,10 @@ void Compiler::raMarkStkVars()
 
         noway_assert((varDsc->lvType != TYP_UNDEF) && (varDsc->lvType != TYP_VOID) && (varDsc->lvType != TYP_UNKNOWN));
 #if FEATURE_FIXED_OUT_ARGS
-        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || (lvaLclStackHomeSize(lclNum) != 0));
+        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || varTypeHasUnknownSize(varDsc) ||
+                     (lvaLclStackHomeSize(lclNum) != 0));
 #else  // FEATURE_FIXED_OUT_ARGS
-        noway_assert(lvaLclStackHomeSize(lclNum) != 0);
+        noway_assert(varTypeHasUnknownSize(varDsc) || lvaLclStackHomeSize(lclNum) != 0);
 #endif // FEATURE_FIXED_OUT_ARGS
 
         varDsc->lvOnFrame = true; // Our prediction is that the final home for this local variable will be in the
