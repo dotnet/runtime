@@ -36,10 +36,13 @@ export function abortBackgroundTimers(): void {
 }
 
 export function abortPosix(exitCode: number, reason: any, nativeReady: boolean): void {
-    _ems_.ABORT = true;
-    _ems_.EXITSTATUS = exitCode;
     try {
-        if (nativeReady) {
+        _ems_.ABORT = true;
+        _ems_.EXITSTATUS = exitCode;
+        if (exitCode === 0 && nativeReady) {
+            _ems_._exit(0);
+            return;
+        } else if (nativeReady) {
             _ems_.___trap();
         } else {
             _ems_.abort(reason);
@@ -47,9 +50,9 @@ export function abortPosix(exitCode: number, reason: any, nativeReady: boolean):
         throw reason;
     } catch (error: any) {
         // do not propagate ExitStatus exception
-        if (error.status === undefined) {
-            _ems_.dotnetApi.exit(1, error);
-            throw error;
+        if (error.status !== undefined || error instanceof WebAssembly.RuntimeError) {
+            return;
         }
+        throw error;
     }
 }
