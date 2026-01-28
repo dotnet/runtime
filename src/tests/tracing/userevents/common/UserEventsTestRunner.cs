@@ -102,13 +102,18 @@ namespace Tracing.UserEvents.Tests.Common
 
             ProcessStartInfo recordTraceStartInfo = new();
             recordTraceStartInfo.FileName = "sudo";
-            recordTraceStartInfo.Arguments = $"-n {recordTracePath} --script-file {scriptFilePath} --out {traceFilePath}";
+            recordTraceStartInfo.ArgumentList.Add("-n");
+            recordTraceStartInfo.ArgumentList.Add(recordTracePath);
+            recordTraceStartInfo.ArgumentList.Add("--script-file");
+            recordTraceStartInfo.ArgumentList.Add(scriptFilePath);
+            recordTraceStartInfo.ArgumentList.Add("--out");
+            recordTraceStartInfo.ArgumentList.Add(traceFilePath);
             recordTraceStartInfo.WorkingDirectory = userEventsScenarioDir;
             recordTraceStartInfo.UseShellExecute = false;
             recordTraceStartInfo.RedirectStandardOutput = true;
             recordTraceStartInfo.RedirectStandardError = true;
 
-            Console.WriteLine($"Starting record-trace: {recordTraceStartInfo.FileName} {recordTraceStartInfo.Arguments}");
+            Console.WriteLine($"Starting record-trace: {recordTraceStartInfo.FileName} {string.Join(" ", recordTraceStartInfo.ArgumentList)}");
             using Process recordTraceProcess = Process.Start(recordTraceStartInfo);
             recordTraceProcess.OutputDataReceived += (_, args) =>
             {
