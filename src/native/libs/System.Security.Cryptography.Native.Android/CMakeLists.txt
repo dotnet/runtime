@@ -17,6 +17,7 @@ set(NATIVECRYPTO_SOURCES
     pal_cipher.c
     pal_hmac.c
     pal_jni.c
+    pal_jni_onload.c
     pal_lifetime.c
     pal_memory.c
     pal_misc.c
@@ -33,13 +34,13 @@ set(NATIVECRYPTO_SOURCES
 
 add_library(System.Security.Cryptography.Native.Android
     SHARED
-    ${NATIVECRYPTO_SOURCES} pal_jni_onload.c
+    ${NATIVECRYPTO_SOURCES}
     ${VERSION_FILE_PATH}
 )
 
 add_library(System.Security.Cryptography.Native.Android-Static
     STATIC
-    ${NATIVECRYPTO_SOURCES} pal_jni_onload.c
+    ${NATIVECRYPTO_SOURCES}
 )
 
 set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Android CLEAN_DIRECT_OUTPUT 1)
