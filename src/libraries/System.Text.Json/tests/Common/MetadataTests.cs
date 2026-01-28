@@ -202,7 +202,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(typeof(ClassWithInitOnlyProperty))]
-        public void TypeWithInitOnlyNonRequiredMember_SourceGen_NoAssociatedParameterInfo(Type type)
+        public void TypeWithInitOnlyNonRequiredMember_NoAssociatedParameterInfo(Type type)
         {
             // Init-only non-required properties should NOT have associated parameter info
             // because they are set via reflection-based setters, not the constructor delegate.

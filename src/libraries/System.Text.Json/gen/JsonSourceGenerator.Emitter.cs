@@ -965,7 +965,7 @@ namespace System.Text.Json.SourceGeneration
                 sb.Append(')');
 
                 // Only include required properties in the object initializer.
-                // Non-required init-only properties should be set via unsafe accessors
+                // Non-required init-only properties should be set via reflection-based setters
                 // to preserve their default values when not specified in the JSON.
                 bool hasRequiredInitializers = false;
                 foreach (PropertyInitializerGenerationSpec property in propertyInitializers)

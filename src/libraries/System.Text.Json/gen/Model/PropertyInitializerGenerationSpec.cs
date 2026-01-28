@@ -38,7 +38,7 @@ namespace System.Text.Json.SourceGeneration
         /// Indicates whether the property is a C# required member.
         /// Required members must be set via object initializers,
         /// while non-required init-only properties can preserve default values
-        /// by setting them via unsafe accessors after construction.
+        /// by setting them via reflection-based setters after construction.
         /// </summary>
         public required bool IsRequired { get; init; }
     }

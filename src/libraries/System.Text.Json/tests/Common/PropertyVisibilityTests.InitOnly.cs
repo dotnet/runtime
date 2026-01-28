@@ -234,6 +234,11 @@ namespace System.Text.Json.Serialization.Tests
             obj = await Serializer.DeserializeWrapper<StructWithInitOnlyPropertyDefaults>(@"{""Name"":""Custom""}");
             Assert.Equal("Custom", obj.Name);
             Assert.Equal(42, obj.Number);
+
+            // When all properties are specified, they should be used
+            obj = await Serializer.DeserializeWrapper<StructWithInitOnlyPropertyDefaults>(@"{""Name"":""Custom"",""Number"":100}");
+            Assert.Equal("Custom", obj.Name);
+            Assert.Equal(100, obj.Number);
         }
 
         public class ClassWithInitOnlyPropertyDefaults
