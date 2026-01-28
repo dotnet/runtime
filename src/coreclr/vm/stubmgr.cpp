@@ -2249,7 +2249,10 @@ BOOL AsyncThunkStubManager::TraceManager(Thread *thread,
         LOG((LF_CORDB, LL_INFO1000, "ATSM::TraceManager: Step through async thunk to target - %p\n", pOtherMD));
         PCODE target = GetStubTarget(pOtherMD);
         if (target == (PCODE)NULL)
+        {
+            LOG((LF_CORDB,LL_INFO10000, "ATSM::TraceManager Unable to determine stub target, pMD %p\n", pMD));
             return FALSE;
+        }
 
         trace->InitForManaged(target);
         return TRUE;
