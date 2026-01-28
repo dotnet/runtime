@@ -162,9 +162,11 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     assert(params.argSize % REGSIZE_BYTES == 0);
     int argCnt = (int)(params.argSize / (int)REGSIZE_BYTES);
 
-    // Set the instruction - special case jumping a function
     // All Wasm calls we generate are indirect, it's just a question of *how* much indirection
     instruction ins;
+
+    // TODO-WASM: Currently while we're loading SP onto the stack we're not loading PEP, so generate one here.
+    emitIns_I(INS_i32_const, EA_4BYTE, 0);
 
     switch (params.callType)
     {
