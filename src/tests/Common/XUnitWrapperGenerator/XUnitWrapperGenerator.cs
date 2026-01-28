@@ -663,6 +663,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
     private static IEnumerable<ITestInfo> GetTestMethodInfosForMethod(IMethodSymbol method, AnalyzerConfigOptionsProvider options, ImmutableDictionary<string, string> aliasMap)
     {
+        try
+        {
         bool factAttribute = false;
         bool theoryAttribute = false;
         List<AttributeData> theoryDataAttributes = new();
@@ -887,6 +889,17 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
 
         return testInfos;
+        }
+        catch(Exception ex) when (LaunchDebugger(ex))
+        {
+            throw;
+        }
+
+        bool LaunchDebugger(Exception ex)
+        {
+            System.Diagnostics.Debugger.Launch();
+            return false;
+        }
     }
 
     private static ImmutableArray<ITestInfo> DecorateWithSkipOnCoreClrConfiguration(ImmutableArray<ITestInfo> testInfos, Xunit.RuntimeTestModes skippedTestModes, Xunit.RuntimeConfiguration skippedConfigurations)

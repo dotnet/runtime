@@ -9,6 +9,8 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <IsLongRunningGCTest>true</IsLongRunningGCTest>
     <CLRTestPriority>1</CLRTestPriority>
+    <!-- Precise GC not supported on Mono -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="doublinknoleak.cs" />

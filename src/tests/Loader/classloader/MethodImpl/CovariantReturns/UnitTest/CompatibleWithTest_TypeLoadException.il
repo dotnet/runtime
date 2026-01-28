@@ -785,12 +785,23 @@
         ret
     }
 
-    .method public hidebysig static int32 Main() cil managed
+    .method public hidebysig static int32 Main() cil managed noinlining
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00
         )
-        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('Tests that expect TypeLoadException') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+            string('Synthesized PGO may cause the expected TypeLoadExceptions in this test to appear at unexpected places')
+            type([TestLibrary]TestLibrary.Utilities)
+            string[1] ('IsUsingSynthesizedPgoData')
+        }
+
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+            string('Tests that expect TypeLoadException')
+            type([TestLibrary]TestLibrary.Utilities)
+            string[1] ('IsNativeAot')
+        }
+
         .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
             string('Doesn\'t pass after LLVM AOT compilation.')
             int32(0x2) // Mono

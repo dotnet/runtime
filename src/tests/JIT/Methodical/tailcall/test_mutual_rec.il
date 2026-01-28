@@ -24,7 +24,7 @@
           01 00 00 00
       )
       .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
-          string('https://github.com/dotnet/runtime/issues/114908')
+          string('needs triage')
           type([TestLibrary]TestLibrary.PlatformDetection)
           string[2] ('IsMonoRuntime' 'IsArm64Process')
       }

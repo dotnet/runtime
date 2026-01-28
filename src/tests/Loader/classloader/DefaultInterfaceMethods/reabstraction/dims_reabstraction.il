@@ -8,7 +8,7 @@
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
-.assembly reabstraction { }
+.assembly dims_reabstraction { }
 
 // Interface with a default method
 .class interface public abstract auto ansi I1

@@ -1,13 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for SynthesizedPgoIncompatible -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- Synthesized PGO may cause the expected TypeLoadExceptions in this test to appear at unexpected places -->
-    <SynthesizedPgoIncompatible>true</SynthesizedPgoIncompatible>
     <!-- Mono AOT may cause the expected TypeLoadExceptions in this test to appear at unexpected places -->
     <MonoAotIncompatible>true</MonoAotIncompatible>
-    <!-- NativeAOT may cause the expected TypeLoadExceptions in this test to appear at unexpected places -->
-    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CompatibleWithTest_TypeLoadException.il" />

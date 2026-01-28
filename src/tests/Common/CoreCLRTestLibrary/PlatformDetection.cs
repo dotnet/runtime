@@ -113,5 +113,7 @@ namespace TestLibrary
 
             return Environment.GetEnvironmentVariable(variableName) is "true";
         }
+
+        public static bool IsUsingSynthesizedPgoData => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CrossGen2SynthesizePgo"));
     }
 }
