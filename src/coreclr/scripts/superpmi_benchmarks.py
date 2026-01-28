@@ -187,19 +187,22 @@ def build_and_run(coreclr_args, output_mch_name):
         if not os.path.isfile(dotnet_install_script):
             print("Missing " + dotnet_install_script)
             return
-        run_command(
-            python_exe + [dotnet_install_script, "install", "--channels", "10.0", "--architecture", arch, "--install-dir",
+        with open(dotnet_install_script, encoding="utf-8") as f: s = f.read()
+        with open(dotnet_install_script, "w", encoding="utf-8") as f: f.write(s.replace("powershell.exe", "pwsh.exe"))
+        run_command(python_exe + [dotnet_install_script, "install", "--channels", "10.0", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
     os.environ["PATH"] = dotnet_directory + os.pathsep + os.environ["PATH"]
     os.environ["DOTNET_ROOT"] = dotnet_directory
+
+
 
     make_executable(dotnet_exe)
 
     # Start with a "dotnet --info" to see what we've got.
     run_command([dotnet_exe, "--info"])
 
-    tfm = "net10.0" # revert once SDKs start to support net11.0 properly
+    tfm = "net10.0"
     os.environ["PERFLAB_TARGET_FRAMEWORKS"] = tfm
 
     env_for_restore = os.environ.copy()
