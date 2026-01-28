@@ -188,7 +188,7 @@ def build_and_run(coreclr_args, output_mch_name):
             print("Missing " + dotnet_install_script)
             return
         run_command(
-            python_exe + [dotnet_install_script, "install", "--channels", "main", "--architecture", arch, "--install-dir",
+            python_exe + [dotnet_install_script, "install", "--channels", "10.0", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
     os.environ["PATH"] = dotnet_directory + os.pathsep + os.environ["PATH"]
