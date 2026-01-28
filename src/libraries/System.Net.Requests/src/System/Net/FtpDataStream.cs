@@ -77,10 +77,32 @@ namespace System.Net
             {
                 try
                 {
-                    if ((closeState & CloseExState.Abort) == 0)
-                        _originalStream.Close(DefaultCloseTimeout);
+                    // If we have an SslStream wrapping the NetworkStream, close it first.
+                    // The SslStream will handle proper SSL/TLS shutdown and close the underlying NetworkStream.
+                    if (_stream != _originalStream)
+                    {
+                        // Close the SslStream with appropriate timeout
+                        if ((closeState & CloseExState.Abort) == 0)
+                        {
+                            // For normal close, use Close() which sends TLS close_notify
+                            // The SslStream will close the underlying NetworkStream
+                            _stream.Close();
+                        }
+                        else
+                        {
+                            // For abort, just dispose without graceful shutdown
+                            _stream.Dispose();
+                            _originalStream.Close(0);
+                        }
+                    }
                     else
-                        _originalStream.Close(0);
+                    {
+                        // No SslStream wrapping, close the NetworkStream directly with timeout
+                        if ((closeState & CloseExState.Abort) == 0)
+                            _originalStream.Close(DefaultCloseTimeout);
+                        else
+                            _originalStream.Close(0);
+                    }
                 }
                 finally
                 {
