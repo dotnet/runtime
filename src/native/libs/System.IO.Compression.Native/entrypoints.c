@@ -41,6 +41,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(CompressionNative_InflateEnd)
     DllImportEntry(CompressionNative_InflateInit2_)
     DllImportEntry(CompressionNative_InflateReset2_)
+    DllImportEntry(CompressionNative_CompressBound)
 #if !defined(TARGET_WASM)
     DllImportEntry(ZSTD_createCCtx)
     DllImportEntry(ZSTD_createDCtx)
