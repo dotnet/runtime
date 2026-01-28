@@ -3,7 +3,8 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'Mono'">true</CLRTestTargetUnsupported>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/123697 -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
 </Project>

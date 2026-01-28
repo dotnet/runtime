@@ -100,6 +100,10 @@ void WasmRegAlloc::IdentifyCandidates()
         {
             JITDUMP("RA candidate: V%02u", lclNum);
         }
+        else if ((m_fpReg == REG_NA) && (varDsc->lvRefCnt() != 0))
+        {
+            m_fpReg = AllocateFreeRegister(TYP_I_IMPL);
+        }
     }
 }
 
@@ -146,11 +150,6 @@ void WasmRegAlloc::AllocateAndResolveNode(GenTree* node)
             if (node->OperIsLocalStore())
             {
                 RewriteLocalStackStore(node->AsLclVarCommon());
-            }
-
-            if (m_fpReg == REG_NA)
-            {
-                m_fpReg = AllocateFreeRegister(TYP_I_IMPL);
             }
         }
     }
