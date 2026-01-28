@@ -694,6 +694,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     bool            hasImmShift = (intrinEmbMask.category == HW_Category_ShiftLeftByImmediate ||
                                         intrinEmbMask.category == HW_Category_ShiftRightByImmediate) &&
                                        HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id);
+                    bool hasOptionalEmbMask = HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinEmbMask.id);
 
                     insOpts embOpt = opt;
                     switch (intrinEmbMask.id)
@@ -721,6 +722,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             // Thus, we expect the JIT to wrap this with CndSel.
                             assert(intrin.op3->IsVectorZero());
                             break;
+
+                        case NI_Sve2_AddSaturate:
+                        {
+                            var_types baseType = op2->AsHWIntrinsic()->GetSimdBaseType();
+                            var_types auxType  = op2->AsHWIntrinsic()->GetAuxiliaryType();
+                            if (baseType != auxType)
+                            {
+                                insEmbMask = (varTypeIsUnsigned(baseType)) ? INS_sve_usqadd : INS_sve_suqadd;
+                                // SUQADD and USQADD must be predicated.
+                                hasOptionalEmbMask = false;
+                            }
+                            else
+                            {
+                                // SQADD and UQADD can be unpredicated.
+                                hasOptionalEmbMask = true;
+                            }
+                            break;
+                        }
 
                         case NI_Sve2_ConvertToSingleOdd:
                         case NI_Sve2_ConvertToSingleOddRoundToOdd:
@@ -786,6 +805,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 GetEmitter()->emitIns_Mov(INS_fmov, GetEmitter()->optGetSveElemsize(embOpt), targetReg,
                                                           embMaskOp1Reg, /* canSkip */ true);
                                 emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                                break;
+
+                            case NI_Sve2_AddSaturate:
+                                assert((targetReg == op1Reg) || (targetReg != embMaskOp2Reg) ||
+                                       genIsSameLocalVar(intrinEmbMask.op1, intrinEmbMask.op2));
+
+                                if (hasOptionalEmbMask && intrin.op1->IsTrueMask(intrinEmbMask.baseType))
+                                {
+                                    // Use unpredicated SQADD/UQADD if the mask is all-true.
+                                    GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg,
+                                                                embMaskOp2Reg, embOpt, sopt);
+                                }
+                                else
+                                {
+                                    GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, maskReg,
+                                                                embMaskOp1Reg, opt);
+                                    emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                                }
                                 break;
 
                             case NI_Sve2_AddPairwise:
@@ -862,7 +899,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         else if (falseReg != embMaskOp1Reg)
                         {
                             // At the point, targetReg != embMaskOp1Reg != falseReg
-                            if (HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinEmbMask.id))
+                            if (hasOptionalEmbMask)
                             {
                                 // If the embedded instruction supports optional mask operation, use the "unpredicated"
                                 // version of the instruction, followed by "sel" to select the active lanes.
