@@ -1778,6 +1778,29 @@ unsigned MethodContext::repGetClassSize(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+void MethodContext::recGetClassIndirectSize(CORINFO_CLASS_HANDLE cls, unsigned result)
+{
+    if (GetClassIndirectSize == nullptr)
+        GetClassIndirectSize = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = (DWORD)result;
+    GetClassIndirectSize->Add(key, value);
+    DEBUG_REC(dmpGetClassIndirectSize(key, value));
+}
+void MethodContext::dmpGetClassIndirectSize(DWORDLONG key, DWORD val)
+{
+    printf("GetClassIndirectSize key %016" PRIX64 ", value %u", key, val);
+}
+unsigned MethodContext::repGetClassIndirectSize(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(GetClassIndirectSize, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetClassIndirectSize(key, value));
+    unsigned result = (unsigned)value;
+    return result;
+}
+
 void MethodContext::recGetHeapClassSize(CORINFO_CLASS_HANDLE cls, unsigned result)
 {
     if (GetHeapClassSize == nullptr)

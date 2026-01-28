@@ -218,6 +218,10 @@ public:
     void dmpGetClassSize(DWORDLONG key, DWORD val);
     unsigned repGetClassSize(CORINFO_CLASS_HANDLE cls);
 
+    void recGetClassIndirectSize(CORINFO_CLASS_HANDLE cls, unsigned result);
+    void dmpGetClassIndirectSize(DWORDLONG key, DWORD val);
+    unsigned repGetClassIndirectSize(CORINFO_CLASS_HANDLE cls);
+
     void recGetHeapClassSize(CORINFO_CLASS_HANDLE cls, unsigned result);
     void dmpGetHeapClassSize(DWORDLONG key, DWORD val);
     unsigned repGetHeapClassSize(CORINFO_CLASS_HANDLE cls);
@@ -1209,6 +1213,7 @@ enum mcPackets
     Packet_GetCookieForInterpreterCalliSig = 232,
     Packet_GetHelperFtn = 233,
     Packet_GetContinuationType = 234,
+    Packet_GetClassIndirectSize = 235,
 };
 
 void SetDebugDumpVariables();
