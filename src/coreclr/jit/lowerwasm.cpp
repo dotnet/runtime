@@ -186,13 +186,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         if (blkNode->IsZeroingGcPointersOnHeap())
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
-            // We're going to use REG_R0 for zero
             src->SetContained();
-            NYI_WASM("memory.fill of gc pointers");
+            // memory.fill
         }
         else
         {
-            NYI_WASM("memory.fill");
+            // memory.fill
         }
     }
     else
@@ -203,6 +202,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         if (src->OperIs(GT_LCL_VAR))
         {
             // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            // TODO-WASM: Is this true for wasm as well?
             const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
             comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
@@ -226,7 +226,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         else
         {
             assert(blkNode->OperIs(GT_STORE_BLK));
-            NYI_WASM("memory.copy");
+            // memory.copy
         }
     }
 }
