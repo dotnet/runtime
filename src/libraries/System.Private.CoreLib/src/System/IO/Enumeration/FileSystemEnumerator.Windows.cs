@@ -51,6 +51,29 @@ namespace System.IO.Enumeration
         internal FileSystemEnumerator(string directory, bool isNormalized, EnumerationOptions? options, string? expression) :
             this(directory, isNormalized, options)
         {
+            // We need to ensure that the expression is prepped to be used as an NtQueryDirectoryFile filter.
+            // If the match type is simple, we need to escape the special DOS wildcard characters. If it is
+            // DOS style, the characters have already been escaped in the FileSystemEnumerableFactory.
+
+            if (expression is not null && !_options.RecurseSubdirectories)
+            {
+                if (expression is "." or "..")
+                {
+                    // Special directories are not valid expressions for OS-level filtering
+                    expression = null;
+                }
+                else if (_options.MatchType == MatchType.Simple && _expression.AsSpan().ContainsAny(@"\""<>"))
+                {
+                    // Escape the escaping literal first
+                    expression = expression.Replace("\\", "\\\\");
+
+                    // Also need to escape the other special wild characters ('"', '<', and '>')
+                    expression = expression.Replace("\"", "\\\"");
+                    expression = expression.Replace(">", "\\>");
+                    expression = expression.Replace("<", "\\<");
+                }
+            }
+
             _expression = expression;
         }
 
@@ -111,7 +134,7 @@ namespace System.IO.Enumeration
                 if (_isFirstGetData)
                 {
                     _isFirstGetData = false;
-                    if (!_options.RecurseSubdirectories && IsSafePatternForOSFilter(_expression))
+                    if (!_options.RecurseSubdirectories && _expression is not null)
                     {
                         fileNameStruct.Length = fileNameStruct.MaximumLength = (ushort)(_expression.Length * sizeof(char));
                         fileNameStruct.Buffer = (IntPtr)pBuffer;
@@ -357,32 +380,5 @@ namespace System.IO.Enumeration
 
             Dispose(disposing);
         }
-
-        /// <summary>
-        /// Determines if the given expression is safe to pass to NtQueryDirectoryFile as a hint.
-        /// </summary>
-        /// <remarks>
-        /// This is a conservative check: false negatives are ok, but false positives are not.
-        /// Worst case is this returns false when it could have returned true and we miss an optimization opportunity.
-        /// Safe patterns are those where the OS filter will return a superset of what .NET expects,
-        /// allowing the managed MatchesPattern filter to ensure correctness.
-        /// Patterns combining * with literal characters (e.g., *.txt) are safe.
-        /// Patterns with ? are unsafe due to DOS_QM behavioral differences.
-        /// Pattern *.* is unsafe because .NET treats it as *, but OS requires a . in the name.
-        /// Patterns ending with . have special behaviors.
-        /// Patterns with invalid filename characters are unsafe as NtQueryDirectoryFile will reject them.
-        /// </remarks>
-        private static bool IsSafePatternForOSFilter([NotNullWhen(true)] string? expression) =>
-            !string.IsNullOrEmpty(expression) &&
-            expression is not "*" and not "*.*" &&
-            expression.Length <= 255 && // Max filename length
-            !expression.EndsWith('.') &&
-            !expression.ContainsAny(s_unsafeForFilter);
-
-        // Path.GetInvalidFileNameChars() minus '*' which is allowed in search patterns
-        private static readonly SearchValues<char> s_unsafeForFilter = SearchValues.Create(
-            "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000a\u000b\u000c\u000d\u000e\u000f" +
-            "\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f" +
-            "\"<>|:/\\?");
     }
 }
