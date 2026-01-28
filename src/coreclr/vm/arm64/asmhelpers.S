@@ -1225,9 +1225,7 @@ LEAF_END Load_SwiftIndirectResult
     and w11, w12, #0xFFFF    // Extract offset (lower 16 bits)
     ldr \reg, [x9, x11]      // Load from [x9 + offset]
     lsr x12, x12, #16        // Shift to get struct_size
-    cbz x12, 1f              // If struct_size == 0, skip advance
-    add x9, x9, x12          // Advance x9 by struct_size
-1:
+    add x9, x9, x12          // Advance x9 by struct_size (no-op if zero)
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 .endm
@@ -1269,9 +1267,7 @@ LEAF_END Load_X7_AtOffset
     and w11, w12, #0xFFFF    // Extract offset (lower 16 bits)
     ldr \reg, [x9, x11]      // Load float from [x9 + offset]
     lsr x12, x12, #16        // Shift to get struct_size
-    cbz x12, 1f              // If struct_size == 0, skip advance
-    add x9, x9, x12          // Advance x9 by struct_size
-1:
+    add x9, x9, x12          // Advance x9 by struct_size (no-op if zero)
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 .endm
@@ -1316,9 +1312,7 @@ LEAF_ENTRY Load_Stack_AtOffset
     add x14, sp, x14         // Calculate stack destination
     str x13, [x14]           // Store to native stack
     ubfx x12, x12, #16, #16  // Extract structSize (bits 16-31)
-    cbz x12, 1f              // If structSize == 0, skip advance
-    add x9, x9, x12          // Advance x9 by structSize
-1:
+    add x9, x9, x12          // Advance x9 by structSize (no-op if zero)
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 LEAF_END Load_Stack_AtOffset

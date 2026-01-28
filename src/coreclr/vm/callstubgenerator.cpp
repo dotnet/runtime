@@ -2857,122 +2857,6 @@ bool isNativePrimitiveStructType(MethodTable* pMT)
 
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
 //---------------------------------------------------------------------------
-// isSwiftSelfType:
-//    Check if the given type is SwiftSelf.
-//
-// Arguments:
-//    pMT - the handle for the type.
-//
-// Return Value:
-//    true if the given type is SwiftSelf,
-//    false otherwise.
-//
-bool isSwiftSelfType(MethodTable* pMT)
-{
-    const char* namespaceName = nullptr;
-    const char* typeName      = pMT->GetFullyQualifiedNameInfo(&namespaceName);
-
-    if ((namespaceName == NULL) || (typeName == NULL))
-    {
-        return false;
-    }
-
-    if (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") != 0)
-    {
-        return false;
-    }
-
-    return strcmp(typeName, "SwiftSelf") == 0;
-}
-
-//---------------------------------------------------------------------------
-// isSwiftSelfGenericType:
-//    Check if the given type is SwiftSelf<T>.
-//
-// Arguments:
-//    pMT - the handle for the type.
-//
-// Return Value:
-//    true if the given type is SwiftSelf<T>,
-//    false otherwise.
-//
-bool isSwiftSelfGenericType(MethodTable* pMT)
-{
-    const char* namespaceName = nullptr;
-    const char* typeName      = pMT->GetFullyQualifiedNameInfo(&namespaceName);
-
-    if ((namespaceName == NULL) || (typeName == NULL))
-    {
-        return false;
-    }
-
-    if (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") != 0)
-    {
-        return false;
-    }
-
-    return strcmp(typeName, "SwiftSelf`1") == 0;
-}
-
-//---------------------------------------------------------------------------
-// isSwiftErrorType:
-//    Check if the given type is SwiftError.
-//
-// Arguments:
-//    pMT - the handle for the type.
-//
-// Return Value:
-//    true if the given type is SwiftError
-//    false otherwise.
-//
-bool isSwiftErrorType(MethodTable* pMT)
-{
-    const char* namespaceName = nullptr;
-    const char* typeName      = pMT->GetFullyQualifiedNameInfo(&namespaceName);
-
-    if ((namespaceName == NULL) || (typeName == NULL))
-    {
-        return false;
-    }
-
-    if (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") != 0)
-    {
-        return false;
-    }
-
-    return strcmp(typeName, "SwiftError") == 0;
-}
-
-//---------------------------------------------------------------------------
-// isSwiftIndirectResultType:
-//    Check if the given type is SwiftIndirectResult.
-//
-// Arguments:
-//    pMT - the handle for the type.
-//
-// Return Value:
-//    true if the given type is SwiftIndirectResult,
-//    false otherwise.
-//
-bool isSwiftIndirectResultType(MethodTable* pMT)
-{
-    const char* namespaceName = nullptr;
-    const char* typeName      = pMT->GetFullyQualifiedNameInfo(&namespaceName);
-
-    if ((namespaceName == NULL) || (typeName == NULL))
-    {
-        return false;
-    }
-
-    if (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") != 0)
-    {
-        return false;
-    }
-
-    return strcmp(typeName, "SwiftIndirectResult") == 0;
-}
-
-//---------------------------------------------------------------------------
 // isIntrinsicSIMDType:
 //    Check if the given type is a SIMD type (Vector<T>, Vector64<T>, Vector128<T>, etc.).
 //
@@ -4044,7 +3928,7 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
                 COMPlusThrow(kInvalidProgramException);
             }
 
-            if (isSwiftSelfType(pArgMT))
+            if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_SELF))
             {
                 swiftSelfCount++;
                 if (swiftSelfCount > 1)
@@ -4055,7 +3939,7 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
                 continue;
             }
 
-            if (isSwiftErrorType(pArgMT))
+            if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_ERROR))
             {
                 swiftErrorCount++;
                 if (swiftErrorCount > 1)
@@ -4066,7 +3950,7 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
                 continue;
             }
 
-            if (isSwiftIndirectResultType(pArgMT))
+            if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_INDIRECT_RESULT))
             {
                 swiftIndirectResultCount++;
                 if (swiftIndirectResultCount > 1)
@@ -4114,13 +3998,13 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
             MethodTable* pArgMT = thArgType.IsTypeDesc() ? nullptr : thArgType.AsMethodTable();
             if (pArgMT != nullptr)
             {
-                if (isSwiftIndirectResultType(pArgMT))
+                if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_INDIRECT_RESULT))
                 {
                     // SwiftIndirectResult goes in x8, not in argument registers
                     continue;
                 }
                 // Don't lower Swift* types except SwiftSelf<T>
-                if (isSwiftSelfType(pArgMT))
+                if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_SELF))
                 {
                     SigPointer pArg = sig.GetArgProps();
                     pArg.ConvertToInternalExactlyOne(sig.GetModule(), sig.GetSigTypeContext(), &swiftSigBuilder);
@@ -4211,7 +4095,7 @@ bool CallStubGenerator::ProcessSwiftSpecialArgument(MethodTable* pArgMT, int int
         return false;
     }
 
-    if (isSwiftSelfGenericType(pArgMT))
+    if (pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SWIFT_SELF_T)))
     {
         Instantiation inst = pArgMT->GetInstantiation();
         _ASSERTE(inst.GetNumArgs() != 0);
@@ -4236,7 +4120,7 @@ bool CallStubGenerator::ProcessSwiftSpecialArgument(MethodTable* pArgMT, int int
         return true;
     }
 
-    if (isSwiftSelfType(pArgMT))
+    if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_SELF))
     {
 #if LOG_COMPUTE_CALL_STUB
         printf("Swift Self argument detected\n");
@@ -4248,7 +4132,7 @@ bool CallStubGenerator::ProcessSwiftSpecialArgument(MethodTable* pArgMT, int int
         return true;
     }
 
-    if (isSwiftErrorType(pArgMT))
+    if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_ERROR))
     {
 #if LOG_COMPUTE_CALL_STUB
         printf("Swift Error argument detected\n");
