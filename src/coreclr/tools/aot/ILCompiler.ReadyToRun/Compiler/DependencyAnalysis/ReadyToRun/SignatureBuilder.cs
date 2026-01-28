@@ -436,6 +436,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
             }
+            if (method.Method.IsAsyncVariant())
+            {
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant;
+            }
 
             EmitMethodSpecificationSignature(method, flags, enforceDefEncoding, enforceOwningType, context);
 
@@ -567,9 +571,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private ObjectDataBuilder _builder;
 
-        public ObjectDataSignatureBuilder()
+        public ObjectDataSignatureBuilder(NodeFactory factory, bool relocsOnly)
         {
-            _builder = new ObjectDataBuilder();
+            _builder = new ObjectDataBuilder(factory, relocsOnly);
         }
 
         public void AddSymbol(ISymbolDefinitionNode symbol)

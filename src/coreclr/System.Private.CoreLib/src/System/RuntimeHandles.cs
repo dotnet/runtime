@@ -1115,7 +1115,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetMethodDef(RuntimeMethodHandleInternal method);
+        internal static extern int GetMethodDef(RuntimeMethodHandleInternal method);
 
         internal static int GetMethodDef(IRuntimeMethodInfo method)
         {
@@ -1336,6 +1336,9 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsConstructor(RuntimeMethodHandleInternal method);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsAsyncMethod(RuntimeMethodHandleInternal method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern LoaderAllocator GetLoaderAllocatorInternal(RuntimeMethodHandleInternal method);
@@ -1566,7 +1569,7 @@ namespace System
         private static unsafe partial void GetFieldDataReference(IntPtr fieldDesc, ObjectHandleOnStack target, ByteRefOnStack fieldDataRef);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetToken(IntPtr fieldDesc);
+        internal static extern int GetToken(IntPtr fieldDesc);
 
         internal static int GetToken(RtFieldInfo field)
         {

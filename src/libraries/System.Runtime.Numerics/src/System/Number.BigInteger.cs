@@ -482,10 +482,7 @@ namespace System
 
                 ReadOnlySpan<uint> buffer2 = buffer.Slice(0, BigIntegerCalculator.ActualLength(buffer));
                 Span<uint> bitsUpper = bits.Slice(multiplierTrailingZeroCount, buffer2.Length + multiplier.Length);
-                if (multiplier.Length < buffer2.Length)
-                    BigIntegerCalculator.Multiply(buffer2, multiplier, bitsUpper);
-                else
-                    BigIntegerCalculator.Multiply(multiplier, buffer2, bitsUpper);
+                BigIntegerCalculator.Multiply(buffer2, multiplier, bitsUpper);
 
                 buffer.Clear();
 
@@ -1340,10 +1337,7 @@ namespace System
                         Span<uint> src = powersOfTen.Slice(0, curLength);
                         Span<uint> dst = powersOfTen2.Slice(0, curLength += power.Length);
 
-                        if (power.Length < src.Length)
-                            BigIntegerCalculator.Multiply(src, power, dst);
-                        else
-                            BigIntegerCalculator.Multiply(power, src, dst);
+                        BigIntegerCalculator.Multiply(src, power, dst);
 
                         Span<uint> tmp = powersOfTen;
                         powersOfTen = powersOfTen2;
@@ -1360,10 +1354,8 @@ namespace System
 
                 powersOfTen = powersOfTen.Slice(0, curLength);
                 Span<uint> bits2 = bits.Slice(omittedLength, curLength += left.Length);
-                if (left.Length < powersOfTen.Length)
-                    BigIntegerCalculator.Multiply(powersOfTen, left, bits2);
-                else
-                    BigIntegerCalculator.Multiply(left, powersOfTen, bits2);
+
+                BigIntegerCalculator.Multiply(left, powersOfTen, bits2);
 
                 if (powersOfTenFromPool != null)
                     ArrayPool<uint>.Shared.Return(powersOfTenFromPool);

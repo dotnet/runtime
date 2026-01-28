@@ -985,9 +985,14 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GCINFO_WRITE(m_Info1, (m_WantsReportOnlyLeaf ? 1 : 0), 1, FlagsSize);
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         GCINFO_WRITE(m_Info1, (m_HasTailCalls ? 1 : 0), 1, FlagsSize);
+#else
+        GCINFO_WRITE(m_Info1, 0, 1, FlagsSize); // unused
 #endif // TARGET_AMD64
         GCINFO_WRITE(m_Info1, ((m_SizeOfEditAndContinuePreservedArea != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, (hasReversePInvokeFrame ? 1 : 0), 1, FlagsSize);
+
+        // See definition of GC_INFO_FLAGS_BIT_SIZE
+        _ASSERTE(m_Info1.GetBitCount() == (10 + 1)); // +1 for the initial slim/fat encoding bit
     }
 
     _ASSERTE( m_CodeLength > 0 );
@@ -2629,8 +2634,10 @@ int BitStreamWriter::EncodeVarLengthSigned( SSIZE_T n, UINT32 base )
     }
 }
 
+#ifndef TARGET_WASM
 // Instantiate the encoder so other files can use it
 template class TGcInfoEncoder<TargetGcInfoEncoding>;
+#endif // !TARGET_WASM
 
 #ifdef FEATURE_INTERPRETER
 template class TGcInfoEncoder<InterpreterGcInfoEncoding>;

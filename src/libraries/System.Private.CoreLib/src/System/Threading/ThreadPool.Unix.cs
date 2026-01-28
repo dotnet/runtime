@@ -19,11 +19,15 @@ namespace System.Threading
 #if !(TARGET_BROWSER && FEATURE_WASM_MANAGED_THREADS)
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work.
-        internal static bool YieldFromDispatchLoop => false;
+        internal static bool YieldFromDispatchLoop(int currentTickCount)
+        {
+            PortableThreadPool.ThreadPoolInstance.NotifyDispatchProgress(currentTickCount);
+            return false;
+        }
 #endif
 
-        internal static object GetOrCreateThreadLocalCompletionCountObject() =>
-            PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
+        internal static ThreadInt64PersistentCounter.ThreadLocalNode GetOrCreateThreadLocalCompletionCountNode() =>
+            PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountNode();
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads) =>
             PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads, completionPortThreads);
@@ -61,15 +65,15 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NotifyWorkItemComplete(object threadLocalCompletionCountObject, int currentTimeMs) =>
-            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTimeMs);
+        internal static bool NotifyWorkItemComplete(ThreadInt64PersistentCounter.ThreadLocalNode threadLocalCompletionCountNode, int currentTimeMs) =>
+            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountNode, currentTimeMs);
 
         /// <summary>
         /// This method is called to request a new thread pool worker to handle pending work.
         /// </summary>
-        internal static unsafe void RequestWorkerThread()
+        internal static unsafe void EnsureWorkerRequested()
         {
-            PortableThreadPool.ThreadPoolInstance.RequestWorker();
+            PortableThreadPool.ThreadPoolInstance.EnsureWorkerRequested();
         }
 
         internal static void ReportThreadStatus(bool isWorking)
@@ -85,7 +89,7 @@ namespace System.Threading
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
             return PortableThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
         }
 

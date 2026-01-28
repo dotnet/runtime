@@ -407,8 +407,10 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
     char name[_POSIX_HOST_NAME_MAX];
     result = gethostname((char*)name, _POSIX_HOST_NAME_MAX);
 
-    bool includeIPv4Loopback = true;
-    bool includeIPv6Loopback = true;
+    bool includeIPv4Loopback;
+    bool includeIPv6Loopback;
+    includeIPv4Loopback = true;
+    includeIPv6Loopback = true;
 
     if (result == 0 && strcasecmp((const char*)address, name) == 0)
     {
@@ -1526,7 +1528,7 @@ int32_t SystemNative_ReceiveSocketError(intptr_t socket, MessageHeader* messageH
 #if HAVE_LINUX_ERRQUEUE_H
     char buffer[sizeof(struct sock_extended_err) + sizeof(struct sockaddr_storage)];
     messageHeader->ControlBufferLen = sizeof(buffer);
-    messageHeader->ControlBuffer = (void*)buffer;
+    messageHeader->ControlBuffer = (uint8_t*)buffer;
 
     struct msghdr header;
     struct icmphdr icmph;

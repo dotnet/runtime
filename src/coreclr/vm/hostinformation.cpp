@@ -58,3 +58,35 @@ bool HostInformation::ExternalAssemblyProbe(_In_ const SString& path, _Out_ void
     utf8Path.SetAndConvertToUTF8(path.GetUnicode());
     return s_hostContract.external_assembly_probe(utf8Path.GetUTF8(), data, size);
 }
+
+bool HostInformation::GetNativeCodeData(_In_ const SString& assemblyPath, _In_z_ const char* ownerCompositeName, _Out_ void** header, _Out_ size_t* image_size, _Out_ void** image_base)
+{
+    _ASSERT(header != nullptr);
+    _ASSERT(image_base != nullptr);
+    _ASSERT(image_size != nullptr);
+
+    size_t requiredSize = offsetof(host_runtime_contract, get_native_code_data) + sizeof(s_hostContract.get_native_code_data);
+    if (s_hostContract.size < requiredSize || s_hostContract.get_native_code_data == nullptr)
+        return false;
+
+    StackSString utf8Path;
+    utf8Path.SetAndConvertToUTF8(assemblyPath.GetUnicode());
+    host_runtime_contract_native_code_context context
+    {
+        sizeof(host_runtime_contract_native_code_context),
+        utf8Path.GetUTF8(),
+        ownerCompositeName
+    };
+    host_runtime_contract_native_code_data data = { sizeof(host_runtime_contract_native_code_data) };
+    if (!s_hostContract.get_native_code_data(&context, &data))
+        return false;
+
+    if (data.r2r_header_ptr == nullptr || data.image_size == 0 || data.image_base == nullptr)
+        return false;
+
+    _ASSERT(data.size >= offsetof(host_runtime_contract_native_code_data, image_base) + sizeof(data.image_base));
+    *header = data.r2r_header_ptr;
+    *image_size = data.image_size;
+    *image_base = data.image_base;
+    return true;
+}

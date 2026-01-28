@@ -155,6 +155,7 @@ public class Test
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/112557", TestRuntimes.Mono)]
     public static void Validate_Explicit5_Invalid()
     {
         if (Environment.Is64BitProcess)

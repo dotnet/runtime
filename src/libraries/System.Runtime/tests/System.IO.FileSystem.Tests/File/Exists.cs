@@ -230,6 +230,33 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
+        [Theory]
+        [MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        public void ExistsWithProblematicNames(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            File.Create(filePath).Dispose();
+            Assert.True(Exists(filePath));
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsExistsWithTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
+        {
+            // Files with trailing spaces/periods require \\?\ syntax on Windows
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            string extendedPath = @"\\?\" + filePath;
+            
+            File.Create(extendedPath).Dispose();
+            Assert.True(Exists(extendedPath));
+            
+            // Without extended syntax, the trailing space/period is trimmed
+            Assert.False(Exists(filePath));
+        }
+
         #endregion
     }
 

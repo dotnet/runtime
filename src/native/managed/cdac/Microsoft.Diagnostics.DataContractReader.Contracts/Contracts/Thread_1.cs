@@ -135,7 +135,7 @@ internal readonly struct Thread_1 : IThread
                 }
                 break;
             case TLSIndexType.DirectOnThreadLocalData:
-                threadLocalStaticBase = threadLocalDataPtr;
+                threadLocalStaticBase = threadLocalDataPtr + (ulong)indexOffset;
                 break;
         }
         if (threadLocalStaticBase == TargetPointer.Null)

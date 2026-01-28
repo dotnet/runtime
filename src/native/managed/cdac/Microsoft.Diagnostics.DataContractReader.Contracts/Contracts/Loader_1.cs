@@ -245,6 +245,8 @@ internal readonly struct Loader_1 : ILoader
 
     TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
     {
+        if (rva == 0)
+            return TargetPointer.Null;
         Data.PEAssembly assembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
         if (assembly.PEImage == TargetPointer.Null)
             throw new InvalidOperationException("PEAssembly does not have a PEImage associated with it.");
@@ -531,7 +533,9 @@ internal readonly struct Loader_1 : ILoader
     private int GetRVAFromMetadata(ModuleHandle handle, int token)
     {
         IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-        MetadataReader mdReader = ecmaMetadataContract.GetMetadata(handle)!;
+        MetadataReader? mdReader = ecmaMetadataContract.GetMetadata(handle);
+        if (mdReader == null)
+            throw new NotImplementedException();
         MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
         return methodDef.RelativeVirtualAddress;
     }
@@ -540,10 +544,10 @@ internal readonly struct Loader_1 : ILoader
     {
         // we need module
         ILoader loader = this;
-        TargetPointer peAssembly = loader.GetPEAssembly(handle);
-        TargetPointer headerPtr = GetDynamicIL(handle, token);
+        TargetPointer headerPtr = loader.GetDynamicIL(handle, token);
         if (headerPtr == TargetPointer.Null)
         {
+            TargetPointer peAssembly = loader.GetPEAssembly(handle);
             int rva = GetRVAFromMetadata(handle, (int)token);
             headerPtr = loader.GetILAddr(peAssembly, rva);
         }
@@ -574,7 +578,7 @@ internal readonly struct Loader_1 : ILoader
         public ISHash<uint, DynamicILBlobEntry> HashTable { get; init; }
     }
 
-    private TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
+    TargetPointer ILoader.GetDynamicIL(ModuleHandle handle, uint token)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         if (module.DynamicILBlobTable == TargetPointer.Null)

@@ -23,9 +23,7 @@
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exinfo.h"
-#endif // FEATURE_EH_FUNCLETS
 
 typedef IDacDbiInterface::StackWalkHandle StackWalkHandle;
 
@@ -269,7 +267,6 @@ BOOL DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle)
                 // Just continue onto the next managed stack frame.
                 continue;
             }
-#ifdef FEATURE_EH_FUNCLETS
             else if (pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
             {
                 // Skip the new exception handling managed code, the debugger clients are not supposed to see them
@@ -283,7 +280,6 @@ BOOL DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle)
 
                 fIsAtEndOfStack = FALSE;
             }
-#endif // FEATURE_EH_FUNCLETS
             else
             {
                 fIsAtEndOfStack = FALSE;
@@ -383,7 +379,6 @@ IDacDbiInterface::FrameType DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(St
 
             case StackFrameIterator::SFITER_FRAMELESS_METHOD:
                 {
-#ifdef FEATURE_EH_FUNCLETS
                     MethodDesc *pMD = pIter->m_crawl.GetFunction();
                     // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
                     if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
@@ -391,7 +386,6 @@ IDacDbiInterface::FrameType DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(St
                         ftResult = kManagedExceptionHandlingCodeFrame;
                     }
                     else
-#endif // FEATURE_EH_FUNCLETS
                     {
                         ftResult = kManagedStackFrame;
                         fInitFrameData = TRUE;
@@ -469,7 +463,6 @@ ULONG32 DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread)
     ULONG32 uCount = 0;
     while (pFrame != FRAME_TOP)
     {
-#ifdef FEATURE_EH_FUNCLETS
         if (InlinedCallFrame::FrameHasActiveCall(pFrame))
         {
             // Skip new exception handling helpers
@@ -482,7 +475,6 @@ ULONG32 DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread)
                 continue;
             }
         }
-#endif // FEATURE_EH_FUNCLETS
         CorDebugInternalFrameType ift = GetInternalFrameType(pFrame);
         if (ift != STUBFRAME_NONE)
         {
@@ -522,7 +514,6 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 
     while (pFrame != FRAME_TOP)
     {
-#ifdef FEATURE_EH_FUNCLETS
         if (InlinedCallFrame::FrameHasActiveCall(pFrame))
         {
             // Skip new exception handling helpers
@@ -535,7 +526,6 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
                 continue;
             }
         }
-#endif // FEATURE_EH_FUNCLETS
         // check if the internal frame is interesting
         frameData.stubFrame.frameType = GetInternalFrameType(pFrame);
         if (frameData.stubFrame.frameType != STUBFRAME_NONE)
@@ -617,7 +607,6 @@ BOOL DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePoi
 {
     DD_ENTER_MAY_THROW;
 
-#ifdef FEATURE_EH_FUNCLETS
     StackFrame sfToCheck = StackFrame((UINT_PTR)fpToCheck.GetSPValue());
 
     StackFrame sfParent  = StackFrame((UINT_PTR)fpParent.GetSPValue());
@@ -625,11 +614,6 @@ BOOL DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePoi
     // Ask the ExInfo to figure out the answer.
     // Don't try to compare the StackFrames/FramePointers ourselves.
     return ExInfo::IsUnwoundToTargetParentFrame(sfToCheck, sfParent);
-
-#else // !FEATURE_EH_FUNCLETS
-    return FALSE;
-
-#endif // FEATURE_EH_FUNCLETS
 }
 
 // Return the stack parameter size of the given method.
@@ -971,7 +955,6 @@ void DacDbiInterfaceImpl::InitNativeCodeAddrAndSize(TADDR                      t
 void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
                                               DebuggerIPCE_JITFuncData * pJITFuncData)
 {
-#ifdef FEATURE_EH_FUNCLETS
     pJITFuncData->fIsFilterFrame = pCF->IsFilterFunclet();
 
     if (pCF->IsFunclet())
@@ -1001,7 +984,6 @@ void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
         pJITFuncData->fpParentOrSelf = FramePointer::MakeFramePointer(sfSelf.SP);
         pJITFuncData->parentNativeOffset = 0;
     }
-#endif // FEATURE_EH_FUNCLETS
 }
 
 // Return the stack parameter size of the given method.
@@ -1213,31 +1195,7 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
 void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
                                                    T_CONTEXT *  pContext)
 {
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
-    // Do a partial copy first.
-    pContext->ContextFlags = (CONTEXT_INTEGER | CONTEXT_CONTROL);
-
-    pContext->Edi = *pRegDisp->GetEdiLocation();
-    pContext->Esi = *pRegDisp->GetEsiLocation();
-    pContext->Ebx = *pRegDisp->GetEbxLocation();
-    pContext->Ebp = *pRegDisp->GetEbpLocation();
-    pContext->Eax = *pRegDisp->GetEaxLocation();
-    pContext->Ecx = *pRegDisp->GetEcxLocation();
-    pContext->Edx = *pRegDisp->GetEdxLocation();
-    pContext->Esp = pRegDisp->SP;
-    pContext->Eip = pRegDisp->ControlPC;
-
-    // If we still have the pointer to the leaf CONTEXT, and the leaf CONTEXT is the same as the CONTEXT for
-    // the current frame (i.e. the stackwalker is at the leaf frame), then we do a full copy.
-    if ((pRegDisp->pContext != NULL) &&
-        (CompareControlRegisters(const_cast<const DT_CONTEXT *>(reinterpret_cast<DT_CONTEXT *>(pContext)),
-                                 const_cast<const DT_CONTEXT *>(reinterpret_cast<DT_CONTEXT *>(pRegDisp->pContext)))))
-    {
-        *pContext = *pRegDisp->pContext;
-    }
-#else // TARGET_X86 && !FEATURE_EH_FUNCLETS
     *pContext = *pRegDisp->pCurrentContext;
-#endif // !TARGET_X86 || FEATURE_EH_FUNCLETS
 }
 
 //---------------------------------------------------------------------------------------

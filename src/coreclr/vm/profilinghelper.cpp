@@ -250,7 +250,6 @@ void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SS
 
     StackSString supplementaryInformation;
     if (!supplementaryInformation.LoadResource(
-        CCompRC::Debugging,
         IDS_PROF_SUPPLEMENTARY_INFO
         ))
     {
@@ -302,7 +301,6 @@ void ProfilingAPIUtility::LogProfEventVA(
 
     StackSString messageFromResource;
     if (!messageFromResource.LoadResource(
-        CCompRC::Debugging,
         iStringResourceID
         ))
     {

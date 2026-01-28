@@ -65,6 +65,10 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!method.IsAbstract)
             {
+                if (method.IsSharedByGenericInstantiations)
+                {
+                    dependencies.Add(factory.ShadowNonConcreteMethod(method), "Shadow generic reflectable method");
+                }
                 dependencies.Add(factory.AddressTakenMethodEntrypoint(method), "Body of a reflectable method");
             }
 

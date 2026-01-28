@@ -19,9 +19,7 @@ PALEXPORT int32_t CryptoNative_EvpCipherSetCcmNonceLength(EVP_CIPHER_CTX* ctx, i
 /*
 Cleans up and deletes an EVP_CIPHER_CTX instance created by EvpCipherCreate.
 
-Implemented by:
-  1) Calling EVP_CIPHER_CTX_cleanup
-  2) Deleting the EVP_CIPHER_CTX instance.
+Implemented by calling EVP_CIPHER_CTX_free
 
 No-op if ctx is null.
 The given EVP_CIPHER_CTX pointer is invalid after this call.

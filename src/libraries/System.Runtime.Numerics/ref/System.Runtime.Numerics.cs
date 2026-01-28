@@ -93,12 +93,14 @@ namespace System.Numerics
         public static explicit operator System.Numerics.BigInteger (decimal value) { throw null; }
         public static explicit operator System.Numerics.BigInteger (double value) { throw null; }
         public static explicit operator System.Numerics.BigInteger (System.Half value) { throw null; }
+        public static explicit operator System.Numerics.BigInteger (System.Numerics.BFloat16 value) { throw null; }
         public static explicit operator byte (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator char (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator decimal (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator double (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator System.Half (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator System.Int128 (System.Numerics.BigInteger value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16 (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator short (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator int (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator long (System.Numerics.BigInteger value) { throw null; }
@@ -328,6 +330,7 @@ namespace System.Numerics
         public static implicit operator System.Numerics.Complex (char value) { throw null; }
         public static implicit operator System.Numerics.Complex (double value) { throw null; }
         public static implicit operator System.Numerics.Complex (System.Half value) { throw null; }
+        public static implicit operator System.Numerics.Complex (System.Numerics.BFloat16 value) { throw null; }
         public static implicit operator System.Numerics.Complex (short value) { throw null; }
         public static implicit operator System.Numerics.Complex (int value) { throw null; }
         public static implicit operator System.Numerics.Complex (long value) { throw null; }

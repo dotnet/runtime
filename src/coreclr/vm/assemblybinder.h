@@ -47,7 +47,7 @@ public:
         m_ptrAssemblyLoadContext = ptrManagedDefaultBinderInstance;
     }
 
-    NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName);
+    NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName, bool isPlatformNative);
     void AddLoadedAssembly(Assembly* loadedAssembly);
 
     void GetNameForDiagnostics(/*out*/ SString& alcName);

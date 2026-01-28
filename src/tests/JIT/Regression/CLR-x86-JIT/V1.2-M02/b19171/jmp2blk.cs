@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b19171;
+
 using System;
 using Xunit;
 public struct AA
@@ -19,6 +22,7 @@ public struct AA
         return (new int[1, 1]);
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

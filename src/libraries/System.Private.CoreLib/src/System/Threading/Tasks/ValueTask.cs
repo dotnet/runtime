@@ -179,6 +179,30 @@ namespace System.Threading.Tasks
                 GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource>(obj));
         }
 
+        internal object AsTaskOrNotifier()
+        {
+            object? obj = _obj;
+            Debug.Assert(obj is Task || obj is IValueTaskSource);
+            return
+                obj as Task ??
+                (object)new ValueTaskSourceNotifier(Unsafe.As<IValueTaskSource>(obj), _token);
+        }
+
+        private sealed class ValueTaskSourceNotifier : IValueTaskSourceNotifier
+        {
+            private IValueTaskSource _valueTaskSource;
+            private short _token;
+
+            public ValueTaskSourceNotifier(IValueTaskSource valueTaskSource, short token)
+            {
+                _valueTaskSource = valueTaskSource;
+                _token = token;
+            }
+
+            public void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags) =>
+                _valueTaskSource.OnCompleted(continuation, state, _token, flags);
+        }
+
         /// <summary>Gets a <see cref="ValueTask"/> that may be used at any point in the future.</summary>
         public ValueTask Preserve() => _obj == null ? this : new ValueTask(AsTask());
 
@@ -588,6 +612,30 @@ namespace System.Threading.Tasks
             return GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource<TResult>>(obj));
         }
 
+        internal object AsTaskOrNotifier()
+        {
+            object? obj = _obj;
+            Debug.Assert(obj is Task<TResult> || obj is IValueTaskSource<TResult>);
+            return
+                obj as Task ??
+                (object)new ValueTaskSourceNotifier(Unsafe.As<IValueTaskSource<TResult>>(obj), _token);
+        }
+
+        private sealed class ValueTaskSourceNotifier : IValueTaskSourceNotifier
+        {
+            private IValueTaskSource<TResult> _valueTaskSource;
+            private short _token;
+
+            public ValueTaskSourceNotifier(IValueTaskSource<TResult> valueTaskSource, short token)
+            {
+                _valueTaskSource = valueTaskSource;
+                _token = token;
+            }
+
+            public void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags) =>
+                _valueTaskSource.OnCompleted(continuation, state, _token, flags);
+        }
+
         /// <summary>Gets a <see cref="ValueTask{TResult}"/> that may be used at any point in the future.</summary>
         public ValueTask<TResult> Preserve() => _obj == null ? this : new ValueTask<TResult>(AsTask());
 
@@ -847,5 +895,10 @@ namespace System.Threading.Tasks
 
             return string.Empty;
         }
+    }
+
+    internal interface IValueTaskSourceNotifier
+    {
+        void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags);
     }
 }

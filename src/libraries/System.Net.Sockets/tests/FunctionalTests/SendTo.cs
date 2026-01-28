@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -93,16 +94,21 @@ namespace System.Net.Sockets.Tests
             Assert.NotNull(socket.LocalEndPoint);
         }
 
-        [Fact]
+        [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.FreeBSD, "FreeBSD allows sendto() to broadcast")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114450", typeof(PlatformDetection), nameof(PlatformDetection.IsMacCatalyst), nameof(PlatformDetection.IsX64Process))]
         public async Task Datagram_UDP_AccessDenied_Throws_DoesNotBind()
         {
             IPEndPoint invalidEndpoint = new IPEndPoint(IPAddress.Broadcast, 1234);
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             byte[] buffer = new byte[32];
 
-            var e = await Assert.ThrowsAnyAsync<SocketException>(() => SendToAsync(socket, new ArraySegment<byte>(buffer), invalidEndpoint));
+            SocketException e = await Assert.ThrowsAnyAsync<SocketException>(() => SendToAsync(socket, new ArraySegment<byte>(buffer), invalidEndpoint));
+            if (e.SocketErrorCode == SocketError.HostUnreachable && PlatformDetection.IsApplePlatform)
+            {
+                // https://github.com/dotnet/runtime/issues/114450
+                throw new SkipTestException("HostUnreachable indicates missing local network permission; this test might pass or fail depending on the environment. Please verify manually.");
+            }
+
             Assert.Equal(SocketError.AccessDenied, e.SocketErrorCode);
             Assert.Null(socket.LocalEndPoint);
         }

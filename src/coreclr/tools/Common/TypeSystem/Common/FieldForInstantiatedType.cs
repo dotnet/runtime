@@ -4,6 +4,10 @@
 using System;
 using Debug = System.Diagnostics.Debug;
 
+#if TYPE_LOADER_IMPLEMENTATION
+using MetadataType = Internal.TypeSystem.DefType;
+#endif
+
 namespace Internal.TypeSystem
 {
     public sealed partial class FieldForInstantiatedType : FieldDesc
@@ -26,7 +30,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override DefType OwningType
+        public override MetadataType OwningType
         {
             get
             {

@@ -11,7 +11,7 @@ using Xunit;
 
 public class Async2CollectibleAlc
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsCollectibleAssembliesSupported))]
     public static void TestEntryPoint()
     {
         AsyncEntryPoint().Wait();

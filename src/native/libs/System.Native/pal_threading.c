@@ -82,9 +82,9 @@ LowLevelMonitor* SystemNative_LowLevelMonitor_Create(void)
 
     error = pthread_cond_init(&monitor->Condition, &conditionAttributes);
 
-    int condAttrDestroyError = pthread_condattr_destroy(&conditionAttributes);
+    int condAttrDestroyError;
+    condAttrDestroyError = pthread_condattr_destroy(&conditionAttributes);
     assert(condAttrDestroyError == 0);
-    (void)condAttrDestroyError; // unused in release build
 #else
     error = pthread_cond_init(&monitor->Condition, NULL);
 #endif
@@ -118,8 +118,6 @@ void SystemNative_LowLevelMonitor_Destroy(LowLevelMonitor* monitor)
     error = pthread_mutex_destroy(&monitor->Mutex);
     assert(error == 0);
 
-    (void)error; // unused in release build
-
     free(monitor);
 }
 
@@ -127,9 +125,10 @@ void SystemNative_LowLevelMonitor_Acquire(LowLevelMonitor* monitor)
 {
     assert(monitor != NULL);
 
-    int error = pthread_mutex_lock(&monitor->Mutex);
+    int error;
+
+    error = pthread_mutex_lock(&monitor->Mutex);
     assert(error == 0);
-    (void)error; // unused in release build
 
     SetIsLocked(monitor, true);
 }
@@ -140,9 +139,10 @@ void SystemNative_LowLevelMonitor_Release(LowLevelMonitor* monitor)
 
     SetIsLocked(monitor, false);
 
-    int error = pthread_mutex_unlock(&monitor->Mutex);
+    int error;
+
+    error = pthread_mutex_unlock(&monitor->Mutex);
     assert(error == 0);
-    (void)error; // unused in release build
 }
 
 void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
@@ -151,9 +151,10 @@ void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
 
     SetIsLocked(monitor, false);
 
-    int error = pthread_cond_wait(&monitor->Condition, &monitor->Mutex);
+    int error;
+
+    error = pthread_cond_wait(&monitor->Condition, &monitor->Mutex);
     assert(error == 0);
-    (void)error; // unused in release build
 
     SetIsLocked(monitor, true);
 }
@@ -213,8 +214,6 @@ void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
 
     error = pthread_mutex_unlock(&monitor->Mutex);
     assert(error == 0);
-
-    (void)error; // unused in release build
 }
 
 int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)

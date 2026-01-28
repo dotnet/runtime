@@ -5,13 +5,14 @@ using System;
 using System.Reflection;
 using Xunit;
 
-namespace Test
+namespace GitHub_12392
 {
     // This is a regression test for a bug in fgMorphRecognizeBoxNullable.
     // See the comment in Setting<T>.HasValue for details.
     public class Program
     {
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

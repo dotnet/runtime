@@ -47,6 +47,9 @@ public:
     static Thread *         RawGetCurrentThread();
     static Thread *         GetCurrentThread();
     static Thread *         GetCurrentThreadIfAvailable();
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+    static Thread *         GetCurrentThreadIfAvailableAsyncSafe();
+#endif
     static PTR_Thread       GetSuspendingThread();
     static void             AttachCurrentThread();
     static void             AttachCurrentThread(bool fAcquireThreadStoreLock);

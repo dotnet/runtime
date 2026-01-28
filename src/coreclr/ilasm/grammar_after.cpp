@@ -1200,8 +1200,8 @@ Its_An_Id:
         begNum = curPos;
         {
             uint64_t i64 = str2uint64(begNum, const_cast<const char**>(&curPos), radix);
-            uint64_t mask64 = neg ? UI64(0xFFFFFFFF80000000) : UI64(0xFFFFFFFF00000000);
-            uint64_t largestNegVal32 = UI64(0x0000000080000000);
+            uint64_t mask64 = neg ? 0xFFFFFFFF80000000ULL : 0xFFFFFFFF00000000ULL;
+            uint64_t largestNegVal32 = 0x0000000080000000ULL;
             if ((i64 & mask64) && (i64 != largestNegVal32))
             {
                 yylval.int64 = new int64_t(i64);
@@ -1792,7 +1792,7 @@ void AsmParse::error(const char* fmt, ...)
     va_start(args, fmt);
 
     if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%s(%d) : ", penv->in->name(), penv->curLine);
-    psz+=sprintf_s(psz, (dwUniBuf >> 1), "error : ");
+    psz+=sprintf_s(psz, (dwUniBuf >> 1), assem->OnErrGo ? "warning : " : "error : ");
     _vsnprintf_s(psz, (dwUniBuf >> 1),(dwUniBuf >> 1)-strlen(sz)-1, fmt, args);
     PrintANSILine(pF,sz);
 }

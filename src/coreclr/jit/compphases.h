@@ -48,7 +48,7 @@ CompPhaseNameMacro(PHASE_EARLY_UPDATE_FLOW_GRAPH,    "Update flow graph early pa
 CompPhaseNameMacro(PHASE_DFS_BLOCKS1,                "DFS blocks and remove dead code 1",false, -1, false)
 CompPhaseNameMacro(PHASE_DFS_BLOCKS2,                "DFS blocks and remove dead code 2",false, -1, false)
 CompPhaseNameMacro(PHASE_DFS_BLOCKS3,                "DFS blocks and remove dead code 3",false, -1, false)
-CompPhaseNameMacro(PHASE_STR_ADRLCL,                 "Morph - Structs/AddrExp",        false, -1, false)
+CompPhaseNameMacro(PHASE_LOCAL_MORPH,                "Local morph",        false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_MASK_CONVERSIONS,  "Optimize mask conversions",      false, -1, false)
 CompPhaseNameMacro(PHASE_EARLY_LIVENESS,             "Early liveness",                 false, -1, false)
 CompPhaseNameMacro(PHASE_PHYSICAL_PROMOTION,         "Physical promotion",             false, -1, false)
@@ -63,6 +63,7 @@ CompPhaseNameMacro(PHASE_GS_COOKIE,                  "GS Cookie",               
 CompPhaseNameMacro(PHASE_COMPUTE_BLOCK_WEIGHTS,      "Compute block weights",          false, -1, false)
 CompPhaseNameMacro(PHASE_CREATE_FUNCLETS,            "Create EH funclets",             false, -1, false)
 CompPhaseNameMacro(PHASE_HEAD_TAIL_MERGE,            "Head and tail merge",            false, -1, false)
+CompPhaseNameMacro(PHASE_EARLY_QMARK_EXPANSION,      "Early QMARK expansion",          false, -1, false)
 CompPhaseNameMacro(PHASE_MERGE_THROWS,               "Merge throw blocks",             false, -1, false)
 CompPhaseNameMacro(PHASE_INVERT_LOOPS,               "Invert loops",                   false, -1, false)
 CompPhaseNameMacro(PHASE_HEAD_TAIL_MERGE2,           "Post-morph head and tail merge", false, -1, false)
@@ -121,6 +122,10 @@ CompPhaseNameMacro(PHASE_DETERMINE_FIRST_COLD_BLOCK, "Determine first cold block
 CompPhaseNameMacro(PHASE_RATIONALIZE,                "Rationalize IR",                 false, -1, false)
 CompPhaseNameMacro(PHASE_REPAIR_PROFILE_POST_MORPH,  "Repair profile post-morph",      false, -1, false)
 CompPhaseNameMacro(PHASE_REPAIR_PROFILE_PRE_LAYOUT,  "Repair profile pre-layout",      false, -1, false)
+
+CompPhaseNameMacro(PHASE_DFS_BLOCKS_WASM,            "Wasm remove unreachable blocks", false, -1, false)
+CompPhaseNameMacro(PHASE_WASM_TRANSFORM_SCCS,        "Wasm transform sccs",            false, -1, false)
+CompPhaseNameMacro(PHASE_WASM_CONTROL_FLOW,          "Wasm control flow",              false, -1, false)
 
 CompPhaseNameMacro(PHASE_ASYNC,                      "Transform async",                false, -1, true)
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS,             "Local var liveness",             true,  -1, false)

@@ -175,9 +175,9 @@
 
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' != 'maccatalyst'" Include="mtriple=arm64-ios" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=arm64-apple-ios15.0-macabi" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=arm64-apple-ios17.0-macabi" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' != 'maccatalyst'" Include="mtriple=x86_64-ios" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=x86_64-apple-ios15.0-macabi" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=x86_64-apple-ios17.0-macabi" />
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->
@@ -257,7 +257,7 @@
       <_MonoLLVMPath Condition="'$(_MonoLLVMPath)' == '' and '$(MonoEnableLLVM)' == 'true'">$([System.IO.Path]::GetDirectoryName("$(_CompilerBinaryPath)"))</_MonoLLVMPath>
     </PropertyGroup>
 
-    <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
+    <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true' and '$(UseMonoRuntime)' != 'false'"
         AotModulesTablePath="$(_AotModuleTablePath)"
         AotModulesTableLanguage="ObjC"
         Assemblies="@(_AotInputAssemblies)"
@@ -296,6 +296,10 @@
 
     <ItemGroup>
       <ExtraAppLinkerArgs Include="@(_CommonLinkerArgs)" />
+      <!-- Disable linker optimization to prevent AOT PLT resolution failures on macOS 14+. This is only visible in CI and isn't reproducible locally.
+           Tracking issue: https://github.com/dotnet/runtime/issues/117159 -->
+      <ExtraAppLinkerArgs Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'" Include="-Xlinker" />
+      <ExtraAppLinkerArgs Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'" Include="-O0" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
@@ -314,6 +318,7 @@
       <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == '' and '$(UseNativeAOTRuntime)' == 'true'">NativeAOT</AppleAppBuilderRuntime>
       <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == '' and '$(UseMonoRuntime)' == 'false'">CoreCLR</AppleAppBuilderRuntime>
       <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == ''">MonoVM</AppleAppBuilderRuntime>
+      <MainLibraryFileName Condition="'$(UseNativeAOTRuntime)' == 'true'"></MainLibraryFileName>
     </PropertyGroup>
 
     <AppleAppBuilderTask

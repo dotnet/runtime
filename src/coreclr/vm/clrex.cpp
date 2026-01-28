@@ -16,9 +16,7 @@
 #include "sigformat.h"
 #include "eeconfig.h"
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exceptionhandling.h"
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_COMINTEROP
 #include "interoputil.inl"
@@ -1050,7 +1048,7 @@ BOOL EEException::GetResourceMessage(UINT iResourceID, SString &result,
     BOOL ok;
 
     StackSString temp;
-    ok = temp.LoadResource(CCompRC::Error, iResourceID);
+    ok = temp.LoadResource(iResourceID);
 
     if (ok)
         result.FormatMessage(FORMAT_MESSAGE_FROM_STRING,

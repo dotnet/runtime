@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_90001;
+
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -18,17 +21,14 @@ public class Runtime_89456
         return Avx512BW.PermuteVar32x16x2(zmm0, zmm2, zmm1);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(Avx512BW), nameof(Avx512BW.IsSupported))]
     public static int TestEntryPoint()
     {
-        if (Avx512BW.IsSupported)
+        var expected = Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+        Vector512<ushort> actual = PermuteVar32x16x2Test(Vector512.Create(ushort.MinValue, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31), 32);
+        if (actual != expected)
         {
-            var expected = Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
-            Vector512<ushort> actual = PermuteVar32x16x2Test(Vector512.Create(ushort.MinValue, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31), 32);
-            if (actual != expected)
-            {
-                return 101;
-            }
+            return 101;
         }
         return 100;
     }

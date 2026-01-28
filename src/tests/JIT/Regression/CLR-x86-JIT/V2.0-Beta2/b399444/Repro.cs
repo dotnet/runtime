@@ -10,11 +10,12 @@ namespace Tests
 {
     public class Test
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {
             if ((TestManyFields() == 100)
-                && (TestManyFieldsPlusOne() == 100))
+                && (TestManyFieldsPlusTwo() == 100))
             {
                 return 100;
             }
@@ -35,11 +36,11 @@ namespace Tests
             return 100;
         }
 
-        public static int TestManyFieldsPlusOne()
+        public static int TestManyFieldsPlusTwo()
         {
             try
             {
-                TestLdManyFieldsPlusOne();
+                TestLdManyFieldsPlusTwo();
             }
             catch (TargetInvocationException)
             {
@@ -62,9 +63,9 @@ namespace Tests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void TestLdManyFieldsPlusOne()
+        internal static void TestLdManyFieldsPlusTwo()
         {
-            object o = Activator.CreateInstance(typeof(ManyFieldsPlusOne));
+            object o = Activator.CreateInstance(typeof(ManyFieldsPlusTwo));
         }
     }
 
@@ -65604,11 +65605,11 @@ namespace Tests
         public int m65532 = 65532;
         public int m65533 = 65533;
         public int m65534 = 65534;
-        public int m65535 = 65535;
     }
 
-    public class ManyFieldsPlusOne : ManyFields
+    public class ManyFieldsPlusTwo : ManyFields
     {
+        public int m65535 = 65535;
         public int m65536 = 65536;
     }
 }

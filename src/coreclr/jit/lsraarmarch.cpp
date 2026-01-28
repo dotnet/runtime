@@ -174,8 +174,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH.GetIntRegSet() & ~SRBM_LR;
             if (compiler->getNeedsGSSecurityCookie())
             {
-                ctrlExprCandidates &=
-                    ~(genSingleTypeRegMask(REG_GSCOOKIE_TMP_0) | genSingleTypeRegMask(REG_GSCOOKIE_TMP_1));
+                ctrlExprCandidates &= ~compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true).GetIntRegSet();
             }
             assert(ctrlExprCandidates != RBM_NONE);
         }
@@ -232,21 +231,28 @@ int LinearScan::BuildCall(GenTreeCall* call)
     }
     else
 #endif // TARGET_ARM
+#ifdef TARGET_ARM64
+        if (call->IsHelperCall(compiler, CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
+    {
+        singleDstCandidates = RBM_INTERFACELOOKUP_FOR_SLOT_RETURN.GetIntRegSet();
+    }
+    else
+#endif
         if (!hasMultiRegRetVal)
+    {
+        if (varTypeUsesFloatArgReg(registerType))
         {
-            if (varTypeUsesFloatArgReg(registerType))
-            {
-                singleDstCandidates = RBM_FLOATRET.GetFloatRegSet();
-            }
-            else if (registerType == TYP_LONG)
-            {
-                singleDstCandidates = RBM_LNGRET.GetIntRegSet();
-            }
-            else
-            {
-                singleDstCandidates = RBM_INTRET.GetIntRegSet();
-            }
+            singleDstCandidates = RBM_FLOATRET.GetFloatRegSet();
         }
+        else if (registerType == TYP_LONG)
+        {
+            singleDstCandidates = RBM_LNGRET.GetIntRegSet();
+        }
+        else
+        {
+            singleDstCandidates = RBM_INTRET.GetIntRegSet();
+        }
+    }
 
     srcCount += BuildCallArgUses(call);
 

@@ -24,6 +24,7 @@
 #include "assemblyprofiler/assemblyprofiler.h"
 #include "classload/classload.h"
 #include "dynamicjitoptimization/dynamicjitoptimization.h"
+#include "gcskipobjectsallocatedbyclasscallbackprofiler/gcskipobjectsallocatedbyclasscallbackprofiler.h"
 
 ClassFactory::ClassFactory(REFCLSID clsid) : refCount(0), clsid(clsid)
 {
@@ -158,6 +159,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == DynamicJitOptimizations::GetClsid())
     {
         profiler = new DynamicJitOptimizations();
+    }
+    else if (clsid == GCSkipObjectsAllocatedByClassCallbackProfiler::GetClsid())
+    {
+        profiler = new GCSkipObjectsAllocatedByClassCallbackProfiler();
     }
     else
     {

@@ -18,10 +18,13 @@ namespace TestLibrary
 
         public static bool IsWindows => OperatingSystem.IsWindows();
 
-        public static bool IsBuiltInComEnabled => IsWindows
+        public static bool IsBuiltInComEnabled => IsWindows && !Utilities.IsCoreClrInterpreter
                                             && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
                                                 ? isEnabled
                                                 : true);
+
+        public static bool IsICorProfilerEnabled => !Utilities.IsNativeAot && !IsMonoRuntime;
+        public static bool IsICorProfilerEnterLeaveHooksEnabled => IsICorProfilerEnabled && !Utilities.IsCoreClrInterpreter;
 
         public static bool IsRareEnumsSupported => !Utilities.IsNativeAot;
 
@@ -50,6 +53,11 @@ namespace TestLibrary
         }
 
         public static bool IsNonZeroLowerBoundArrayNotSupported => !IsNonZeroLowerBoundArraySupported;
+
+        public static bool IsTypeEquivalenceSupported => IsWindows && !Utilities.IsNativeAot && !Utilities.IsMonoRuntime;
+        public static bool IsVarArgSupported => IsWindows && !Utilities.IsNativeAot && !Utilities.IsMonoRuntime && !Utilities.IsCoreClrInterpreter;
+
+        public static bool IsExceptionInteropSupported => IsWindows && !Utilities.IsNativeAot && !Utilities.IsMonoRuntime && !Utilities.IsCoreClrInterpreter;
 
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
 

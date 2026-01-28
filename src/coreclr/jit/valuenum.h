@@ -701,7 +701,7 @@ public:
     ValueNum VNOneForSimdType(var_types simdType, var_types simdBaseType);
 
     // A helper function for constructing VNF_SimdType VNs.
-    ValueNum VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType);
+    ValueNum VNForSimdType(unsigned simdSize, var_types simdBaseType);
 
     // Returns if a value number represents NaN in all elements
     bool VNIsVectorNaN(var_types simdType, var_types simdBaseType, ValueNum valVN);

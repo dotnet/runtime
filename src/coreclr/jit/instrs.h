@@ -11,6 +11,8 @@
 #include "instrsloongarch64.h"
 #elif defined(TARGET_RISCV64)
 #include "instrsriscv64.h"
+#elif defined(TARGET_WASM)
+#include "instrswasm.h"
 #else
 #error Unsupported or unset target architecture
 #endif // target type

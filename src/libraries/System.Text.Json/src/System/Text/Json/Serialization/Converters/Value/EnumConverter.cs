@@ -247,7 +247,7 @@ namespace System.Text.Json.Serialization.Converters
 
             int charsWritten = reader.CopyString(charBuffer);
             charBuffer = charBuffer.Slice(0, charsWritten);
-#if NET9_0_OR_GREATER
+#if NET
             ReadOnlySpan<char> source = charBuffer.Trim();
             ConcurrentDictionary<string, ulong>.AlternateLookup<ReadOnlySpan<char>> lookup = _nameCacheForReading.GetAlternateLookup<ReadOnlySpan<char>>();
 #else
@@ -295,14 +295,14 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         private bool TryParseNamedEnum(
-#if NET9_0_OR_GREATER
+#if NET
             ReadOnlySpan<char> source,
 #else
             string source,
 #endif
             out T result)
         {
-#if NET9_0_OR_GREATER
+#if NET
             Dictionary<string, EnumFieldInfo>.AlternateLookup<ReadOnlySpan<char>> lookup = _enumFieldInfoIndex.GetAlternateLookup<ReadOnlySpan<char>>();
             ReadOnlySpan<char> rest = source;
 #else
@@ -327,7 +327,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 if (lookup.TryGetValue(
-#if NET9_0_OR_GREATER
+#if NET
                         next,
 #else
                         next.ToString(),

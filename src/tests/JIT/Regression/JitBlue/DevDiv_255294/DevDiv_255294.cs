@@ -9,6 +9,7 @@ public class Test_DevDiv_255294
 {
     static bool f;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

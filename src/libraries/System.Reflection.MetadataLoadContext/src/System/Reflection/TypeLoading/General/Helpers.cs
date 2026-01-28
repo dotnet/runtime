@@ -12,11 +12,7 @@ namespace System.Reflection.TypeLoading
 {
     internal static class Helpers
     {
-#if NET
         private static readonly SearchValues<char> s_charsToEscape = SearchValues.Create("\\[]+*&,");
-#else
-        private static ReadOnlySpan<char> s_charsToEscape => "\\[]+*&,".AsSpan();
-#endif
 
         [return: NotNullIfNotNull(nameof(original))]
         public static T[]? CloneArray<T>(this T[]? original)
@@ -120,16 +116,12 @@ namespace System.Reflection.TypeLoading
 
         public static bool TypeNameContainsTypeParserMetacharacters(this string identifier)
         {
-            return identifier.AsSpan().IndexOfAny(s_charsToEscape) >= 0;
+            return identifier.AsSpan().ContainsAny(s_charsToEscape);
         }
 
         public static bool NeedsEscapingInTypeName(this char c)
         {
-#if NET
             return s_charsToEscape.Contains(c);
-#else
-            return s_charsToEscape.IndexOf(c) >= 0;
-#endif
         }
 
         public static string UnescapeTypeNameIdentifier(this string identifier)
@@ -366,22 +358,7 @@ namespace System.Reflection.TypeLoading
 
         public static byte[] ToUtf8(this string s) => Encoding.UTF8.GetBytes(s);
 
-#if NET
         public static string ToUtf16(this ReadOnlySpan<byte> utf8) => Encoding.UTF8.GetString(utf8);
-#else
-        public static unsafe string ToUtf16(this ReadOnlySpan<byte> utf8)
-        {
-            if (utf8.IsEmpty)
-            {
-                return string.Empty;
-            }
-
-            fixed (byte* ptr = utf8)
-            {
-                return Encoding.UTF8.GetString(ptr, utf8.Length);
-            }
-        }
-#endif
 
         // Guards ToString() implementations. Sample usage:
         //

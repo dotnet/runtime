@@ -38,6 +38,8 @@ namespace Internal.TypeSystem
 
         public override bool IsFinal => _wrappedMethod.IsFinal;
 
+        public override bool IsAsync => _wrappedMethod.IsAsync;
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _wrappedMethod.HasCustomAttribute(attributeNamespace, attributeName);

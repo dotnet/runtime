@@ -230,6 +230,7 @@ namespace System.Net
 
         /// <summary>Determines whether the provided span contains a valid <see cref="IPAddress"/>.</summary>
         /// <param name="utf8Text">The text to parse.</param>
+        /// <returns><see langword="true"/> if <paramref name="utf8Text"/> contains a valid IP address; otherwise, <see langword="false"/>.</returns>
         public static bool IsValidUtf8(ReadOnlySpan<byte> utf8Text) => IPAddressParser.IsValid(utf8Text);
 
         /// <devdoc>

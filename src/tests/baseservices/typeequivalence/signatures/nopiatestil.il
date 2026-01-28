@@ -19,6 +19,8 @@
 {
   .ver 0:0:0:0
 }
+.assembly extern TestLibrary {}
+
 .assembly nopiatestil
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
@@ -1011,52 +1013,60 @@
                         IL_00cd,
                         IL_00d5,
                         IL_00dd)
-  IL_006b:  br.s       IL_00e5
+  IL_006b:  br       IL_00e5
   IL_006d:  call       void NoPIATest.Program::Test1_0()
   IL_0072:  nop
-  IL_0073:  br.s       IL_00e5
+  IL_0073:  br       IL_00e5
   IL_0075:  call       void NoPIATest.Program::Test1_1()
   IL_007a:  nop
-  IL_007b:  br.s       IL_00e5
+  IL_007b:  br       IL_00e5
   IL_007d:  call       void NoPIATest.Program::Test2()
   IL_0082:  nop
-  IL_0083:  br.s       IL_00e5
+  IL_0083:  br       IL_00e5
   IL_0085:  call       void NoPIATest.Program::Test3()
   IL_008a:  nop
-  IL_008b:  br.s       IL_00e5
+  IL_008b:  br       IL_00e5
   IL_008d:  call       void NoPIATest.Program::Test4()
   IL_0092:  nop
-  IL_0093:  br.s       IL_00e5
+  IL_0093:  br       IL_00e5
   IL_0095:  call       void NoPIATest.Program::Test5()
   IL_009a:  nop
-  IL_009b:  br.s       IL_00e5
+  IL_009b:  br       IL_00e5
   IL_009d:  call       void NoPIATest.Program::Test6()
   IL_00a2:  nop
-  IL_00a3:  br.s       IL_00e5
+  IL_00a3:  br       IL_00e5
   IL_00a5:  call       void NoPIATest.Program::Test7()
   IL_00aa:  nop
-  IL_00ab:  br.s       IL_00e5
+  IL_00ab:  br       IL_00e5
   IL_00ad:  call       void NoPIATest.Program::Test8()
   IL_00b2:  nop
-  IL_00b3:  br.s       IL_00e5
-  IL_00b5:  call       void NoPIATest.Program::Test9()
-  IL_00ba:  nop
-  IL_00bb:  br.s       IL_00e5
-  IL_00bd:  call       void NoPIATest.Program::Test10()
-  IL_00c2:  nop
-  IL_00c3:  br.s       IL_00e5
+  IL_00b3:  br       IL_00e5
+
+  IL_00b5:
+  call bool [TestLibrary]TestLibrary.PlatformDetection::get_IsVarArgSupported()
+  brfalse.s IL_SkipVarArgsTests_9
+
+            call       void NoPIATest.Program::Test9()
+  IL_SkipVarArgsTests_9:  nop
+  IL_00bb:  br       IL_00e5
+  IL_00bd:  
+  call bool [TestLibrary]TestLibrary.PlatformDetection::get_IsVarArgSupported()
+  brfalse.s IL_SkipVarArgsTests_10
+           call       void NoPIATest.Program::Test10()
+  IL_SkipVarArgsTests_10:  nop
+  IL_00c3:  br       IL_00e5
   IL_00c5:  call       void NoPIATest.Program::Test11()
   IL_00ca:  nop
-  IL_00cb:  br.s       IL_00e5
+  IL_00cb:  br       IL_00e5
   IL_00cd:  call       void NoPIATest.Program::Test12()
   IL_00d2:  nop
-  IL_00d3:  br.s       IL_00e5
+  IL_00d3:  br       IL_00e5
   IL_00d5:  call       void NoPIATest.Program::Test13()
   IL_00da:  nop
-  IL_00db:  br.s       IL_00e5
+  IL_00db:  br       IL_00e5
   IL_00dd:  call       void NoPIATest.Program::Test14()
   IL_00e2:  nop
-  IL_00e3:  br.s       IL_00e5
+  IL_00e3:  br       IL_00e5
   IL_00e5:  nop
   IL_00e6:  ldloc.2
   IL_00e7:  ldc.i4.1

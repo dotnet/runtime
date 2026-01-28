@@ -6,6 +6,8 @@
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <!-- COM is not supported on Mono -->
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+    <!-- COM is not supported with Interpreter. See https://github.com/dotnet/runtime/issues/118965 -->
+    <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
 
 </Project>

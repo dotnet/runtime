@@ -122,7 +122,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
 
-                if (entry.IsHidden)
+                if ((entry.Flags & StackTraceRecordFlags.IsHidden) != 0)
                 {
                     command |= StackTraceDataCommand.IsStackTraceHidden;
                 }

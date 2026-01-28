@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace GitHub_11574;
+
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -21,6 +24,7 @@ public class Program
         return (actual == expected) ? rv : 0;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

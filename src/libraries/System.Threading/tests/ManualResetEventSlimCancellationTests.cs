@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static class ManualResetEventCancellationTests
     {
         [Fact]
@@ -25,7 +26,7 @@ namespace System.Threading.Tests
             mres.Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public static void CancelAfterWait()
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();

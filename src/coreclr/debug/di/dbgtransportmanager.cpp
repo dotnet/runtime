@@ -4,13 +4,10 @@
 #include "stdafx.h"
 #include "dbgtransportsession.h"
 #include "dbgtransportmanager.h"
-#include "coreclrremotedebugginginterfaces.h"
-
-
 
 #ifdef FEATURE_DBGIPC_TRANSPORT_DI
 
-DbgTransportTarget *g_pDbgTransportTarget = NULL;
+DbgTransportTarget g_DbgTransportTarget{};
 
 DbgTransportTarget::DbgTransportTarget()
     : m_pProcessList{}

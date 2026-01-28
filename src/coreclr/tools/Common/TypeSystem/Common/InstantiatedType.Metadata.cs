@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -8,16 +9,6 @@ namespace Internal.TypeSystem
 {
     public sealed partial class InstantiatedType : MetadataType
     {
-        public override MetadataType MetadataBaseType
-        {
-            get
-            {
-                if (_baseType == this)
-                    return InitializeBaseType();
-                return _baseType;
-            }
-        }
-
         // Properties that are passed through from the type definition
         public override ClassLayoutMetadata GetClassLayout()
         {
@@ -102,7 +93,7 @@ namespace Internal.TypeSystem
             return _typeDef.HasCustomAttribute(attributeNamespace, attributeName);
         }
 
-        public override MetadataType GetNestedType(string name)
+        public override MetadataType GetNestedType(ReadOnlySpan<byte> name)
         {
             // Return the result from the typical type definition.
             return _typeDef.GetNestedType(name);

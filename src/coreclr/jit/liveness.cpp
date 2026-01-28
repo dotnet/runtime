@@ -944,6 +944,8 @@ bool Compiler::fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
     if (VarSetOps::IsMember(this, life, varIndex))
     {
         // The variable is live
+        node->gtFlags &= ~GTF_VAR_DEATH;
+
         if ((node->gtFlags & GTF_VAR_USEASG) == 0)
         {
             // Remove the variable from the live set if it is not in the keepalive set.
@@ -1492,15 +1494,13 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_START_NONGC:
             case GT_START_PREEMPTGC:
             case GT_PROF_HOOK:
-#if defined(FEATURE_EH_WINDOWS_X86)
-            case GT_END_LFIN:
-#endif // FEATURE_EH_WINDOWS_X86
             case GT_SWITCH_TABLE:
             case GT_PINVOKE_PROLOG:
             case GT_PINVOKE_EPILOG:
             case GT_RETURNTRAP:
             case GT_PUTARG_STK:
             case GT_IL_OFFSET:
+            case GT_RECORD_ASYNC_RESUME:
             case GT_KEEPALIVE:
             case GT_SWIFT_ERROR_RET:
             case GT_GCPOLL:

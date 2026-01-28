@@ -832,25 +832,27 @@ EVP_PKEY* CryptoNative_EvpPKeyFromData(const char* algorithmName, uint8_t* key, 
             goto done;
         }
 
-        const char* paramName = privateKey == 0 ? OSSL_PKEY_PARAM_PUB_KEY : OSSL_PKEY_PARAM_PRIV_KEY;
-        int selection = privateKey == 0 ? EVP_PKEY_PUBLIC_KEY : EVP_PKEY_KEYPAIR;
-        size_t keyLengthT = Int32ToSizeT(keyLength);
-
-        OSSL_PARAM params[] =
         {
-            OSSL_PARAM_construct_octet_string(paramName, (void*)key, keyLengthT),
-            OSSL_PARAM_construct_end(),
-        };
+            const char* paramName = privateKey == 0 ? OSSL_PKEY_PARAM_PUB_KEY : OSSL_PKEY_PARAM_PRIV_KEY;
+            int selection = privateKey == 0 ? EVP_PKEY_PUBLIC_KEY : EVP_PKEY_KEYPAIR;
+            size_t keyLengthT = Int32ToSizeT(keyLength);
 
-        if (EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1)
-        {
-            if (pkey != NULL)
+            OSSL_PARAM params[] =
             {
-                EVP_PKEY_free(pkey);
-                pkey = NULL;
-            }
+                OSSL_PARAM_construct_octet_string(paramName, (void*)key, keyLengthT),
+                OSSL_PARAM_construct_end(),
+            };
 
-            goto done;
+            if (EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1)
+            {
+                if (pkey != NULL)
+                {
+                    EVP_PKEY_free(pkey);
+                    pkey = NULL;
+                }
+
+                goto done;
+            }
         }
 
 done:

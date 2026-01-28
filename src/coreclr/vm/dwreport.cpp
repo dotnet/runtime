@@ -1,13 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // FILE: dwreport.cpp
 //
-
-//
-
-//
-// ============================================================================
 
 #include "common.h"
 
@@ -23,9 +19,7 @@
 #include "utilcode.h"
 #include "../dlls/mscorrc/resource.h"   // for resource ids
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exinfo.h"
-#endif
 
 EFaultRepRetVal DoReportFault(EXCEPTION_POINTERS * pExceptionInfo);
 

@@ -7,6 +7,7 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1090,11 +1091,43 @@ namespace System.Formats.Tar
         private static int Checksum(ReadOnlySpan<byte> bytes)
         {
             int checksum = 0;
-            foreach (byte b in bytes)
+            int vectorSize = Vector<byte>.Count;
+            int i = 0;
+
+            if (Vector.IsHardwareAccelerated && bytes.Length >= vectorSize)
             {
-                checksum += b;
+                // tar header is 512 bytes, which makes the maximum checksum
+                // 512 * 255 = 130560. That does not fit into ushort, but since
+                // the vector will contain multiple ushorts and we don't ever
+                // sum over the entirety of the data, we will (just barely) not
+                // overflow ushort accumulators even on repeated 0xFF data.
+                Debug.Assert(bytes.Length <= 512);
+                Vector<ushort> accumulator = Vector<ushort>.Zero;
+
+                // Process full vectors
+                for (; i <= bytes.Length - vectorSize; i += vectorSize)
+                {
+                    Vector<byte> vector = new Vector<byte>(bytes.Slice(i, vectorSize));
+
+                    // Widen and sum to avoid overflow
+                    Vector.Widen(vector, out Vector<ushort> lower, out Vector<ushort> upper);
+                    accumulator += lower + upper;
+                }
+
+                // Horizontal sum of accumulator, this one might overflow ushort
+                // so we widen again
+                Vector.Widen(accumulator, out Vector<uint> lower32, out Vector<uint> upper32);
+                checksum = (int)Vector.Sum(lower32) + (int)Vector.Sum(upper32);
             }
+
+            // Process remaining bytes (or entire range if no vectorization)
+            for (; i < bytes.Length; i++)
+            {
+                checksum += bytes[i];
+            }
+
             return checksum;
+
         }
         private int FormatNumeric(int value, Span<byte> destination)
         {

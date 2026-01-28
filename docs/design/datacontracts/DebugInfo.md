@@ -8,9 +8,10 @@ This contract is for fetching information related to DebugInfo associated with n
 [Flags]
 public enum SourceTypes : uint
 {
-    SourceTypeInvalid = 0x00, // To indicate that nothing else applies
+    Default = 0x00, // To indicate that nothing else applies
     StackEmpty = 0x01, // The stack is empty here
-    CallInstruction = 0x02  // The actual instruction of a call.
+    CallInstruction = 0x02  // The actual instruction of a call
+    Async = 0x04 // (Version 2+) Indicates suspension/resumption for an async call
 }
 ```
 
@@ -40,7 +41,6 @@ Data descriptors used:
 Contracts used:
 | Contract Name |
 | --- |
-| `CodeVersions` |
 | `ExecutionManager` |
 
 Constants:
@@ -50,6 +50,7 @@ Constants:
 | DEBUG_INFO_BOUNDS_HAS_INSTRUMENTED_BOUNDS | Indicates bounds data contains instrumented bounds | `0xFFFFFFFF` |
 | EXTRA_DEBUG_INFO_PATCHPOINT | Indicates debug info contains patchpoint information | 0x1 |
 | EXTRA_DEBUG_INFO_RICH | Indicates debug info contains rich information | 0x2 |
+| SOURCE_TYPE_BITS | Number of bits per bounds entry used to encode source type flags | 2 |
 
 ### DebugInfo Stream Encoding
 
@@ -169,7 +170,7 @@ private static IEnumerable<OffsetMapping> DoBounds(NativeReader nativeReader)
     uint bitsForNativeDelta = reader.ReadUInt() + 1; // Number of bits needed for native deltas
     uint bitsForILOffsets = reader.ReadUInt() + 1; // Number of bits needed for IL offsets
 
-    uint bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + 2; // 2 bits for source type
+    uint bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + SOURCE_TYPE_BITS; // 2 bits for source type
     ulong bitsMeaningfulMask = (1UL << ((int)bitsPerEntry)) - 1;
     int offsetOfActualBoundsData = reader.GetNextByteOffset();
 
@@ -198,7 +199,7 @@ private static IEnumerable<OffsetMapping> DoBounds(NativeReader nativeReader)
                 _ => throw new InvalidOperationException($"Unknown source type encoding: {mappingDataEncoded & 0x3}")
             };
 
-            mappingDataEncoded >>= 2;
+            mappingDataEncoded >>= (int)SOURCE_TYPE_BITS;
             uint nativeOffsetDelta = (uint)(mappingDataEncoded & ((1UL << (int)bitsForNativeDelta) - 1));
             previousNativeOffset += nativeOffsetDelta;
             uint nativeOffset = previousNativeOffset;
@@ -217,3 +218,79 @@ private static IEnumerable<OffsetMapping> DoBounds(NativeReader nativeReader)
     }
 }
 ```
+
+## Version 2
+
+Version 2 introduces two distinct changes:
+
+1. A unified header format ("fat" vs "slim") replacing the Version 1 flag byte and implicit layout.
+2. An additional `SourceTypes.Async` flag, expanding the per-entry source type encoding from 2 bits to a 3-bit bitfield.
+
+The nibble-encoded variable-length integer mechanism is unchanged; only the header and bounds entry source-type packing differ.
+
+Data descriptors used:
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| _(none)_ | | |
+
+Contracts used:
+| Contract Name |
+| --- |
+| `ExecutionManager` |
+
+Constants:
+| Constant Name | Meaning | Value |
+| --- | --- | --- |
+| IL_OFFSET_BIAS | IL offsets bias (unchanged from Version 1) | `0xfffffffd` (-3) |
+| DEBUG_INFO_FAT | Marker value in first nibble-coded integer indicating a fat header follows | `0x0` |
+| SOURCE_TYPE_BITS | Number of bits per bounds entry used for source type flags | 3 |
+
+### Header Encoding
+
+The first nibble-decoded unsigned integer (`countBoundsOrFatMarker`):
+
+* If `countBoundsOrFatMarker == DEBUG_INFO_FAT` (0), the header is FAT and the next 6 nibble-decoded unsigned integers are, in order:
+    1. `BoundsSize`
+    2. `VarsSize`
+    3. `UninstrumentedBoundsSize`
+    4. `PatchpointInfoSize`
+    5. `RichDebugInfoSize`
+    6. `AsyncInfoSize`
+* Otherwise (SLIM header), the value is `BoundsSize` and the next nibble-decoded unsigned integer is `VarsSize`; all other sizes are implicitly 0.
+
+After decoding sizes, chunk start addresses are computed by linear accumulation beginning at the first byte after the header stream:
+
+```
+BoundsStart = debugInfo + headerBytesConsumed
+VarsStart = BoundsStart + BoundsSize
+UninstrumentedBoundsStart = VarsStart + VarsSize
+PatchpointInfoStart = UninstrumentedBoundsStart + UninstrumentedBoundsSize
+RichDebugInfoStart = PatchpointInfoStart + PatchpointInfoSize
+AsyncInfoStart = RichDebugInfoStart + RichDebugInfoSize
+DebugInfoEnd = AsyncInfoStart + AsyncInfoSize
+```
+
+### Bounds Entry Encoding Differences from Version 1
+
+Version 1 packs each bounds entry using: `[2 bits sourceType][nativeDeltaBits][ilOffsetBits]`.
+
+Version 2 extends this to three independent flag bits for source type and so uses: `[3 bits sourceFlags][nativeDeltaBits][ilOffsetBits]`.
+
+Source type bits (low → high):
+| Bit | Mask | Meaning |
+| --- | --- | --- |
+| 0 | 0x1 | `CallInstruction` |
+| 1 | 0x2 | `StackEmpty` |
+| 2 | 0x4 | `Async` (new in Version 2) |
+
+`SourceTypeInvalid` is represented by all three bits clear (0). Combinations are produced by OR-ing masks (e.g., `StackEmpty | CallInstruction`).
+
+Pseudo-code for Version 2 source type extraction:
+```csharp
+SourceTypes sourceType = 0;
+if ((encoded & 0x1) != 0) sourceType |= SourceTypes.CallInstruction;
+if ((encoded & 0x2) != 0) sourceType |= SourceTypes.StackEmpty;
+if ((encoded & 0x4) != 0) sourceType |= SourceTypes.Async; // New bit
+```
+
+After masking the 3 bits, shift them out before reading native delta and IL offset fields as before.

@@ -109,6 +109,7 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/mono/mono/issues/15140", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120055", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public static void ThrowStatementDoesNotResetExceptionStackLineSameMethod()
         {
             (string, string, int) rethrownExceptionStackFrame = (null, null, 0);
@@ -139,6 +140,7 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.HasAssemblyFiles))]
         // [ActiveIssue(https://github.com/dotnet/runtime/issues/1871)] can't use ActiveIssue for archs
         [ActiveIssue("https://github.com/mono/mono/issues/15141", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120055", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsX64Process), nameof(PlatformDetection.IsCoreCLR))]
         public static void ThrowStatementDoesNotResetExceptionStackLineOtherMethod()
         {
             (string, string, int) rethrownExceptionStackFrame = (null, null, 0);
@@ -179,15 +181,7 @@ namespace System.Tests
         {
             try
             {
-                string frameParserRegex;
-                if (PlatformDetection.IsLineNumbersSupported)
-                {
-                    frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)\([^)]*\)\sin\s(?<filePath>.*)\:line\s(?<lineNumber>[\d]+)";
-                }
-                else
-                {
-                    frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)";
-                }
+                string frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)\([^)]*\)\sin\s(?<filePath>.*)\:line\s(?<lineNumber>[\d]+)";
 
                 using (var sr = new StringReader(reportedCallStack))
                 {
@@ -198,12 +192,8 @@ namespace System.Tests
                     var match = Regex.Match(frame, frameParserRegex);
                     Assert.True(match.Success);
                     Assert.Equal(expectedStackFrame.CallerMemberName, match.Groups["memberName"].Value);
-
-                    if (PlatformDetection.IsLineNumbersSupported)
-                    {
-                        Assert.Equal(expectedStackFrame.SourceFilePath, match.Groups["filePath"].Value);
-                        Assert.Equal(expectedStackFrame.SourceLineNumber, Convert.ToInt32(match.Groups["lineNumber"].Value));
-                    }
+                    Assert.Equal(expectedStackFrame.SourceFilePath, match.Groups["filePath"].Value);
+                    Assert.Equal(expectedStackFrame.SourceLineNumber, Convert.ToInt32(match.Groups["lineNumber"].Value));
                 }
             }
             catch

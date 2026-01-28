@@ -676,7 +676,7 @@ g_str_hash (gconstpointer v1)
 	unsigned char *p = (unsigned char *) v1;
 
 	while (*p)
-		hash = (hash << 5) - (hash + *p++);
+		hash = (hash << 5) - hash + *p++;
 
 	return hash;
 }

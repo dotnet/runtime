@@ -263,6 +263,8 @@ OBJECTREF COMToCLRGetObjectAndTarget_NonVirtual(ComCallWrapper * pWrap, MethodDe
     }
     CONTRACTL_END;
 
+    CONTRACT_VIOLATION(ThrowsViolation);
+
     //NOTE: No need to optimize for stub dispatch since non-virtuals are retrieved quickly.
     *ppManagedTargetOut = pRealMD->GetSingleCallableAddrOfCode();
 
@@ -850,6 +852,7 @@ void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(!pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
@@ -974,6 +977,7 @@ void ComCallMethodDesc::InitNativeInfo()
         else
         {
             MethodDesc *pMD = GetCallMethodDesc();
+            _ASSERTE(!pMD->IsAsyncMethod()); // Async methods should never have a ComCallMethodDesc.
 
 #ifdef _DEBUG
             LPCUTF8         szDebugName = pMD->m_pszDebugMethodName;
@@ -985,9 +989,6 @@ void ComCallMethodDesc::InitNativeInfo()
 
             MethodTable * pMT = pMD->GetMethodTable();
             IMDInternalImport * pInternalImport = pMT->GetMDImport();
-            // TODO: (async) revisit and examine if this needs to be supported somehow
-            if (pMD->IsAsyncMethod())
-                ThrowHR(COR_E_NOTSUPPORTED);
 
             mdMethodDef md = pMD->GetMemberDef();
 

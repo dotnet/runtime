@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace GitHub_11733;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -19,6 +22,7 @@ public class C
         return (float)Math.Pow(a, (float)Math.Pow(b, a));
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

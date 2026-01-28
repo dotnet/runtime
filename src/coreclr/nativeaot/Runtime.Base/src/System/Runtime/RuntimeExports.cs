@@ -56,7 +56,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhNewArray")]
-        public static unsafe object RhNewArray(MethodTable* pEEType, int length)
+        public static unsafe object RhNewArray(MethodTable* pEEType, nint length)
         {
             Debug.Assert(pEEType->IsSzArray);
 

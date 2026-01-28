@@ -68,6 +68,7 @@
       System.IO.Compression;
       System.IO.Compression.Brotli;
       System.IO.Compression.ZipFile;
+      System.IO.Compression.Zstandard;
       System.IO.FileSystem;
       System.IO.FileSystem.AccessControl;
       System.IO.FileSystem.DriveInfo;

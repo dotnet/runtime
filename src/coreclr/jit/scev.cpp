@@ -688,7 +688,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
         case GT_CAST:
         {
             GenTreeCast* cast = tree->AsCast();
-            if (cast->gtCastType != TYP_LONG)
+            if ((cast->gtCastType != TYP_LONG) && (cast->gtCastType != TYP_ULONG))
             {
                 return nullptr;
             }

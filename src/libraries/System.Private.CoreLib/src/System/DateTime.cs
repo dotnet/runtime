@@ -1509,17 +1509,8 @@ namespace System
             get
             {
                 DateTime utc = UtcNow;
-                long offset = TimeZoneInfo.GetDateTimeNowUtcOffsetFromUtc(utc, out bool isAmbiguousLocalDst).Ticks;
-                long tick = utc.Ticks + offset;
-                if ((ulong)tick <= MaxTicks)
-                {
-                    if (!isAmbiguousLocalDst)
-                    {
-                        return new DateTime((ulong)tick | KindLocal);
-                    }
-                    return new DateTime((ulong)tick | KindLocalAmbiguousDst);
-                }
-                return new DateTime(tick < 0 ? KindLocal : MaxTicks | KindLocal);
+                long localTicks = TimeZoneInfo.GetLocalDateTimeNowTicks(utc, out bool isAmbiguousLocalDst);
+                return new DateTime((ulong)localTicks | (isAmbiguousLocalDst ? KindLocalAmbiguousDst : KindLocal));
             }
         }
 

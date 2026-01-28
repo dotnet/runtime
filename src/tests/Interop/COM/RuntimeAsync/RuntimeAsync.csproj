@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- RequiresProcessIsolation required for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <NoWarn>$(NoWarn);SYSLIB5007</NoWarn>
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="RuntimeAsync.cs" />
+    <Compile Include="TaskComServer.cs" />
+    <Compile Include="$(InteropCommonDir)ComActivationHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <CLRTestEnvironmentVariable Include="DOTNET_RuntimeAsync" Value="1" />
+  </ItemGroup>
+</Project>

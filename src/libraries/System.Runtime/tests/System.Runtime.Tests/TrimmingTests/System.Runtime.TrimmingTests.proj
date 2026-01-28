@@ -79,6 +79,9 @@
       <EnabledProperties>UseWindowsThreadPool</EnabledProperties>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(WasmEnableThreads)' != 'true'">
+    <TestConsoleAppSourceFiles Include="BrowserDoesNotIncludeConcurrentTypes.cs" />
+  </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

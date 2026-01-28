@@ -106,15 +106,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override MetadataType MetadataBaseType
-        {
-            get
-            {
-                return InteropTypes.GetNativeFunctionPointerWrapper(Context);
-            }
-        }
-
-        public override DefType BaseType
+        public override MetadataType BaseType
         {
             get
             {
@@ -138,7 +130,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override DefType ContainingType
+        public override MetadataType ContainingType
         {
             get
             {
@@ -188,7 +180,7 @@ namespace Internal.TypeSystem.Interop
             return Array.Empty<MetadataType>();
         }
 
-        public override MetadataType GetNestedType(string name)
+        public override MetadataType GetNestedType(ReadOnlySpan<byte> name)
         {
             return null;
         }

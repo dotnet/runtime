@@ -3,7 +3,7 @@
 using System;
 using Xunit;
 
-public class Program
+public class SecondLevelIndirection
 {
     public int value = 23;
 
@@ -12,10 +12,11 @@ public class Program
         value += num;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {
-        Program prog = new Program();
+        SecondLevelIndirection prog = new SecondLevelIndirection();
 
         Action<int> action = prog.Update;
         Action<int> secondLevel = action.Invoke;

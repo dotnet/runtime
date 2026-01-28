@@ -7,7 +7,7 @@ using System.Reflection.Metadata;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
-
+using ILCompiler.ReadyToRun.TypeSystem;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -79,7 +79,7 @@ namespace ILCompiler
                 {
                     Debug.Assert(!_sortedMethods);
                     MethodDesc method = methodNode.Method;
-                    EcmaModule module = (EcmaModule)((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+                    EcmaModule module = (EcmaModule)((EcmaMethod)method.GetTypicalMethodDefinition().GetPrimaryMethodDesc()).Module;
                     if (!_methodsGenerated.TryGetValue(module, out var perModuleData))
                     {
                         perModuleData = new PerModuleMethodsGenerated(module);
@@ -112,7 +112,7 @@ namespace ILCompiler
                         int methodOnlyResult = comparer.Compare(x.Method, y.Method);
 
                         // Assert the two sorting techniques produce the same result unless there is a CustomSort applied
-                        Debug.Assert((nodeComparerResult == methodOnlyResult) || 
+                        Debug.Assert((nodeComparerResult == methodOnlyResult) ||
                             ((x is SortableDependencyNode sortableX && sortableX.CustomSort != Int32.MaxValue) ||
                              (y is SortableDependencyNode sortableY && sortableY.CustomSort != Int32.MaxValue)));
 #endif

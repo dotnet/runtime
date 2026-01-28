@@ -19,6 +19,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Returns a pointer to the given by-ref parameter.
         /// </summary>
+        /// <typeparam name="T">The type referenced by the byref parameter.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__AS_POINTER
         // AOT:AsPointer
@@ -39,6 +40,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Returns the size of an object of the given type parameter.
         /// </summary>
+        /// <typeparam name="T">The type whose size is returned.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__SIZEOF
         // AOT:SizeOf
@@ -54,6 +56,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Casts the given object to the specified type, performs no dynamic type checking.
         /// </summary>
+        /// <typeparam name="T">The target reference type. The return value will be of this type.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__OBJECT_AS
         // AOT:As
@@ -72,6 +75,8 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Reinterprets the given reference as a reference to a value of type <typeparamref name="TTo"/>.
         /// </summary>
+        /// <typeparam name="TFrom">The source type of the reference to reinterpret.</typeparam>
+        /// <typeparam name="TTo">The destination type to reinterpret the reference as.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_AS
         // AOT:As
@@ -91,6 +96,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Adds an element offset to the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_ADD
         // AOT:Add
@@ -118,6 +124,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Adds an element offset to the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_ADD
         // AOT:Add
@@ -145,6 +152,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Adds an element offset to the given pointer.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the pointer.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_ADD
         // AOT:Add
@@ -174,6 +182,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Adds an element offset to the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
         [Intrinsic]
         // CoreCLR:
         [NonVersionable]
@@ -200,6 +209,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Adds an byte offset to the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the source.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET_UINTPTR
         // AOT:AddByteOffset
@@ -226,6 +236,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Determines whether the specified references point to the same location.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the inputs.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_ARE_SAME
         // AOT:AreSame
@@ -652,6 +663,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Adds an byte offset to the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the source.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET_INTPTR
         // AOT:AddByteOffset
@@ -809,6 +821,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Subtracts an element offset from the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_INT_SUBTRACT
         [NonVersionable]
@@ -835,6 +848,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Subtracts an element offset from the given void pointer.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the pointer.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_INT_SUBTRACT
         [NonVersionable]
@@ -862,6 +876,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Subtracts an element offset from the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT
         [NonVersionable]
@@ -887,6 +902,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Subtracts an element offset from the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT
         [NonVersionable]
@@ -913,6 +929,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Subtracts a byte offset from the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the source.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT_BYTE_OFFSET
         [NonVersionable]
@@ -931,6 +948,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Subtracts a byte offset from the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the source.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET
         [NonVersionable]

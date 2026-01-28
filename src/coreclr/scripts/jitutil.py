@@ -494,6 +494,8 @@ def determine_jit_name(host_os, target_os=None, host_arch=None, target_arch=None
     if use_cross_compile_jit or (host_arch != target_arch) or ((target_os is not None) and (host_os != target_os)):
         if target_arch.startswith("arm"):
             jit_os_name = "universal"
+        elif target_arch.startswith("wasm"):
+            jit_os_name = "universal"
         elif target_os == "windows":
             jit_os_name = "win"
         elif target_os == "osx" or target_os == "linux":

@@ -22,7 +22,7 @@ namespace NetClient
 
             try
             {
-                var server = (Server.Contract.Servers.NumericTesting)new Server.Contract.Servers.NumericTestingClass();
+                var server = new Server.Contract.Servers.NumericTesting();
             }
             catch (NotSupportedException) when (OperatingSystem.IsWindows())
             {

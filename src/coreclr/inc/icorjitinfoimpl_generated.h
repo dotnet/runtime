@@ -219,10 +219,10 @@ bool getIsClassInitedFlagAddress(
           CORINFO_CONST_LOOKUP* addr,
           int* offset) override;
 
-size_t getClassThreadStaticDynamicInfo(
+void* getClassThreadStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr) override;
 
-size_t getClassStaticDynamicInfo(
+void* getClassStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr) override;
 
 bool getStaticBaseAddress(
@@ -453,6 +453,12 @@ void reportRichMappings(
           ICorDebugInfo::RichOffsetMapping* mappings,
           uint32_t numMappings) override;
 
+void reportAsyncDebugInfo(
+          ICorDebugInfo::AsyncInfo* asyncInfo,
+          ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+          ICorDebugInfo::AsyncContinuationVarInfo* vars,
+          uint32_t numVars) override;
+
 void reportMetadata(
           const char* key,
           const void* value,
@@ -549,9 +555,6 @@ void getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
           bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
-
-CorInfoHelpFunc getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle) override;
 
 CORINFO_MODULE_HANDLE embedModuleHandle(
           CORINFO_MODULE_HANDLE handle,
@@ -655,7 +658,13 @@ bool getTailCallHelpers(
           CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
           CORINFO_TAILCALL_HELPERS* pResult) override;
 
-CORINFO_METHOD_HANDLE getAsyncResumptionStub() override;
+CORINFO_CLASS_HANDLE getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          size_t objRefsSize) override;
+
+CORINFO_METHOD_HANDLE getAsyncResumptionStub(
+          void** entryPoint) override;
 
 bool convertPInvokeCalliToCall(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -731,10 +740,10 @@ void recordRelocation(
           void* location,
           void* locationRW,
           void* target,
-          uint16_t fRelocType,
+          CorInfoReloc fRelocType,
           int32_t addlDelta) override;
 
-uint16_t getRelocTypeHint(
+CorInfoReloc getRelocTypeHint(
           void* target) override;
 
 uint32_t getExpectedTargetArchitecture() override;

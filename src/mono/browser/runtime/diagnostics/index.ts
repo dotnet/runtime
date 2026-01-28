@@ -40,7 +40,7 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects): void {
         if (!wrapper) {
             return -1;
         }
-        const message = (new Uint8Array(Module.HEAPU8.buffer, buffer as any, bytes_to_write)).slice();
+        const message = (new Uint8Array(Module.HEAPU8.buffer, buffer as any >>> 0, bytes_to_write)).slice();
         return wrapper.send(message);
     };
 

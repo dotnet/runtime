@@ -2,13 +2,13 @@ project(hfa_interop)
 
 
 add_library(hfa_simple_f32_native_cpp SHARED hfa_native.cpp)
-SET_TARGET_PROPERTIES(hfa_simple_f32_native_cpp PROPERTIES COMPILE_FLAGS "-c -DSIMPLE_HFA -DFLOAT32") 
+target_compile_definitions(hfa_simple_f32_native_cpp PRIVATE SIMPLE_HFA FLOAT32)
 
 add_library(hfa_simple_f64_native_cpp SHARED hfa_native.cpp)
-SET_TARGET_PROPERTIES(hfa_simple_f64_native_cpp PROPERTIES COMPILE_FLAGS "-c -DSIMPLE_HFA -DFLOAT64") 
+target_compile_definitions(hfa_simple_f64_native_cpp PRIVATE SIMPLE_HFA FLOAT64)
 
 add_library(hfa_nested_f32_native_cpp SHARED hfa_native.cpp)
-SET_TARGET_PROPERTIES(hfa_nested_f32_native_cpp PROPERTIES COMPILE_FLAGS "-c -DNESTED_HFA -DFLOAT32") 
+target_compile_definitions(hfa_nested_f32_native_cpp PRIVATE NESTED_HFA FLOAT32)
 
 add_library(hfa_nested_f64_native_cpp SHARED hfa_native.cpp)
-SET_TARGET_PROPERTIES(hfa_nested_f64_native_cpp PROPERTIES COMPILE_FLAGS "-c -DNESTED_HFA -DFLOAT64") 
+target_compile_definitions(hfa_nested_f64_native_cpp PRIVATE NESTED_HFA FLOAT64)

@@ -13,6 +13,7 @@ namespace SafeHandleTests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/48084", TestRuntimes.Mono)]
+        [Xunit.SkipOnCoreClrAttribute("Depends on COM", RuntimeTestModes.InterpreterActive)] // When on Win32, IsBuiltInComEnabled is found to be false, but enough of COM interop is in place to make this go down the InvalidOperationException path
         public static void RunTest()
         {
             if (TestLibrary.PlatformDetection.IsBuiltInComEnabled)

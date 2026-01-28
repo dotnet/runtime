@@ -2676,6 +2676,344 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        public void GetDocument_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var doc = reader.GetDocument(default(DocumentHandle));
+
+                Assert.Throws<BadImageFormatException>(() => doc.Name);
+                Assert.Throws<BadImageFormatException>(() => doc.Language);
+                Assert.Throws<BadImageFormatException>(() => doc.HashAlgorithm);
+                Assert.Throws<BadImageFormatException>(() => doc.Hash);
+            }
+        }
+
+        [Fact]
+        public void GetLocalScope_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var scope = reader.GetLocalScope(default(LocalScopeHandle));
+
+                Assert.Throws<BadImageFormatException>(() => scope.Method);
+                Assert.Throws<BadImageFormatException>(() => scope.ImportScope);
+                Assert.Throws<BadImageFormatException>(() => scope.StartOffset);
+                Assert.Throws<BadImageFormatException>(() => scope.Length);
+            }
+        }
+
+        [Fact]
+        public void GetCustomDebugInformation_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var cdi = reader.GetCustomDebugInformation(default(CustomDebugInformationHandle));
+
+                Assert.Throws<BadImageFormatException>(() => cdi.Parent);
+                Assert.Throws<BadImageFormatException>(() => cdi.Kind);
+                Assert.Throws<BadImageFormatException>(() => cdi.Value);
+            }
+        }
+
+        [Fact]
+        public void GetLocalVariable_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var localVar = reader.GetLocalVariable(default(LocalVariableHandle));
+
+                Assert.Throws<BadImageFormatException>(() => localVar.Attributes);
+                Assert.Throws<BadImageFormatException>(() => localVar.Index);
+                Assert.Throws<BadImageFormatException>(() => localVar.Name);
+            }
+        }
+
+        [Fact]
+        public void GetLocalConstant_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var localConst = reader.GetLocalConstant(default(LocalConstantHandle));
+
+                Assert.Throws<BadImageFormatException>(() => localConst.Name);
+                Assert.Throws<BadImageFormatException>(() => localConst.Signature);
+            }
+        }
+
+        [Fact]
+        public void GetImportScope_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var importScope = reader.GetImportScope(default(ImportScopeHandle));
+
+                Assert.Throws<BadImageFormatException>(() => importScope.Parent);
+                Assert.Throws<BadImageFormatException>(() => importScope.ImportsBlob);
+            }
+        }
+
+        [Fact]
+        public void GetAssemblyFile_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetAssemblyFile(default(AssemblyFileHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.ContainsMetadata);
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+            Assert.Throws<BadImageFormatException>(() => entity.HashValue);
+        }
+
+        [Fact]
+        public void GetAssemblyReference_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetAssemblyReference(default(AssemblyReferenceHandle));
+
+            // Version has special handling - when RowId == WinMDMscorlibRef (both 0 for regular assemblies),
+            // it returns a static version without accessing the table.
+            Assert.Equal(new Version(4, 0, 0, 0), entity.Version);
+
+            Assert.Throws<BadImageFormatException>(() => entity.Flags);
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+            Assert.Throws<BadImageFormatException>(() => entity.Culture);
+            Assert.Throws<BadImageFormatException>(() => entity.PublicKeyOrToken);
+            Assert.Throws<BadImageFormatException>(() => entity.HashValue);
+        }
+
+        [Fact]
+        public void GetConstant_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetConstant(default(ConstantHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.TypeCode);
+            Assert.Throws<BadImageFormatException>(() => entity.Value);
+            Assert.Throws<BadImageFormatException>(() => entity.Parent);
+        }
+
+        [Fact]
+        public void GetCustomAttribute_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetCustomAttribute(default(CustomAttributeHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Constructor);
+            Assert.Throws<BadImageFormatException>(() => entity.Parent);
+            Assert.Throws<BadImageFormatException>(() => entity.Value);
+        }
+
+        [Fact]
+        public void GetDeclarativeSecurityAttribute_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetDeclarativeSecurityAttribute(default(DeclarativeSecurityAttributeHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Action);
+            Assert.Throws<BadImageFormatException>(() => entity.Parent);
+            Assert.Throws<BadImageFormatException>(() => entity.PermissionSet);
+        }
+
+        [Fact]
+        public void GetEventDefinition_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetEventDefinition(default(EventDefinitionHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+            Assert.Throws<BadImageFormatException>(() => entity.Attributes);
+            Assert.Throws<BadImageFormatException>(() => entity.Type);
+        }
+
+        [Fact]
+        public void GetExportedType_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetExportedType(default(ExportedTypeHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Attributes);
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+            Assert.Throws<BadImageFormatException>(() => entity.Namespace);
+            Assert.Throws<BadImageFormatException>(() => entity.Implementation);
+        }
+
+        [Fact]
+        public void GetFieldDefinition_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetFieldDefinition(default(FieldDefinitionHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+            Assert.Throws<BadImageFormatException>(() => entity.Attributes);
+            Assert.Throws<BadImageFormatException>(() => entity.Signature);
+        }
+
+        [Fact]
+        public void GetGenericParameter_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetGenericParameter(default(GenericParameterHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Parent);
+            Assert.Throws<BadImageFormatException>(() => entity.Attributes);
+            Assert.Throws<BadImageFormatException>(() => entity.Index);
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+        }
+
+        [Fact]
+        public void GetGenericParameterConstraint_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetGenericParameterConstraint(default(GenericParameterConstraintHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Parameter);
+            Assert.Throws<BadImageFormatException>(() => entity.Type);
+        }
+
+        [Fact]
+        public void GetInterfaceImplementation_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetInterfaceImplementation(default(InterfaceImplementationHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Interface);
+        }
+
+        [Fact]
+        public void GetManifestResource_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetManifestResource(default(ManifestResourceHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Offset);
+            Assert.Throws<BadImageFormatException>(() => entity.Attributes);
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+            Assert.Throws<BadImageFormatException>(() => entity.Implementation);
+        }
+
+        [Fact]
+        public void GetMemberReference_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetMemberReference(default(MemberReferenceHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Parent);
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+            Assert.Throws<BadImageFormatException>(() => entity.Signature);
+        }
+
+        [Fact]
+        public void GetMethodDefinition_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetMethodDefinition(default(MethodDefinitionHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+            Assert.Throws<BadImageFormatException>(() => entity.Signature);
+            Assert.Throws<BadImageFormatException>(() => entity.RelativeVirtualAddress);
+            Assert.Throws<BadImageFormatException>(() => entity.Attributes);
+        }
+
+        [Fact]
+        public void GetMethodImplementation_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetMethodImplementation(default(MethodImplementationHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Type);
+            Assert.Throws<BadImageFormatException>(() => entity.MethodBody);
+            Assert.Throws<BadImageFormatException>(() => entity.MethodDeclaration);
+        }
+
+        [Fact]
+        public void GetMethodSpecification_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetMethodSpecification(default(MethodSpecificationHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Method);
+            Assert.Throws<BadImageFormatException>(() => entity.Signature);
+        }
+
+        [Fact]
+        public void GetModuleReference_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetModuleReference(default(ModuleReferenceHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+        }
+
+        [Fact]
+        public void GetParameter_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetParameter(default(ParameterHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Attributes);
+            Assert.Throws<BadImageFormatException>(() => entity.SequenceNumber);
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+        }
+
+        [Fact]
+        public void GetPropertyDefinition_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetPropertyDefinition(default(PropertyDefinitionHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+            Assert.Throws<BadImageFormatException>(() => entity.Attributes);
+            Assert.Throws<BadImageFormatException>(() => entity.Signature);
+        }
+
+        [Fact]
+        public void GetStandaloneSignature_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetStandaloneSignature(default(StandaloneSignatureHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Signature);
+        }
+
+        [Fact]
+        public void GetTypeDefinition_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetTypeDefinition(default(TypeDefinitionHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Attributes);
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+            Assert.Throws<BadImageFormatException>(() => entity.Namespace);
+            Assert.Throws<BadImageFormatException>(() => entity.BaseType);
+        }
+
+        [Fact]
+        public void GetTypeReference_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetTypeReference(default(TypeReferenceHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.ResolutionScope);
+            Assert.Throws<BadImageFormatException>(() => entity.Name);
+            Assert.Throws<BadImageFormatException>(() => entity.Namespace);
+        }
+
+        [Fact]
+        public void GetTypeSpecification_InvalidHandle()
+        {
+            var reader = GetMetadataReader(Misc.Members);
+            var entity = reader.GetTypeSpecification(default(TypeSpecificationHandle));
+
+            Assert.Throws<BadImageFormatException>(() => entity.Signature);
+        }
+
+        [Fact]
         public void GetCustomDebugInformation()
         {
             using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))

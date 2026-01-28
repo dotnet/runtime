@@ -358,6 +358,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Contains(@"""IReadOnlyCollectionT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""IReadOnlyListT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""ISetT"":[""Hello"",""World""]", json);
+                Assert.Contains(@"""IReadOnlySetT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""StackT"":[""World"",""Hello""]", json);
                 Assert.Contains(@"""QueueT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""HashSetT"":[""Hello"",""World""]", json);

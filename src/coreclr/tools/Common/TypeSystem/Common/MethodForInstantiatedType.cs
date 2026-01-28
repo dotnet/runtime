@@ -119,6 +119,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsAsync
+        {
+            get
+            {
+                return _typicalMethodDef.IsAsync;
+            }
+        }
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _typicalMethodDef.HasCustomAttribute(attributeNamespace, attributeName);

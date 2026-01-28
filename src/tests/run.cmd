@@ -65,7 +65,6 @@ if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=1&shif
 REM This test feature is currently intentionally undocumented
 if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=1&set CrossgenLargeVersionBubble=1&shift&goto Arg_Loop)
 if /i "%1" == "synthesizepgo"                           (set CrossGen2SynthesizePgo=1&shift&goto Arg_Loop)
-if /i "%1" == "link"                                    (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcname"                                  (set DOTNET_GCName=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcstresslevel"                           (set DOTNET_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcsimulator"                             (set __GCSimulatorTests=1&shift&goto Arg_Loop)
@@ -113,10 +112,6 @@ set __RuntestPyArgs=-arch %__BuildArch% -build_type %__BuildType%
 
 if defined LogsDirArg (
     set __RuntestPyArgs=%__RuntestPyArgs% -logs_dir %LogsDirArg%
-)
-
-if defined DoLink (
-    set __RuntestPyArgs=%__RuntestPyArgs% --il_link
 )
 
 if defined __LongGCTests (

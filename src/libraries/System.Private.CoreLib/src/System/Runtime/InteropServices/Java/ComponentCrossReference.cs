@@ -5,6 +5,9 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.Java
 {
+    /// <summary>
+    /// Represents a cross-reference between two tracked component groups.
+    /// </summary>
     [CLSCompliant(false)]
     [SupportedOSPlatform("android")]
     [StructLayout(LayoutKind.Sequential)]

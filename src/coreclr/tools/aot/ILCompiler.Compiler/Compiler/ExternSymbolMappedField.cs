@@ -24,7 +24,7 @@ namespace ILCompiler
 
         public string SymbolName => _symbolName;
 
-        public override DefType OwningType => _fieldType.Context.SystemModule.GetGlobalModuleType();
+        public override MetadataType OwningType => _fieldType.Context.SystemModule.GetGlobalModuleType();
 
         public override TypeDesc FieldType => _fieldType;
         public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => null;

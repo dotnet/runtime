@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b19112a;
+
 using Xunit;
 public class foo
 {
@@ -10,6 +13,7 @@ public class foo
     public static sbyte a, b, c;
 #pragma warning restore 0414
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

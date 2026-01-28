@@ -1437,7 +1437,7 @@ namespace System.Net.Http.Functional.Tests
             return default(T);
         }
 
-        private sealed class CustomResponseHandler : HttpMessageHandler
+        internal sealed class CustomResponseHandler : HttpMessageHandler
         {
             private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _func;
 

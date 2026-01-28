@@ -9,6 +9,6 @@
     <ProjectReference Include="..\dll\common.csproj" />
     <ProjectReference Include="..\dll\hfa_nested_f32_common.csproj" />
     <ProjectReference Include="..\dll\hfa_nested_f32_managed.csproj" />
-    <CMakeProjectReference Include="..\dll\CMakelists.txt" />
+    <CMakeProjectReference Include="..\dll\CMakeLists.txt" />
   </ItemGroup>
 </Project>

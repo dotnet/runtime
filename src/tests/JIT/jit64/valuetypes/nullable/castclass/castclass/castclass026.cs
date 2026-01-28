@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using System;
 using Xunit;
 
+namespace castclass026;
 public class NullableTest
 {
     private static bool BoxUnboxToNQ(object o)
@@ -28,6 +29,7 @@ public class NullableTest
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         EmptyStructGen<int>? s = Helper.Create(default(EmptyStructGen<int>));

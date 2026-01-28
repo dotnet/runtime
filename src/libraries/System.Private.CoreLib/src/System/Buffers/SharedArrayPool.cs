@@ -107,7 +107,13 @@ namespace System.Buffers
                 ArgumentOutOfRangeException.ThrowIfNegative(minimumLength);
             }
 
-            buffer = GC.AllocateUninitializedArray<T>(minimumLength);
+            // For large arrays, we prefer to avoid the zero-initialization costs. However, as the resulting
+            // arrays could end up containing arbitrary bit patterns, we only allow this for types for which
+            // every possible bit pattern is valid.
+            buffer = typeof(T).IsPrimitive && typeof(T) != typeof(bool) ?
+                GC.AllocateUninitializedArray<T>(minimumLength) :
+                new T[minimumLength];
+
             if (log.IsEnabled())
             {
                 int bufferId = buffer.GetHashCode();

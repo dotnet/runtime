@@ -36,7 +36,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       That is, the destination register is one of the sources.  In this case, we must not use the same register for
       the non-RMW operand as for the destination.
 
-  Overview (doLinearScan):
+  Overview (doRegisterAllocation):
     - Walk all blocks, building intervals and RefPositions (buildIntervals)
     - Allocate registers (allocateRegisters)
     - Annotate nodes with register assignments (resolveRegisters)
@@ -824,7 +824,7 @@ void LinearScan::dumpOutVarToRegMap(BasicBlock* block)
 
 #endif // DEBUG
 
-LinearScanInterface* getLinearScanAllocator(Compiler* comp)
+RegAllocInterface* GetRegisterAllocator(Compiler* comp)
 {
     return new (comp, CMK_LSRA) LinearScan(comp);
 }
@@ -874,15 +874,15 @@ LinearScan::LinearScan(Compiler* theCompiler)
     }
     else
     {
-        regIndices =
-            new regNumber[]{REG_RAX,   REG_RCX,   REG_RDX,   REG_RBX,   REG_RSP,   REG_RBP,   REG_RSI,   REG_RDI,
-                            REG_R8,    REG_R9,    REG_R10,   REG_R11,   REG_R12,   REG_R13,   REG_R14,   REG_R15,
-                            REG_XMM0,  REG_XMM1,  REG_XMM2,  REG_XMM3,  REG_XMM4,  REG_XMM5,  REG_XMM6,  REG_XMM7,
-                            REG_XMM8,  REG_XMM9,  REG_XMM10, REG_XMM11, REG_XMM12, REG_XMM13, REG_XMM14, REG_XMM15,
-                            REG_XMM16, REG_XMM17, REG_XMM18, REG_XMM19, REG_XMM20, REG_XMM21, REG_XMM22, REG_XMM23,
-                            REG_XMM24, REG_XMM25, REG_XMM26, REG_XMM27, REG_XMM28, REG_XMM29, REG_XMM30, REG_XMM31,
-                            REG_K0,    REG_K1,    REG_K2,    REG_K3,    REG_K4,    REG_K5,    REG_K6,    REG_K7,
-                            REG_COUNT};
+        regIndices = new (theCompiler, CMK_LSRA)
+            regNumber[]{REG_RAX,   REG_RCX,   REG_RDX,   REG_RBX,   REG_RSP,   REG_RBP,   REG_RSI,   REG_RDI,
+                        REG_R8,    REG_R9,    REG_R10,   REG_R11,   REG_R12,   REG_R13,   REG_R14,   REG_R15,
+                        REG_XMM0,  REG_XMM1,  REG_XMM2,  REG_XMM3,  REG_XMM4,  REG_XMM5,  REG_XMM6,  REG_XMM7,
+                        REG_XMM8,  REG_XMM9,  REG_XMM10, REG_XMM11, REG_XMM12, REG_XMM13, REG_XMM14, REG_XMM15,
+                        REG_XMM16, REG_XMM17, REG_XMM18, REG_XMM19, REG_XMM20, REG_XMM21, REG_XMM22, REG_XMM23,
+                        REG_XMM24, REG_XMM25, REG_XMM26, REG_XMM27, REG_XMM28, REG_XMM29, REG_XMM30, REG_XMM31,
+                        REG_K0,    REG_K1,    REG_K2,    REG_K3,    REG_K4,    REG_K5,    REG_K6,    REG_K7,
+                        REG_COUNT};
     }
 #endif // TARGET_AMD64
 
@@ -1008,9 +1008,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // TARGET_XARCH
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
-
-    compiler->codeGen->intRegState.rsIsFloat   = false;
-    compiler->codeGen->floatRegState.rsIsFloat = true;
 
     // Block sequencing (the order in which we schedule).
     // Note that we don't initialize the bbVisitedSet until we do the first traversal
@@ -1317,7 +1314,7 @@ BasicBlock* LinearScan::getNextBlock()
 }
 
 //------------------------------------------------------------------------
-// doLinearScan: The main method for register allocation.
+// doRegisterAllocation: The main method for register allocation.
 //
 // Arguments:
 //    None
@@ -1325,7 +1322,7 @@ BasicBlock* LinearScan::getNextBlock()
 // Return Value:
 //    Suitable phase status
 //
-PhaseStatus LinearScan::doLinearScan()
+PhaseStatus LinearScan::doRegisterAllocation()
 {
     // Check to see whether we have any local variables to enregister.
     // We initialize this in the constructor based on opt settings,
@@ -1415,7 +1412,7 @@ PhaseStatus LinearScan::doLinearScan()
     compiler->fgDebugCheckLinks();
 #endif
 
-    compiler->compLSRADone = true;
+    compiler->compRegAllocDone = true;
 
     // If edge resolution didn't create new blocks,
     // we can reuse the current flowgraph annotations during block layout.
@@ -1520,6 +1517,19 @@ void Interval::setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l
 }
 
 //------------------------------------------------------------------------
+// GetCompiler: Get the compiler field.
+//
+// Bridges the field naming difference for common RA code.
+//
+// Return Value:
+//    The 'this->compiler' field.
+//
+Compiler* LinearScan::GetCompiler() const
+{
+    return compiler;
+}
+
+//------------------------------------------------------------------------
 // LinearScan:identifyCandidatesExceptionDataflow: Build the set of variables exposed on EH flow edges
 //
 // Notes:
@@ -1576,148 +1586,6 @@ void LinearScan::identifyCandidatesExceptionDataflow()
         }
     }
 #endif
-}
-
-bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
-{
-    if (!enregisterLocalVars)
-    {
-        return false;
-    }
-    assert(compiler->compEnregLocals());
-
-    if (!varDsc->lvTracked)
-    {
-        return false;
-    }
-
-#if !defined(TARGET_64BIT)
-    if (varDsc->lvType == TYP_LONG)
-    {
-        // Long variables should not be register candidates.
-        // Lowering will have split any candidate lclVars into lo/hi vars.
-        return false;
-    }
-#endif // !defined(TARGET_64BIT)
-
-    // If we have JMP, reg args must be put on the stack
-
-    if (compiler->compJmpOpUsed && varDsc->lvIsRegArg)
-    {
-        return false;
-    }
-
-    // Don't allocate registers for dependently promoted struct fields
-    if (compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc))
-    {
-        return false;
-    }
-
-    // Don't enregister if the ref count is zero.
-    if (varDsc->lvRefCnt() == 0)
-    {
-        varDsc->setLvRefCntWtd(0);
-        return false;
-    }
-
-    // Variables that are address-exposed are never enregistered, or tracked.
-    // A struct may be promoted, and a struct that fits in a register may be fully enregistered.
-    // Pinned variables may not be tracked (a condition of the GCInfo representation)
-    // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
-    // references when using the general GC encoding.
-    unsigned lclNum = compiler->lvaGetLclNum(varDsc);
-    if (varDsc->IsAddressExposed() || !varDsc->IsEnregisterableType() ||
-        (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT)))
-    {
-#ifdef DEBUG
-        DoNotEnregisterReason dner;
-        if (varDsc->IsAddressExposed())
-        {
-            dner = DoNotEnregisterReason::AddrExposed;
-        }
-        else if (!varDsc->IsEnregisterableType())
-        {
-            dner = DoNotEnregisterReason::NotRegSizeStruct;
-        }
-        else
-        {
-            dner = DoNotEnregisterReason::DontEnregStructs;
-        }
-#endif // DEBUG
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(dner));
-        return false;
-    }
-    else if (varDsc->lvPinned)
-    {
-        varDsc->lvTracked = 0;
-#ifdef JIT32_GCENCODER
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
-#endif // JIT32_GCENCODER
-        return false;
-    }
-
-    //  Are we not optimizing and we have exception handlers?
-    //   if so mark all args and locals as volatile, so that they
-    //   won't ever get enregistered.
-    //
-    if (compiler->opts.MinOpts() && compiler->compHndBBtabCount > 0)
-    {
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-    }
-
-    if (varDsc->lvDoNotEnregister)
-    {
-        return false;
-    }
-
-    switch (genActualType(varDsc->TypeGet()))
-    {
-        case TYP_FLOAT:
-        case TYP_DOUBLE:
-            return !compiler->opts.compDbgCode;
-
-        case TYP_INT:
-        case TYP_LONG:
-        case TYP_REF:
-        case TYP_BYREF:
-            break;
-
-#ifdef FEATURE_SIMD
-        case TYP_SIMD8:
-        case TYP_SIMD12:
-        case TYP_SIMD16:
-#if defined(TARGET_XARCH)
-        case TYP_SIMD32:
-        case TYP_SIMD64:
-#endif // TARGET_XARCH
-#ifdef FEATURE_MASKED_HW_INTRINSICS
-        case TYP_MASK:
-#endif // FEATURE_MASKED_HW_INTRINSICS
-        {
-            return !varDsc->lvPromoted;
-        }
-#endif // FEATURE_SIMD
-
-        case TYP_STRUCT:
-        {
-            // TODO-1stClassStructs: support vars with GC pointers. The issue is that such
-            // vars will have `lvMustInit` set, because emitter has poor support for struct liveness,
-            // but if the variable is tracked the prolog generator would expect it to be in liveIn set,
-            // so an assert in `genFnProlog` will fire.
-            return compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
-        }
-
-        case TYP_UNDEF:
-        case TYP_UNKNOWN:
-            noway_assert(!"lvType not set correctly");
-            varDsc->lvType = TYP_INT;
-            return false;
-
-        default:
-            return false;
-    }
-
-    return true;
 }
 
 template void LinearScan::identifyCandidates<true>();
@@ -2719,6 +2587,16 @@ void LinearScan::setFrameType()
         removeMask |= RBM_OPT_RSVD.GetIntRegSet();
     }
 #endif // TARGET_ARMARCH || TARGET_RISCV64
+
+#ifdef TARGET_ARM
+    if (compiler->compLocallocUsed)
+    {
+        // We reserve REG_SAVED_LOCALLOC_SP to store SP on entry for stack unwinding
+        compiler->codeGen->regSet.rsMaskResvd |= RBM_SAVED_LOCALLOC_SP;
+        JITDUMP("  Reserved REG_SAVED_LOCALLOC_SP (%s) due to localloc\n", getRegName(REG_SAVED_LOCALLOC_SP));
+        removeMask |= RBM_SAVED_LOCALLOC_SP.GetIntRegSet();
+    }
+#endif // TARGET_ARM
 
     if ((removeMask != RBM_NONE) && ((availableIntRegs & removeMask) != 0))
     {
@@ -9065,23 +8943,27 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 
         if (lastNode->OperIs(GT_JTRUE, GT_JCMP, GT_JTEST))
         {
-            GenTree* op = lastNode->gtGetOp1();
-            consumedRegs |= genSingleTypeRegMask(op->GetRegNum());
+            assert(!lastNode->OperIs(GT_JTRUE) || !lastNode->gtGetOp1()->isContained());
+            if (!lastNode->gtGetOp1()->isContained())
+            {
+                GenTree* op = lastNode->gtGetOp1();
+                consumedRegs |= genSingleTypeRegMask(op->GetRegNum());
 
-            if (op->OperIs(GT_COPY))
-            {
-                GenTree* srcOp = op->gtGetOp1();
-                consumedRegs |= genSingleTypeRegMask(srcOp->GetRegNum());
-            }
-            else if (op->IsLocal())
-            {
-                GenTreeLclVarCommon* lcl = op->AsLclVarCommon();
-                terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
+                if (op->OperIs(GT_COPY))
+                {
+                    GenTree* srcOp = op->gtGetOp1();
+                    consumedRegs |= genSingleTypeRegMask(srcOp->GetRegNum());
+                }
+                else if (op->IsLocal())
+                {
+                    GenTreeLclVarCommon* lcl = op->AsLclVarCommon();
+                    terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
+                }
             }
 
             if (lastNode->OperIs(GT_JCMP, GT_JTEST) && !lastNode->gtGetOp2()->isContained())
             {
-                op = lastNode->gtGetOp2();
+                GenTree* op = lastNode->gtGetOp2();
                 consumedRegs |= genSingleTypeRegMask(op->GetRegNum());
 
                 if (op->OperIs(GT_COPY))
@@ -12575,7 +12457,7 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     this->linearScan = linearScan;
 
 #ifdef DEBUG
-    mappingTable = new ScoreMappingTable(linearScan->compiler->getAllocator(CMK_LSRA));
+    mappingTable = new (linearScan->compiler, CMK_LSRA) ScoreMappingTable(linearScan->compiler->getAllocator(CMK_LSRA));
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);

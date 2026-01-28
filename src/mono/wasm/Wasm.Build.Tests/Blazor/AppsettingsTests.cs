@@ -14,12 +14,13 @@ namespace Wasm.Build.Tests.Blazor;
 public class AppsettingsTests : BlazorWasmTestBase
 {
     public AppsettingsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-        : base(output, buildContext)
+        : base(output, buildContext, DefaultTargetFrameworkForBlazorTemplate)
     {
         _enablePerTestCleanup = true;
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/122338")] // add it back to eng\testing\scenarios\BuildWasmAppsJobsList.txt
     public async Task FileInVfs()
     {
         Configuration config = Configuration.Debug;

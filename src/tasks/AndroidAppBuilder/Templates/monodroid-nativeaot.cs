@@ -39,11 +39,20 @@ internal static unsafe partial class MonoDroidExports
         // The NativeAOT runtime does not need to be initialized, but the crypto library does.
         JavaVM* javaVM = env->GetJavaVM();
         AndroidCryptoNative_InitLibraryOnLoad(javaVM, null);
+
+        var filesDir = env->GetStringUTFChars(j_files_dir) ?? string.Empty;
+        AppContext.SetData("APP_CONTEXT_BASE_DIRECTORY", filesDir);
+        Environment.CurrentDirectory = filesDir;
         return 0;
     }
 
     [LibraryImport("System.Security.Cryptography.Native.Android")]
     internal static partial int AndroidCryptoNative_InitLibraryOnLoad(JavaVM* vm, void* reserved);
+
+#if !SINGLE_FILE_TEST_RUNNER
+    [DllImport("*", EntryPoint = "__managed__Main")]
+    static extern int ManagedMain(int argc, void** argv);
+#endif
 
     // int Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args);
     [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_execEntryPoint", CallConvs = [typeof(CallConvCdecl)])]
@@ -54,20 +63,42 @@ internal static unsafe partial class MonoDroidExports
         for (int i = 0; i < argc; i++)
         {
             JObject j_arg = env->GetObjectArrayElement(j_args, i);
-            args[i] = env->GetStringUTFChars((JString)j_arg);
+            args[i] = env->GetStringUTFChars((JString)j_arg)!;
         }
 
 #if SINGLE_FILE_TEST_RUNNER
-        string excludesFile = Path.Combine(Environment.GetEnvironmentVariable("HOME"), "xunit-excludes.txt");
-        if (File.Exists(excludesFile))
+        if (Environment.GetEnvironmentVariable("HOME") is string homeDir)
         {
-            args = args.Concat(File.ReadAllLines(excludesFile).SelectMany(trait => new string[]{"-notrait", trait})).ToArray();
+            string excludesFile = Path.Combine(homeDir, "xunit-excludes.txt");
+            if (File.Exists(excludesFile))
+            {
+                args = args.Concat(File.ReadAllLines(excludesFile).SelectMany(trait => new string[]{"-notrait", trait})).ToArray();
+            }
         }
         // SingleFile unit tests
         return SingleFileTestRunner.Main(args);
 #else
-        // Functional tests
-        return Program.Main(args);
+        string entryPointName = env->GetStringUTFChars(j_entryPointLibName)!;
+        IntPtr[] managedMainArgs = new IntPtr[argc + 1];
+        managedMainArgs[0] = Marshal.StringToCoTaskMemUTF8(entryPointName);
+        for (int i = 0; i < argc; i++)
+        {
+            managedMainArgs[i + 1] = Marshal.StringToCoTaskMemUTF8(args[i]);
+        }
+
+        int ret;
+        fixed (IntPtr* argvPtrs = managedMainArgs)
+        {
+            void** argv = (void**)argvPtrs;
+            ret = ManagedMain(argc + 1, argv);
+        }
+
+        for (int i = 0; i < managedMainArgs.Length; i++)
+        {
+            Marshal.FreeCoTaskMem(managedMainArgs[i]);
+        }
+
+        return ret;
 #endif
     }
 
@@ -93,7 +124,7 @@ internal unsafe struct JNIEnv
             if (chars is null)
                 return null;
 
-            string result = Marshal.PtrToStringUTF8((nint)chars);
+            string result = Marshal.PtrToStringUTF8((nint)chars)!;
             if (isCopy != 0)
                 NativeInterface->ReleaseStringUTFChars(thisptr, str, chars);
 

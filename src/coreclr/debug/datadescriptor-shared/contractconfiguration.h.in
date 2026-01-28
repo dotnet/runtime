@@ -1,6 +1,8 @@
 #pragma once
 
-#define POINTER_DATA_NAME @POINTER_DATA_NAME@
-#define CONTRACT_NAME @CONTRACT_NAME@
+#include <contract-descriptor.h>
 
-#define EXPORT_CONTRACT @EXPORT_CONTRACT@
+#cmakedefine POINTER_DATA_NAME @POINTER_DATA_NAME@
+#cmakedefine CONTRACT_NAME @CONTRACT_NAME@
+
+#cmakedefine EXPORT_CONTRACT @EXPORT_CONTRACT@

@@ -105,4 +105,21 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             m => Assert.Equal("Managed code has run", m)
         );
     }
+
+    [Fact, TestCategory("bundler-friendly")]
+    public async Task AssetIntegrity()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"AssetIntegrity");
+        PublishProject(info, config);
+
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "AssetIntegrity"
+        ));
+        Assert.False(
+            result.TestOutput.Any(m => !m.Contains(".js") && !m.Contains(".json") && m.Contains("has integrity ''")),
+            "There are assets without integrity hash"
+        );
+    }
 }

@@ -48,6 +48,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             ExplicitIndexerAccess.Test();
             ImplicitIndexerAccess.Test();
+            AnnotatedIndexerParameter.Test();
+            IndexerDefaultArgument.Test();
 
             AnnotationOnUnsupportedType.Test();
             AutoPropertyUnrecognizedField.Test();
@@ -288,8 +290,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             private Type PropertyWithDifferentBackingFields_SetterField;
 
             // Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
-            [ExpectedWarning("IL2042",
-                "Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow.TestAutomaticPropagationType.PropertyWithDifferentBackingFields", Tool.Trimmer | Tool.NativeAot, "Requires IL")]
             [ExpectedWarning("IL2078",
                 nameof(TestAutomaticPropagationType) + "." + nameof(PropertyWithDifferentBackingFields) + ".get",
                 "Type", Tool.Analyzer, "")]
@@ -313,32 +313,57 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             public void TestPropertyWithExistingAttributes()
             {
-                _ = PropertyWithExistingAttributes;
-                PropertyWithExistingAttributes = null;
+                _ = PropertyWithExistingMatchingAttributes;
+                PropertyWithExistingMatchingAttributes = null;
+                _ = PropertyWithExistingMismatchedAttributes;
+                PropertyWithExistingMismatchedAttributes = null;
             }
 
             // Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
-            [ExpectedWarning("IL2056", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes_Field", Tool.Trimmer | Tool.NativeAot, "")]
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
             [CompilerGenerated]
-            Type PropertyWithExistingAttributes_Field;
+            Type PropertyWithExistingMatchingAttributes_Field;
 
-            [ExpectedWarning("IL2043", ["PropertyWithExistingAttributes", "PropertyWithExistingAttributes.get"], Tool.Analyzer, "")]
-            [ExpectedWarning("IL2043", ["PropertyWithExistingAttributes", "PropertyWithExistingAttributes.set"], Tool.Analyzer, "")]
+            [ExpectedWarning("IL2043", ["PropertyWithExistingMatchingAttributes", "PropertyWithExistingMatchingAttributes.get"], Tool.Analyzer, "")]
+            [ExpectedWarning("IL2043", ["PropertyWithExistingMatchingAttributes", "PropertyWithExistingMatchingAttributes.set"], Tool.Analyzer, "")]
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            Type PropertyWithExistingAttributes
+            Type PropertyWithExistingMatchingAttributes
             {
-                // On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
-                [ExpectedWarning("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.get", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2043", ["PropertyWithExistingMatchingAttributes", "PropertyWithExistingMatchingAttributes.get"], Tool.Trimmer | Tool.NativeAot, "")]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
                 [CompilerGenerated]
-                get { return PropertyWithExistingAttributes_Field; }
+                get { return PropertyWithExistingMatchingAttributes_Field; }
 
-                // On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
-                [ExpectedWarning("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.set", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2043", ["PropertyWithExistingMatchingAttributes", "PropertyWithExistingMatchingAttributes.set"], Tool.Trimmer | Tool.NativeAot, "")]
                 [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
                 [CompilerGenerated]
-                set { PropertyWithExistingAttributes_Field = value; }
+                set { PropertyWithExistingMatchingAttributes_Field = value; }
+            }
+
+            // Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
+            [ExpectedWarning("IL2056", "PropertyWithExistingMismatchedAttributes", "PropertyWithExistingMismatchedAttributes_Field", Tool.Trimmer | Tool.NativeAot, "")]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+            [CompilerGenerated]
+            Type PropertyWithExistingMismatchedAttributes_Field;
+
+            [ExpectedWarning("IL2043", ["PropertyWithExistingMismatchedAttributes", "PropertyWithExistingMismatchedAttributes.get"], Tool.Analyzer, "")]
+            [ExpectedWarning("IL2043", ["PropertyWithExistingMismatchedAttributes", "PropertyWithExistingMismatchedAttributes.set"], Tool.Analyzer, "")]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
+            Type PropertyWithExistingMismatchedAttributes
+            {
+                // On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
+                [ExpectedWarning("IL2043", "PropertyWithExistingMismatchedAttributes", "PropertyWithExistingMismatchedAttributes.get", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2078", "return value", "PropertyWithExistingMismatchedAttributes_Field")]
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                [CompilerGenerated]
+                get { return PropertyWithExistingMismatchedAttributes_Field; }
+
+                // On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
+                [ExpectedWarning("IL2043", "PropertyWithExistingMismatchedAttributes", "PropertyWithExistingMismatchedAttributes.set", Tool.Trimmer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL2069", "PropertyWithExistingMismatchedAttributes_Field", "parameter 'value'")]
+                [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                [CompilerGenerated]
+                set { PropertyWithExistingMismatchedAttributes_Field = value; }
             }
 
             // When the property annotation conflicts with the getter/setter annotation,
@@ -904,6 +929,74 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
+        class AnnotatedIndexerParameter
+        {
+            public Type this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type index]
+            {
+                get
+                {
+                    index.RequiresPublicConstructors();
+                    return null;
+                }
+                [ExpectedWarning("IL2067", ["this[Type].set", "index"], Tool.Analyzer, "")]
+                [ExpectedWarning("IL2067", ["Item.set", "index"], Tool.Trimmer | Tool.NativeAot, "")]
+                set
+                {
+                    index.RequiresPublicMethods();
+                }
+            }
+
+            [ExpectedWarning("IL2067", ["this[Type].set", nameof(unannotated), "index"], Tool.Analyzer, "")]
+            [ExpectedWarning("IL2067", ["Item.set", nameof(unannotated), "index"], Tool.Trimmer | Tool.NativeAot, "")]
+            static void ParameterMismatch(Type unannotated = null)
+            {
+                var instance = new AnnotatedIndexerParameter();
+                instance[unannotated] = null;
+            }
+
+            static void ParameterMatch([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type annotated = null)
+            {
+                var instance = new AnnotatedIndexerParameter();
+                instance[annotated] = null;
+            }
+
+            public static void Test()
+            {
+                ParameterMismatch();
+                ParameterMatch();
+            }
+        }
+
+        class IndexerDefaultArgument
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            Type this[int index = 0]
+            {
+                get => throw new NotImplementedException();
+                set => throw new NotImplementedException();
+            }
+
+            [ExpectedWarning("IL2072", ["this[Int32].get", nameof(DataFlowTypeExtensions.RequiresAll)], Tool.Analyzer, "")]
+            [ExpectedWarning("IL2072", ["Item.get", nameof(DataFlowTypeExtensions.RequiresAll)], Tool.Trimmer | Tool.NativeAot, "")]
+            static void TestRead(IndexerDefaultArgument instance = null)
+            {
+                instance[1].RequiresAll();
+            }
+
+            [ExpectedWarning("IL2072", [nameof(GetTypeWithPublicConstructors), "this[Int32].set"], Tool.Analyzer, "")]
+            [ExpectedWarning("IL2072", [nameof(GetTypeWithPublicConstructors), "Item.set"], Tool.Trimmer | Tool.NativeAot, "")]
+            static void TestWrite(IndexerDefaultArgument instance = null)
+            {
+                instance[1] = GetTypeWithPublicConstructors();
+            }
+
+            public static void Test()
+            {
+                TestRead();
+                TestWrite();
+            }
+        }
+
         class AnnotationOnUnsupportedType
         {
             [ExpectedWarning("IL2099", nameof(PropertyWithUnsupportedType))]
@@ -959,7 +1052,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             private Type Property_BackingField;
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type Property
             {
                 [CompilerGenerated]
@@ -980,7 +1072,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type PropertyAutoSet
             {
                 [CompilerGenerated]
@@ -995,10 +1086,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type PropertyAutoGet
             {
-                [ExpectedWarning("IL2078", ["return value", nameof(PropertyAutoGet), "BackingField"], producedBy: Tool.NativeAot | Tool.Trimmer, "Requires IL")]
                 get;
                 [CompilerGenerated]
                 set
@@ -1010,7 +1099,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type PropertyManualSet
             {
                 [CompilerGenerated]
@@ -1025,7 +1113,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type PropertyManualGet
             {
                 [ExpectedWarning("IL2078", "return value", nameof(Property_BackingField))]
@@ -1040,7 +1127,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type PropertyOnlyGet
             {
                 [CompilerGenerated]
@@ -1054,7 +1140,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-            [ExpectedWarning("IL2042", nameof(PropertyOnlySet), Tool.NativeAot | Tool.Trimmer, "Requires IL")] // Can't find backing field
             public Type PropertyOnlySet
             {
                 [CompilerGenerated]

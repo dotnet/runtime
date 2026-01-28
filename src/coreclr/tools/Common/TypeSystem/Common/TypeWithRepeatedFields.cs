@@ -84,7 +84,7 @@ namespace Internal.TypeSystem
         public override ClassLayoutMetadata GetClassLayout() => MetadataType.GetClassLayout();
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => MetadataType.HasCustomAttribute(attributeNamespace, attributeName);
         public override IEnumerable<MetadataType> GetNestedTypes() => (IEnumerable<MetadataType>)EmptyTypes;
-        public override MetadataType GetNestedType(string name) => null;
+        public override MetadataType GetNestedType(ReadOnlySpan<byte> name) => null;
         public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => MetadataType.FindMethodsImplWithMatchingDeclName(name);
         public override int GetHashCode() => MetadataType.GetHashCode();
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
@@ -109,15 +109,13 @@ namespace Internal.TypeSystem
 
         public override ModuleDesc Module => MetadataType.Module;
 
-        public override MetadataType MetadataBaseType => MetadataType.MetadataBaseType;
-
-        public override DefType BaseType => MetadataType.BaseType;
+        public override MetadataType BaseType => MetadataType.BaseType;
 
         public override bool IsSealed => true;
 
         public override bool IsAbstract => false;
 
-        public override DefType ContainingType => MetadataType.ContainingType;
+        public override MetadataType ContainingType => MetadataType.ContainingType;
 
         public override PInvokeStringFormat PInvokeStringFormat => MetadataType.PInvokeStringFormat;
 

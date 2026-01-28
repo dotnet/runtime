@@ -61,7 +61,7 @@ TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
-TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva);
+TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
 IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle);
 IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
@@ -83,6 +83,8 @@ TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
+TargetPointer GetILHeader(ModuleHandle handle, uint token);
+TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 ```
 
 ## Version 1
@@ -357,6 +359,8 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
 
 TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
 {
+    if (rva == 0)
+        return TargetPointer.Null;
     TargetPointer peImage = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
     if(peImage == TargetPointer.Null)
         throw new InvalidOperationException("PEAssembly does not have a PEImage associated with it.");
@@ -650,10 +654,22 @@ private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>
 
 TargetPointer GetILHeader(ModuleHandle handle, uint token)
 {
-    // we need module
-    ILoader loader = this;
-    TargetPointer peAssembly = loader.GetPEAssembly(handle);
-    TargetPointer headerPtr = GetDynamicIL(handle, token);
+    if (GetDynamicIL(handle, token) == TargetPointer.Null)
+    {
+        TargetPointer peAssembly = loader.GetPEAssembly(handle);
+        IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+        MetadataReader? mdReader = ecmaMetadataContract.GetMetadata(handle);
+        if (mdReader == null)
+            throw new NotImplementedException();
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
+        int rva = methodDef.RelativeVirtualAddress;
+        headerPtr = loader.GetILAddr(peAssembly, rva);
+    }
+    return headerPtr;
+}
+
+TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
+{
     TargetPointer dynamicBlobTablePtr = target.ReadPointer(handle.Address + /* Module::DynamicILBlobTable offset */);
     Contracts.IThread shashContract = target.Contracts.SHash;
     DynamicILBlobTraits traits = new();
@@ -664,15 +680,7 @@ TargetPointer GetILHeader(ModuleHandle handle, uint token)
     */
     SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicILBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
     Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
-    if (blobEntry.EntryIL == TargetPointer.Null)
-    {
-        IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-        MetadataReader mdReader = ecmaMetadataContract.GetMetadata(handle)!;
-        MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
-        int rva = methodDef.RelativeVirtualAddress;
-        headerPtr = loader.GetILAddr(peAssembly, rva);
-    }
-    return headerPtr;
+    return /* blob entry IL address */
 }
 ```
 

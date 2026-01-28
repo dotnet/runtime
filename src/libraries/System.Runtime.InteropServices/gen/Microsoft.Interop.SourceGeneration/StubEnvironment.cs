@@ -87,5 +87,19 @@ namespace Microsoft.Interop
                 return _wasmImportLinkageAttrType.Value;
             }
         }
+
+        private Optional<INamedTypeSymbol?> _stackTraceHiddenAttrType;
+        public INamedTypeSymbol? StackTraceHiddenAttrType
+        {
+            get
+            {
+                if (_stackTraceHiddenAttrType.HasValue)
+                {
+                    return _stackTraceHiddenAttrType.Value;
+                }
+                _stackTraceHiddenAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.System_Diagnostics_StackTraceHiddenAttribute));
+                return _stackTraceHiddenAttrType.Value;
+            }
+        }
     }
 }

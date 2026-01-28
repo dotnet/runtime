@@ -42,7 +42,6 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
             {
-#if NET9_0_OR_GREATER
                 if (typeof(T) == typeof(double))
                 {
                     return Vector128.Hypot(x.AsDouble(), y.AsDouble()).As<double, T>();
@@ -52,14 +51,10 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector128.Hypot(x.AsSingle(), y.AsSingle()).As<float, T>();
                 }
-#else
-                return Vector128.Sqrt((x * x) + (y * y));
-#endif
             }
 
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
             {
-#if NET9_0_OR_GREATER
                 if (typeof(T) == typeof(double))
                 {
                     return Vector256.Hypot(x.AsDouble(), y.AsDouble()).As<double, T>();
@@ -69,14 +64,10 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector256.Hypot(x.AsSingle(), y.AsSingle()).As<float, T>();
                 }
-#else
-                return Vector256.Sqrt((x * x) + (y * y));
-#endif
             }
 
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
             {
-#if NET9_0_OR_GREATER
                 if (typeof(T) == typeof(double))
                 {
                     return Vector512.Hypot(x.AsDouble(), y.AsDouble()).As<double, T>();
@@ -86,9 +77,6 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector512.Hypot(x.AsSingle(), y.AsSingle()).As<float, T>();
                 }
-#else
-                return Vector512.Sqrt((x * x) + (y * y));
-#endif
             }
         }
     }

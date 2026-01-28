@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Linq;
 using Xunit.Sdk;
 
@@ -14,13 +15,17 @@ namespace System.Security.Cryptography.Tests
             internal string Id { get; }
             internal CompositeMLDsaAlgorithm Algorithm { get; }
             internal byte[] Message { get; }
+            internal byte[] Context { get; }
             internal byte[] PublicKey { get; }
             internal byte[] Certificate { get; }
             internal byte[] SecretKey { get; }
             internal byte[] Pkcs8 { get; }
             internal byte[] Signature { get; }
+            internal byte[] SignatureWithContext { get; }
 
-            internal CompositeMLDsaTestVector(string tcId, CompositeMLDsaAlgorithm algo, string pk, string x5c, string sk, string sk_pkcs8, string m, string s)
+            internal byte[] Spki { get; }
+
+            internal CompositeMLDsaTestVector(string tcId, CompositeMLDsaAlgorithm algo, string pk, string x5c, string sk, string sk_pkcs8, string m, string ctx, string s, string sWithContext)
             {
                 Id = tcId;
                 Algorithm = algo;
@@ -29,7 +34,22 @@ namespace System.Security.Cryptography.Tests
                 SecretKey = Convert.FromBase64String(sk);
                 Pkcs8 = Convert.FromBase64String(sk_pkcs8);
                 Message = Convert.FromBase64String(m);
+                Context = Convert.FromBase64String(ctx);
                 Signature = Convert.FromBase64String(s);
+                SignatureWithContext = Convert.FromBase64String(sWithContext);
+
+                AsnReader reader = new AsnReader(Certificate, AsnEncodingRules.DER);
+                AsnReader certificate = reader.ReadSequence();
+                AsnReader tbsCertificate = certificate.ReadSequence();
+
+                tbsCertificate.ReadEncodedValue(); // Version
+                tbsCertificate.ReadEncodedValue(); // SerialNumber
+                tbsCertificate.ReadEncodedValue(); // Signature
+                tbsCertificate.ReadEncodedValue(); // Issuer
+                tbsCertificate.ReadEncodedValue(); // Validity
+                tbsCertificate.ReadEncodedValue(); // Subject
+
+                Spki = tbsCertificate.ReadEncodedValue().ToArray();
             }
 
             public override string ToString() => Id;
@@ -43,7 +63,7 @@ namespace System.Security.Cryptography.Tests
         internal static CompositeMLDsaTestVector[] SupportedAlgorithmIetfVectors =>
             field ??= AllIetfVectors.Where(v => CompositeMLDsa.IsAlgorithmSupported(v.Algorithm)).ToArray();
 
-        public static IEnumerable<object[]>SupportedAlgorithmIetfVectorsTestData =>
+        public static IEnumerable<object[]> SupportedAlgorithmIetfVectorsTestData =>
             SupportedAlgorithmIetfVectors.Select(v => new object[] { v });
 
         public static IEnumerable<object[]> SupportedECDsaAlgorithmIetfVectorsTestData =>
@@ -100,5 +120,8 @@ namespace System.Security.Cryptography.Tests
                 throw new XunitException($"Algorithm '{algorithm.Name}' doesn't have ML-DSA component.");
             }
         }
+
+        internal static CompositeMLDsaTestVector GetIetfTestVector(CompositeMLDsaAlgorithm algorithm) =>
+            AllIetfVectors.Single(v => v.Algorithm == algorithm);
     }
 }

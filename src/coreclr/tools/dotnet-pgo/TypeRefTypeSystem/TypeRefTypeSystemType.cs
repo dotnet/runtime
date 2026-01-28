@@ -156,9 +156,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override ModuleDesc Module => _module;
 
-        public override DefType BaseType => MetadataBaseType;
-
-        public override MetadataType MetadataBaseType
+        public override MetadataType BaseType
         {
             get
             {
@@ -174,7 +172,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override bool IsAbstract => throw new NotImplementedException();
 
-        public override DefType ContainingType => _containingType;
+        public override TypeRefTypeSystemType ContainingType => _containingType;
 
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 
@@ -197,12 +195,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             return hash.ToHashCode();
         }
 
-        public override MetadataType GetNestedType(string name)
+        public override MetadataType GetNestedType(ReadOnlySpan<byte> name)
         {
             TypeRefTypeSystemType type = null;
             if (_nestedType != null)
             {
-                _nestedType.TryGetValue(name, out type);
+                _nestedType.TryGetValue(Encoding.UTF8.GetString(name), out type);
             }
             return type;
         }

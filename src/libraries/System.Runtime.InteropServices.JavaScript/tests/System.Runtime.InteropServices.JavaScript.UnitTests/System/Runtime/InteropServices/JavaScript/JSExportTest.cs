@@ -390,6 +390,32 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             //GC.Collect();
         }
 
+        [Theory]
+        [MemberData(nameof(MarshalBigInt64Cases))]
+        public async Task JsExportTaskOfLong(long value)
+        {
+            TaskCompletionSource<long> tcs = new TaskCompletionSource<long>();
+            var res = JavaScriptTestHelper.invoke1_TaskOfLong(tcs.Task, nameof(JavaScriptTestHelper.AwaitTaskOfInt64));
+            tcs.SetResult(value); // unresolved task marshalls promise and resolves on completion
+            await Task.Yield();
+            var rr = await res;
+            await Task.Yield();
+            Assert.Equal(value, rr);
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalBigInt64Cases))]
+        public async Task JsExportCompletedTaskOfLong(long value)
+        {
+            TaskCompletionSource<long> tcs = new TaskCompletionSource<long>();
+            tcs.SetResult(value); // completed task marshalls value immediately
+            var res = JavaScriptTestHelper.invoke1_TaskOfLong(tcs.Task, nameof(JavaScriptTestHelper.AwaitTaskOfInt64));
+            await Task.Yield();
+            var rr = await res;
+            await Task.Yield();
+            Assert.Equal(value, rr);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsExportCallback_FunctionIntInt()
         {

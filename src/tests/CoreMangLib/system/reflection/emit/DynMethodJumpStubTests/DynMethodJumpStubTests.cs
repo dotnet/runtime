@@ -6,11 +6,18 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 public static class DynamicMethodJumpStubTests
 {
-    [Fact]
+    public static bool RunTests =>
+        OperatingSystem.IsWindows()
+        && Utilities.IsNotNativeAot
+        && PlatformDetection.Is64BitProcess;
+
+    [ConditionalFact(nameof(RunTests))]
+    [OuterLoop]
     public static void TestEntryPoint()
     {
         DynamicMethodJumpStubTest();
@@ -18,11 +25,6 @@ public static class DynamicMethodJumpStubTests
 
     public static void DynamicMethodJumpStubTest()
     {
-        if (!Environment.Is64BitProcess)
-        {
-            return;
-        }
-
         // Reserve memory around framework libraries. This is just a best attempt, it typically doesn't help since the
         // precode allocator may have already committed pages it can allocate from, or it may commit reserved pages close to
         // framework libraries.

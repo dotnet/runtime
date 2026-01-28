@@ -11,7 +11,7 @@ Push-Location $dir
 
 
 cargo install --locked --no-default-features --features csharp --version 0.32.0 wit-bindgen-cli
-Invoke-WebRequest -Uri https://github.com/WebAssembly/wasi-http/archive/refs/tags/v0.2.0.tar.gz -OutFile v0.2.0.tar.gz
+Invoke-WebRequest -UseBasicParsing -Uri https://github.com/WebAssembly/wasi-http/archive/refs/tags/v0.2.0.tar.gz -OutFile v0.2.0.tar.gz
 tar xzf v0.2.0.tar.gz
 cp world.wit wasi-http-0.2.0/wit/world.wit
 wit-bindgen c-sharp -w wasi-http -r native-aot --internal wasi-http-0.2.0/wit

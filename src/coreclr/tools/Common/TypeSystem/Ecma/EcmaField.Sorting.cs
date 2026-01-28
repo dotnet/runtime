@@ -14,8 +14,8 @@ namespace Internal.TypeSystem.Ecma
         {
             var otherField = (EcmaField)other;
 
-            EcmaModule module = _type.EcmaModule;
-            EcmaModule otherModule = otherField._type.EcmaModule;
+            EcmaModule module = _type.Module;
+            EcmaModule otherModule = otherField._type.Module;
 
             int result = module.MetadataReader.GetToken(_handle) - otherModule.MetadataReader.GetToken(otherField._handle);
             if (result != 0)

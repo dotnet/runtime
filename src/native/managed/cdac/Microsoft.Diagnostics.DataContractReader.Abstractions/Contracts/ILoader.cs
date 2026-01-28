@@ -109,6 +109,7 @@ public interface ILoader : IContract
     TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetILHeader(ModuleHandle handle, uint token) => throw new NotImplementedException();
     TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    TargetPointer GetDynamicIL(ModuleHandle handle, uint token) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader

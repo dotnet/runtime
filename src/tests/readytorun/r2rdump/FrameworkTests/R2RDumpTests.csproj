@@ -6,6 +6,7 @@
     <!-- The test is lengthy as it scans the entire System.Private.CoreLib so that it times out in GC stress runs. -->
     <!-- The purpose of the test is functional testing of the R2R reader, not runtime stress testing. -->
     <GCStressIncompatible>true</GCStressIncompatible>
+    <InterpreterIncompatible>true</InterpreterIncompatible> <!-- The test passes, but takes an inordinate amount of time -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="R2RDumpTester.cs" />

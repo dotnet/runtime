@@ -225,7 +225,7 @@ namespace Internal.TypeSystem
                 else
                 {
                     // nested type
-                    resolutionScope = GetTypeRef((MetadataType)metadataType.ContainingType);
+                    resolutionScope = GetTypeRef(metadataType.ContainingType);
                 }
 
                 typeHandle = _metadataBuilder.AddTypeReference(resolutionScope, typeNamespace, typeName);
@@ -336,7 +336,7 @@ namespace Internal.TypeSystem
 
             EntityHandle fieldHandle;
 
-            EntityHandle typeHandle = GetTypeRef((MetadataType)field.OwningType);
+            EntityHandle typeHandle = GetTypeRef(field.OwningType);
             StringHandle fieldName = _metadataBuilder.GetOrAddString(field.GetName());
 
             var sigBlob = GetFieldSignatureBlobHandle(field.GetTypicalFieldDefinition());

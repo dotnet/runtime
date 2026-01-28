@@ -5,7 +5,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-#pragma warning disable 0618 // CurrencyWrapper is marked as Obsolete.
     public class CurrencyWrapperTests
     {
         [Theory]
@@ -34,5 +33,4 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>("obj", () => new CurrencyWrapper("1"));
         }
     }
-#pragma warning restore 0618
 }

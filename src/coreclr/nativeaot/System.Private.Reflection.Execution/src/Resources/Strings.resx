@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Reflection_InsufficientMetadata_NoHelpAvailable" xml:space="preserve">
-    <value>This operation cannot be carried out because metadata for the following object was removed for performance reasons:\n\n  {0}\n\nNo further information is available. Rebuild in debug mode for better information.\n\n</value>
-  </data>
   <data name="Reflection_InsufficientMetadata_EdbNeeded" xml:space="preserve">
     <value>'{0}' is missing native code or metadata. This can happen for code that is not compatible with trimming or AOT. Inspect and fix trimming and AOT related warnings that were generated when the app was published. For more information see https://aka.ms/nativeaot-compatibility</value>
   </data>
@@ -197,9 +194,6 @@
   </data>
   <data name="DelegateGetMethodInfo_NoDynamic" xml:space="preserve">
     <value>Cannot retrieve a MethodInfo for this delegate because the method it targeted was not enabled for metadata.</value>
-  </data>
-  <data name="DelegateGetMethodInfo_NoDynamic_WithDisplayString" xml:space="preserve">
-    <value>Cannot retrieve a MethodInfo for this delegate because the method it targeted ({0}) was not enabled for metadata.</value>
   </data>
   <data name="DelegateGetMethodInfo_NoInstantiation" xml:space="preserve">
     <value>Cannot retrieve a MethodInfo for this delegate because the necessary generic instantiation was not metadata-enabled.</value>

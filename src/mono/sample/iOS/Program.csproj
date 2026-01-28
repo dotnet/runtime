@@ -44,11 +44,11 @@
           AfterTargets="_AppleGenerateAppBundle"
           Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'">
     <!-- Install and run on a device or simulator -->
-    <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
-    <Exec Condition="'$(TargetOS)' == 'ios'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=&quot;$(AppBundlePath)&quot; --targets=ios-simulator-64 --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'ios'" Command="dotnet xharness apple run --app=&quot;$(AppBundlePath)&quot; --targets=ios-device --output-directory=/tmp/out" />
 
     <!-- run on maccatalyst -->
-    <Exec Condition="'$(TargetOS)' == 'maccatalyst'" Command="open -W $(AppBundlePath)" />
+    <Exec Condition="'$(TargetOS)' == 'maccatalyst'" Command="open -W &quot;$(AppBundlePath)&quot;" />
   </Target>
 
   <Target Name="CopySampleAppToHelixTestDir"

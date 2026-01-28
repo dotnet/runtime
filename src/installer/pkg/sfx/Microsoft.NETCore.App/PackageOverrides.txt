@@ -148,13 +148,13 @@ System.Collections.Immutable|${ProductVersion}
 System.Collections.NonGeneric|4.3.0
 System.Collections.Specialized|4.3.0
 System.ComponentModel|4.3.0
-System.ComponentModel.Annotations|4.3.0
+System.ComponentModel.Annotations|5.0.0
 System.ComponentModel.EventBasedAsync|4.3.0
 System.ComponentModel.Primitives|4.3.0
 System.ComponentModel.TypeConverter|4.3.0
 System.Console|4.3.1
 System.Data.Common|4.3.0
-System.Data.DataSetExtensions|4.4.0
+System.Data.DataSetExtensions|4.5.0
 System.Diagnostics.Contracts|4.3.0
 System.Diagnostics.Debug|4.3.0
 System.Diagnostics.DiagnosticSource|${ProductVersion}
@@ -176,7 +176,7 @@ System.IO|4.3.0
 System.IO.Compression|4.3.0
 System.IO.Compression.ZipFile|4.3.0
 System.IO.FileSystem|4.3.0
-System.IO.FileSystem.AccessControl|4.4.0
+System.IO.FileSystem.AccessControl|5.0.0
 System.IO.FileSystem.DriveInfo|4.3.1
 System.IO.FileSystem.Primitives|4.3.0
 System.IO.FileSystem.Watcher|4.3.0
@@ -217,7 +217,7 @@ System.Reflection.Emit.Lightweight|4.7.0
 System.Reflection.Extensions|4.3.0
 System.Reflection.Metadata|${ProductVersion}
 System.Reflection.Primitives|4.3.0
-System.Reflection.TypeExtensions|4.3.0
+System.Reflection.TypeExtensions|4.7.0
 System.Resources.Reader|4.3.0
 System.Resources.ResourceManager|4.3.0
 System.Resources.Writer|4.3.0
@@ -263,7 +263,7 @@ System.Threading.Tasks.Parallel|4.3.0
 System.Threading.Thread|4.3.0
 System.Threading.ThreadPool|4.3.0
 System.Threading.Timer|4.3.0
-System.ValueTuple|4.5.0
+System.ValueTuple|4.6.1
 System.Xml.ReaderWriter|4.3.1
 System.Xml.XDocument|4.3.0
 System.Xml.XmlDocument|4.3.0

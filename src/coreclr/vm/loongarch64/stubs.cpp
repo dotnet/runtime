@@ -679,14 +679,6 @@ int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-#ifdef DACCESS_COMPILE
-BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
-{
-    _ASSERTE(!"LOONGARCH64:NYI");
-    return FALSE;
-}
-#endif // DACCESS_COMPILE
-
 #ifndef DACCESS_COMPILE
 // ----------------------------------------------------------------
 // StubLinkerCPU methods

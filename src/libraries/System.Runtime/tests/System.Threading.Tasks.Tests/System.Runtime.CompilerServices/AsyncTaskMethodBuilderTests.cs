@@ -651,14 +651,22 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
+        // NOTE: This depends on private implementation details generally only used by the debugger.
+        // If those ever change, this test will need to be updated as well.
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_asyncDebuggingEnabled")]
+        private extern static ref bool AsyncDebuggingEnabled(Task t);
+
+        // NOTE: This depends on private implementation details generally only used by the debugger.
+        // If those ever change, this test will need to be updated as well.
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_currentActiveTasks")]
+        private extern static ref Dictionary<int, Task>? CurrentActiveTasks(Task t);
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void AsyncTaskMethodBuilder_Completed_RemovedFromTracking()
         {
             RemoteExecutor.Invoke(() =>
             {
-                // NOTE: This depends on private implementation details generally only used by the debugger.
-                // If those ever change, this test will need to be updated as well.
-                typeof(Task).GetField("s_asyncDebuggingEnabled", BindingFlags.NonPublic | BindingFlags.Static).SetValue(null, true);
+                AsyncDebuggingEnabled(null) = true;
 
                 for (int i = 0; i < 1000; i++)
                 {
@@ -670,8 +678,10 @@ namespace System.Threading.Tasks.Tests
                     t.Wait();
                 }
 
-                int activeCount = ((dynamic)typeof(Task).GetField("s_currentActiveTasks", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).Count;
+                Dictionary<int, Task>? activeTasks = CurrentActiveTasks(null);
+                int activeCount = activeTasks?.Count ?? 0;
                 Assert.InRange(activeCount, 0, 10); // some other tasks may be created by the runtime, so this is just using a reasonably small upper bound
+
             }).Dispose();
         }
 

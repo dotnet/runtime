@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 project(corehost)
 
 include(../../../eng/native/configurepaths.cmake)
@@ -27,9 +27,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 
 if (NOT ${CLR_SINGLE_FILE_HOST_ONLY})
-    if("${CLI_CMAKE_PKG_RID}" STREQUAL "")
-        message(FATAL_ERROR "A minimum supported package rid is not specified (ex: win7-x86 or ubuntu.14.04-x64, osx.10.12-x64, rhel.7-x64)")
-    endif()
     if("${CLI_CMAKE_COMMIT_HASH}" STREQUAL "")
         message(FATAL_ERROR "Commit hash needs to be specified to build the host")
     endif()
@@ -79,25 +76,30 @@ if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_SUNOS)
     add_link_options(LINKER:-Bsymbolic)
 endif()
 
-add_library(fxr_resolver INTERFACE)
-target_sources(fxr_resolver INTERFACE fxr_resolver.cpp)
-target_include_directories(fxr_resolver INTERFACE fxr)
+if(NOT CLR_CMAKE_TARGET_BROWSER)
+    add_library(fxr_resolver INTERFACE)
+    target_sources(fxr_resolver INTERFACE fxr_resolver.cpp)
+    target_include_directories(fxr_resolver INTERFACE fxr)
 
-add_compile_definitions(RAPIDJSON_HAS_CXX17)
+    add_compile_definitions(RAPIDJSON_HAS_CXX17)
 
-if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
-    include_directories(${CLR_SRC_NATIVE_DIR}/external/)
+    if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
+        include_directories(${CLR_SRC_NATIVE_DIR}/external/)
+    endif()
+
+    add_subdirectory(hostcommon)
+    add_subdirectory(hostmisc)
+    add_subdirectory(fxr)
+    add_subdirectory(hostpolicy)
+
+    add_subdirectory(apphost)
+    add_subdirectory(dotnet)
+    add_subdirectory(nethost)
+    add_subdirectory(test)
+else()
+    add_subdirectory(hostmisc)
+    add_subdirectory(browserhost)
 endif()
-
-add_subdirectory(hostcommon)
-add_subdirectory(hostmisc)
-add_subdirectory(fxr)
-add_subdirectory(hostpolicy)
-
-add_subdirectory(apphost)
-add_subdirectory(dotnet)
-add_subdirectory(nethost)
-add_subdirectory(test)
 
 # If there's a dynamic ASAN runtime, then install it in the directories where we put our executables.
 if (NOT "${ASAN_RUNTIME}" STREQUAL "")
