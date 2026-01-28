@@ -659,6 +659,22 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             {
                 return next;
             }
+
+            if (binOp->OperIs(GT_AND))
+            {
+                if (TryLowerOrToBFX(binOp, &next))
+                {
+                    return next;
+                }
+            }
+            else
+            {
+                assert(binOp->OperIs(GT_OR));
+                if (TryLowerOrToBFI(binOp, &next))
+                {
+                    return next;
+                }
+            }
         }
 
         if (binOp->OperIs(GT_SUB))
