@@ -2020,7 +2020,6 @@ DacInstanceManager::ClearEnumMemMarker(void)
 void
 DacInstanceManager::ClearEnumMemMarker(void)
 {
-    ULONG i;
     DAC_INSTANCE* inst;
 
     DacInstanceHashIterator end = m_hash.end();
