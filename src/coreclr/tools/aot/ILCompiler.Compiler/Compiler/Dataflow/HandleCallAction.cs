@@ -681,9 +681,10 @@ namespace ILLink.Shared.TrimAnalysis
 
         private partial bool TryGetGenericTypeDefinition(TypeProxy type, out TypeProxy? genericTypeDefinition)
         {
-            if (type.Type is InstantiatedType instantiatedType)
+            TypeDesc typeDefinition = type.Type.GetTypeDefinition();
+            if (type.Type != typeDefinition)
             {
-                genericTypeDefinition = new TypeProxy(instantiatedType.GetTypeDefinition());
+                genericTypeDefinition = new TypeProxy(typeDefinition);
                 return true;
             }
 
