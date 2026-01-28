@@ -11307,6 +11307,26 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
             break;
 
+        case GT_RSH:
+        case GT_RSZ:
+            // Optimise right shift of an int -> unsigned cast by a constant amount, and the shift amount is >= the
+            // bit width of the cast to type. This always equals zero so replace shift & cast with setting to 0.
+            if (opts.OptimizationEnabled() && op1->OperIs(GT_CAST) && op2->IsCnsIntOrI())
+            {
+                GenTreeCast*   cast = op1->AsCast();
+                GenTreeIntCon* cns  = op2->AsIntCon();
+                if (!cast->gtOverflow() && cast->CastOp()->TypeIs(TYP_INT) && varTypeIsUnsigned(cast->CastToType()))
+                {
+                    ssize_t  shiftAmount = cns->IconValue();
+                    unsigned srcBits     = genTypeSize(cast->CastToType()) * BITS_PER_BYTE;
+                    if ((shiftAmount >= 0) && (static_cast<unsigned>(shiftAmount) >= srcBits))
+                    {
+                        return gtNewZeroConNode(tree->TypeGet());
+                    }
+                }
+            }
+            break;
+
         case GT_INIT_VAL:
             // Initialization values for initBlk have special semantics - their lower
             // byte is used to fill the struct. However, we allow 0 as a "bare" value,
