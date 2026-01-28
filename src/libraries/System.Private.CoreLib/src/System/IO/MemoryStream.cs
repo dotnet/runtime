@@ -264,7 +264,7 @@ namespace System.IO
                 if (value < Length)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
                 if (value > MemStreamMaxLength)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_Capacity);
 
                 EnsureNotClosed();
 
