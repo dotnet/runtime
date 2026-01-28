@@ -47,6 +47,8 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonExceptionTypeRef = "global::System.Text.Json.JsonException";
             private const string TypeTypeRef = "global::System.Type";
             private const string UnsafeTypeRef = "global::System.Runtime.CompilerServices.Unsafe";
+            private const string UnsafeAccessorTypeRef = "global::System.Runtime.CompilerServices.UnsafeAccessorAttribute";
+            private const string UnsafeAccessorKindTypeRef = "global::System.Runtime.CompilerServices.UnsafeAccessorKind";
             private const string EqualityComparerTypeRef = "global::System.Collections.Generic.EqualityComparer";
             private const string KeyValuePairTypeRef = "global::System.Collections.Generic.KeyValuePair";
             private const string JsonEncodedTextTypeRef = "global::System.Text.Json.JsonEncodedText";
@@ -590,6 +592,13 @@ namespace System.Text.Json.SourceGeneration
                     GenerateCtorParamMetadataInitFunc(writer, ctorParamMetadataInitMethodName, typeMetadata);
                 }
 
+                // Generate UnsafeAccessor methods for init-only properties
+                if (ShouldGenerateMetadata(typeMetadata))
+                {
+                    writer.WriteLine();
+                    GenerateUnsafeAccessorMethods(writer, typeMetadata);
+                }
+
                 writer.Indentation--;
                 writer.WriteLine('}');
 
@@ -633,22 +642,45 @@ namespace System.Text.Json.SourceGeneration
                         _ => "null"
                     };
 
-                    string setterValue = property switch
+                    string setterValue;
+                    if (property.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
                     {
-                        { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "null",
-                        // For init-only properties, use reflection to invoke the setter since we can't
-                        // directly assign after the object is constructed. This preserves default values
+                        setterValue = "null";
+                    }
+                    else if (property is { CanUseSetter: true, IsInitOnlySetter: true })
+                    {
+                        // For init-only properties, use UnsafeAccessor on .NET 8+ for better performance,
+                        // and fall back to reflection on older targets. This preserves default values
                         // for init-only properties when they're not specified in the JSON.
-                        { CanUseSetter: true, IsInitOnlySetter: true }
-                            => $"""static (obj, value) => typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName})!.SetValue(obj, value)""",
-                        { CanUseSetter: true } when typeGenerationSpec.TypeRef.IsValueType
-                            => $"""static (obj, value) => {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj).{propertyName} = value!""",
-                        { CanUseSetter: true }
-                            => $"""static (obj, value) => (({declaringTypeFQN})obj).{propertyName} = value!""",
-                        { CanUseSetter: false, HasJsonInclude: true }
-                            => $"""static (obj, value) => throw new {InvalidOperationExceptionTypeRef}("{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.TypeRef.Name, property.MemberName)}")""",
-                        _ => "null",
-                    };
+                        string unsafeAccessorSetter = $"{GetUnsafeAccessorName(property)}(({declaringTypeFQN})obj, value!)";
+                        string reflectionSetter = $"typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName})!.SetValue(obj, value)";
+                        setterValue = $$"""
+                            static (obj, value) =>
+                            {
+                            #if NET8_0_OR_GREATER
+                                {{unsafeAccessorSetter}};
+                            #else
+                                {{reflectionSetter}};
+                            #endif
+                            }
+                            """;
+                    }
+                    else if (property.CanUseSetter && typeGenerationSpec.TypeRef.IsValueType)
+                    {
+                        setterValue = $"""static (obj, value) => {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj).{propertyName} = value!""";
+                    }
+                    else if (property.CanUseSetter)
+                    {
+                        setterValue = $"""static (obj, value) => (({declaringTypeFQN})obj).{propertyName} = value!""";
+                    }
+                    else if (property.HasJsonInclude)
+                    {
+                        setterValue = $"""static (obj, value) => throw new {InvalidOperationExceptionTypeRef}("{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.TypeRef.Name, property.MemberName)}")""";
+                    }
+                    else
+                    {
+                        setterValue = "null";
+                    }
 
                     string ignoreConditionNamedArg = property.DefaultIgnoreCondition.HasValue
                         ? $"{JsonIgnoreConditionTypeRef}.{property.DefaultIgnoreCondition.Value}"
@@ -1504,6 +1536,55 @@ namespace System.Text.Json.SourceGeneration
             private static string FormatBoolLiteral(bool value) => value ? "true" : "false";
             private static string FormatStringLiteral(string? value) => value is null ? "null" : SymbolDisplay.FormatLiteral(value, quote: true);
             private static string FormatCharLiteral(char value) => SymbolDisplay.FormatLiteral(value, quote: true);
+
+            /// <summary>
+            /// Gets the name of the UnsafeAccessor method for setting an init-only property.
+            /// </summary>
+            private static string GetUnsafeAccessorName(PropertyGenerationSpec property)
+                => $"__UnsafeAccessor_Set_{property.DeclaringType.Name}_{property.MemberName}";
+
+            /// <summary>
+            /// Generates UnsafeAccessor methods for init-only properties in a type.
+            /// These methods use UnsafeAccessor on .NET 8+ for better performance.
+            /// </summary>
+            private static void GenerateUnsafeAccessorMethods(SourceWriter writer, TypeGenerationSpec typeGenerationSpec)
+            {
+                bool hasInitOnlyProperties = false;
+                foreach (PropertyGenerationSpec property in typeGenerationSpec.PropertyGenSpecs)
+                {
+                    if (property.CanUseSetter && property.IsInitOnlySetter && property.DefaultIgnoreCondition != JsonIgnoreCondition.Always)
+                    {
+                        hasInitOnlyProperties = true;
+                        break;
+                    }
+                }
+
+                if (!hasInitOnlyProperties)
+                {
+                    return;
+                }
+
+                writer.WriteLine("#if NET8_0_OR_GREATER");
+
+                foreach (PropertyGenerationSpec property in typeGenerationSpec.PropertyGenSpecs)
+                {
+                    if (!property.CanUseSetter || !property.IsInitOnlySetter || property.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
+                    {
+                        continue;
+                    }
+
+                    string declaringTypeFQN = property.DeclaringType.FullyQualifiedName;
+                    string propertyTypeFQN = property.PropertyType.FullyQualifiedName;
+                    string accessorName = GetUnsafeAccessorName(property);
+
+                    writer.WriteLine($"""
+                        [{UnsafeAccessorTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "set_{property.MemberName}")]
+                        private static extern void {accessorName}({declaringTypeFQN} obj, {propertyTypeFQN} value);
+                        """);
+                }
+
+                writer.WriteLine("#endif");
+            }
 
             /// <summary>
             /// Method used to generate JsonTypeInfo given options instance
