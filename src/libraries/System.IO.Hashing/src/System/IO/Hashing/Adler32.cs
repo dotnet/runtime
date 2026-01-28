@@ -180,6 +180,22 @@ namespace System.IO.Hashing
 
         private static uint Update(uint adler, ReadOnlySpan<byte> buf)
         {
+#if NET
+            if (CanBeVectorized(buf))
+            {
+                return UpdateVectorized(adler, buf);
+            }
+#endif
+
+            return UpdateScalar(adler, buf);
+        }
+
+        private static uint UpdateScalar(uint adler, ReadOnlySpan<byte> buf)
+        {
+#if NET
+            // Do the same just like in Crc32's UpdateScalar to use ARM intrinsics if available
+            // if the vectorized path is not available?
+#endif
             const uint Base = 65521; // largest prime smaller than 65536
             const int NMax = 5552; // NMax is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1
             if (buf.IsEmpty)
