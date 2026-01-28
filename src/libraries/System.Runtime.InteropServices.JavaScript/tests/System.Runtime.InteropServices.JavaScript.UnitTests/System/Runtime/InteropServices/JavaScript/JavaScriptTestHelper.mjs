@@ -262,6 +262,10 @@ export function invokeDelegate_DateTimeWithOffset(delegate, date, offset) {
     return delegate(returnDateWithOffset(date, offset));
 }
 
+export function getInt32ArrayWithOutOfRangeValues() {
+    return [0, 1, 2147483648, 3147483648, 9007199254740991, 9007199254740992];
+}
+
 export function returnResolvedPromise() {
     return Promise.resolve();
 }

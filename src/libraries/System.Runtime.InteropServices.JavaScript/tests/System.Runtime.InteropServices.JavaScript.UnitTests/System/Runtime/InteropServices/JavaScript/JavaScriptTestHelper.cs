@@ -247,6 +247,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.Object>]
         internal static partial JSObject? store_JSObjectArray([JSMarshalAs<JSType.Array<JSType.Object>>] JSObject[]? value, [JSMarshalAs<JSType.Number>] int index);
 
+        [JSImport("getInt32ArrayWithOutOfRangeValues", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Array<JSType.Number>>]
+        internal static partial int[] getInt32ArrayWithOutOfRangeValues();
+
         #endregion
 
         #region Views

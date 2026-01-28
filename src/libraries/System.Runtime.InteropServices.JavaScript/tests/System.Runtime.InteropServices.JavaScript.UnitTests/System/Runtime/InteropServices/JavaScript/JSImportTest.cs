@@ -213,6 +213,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal("Error: Assert failed: Overflow: value 0000-12-31T23:59:59.999Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
         }
 
+        [Fact]
+        public async Task Int32ArrayFromJSWithAnOutOfRangeValue()
+        {
+            int[] arr = JavaScriptTestHelper.getInt32ArrayWithOutOfRangeValues();
+            Assert.Equal(0, arr[0]);
+            Assert.Equal(1, arr[1]);
+            Assert.Equal(-2147483648, arr[2]);
+            Assert.Equal(-1147483648, arr[3]);
+            Assert.Equal(-1, arr[4]);
+            Assert.Equal(0, arr[5]);
+            // Currently, values > int32.MaxValue are wrapped around when marshaled from JS to C#.
+            // TODO: Instead throw OverflowException when out of range value is encountered.
+        }
+
         #endregion
 
         #region Get/Set Property
