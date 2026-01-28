@@ -711,13 +711,8 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         // modified method, but at least the error won't leak out to interfere with inspection
         // of the callstack as a whole.
 
-        // TODO: this was added for debuggers not display the async thunk methods in the stackwalk
-        // figure out if there is a better way to implement this
-        IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-        IDacDbiInterface::DynamicMethodType dynMethodType = pDAC->IsILStubOrLCGMethod(pJITFuncData->vmNativeCodeMethodDescToken);
         if (!frameData.v.fNoMetadata &&
-            pNativeCode->GetFunction()->IsNativeImpl() != CordbFunction::kNativeOnly &&
-            dynMethodType != IDacDbiInterface::kILStub)
+            pNativeCode->GetFunction()->IsNativeImpl() != CordbFunction::kNativeOnly)
         {
             pNativeCode->LoadNativeInfo();
 
@@ -795,16 +790,6 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
             pNativeFrame->m_JITILFrame.Assign(pJITILFrame);
             pJITILFrame.ClearAndMarkDontNeuter();
-        }
-        else if (dynMethodType == IDacDbiInterface::kILStub)
-        {
-            // Skipping IL frame creation for IL stub/diagnostics-hidden method (e.g., async thunk)
-            // Log IP (nativeStartAddressPtr + nativeOffset) and FP for debugging
-            LOG((LF_CORDB, LL_INFO1000,
-                "CSW::GFW - skipping IL frame for diagnostics-hidden method: IP=0x%p, FP=0x%p, nativeOffset=0x%x",
-                (BYTE*)pJITFuncData->nativeStartAddressPtr + pJITFuncData->nativeOffset,
-                frameData.fp.GetSPValue(),
-                pJITFuncData->nativeOffset));
         }
 
         STRESS_LOG3(LF_CORDB, LL_INFO1000, "CSW::GFW - managed stack frame (%p): CNF - 0x%p, CJILF - 0x%p",

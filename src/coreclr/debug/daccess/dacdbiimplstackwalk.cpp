@@ -798,7 +798,11 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         // fields.  We don't have the native var info here to fully initialize everything.
         pFrameData->v.fVarArgs = (pMD->IsVarArg() == TRUE);
 
-        pFrameData->v.fNoMetadata = (pMD->IsNoMetadata() == TRUE);
+        // Check if this is a NoMetadata method or if the method should be hidden.
+        // These methods should not be visible in the debugger both for convenience and 
+        // because they don't have backing metadata. For more information see comments in
+        // MethodDesc::IsNoMetadata and MethodDesc::IsDiagnosticsHidden.
+        pFrameData->v.fNoMetadata = (pMD->IsNoMetadata() == TRUE) || pMD->IsDiagnosticsHidden();
 
         pFrameData->v.taAmbientESP = pCF->GetAmbientSPFromCrawlFrame();
         if (pMD->IsSharedByGenericInstantiations())
