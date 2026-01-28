@@ -792,7 +792,7 @@
         )
         .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
             string('Synthesized PGO may cause the expected TypeLoadExceptions in this test to appear at unexpected places')
-            type([TestLibrary]TestLibrary.Utilities)
+            type([TestLibrary]TestLibrary.PlatformDetection)
             string[1] ('IsUsingSynthesizedPgoData')
         }
 
