@@ -7293,7 +7293,7 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
 
             // Enable the JMC backstop for traditional steppers to catch us in case
             // we didn't predict the call target properly.
-                EnableJMCBackStop(NULL);
+            EnableJMCBackStop(NULL);
 
 
             if (!traceOk
