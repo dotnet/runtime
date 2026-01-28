@@ -3528,8 +3528,7 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
         // if (myvar==0) myvar = 1;
         // If we're comparing a local to a constant int, and branch has a use of the value+1
 
-        if (!cond->OperIs(GT_CMP) ||
-            !select->OperIs(GT_SELECTCC))
+        if (!cond->OperIs(GT_CMP) || !select->OperIs(GT_SELECTCC))
         {
             return;
         }
