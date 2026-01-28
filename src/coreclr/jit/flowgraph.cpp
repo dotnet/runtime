@@ -3684,7 +3684,13 @@ Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, BasicBl
         {
             JITDUMP(FMT_BB ": unexpected request for new throw helper: kind %d (%s), data 0x%08x\n", fromBlock->bbNum,
                     kind, sckName(kind), key.Data());
+
+            if (kind == SCK_NULL_CHECK)
+            {
+                NYI_WASM("Missing null check demand");
+            }
         }
+
         assert(!fgRngChkThrowAdded);
     }
 

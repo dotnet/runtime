@@ -351,7 +351,13 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
                     //
                     Compiler::AddCodeDsc* acd = nullptr;
                     acdMap->Lookup(key, &acd);
-                    RETURN_ON_ABORT(func(acd->acdDstBlk));
+
+                    // We only need to consider used ACDs... we may have demanded throw helpers that are not needed.
+                    //
+                    if (acd->acdUsed)
+                    {
+                        RETURN_ON_ABORT(func(acd->acdDstBlk));
+                    }
                 }
             }
         }
