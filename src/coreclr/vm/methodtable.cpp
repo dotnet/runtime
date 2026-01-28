@@ -505,7 +505,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
             FALSE,              // allowInstParam
             TRUE);              // forceRemotableMethod
 
-        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD, false));
+        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD));
     }
 #endif // !FEATURE_COMINTEROP
 
@@ -536,8 +536,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 #ifdef FEATURE_COMINTEROP
 //==========================================================================================
 // get the method desc given the interface method desc on a COM implemented server
-// (if fNullOk is set then NULL is an allowable return value)
-MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, bool fNullOk)
+MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
 {
     CONTRACT(MethodDesc*)
     {
@@ -547,7 +546,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(IsComObjectType());
-        POSTCONDITION(fNullOk || CheckPointer(RETVAL));
+        POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
 
