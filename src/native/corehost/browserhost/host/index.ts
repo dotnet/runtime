@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { InternalExchange, BrowserHostExports, RuntimeAPI, BrowserHostExportsTable } from "./types";
+import type { InternalExchange, BrowserHostExports, RuntimeAPI, BrowserHostExportsTable, LoaderConfigInternal } from "./types";
 import { InternalExchangeIndex } from "./types";
 import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
 
@@ -9,6 +9,7 @@ import GitHash from "consts:gitHash";
 
 import { runMain, runMainAndExit, initializeCoreCLR } from "./host";
 import { registerPdbBytes, registerDllBytes, installVfsFile, loadIcuData, instantiateWasm, } from "./assets";
+import { Module } from "./cross-module";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
@@ -32,6 +33,9 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         instantiateWasm,
     });
     _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
+
+    setupEmscripten();
+
     function browserHostExportsToTable(map: BrowserHostExports): BrowserHostExportsTable {
         // keep in sync with browserHostExportsFromTable()
         return [
@@ -43,6 +47,29 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.instantiateWasm,
         ];
     }
+}
+
+function setupEmscripten() {
+    const loaderConfig = _ems_.dotnetApi.getConfig() as LoaderConfigInternal;
+    if (!loaderConfig.resources ||
+        !loaderConfig.resources.assembly ||
+        !loaderConfig.resources.coreAssembly ||
+        loaderConfig.resources.coreAssembly.length === 0 ||
+        !loaderConfig.mainAssemblyName ||
+        !loaderConfig.virtualWorkingDirectory ||
+        !loaderConfig.environmentVariables) {
+        throw new Error("Invalid runtime config, cannot initialize the runtime.");
+    }
+
+    for (const key in loaderConfig.environmentVariables) {
+        _ems_.ENV[key] = loaderConfig.environmentVariables[key];
+    }
+
+    Module.preInit = [() => {
+        _ems_.FS.createPath("/", loaderConfig.virtualWorkingDirectory!, true, true);
+        _ems_.FS.chdir(loaderConfig.virtualWorkingDirectory!);
+    }, ...(Module.preInit || [])];
+
 }
 
 export { BrowserHost_ExternalAssemblyProbe } from "./assets";

@@ -41,7 +41,9 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     FS: {
         createPath: (parent: string, path: string, canRead?: boolean, canWrite?: boolean) => string;
         createDataFile: (parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean) => string;
+        chdir: (path: string) => void;
     }
+    ENV: any;
 
     DOTNET: any;
     DOTNET_INTEROP: any;

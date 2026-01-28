@@ -85,31 +85,19 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
     const lastSlash = virtualName.lastIndexOf("/");
     let parentDirectory = (lastSlash > 0)
         ? virtualName.substring(0, lastSlash)
-        : null;
+        : browserVirtualAppBase;
     let fileName = (lastSlash > 0)
         ? virtualName.substring(lastSlash + 1)
         : virtualName;
     if (fileName.startsWith("/")) {
         fileName = fileName.substring(1);
     }
-    if (parentDirectory) {
-        if (!parentDirectory.startsWith("/"))
-            parentDirectory = browserVirtualAppBase + "/" + parentDirectory;
-
-        _ems_.dotnetLogger.debug(`Creating directory '${parentDirectory}'`);
-
-        _ems_.FS.createPath(
-            "/", parentDirectory, true, true // fixme: should canWrite be false?
-        );
-    } else {
-        parentDirectory = browserVirtualAppBase;
-    }
+    if (!parentDirectory.startsWith("/"))
+        parentDirectory = browserVirtualAppBase + "/" + parentDirectory;
 
     _ems_.dotnetLogger.debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
-
-    _ems_.FS.createDataFile(
-        parentDirectory, fileName,
-        bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
+    _ems_.FS.createPath("/", parentDirectory, true, true);
+    _ems_.FS.createDataFile(parentDirectory, fileName, bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
     );
 }
 

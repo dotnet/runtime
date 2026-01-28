@@ -44,33 +44,6 @@
                         libBrowserHostFn(exports);
                         exports.dotnetInitializeModule(dotnetInternals);
                         BROWSER_HOST.assignExports(exports, BROWSER_HOST);
-
-                        const loaderConfig = dotnetInternals[2/*InternalExchangeIndex.LoaderConfig*/];
-                        if (!loaderConfig.resources.assembly ||
-                            !loaderConfig.resources.coreAssembly ||
-                            loaderConfig.resources.coreAssembly.length === 0 ||
-                            !loaderConfig.mainAssemblyName ||
-                            !loaderConfig.virtualWorkingDirectory ||
-                            !loaderConfig.environmentVariables) {
-                            throw new Error("Invalid runtime config, cannot initialize the runtime.");
-                        }
-
-                        for (const key in loaderConfig.environmentVariables) {
-                            ENV[key] = loaderConfig.environmentVariables[key];
-                        }
-
-                        Module.preInit = [() => {
-                            let vwdExists;
-                            try {
-                                vwdExists = !!FS.stat(loaderConfig.virtualWorkingDirectory);
-                            } catch {
-                                vwdExists = false;
-                            }
-                            if (!vwdExists) {
-                                Module.FS.createPath("/", loaderConfig.virtualWorkingDirectory, true, true);
-                            }
-                            FS.chdir(loaderConfig.virtualWorkingDirectory);
-                        }, ...(Module.preInit || [])];
                     }
                 },
             },
