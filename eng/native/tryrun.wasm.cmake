@@ -21,6 +21,12 @@
 #   Automatically applied when building for browser-wasm. No special flags needed:
 #     ./build.sh -subset clr.runtime -os browser -arch wasm -c Debug
 #
+# VERSION TRACKING:
+#   The TRYRUN_WASM_EMSCRIPTEN_VERSION variable at the top of this file tracks
+#   which Emscripten version this cache was generated for. The build system
+#   validates this against src/mono/browser/emscripten-version.txt and warns
+#   if there's a mismatch.
+#
 # WHEN TO REGENERATE:
 #   This file should be regenerated when:
 #   - Emscripten version changes (see src/mono/browser/emscripten-version.txt)
@@ -57,7 +63,8 @@
 #        done < <(grep -E "^(HAVE_|HAS_|...)" CMakeCache.txt)
 #
 #   5. Update this file with:
-#        - New Emscripten version in header comment
+#        - New TRYRUN_WASM_EMSCRIPTEN_VERSION at the top of the file
+#        - New Emscripten version in header comment (line 9)
 #        - New cache entries (replacing old ones)
 #        - Verify no duplicate entries
 #
@@ -72,6 +79,9 @@
 #
 #   8. Restore if needed:
 #        mv eng/native/tryrun.wasm.cmake.bak eng/native/tryrun.wasm.cmake
+
+# Version tracking: This cache is valid for the following Emscripten version
+set(TRYRUN_WASM_EMSCRIPTEN_VERSION "3.1.56" CACHE INTERNAL "Emscripten version this cache was generated for")
 
 # Macro to set cache values (same as eng/native/tryrun.cmake)
 macro(set_cache_value)
