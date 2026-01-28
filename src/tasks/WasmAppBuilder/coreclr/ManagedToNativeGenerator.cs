@@ -30,6 +30,9 @@ public class ManagedToNativeGenerator : Task
     public string? PInvokeOutputPath { get; set; }
 
     [Required, NotNull]
+    public string? ReversePInvokeOutputPath { get; set; }
+
+    [Required, NotNull]
     public string? InterpToNativeOutputPath { get; set; }
     public string? CacheFilePath { get; set; }
 
@@ -122,7 +125,7 @@ public class ManagedToNativeGenerator : Task
         }
 
         IEnumerable<string> cookies = Enumerable.Concat(
-            pinvoke.Generate(PInvokeModules, PInvokeOutputPath),
+            pinvoke.Generate(PInvokeModules, PInvokeOutputPath, ReversePInvokeOutputPath),
             Enumerable.Concat(icall.Generate(IcallOutputPath),
             missingCookies));
 

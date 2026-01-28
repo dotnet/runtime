@@ -1091,7 +1091,15 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetRetBuffArgOffset()
     // x86 is special as always
     ret += this->HasThis() ? offsetof(ArgumentRegisters, EDX) : offsetof(ArgumentRegisters, ECX);
 #elif TARGET_ARM64
-    ret = TransitionBlock::GetOffsetOfRetBuffArgReg();
+    if (this->IsRetBuffPassedAsFirstArg())
+    {
+        if (this->HasThis())
+            ret += TARGET_REGISTER_SIZE;
+    }
+    else
+    {
+        ret = TransitionBlock::GetOffsetOfRetBuffArgReg();
+    }
 #else
     if (this->HasThis())
         ret += TARGET_REGISTER_SIZE;
@@ -1119,7 +1127,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetVASigCookieOffset()
         ret += TARGET_REGISTER_SIZE;
     }
 
-    if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+    if (this->HasRetBuffArg() && this->IsRetBuffPassedAsFirstArg())
     {
         ret += TARGET_REGISTER_SIZE;
     }
@@ -1172,7 +1180,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetParamTypeArgOffset()
         ret += TARGET_REGISTER_SIZE;
     }
 
-    if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+    if (this->HasRetBuffArg() && this->IsRetBuffPassedAsFirstArg())
     {
         ret += TARGET_REGISTER_SIZE;
     }
@@ -1229,7 +1237,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetAsyncContinuationArgOffset()
         ret += TARGET_REGISTER_SIZE;
     }
 
-    if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+    if (this->HasRetBuffArg() && this->IsRetBuffPassedAsFirstArg())
     {
         ret += TARGET_REGISTER_SIZE;
     }
@@ -1265,7 +1273,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         if (this->HasThis())
             numRegistersUsed++;
 
-        if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+        if (this->HasRetBuffArg() && this->IsRetBuffPassedAsFirstArg())
             numRegistersUsed++;
 
         _ASSERTE(!this->IsVarArg() || !this->HasParamType());
@@ -2070,7 +2078,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
     if (this->HasThis())
         numRegistersUsed++;
 
-    if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+    if (this->HasRetBuffArg() && this->IsRetBuffPassedAsFirstArg())
         numRegistersUsed++;
 
     if (this->IsVarArg())
@@ -2267,6 +2275,11 @@ protected:
 #endif // defined(UNIX_AMD64_ABI)
 
 public:
+    FORCEINLINE BOOL IsRetBuffPassedAsFirstArg()
+    {
+        return ::IsRetBuffPassedAsFirstArg();
+    }
+
     BOOL HasThis()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2360,6 +2373,26 @@ public:
         m_pSig = pSig;
     }
 };
+
+#if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+class ArgIteratorBaseForWindowsArm64PInvokeThisCall : public ArgIteratorBaseForPInvoke
+{
+public:
+    FORCEINLINE BOOL IsRetBuffPassedAsFirstArg()
+    {
+        return TRUE;
+    }
+};
+
+class WindowsArm64PInvokeThisCallArgIterator : public ArgIteratorTemplate<ArgIteratorBaseForWindowsArm64PInvokeThisCall>
+{
+public:
+    WindowsArm64PInvokeThisCallArgIterator(MetaSig* pSig)
+    {
+        m_pSig = pSig;
+    }
+};
+#endif // defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
 
 // Conventience helper
 inline BOOL HasRetBuffArg(MetaSig * pSig)
