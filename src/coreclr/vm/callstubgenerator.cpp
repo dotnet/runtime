@@ -2203,7 +2203,7 @@ PCODE CallStubGenerator::GetSwiftStoreGPAtOffsetRoutine(int regIndex)
     static PCODE routines[] = {
         (PCODE)Store_X0_AtOffset, (PCODE)Store_X1_AtOffset, (PCODE)Store_X2_AtOffset, (PCODE)Store_X3_AtOffset
     };
-    _ASSERTE(regIndex >= 0 && regIndex < 4);
+    _ASSERTE(regIndex >= 0 && regIndex < ARRAY_SIZE(routines));
     return routines[regIndex];
 }
 
