@@ -62,6 +62,7 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
     const runtimeModuleReady = runtimeModule.dotnetInitializeModule<void>(dotnetInternals);
 
     await nativeModulePromiseController.promise;
+    runtimeState.nativeReady = true;
     await coreAssembliesPromise;
     await coreVfsPromise;
     await vfsPromise;

@@ -6,6 +6,7 @@ import { dotnetLogger, dotnetLoaderExports, Module, dotnetBrowserUtilsExports, d
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB } from "./per-module";
 
 export const runtimeState = {
+    nativeReady: false,
     runtimeReady: false,
     exitCode: undefined as number | undefined,
     exitReason: undefined as any,
@@ -151,7 +152,7 @@ export function quitNow(exitCode: number, reason?: any): void {
     if (runtimeState.runtimeReady) {
         Module.runtimeKeepalivePop();
         if (dotnetBrowserUtilsExports && dotnetBrowserUtilsExports.abortPosix) {
-            dotnetBrowserUtilsExports.abortPosix(exitCode);
+            dotnetBrowserUtilsExports.abortPosix(exitCode, reason, runtimeState.runtimeReady);
         }
     }
     if (exitCode !== 0 || !ENVIRONMENT_IS_WEB) {
