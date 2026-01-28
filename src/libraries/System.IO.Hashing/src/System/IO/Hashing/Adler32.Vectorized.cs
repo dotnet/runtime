@@ -6,23 +6,6 @@ using System.Runtime.Intrinsics;
 
 namespace System.IO.Hashing
 {
-    /// <summary>
-    ///   Provides an implementation of the Adler-32 algorithm, as used in
-    ///   RFC1950.
-    /// </summary>
-    /// <remarks>
-    ///   <para>
-    ///     The Adler-32 algorithm is designed for fast, lightweight integrity checking and is commonly used in
-    ///     data compression and transmission scenarios. This class is not suitable for cryptographic purposes.
-    ///   </para>
-    ///   <para>
-    ///     Adler-32 is not as robust as other checksum algorithms like CRC32, but it is faster to compute.
-    ///     It also originally comes from zlib.
-    ///   </para>
-    ///   <para>
-    ///     The Adler-32 checksum is stored as s2*65536 + s1 in most-significant-byte first(network) order.
-    ///   </para>
-    /// </remarks>
     public sealed partial class Adler32 : NonCryptographicHashAlgorithm
     {
         // We check for little endian byte order here in case we're ever on ARM in big endian mode.

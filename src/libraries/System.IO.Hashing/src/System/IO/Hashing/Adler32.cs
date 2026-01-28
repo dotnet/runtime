@@ -193,8 +193,17 @@ namespace System.IO.Hashing
         private static uint UpdateScalar(uint adler, ReadOnlySpan<byte> buf)
         {
 #if NET
-            // Do the same just like in Crc32's UpdateScalar to use ARM intrinsics if available
-            // if the vectorized path is not available?
+            // Similar to Crc32's UpdateScalar, but use Avx2/Sse if available
+            // if the vectorized path is not available.
+            if (System.Runtime.Intrinsics.X86.Avx2.IsSupported)
+            {
+                return UpdateScalarAvx2(adler, buf);
+            }
+
+            if (System.Runtime.Intrinsics.X86.Ssse3.IsSupported)
+            {
+                return UpdateScalarSse(adler, buf);
+            }
 #endif
             const uint Base = 65521; // largest prime smaller than 65536
             const int NMax = 5552; // NMax is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1
