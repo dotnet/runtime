@@ -172,8 +172,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(typeof(ClassWithRequiredMember))]
-        [InlineData(typeof(ClassWithInitOnlyProperty))]
-        public void TypeWithRequiredOrInitMember_SourceGen_HasAssociatedParameterInfo(Type type)
+        public void TypeWithRequiredMember_SourceGen_HasAssociatedParameterInfo(Type type)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type);
             JsonPropertyInfo propertyInfo = typeInfo.Properties.Single();
@@ -199,6 +198,20 @@ namespace System.Text.Json.Serialization.Tests
             {
                 Assert.Null(jsonParameter);
             }
+        }
+
+        [Theory]
+        [InlineData(typeof(ClassWithInitOnlyProperty))]
+        public void TypeWithInitOnlyNonRequiredMember_SourceGen_NoAssociatedParameterInfo(Type type)
+        {
+            // Init-only non-required properties should NOT have associated parameter info
+            // because they are set via reflection-based setters, not the constructor delegate.
+            // This preserves their default values when not specified in the JSON.
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type);
+            JsonPropertyInfo propertyInfo = typeInfo.Properties.Single();
+
+            JsonParameterInfo? jsonParameter = propertyInfo.AssociatedParameter;
+            Assert.Null(jsonParameter);
         }
 
         [Theory]
