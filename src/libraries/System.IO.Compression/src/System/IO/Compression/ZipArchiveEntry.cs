@@ -882,8 +882,6 @@ namespace System.IO.Compression
                 ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: true);
             }
 
-            _everOpenedForWrite = true;
-            Changes |= ZipArchive.ChangeState.StoredData;
             _currentlyOpenForWrite = true;
 
             if (loadExistingContent)
@@ -894,14 +892,24 @@ namespace System.IO.Compression
             {
                 _storedUncompressedData?.Dispose();
                 _storedUncompressedData = new MemoryStream();
+                // Opening with loadExistingContent: false discards existing content, which is a modification
+                MarkAsModified();
             }
 
             _storedUncompressedData.Seek(0, SeekOrigin.Begin);
 
-            return new WrappedStream(_storedUncompressedData, this, thisRef =>
-            {
-                thisRef!._currentlyOpenForWrite = false;
-            });
+            return new WrappedStream(_storedUncompressedData, this,
+                onClosed: thisRef => thisRef!._currentlyOpenForWrite = false,
+                notifyEntryOnWrite: true);
+        }
+
+        /// <summary>
+        /// Marks this entry as modified, indicating that its data has changed and needs to be rewritten.
+        /// </summary>
+        internal void MarkAsModified()
+        {
+            _everOpenedForWrite = true;
+            Changes |= ZipArchive.ChangeState.StoredData;
         }
 
         private bool IsOpenable(bool needToUncompress, bool needToLoadIntoMemory, out string? message)
@@ -1171,6 +1179,18 @@ namespace System.IO.Compression
 
         private void WriteLocalFileHeaderAndDataIfNeeded(bool forceWrite)
         {
+            // Check if the entry's stored data was actually modified (StoredData flag is set).
+            // If _storedUncompressedData is loaded but StoredData is not set, it means the entry
+            // was opened for update but no writes occurred - we should use the original compressed bytes.
+            bool storedDataModified = (Changes & ZipArchive.ChangeState.StoredData) != 0;
+
+            // If _storedUncompressedData is loaded but not modified, clear it so we use _compressedBytes
+            if (_storedUncompressedData != null && !storedDataModified)
+            {
+                _storedUncompressedData.Dispose();
+                _storedUncompressedData = null;
+            }
+
             // _storedUncompressedData gets frozen here, and is what gets written to the file
             if (_storedUncompressedData != null || _compressedBytes != null)
             {

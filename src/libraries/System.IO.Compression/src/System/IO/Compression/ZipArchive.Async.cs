@@ -103,6 +103,7 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     if (zipArchive._archiveStream.Length == 0)
                     {
                         zipArchive._readEntries = true;
+                        zipArchive._isNewArchive = true;
                     }
                     else
                     {
@@ -147,10 +148,16 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     case ZipArchiveMode.Read:
                         break;
                     case ZipArchiveMode.Create:
+                        await WriteFileAsync().ConfigureAwait(false);
+                        break;
                     case ZipArchiveMode.Update:
                     default:
-                        Debug.Assert(_mode == ZipArchiveMode.Update || _mode == ZipArchiveMode.Create);
-                        await WriteFileAsync().ConfigureAwait(false);
+                        Debug.Assert(_mode == ZipArchiveMode.Update);
+                        // Only write if the archive has been modified
+                        if (IsModified)
+                        {
+                            await WriteFileAsync().ConfigureAwait(false);
+                        }
                         break;
                 }
             }
