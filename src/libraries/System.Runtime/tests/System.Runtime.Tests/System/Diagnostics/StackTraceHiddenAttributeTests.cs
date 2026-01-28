@@ -140,16 +140,27 @@ namespace System.Tests
         }
 
         [Fact]
-        public void InterfaceHidden_CanApplyAttribute()
+        public void InterfaceHidden_EnvironmentStackTrace()
         {
-            var attr = typeof(IHiddenInterface).GetCustomAttributes(typeof(StackTraceHiddenAttribute), false);
-            Assert.Single(attr);
+            string stacktrace = ((IHiddenInterface)new HiddenInterfaceImpl()).GetStackTraceMethodA();
+            Assert.DoesNotContain(nameof(IHiddenInterface.GetStackTraceMethodA), stacktrace);
+            Assert.DoesNotContain(nameof(IHiddenInterface.GetStackTraceMethodB), stacktrace);
+            Assert.DoesNotContain(nameof(IHiddenInterface.GetStackTraceMethodC), stacktrace);
         }
 
         [StackTraceHidden]
         internal interface IHiddenInterface
         {
-            string GetStackTrace();
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+            string GetStackTraceMethodA() => GetStackTraceMethodB();
+
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+            string GetStackTraceMethodB() => GetStackTraceMethodC();
+
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+            string GetStackTraceMethodC() => Environment.StackTrace;
         }
+
+        internal class HiddenInterfaceImpl : IHiddenInterface { }
     }
 }
