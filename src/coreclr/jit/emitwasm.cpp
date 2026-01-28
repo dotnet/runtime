@@ -319,6 +319,11 @@ unsigned emitter::instrDesc::idCodeSize() const
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             break;
         }
+        case IF_MEMCPY:
+        {
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
+        }
         default:
             unreached();
     }
@@ -481,6 +486,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputByte(dst, valType);
             break;
         }
+        case IF_MEMCPY:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            cnsval_ssize_t constant = emitGetInsSC(id);
+            dst += emitOutputULEB128(dst, (uint64_t)constant);
+            dst += emitOutputULEB128(dst, (uint64_t)constant);
+            break;
+        }
         default:
             NYI_WASM("emitOutputInstr");
             break;
@@ -605,6 +618,13 @@ void emitter::emitDispIns(
             dispJumpTargetIfAny();
         }
         break;
+
+        case IF_MEMCPY:
+        {
+            cnsval_ssize_t imm = emitGetInsSC(id);
+            printf(" %llu %llu", (uint64_t)imm, (uint64_t)imm);
+            dispJumpTargetIfAny();
+        }
 
         case IF_LOCAL_DECL:
         {
