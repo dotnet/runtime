@@ -1667,13 +1667,27 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         {
             pFrameContext->ContextFlags |= CONTEXT_XSTATE;
             SetXStateFeaturesMask(pFrameContext, XSTATE_MASK_CET_U);
-            SetSSP(pFrameContext, _rdsspq());
+            PCODE* ssp = (PCODE*)_rdsspq();
 
-            DWORD64 ssp = GetSSP(pFrameContext);
-            if (ssp != 0)
+            // Pop the calls it took to get here from the shadow stack. This
+            // function won't return.
+            int toPop = 0;
+            while (ssp[toPop] != *pReturnAddress)
             {
-                SetSSP(pFrameContext, ssp - 8);  // Simulate call pushing shadow stack
+                _ASSERTE(toPop < 10);
+                if (toPop >= 10)
+                {
+                    LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "Could not unwind shadow stack pointer: ssp %p expected to find %p\n",
+                            ssp, *pReturnAddress));
+                    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+                }
+
+                toPop++;
             }
+
+            // Pop entries as if we never called into the patchpoint helper
+            ssp += toPop + 1;
+            SetSSP(pFrameContext, (DWORD64)ssp);
         }
 #endif
 

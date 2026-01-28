@@ -11315,6 +11315,8 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
     TADDR callerRBP = *((TADDR*)managedFrameFP);
     pContext->Rbp = callerRBP;
 
+    pContext->EFlags = 0x202; // Default flags
+
     // SP points just past the TransitionBlock (after return address)
     // Adjust for call simulation: OSR method expects SP as if a call just happened
     *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
