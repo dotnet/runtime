@@ -3902,6 +3902,11 @@ namespace Internal.JitInterface
                         continue;
                     }
 
+                    if (ChunkNeedsReadWriteSection(chunk))
+                    {
+                        continue;
+                    }
+
                     offset = offset.AlignUp((int)chunk.alignment);
                     chunk.block = roDataBlock + offset;
                     chunk.blockRW = chunk.block;
