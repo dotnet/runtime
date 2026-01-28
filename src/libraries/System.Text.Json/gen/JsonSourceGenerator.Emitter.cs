@@ -577,7 +577,7 @@ namespace System.Text.Json.SourceGeneration
                 if (propInitMethodName != null)
                 {
                     writer.WriteLine();
-                    GeneratePropMetadataInitFunc(writer, propInitMethodName, typeMetadata);
+                    GeneratePropMetadataInitFunc(writer, contextSpec, propInitMethodName, typeMetadata);
                 }
 
                 if (serializeMethodName != null)
@@ -593,7 +593,7 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 // Generate UnsafeAccessor methods for init-only properties
-                if (ShouldGenerateMetadata(typeMetadata))
+                if (ShouldGenerateMetadata(typeMetadata) && contextSpec.SupportsUnsafeAccessor)
                 {
                     writer.WriteLine();
                     GenerateUnsafeAccessorMethods(writer, typeMetadata);
@@ -605,7 +605,7 @@ namespace System.Text.Json.SourceGeneration
                 return CompleteSourceFileAndReturnText(writer);
             }
 
-            private void GeneratePropMetadataInitFunc(SourceWriter writer, string propInitMethodName, TypeGenerationSpec typeGenerationSpec)
+            private void GeneratePropMetadataInitFunc(SourceWriter writer, ContextGenerationSpec contextSpec, string propInitMethodName, TypeGenerationSpec typeGenerationSpec)
             {
                 ImmutableEquatableArray<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecs;
 
@@ -649,21 +649,19 @@ namespace System.Text.Json.SourceGeneration
                     }
                     else if (property is { CanUseSetter: true, IsInitOnlySetter: true })
                     {
-                        // For init-only properties, use UnsafeAccessor on .NET 8+ for better performance,
+                        // For init-only properties, use UnsafeAccessor on supported TFMs for better performance,
                         // and fall back to reflection on older targets. This preserves default values
                         // for init-only properties when they're not specified in the JSON.
-                        string unsafeAccessorSetter = $"{GetUnsafeAccessorName(property)}(({declaringTypeFQN})obj, value!)";
-                        string reflectionSetter = $"typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName})!.SetValue(obj, value)";
-                        setterValue = $$"""
-                            static (obj, value) =>
-                            {
-                            #if NET8_0_OR_GREATER
-                                {{unsafeAccessorSetter}};
-                            #else
-                                {{reflectionSetter}};
-                            #endif
-                            }
-                            """;
+                        if (contextSpec.SupportsUnsafeAccessor)
+                        {
+                            string unsafeAccessorSetter = $"{GetUnsafeAccessorName(property)}(({declaringTypeFQN})obj, value!)";
+                            setterValue = $"static (obj, value) => {unsafeAccessorSetter}";
+                        }
+                        else
+                        {
+                            string reflectionSetter = $"typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName})!.SetValue(obj, value)";
+                            setterValue = $"static (obj, value) => {reflectionSetter}";
+                        }
                     }
                     else if (property.CanUseSetter && typeGenerationSpec.TypeRef.IsValueType)
                     {
@@ -1564,8 +1562,6 @@ namespace System.Text.Json.SourceGeneration
                     return;
                 }
 
-                writer.WriteLine("#if NET8_0_OR_GREATER");
-
                 foreach (PropertyGenerationSpec property in typeGenerationSpec.PropertyGenSpecs)
                 {
                     if (!property.CanUseSetter || !property.IsInitOnlySetter || property.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
@@ -1582,8 +1578,6 @@ namespace System.Text.Json.SourceGeneration
                         private static extern void {accessorName}({declaringTypeFQN} obj, {propertyTypeFQN} value);
                         """);
                 }
-
-                writer.WriteLine("#endif");
             }
 
             /// <summary>

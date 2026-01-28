@@ -166,6 +166,7 @@ namespace System.Text.Json.SourceGeneration
                     Namespace = contextTypeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
                     ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
                     GeneratedOptionsSpec = options,
+                    SupportsUnsafeAccessor = _knownSymbols.UnsafeAccessorAttributeType is not null,
                 };
 
                 // Clear the caches of generated metadata between the processing of context classes.

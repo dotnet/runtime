@@ -255,6 +255,10 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? IJsonOnSerializedType => GetOrResolveType(JsonConstants.IJsonOnSerializedFullName, ref _IJsonOnSerializedType);
         private Option<INamedTypeSymbol?> _IJsonOnSerializedType;
 
+        // Runtime feature detection types
+        public INamedTypeSymbol? UnsafeAccessorAttributeType => GetOrResolveType("System.Runtime.CompilerServices.UnsafeAccessorAttribute", ref _UnsafeAccessorAttributeType);
+        private Option<INamedTypeSymbol?> _UnsafeAccessorAttributeType;
+
         // Unsupported types
         public INamedTypeSymbol? DelegateType => _DelegateType ??= Compilation.GetSpecialType(SpecialType.System_Delegate);
         private INamedTypeSymbol? _DelegateType;
