@@ -1184,8 +1184,8 @@ methodDecl:
 	| dataDecl
 	| labelDecl
 	| secDecl
-	| extSourceSpec // Leave for later when I get to generating symbols.
-	| languageDecl // Leave for later when I get to generating symbols.
+	| extSourceSpec
+	| languageDecl
 	| customDescrInMethodBody  // Only customDescr and customDescrWithOwner, NOT bare typedefs
 	| compControl
 	| EXPORT '[' int32 ']'
