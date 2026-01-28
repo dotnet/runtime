@@ -78,9 +78,9 @@ void DECLSPEC_NORETURN implLimitation()
 }
 
 /*****************************************************************************/
-void DECLSPEC_NORETURN implPrejitUnsupported()
+void DECLSPEC_NORETURN implReadyToRunUnsupported()
 {
-    fatal(CORJIT_PREJIT_UNSUPPORTED);
+    fatal(CORJIT_R2R_UNSUPPORTED);
 }
 
 /*****************************************************************************/

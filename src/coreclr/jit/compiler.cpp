@@ -7707,7 +7707,7 @@ START:
 
 if (!inlineInfo &&
     (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION ||
-     result == CORJIT_PREJIT_UNSUPPORTED) &&
+     result == CORJIT_R2R_UNSUPPORTED) &&
     !jitFallbackCompile)
 {
     // If we failed the JIT, reattempt with debuggable code.
