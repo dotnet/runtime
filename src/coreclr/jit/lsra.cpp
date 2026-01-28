@@ -1412,7 +1412,7 @@ PhaseStatus LinearScan::doRegisterAllocation()
     compiler->fgDebugCheckLinks();
 #endif
 
-    compiler->compLSRADone = true;
+    compiler->compRegAllocDone = true;
 
     // If edge resolution didn't create new blocks,
     // we can reuse the current flowgraph annotations during block layout.
