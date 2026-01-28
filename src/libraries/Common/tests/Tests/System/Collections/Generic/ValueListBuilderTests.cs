@@ -1,50 +1,68 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using Xunit;
 
-namespace System.Text.Tests
+namespace System.Collections.Generic
 {
-    public class ValueStringBuilderTests
+    internal ref partial struct ValueListBuilder<T>
+    {
+        public int Capacity => _span.Length;
+        public T[] ToArrayAndDispose()
+        {
+            T[] s = this.AsSpan().ToArray();
+            Dispose();
+            return s;
+        }
+    }
+}
+
+namespace System.Collections.Generic.Tests
+{
+    /// <summary>
+    /// Copied from <see cref="System.Text.Tests.ValueStringBuilderTests"/>.
+    /// </summary>
+    public class ValueListBuilderTests
     {
         [Fact]
         public void Ctor_Default_CanAppend()
         {
-            var vsb = default(ValueStringBuilder);
+            var vsb = default(ValueListBuilder<char>);
             Assert.Equal(0, vsb.Length);
 
             vsb.Append('a');
             Assert.Equal(1, vsb.Length);
-            Assert.Equal("a", vsb.ToString());
+            Assert.Equal("a", vsb.ToArrayAndDispose());
         }
 
         [Fact]
         public void Ctor_Span_CanAppend()
         {
-            var vsb = new ValueStringBuilder(new char[1]);
+            var vsb = new ValueListBuilder<char>(new char[1]);
             Assert.Equal(0, vsb.Length);
 
             vsb.Append('a');
             Assert.Equal(1, vsb.Length);
-            Assert.Equal("a", vsb.ToString());
+            Assert.Equal("a", vsb.ToArrayAndDispose());
         }
 
         [Fact]
         public void Ctor_InitialCapacity_CanAppend()
         {
-            var vsb = new ValueStringBuilder(1);
+            var vsb = new ValueListBuilder<char>(1);
             Assert.Equal(0, vsb.Length);
 
             vsb.Append('a');
             Assert.Equal(1, vsb.Length);
-            Assert.Equal("a", vsb.ToString());
+            Assert.Equal("a", vsb.ToArrayAndDispose());
         }
 
         [Fact]
         public void Append_Char_MatchesStringBuilder()
         {
             var sb = new StringBuilder();
-            var vsb = new ValueStringBuilder();
+            var vsb = new ValueListBuilder<char>();
             for (int i = 1; i <= 100; i++)
             {
                 sb.Append((char)i);
@@ -52,14 +70,14 @@ namespace System.Text.Tests
             }
 
             Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToString());
+            Assert.Equal(sb.ToString(), vsb.ToArrayAndDispose());
         }
 
         [Fact]
         public void Append_String_MatchesStringBuilder()
         {
             var sb = new StringBuilder();
-            var vsb = new ValueStringBuilder();
+            var vsb = new ValueListBuilder<char>();
             for (int i = 1; i <= 100; i++)
             {
                 string s = i.ToString();
@@ -68,7 +86,7 @@ namespace System.Text.Tests
             }
 
             Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToString());
+            Assert.Equal(sb.ToString(), vsb.ToArrayAndDispose());
         }
 
         [Theory]
@@ -78,35 +96,20 @@ namespace System.Text.Tests
         public void Append_String_Large_MatchesStringBuilder(int initialLength, int stringLength)
         {
             var sb = new StringBuilder(initialLength);
-            var vsb = new ValueStringBuilder(new char[initialLength]);
+            var vsb = new ValueListBuilder<char>(new char[initialLength]);
 
             string s = new string('a', stringLength);
             sb.Append(s);
             vsb.Append(s);
 
             Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToString());
-        }
-
-        [Fact]
-        public void Append_CharInt_MatchesStringBuilder()
-        {
-            var sb = new StringBuilder();
-            var vsb = new ValueStringBuilder();
-            for (int i = 1; i <= 100; i++)
-            {
-                sb.Append((char)i, i);
-                vsb.Append((char)i, i);
-            }
-
-            Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToString());
+            Assert.Equal(sb.ToString(), vsb.ToArrayAndDispose());
         }
 
         [Fact]
         public void AppendSpan_Capacity()
         {
-            var vsb = new ValueStringBuilder();
+            var vsb = new ValueListBuilder<char>();
 
             vsb.AppendSpan(17);
             Assert.Equal(32, vsb.Capacity);
@@ -119,7 +122,7 @@ namespace System.Text.Tests
         public void AppendSpan_DataAppendedCorrectly()
         {
             var sb = new StringBuilder();
-            var vsb = new ValueStringBuilder();
+            var vsb = new ValueListBuilder<char>();
 
             for (int i = 1; i <= 1000; i++)
             {
@@ -134,32 +137,15 @@ namespace System.Text.Tests
             }
 
             Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToString());
+            Assert.Equal(sb.ToString(), vsb.ToArrayAndDispose());
         }
 
-        [Fact]
-        public void Insert_IntCharInt_MatchesStringBuilder()
-        {
-            var sb = new StringBuilder();
-            var vsb = new ValueStringBuilder();
-            var rand = new Random(42);
-
-            for (int i = 1; i <= 100; i++)
-            {
-                int index = rand.Next(sb.Length);
-                sb.Insert(index, new string((char)i, 1), i);
-                vsb.Insert(index, (char)i, i);
-            }
-
-            Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToString());
-        }
 
         [Fact]
         public void Insert_IntString_MatchesStringBuilder()
         {
             var sb = new StringBuilder();
-            var vsb = new ValueStringBuilder();
+            var vsb = new ValueListBuilder<char>();
 
             sb.Insert(0, new string('a', 6));
             vsb.Insert(0, new string('a', 6));
@@ -185,14 +171,14 @@ namespace System.Text.Tests
             Assert.Equal(64, vsb.Capacity);
 
             Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToString());
+            Assert.Equal(sb.ToString(), vsb.ToArrayAndDispose());
         }
 
         [Fact]
         public void AsSpan_ReturnsCorrectValue_DoesntClearBuilder()
         {
             var sb = new StringBuilder();
-            var vsb = new ValueStringBuilder();
+            var vsb = new ValueListBuilder<char>();
 
             for (int i = 1; i <= 100; i++)
             {
@@ -206,35 +192,35 @@ namespace System.Text.Tests
 
             Assert.NotEqual(0, sb.Length);
             Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToString());
+            Assert.Equal(sb.ToString(), vsb.ToArrayAndDispose());
         }
 
         [Fact]
         public void ToString_ClearsBuilder_ThenReusable()
         {
             const string Text1 = "test";
-            var vsb = new ValueStringBuilder();
+            var vsb = new ValueListBuilder<char>();
 
             vsb.Append(Text1);
             Assert.Equal(Text1.Length, vsb.Length);
 
-            string s = vsb.ToString();
+            char[] s = vsb.ToArrayAndDispose();
             Assert.Equal(Text1, s);
 
             Assert.Equal(0, vsb.Length);
-            Assert.Equal(string.Empty, vsb.ToString());
+            Assert.Equal(string.Empty, vsb.ToArrayAndDispose());
 
             const string Text2 = "another test";
             vsb.Append(Text2);
             Assert.Equal(Text2.Length, vsb.Length);
-            Assert.Equal(Text2, vsb.ToString());
+            Assert.Equal(Text2, vsb.ToArrayAndDispose());
         }
 
         [Fact]
         public void Dispose_ClearsBuilder_ThenReusable()
         {
             const string Text1 = "test";
-            var vsb = new ValueStringBuilder();
+            var vsb = new ValueListBuilder<char>();
 
             vsb.Append(Text1);
             Assert.Equal(Text1.Length, vsb.Length);
@@ -242,19 +228,19 @@ namespace System.Text.Tests
             vsb.Dispose();
 
             Assert.Equal(0, vsb.Length);
-            Assert.Equal(string.Empty, vsb.ToString());
+            Assert.Equal(string.Empty, vsb.ToArrayAndDispose());
 
             const string Text2 = "another test";
             vsb.Append(Text2);
             Assert.Equal(Text2.Length, vsb.Length);
-            Assert.Equal(Text2, vsb.ToString());
+            Assert.Equal(Text2, vsb.ToArrayAndDispose());
         }
 
         [Fact]
         public void Indexer()
         {
             const string Text1 = "foobar";
-            var vsb = new ValueStringBuilder();
+            var vsb = new ValueListBuilder<char>();
 
             vsb.Append(Text1);
 
@@ -262,42 +248,6 @@ namespace System.Text.Tests
             vsb[3] = 'c';
             Assert.Equal('c', vsb[3]);
             vsb.Dispose();
-        }
-
-        [Fact]
-        public void EnsureCapacity_IfRequestedCapacityWins()
-        {
-            // Note: constants used here may be dependent on minimal buffer size
-            // the ArrayPool is able to return.
-            var builder = new ValueStringBuilder(stackalloc char[32]);
-
-            builder.EnsureCapacity(65);
-
-            Assert.Equal(128, builder.Capacity);
-        }
-
-        [Fact]
-        public void EnsureCapacity_IfBufferTimesTwoWins()
-        {
-            var builder = new ValueStringBuilder(stackalloc char[32]);
-
-            builder.EnsureCapacity(33);
-
-            Assert.Equal(64, builder.Capacity);
-            builder.Dispose();
-        }
-
-        [Fact]
-        public void EnsureCapacity_NoAllocIfNotNeeded()
-        {
-            // Note: constants used here may be dependent on minimal buffer size
-            // the ArrayPool is able to return.
-            var builder = new ValueStringBuilder(stackalloc char[64]);
-
-            builder.EnsureCapacity(16);
-
-            Assert.Equal(64, builder.Capacity);
-            builder.Dispose();
         }
     }
 }
