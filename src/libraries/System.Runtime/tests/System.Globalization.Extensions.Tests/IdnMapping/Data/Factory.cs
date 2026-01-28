@@ -29,7 +29,9 @@ namespace System.Globalization.Tests
             // some exception for Windows which released ICU 72.1.0.4 which using Unicode 15.1.
 
             string fileName = null;
-            if (PlatformDetection.ICUVersion >= new Version(76, 0))
+            if (PlatformDetection.ICUVersion >= new Version(78, 0))
+                fileName = "IdnaTest_17.txt";
+            else if (PlatformDetection.ICUVersion >= new Version(76, 0))
                 fileName = "IdnaTest_16.txt";
             else if (PlatformDetection.ICUVersion >= new Version(72, 1, 0, 4))
                 fileName = "IdnaTest_15_1.txt";
@@ -70,7 +72,9 @@ namespace System.Globalization.Tests
 
         private static IConformanceIdnaTest GetConformanceIdnaTest(string line, int lineCount)
         {
-            if (PlatformDetection.ICUVersion >= new Version(76, 0))
+            if (PlatformDetection.ICUVersion >= new Version(78, 0))
+                return new Unicode_17_0_IdnaTest(line, lineCount);
+            else if (PlatformDetection.ICUVersion >= new Version(76, 0))
                 return new Unicode_16_0_IdnaTest(line, lineCount);
             else if (PlatformDetection.ICUVersion >= new Version(72, 1, 0, 4))
                 return new Unicode_15_1_IdnaTest(line, lineCount);
