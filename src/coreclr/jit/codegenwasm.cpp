@@ -1207,17 +1207,13 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     }
     else
     {
-        BasicBlock* const tgtBlk = genCreateTempLabel();
-        GetEmitter()->emitIns(INS_block);
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
         GetEmitter()->emitIns(INS_I_le_u);
         GetEmitter()->emitIns(INS_if);
-        // TODO-WASM: codegen for the call
+        // TODO-WASM: codegen for the call instead of unreachable
         // genEmitHelperCall(compiler->acdHelper(SCK_NULL_CHECK), 0, EA_UNKNOWN);
-        // The helper won't return, and we may have things pended on the stack, so emit unreachable
         GetEmitter()->emitIns(INS_unreachable);
         GetEmitter()->emitIns(INS_end);
-        genDefineTempLabel(tgtBlk);
     }
 }
 
