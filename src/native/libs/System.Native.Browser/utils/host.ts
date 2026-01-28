@@ -13,8 +13,13 @@ export function getExitStatus(): new (exitCode: number) => any {
 }
 
 export function runBackgroundTimers(): void {
-    _ems_._SystemJS_ExecuteTimerCallback();
-    _ems_._SystemJS_ExecuteBackgroundJobCallback();
+    try {
+        _ems_._SystemJS_ExecuteTimerCallback();
+        _ems_._SystemJS_ExecuteBackgroundJobCallback();
+        _ems_._SystemJS_ExecuteFinalizationCallback();
+    } catch (err) {
+        _ems_.dotnetApi.exit(1, err);
+    }
 }
 
 export function abortBackgroundTimers(): void {
