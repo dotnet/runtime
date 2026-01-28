@@ -214,7 +214,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public async Task Int32ArrayFromJSWithAnOutOfRangeValue()
+        public async Task Int32ArrayWithOutOfRangeValues()
         {
             int[] arr = JavaScriptTestHelper.getInt32ArrayWithOutOfRangeValues();
             Assert.Equal(0, arr[0]);
