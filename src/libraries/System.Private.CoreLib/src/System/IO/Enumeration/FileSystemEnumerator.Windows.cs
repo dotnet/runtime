@@ -62,7 +62,7 @@ namespace System.IO.Enumeration
                     // Special directories are not valid expressions for OS-level filtering
                     expression = null;
                 }
-                else if (_options.MatchType == MatchType.Simple && _expression.AsSpan().ContainsAny(@"\""<>"))
+                else if (_options.MatchType == MatchType.Simple && expression.AsSpan().ContainsAny(@"\""<>"))
                 {
                     // Escape the escaping literal first
                     expression = expression.Replace("\\", "\\\\");
