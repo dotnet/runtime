@@ -4821,35 +4821,34 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         noCSE = noCSE && this->compOpportunisticallyDependsOn(InstructionSet_Zba);
 #else
         noCSE = noCSE && (mul > 1);
-#endif
+#endif // defined(TARGET_RISCV64)
 
         if (noCSE)
         {
             op2->gtFlags |= GTF_ADDRMODE_NO_CSE;
 #if defined(TARGET_RISCV64)
             // RISC-V addressing mode follows the form: (base + index*scale) + offset.
-            // To emit sh1/2/3add.uw, GT_ADD + GT_LSH(or MUL) + GT_CAST nodes are required.
-            // Disabling CSE for GT_CAST nodes encourages to emit shXadd.uw instructions(Zba).
+            // To emit sh1/2/3add.uw, GT_ADD + GT_LSH/MUL + GT_CAST(zero-extend) nodes are required (Zba extension).
+            // Disabling CSE for GT_CAST prevents breaking the pattern and ensures emitting sh1/2/3add.uw.
+            // Note that emitting sh1/2/3add instructions (without .uw) don't require a GT_CAST node.
             //
             // Example:
             //      ADD
             //      |- ADD
             //      |  |- LCL_VAR       (base)
             //      |  |- LSH (or MUL)  (index * scale)
-            //      |     |- GT_CAST    (index, CSE shouldn't be applied on this node to emit sh1/2/3add.uw)
-            //      |        |- OP1     (CSE/ConstCSE possible on this node and its children)
+            //      |     |- GT_CAST    (index, CSE must be disabled here to emit sh1/2/3add.uw)
+            //      |        |- OP1     (CSE/ConstCSE allowed here)
             //      |     |- CNS_INT    (scale)
             //      |- CNS_INT          (offset)
-            //
-            // Emitting standard sh1/2/3add instructions (without .uw) don't require a GT_CAST node.
 
             GenTree* index = op2->gtGetOp1();
             if ((index != nullptr) && index->OperIs(GT_CAST))
             {
                 assert(index->TypeIs(TYP_I_IMPL));
-                index->gtFlags |= GTF_DONT_CSE;
+                index->gtFlags |= GTF_ADDRMODE_NO_CSE;
             }
-#endif
+#endif // defined(TARGET_RISCV64)
         }
 
         // Finally, adjust the costs on the parenting COMMAs.
