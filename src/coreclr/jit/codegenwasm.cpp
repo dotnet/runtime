@@ -570,8 +570,14 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     assert(caseCount > 0);
     assert(desc->HasDefaultCase());
 
-    GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
+    // br_table list (labelidx*) labelidx
+    // list is prefixed with length, which is caseCount - 1
+    //
+    GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount - 1);
 
+    // Emit the list case targets, then default case target
+    // (which is always the last case in the desc).
+    //
     for (unsigned caseNum = 0; caseNum < caseCount; caseNum++)
     {
         BasicBlock* const caseTarget = desc->GetCase(caseNum)->getDestinationBlock();
