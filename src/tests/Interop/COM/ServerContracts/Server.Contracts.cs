@@ -184,6 +184,8 @@ namespace Server.Contract
         void Pass_Through_LCID(out int lcid);
     }
 
+    // This interface must not be an explicit COM interface to trigger
+    // the dynamic interface map codepath in ComObject.
     public interface Interface0
     {
     }
