@@ -1140,10 +1140,9 @@ public:
 
         // All ComObjects except for __ComObject
         // have dynamic Interface maps
-        return GetNumInterfaces() > 0
+        return GetNumInterfaces() > 1
             && IsComObjectType()
-            && !ParentEquals(g_pObjectClass)
-            && this != g_pBaseCOMObject;
+            && !ParentEquals(g_pObjectClass);
     }
 #endif // FEATURE_COMINTEROP
 

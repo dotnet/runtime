@@ -214,9 +214,12 @@ namespace NetClient
 
             Console.WriteLine("-- Interfaces...");
             {
+                Assert.True(new MiscTypesTestingClass() is Server.Contract.IInterface2);
+                Assert.True(Activator.CreateInstance(typeof(MiscTypesTestingClass)) is Server.Contract.IInterface2);
+
                 var interfaceMaybe = miscTypeTesting.Marshal_Interface(new InterfaceImpl());
-                Assert.True(interfaceMaybe is Server.Contract.IInterface1);
                 Assert.True(interfaceMaybe is Server.Contract.IInterface2);
+                Assert.True(interfaceMaybe is Server.Contract.IInterface1);
             }
         }
 

@@ -6,7 +6,7 @@
 #include <xplatform.h>
 #include "Servers.h"
 
-class MiscTypesTesting : public UnknownImpl, public IMiscTypesTesting
+class MiscTypesTesting : public UnknownImpl, public IMiscTypesTesting, public IInterface2
 {
     struct InterfaceImpl : public UnknownImpl, public IInterface2
     {
@@ -22,6 +22,8 @@ class MiscTypesTesting : public UnknownImpl, public IMiscTypesTesting
 
         DEFINE_REF_COUNTING();
     };
+public: // IInterface1
+public: // IInterface2
 public: // IMiscTypesTesting
     DEF_FUNC(Marshal_Variant)(_In_ VARIANT obj, _Out_ VARIANT* result)
     {
@@ -59,7 +61,7 @@ public: // IUnknown
         /* [in] */ REFIID riid,
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
     {
-        return DoQueryInterface(riid, ppvObject, static_cast<IMiscTypesTesting *>(this));
+        return DoQueryInterface(riid, ppvObject, static_cast<IMiscTypesTesting *>(this), static_cast<IInterface1 *>(this), static_cast<IInterface2 *>(this));
     }
 
     DEFINE_REF_COUNTING();
