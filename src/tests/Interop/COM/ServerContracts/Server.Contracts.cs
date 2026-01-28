@@ -191,14 +191,7 @@ namespace Server.Contract
     [ComVisible(true)]
     [Guid("4242A2F9-995D-4302-A722-02058CF58158")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface IInterface1
-    {
-    }
-
-    [ComVisible(true)]
-    [Guid("7AC820FE-E227-4C4D-A8B0-FCA68C459B43")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface IInterface2 : IInterface1, Interface0
+    public interface IInterface1 : Interface0
     {
     }
 
@@ -215,7 +208,7 @@ namespace Server.Contract
         void Marshal_ByRefVariant(ref object result, object value);
 
         [return: MarshalAs(UnmanagedType.Interface)]
-        IInterface2 Marshal_Interface([MarshalAs(UnmanagedType.Interface)] object inst);
+        IInterface1 Marshal_Interface([MarshalAs(UnmanagedType.Interface)] object inst);
     }
 
     public struct HResult
