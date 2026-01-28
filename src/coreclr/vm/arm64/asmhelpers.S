@@ -586,11 +586,9 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
-    // x0 = pointer to TransitionBlock
-    add     x0, sp, #__PWTB_TransitionBlock
+    add     x0, sp, #__PWTB_TransitionBlock // TransitionBlock *
     bl      C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
 
-    // If we return, restore all registers and return to caller
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 NESTED_END JIT_Patchpoint, _TEXT
 
@@ -2899,62 +2897,3 @@ NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
     brk     #0
 NESTED_END IL_Rethrow, _TEXT
 
-// ------------------------------------------------------------------
-// ClrRestoreNonvolatileContextWorker
-//
-// Restores registers based on ContextFlags and jumps to the target IP.
-// When CONTEXT_INTEGER is set, restores ALL integer registers (x0-x28)
-// because exception handling needs x0 (exception object).
-// When CONTEXT_FLOATING_POINT is set, restores non-volatile FP regs (d8-d15).
-//
-// Arguments:
-//   x0 - pointer to CONTEXT structure
-//
-// Does not return - jumps directly to the Pc stored in the CONTEXT
-// ------------------------------------------------------------------
-LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
-
-    // Save context pointer in x16 since we'll overwrite x0
-    mov     x16, x0
-
-    // Check ContextFlags to see if we should restore floating point registers
-    ldr     w17, [x16, #OFFSETOF__CONTEXT__ContextFlags]
-    tbz     w17, #CONTEXT_FLOATING_POINT_BIT, LOCAL_LABEL(SkipFloatingPointRestore)
-
-    // Restore non-volatile FP registers d8-d15 (lower 64 bits of v8-v15)
-    // V8 is at OFFSETOF__CONTEXT__V0 + 8*16 = 0x110 + 0x80 = 0x190
-    ldp     q8, q9,   [x16, #(OFFSETOF__CONTEXT__V0 + 8*16)]
-    ldp     q10, q11, [x16, #(OFFSETOF__CONTEXT__V0 + 10*16)]
-    ldp     q12, q13, [x16, #(OFFSETOF__CONTEXT__V0 + 12*16)]
-    ldp     q14, q15, [x16, #(OFFSETOF__CONTEXT__V0 + 14*16)]
-
-LOCAL_LABEL(SkipFloatingPointRestore):
-    // Check ContextFlags to see if we should restore integer registers
-    tbz     w17, #CONTEXT_INTEGER_BIT, LOCAL_LABEL(SkipIntegerRestore)
-
-    // Restore argument registers x0-x7 (exception handling needs x0 for exception object)
-    // and non-volatile registers x19-x28
-    ldp     x0, x1,   [x16, #OFFSETOF__CONTEXT__X0]
-    ldp     x2, x3,   [x16, #(OFFSETOF__CONTEXT__X0 + 16)]
-    ldp     x4, x5,   [x16, #(OFFSETOF__CONTEXT__X0 + 32)]
-    ldp     x6, x7,   [x16, #(OFFSETOF__CONTEXT__X0 + 48)]
-    // Skip x8-x18: x8-x15 are scratch, x16-x17 we're using, x18 is platform reserved
-    ldp     x19, x20, [x16, #OFFSETOF__CONTEXT__X19]
-    ldp     x21, x22, [x16, #(OFFSETOF__CONTEXT__X19 + 16)]
-    ldp     x23, x24, [x16, #(OFFSETOF__CONTEXT__X19 + 32)]
-    ldp     x25, x26, [x16, #(OFFSETOF__CONTEXT__X19 + 48)]
-    ldp     x27, x28, [x16, #(OFFSETOF__CONTEXT__X19 + 64)]
-
-LOCAL_LABEL(SkipIntegerRestore):
-    // Restore fp (x29) and lr (x30)
-    ldp     fp, lr, [x16, #OFFSETOF__CONTEXT__Fp]
-
-    // Load Sp and Pc into scratch registers (after all other loads)
-    ldr     x17, [x16, #OFFSETOF__CONTEXT__Sp]
-    ldr     x16, [x16, #OFFSETOF__CONTEXT__Pc]
-
-    // Set sp and jump to target
-    mov     sp, x17
-    br      x16
-
-LEAF_END ClrRestoreNonvolatileContextWorker, _TEXT
