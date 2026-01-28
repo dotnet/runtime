@@ -20,6 +20,11 @@ if(CLR_CMAKE_TARGET_ARCH_ARM AND CLR_CMAKE_TARGET_LINUX)
     set(WITH_NEON OFF)
 endif()
 
+if (CLR_CMAKE_TARGET_WASI)
+  # 'aligned_alloc' is not available in browser/wasi, yet it is set by zlib-ng/CMakeLists.txt.
+  set(HAVE_ALIGNED_ALLOC FALSE CACHE BOOL "have aligned_alloc" FORCE)
+endif()
+
 if (CLR_CMAKE_TARGET_BROWSER)
   # 'aligned_alloc' is not available in browser, yet it is set by zlib-ng/CMakeLists.txt.
   set(HAVE_ALIGNED_ALLOC FALSE CACHE BOOL "have aligned_alloc" FORCE)
