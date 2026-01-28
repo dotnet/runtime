@@ -3970,62 +3970,14 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     // Let's see if MergeEdgeAssertions can help us:
     if (tree->TypeIs(TYP_INT))
     {
-        // See if (X + CNS) is known to be non-negative
-        if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
+        Range rng = RangeCheck::GetRangeFromAssertions(this, treeVN, assertions);
+        if (rng.LowerLimit().GetConstant() >= 0)
         {
-            Range    rng = Range(Limit(Limit::keUnknown));
-            ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
-            if (!RangeCheck::TryGetRangeFromAssertions(this, vn, assertions, &rng))
-            {
-                return;
-            }
-
-            int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
-
-            if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
-                (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
-            {
-                // Add cns to both bounds if they are constants. Make sure the addition doesn't overflow.
-                return;
-            }
-
-            if (rng.LowerLimit().IsConstant())
-            {
-                // E.g. "X + -8" when X's range is [8..unknown]
-                // it's safe to say "X + -8" is non-negative
-                if ((rng.LowerLimit().GetConstant() == 0))
-                {
-                    *isKnownNonNegative = true;
-                }
-
-                // E.g. "X + 8" when X's range is [0..CNS]
-                // Here we have to check the upper bound as well to avoid overflow
-                if ((rng.LowerLimit().GetConstant() > 0) && rng.UpperLimit().IsConstant() &&
-                    rng.UpperLimit().GetConstant() > rng.LowerLimit().GetConstant())
-                {
-                    *isKnownNonNegative = true;
-                    *isKnownNonZero     = true;
-                }
-            }
+            *isKnownNonNegative = true;
         }
-        else
+        if (rng.LowerLimit().GetConstant() > 0)
         {
-            Range rng = Range(Limit(Limit::keUnknown));
-            if (RangeCheck::TryGetRangeFromAssertions(this, treeVN, assertions, &rng))
-            {
-                Limit lowerBound = rng.LowerLimit();
-                if (lowerBound.IsConstant())
-                {
-                    if (lowerBound.GetConstant() >= 0)
-                    {
-                        *isKnownNonNegative = true;
-                    }
-                    if (lowerBound.GetConstant() > 0)
-                    {
-                        *isKnownNonZero = true;
-                    }
-                }
-            }
+            *isKnownNonZero = true;
         }
     }
 }
@@ -4293,68 +4245,6 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions,
     return optAssertionPropLocal_RelOp(assertions, tree, stmt);
 }
 
-//--------------------------------------------------------------------------------
-// optVisitReachingAssertions: given a vn, call the specified callback function on all
-//    the assertions that reach it via PHI definitions if any.
-//
-// Arguments:
-//    vn         - The vn to visit all the reaching assertions for
-//    argVisitor - The callback function to call on the vn and its reaching assertions
-//
-// Return Value:
-//    AssertVisit::Aborted  - an argVisitor returned AssertVisit::Abort, we stop the walk and return
-//    AssertVisit::Continue - all argVisitor returned AssertVisit::Continue
-//
-template <typename TAssertVisitor>
-Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertVisitor argVisitor)
-{
-    VNPhiDef phiDef;
-    if (!vnStore->GetPhiDef(vn, &phiDef))
-    {
-        // We assume that the caller already checked assertions for the current block, so we're
-        // interested only in assertions for PHI definitions.
-        return AssertVisit::Abort;
-    }
-
-    LclSsaVarDsc*        ssaDef = lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaDef);
-    GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
-    assert(node->IsPhiDefn());
-
-    // Keep track of the set of phi-preds
-    //
-    BitVecTraits traits(fgBBNumMax + 1, this);
-    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
-
-    for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
-    {
-        GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
-        const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
-        ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
-        if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
-        {
-            // The visitor wants to abort the walk.
-            return AssertVisit::Abort;
-        }
-        BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
-    }
-
-    // Verify the set of phi-preds covers the set of block preds
-    //
-    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
-    {
-        if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
-        {
-            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": pred " FMT_BB " not a phi-pred\n",
-                    ssaDef->GetBlock()->bbNum, pred->bbNum);
-
-            // We missed examining a block pred. Fail the phi inference.
-            //
-            return AssertVisit::Abort;
-        }
-    }
-    return AssertVisit::Continue;
-}
-
 //------------------------------------------------------------------------
 // optAssertionProp: try and optimize a relop via assertion propagation
 //
@@ -4443,53 +4333,17 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
     ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
 
-    // See if we can fold "X relop CNS" using TryGetRangeFromAssertions.
-    int op2cns;
-    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) && vnStore->IsVNIntegralConstant(op2VN, &op2cns))
+    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT))
     {
-        // NOTE: we can call TryGetRangeFromAssertions for op2 as well if we want, but it's not cheap.
-        Range rng1 = Range(Limit(Limit::keUnknown));
-        Range rng2 = Range(Limit(Limit::keConstant, op2cns));
+        Range rng1 = RangeCheck::GetRangeFromAssertions(this, op1VN, assertions);
+        Range rng2 = RangeCheck::GetRangeFromAssertions(this, op2VN, assertions);
 
-        if (RangeCheck::TryGetRangeFromAssertions(this, op1VN, assertions, &rng1))
+        RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
+        if ((kind != RangeOps::RelationKind::Unknown))
         {
-            RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
-            if ((kind != RangeOps::RelationKind::Unknown))
-            {
-                newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
-                newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
-                return optAssertionProp_Update(newTree, tree, stmt);
-            }
-        }
-
-        // If op1VN is actually ADD(X, CNS), we can try peeling the constant offset and adjusting op2Cns accordingly.
-        // It's a bit more complicated for unsigned comparisons, so only do it for signed ones for now.
-        //
-        if (!tree->IsUnsigned())
-        {
-            ValueNum peeledOp1VN  = op1VN;
-            int      peeledOffset = 0;
-            vnStore->PeelOffsetsI32(&peeledOp1VN, &peeledOffset);
-
-            if (peeledOffset != 0)
-            {
-                Range peeledOffsetRng = Range(Limit(Limit::keConstant, peeledOffset));
-                Range peeledOp1Rng    = Range(Limit(Limit::keUnknown));
-                if (RangeCheck::TryGetRangeFromAssertions(this, peeledOp1VN, assertions, &peeledOp1Rng))
-                {
-                    // Subtract handles overflow internally.
-                    rng2 = RangeOps::Subtract(rng2, peeledOffsetRng);
-
-                    RangeOps::RelationKind kind =
-                        RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), peeledOp1Rng, rng2);
-                    if ((kind != RangeOps::RelationKind::Unknown))
-                    {
-                        newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
-                        newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
-                        return optAssertionProp_Update(newTree, tree, stmt);
-                    }
-                }
-            }
+            newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
+            newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+            return optAssertionProp_Update(newTree, tree, stmt);
         }
     }
 
@@ -5419,10 +5273,9 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             std::swap(funcApp.m_args[0], funcApp.m_args[1]);
         }
 
-        Range rng = Range(Limit(Limit::keUnknown));
-        if ((funcApp.m_args[0] == vnCurLen) && vnStore->IsVNInt32Constant(funcApp.m_args[1]) &&
-            RangeCheck::TryGetRangeFromAssertions(this, vnCurLen, assertions, &rng) && rng.LowerLimit().IsConstant())
+        if ((funcApp.m_args[0] == vnCurLen) && vnStore->IsVNInt32Constant(funcApp.m_args[1]))
         {
+            Range rng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
             // Lower known limit of ArrLen:
             const int lenLowerLimit = rng.LowerLimit().GetConstant();
 
