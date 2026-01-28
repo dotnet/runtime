@@ -188,6 +188,10 @@ namespace ILLink.Shared.TrimAnalysis
         /// </summary>
         Type_get_BaseType,
         /// <summary>
+        /// <see cref="System.Type.GetGenericTypeDefinition"/>
+        /// </summary>
+        Type_GetGenericTypeDefinition,
+        /// <summary>
         /// <see cref="System.Linq.Expressions.Expression.Call(System.Type, string, System.Type[]?, System.Linq.Expressions.Expression[]?))"/>
         /// </summary>
         Expression_Call,
