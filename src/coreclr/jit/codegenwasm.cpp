@@ -1193,6 +1193,12 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     if (compiler->fgUseThrowHelperBlocks())
     {
         Compiler::AddCodeDsc* const add = compiler->fgFindExcptnTarget(SCK_NULL_CHECK, compiler->compCurBB);
+
+        if (add == nullptr)
+        {
+            NYI_WASM("Missing null check demand");
+        }
+
         assert(add != nullptr);
         assert(add->acdUsed);
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
