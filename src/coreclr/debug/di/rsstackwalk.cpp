@@ -710,7 +710,6 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         // debugger will not provide IL for it. The debugger can't inspect within the profiler
         // modified method, but at least the error won't leak out to interfere with inspection
         // of the callstack as a whole.
-
         if (!frameData.v.fNoMetadata &&
             pNativeCode->GetFunction()->IsNativeImpl() != CordbFunction::kNativeOnly)
         {
