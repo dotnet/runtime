@@ -192,5 +192,61 @@ namespace System.Text.Json.Serialization.Tests
 
             public record InnerRecord(int Foo, string Bar);
         }
+
+        [Fact]
+        public virtual async Task InitOnlyProperties_PreserveDefaultValues()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/58770
+            // and https://github.com/dotnet/runtime/issues/87488
+            // Default values for init-only properties should be preserved when not specified in JSON.
+
+            // When no properties are specified, default values should be used
+            ClassWithInitOnlyPropertyDefaults obj = await Serializer.DeserializeWrapper<ClassWithInitOnlyPropertyDefaults>("{}");
+            Assert.Equal("DefaultName", obj.Name);
+            Assert.Equal(42, obj.Number);
+
+            // When only some properties are specified, unspecified ones should retain defaults
+            obj = await Serializer.DeserializeWrapper<ClassWithInitOnlyPropertyDefaults>(@"{""Name"":""Custom""}");
+            Assert.Equal("Custom", obj.Name);
+            Assert.Equal(42, obj.Number);
+
+            obj = await Serializer.DeserializeWrapper<ClassWithInitOnlyPropertyDefaults>(@"{""Number"":100}");
+            Assert.Equal("DefaultName", obj.Name);
+            Assert.Equal(100, obj.Number);
+
+            // When all properties are specified, they should be used
+            obj = await Serializer.DeserializeWrapper<ClassWithInitOnlyPropertyDefaults>(@"{""Name"":""Custom"",""Number"":100}");
+            Assert.Equal("Custom", obj.Name);
+            Assert.Equal(100, obj.Number);
+        }
+
+        [Fact]
+        public virtual async Task InitOnlyProperties_PreserveDefaultValues_Struct()
+        {
+            // Regression test for value types with init-only properties with default values
+
+            // When no properties are specified, default values should be used
+            StructWithInitOnlyPropertyDefaults obj = await Serializer.DeserializeWrapper<StructWithInitOnlyPropertyDefaults>("{}");
+            Assert.Equal("DefaultName", obj.Name);
+            Assert.Equal(42, obj.Number);
+
+            // When only some properties are specified, unspecified ones should retain defaults
+            obj = await Serializer.DeserializeWrapper<StructWithInitOnlyPropertyDefaults>(@"{""Name"":""Custom""}");
+            Assert.Equal("Custom", obj.Name);
+            Assert.Equal(42, obj.Number);
+        }
+
+        public class ClassWithInitOnlyPropertyDefaults
+        {
+            public string Name { get; init; } = "DefaultName";
+            public int Number { get; init; } = 42;
+        }
+
+        public struct StructWithInitOnlyPropertyDefaults
+        {
+            public StructWithInitOnlyPropertyDefaults() { }
+            public string Name { get; init; } = "DefaultName";
+            public int Number { get; init; } = 42;
+        }
     }
 }

@@ -640,7 +640,7 @@ namespace System.Text.Json.SourceGeneration
                         // directly assign after the object is constructed. This preserves default values
                         // for init-only properties when they're not specified in the JSON.
                         { CanUseSetter: true, IsInitOnlySetter: true }
-                            => $"""static (obj, value) => typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)})!.SetValue(obj, value)""",
+                            => $"""static (obj, value) => typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName})!.SetValue(obj, value)""",
                         { CanUseSetter: true } when typeGenerationSpec.TypeRef.IsValueType
                             => $"""static (obj, value) => {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj).{propertyName} = value!""",
                         { CanUseSetter: true }
