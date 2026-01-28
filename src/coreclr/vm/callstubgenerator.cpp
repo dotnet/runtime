@@ -3194,7 +3194,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         bool isFloat;           // True if this element goes in FP register
         bool isLowered;         // True if this is part of a lowered struct (not a regular arg)
     };
-    SwiftLoweringElement swiftLoweringInfo[128];
+    CQuickArray<SwiftLoweringElement> swiftLoweringInfo;
     int swiftLoweringCount = 0;
     int swiftIndirectResultCount = 0;
 
@@ -3315,6 +3315,8 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
             newArgCount++;
         }
+
+        swiftLoweringInfo.AllocThrows(newArgCount);
 
         // Build new signature with lowered structs and store lowering info
         SigBuilder swiftSigBuilder;
