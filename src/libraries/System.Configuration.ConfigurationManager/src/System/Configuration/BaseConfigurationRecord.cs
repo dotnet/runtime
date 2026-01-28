@@ -3201,7 +3201,7 @@ namespace System.Configuration
             if (string.IsNullOrEmpty(configSource) || Path.IsPathRooted(configSource))
                 throw new ConfigurationErrorsException(SR.Config_source_invalid_format, errorInfo);
 
-            if (configSource.IndexOf('\\') != -1 || configSource.IndexOf('/') != -1) // string.Contains(char) is .NetCore2.1+ specific
+            if (configSource.AsSpan().IndexOfAny('\\', '/') >= 0)
             {
                 string newConfigSource = configSource.Replace('\\', '/');
                 if (!ConfigPathUtility.IsValid(newConfigSource))

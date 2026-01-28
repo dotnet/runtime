@@ -109,7 +109,10 @@ unsigned UnpackWasmReg(regNumber reg, WasmValueType* pType)
 //
 unsigned WasmRegToIndex(regNumber reg)
 {
-    return UnpackWasmReg(reg);
+    WasmValueType wasmType;
+    unsigned      index = UnpackWasmReg(reg, &wasmType);
+    assert((WasmValueType::Invalid < wasmType) && (wasmType < WasmValueType::Count));
+    return index;
 }
 
 bool genIsValidReg(regNumber reg)

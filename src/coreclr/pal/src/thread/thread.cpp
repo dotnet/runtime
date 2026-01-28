@@ -206,59 +206,6 @@ static void FreeTHREAD(CPalThread *pThread)
 
 /*++
 Function:
-  THREADGetThreadProcessId
-
-returns the process owner ID of the indicated hThread
---*/
-DWORD
-THREADGetThreadProcessId(
-    HANDLE hThread
-    // UNIXTODO Should take pThread parameter here (modify callers)
-    )
-{
-    CPalThread *pThread;
-    CPalThread *pTargetThread;
-    IPalObject *pobjThread = NULL;
-    PAL_ERROR palError = NO_ERROR;
-
-    DWORD dwProcessId = 0;
-
-    pThread = InternalGetCurrentThread();
-
-    palError = InternalGetThreadDataFromHandle(
-        pThread,
-        hThread,
-        &pTargetThread,
-        &pobjThread
-        );
-
-    if (NO_ERROR != palError)
-    {
-        if (!pThread->IsDummy())
-        {
-            dwProcessId = GetCurrentProcessId();
-        }
-        else
-        {
-            ASSERT("Dummy thread passed to THREADGetProcessId\n");
-        }
-
-        if (NULL != pobjThread)
-        {
-            pobjThread->ReleaseReference(pThread);
-        }
-    }
-    else
-    {
-        ERROR("Couldn't retrieve the hThread:%p pid owner !\n", hThread);
-    }
-
-
-    return dwProcessId;
-}
-
-/*++
-Function:
   GetCurrentThreadId
 
 See MSDN doc.

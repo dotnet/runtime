@@ -1,0 +1,54 @@
+# This pipeline is used for running the VMR verification of the PR changes in repo-level PRs.
+# If there are changes in flight that intentionally create cross-repo breaking changes in the VMR ingestion,
+# this pipeline is expected to fail until the conflicts are resolved in the VMR.
+
+trigger: none
+
+pr:
+  branches:
+    include:
+    - main
+    - release/*.*
+  paths:
+    include:
+    - '*'
+    - eng/pipelines/global-build.yml
+    exclude:
+    - '**.md'
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    # Don't trigger VMR builds for changes to Mono.
+    # Mono-based stage 2 source-build is not blocking for the VMR and is only done as a basic validation
+    # for our partners. Interesting Mono-based stage 2 source-build legs are for architectures that are not
+    # supported on CoreCLR, like S390X, which we don't build ourselves.
+    - src/mono/*
+    - eng/pipelines/coreclr/*.*
+    - eng/pipelines/libraries/*.*
+    - eng/pipelines/installer/*.*
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
+
+variables:
+- template: /eng/common/templates/variables/pool-providers.yml@self
+
+- name: skipComponentGovernanceDetection  # we run CG on internal builds only
+  value: true
+
+- name: Codeql.Enabled  # we run CodeQL on internal builds only
+  value: false
+
+resources:
+  repositories:
+  - repository: vmr
+    type: github
+    name: dotnet/dotnet
+    endpoint: dotnet
+
+stages:
+- template: /eng/pipelines/templates/stages/vmr-build.yml@vmr
+  parameters:
+    isBuiltFromVmr: false
+    scope: lite
+    verifications: [ "source-build-stage1", "source-build-stage2" ]
+

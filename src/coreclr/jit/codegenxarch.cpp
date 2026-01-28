@@ -1125,7 +1125,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
 
     instruction ins;
     emitAttr    size                  = emitTypeSize(treeNode);
-    bool        isUnsignedMultiply    = ((treeNode->gtFlags & GTF_UNSIGNED) != 0);
+    bool        isUnsignedMultiply    = treeNode->IsUnsigned();
     bool        requiresOverflowCheck = treeNode->gtOverflowEx();
 
     GenTree* op1 = treeNode->gtGetOp1();
@@ -5925,6 +5925,21 @@ void CodeGen::genCall(GenTreeCall* call)
             if (target->isContainedIndir())
             {
                 genConsumeAddress(target->AsIndir()->Addr());
+
+                // Consuming these registers will ensure the registers containing the state we need are available here,
+                // but it assumes we will use them immediately and will thus kill the live state. Since these registers
+                // are live into the epilog we need to remark them as live.
+                // This logic is similar to what genCallPlaceRegArgs does above for argument registers.
+                GenTreeIndir* indir = target->AsIndir();
+                if (indir->HasBase() && indir->Base()->TypeIs(TYP_BYREF, TYP_REF))
+                {
+                    gcInfo.gcMarkRegPtrVal(indir->Base()->GetRegNum(), indir->Base()->TypeGet());
+                }
+
+                if (indir->HasIndex() && indir->Index()->TypeIs(TYP_BYREF, TYP_REF))
+                {
+                    gcInfo.gcMarkRegPtrVal(indir->Index()->GetRegNum(), indir->Index()->TypeGet());
+                }
             }
             else
             {
@@ -6642,7 +6657,7 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
         // The common type cannot be smaller than any of the operand types, we're probably mixing int/long
         assert(genTypeSize(type) >= max(genTypeSize(op1Type), genTypeSize(op2Type)));
         // Small unsigned int types (TYP_BOOL can use anything) should use unsigned comparisons
-        assert(!(varTypeIsSmall(type) && varTypeIsUnsigned(type)) || ((tree->gtFlags & GTF_UNSIGNED) != 0));
+        assert(!(varTypeIsSmall(type) && varTypeIsUnsigned(type)) || tree->IsUnsigned());
         // If op1 is smaller then it cannot be in memory, we're probably missing a cast
         assert((genTypeSize(op1Type) >= genTypeSize(type)) || !op1->isUsedFromMemory());
         // If op2 is smaller then it cannot be in memory, we're probably missing a cast
@@ -6804,7 +6819,7 @@ void CodeGen::genLongToIntCast(GenTree* cast)
 
     genConsumeRegs(src);
 
-    var_types srcType  = ((cast->gtFlags & GTF_UNSIGNED) != 0) ? TYP_ULONG : TYP_LONG;
+    var_types srcType  = cast->IsUnsigned() ? TYP_ULONG : TYP_LONG;
     var_types dstType  = cast->CastToType();
     regNumber loSrcReg = src->gtGetOp1()->GetRegNum();
     regNumber hiSrcReg = src->gtGetOp2()->GetRegNum();
@@ -11146,7 +11161,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     assert(blkSize >= 0);
     noway_assert((blkSize % sizeof(int)) == 0);
     // initReg is not a live incoming argument reg
-    assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
+    assert((genRegMask(initReg) & calleeRegArgMaskLiveIn) == 0);
 
 #if defined(TARGET_AMD64)
     // We will align on x64 so can use the aligned mov

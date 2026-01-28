@@ -92,10 +92,6 @@ export interface DotnetHostBuilder {
 }
 export type LoaderConfig = {
     /**
-     * Additional search locations for assets.
-     */
-    remoteSources?: string[];
-    /**
      * It will not fail the startup is .pdb files can't be downloaded
      */
     ignorePdbLoadErrors?: boolean;
@@ -328,10 +324,6 @@ export interface AssetEntry {
      * Culture code
      */
     culture?: string;
-    /**
-     * If true, an attempt will be made to load the asset from each location in LoaderConfig.remoteSources.
-     */
-    loadRemote?: boolean;
     /**
      * If true, the runtime startup would not fail if the asset download was not successful.
      */

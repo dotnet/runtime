@@ -1803,16 +1803,33 @@ class CodeHeapIterator final
         size_t MaxCodeHeapSize;
     };
 
-    EECodeGenManager* m_manager;
+    class EECodeGenManagerReleaseIteratorHolder
+    {
+        EECodeGenManager* m_manager;
+    public:
+        EECodeGenManagerReleaseIteratorHolder(EECodeGenManager* manager);
+        EECodeGenManagerReleaseIteratorHolder(EECodeGenManagerReleaseIteratorHolder const&) = delete;
+        EECodeGenManagerReleaseIteratorHolder& operator=(EECodeGenManagerReleaseIteratorHolder const&) = delete;
+        EECodeGenManagerReleaseIteratorHolder(EECodeGenManagerReleaseIteratorHolder&& other)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_manager = other.m_manager;
+            other.m_manager = NULL;
+        }
+        EECodeGenManagerReleaseIteratorHolder& operator=(EECodeGenManagerReleaseIteratorHolder&& other);
+        ~EECodeGenManagerReleaseIteratorHolder();
+    };
+
+    EECodeGenManagerReleaseIteratorHolder m_manager;
     MethodSectionIterator m_Iterator;
     CUnorderedArray<HeapListState, 64> m_Heaps;
     int32_t m_HeapsIndexNext;
     LoaderAllocator* m_pLoaderAllocatorFilter;
     MethodDesc* m_pCurrent;
+    DWORD m_codeType;
 
 public:
     CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList, LoaderAllocator* pLoaderAllocatorFilter);
-    ~CodeHeapIterator();
 
     CodeHeapIterator(CodeHeapIterator const&) = delete;
     CodeHeapIterator& operator=(CodeHeapIterator const&) = delete;
@@ -1931,7 +1948,7 @@ public:
     void CleanupCodeHeaps();
 
     template<typename TCodeHeader>
-    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, void** ppCodeHeader, void** ppCodeHeaderRW,
+    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
                    size_t* pAllocatedSize, HeapList** ppCodeHeap , BYTE** ppRealHeader
                  , UINT nUnwindInfos
                   );
