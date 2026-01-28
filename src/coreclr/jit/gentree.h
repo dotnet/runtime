@@ -8098,6 +8098,9 @@ public:
         BlkOpKindLoop,
         BlkOpKindUnroll,
         BlkOpKindUnrollMemmove,
+#ifdef TARGET_WASM
+        BlkOpKindNativeOpcode,
+#endif
     } gtBlkOpKind;
 
     bool gtBlkOpGcUnsafe;

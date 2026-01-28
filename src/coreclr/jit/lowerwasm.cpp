@@ -195,7 +195,63 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
 //
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
-    NYI_WASM("LowerBlockStore");
+    GenTree* dstAddr = blkNode->Addr();
+    GenTree* src     = blkNode->Data();
+
+    if (blkNode->OperIsInitBlkOp())
+    {
+        if (src->OperIs(GT_INIT_VAL))
+        {
+            src->SetContained();
+            src = src->AsUnOp()->gtGetOp1();
+        }
+
+        if (blkNode->IsZeroingGcPointersOnHeap())
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+            src->SetContained();
+        }
+        else
+        {
+            // memory.fill
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        }
+    }
+    else
+    {
+        assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
+        src->SetContained();
+
+        if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            // TODO-WASM: Is this true for wasm as well?
+            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
+        }
+
+        ClassLayout* layout  = blkNode->GetLayout();
+        bool         doCpObj = layout->HasGCPtr();
+
+        // CopyObj or CopyBlk
+        if (doCpObj)
+        {
+            // Try to use bulk copy helper
+            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
+            {
+                return;
+            }
+
+            assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
+        }
+        else
+        {
+            assert(blkNode->OperIs(GT_STORE_BLK));
+            // memory.copy
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -440,6 +496,13 @@ void Lowering::AfterLowerBlock()
                     // rare, introduced in lowering only. All HIR-induced cases (such as from "gtSetEvalOrder") should
                     // instead be ifdef-ed out for WASM.
                     m_anyChanges = true;
+#ifdef DEBUG
+                    printf("node==");
+                    Compiler::printTreeID(node);
+                    printf(" prev==");
+                    Compiler::printTreeID(prev);
+                    printf("\n");
+#endif
                     NYI_WASM("IR not in a stackified form");
                 }
 

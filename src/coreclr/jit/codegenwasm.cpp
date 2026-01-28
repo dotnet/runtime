@@ -599,6 +599,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genLeaInstruction(treeNode->AsAddrMode());
             break;
 
+        case GT_STORE_BLK:
+            genCodeForStoreBlk(treeNode->AsBlk());
+            break;
+
         case GT_MEMORYBARRIER:
             // No-op for single-threaded wasm.
             assert(!WASM_THREAD_SUPPORT);
@@ -1962,6 +1966,78 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
     }
 
     WasmProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreBlk: Produce code for a GT_STORE_BLK node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
+{
+    assert(blkOp->OperIs(GT_STORE_BLK));
+
+    if (blkOp->gtBlkOpGcUnsafe)
+    {
+        GetEmitter()->emitDisableGC();
+    }
+    bool isCopyBlk = blkOp->OperIsCopyBlkOp();
+
+    switch (blkOp->gtBlkOpKind)
+    {
+        case GenTreeBlk::BlkOpKindCpObjUnroll:
+            assert(!blkOp->gtBlkOpGcUnsafe);
+            genCodeForCpObj(blkOp->AsBlk());
+            break;
+
+        case GenTreeBlk::BlkOpKindLoop:
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(blkOp);
+            break;
+
+        case GenTreeBlk::BlkOpKindNativeOpcode:
+            genConsumeOperands(blkOp);
+            // Emit the size constant expected by the memory.copy and memory.fill opcodes
+            GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
+            GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_8BYTE, /* memory index */ 0);
+            break;
+
+        default:
+            unreached();
+    }
+
+    if (blkOp->gtBlkOpGcUnsafe)
+    {
+        GetEmitter()->emitEnableGC();
+    }
+}
+
+void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
+{
+    NYI_WASM("genCodeForCpObj");
+}
+
+//------------------------------------------------------------------------
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
+//    It's needed for cases when size is too big to unroll and we're not allowed
+//    to use memset call due to atomicity requirements.
+//
+// Arguments:
+//    initBlkNode - the GT_STORE_BLK node
+//
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* blkOp)
+{
+    // TODO-WASM: In multi-threaded wasm we will need to generate a for loop that atomically zeroes one GC ref
+    //  at a time. Right now we're single-threaded, so we can just use memory.fill.
+    assert(!WASM_THREAD_SUPPORT);
+
+    genConsumeOperands(blkOp);
+    // Emit the value constant expected by the memory.fill opcode (zero)
+    GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, 0);
+    // Emit the size constant expected by the memory.copy and memory.fill opcodes
+    GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
+    GetEmitter()->emitIns_I(INS_memory_fill, EA_8BYTE, /* memory index */ 0);
 }
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
