@@ -28,7 +28,8 @@ struct CallDescrData
 #ifdef TARGET_WASM
     // size of the arguments and the transition block are used to execute the method with the interpreter
     size_t                      nArgsSize;
-#endif
+    bool                        hasRetBuff;
+#endif // TARGET_WASM
 
 #ifdef CALLDESCR_RETBUFFARGREG
     // Pointer to return buffer arg location

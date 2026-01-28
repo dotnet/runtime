@@ -13,6 +13,7 @@
 #define __CALLING_CONVENTION_INCLUDED
 
 #ifdef FEATURE_INTERPRETER
+#include <cgencpu.h>
 #include <interpretershared.h>
 #endif // FEATURE_INTERPRETER
 
@@ -652,7 +653,7 @@ public:
     // Return the offsets of the special arguments
     //------------------------------------------------------------
 
-    static int GetThisOffset();
+    int GetThisOffset();
 
     int GetRetBuffArgOffset();
     int GetVASigCookieOffset();
@@ -1072,7 +1073,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetThisOffset()
 #ifdef TARGET_X86
     // x86 is special as always
     ret += offsetof(ArgumentRegisters, ECX);
-#endif
+#elif defined(TARGET_WASM)
+    if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+        ret += TARGET_REGISTER_SIZE;
+#endif // TARGET_WASM
 
     return ret;
 }
@@ -1100,10 +1104,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetRetBuffArgOffset()
     {
         ret = TransitionBlock::GetOffsetOfRetBuffArgReg();
     }
-#else
+#elif !defined(TARGET_WASM)
     if (this->HasThis())
         ret += TARGET_REGISTER_SIZE;
-#endif
+#endif // !TARGET_WASM
 
     return ret;
 }
@@ -1902,8 +1906,22 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     return argOfs;
 #elif defined(TARGET_WASM)
+
+    size_t align;
+    if (argType == ELEMENT_TYPE_VALUETYPE && argSize > INTERP_STACK_SLOT_SIZE)
+    {
+        align = CEEInfo::getClassAlignmentRequirementStatic(thValueType.GetMethodTable());
+        if (align < INTERP_STACK_SLOT_SIZE)
+            align = INTERP_STACK_SLOT_SIZE;
+
+        if (align > INTERP_STACK_ALIGNMENT)
+            align = INTERP_STACK_ALIGNMENT;
+    } else {
+        align = INTERP_STACK_SLOT_SIZE;
+    }
+
     int cbArg = ALIGN_UP(argSize, INTERP_STACK_SLOT_SIZE);
-    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + ALIGN_UP(m_ofsStack, align);
 
     m_ofsStack += cbArg;
 
