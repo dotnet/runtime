@@ -511,10 +511,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForStoreInd(treeNode->AsStoreInd());
             break;
 
-        case GT_NULLCHECK:
-            genCodeForNullCheck(treeNode->AsIndir());
-            break;
-
         case GT_CALL:
             genCall(treeNode->AsCall());
             break;
@@ -1553,28 +1549,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             genEmitCallWithCurrentGC(params);
         }
     }
-}
-
-//---------------------------------------------------------------------
-// genCodeForNullCheck - generate code for a GT_NULLCHECK node
-//
-// Arguments
-//    tree - the GT_NULLCHECK node
-//
-// Return value:
-//    None
-//
-void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
-{
-    assert(tree->OperIs(GT_NULLCHECK));
-    GenTree* op1 = tree->gtOp1;
-
-    genConsumeRegs(op1);
-
-    // FIXME-WASM: Emit the actual nullcheck, not just the helper call. AndyA has a PR open for this:
-    // https://github.com/dotnet/runtime/pull/123053
-
-    genEmitHelperCall(CORINFO_HELP_THROWNULLREF, 0, EA_UNKNOWN, REG_NA);
 }
 
 /*****************************************************************************
