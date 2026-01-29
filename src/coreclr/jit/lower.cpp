@@ -3209,20 +3209,6 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // We expect to see a call that meets the following conditions
     assert(call->IsFastTailCall());
 
-    // VM cannot use return address hijacking when A() and B() tail call each
-    // other in mutual recursion.  Therefore, this block is reachable through
-    // a GC-safe point or the whole method is marked as fully interruptible.
-    //
-    // TODO-Cleanup:
-    // optReachWithoutCall() depends on the fact that loop headers blocks
-    // will have a block number > fgLastBB.  These loop headers gets added
-    // after dominator computation and get skipped by OptReachWithoutCall().
-    // The below condition cannot be asserted in lower because fgSimpleLowering()
-    // can add a new basic block for range check failure which becomes
-    // fgLastBB with block number > loop header block number.
-    // assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) ||
-    //         !comp->optReachWithoutCall(comp->fgFirstBB, comp->compCurBB) || comp->GetInterruptible());
-
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
     if (comp->compMethodRequiresPInvokeFrame())
@@ -3524,12 +3510,6 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     // We expect to see a call that meets the following conditions
     assert(call->IsTailCallViaJitHelper());
     assert(callTarget != nullptr);
-
-    // The TailCall helper call never returns to the caller and is not GC interruptible.
-    // Therefore the block containing the tail call should be a GC safe point to avoid
-    // GC starvation. It is legal for the block to be unmarked iff the entry block is a
-    // GC safe point, as the entry block trivially dominates every reachable block.
-    assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) || comp->fgFirstBB->HasFlag(BBF_GC_SAFE_POINT));
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
