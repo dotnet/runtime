@@ -2530,6 +2530,7 @@ namespace System.Collections.Immutable.Tests
             Task.WaitAll(Task.Run(mutator), Task.Run(mutator));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         [MemberData(nameof(Int32EnumerableData))]
         public void DebuggerAttributesValid_AdditionalCases(IEnumerable<int> source)

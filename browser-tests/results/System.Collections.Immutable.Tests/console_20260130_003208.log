@@ -1,0 +1,142 @@
+nohup: ignoring input
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime2/artifacts/bin/TestUtilities/Debug/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime2/artifacts/bin/ILLink.RoslynAnalyzer/Debug/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime2/artifacts/bin/ILLink.CodeFixProvider/Debug/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime2/artifacts/bin/Mono.Linker/ref/Debug/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime2/artifacts/bin/Mono.Linker/Debug/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime2/artifacts/bin/ILLink.Tasks/Debug/net/ILLink.Tasks.dll
+  System.Private.CoreLib.Generators -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Private.CoreLib.Generators/Debug/netstandard2.0/System.Private.CoreLib.Generators.dll
+  System.Private.CoreLib -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Private.CoreLib/ref/Debug/net11.0/System.Private.CoreLib.dll
+  EventSourceGenerator -> /home/pavelsavara/dev/runtime2/artifacts/bin/EventSourceGenerator/Debug/netstandard2.0/EventSourceGenerator.dll
+  Microsoft.Interop.SourceGeneration -> /home/pavelsavara/dev/runtime2/artifacts/bin/Microsoft.Interop.SourceGeneration/Debug/netstandard2.0/Microsoft.Interop.SourceGeneration.dll
+  LibraryImportGenerator -> /home/pavelsavara/dev/runtime2/artifacts/bin/LibraryImportGenerator/Debug/netstandard2.0/Microsoft.Interop.LibraryImportGenerator.dll
+  System.Private.CoreLib -> /home/pavelsavara/dev/runtime2/artifacts/bin/coreclr/browser.wasm.Debug/IL/System.Private.CoreLib.dll
+  System.Private.Uri -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Private.Uri/Debug/net11.0/System.Private.Uri.dll
+  System.Runtime -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Runtime/ref/Debug/net11.0/System.Runtime.dll
+  System.Memory -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Memory/ref/Debug/net11.0/System.Memory.dll
+  System.Diagnostics.Tracing -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Diagnostics.Tracing/ref/Debug/net11.0/System.Diagnostics.Tracing.dll
+  System.Numerics.Vectors -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Numerics.Vectors/ref/Debug/net11.0/System.Numerics.Vectors.dll
+  System.Collections -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections/ref/Debug/net11.0/System.Collections.dll
+  System.Threading -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Threading/ref/Debug/net11.0/System.Threading.dll
+  System.Runtime -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Runtime/Debug/net11.0/System.Runtime.dll
+  System.Runtime.Intrinsics -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Runtime.Intrinsics/ref/Debug/net11.0/System.Runtime.Intrinsics.dll
+  System.Numerics.Vectors -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Numerics.Vectors/Debug/net11.0/System.Numerics.Vectors.dll
+  System.Memory -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Memory/Debug/net11.0/System.Memory.dll
+  System.Collections -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections/Debug/net11.0/System.Collections.dll
+  System.Diagnostics.Tracing -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Diagnostics.Tracing/Debug/net11.0/System.Diagnostics.Tracing.dll
+  System.Threading -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Threading/Debug/net11.0/System.Threading.dll
+  System.Runtime.Intrinsics -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Runtime.Intrinsics/Debug/net11.0/System.Runtime.Intrinsics.dll
+  System.Collections.Concurrent -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Concurrent/ref/Debug/net11.0/System.Collections.Concurrent.dll
+  System.Collections.Concurrent -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Concurrent/Debug/net11.0/System.Collections.Concurrent.dll
+  System.Runtime.InteropServices -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Runtime.InteropServices/ref/Debug/net11.0/System.Runtime.InteropServices.dll
+  System.Runtime.InteropServices -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Runtime.InteropServices/Debug/net11.0/System.Runtime.InteropServices.dll
+  System.Linq -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Linq/ref/Debug/net11.0/System.Linq.dll
+  ComInterfaceGenerator -> /home/pavelsavara/dev/runtime2/artifacts/bin/ComInterfaceGenerator/Debug/netstandard2.0/Microsoft.Interop.ComInterfaceGenerator.dll
+  System.Linq -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Linq/Debug/net11.0/System.Linq.dll
+  System.Collections.Immutable -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Immutable/ref/Debug/net11.0/System.Collections.Immutable.dll
+  System.Collections.Immutable -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Immutable/Debug/net11.0/System.Collections.Immutable.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Collections.Immutable.Tests -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Immutable.Tests/Debug/net11.0/browser-wasm/System.Collections.Immutable.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime2/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime2/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime2/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Immutable.Tests/Debug/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Immutable.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime2/artifacts/bin/System.Collections.Immutable.Tests/Debug/net11.0/browser-wasm/wwwroot ~/dev/runtime2/src/libraries/System.Collections.Immutable/tests
+  ----- start Fri Jan 30 00:32:22 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Immutable.Tests/Debug/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Immutable.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime2/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Collections.Immutable.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime2/artifacts/bin/System.Collections.Immutable.Tests/Debug/net11.0/browser-wasm/wwwroot ~/dev/runtime2/artifacts/bin/System.Collections.Immutable.Tests/Debug/net11.0/browser-wasm/wwwroot ~/dev/runtime2/src/libraries/System.Collections.Immutable/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Immutable.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime2/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Collections.Immutable.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime2/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 33657
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 33657.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:34123/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Collections.Immutable.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Collections.Immutable.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Collections.Immutable.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash 713bb3f1f8bf1ec9117f81c55ac3a999ec24aa86
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Collections.Immutable.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Collections.Immutable.Tests.dll (found 4692 of 4806 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Collections.Immutable.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_Contains_DefaultValueOnCollectionContainingDefaultValue(count: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_Contains_DefaultValueOnCollectionContainingDefaultValue(count: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_Contains_DefaultValueOnCollectionContainingDefaultValue(count: 75)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_Remove_ReferenceRemovedFromCollection
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.IEnumerable_Generic_Enumerator_Reset
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_CopyTo_NegativeIndex_ThrowsArgumentOutOfRangeException(count: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_CopyTo_NegativeIndex_ThrowsArgumentOutOfRangeException(count: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_CopyTo_NegativeIndex_ThrowsArgumentOutOfRangeException(count: 75)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowsAnyArgumentException(count: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowsAnyArgumentException(count: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowsAnyArgumentException(count: 75)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_CopyTo_NotEnoughSpaceInOffsettedArray_ThrowsArgumentException(count: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_CopyTo_NotEnoughSpaceInOffsettedArray_ThrowsArgumentException(count: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_CopyTo_NotEnoughSpaceInOffsettedArray_ThrowsArgumentException(count: 75)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ISet_Generic_IsProperSupersetOf_Itself(setLength: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ISet_Generic_IsProperSupersetOf_Itself(setLength: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ISet_Generic_IsProperSupersetOf_Itself(setLength: 75)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_Add_DefaultValue(count: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_Add_DefaultValue(count: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_Add_DefaultValue(count: 75)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.EmptyFrozenSet_Idempotent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.IEnumerable_NonGeneric_GetEnumerator_EmptyCollection_UsesSingleton
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_Contains_ValidValueOnCollectionContainingThatValue(count: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_Contains_ValidValueOnCollectionContainingThatValue(count: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.ICollection_Generic_Contains_ValidValueOnCollectionContainingThatValue(count: 75)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.FrozenSet_ToFrozenSet_Idempotent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.IEnumerable_Generic_Enumerator_Current_ModifiedDuringEnumeration_Succeeds(count: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.IEnumerable_Generic_Enumerator_Current_ModifiedDuringEnumeration_Succeeds(count: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.IEnumerable_Generic_Enumerator_Current_ModifiedDuringEnumeration_Succeeds(count: 75)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 0, comparer: null, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 0, comparer: null, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 0, comparer: ObjectEqualityComparer`1 { }, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 0, comparer: ObjectEqualityComparer`1 { }, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 0, comparer: NonDefaultEqualityComparer`1 { }, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 0, comparer: NonDefaultEqualityComparer`1 { }, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 1, comparer: null, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 1, comparer: null, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 1, comparer: ObjectEqualityComparer`1 { }, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 1, comparer: ObjectEqualityComparer`1 { }, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 1, comparer: NonDefaultEqualityComparer`1 { }, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 1, comparer: NonDefaultEqualityComparer`1 { }, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 2, comparer: null, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 2, comparer: null, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 2, comparer: ObjectEqualityComparer`1 { }, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 2, comparer: ObjectEqualityComparer`1 { }, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 2, comparer: NonDefaultEqualityComparer`1 { }, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 2, comparer: NonDefaultEqualityComparer`1 { }, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 10, comparer: null, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 10, comparer: null, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 10, comparer: ObjectEqualityComparer`1 { }, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 10, comparer: ObjectEqualityComparer`1 { }, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 10, comparer: NonDefaultEqualityComparer`1 { }, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 10, comparer: NonDefaultEqualityComparer`1 { }, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 99, comparer: null, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 99, comparer: null, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 99, comparer: ObjectEqualityComparer`1 { }, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 99, comparer: ObjectEqualityComparer`1 { }, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 99, comparer: NonDefaultEqualityComparer`1 { }, specifySameComparer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.LookupItems_AllItemsFoundAsExpected(size: 99, comparer: NonDefaultEqualityComparer`1 { }, specifySameComparer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Collections.Frozen.Tests.FrozenSet_Generic_Tests_SimpleClass.CreateVeryLargeSet_Success(largeCount: 100000)
