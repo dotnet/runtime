@@ -176,24 +176,17 @@ def setup_and_run_crank_agent(workdir: Path):
     # Create a Localhost.yml to define the local environment since we can't access the PerfLab.
     yml = textwrap.dedent(
 f"""
-variables:
-    applicationAddress: 127.0.0.1
-    loadAddress: 127.0.0.1
-    applicationPort: {CRANK_PORT}
-    applicationScheme: http
-    loadPort: {CRANK_PORT}
-    loadScheme: http
+
 profiles:
     Localhost:
-        variables:
-            serverAddress: "{{{{applicationAddress}}}}"
         jobs:
             application:
                 endpoints:
-                    - "{{{{applicationScheme}}}}://{{{{applicationAddress}}}}:{{{{applicationPort}}}}"
+                    - "http://127.0.0.1:{CRANK_PORT}"
             load:
                 endpoints:
-                    - "{{{{loadScheme}}}}://{{{{loadAddress}}}}:{{{{loadPort}}}}"
+                    - "http://127.0.0.1:{CRANK_PORT}"
+
 """)
     localhost_yml.write_text(yml, encoding="utf-8")
 
@@ -253,11 +246,6 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
         "--application.runtimeVersion", "10.0.0-rtm.25513.102",
         "--application.sdkVersion", "10.0.100-rtm.25513.102",
 
-        "--application.collectDependencies", "false",
-        "--application.options.collectCounters", "false",
-        "--load.options.reuseBuild", "true",
-        "--load.variables.duration", "45",
-        "--load.variables.warmup", "15",
         "--load.job", "bombardier", # Bombardier is more cross-platform friendly (wrk is linux only)
     ]
     
