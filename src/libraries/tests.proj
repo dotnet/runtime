@@ -658,6 +658,8 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/DefaultContext/System.Runtime.Loader.DefaultContext.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/FunctionalTests/System.Text.RegularExpressions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Extensions/tests/BinaryFormatTests/System.Resources.Extensions.BinaryFormat.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Formatters/tests/System.Runtime.Serialization.Formatters.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
