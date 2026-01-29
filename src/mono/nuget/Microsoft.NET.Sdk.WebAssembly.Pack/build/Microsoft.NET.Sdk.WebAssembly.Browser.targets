@@ -962,6 +962,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <WasmPublishConfig Include="WasmFingerprintBootConfig" Value="$(_WasmFingerprintBootConfig)" />
       <WasmPublishConfig Include="WasmPreloadAssets" Value="$(_WasmPreloadAssets)" />
       <WasmPublishConfig Include="WasmBundlerFriendlyBootConfig" Value="$(_WasmBundlerFriendlyBootConfig)" />
+      <WasmPublishConfig Include="UseMonoRuntime" Value="$(UseMonoRuntime)" />
     </ItemGroup>
     <AllowEmptyTelemetry EventName="WasmPublishConfig" EventData="@(WasmPublishConfig)" />
   </Target>
