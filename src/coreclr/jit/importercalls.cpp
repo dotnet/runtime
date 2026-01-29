@@ -7438,6 +7438,7 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
         {
             case WellKnownArg::RetBuffer:
             case WellKnownArg::ThisPointer:
+            case WellKnownArg::AsyncContinuation:
                 // Not part of signature but we still expect to see it here
                 continue;
             case WellKnownArg::None:

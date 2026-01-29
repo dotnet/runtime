@@ -13,10 +13,14 @@
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
 static const instruction INS_I_sub   = INS_i64_sub;
+static const instruction INS_I_le_u  = INS_i64_le_u;
+static const instruction INS_I_gt_u  = INS_i64_gt_u;
 #else  // !TARGET_64BIT
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
 static const instruction INS_I_sub   = INS_i32_sub;
+static const instruction INS_I_le_u  = INS_i32_le_u;
+static const instruction INS_I_gt_u  = INS_i32_gt_u;
 #endif // !TARGET_64BIT
 
 void CodeGen::genMarkLabelsForCodegen()
@@ -495,6 +499,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForNegNot(treeNode->AsOp());
             break;
 
+        case GT_NULLCHECK:
+            genCodeForNullCheck(treeNode->AsIndir());
+            break;
+
         case GT_IND:
             genCodeForIndir(treeNode->AsIndir());
             break;
@@ -922,6 +930,37 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 {
     genConsumeOperands(treeNode);
 
+    // wasm stack is
+    // divisor (top)
+    // dividend (next)
+    // ...
+    // TODO-WASM: To check for exception, we will have to spill these to
+    // internal registers along the way, like so:
+    //
+    // ... push dividend
+    // tee.local $temp1
+    // ... push divisor
+    // tee.local $temp2
+    // ... exception checks (using $temp1 and $temp2; will introduce flow)
+    // div/mod op
+
+    if (!varTypeIsFloating(treeNode->TypeGet()))
+    {
+        ExceptionSetFlags exSetFlags = treeNode->OperExceptions(compiler);
+
+        // TODO-WASM:(AnyVal / 0) => DivideByZeroException
+        //
+        if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+        {
+        }
+
+        // TODO-WASM: (MinInt / -1) => ArithmeticException
+        //
+        if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+        {
+        }
+    }
+
     instruction ins;
     switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
     {
@@ -1134,6 +1173,48 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 
     GetEmitter()->emitIns(ins);
     genProduceReg(tree);
+}
+
+//---------------------------------------------------------------------
+// genCodeForNullCheck - generate code for a GT_NULLCHECK node
+//
+// Arguments:
+//    tree - the GT_NULLCHECK node
+//
+// Notes:
+//    If throw helper calls are being emitted inline, we need
+//    to wrap the resulting codegen in a block/end pair.
+//
+void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
+{
+    genConsumeAddress(tree->Addr());
+
+    // TODO-WASM: refactor once we have implemented other cases invoking throw helpers
+    if (compiler->fgUseThrowHelperBlocks())
+    {
+        Compiler::AddCodeDsc* const add = compiler->fgFindExcptnTarget(SCK_NULL_CHECK, compiler->compCurBB);
+
+        if (add == nullptr)
+        {
+            NYI_WASM("Missing null check demand");
+        }
+
+        assert(add != nullptr);
+        assert(add->acdUsed);
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
+        GetEmitter()->emitIns(INS_I_le_u);
+        inst_JMP(EJ_jmpif, add->acdDstBlk);
+    }
+    else
+    {
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
+        GetEmitter()->emitIns(INS_I_le_u);
+        GetEmitter()->emitIns(INS_if);
+        // TODO-WASM: codegen for the call instead of unreachable
+        // genEmitHelperCall(compiler->acdHelper(SCK_NULL_CHECK), 0, EA_UNKNOWN);
+        GetEmitter()->emitIns(INS_unreachable);
+        GetEmitter()->emitIns(INS_end);
+    }
 }
 
 //------------------------------------------------------------------------
