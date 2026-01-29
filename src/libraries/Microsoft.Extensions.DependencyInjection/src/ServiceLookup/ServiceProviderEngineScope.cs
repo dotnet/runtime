@@ -120,10 +120,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public void Dispose()
         {
             List<object>? toDispose = BeginDispose();
-
-            if (toDispose != null)
+            if (toDispose is null)
             {
-                for (int i = toDispose.Count - 1; i >= 0; i--)
+                return;
+            }
+
+            List<Exception>? exceptions = null;
+            for (var i = toDispose.Count - 1; i >= 0; i--)
+            {
+                try
                 {
                     if (toDispose[i] is IDisposable disposable)
                     {
@@ -134,45 +139,66 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         throw new InvalidOperationException(SR.Format(SR.AsyncDisposableServiceDispose, TypeNameHelper.GetTypeDisplayName(toDispose[i])));
                     }
                 }
+                catch (Exception exception)
+                {
+                    exceptions ??= new List<Exception>();
+                    exceptions.Add(exception);
+                }
             }
+
+            if (exceptions is null)
+            {
+                return;
+            }
+
+            throw exceptions.Count == 1 ? exceptions[0] : new AggregateException(exceptions);
         }
 
         public ValueTask DisposeAsync()
         {
             List<object>? toDispose = BeginDispose();
+            if (toDispose is null)
+            {
+                return default;
+            }
 
-            if (toDispose != null)
+            List<Exception>? exceptions = null;
+            for (var i = toDispose.Count - 1; i >= 0; i--)
             {
                 try
                 {
-                    for (int i = toDispose.Count - 1; i >= 0; i--)
+                    object disposable = toDispose[i];
+                    if (disposable is IAsyncDisposable asyncDisposable)
                     {
-                        object disposable = toDispose[i];
-                        if (disposable is IAsyncDisposable asyncDisposable)
+                        ValueTask vt = asyncDisposable.DisposeAsync();
+                        if (!vt.IsCompletedSuccessfully)
                         {
-                            ValueTask vt = asyncDisposable.DisposeAsync();
-                            if (!vt.IsCompletedSuccessfully)
-                            {
-                                return Await(i, vt, toDispose);
-                            }
+                            return Await(i, vt, toDispose);
+                        }
 
-                            // If its a IValueTaskSource backed ValueTask,
-                            // inform it its result has been read so it can reset
-                            vt.GetAwaiter().GetResult();
-                        }
-                        else
-                        {
-                            ((IDisposable)disposable).Dispose();
-                        }
+                        // If its a IValueTaskSource backed ValueTask,
+                        // inform it its result has been read so it can reset
+                        vt.GetAwaiter().GetResult();
+                    }
+                    else
+                    {
+                        ((IDisposable)disposable).Dispose();
                     }
                 }
                 catch (Exception ex)
                 {
-                    return new ValueTask(Task.FromException(ex));
+                    exceptions ??= new List<Exception>();
+                    exceptions.Add(ex);
                 }
             }
 
-            return default;
+            if (exceptions is null)
+            {
+                return default;
+            }
+
+            var exception = exceptions.Count == 1 ? exceptions[0] : new AggregateException(exceptions);
+            return new ValueTask(Task.FromException(exception));
 
             static async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
             {
