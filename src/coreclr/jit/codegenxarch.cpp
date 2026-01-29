@@ -4296,8 +4296,6 @@ void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
 {
     genConsumeOperands(tree->AsOp());
     inst_TT(INS_i_jmp, EA_PTRSIZE, tree->gtGetOp1());
-    //GetEmitter()->ihnst
-    //GetEmitter()->emitIns_R(INS_i_jmp, emitTypeSize(TYP_I_IMPL), reg);
 }
 
 // emits the table and an instruction to get the address of the first element
