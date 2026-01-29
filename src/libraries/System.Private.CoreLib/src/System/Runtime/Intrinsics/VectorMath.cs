@@ -3360,7 +3360,9 @@ namespace System.Runtime.Intrinsics
             // Implementation Notes
             // --------------------
             // atanh(x) = 0.5 * log((1 + x) / (1 - x))
-            // Domain: -1 < x < 1, returns NaN for |x| >= 1
+            // Domain: -1 <= x <= 1
+            // - atanh(±1) = ±∞
+            // - atanh(x) = NaN for |x| > 1
             //
             // For very small |x|: atanh(x) ≈ x
 
@@ -3369,8 +3371,11 @@ namespace System.Runtime.Intrinsics
             TVectorDouble sign = x & TVectorDouble.Create(-0.0);
             TVectorDouble ax = TVectorDouble.Abs(x);
 
-            // Return NaN for |x| >= 1
-            TVectorDouble nanMask = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.One);
+            // Return NaN for |x| > 1 (but not for |x| == 1)
+            TVectorDouble nanMask = TVectorDouble.GreaterThan(ax, TVectorDouble.One);
+
+            // Return ±∞ for x == ±1
+            TVectorDouble infMask = TVectorDouble.Equals(ax, TVectorDouble.One);
 
             // For very small values, return x
             TVectorDouble tinyMask = TVectorDouble.LessThanOrEqual(ax, TVectorDouble.Create(TINY_THRESHOLD));
@@ -3383,6 +3388,7 @@ namespace System.Runtime.Intrinsics
 
             // Select appropriate result based on magnitude
             TVectorDouble result = TVectorDouble.ConditionalSelect(tinyMask, ax, normal);
+            result = TVectorDouble.ConditionalSelect(infMask, TVectorDouble.Create(double.PositiveInfinity), result);
             result = TVectorDouble.ConditionalSelect(nanMask, TVectorDouble.Create(double.NaN), result);
 
             // Restore sign
@@ -3729,11 +3735,11 @@ namespace System.Runtime.Intrinsics
             // - If x = 0 and y > 0: atan2(y, x) = pi/2
             // - If x = 0 and y < 0: atan2(y, x) = -pi/2
             //
-            // Special cases:
-            // - atan2(±0, +x) = ±0
-            // - atan2(±0, -x) = ±pi
-            // - atan2(±y, +0) = ±pi/2
-            // - atan2(±y, -0) = ±pi/2
+            // Special cases (IEEE 754 signed zero handling):
+            // - atan2(±0, +0) = ±0
+            // - atan2(±0, -0) = ±π
+            // - atan2(±y, +0) = ±pi/2 for y != 0
+            // - atan2(±y, -0) = ±pi/2 for y != 0
             // - atan2(±∞, +∞) = ±pi/4
             // - atan2(±∞, -∞) = ±3pi/4
             // - atan2(±y, +∞) = ±0
@@ -3741,27 +3747,51 @@ namespace System.Runtime.Intrinsics
 
             const double PI = 3.141592653589793;           // 0x1.921fb54442d18p1
 
-            // Compute atan(y/x) using the regular Atan function
+            // Check for x being negative using standard comparison
+            TVectorDouble xLessThanZero = TVectorDouble.LessThan(x, TVectorDouble.Zero);
+
+            // For signed zero handling: check if x is -0 specifically
+            // We detect -0 by checking: x == 0 AND 1/x < 0 (since 1/-0 = -∞)
+            TVectorDouble xIsZero = TVectorDouble.Equals(x, TVectorDouble.Zero);
+            TVectorDouble recipX = TVectorDouble.One / x;
+            TVectorDouble recipXNegative = TVectorDouble.LessThan(recipX, TVectorDouble.Zero);
+            TVectorDouble xIsNegativeOrNegZero = xLessThanZero | (xIsZero & recipXNegative);
+
+            // Check for y sign using same technique
+            TVectorDouble yLessThanZero = TVectorDouble.LessThan(y, TVectorDouble.Zero);
+            TVectorDouble yIsZero = TVectorDouble.Equals(y, TVectorDouble.Zero);
+            TVectorDouble recipY = TVectorDouble.One / y;
+            TVectorDouble recipYNegative = TVectorDouble.LessThan(recipY, TVectorDouble.Zero);
+            TVectorDouble yIsNegativeOrNegZero = yLessThanZero | (yIsZero & recipYNegative);
+
+            // Compute atan(y/x) for the general case
             TVectorDouble ratio = y / x;
             TVectorDouble atanResult = AtanDouble<TVectorDouble>(ratio);
 
-            // Adjust for quadrant based on sign of x
-            // If x < 0 and y >= 0: add pi
-            // If x < 0 and y < 0: subtract pi (which is same as add pi, then result is negative from atan)
-            TVectorDouble xNegative = TVectorDouble.LessThan(x, TVectorDouble.Zero);
-            TVectorDouble yNonNegative = TVectorDouble.GreaterThanOrEqual(y, TVectorDouble.Zero);
-
+            // For x < 0 (or x = -0), we need to adjust by ±π
             TVectorDouble piAdjust = TVectorDouble.ConditionalSelect(
-                yNonNegative,
-                TVectorDouble.Create(PI),
-                TVectorDouble.Create(-PI)
+                yIsNegativeOrNegZero,
+                TVectorDouble.Create(-PI),
+                TVectorDouble.Create(PI)
             );
 
+            // Apply pi adjustment when x is negative (or -0)
             TVectorDouble result = TVectorDouble.ConditionalSelect(
-                xNegative,
+                xIsNegativeOrNegZero,
                 atanResult + piAdjust,
                 atanResult
             );
+
+            // Special case: when both y = ±0 and x = ±0
+            // atan2(±0, +0) = ±0
+            // atan2(±0, -0) = ±π
+            TVectorDouble negativeZero = TVectorDouble.Create(-0.0);
+            TVectorDouble zeroResult = TVectorDouble.ConditionalSelect(yIsNegativeOrNegZero, negativeZero, TVectorDouble.Zero);
+            TVectorDouble piResult = TVectorDouble.ConditionalSelect(yIsNegativeOrNegZero, TVectorDouble.Create(-PI), TVectorDouble.Create(PI));
+
+            TVectorDouble bothZero = xIsZero & yIsZero;
+            TVectorDouble zeroXResult = TVectorDouble.ConditionalSelect(xIsNegativeOrNegZero, piResult, zeroResult);
+            result = TVectorDouble.ConditionalSelect(bothZero, zeroXResult, result);
 
             return result;
         }
