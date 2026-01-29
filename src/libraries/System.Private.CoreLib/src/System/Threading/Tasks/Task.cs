@@ -182,9 +182,10 @@ namespace System.Threading.Tasks
 
         // Dictionary that relates Tasks to the tick count of the inflight task for debugging purposes
         internal static System.Collections.Concurrent.ConcurrentDictionary<int, long>? s_runtimeAsyncTaskTicks;
-
+#if !MONO
         // Dictionary that relates Continuations to their creation tick count for debugging purposes
         internal static System.Collections.Concurrent.ConcurrentDictionary<Continuation, long>? s_runtimeAsyncContinuationTicks;
+#endif
         internal static bool AddToActiveTasks(Task task)
         {
             Debug.Assert(task != null, "Null Task objects can't be added to the ActiveTasks collection");
@@ -216,6 +217,7 @@ namespace System.Threading.Tasks
             }
         }
 
+#if !MONO
         internal static void SetRuntimeAsyncContinuationTicks(Continuation continuation, long tickCount)
         {
             if (s_asyncDebuggingEnabled)
@@ -233,6 +235,15 @@ namespace System.Threading.Tasks
             }
             tickCount = 0;
             return false;
+        }
+
+        internal static void UpdateRuntimeAsyncContinuationTicks(Continuation continuation, long tickCount)
+        {
+            if (s_asyncDebuggingEnabled)
+            {
+                s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, long>(ContinuationEqualityComparer.Instance);
+                s_runtimeAsyncContinuationTicks[continuation] = tickCount;
+            }
         }
 
         internal static void RemoveRuntimeAsyncContinuationTicks(Continuation continuation)
@@ -253,6 +264,7 @@ namespace System.Threading.Tasks
         {
             s_runtimeAsyncTaskTicks?.Remove(task.Id, out _);
         }
+#endif
 
         // We moved a number of Task properties into this class.  The idea is that in most cases, these properties never
         // need to be accessed during the life cycle of a Task, so we don't want to instantiate them every time.  Once
