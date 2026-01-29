@@ -1474,6 +1474,47 @@ namespace ILCompiler.Reflection.ReadyToRun
                         builder.Append(" (VERIFY_IL_BODY)");
                     break;
 
+                case ReadyToRunFixupKind.ContinuationLayout:
+                    var typeBuilder = new StringBuilder();
+                    ParseType(typeBuilder);
+                    builder.Append($"{typeBuilder.ToString()}");
+                    ReadyToRunTypeLayoutFlags layoutFlags2 = (ReadyToRunTypeLayoutFlags)ReadUInt();
+                    builder.Append($" Flags {layoutFlags2}");
+                    int actualSize2 = (int)ReadUInt();
+                    builder.Append($" Size {actualSize2}");
+
+                    if(layoutFlags2.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_HFA))
+                    {
+                        throw new BadImageFormatException("ContinuationLayout fixup should not have READYTORUN_LAYOUT_HFA flag set");
+                    }
+
+                    if (layoutFlags2.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment)
+                        && !layoutFlags2.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment_Native))
+                    {
+                        throw new BadImageFormatException("ContinuationLayout fixup should not have non-native alignment");
+                    }
+
+                    if (!layoutFlags2.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout))
+                    {
+                        throw new BadImageFormatException("ContinuationLayout fixup should have GCLayout");
+                    }
+
+                    if (!layoutFlags2.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout_Empty))
+                    {
+                        int cbGCRefMap = (actualSize2 / _contextReader.TargetPointerSize + 7) / 8;
+                        builder.Append(" GCLayout 0x");
+                        for (int i = 0; i < cbGCRefMap; i++)
+                        {
+                            builder.Append(ReadByte().ToString("X"));
+                        }
+                    }
+                    else
+                    {
+                        builder.Append(" GCLayout 0x00 (Empty)");
+                    }
+                    builder.Append(" (ContinuationLayout)");
+                    break;
+
                 default:
                     throw new BadImageFormatException();
             }
@@ -1953,6 +1994,18 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
                 case ReadyToRunHelper.PersonalityRoutineFilterFunclet:
                     builder.Append("PERSONALITY_ROUTINE_FILTER_FUNCLET");
+                    break;
+
+                case ReadyToRunHelper.AllocContinuation:
+                    builder.Append("ALLOC_CONTINUATION");
+                    break;
+
+                case ReadyToRunHelper.AllocContinuationMethod:
+                    builder.Append("ALLOC_CONTINUATION_METHOD");
+                    break;
+
+                case ReadyToRunHelper.AllocContinuationClass:
+                    builder.Append("ALLOC_CONTINUATION_CLASS");
                     break;
 
                 //

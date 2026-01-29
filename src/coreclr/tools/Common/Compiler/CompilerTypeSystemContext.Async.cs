@@ -202,7 +202,9 @@ namespace ILCompiler
 
         public MetadataType GetContinuationType(GCPointerMap pointerMap)
         {
-            return _continuationTypeHashtable.GetOrCreateValue(pointerMap);
+            var cont = _continuationTypeHashtable.GetOrCreateValue(pointerMap);
+            _validTypes.TryAdd(cont);
+            return cont;
         }
 
         private sealed class ContinuationTypeHashtable : LockFreeReaderHashtable<GCPointerMap, AsyncContinuationType>
