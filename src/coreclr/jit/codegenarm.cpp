@@ -669,6 +669,17 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genFtnEntry: emits address of the current function being compiled
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    NYI_ARM64("FTN_ENTRY");
+}
+
+//------------------------------------------------------------------------
 // genGetInsForOper: Return instruction encoding of the operation tree.
 //
 instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
