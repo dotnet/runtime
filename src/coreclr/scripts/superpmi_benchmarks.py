@@ -142,13 +142,6 @@ def make_executable(file_name):
              (stat.S_IROTH | stat.S_IXOTH))
     run_command(["ls", "-l", file_name])
 
-def install_dotnet_sdk(python_path, performance_directory, arch):
-    """Install dotnet sdk in performance repo
-    Args:
-        performance_directory (string): Path to performance directory
-        arch (string): Architecture
-    """
-
 def build_and_run(coreclr_args, output_mch_name):
     """Build the microbenchmarks/real-world and run them under "superpmi collect"
 
