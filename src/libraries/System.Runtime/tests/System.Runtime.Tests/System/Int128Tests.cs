@@ -58,6 +58,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(CompareTo_Other_ReturnsExpected_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
         public void CompareTo_Other_ReturnsExpected(Int128 i, object value, int expected)
         {
             if (value is Int128 int128Value)
