@@ -15551,21 +15551,3 @@ void ValueNumStore::PeelOffsetsI32(ValueNum* vn, int* offset)
         }
     }
 }
-
-ValueSize ValueSize::FromJitType(var_types type)
-{
-    assert(genTypeSize(type) != 0);
-    switch (type)
-    {
-#ifdef TARGET_ARM64
-        case TYP_SIMD:
-            return ValueSize::Vector();
-            // TODO-SVE: Implement scalable mask
-            // case TYP_MASK:
-            //     return ValueSize::Mask();
-#endif
-        default:
-            assert(genTypeSize(type) != SIZE_UNKNOWN);
-            return ValueSize(genTypeSize(type));
-    }
-}

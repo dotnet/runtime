@@ -1133,8 +1133,8 @@ inline unsigned genTypeStSz(T value)
 {
 #ifdef TARGET_ARM64
     // The size of these types cannot be evaluated in static contexts.
-    noway_assert(TypeGet(value) != TYP_SIMD);
-    noway_assert(TypeGet(value) != TYP_MASK);
+    assert(TypeGet(value) != TYP_SIMD);
+    assert(TypeGet(value) != TYP_MASK);
 #endif
     assert((unsigned)TypeGet(value) < ArrLen(genTypeStSzs));
 
