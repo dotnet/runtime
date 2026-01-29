@@ -40,6 +40,7 @@ set(HEADERS
 )
 
 add_compile_definitions(FEATURE_APPHOST)
+add_definitions(-DGEN_PINVOKE=1)
 add_definitions(-DFEATURE_APPHOST=1)
 add_definitions(-DFEATURE_STATIC_HOST=1)
 

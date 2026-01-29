@@ -182,4 +182,45 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
+    // Represents a WebAssembly expression used in simple contexts for address calculation
+    enum WasmExprKind
+    {
+        I32Const = 0x41,
+        I64Const = 0x42
+    }
+
+    class WasmConstExpr
+    {
+        WasmExprKind _kind;
+        long ConstValue;
+
+        public WasmConstExpr(WasmExprKind kind, long value)
+        {
+            if (kind == WasmExprKind.I32Const)
+            {
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, int.MaxValue);
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, int.MinValue);
+            }
+
+            _kind = kind;
+            ConstValue = value;
+        }
+
+        public int EncodeSize()
+        {
+           uint valSize = DwarfHelper.SizeOfSLEB128(ConstValue);
+           return 1 + (int)valSize + 1; // opcode + value + end opcode 
+        }
+
+        public int Encode(Span<byte> buffer)
+        {
+            int pos = 0;
+            buffer[pos++] = (byte)_kind; // the kind is the opcode, either i32.const or i64.const
+
+            pos += DwarfHelper.WriteSLEB128(buffer.Slice(pos), ConstValue);
+
+            buffer[pos++] = 0x0B; // end opcode
+            return pos;
+        }
+    }
 }

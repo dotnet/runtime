@@ -225,12 +225,24 @@ protected:
         LIMITED_METHOD_CONTRACT;
     }
 
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    FORCEINLINE BOOL IsRegPassedStruct(TypeHandle th)
     {
-        return pMT->IsRegPassedStruct();
+        return th.AsMethodTable()->IsRegPassedStruct();
     }
 
+#if defined(UNIX_AMD64_ABI)
+    FORCEINLINE SystemVEightByteRegistersInfo GetEightByteRegistersInfo(TypeHandle th)
+    {
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
+    }
+#endif // defined(UNIX_AMD64_ABI)
+
 public:
+    FORCEINLINE BOOL IsRetBuffPassedAsFirstArg()
+    {
+        return ::IsRetBuffPassedAsFirstArg();
+    }
+
     BOOL HasThis()
     {
         LIMITED_METHOD_CONTRACT;
