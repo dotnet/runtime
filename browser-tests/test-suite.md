@@ -61,13 +61,15 @@ This downloads to `browser-tests/results/<TestProject>/mono-console.log` and dis
    - Full stack trace
    - Failure reason/exception type
 3. **Create failure record** for each individual test/method/Fact/Theory in `/browser-tests/failures/<TestSuiteName>/<ClassName.MethodName>.md` (e.g., `JSImportTest.JsImportSleep.md`) with the [template](#Method-Failure-Documentation-Template)
-4. **Mark test** with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011")]`
-5. **Failing Asserts** if there are failing asserts during the run create record in `/browser-tests/failures/<TestSuiteName>/<ClassName.MethodName>.md` with the [template](#Method-Failure-Documentation-Template)
-6. **Compare test counts**: `Tests run: X Passed: Y Failed: Z Skipped: N` with the Mono baseline at: `browser-tests/results/<TestProject>/mono-console.log`
-7. **Compare test sets** with the Mono baseline at: `browser-tests/results/<TestProject>/mono-testResults.xml`. Which tests are missing and which are extra ?
-8. **Create or update** `browser-tests/results/<TestProject>/Summary.md` with the outcome
-9. **Stop and ask for feedback before proceeding.**
-10. **Rebuild and re-run** the test suite to continue until all enabled tests pass.
+4. **Fix the known problems** fix only things described in [fixing-problems.md](fixing-problems.md).
+5. **Mark test** with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011")]`
+6. **Failing Asserts** if there are failing asserts during the run create record in `/browser-tests/failures/<TestSuiteName>/<ClassName.MethodName>.md` with the [template](#Method-Failure-Documentation-Template)
+7. **Compare test counts**: `Tests run: X Passed: Y Failed: Z Skipped: N` with the Mono baseline at: `browser-tests/results/<TestProject>/mono-console.log`
+8. **Compare test sets** with the Mono baseline at: `browser-tests/results/<TestProject>/mono-testResults.xml`. Which tests are missing and which are extra ?
+9. **Create or update** `browser-tests/results/<TestProject>/Summary.md` with the outcome
+10. **Update the overall status** in "Completed Test Suites" of [plan.md](./plan.md)
+11. **Stop and ask for feedback before proceeding.**
+12. **Rebuild and re-run** the test suite to continue until all enabled tests pass.
 
 ### Handling Timeouts/Crashes/Aborts
 

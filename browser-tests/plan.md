@@ -6,8 +6,8 @@ This document tracks progress for running .NET library tests on the Browser/WASM
 
 For detailed execution instructions, see 
 - [before-testing.md](before-testing.md)
-- [test-suite.md](test-suite.md).
-
+- [test-suite.md](test-suite.md)
+- [fixing-problems.md](fixing-problems.md)
 
 ## Target Platform Characteristics
 
@@ -15,6 +15,7 @@ For detailed execution instructions, see
 |----------------|-------|
 | OS | Browser (WebAssembly) |
 | VM | CoreCLR (interpreter only, no JIT) |
+| Reflection | Reflection and Reflection.Emit should be working on CoreCLR interpreter |
 | Threading | **Not supported** - no thread creation, no blocking waits |
 | Known Issues | C# finalizers don't work, GC memory corruption bugs |
 | Test Runner | Xharness (local web server + Chrome browser) |
@@ -38,7 +39,7 @@ Each work item has a `DetailsUrl` that links to Helix logs with `ConsoleOutputUr
 | Question | Decision |
 |----------|----------|
 | GitHub Issue | Use single umbrella issue **#123011** for all Browser+CoreCLR failures |
-| Build Configuration | **Debug** - for better stack traces |
+| Build Configuration | **Debug** - for better stack traces and more asserts |
 | Failure Categories | Decide when all failures collected (threading, gc, finalizer, interpreter, other) |
 | Automation | Keep simple, improve as we go |
 | Timeouts | Keep current defaults (`WasmXHarnessTestsTimeout` = 00:30:00) |

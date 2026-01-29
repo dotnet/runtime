@@ -77,6 +77,7 @@ public class ManagedToNativeGenerator : Task
                         "d",
                         "dii",
                         "f",
+                        "fii",
                         "id",
                         "idi",
                         "if",

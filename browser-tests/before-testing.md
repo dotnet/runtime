@@ -43,9 +43,3 @@ export SSL_CERT_DIR="$HOME/.aspnet/dev-certs/trust:/usr/lib/ssl/certs"
 
 If this succeeds, you're ready to run other test suites.
 
-## Rebuild After Changes
-
-```bash
-# Rebuild just libraries after test attribute changes
-./build.sh libs -os browser -c Debug
-```
