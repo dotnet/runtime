@@ -187,7 +187,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
             src->SetContained();
-            // memory.fill
         }
         else
         {
@@ -209,7 +208,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         ClassLayout* layout               = blkNode->GetLayout();
         bool         doCpObj              = layout->HasGCPtr();
-        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
 
         // CopyObj or CopyBlk
         if (doCpObj)
