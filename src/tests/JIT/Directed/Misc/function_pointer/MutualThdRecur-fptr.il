@@ -2990,17 +2990,10 @@ call void Thread_EA::Dispatch(method explicit instance void *(int32), int32)
 .class public auto ansi MutualThdRecur_fptr {
 .method public static int32 main() il managed
 {
-		.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = (
-			01 00 61 54 65 73 74 4c 69 62 72 61 72 79 2e 50
-			6c 61 74 66 6f 72 6d 44 65 74 65 63 74 69 6f 6e
-			2c 20 54 65 73 74 4c 69 62 72 61 72 79 2c 20 56
-			65 72 73 69 6f 6e 3d 30 2e 30 2e 30 2e 30 2c 20
-			43 75 6c 74 75 72 65 3d 6e 65 75 74 72 61 6c 2c
-			20 50 75 62 6c 69 63 4b 65 79 54 6f 6b 65 6e 3d
-			6e 75 6c 6c 01 00 00 00 18 49 73 57 61 73 6d 54
-			68 72 65 61 64 69 6e 67 53 75 70 70 6f 72 74 65
-			64 00 00
-		)
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsWasmThreadingSupported')
+    }
   .maxstack  4
   .entrypoint
   .locals (class [System.Threading.Thread]System.Threading.Thread[] thrd,
