@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Metadata
@@ -1156,6 +1157,21 @@ namespace System.Reflection.Metadata
                 ParameterInfo[] pars = mi.GetParameters();
                 Assert.Equal("x800", pars[0].Name);
             });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsRemoteExecutorSupported))]
+        void TestHotReloadDisabledEnvironmentVariable()
+        {
+            // Check that DOTNET_HOTRELOAD_DISABLED=1 disables MetadataUpdater.IsSupported.
+            var options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables.Add(
+                ApplyUpdateUtil.DotNetModifiableAssembliesSwitch, ApplyUpdateUtil.DotNetModifiableAssembliesValue);
+            options.StartInfo.EnvironmentVariables.Add("DOTNET_HOTRELOAD_DISABLED", "1");
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(MetadataUpdater.IsSupported);
+            }, options).Dispose();
         }
     }
 }
