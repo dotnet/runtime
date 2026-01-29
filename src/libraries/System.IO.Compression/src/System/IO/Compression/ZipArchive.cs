@@ -394,16 +394,19 @@ namespace System.IO.Compression
             {
                 // A new archive (created on empty stream) always needs to write the structure
                 if (_archiveStream.Length == 0)
+                {
                     return true;
-
+                }
                 // Archive-level changes (e.g., comment)
                 if (Changed != ChangeState.Unchanged)
+                {
                     return true;
-
+                }
                 // Any deleted entries
                 if (_firstDeletedEntryOffset != long.MaxValue)
+                {
                     return true;
-
+                }
                 // Check if any entry was modified or added
                 foreach (ZipArchiveEntry entry in _entries)
                 {
