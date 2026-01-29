@@ -2250,6 +2250,10 @@ BOOL AsyncThunkStubManager::TraceManager(Thread *thread,
         PCODE target = GetStubTarget(pOtherMD);
         if (target == (PCODE)NULL)
         {
+            trace->InitForUnjittedMethod(pOtherMD);
+            return TRUE;
+        }
+        {
             LOG((LF_CORDB,LL_INFO10000, "ATSM::TraceManager Unable to determine stub target, pMD %p\n", pMD));
             return FALSE;
         }
