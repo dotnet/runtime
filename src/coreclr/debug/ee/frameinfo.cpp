@@ -1539,7 +1539,10 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         LOG((LF_CORDB, LL_INFO100000, "DWSP: Skipping to parent method frame at 0x%p.\n", d->fpParent.GetSPValue()));
     }
     else
-    // Hide frameless MethodDescs that are marked as hidden from diagnostics.
+    // Most frameless IsDebuggerHidden methods can be eagerly filtered from the stacktrace so
+    // that the remaining debugger code doesn't have to reason about them. There are a few
+    // special cases below where the runtime debugger code does need to reason about them and
+    // then we filter them out at a later stage.
     if ((md != NULL) && md->IsDiagnosticsHidden() && pCF->IsFrameless())
     {
         if (md->IsILStub())
