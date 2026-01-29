@@ -5,6 +5,17 @@ This document describes the process for running individual Browser/WASM CoreCLR 
 **Prerequisites:** Complete the [before-testing.md](before-testing.md) setup first.
 
 
+## Downloading Mono Baseline
+
+Each test suite has a corresponding Mono baseline from Helix. To compare:
+
+Before running the test suite for the first time;
+
+1. Look up the workitem in [Mono-chrome-workitems.json](Mono-chrome-workitems.json)
+2. Use the `DetailsUrl` to fetch workitem details
+3. Download `ConsoleOutputUri` to see Mono's test execution summary
+4. Store the log as `browser-tests/results/<TestProject>/mono-console.log` for later comparison.
+
 ## Running Tests
 
 ### Using the Script
@@ -45,9 +56,11 @@ This document describes the process for running individual Browser/WASM CoreCLR 
    - Full test name (namespace.class.method)
    - Full stack trace
    - Failure reason/exception type
-3. **Create failure record** in `/browser-tests/failures/<TestSuiteName>/<TestName>.md`
+3. **Create failure record** for each individual test/method/Fact/Theory in `/browser-tests/failures/<TestSuiteName>/<TestName>.md`
 4. **Mark test** with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011")]`
-5. **Rebuild and re-run** the test suite to continue
+5. **Compare test counts**: `Tests run: X Passed: Y Failed: Z Skipped: N` with the Mono baseline at: `browser-tests/results/<TestProject>/mono-console.log`
+6. **Create or update** `browser-tests/results/<TestProject>/Summary.md` with the outcome
+5. **Rebuild and re-run** the test suite to continue until all enabled tests pass.
 
 ### Handling Timeouts/Crashes/Aborts
 
@@ -61,7 +74,7 @@ If the test suite hangs, times out, VM crashes, or exits with non-zero code:
 3. **Re-run the suite** to discover remaining failures
 4. **Repeat** until the suite completes (pass or fail, but not hang/crash)
 
-### Failure Documentation Template
+### Method Failure Documentation Template
 
 ```markdown
 # Test: <FullTestName>
@@ -107,16 +120,3 @@ If the test suite hangs, times out, VM crashes, or exits with non-zero code:
 | Test fails only on Browser+CoreCLR | `[ActiveIssue("...123011")]` |
 | Test fails on all Browser (Mono+CoreCLR) | `[SkipOnPlatform(TestPlatforms.Browser)]` |
 | Test timeout/hang | `[ActiveIssue("...123011")]` with note |
-
-## Comparing with Mono Baseline
-
-Each test suite has a corresponding Mono baseline from Helix. To compare:
-
-1. Look up the workitem in [Mono-chrome-workitems.json](Mono-chrome-workitems.json)
-2. Use the `DetailsUrl` to fetch workitem details
-3. Download `ConsoleOutputUri` to see Mono's test execution summary
-4. Compare test counts: `Tests run: X Passed: Y Failed: Z Skipped: N`
-
-### Mono Baseline Log Location
-
-The script caches Mono logs at: `browser-tests/results/<TestProject>/mono-console.log`
