@@ -18,12 +18,15 @@ fi
 TEST_PROJECT_NAME="$1"
 RESULTS_DIR="${REPO_ROOT}/browser-tests/results/${TEST_PROJECT_NAME}"
 MONO_LOG_PATH="${RESULTS_DIR}/mono-console.log"
+MONO_RESULTS_PATH="${RESULTS_DIR}/mono-testResults.xml"
 WORKITEMS_JSON="${SCRIPT_DIR}/Mono-chrome-workitems.json"
 
 # Check if already downloaded
-if [ -f "$MONO_LOG_PATH" ]; then
-    echo "Mono baseline already exists: $MONO_LOG_PATH"
-    echo "Delete it first if you want to re-download."
+if [ -f "$MONO_LOG_PATH" ] || [ -f "$MONO_RESULTS_PATH" ]; then
+    echo "Mono baseline already exists:"
+    echo "  - $MONO_LOG_PATH"
+    echo "  - $MONO_RESULTS_PATH"
+    echo "Delete them first if you want to re-download."
     exit 0
 fi
 
@@ -59,11 +62,16 @@ if [ -z "$WORKITEM_DETAILS" ]; then
 fi
 
 CONSOLE_URI=$(echo "$WORKITEM_DETAILS" | jq -r '.ConsoleOutputUri // empty' 2>/dev/null)
+TEST_RESULTS_URI=$(echo "$WORKITEM_DETAILS" | jq -r '.Files[] | select(.FileName | test("testResults.xml$")) | .Uri // empty' 2>/dev/null)
 
 if [ -z "$CONSOLE_URI" ]; then
     echo "Error: ConsoleOutputUri not found in workitem details"
     echo "Response: $WORKITEM_DETAILS"
     exit 1
+fi
+
+if [ -z "$TEST_RESULTS_URI" ]; then
+    echo "Warning: testResults.xml not found in workitem files"
 fi
 
 echo "Downloading console log..."
@@ -78,4 +86,15 @@ if curl -s -o "$MONO_LOG_PATH" "$CONSOLE_URI"; then
 else
     echo "Error: Failed to download console log from: $CONSOLE_URI"
     exit 1
+fi
+
+if [ -n "$TEST_RESULTS_URI" ]; then
+    echo ""
+    echo "Downloading testResults.xml..."
+    if curl -s -o "$MONO_RESULTS_PATH" "$TEST_RESULTS_URI"; then
+        FILE_SIZE=$(wc -c < "$MONO_RESULTS_PATH")
+        echo "✓ Downloaded Mono test results: $MONO_RESULTS_PATH ($FILE_SIZE bytes)"
+    else
+        echo "Warning: Failed to download testResults.xml from: $TEST_RESULTS_URI"
+    fi
 fi
