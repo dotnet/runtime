@@ -15,6 +15,7 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123472", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsLinux))]
     public class NegotiateAuthenticationTests
     {
         // Ubuntu 24 and 26 ship with broekn gss-ntlmssp 1.2

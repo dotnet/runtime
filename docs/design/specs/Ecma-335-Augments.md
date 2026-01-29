@@ -978,7 +978,9 @@ Note that integer values of less than 4 bytes are extended to int32 (not native 
 evaluation stack.
 
 ## Ref Fields
-To improve the usefulness of ref structs, support for fields which are defined as ByRefs is needed. Currently their functionality can be approximated by Span<T> fields, but not all types can be converted into Span<T> types simply. In order to support these scenarios, support for generalizing ByRef fields, and converting TypedReference, ArgIterator and RuntimeArgumentHandle into following the normal rules of C# ref structs is desired. With this set of changes, it becomes possible to have ByRef fields of T, but support for pointers to ByRef fields or ByRefs to ByRefs is not added to the ECMA specification.
+To improve the usefulness of ref structs, support for fields which are defined as ByRefs is needed. See [ref fields](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-11.0/low-level-struct-improvements.md#provide-ref-fields-and-scoped) for C# language counterpart. With this set of changes, it becomes possible to have ByRef fields of T, but support for pointers to ByRef fields or ByRefs to ByRefs is not added to the ECMA specification.
+
+ByRef fields can enable converting TypedReference, ArgIterator, and RuntimeArgumentHandle to follow the normal rules of C# ref structs in the future. See [sunset restricted types](https://github.com/dotnet/csharplang/blob/main/proposals/expand-ref.md#sunset-restricted-types) and [dotnet/roslyn#64811](https://github.com/dotnet/roslyn/issues/64811).
 
 Changes to the spec. These changes are relative to the 6th edition (June 2012) of the ECMA-335 specification published by ECMA available at:
 
@@ -1032,7 +1034,7 @@ Changes to signatures:
 
 ## <a name="byreflike-generics"></a> ByRefLike types in generics
 
-ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters, but in order to improve utility certain affordances are required.
+ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters, but in order to improve utility certain affordances are required. See [ref struct Generic Parameters](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-13.0/ref-struct-interfaces.md#ref-struct-generic-parameters) for C# language counterpart.
 
 ### II.10.1.7
 An additional IL keyword, `byreflike`, is introduced to indicate use of ByRefLike types is permitted. This expands the set of permissible types used by this parameters, but limits the potential instructions that can be used on instances of this generic parameter type.

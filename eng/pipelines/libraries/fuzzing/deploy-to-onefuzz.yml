@@ -25,7 +25,7 @@ extends:
         timeoutInMinutes: 240
         pool:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals windows.vs2022.amd64
+          demands: ImageOverride -equals windows.vs2026preview.scout.amd64
 
         steps:
         - checkout: self
@@ -33,6 +33,11 @@ extends:
           fetchDepth: 1
           fetchTags: false
           lfs: false
+
+        # The SharpFuzz CLI currently targets .NET 9.0
+        - powershell: |
+            winget install -e --id Microsoft.DotNet.SDK.9 --accept-package-agreements --accept-source-agreements
+          displayName: Install .NET 9.0
 
         - powershell: |
             cd $(Build.SourcesDirectory)
