@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Metadata
 {
-    public static class MetadataUpdater
+    public static partial class MetadataUpdater
     {
         /// <summary>
         /// Updates the specified assembly using the provided metadata, IL and PDB deltas.
@@ -51,7 +51,7 @@ namespace System.Reflection.Metadata
         internal static string GetCapabilities() => s_ApplyUpdateCapabilities.Value;
 
         [FeatureSwitchDefinition("System.Reflection.Metadata.MetadataUpdater.IsSupported")]
-        public static bool IsSupported { get; } = ApplyUpdateEnabled(justComponentCheck: 0) != 0;
+        public static bool IsSupported { get; } = !IsHotReloadDisabled && ApplyUpdateEnabled(justComponentCheck: 0) != 0;
 
         private static readonly Lazy<string> s_ApplyUpdateCapabilities = new Lazy<string>(InitializeApplyUpdateCapabilities);
 
