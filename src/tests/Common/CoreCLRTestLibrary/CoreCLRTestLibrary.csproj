@@ -7,7 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssertExtensions.cs" />
-    <Compile Include="Expect.cs" />
     <Compile Include="Generator.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="TestFramework.cs" />

@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Runtime.CompilerServices;
-using static TestLibrary.Expect;
 using Xunit;
 
 namespace TestBfx
@@ -16,33 +14,184 @@ namespace TestBfx
         {
             bool fail = false;
 
-            ExpectEqual(() => ExtractBits_Int_NoShift(0x7F654321), 0x1, ref fail);
-            ExpectEqual(() => ExtractBits_Int_Shift(0x7F654321), 0xC, ref fail);
-            ExpectEqual(() => ExtractBits_Int_Shift_Multiple(0x7F654321), 0x15C, ref fail);
-            ExpectEqual(() => ExtractBits_Int_Shift_Non_Continous_Mask(0x7F654321), 0x43, ref fail);
-            ExpectEqual(() => ExtractBits_Int_Shift_Mask0xFF(0x7F654321), 0xC, ref fail);
-            ExpectEqual(() => ExtractBits_Int_Shift_Mask0xFFFF(0x7F654321), 0x950C, ref fail);
-            ExpectEqual<uint>(() => ExtractBits_UInt_NoShift(0xFEDCBA98u), 0x98u, ref fail);
-            ExpectEqual<uint>(() => ExtractBits_UInt_Shift(0xFEDCBA98u), 0x3FBu, ref fail);
-            ExpectEqual<uint>(() => ExtractBits_UInt_Shift_Multiple(0xFEDCBA98u), 0x1A18u, ref fail);
-            ExpectEqual<uint>(() => ExtractBits_UInt_Shift_Non_Continous_Mask(0xFEDCBA98u), 0x4, ref fail);
-            ExpectEqual<uint>(() => ExtractBits_UInt_Shift_Mask0xFF(0xFEDCBA98u), 0xEAu, ref fail);
-            ExpectEqual<uint>(() => ExtractBits_UInt_Shift_Mask0xFFFF(0xFEDCBA98u), 0x72EAu, ref fail);
-            ExpectEqual<long>(() => ExtractBits_Long_NoShift(0x7FFFEDCBA9876543L), 0x6543L, ref fail);
-            ExpectEqual<long>(() => ExtractBits_Long_Shift(0x7FFFEDCBA9876543L), 0x1D95L, ref fail);
-            ExpectEqual<long>(() => ExtractBits_Long_Shift_Multiple(0x7FFFEDCBA9876543L), 0x47F6EL, ref fail);
-            ExpectEqual<long>(() => ExtractBits_Long_Shift_Non_Continous_Mask(0x7FFFEDCBA9876543L), 0x14L, ref fail);
-            ExpectEqual<long>(() => ExtractBits_Long_Shift_Mask0xFF(0x7FFFEDCBA9876543L), 0x95L, ref fail);
-            ExpectEqual<long>(() => ExtractBits_Long_Shift_Mask0xFFFF(0x7FFFEDCBA9876543L), 0x1D95L, ref fail);
-            ExpectEqual<long>(() => ExtractBits_Long_Shift_Mask0xFFFFFFFF(0x7FFFEDCBA9876543L), 0x2EA61D95L, ref fail);
-            ExpectEqual<long>(() => ExtractBits_Long_Shift_Mask0xFFFFFFFFFFFFFFFF(0x7FFFEDCBA9876543L), 0x1FFFFB72EA61D95L, ref fail);
-            ExpectEqual<ulong>(() => ExtractBits_ULong_NoShift(0xFFFEEDCBA9876543UL), 0x3, ref fail);
-            ExpectEqual<ulong>(() => ExtractBits_ULong_Shift(0xFFFEEDCBA9876543UL), 0x261D95UL, ref fail);
-            ExpectEqual<ulong>(() => ExtractBits_ULong_Shift_Multiple(0xFFFEEDCBA9876543UL), 0x1107F6EUL, ref fail);
-            ExpectEqual<ulong>(() => ExtractBits_ULong_Shift_Non_Continous_Mask(0xFFFEEDCBA9876543UL), 0x8UL, ref fail);
-            ExpectEqual<ulong>(() => ExtractBits_ULong_Shift_Mask0xFF(0xFFFEEDCBA9876543UL), 0x95UL, ref fail);
-            ExpectEqual<ulong>(() => ExtractBits_ULong_Shift_Mask0xFFFF(0xFFFEEDCBA9876543UL), 0x1D95UL, ref fail);
-            ExpectEqual<ulong>(() => ExtractBits_ULong_Shift_Mask0xFFFFFFFF(0xFFFEEDCBA9876543UL), 0xCBA98765, ref fail);
+            // Int
+            if (ExtractBits_Int_NoShift(0x7F654321) != 0x1)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Int_Shift(0x7F654321) != 0xC)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Int_Shift_Multiple(0x7F654321) != 0x15C)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Int_Shift_Non_Continous_Mask(0x7F654321) != 0x43)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Int_Shift_Mask0xFF(0x7F654321) != 0xC)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Int_Shift_Mask0xFFFF(0x7F654321) != 0x950C)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Int_Shift_Mask0xF_MaxWidth(0x7F654321) != 0x7)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Int_Shift_Mask0x1F_TooWide(0x7F654321) != 0x7)
+            {
+                fail = true;
+            }
+
+            // UInt
+            if (ExtractBits_UInt_NoShift(0xFEDCBA98u) != 0x98u)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_UInt_Shift(0xFEDCBA98u) != 0x3FBu)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_UInt_Shift_Multiple(0xFEDCBA98u) != 0x1A18u)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_UInt_Shift_Non_Continous_Mask(0xFEDCBA98u) != 0x4u)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_UInt_Shift_Mask0xFF(0xFEDCBA98u) != 0xEAu)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_UInt_Shift_Mask0xFFFF(0xFEDCBA98u) != 0x72EAu)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_UInt_Shift_Mask0xF_MaxWidth(0xFEDCBA98u) != 0xFu)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_UInt_Shift_Mask0x1F_TooWide(0xFEDCBA98u) != 0xFu)
+            {
+                fail = true;
+            }
+
+            // Long
+            if (ExtractBits_Long_NoShift(0x7FFFEDCBA9876543L) != 0x6543L)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Long_Shift(0x7FFFEDCBA9876543L) != 0x1D95L)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Long_Shift_Multiple(0x7FFFEDCBA9876543L) != 0x47F6EL)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Long_Shift_Non_Continous_Mask(0x7FFFEDCBA9876543L) != 0x14L)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Long_Shift_Mask0xFF(0x7FFFEDCBA9876543L) != 0x95L)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Long_Shift_Mask0xFFFF(0x7FFFEDCBA9876543L) != 0x1D95L)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Long_Shift_Mask0xFFFFFFFF(0x7FFFEDCBA9876543L) != 0x2EA61D95L)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Long_Shift_Mask0xFFFFFFFFFFFFFFFF(0x7FFFEDCBA9876543L) != 0x1FFFFB72EA61D95L)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Long_Shift_Mask0xF_MaxWidth(0x7FFFEDCBA9876543L) != 0x7L)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_Long_Shift_Mask0x1F_TooWide(0x7FFFEDCBA9876543L) != 0x7L)
+            {
+                fail = true;
+            }
+
+            // ULong
+            if (ExtractBits_ULong_NoShift(0xFFFEEDCBA9876543UL) != 0x3UL)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_ULong_Shift(0xFFFEEDCBA9876543UL) != 0x261D95UL)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_ULong_Shift_Multiple(0xFFFEEDCBA9876543UL) != 0x1107F6EUL)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_ULong_Shift_Non_Continous_Mask(0xFFFEEDCBA9876543UL) != 0x8UL)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_ULong_Shift_Mask0xFF(0xFFFEEDCBA9876543UL) != 0x95UL)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_ULong_Shift_Mask0xFFFF(0xFFFEEDCBA9876543UL) != 0x1D95UL)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_ULong_Shift_Mask0xFFFFFFFF(0xFFFEEDCBA9876543UL) != 0xCBA98765UL)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_ULong_Shift_Mask0xF_MaxWidth(0xFFFEEDCBA9876543UL) != 0xFUL)
+            {
+                fail = true;
+            }
+
+            if (ExtractBits_ULong_Shift_Mask0x1F_TooWide(0xFFFEEDCBA9876543UL) != 0xFUL)
+            {
+                fail = true;
+            }
 
             if (fail)
             {
@@ -100,6 +249,21 @@ namespace TestBfx
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        static int ExtractBits_Int_Shift_Mask0xF_MaxWidth(int x)
+        {
+            //ARM64-FULL-LINE: ubfx {{w[0-9]+}}, {{w[0-9]+}}, #28, #4
+            return (x >> 28) & 0xF;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int ExtractBits_Int_Shift_Mask0x1F_TooWide(int x)
+        {
+            //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #28
+            //ARM64-FULL-LINE: and {{w[0-9]+}}, {{w[0-9]+}}, #31
+            return (x >> 28) & 0x1F;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static uint ExtractBits_UInt_NoShift(uint x)
         {
             //ARM64-FULL-LINE and {{w[0-9]+}}, {{w[0-9]+}}, #511
@@ -145,6 +309,21 @@ namespace TestBfx
             //ARM64-FULL-LINE: lsr {{w[0-9]+}}, {{w[0-9]+}}, #6
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
             return (x >> 6) & 0xFFFF;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static uint ExtractBits_UInt_Shift_Mask0xF_MaxWidth(uint x)
+        {
+            //ARM64-FULL-LINE: ubfx {{w[0-9]+}}, {{w[0-9]+}}, #28, #4
+            return (x >> 28) & 0xFu;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static uint ExtractBits_UInt_Shift_Mask0x1F_TooWide(uint x)
+        {
+            //ARM64-FULL-LINE: lsr {{w[0-9]+}}, {{w[0-9]+}}, #28
+            //ARM64-FULL-LINE: and {{w[0-9]+}}, {{w[0-9]+}}, #31
+            return (x >> 28) & 0x1Fu;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -210,6 +389,21 @@ namespace TestBfx
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        static long ExtractBits_Long_Shift_Mask0xF_MaxWidth(long x)
+        {
+            //ARM64-FULL-LINE: ubfx {{x[0-9]+}}, {{x[0-9]+}}, #60, #4
+            return (x >> 60) & 0xF;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long ExtractBits_Long_Shift_Mask0x1F_TooWide(long x)
+        {
+            //ARM64-FULL-LINE: asr {{x[0-9]+}}, {{x[0-9]+}}, #60
+            //ARM64-FULL-LINE: and {{x[0-9]+}}, {{x[0-9]+}}, #31
+            return (x >> 60) & 0x1F;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong ExtractBits_ULong_NoShift(ulong x)
         {
             //ARM64-FULL-LINE: and {{x[0-9]+}}, {{x[0-9]+}}, #15
@@ -262,6 +456,21 @@ namespace TestBfx
         {
             //ARM64-FULL-LINE: lsr {{x[0-9]+}}, {{x[0-9]+}}, #8
             return (x >> 8) & 0xFFFFFFFFUL;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static ulong ExtractBits_ULong_Shift_Mask0xF_MaxWidth(ulong x)
+        {
+            //ARM64-FULL-LINE: ubfx {{x[0-9]+}}, {{x[0-9]+}}, #60, #4
+            return (x >> 60) & 0xFu;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static ulong ExtractBits_ULong_Shift_Mask0x1F_TooWide(ulong x)
+        {
+            //ARM64-FULL-LINE: lsr {{x[0-9]+}}, {{x[0-9]+}}, #60
+            //ARM64-FULL-LINE: and {{x[0-9]+}}, {{x[0-9]+}}, #31
+            return (x >> 60) & 0x1Fu;
         }
     }
 }

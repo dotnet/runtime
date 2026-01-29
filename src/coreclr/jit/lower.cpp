@@ -12358,10 +12358,16 @@ bool Lowering::TryLowerOrToBFX(GenTreeOp* tree, GenTree** next)
         return false;
     }
 
-    uint64_t    width  = (uint64_t)BitOperations::PopCount(mask);
-    uint64_t    offset = (uint64_t)shiftVal;
-    var_types   ty     = genActualType(tree->TypeGet());
-    GenTreeBfm* bfm    = comp->gtNewBfxNode(ty, shiftVar, static_cast<unsigned>(offset), static_cast<unsigned>(width));
+    uint64_t  width    = (uint64_t)BitOperations::PopCount(mask);
+    uint64_t  offset   = (uint64_t)shiftVal;
+    var_types ty       = genActualType(tree->TypeGet());
+    uint64_t  bitWidth = genTypeSize(ty) * BITS_PER_BYTE;
+    if ((width > bitWidth) || (offset >= bitWidth) || ((offset + width) > bitWidth))
+    {
+        return false;
+    }
+
+    GenTreeBfm* bfm = comp->gtNewBfxNode(ty, shiftVar, static_cast<unsigned>(offset), static_cast<unsigned>(width));
     bfm->CopyCosts(tree);
 
     ContainCheckNode(bfm);
