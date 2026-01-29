@@ -42,8 +42,8 @@
     <AndroidApiLevelMin>21</AndroidApiLevelMin>
     <iOSVersionMin>13.0</iOSVersionMin>
     <tvOSVersionMin>13.0</tvOSVersionMin>
-    <macOSVersionMin>12.0</macOSVersionMin>
-    <MacCatalystVersionMin>15.2</MacCatalystVersionMin>
+    <macOSVersionMin>14.0</macOSVersionMin>
+    <MacCatalystVersionMin>17.0</MacCatalystVersionMin>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -55,6 +55,14 @@
 
   <!-- Import the Arcade SDK -->
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+  <!-- MSBuild parallelism settings for better build performance.
+       See https://devblogs.microsoft.com/cppblog/cpp-build-throughput-investigation-and-tune-up/ -->
+  <PropertyGroup>
+    <UseMultiToolTask>true</UseMultiToolTask>
+    <EnforceProcessCountAcrossBuilds>true</EnforceProcessCountAcrossBuilds>
+    <EnableClServerMode>true</EnableClServerMode>
+  </PropertyGroup>
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>

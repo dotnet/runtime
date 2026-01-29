@@ -7872,7 +7872,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
     var_types srcType    = castOp->TypeGet();
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
-    if (node->gtFlags & GTF_UNSIGNED)
+    if (node->IsUnsigned())
     {
         srcType = varTypeToUnsigned(srcType);
     }

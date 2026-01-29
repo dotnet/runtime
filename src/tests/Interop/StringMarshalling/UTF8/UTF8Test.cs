@@ -255,14 +255,17 @@ public class Test
         for (int i = 0; i < utf8Strings.Length - 1; i++)
             UTF8StringTests.TestStringPassByRef(utf8Strings[i], i);
 
+        // https://github.com/dotnet/runtime/issues/123529
+        if (!TestLibrary.Utilities.IsNativeAot)
+        {
+            // Test StringBuilder as [In,Out] parameter
+            for (int i = 0; i < utf8Strings.Length - 1; i++)
+                UTF8StringBuilderTests.TestInOutStringBuilderParameter(utf8Strings[i], i);
 
-        // Test StringBuilder as [In,Out] parameter
-        for (int i = 0; i < utf8Strings.Length - 1; i++)
-            UTF8StringBuilderTests.TestInOutStringBuilderParameter(utf8Strings[i], i);
-
-        // Test StringBuilder as [Out] parameter
-        for (int i = 0; i < utf8Strings.Length - 1; i++)
-            UTF8StringBuilderTests.TestOutStringBuilderParameter(utf8Strings[i], i);
+            // Test StringBuilder as [Out] parameter
+            for (int i = 0; i < utf8Strings.Length - 1; i++)
+                UTF8StringBuilderTests.TestOutStringBuilderParameter(utf8Strings[i], i);
+        }
 
         // utf8 string as struct fields
         UTF8StructMarshalling.TestUTF8StructMarshalling(utf8Strings);
@@ -270,9 +273,13 @@ public class Test
         // delegate
         UTF8DelegateMarshalling.TestUTF8DelegateMarshalling();
 
-        // Test StringBuilder as [Out] parameter
-        for (int i = 0; i < utf8Strings.Length - 1; i++)
-            UTF8StringBuilderTests.TestReturnStringBuilder(utf8Strings[i], i);
+        // https://github.com/dotnet/runtime/issues/123529
+        if (!TestLibrary.Utilities.IsNativeAot)
+        {
+            // Test StringBuilder as [Out] parameter
+            for (int i = 0; i < utf8Strings.Length - 1; i++)
+                UTF8StringBuilderTests.TestReturnStringBuilder(utf8Strings[i], i);
+        }
 
         // String.Empty tests
         UTF8StringTests.EmptyStringTest();

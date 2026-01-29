@@ -438,6 +438,15 @@ Compiler::Compiler(ArenaAllocator*       arena,
 
     compMaxUncheckedOffsetForNullObject = eeInfo->maxUncheckedOffsetForNullObject;
 
+#if defined(DEBUG) && defined(TARGET_WASM)
+    // TODO-WASM: remove once we no longer need to use x86/arm collections for wasm replay
+    // if we are cross-replaying wasm, override compMaxUncheckedOffsetForNullObject
+    if (!info.compMatchedVM)
+    {
+        compMaxUncheckedOffsetForNullObject = 1024 - 1;
+    }
+#endif
+
     info.compProfilerCallback = false; // Assume false until we are told to hook this method.
 
     info.compCode         = methodInfo->ILCode;
@@ -9996,7 +10005,7 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         {
             chars += printf("[DONT_CSE]");
         }
-        if (tree->gtFlags & GTF_UNSIGNED)
+        if (tree->IsUnsigned())
         {
             chars += printf("[SMALL_UNSIGNED]");
         }

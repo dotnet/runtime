@@ -1033,11 +1033,6 @@ public:
     }
 
     void UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock);
-
-    // Static helper to populate a CONTEXT from a TransitionBlock for OSR transitions.
-    // Returns the adjusted SP and FP values that the OSR method should use.
-    static void UpdateContextForOSRTransition(TransitionBlock* pTransitionBlock, CONTEXT* pContext, 
-                                              UINT_PTR* pCurrentSP, UINT_PTR* pCurrentFP);
 #endif
 
     TADDR GetReturnAddressPtr_Impl()

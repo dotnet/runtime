@@ -20,7 +20,7 @@ public class BindHandle1
     }
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-    public static extern IntPtr CreateFile(String FileName, uint Access, uint Share, int Atts, uint Dispo, uint Flags, int Template);
+    public static extern IntPtr CreateFile(String FileName, uint Access, uint Share, nint Atts, uint Dispo, uint Flags, nint Template);
 
 
     int RunTest()

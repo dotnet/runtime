@@ -109,3 +109,80 @@ public static class CStructTests
         Assert.Throws<TypeLoadException>(() => typeof(CStructByRefLike));
     }
 }
+
+// CStruct type definitions
+
+[ExtendedLayout(ExtendedLayoutKind.CStruct)]
+public struct CStructBlittablePrimitiveFields
+{
+    public int a;
+    public float b;
+    public byte c;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CStruct)]
+public struct CStructNonBlittablePrimitiveFields
+{
+    public bool b;
+    public char c;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CStruct)]
+public struct CStructWithReferenceFields
+{
+    public string a;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CStruct)]
+public struct CStructWithMixedFields
+{
+    public int a;
+    public string b;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CStruct)]
+public struct NestedCStructType
+{
+    public int x;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CStruct)]
+public struct CStructCustomCStructField
+{
+    public NestedCStructType y;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct NestedSequentialType
+{
+    public int x;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CStruct)]
+public struct CStructCustomSeqStructField
+{
+    public NestedSequentialType y;
+}
+
+[StructLayout(LayoutKind.Auto)]
+public struct NestedAutoLayoutType
+{
+    public int x;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CStruct)]
+public struct CStructCustomAutoStructField
+{
+    public NestedAutoLayoutType y;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CStruct)]
+public struct EmptyCStruct
+{
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CStruct)]
+public ref struct CStructByRefLike
+{
+    public int a;
+}
