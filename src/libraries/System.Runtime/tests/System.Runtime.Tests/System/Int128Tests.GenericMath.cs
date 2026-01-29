@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -101,11 +101,122 @@ namespace System.Tests
         [Fact]
         public static void DivRemTest()
         {
-            Assert.Equal((Zero, Zero), BinaryIntegerHelper<Int128>.DivRem(Zero, 2));
-            Assert.Equal((Zero, One), BinaryIntegerHelper<Int128>.DivRem(One, 2));
-            Assert.Equal((new Int128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), One), BinaryIntegerHelper<Int128>.DivRem(MaxValue, 2));
-            Assert.Equal((new Int128(0xC000_0000_0000_0000, 0x0000_0000_0000_0000), Zero), BinaryIntegerHelper<Int128>.DivRem(MinValue, 2));
-            Assert.Equal((Zero, NegativeOne), BinaryIntegerHelper<Int128>.DivRem(NegativeOne, 2));
+            Assert.Equal((Zero, Zero), BinaryIntegerHelper<Int128>.DivRem(Zero, Two));
+            Assert.Equal((Zero, One), BinaryIntegerHelper<Int128>.DivRem(One, Two));
+            Assert.Equal((One, Zero), BinaryIntegerHelper<Int128>.DivRem(Two, Two));
+            Assert.Equal((new Int128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), Zero), BinaryIntegerHelper<Int128>.DivRem(MaxValueMinusOne, Two));
+            Assert.Equal((new Int128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), One), BinaryIntegerHelper<Int128>.DivRem(MaxValue, Two));
+            Assert.Equal((new Int128(0xC000_0000_0000_0000, 0x0000_0000_0000_0000), Zero), BinaryIntegerHelper<Int128>.DivRem(MinValue, Two));
+            Assert.Equal((new Int128(0xC000_0000_0000_0000, 0x0000_0000_0000_0001), NegativeOne), BinaryIntegerHelper<Int128>.DivRem(MinValuePlusOne, Two));
+            Assert.Equal((NegativeOne, Zero), BinaryIntegerHelper<Int128>.DivRem(NegativeTwo, Two));
+            Assert.Equal((Zero, NegativeOne), BinaryIntegerHelper<Int128>.DivRem(NegativeOne, Two));
+
+            Assert.Equal((Zero, Zero), BinaryIntegerHelper<Int128>.DivRem(Zero, NegativeTwo));
+            Assert.Equal((Zero, One), BinaryIntegerHelper<Int128>.DivRem(One, NegativeTwo));
+            Assert.Equal((NegativeOne, Zero), BinaryIntegerHelper<Int128>.DivRem(Two, NegativeTwo));
+            Assert.Equal((new Int128(0xC000_0000_0000_0000, 0x0000_0000_0000_0001), Zero), BinaryIntegerHelper<Int128>.DivRem(MaxValueMinusOne, NegativeTwo));
+            Assert.Equal((new Int128(0xC000_0000_0000_0000, 0x0000_0000_0000_0001), One), BinaryIntegerHelper<Int128>.DivRem(MaxValue, NegativeTwo));
+            Assert.Equal((new Int128(0x4000_0000_0000_0000, 0x0000_0000_0000_0000), Zero), BinaryIntegerHelper<Int128>.DivRem(MinValue, NegativeTwo));
+            Assert.Equal((new Int128(0x3FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), NegativeOne), BinaryIntegerHelper<Int128>.DivRem(MinValuePlusOne, NegativeTwo));
+            Assert.Equal((One, Zero), BinaryIntegerHelper<Int128>.DivRem(NegativeTwo, NegativeTwo));
+            Assert.Equal((Zero, NegativeOne), BinaryIntegerHelper<Int128>.DivRem(NegativeOne, NegativeTwo));
+
+            Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.DivRem(Zero, 0));
+            Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.DivRem(One, 0));
+            Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.DivRem(NegativeOne, 0));
+        }
+
+        [Fact]
+        public static void DivRemModeTest()
+        {
+            foreach (var mode in (DivisionRounding[])Enum.GetValues(typeof(DivisionRounding)))
+            {
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(Zero, Two, mode), BinaryIntegerHelper<Int128>.DivRem(Zero, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(One, Two, mode), BinaryIntegerHelper<Int128>.DivRem(One, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(Two, Two, mode), BinaryIntegerHelper<Int128>.DivRem(Two, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(MaxValueMinusOne, Two, mode), BinaryIntegerHelper<Int128>.DivRem(MaxValueMinusOne, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(MaxValue, Two, mode), BinaryIntegerHelper<Int128>.DivRem(MaxValue, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(MinValue, Two, mode), BinaryIntegerHelper<Int128>.DivRem(MinValue, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(MinValuePlusOne, Two, mode), BinaryIntegerHelper<Int128>.DivRem(MinValuePlusOne, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(NegativeTwo, Two, mode), BinaryIntegerHelper<Int128>.DivRem(NegativeTwo, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(NegativeOne, Two, mode), BinaryIntegerHelper<Int128>.DivRem(NegativeOne, Two, mode));
+
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(Zero, NegativeTwo, mode), BinaryIntegerHelper<Int128>.DivRem(Zero, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(One, NegativeTwo, mode), BinaryIntegerHelper<Int128>.DivRem(One, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(Two, NegativeTwo, mode), BinaryIntegerHelper<Int128>.DivRem(Two, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(MaxValueMinusOne, NegativeTwo, mode), BinaryIntegerHelper<Int128>.DivRem(MaxValueMinusOne, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(MaxValue, NegativeTwo, mode), BinaryIntegerHelper<Int128>.DivRem(MaxValue, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(MinValue, NegativeTwo, mode), BinaryIntegerHelper<Int128>.DivRem(MinValue, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(MinValuePlusOne, NegativeTwo, mode), BinaryIntegerHelper<Int128>.DivRem(MinValuePlusOne, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(NegativeTwo, NegativeTwo, mode), BinaryIntegerHelper<Int128>.DivRem(NegativeTwo, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivRemExpected(NegativeOne, NegativeTwo, mode), BinaryIntegerHelper<Int128>.DivRem(NegativeOne, NegativeTwo, mode));
+
+                Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.DivRem(Zero, 0, mode));
+                Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.DivRem(One, 0, mode));
+                Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.DivRem(NegativeOne, 0, mode));
+            }
+        }
+
+        [Fact]
+        public static void DivideModeTest()
+        {
+            foreach (var mode in (DivisionRounding[])Enum.GetValues(typeof(DivisionRounding)))
+            {
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(Zero, Two, mode), BinaryIntegerHelper<Int128>.Divide(Zero, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(One, Two, mode), BinaryIntegerHelper<Int128>.Divide(One, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(Two, Two, mode), BinaryIntegerHelper<Int128>.Divide(Two, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(MaxValueMinusOne, Two, mode), BinaryIntegerHelper<Int128>.Divide(MaxValueMinusOne, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(MaxValue, Two, mode), BinaryIntegerHelper<Int128>.Divide(MaxValue, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(MinValue, Two, mode), BinaryIntegerHelper<Int128>.Divide(MinValue, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(MinValuePlusOne, Two, mode), BinaryIntegerHelper<Int128>.Divide(MinValuePlusOne, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(NegativeTwo, Two, mode), BinaryIntegerHelper<Int128>.Divide(NegativeTwo, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(NegativeOne, Two, mode), BinaryIntegerHelper<Int128>.Divide(NegativeOne, Two, mode));
+
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(Zero, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Divide(Zero, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(One, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Divide(One, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(Two, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Divide(Two, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(MaxValueMinusOne, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Divide(MaxValueMinusOne, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(MaxValue, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Divide(MaxValue, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(MinValue, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Divide(MinValue, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(MinValuePlusOne, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Divide(MinValuePlusOne, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(NegativeTwo, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Divide(NegativeTwo, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.DivideExpected(NegativeOne, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Divide(NegativeOne, NegativeTwo, mode));
+
+                Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.Divide(Zero, 0, mode));
+                Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.Divide(One, 0, mode));
+                Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.Divide(NegativeOne, 0, mode));
+            }
+        }
+
+        [Fact]
+        public static void RemainderModeTest()
+        {
+            foreach (var mode in (DivisionRounding[])Enum.GetValues(typeof(DivisionRounding)))
+            {
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(Zero, Two, mode), BinaryIntegerHelper<Int128>.Remainder(Zero, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(One, Two, mode), BinaryIntegerHelper<Int128>.Remainder(One, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(Two, Two, mode), BinaryIntegerHelper<Int128>.Remainder(Two, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(MaxValueMinusOne, Two, mode), BinaryIntegerHelper<Int128>.Remainder(MaxValueMinusOne, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(MaxValue, Two, mode), BinaryIntegerHelper<Int128>.Remainder(MaxValue, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(MinValue, Two, mode), BinaryIntegerHelper<Int128>.Remainder(MinValue, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(MinValuePlusOne, Two, mode), BinaryIntegerHelper<Int128>.Remainder(MinValuePlusOne, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(NegativeTwo, Two, mode), BinaryIntegerHelper<Int128>.Remainder(NegativeTwo, Two, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(NegativeOne, Two, mode), BinaryIntegerHelper<Int128>.Remainder(NegativeOne, Two, mode));
+
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(Zero, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Remainder(Zero, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(One, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Remainder(One, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(Two, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Remainder(Two, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(MaxValueMinusOne, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Remainder(MaxValueMinusOne, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(MaxValue, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Remainder(MaxValue, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(MinValue, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Remainder(MinValue, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(MinValuePlusOne, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Remainder(MinValuePlusOne, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(NegativeTwo, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Remainder(NegativeTwo, NegativeTwo, mode));
+                Assert.Equal(BinaryIntegerHelper<Int128>.RemainderExpected(NegativeOne, NegativeTwo, mode), BinaryIntegerHelper<Int128>.Remainder(NegativeOne, NegativeTwo, mode));
+
+                Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.Remainder(Zero, 0, mode));
+                Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.Remainder(One, 0, mode));
+                Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.Remainder(NegativeOne, 0, mode));
+            }
         }
 
         [Fact]

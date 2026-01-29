@@ -6,6 +6,7 @@
 #include "enumthreadsprofiler/enumthreadsprofiler.h"
 #include "eventpipeprofiler/eventpipereadingprofiler.h"
 #include "eventpipeprofiler/eventpipewritingprofiler.h"
+#include "exceptionprofiler/exceptionprofiler.h"
 #include "getappdomainstaticaddress/getappdomainstaticaddress.h"
 #include "gcallocateprofiler/gcallocateprofiler.h"
 #include "nongcheap/nongcheap.h"
@@ -24,6 +25,7 @@
 #include "assemblyprofiler/assemblyprofiler.h"
 #include "classload/classload.h"
 #include "dynamicjitoptimization/dynamicjitoptimization.h"
+#include "gcskipobjectsallocatedbyclasscallbackprofiler/gcskipobjectsallocatedbyclasscallbackprofiler.h"
 
 ClassFactory::ClassFactory(REFCLSID clsid) : refCount(0), clsid(clsid)
 {
@@ -95,6 +97,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     {
         profiler = new EventPipeWritingProfiler();
     }
+    else if (clsid == ExceptionProfiler::GetClsid())
+    {
+        profiler = new ExceptionProfiler();
+    }
     else if (clsid == MetaDataGetDispenser::GetClsid())
     {
         profiler = new MetaDataGetDispenser();
@@ -158,6 +164,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == DynamicJitOptimizations::GetClsid())
     {
         profiler = new DynamicJitOptimizations();
+    }
+    else if (clsid == GCSkipObjectsAllocatedByClassCallbackProfiler::GetClsid())
+    {
+        profiler = new GCSkipObjectsAllocatedByClassCallbackProfiler();
     }
     else
     {

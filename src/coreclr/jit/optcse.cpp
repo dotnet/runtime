@@ -1925,7 +1925,6 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         case GT_NOT:
         case GT_BSWAP:
         case GT_BSWAP16:
-        case GT_CAST:
         case GT_BITCAST:
             break;
 
@@ -1943,9 +1942,10 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         case GT_ROR:
             break;
 
-        case GT_ADD: // Check for ADDRMODE flag on these Binary Operators
+        case GT_ADD: // Check for ADDRMODE flag on these operators
         case GT_MUL:
         case GT_LSH:
+        case GT_CAST:
             if (tree->IsPartOfAddressMode())
             {
                 return false;

@@ -880,6 +880,19 @@ namespace System.Collections
             return (_array[byteCount] & mask) != 0;
         }
 
+        /// <summary>Computes the number of bits that are set in the <see cref="BitArray"/>.</summary>
+        /// <returns>The number of set bits in the <see cref="BitArray"/>.</returns>
+        public int PopCount()
+        {
+            int count = 0;
+            foreach (int i in MemoryMarshal.Cast<byte, int>(_array))
+            {
+                count += int.PopCount(i);
+            }
+
+            return count;
+        }
+
         /// <summary>Gets the number of elements contained in the <see cref="BitArray"/>.</summary>
         public int Count => _bitLength;
 

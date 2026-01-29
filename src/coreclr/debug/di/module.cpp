@@ -5103,7 +5103,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
 
     if (pNativeCode == NULL)
     {
-        GetProcess()->GetDAC()->GetNativeCodeInfoForAddr(methodDesc, startAddress, &codeInfo);
+        GetProcess()->GetDAC()->GetNativeCodeInfoForAddr(startAddress, &codeInfo, NULL, NULL);
 
         // We didn't have an instance, so we'll build one and add it to the hash table
         LOG((LF_CORDB,

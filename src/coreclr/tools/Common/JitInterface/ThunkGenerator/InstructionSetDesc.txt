@@ -46,7 +46,7 @@ instructionset     ,X86   ,Avx                  ,                   ,7  ,AVX    
 instructionset     ,X86   ,Avx2                 ,                   ,8  ,AVX2                  ,avx2
 instructionset     ,X86   ,Bmi1                 ,                   ,10 ,AVX2                  ,avx2
 instructionset     ,X86   ,Bmi2                 ,                   ,11 ,AVX2                  ,avx2
-instructionset     ,X86   ,F16C                 ,                   ,67 ,AVX2                  ,avx2
+instructionset     ,X86   ,                     ,F16C               ,67 ,AVX2                  ,avx2
 instructionset     ,X86   ,Fma                  ,                   ,12 ,AVX2                  ,avx2
 instructionset     ,X86   ,Lzcnt                ,                   ,13 ,AVX2                  ,avx2
 instructionset     ,X86   ,                     ,Movbe              ,27 ,AVX2                  ,avx2
@@ -65,18 +65,18 @@ instructionset     ,X86   ,                     ,Avx512Ifma         ,76 ,AVX512v
 instructionset     ,X86   ,Avx512Vbmi           ,                   ,37 ,AVX512v2              ,avx512v2
 instructionset     ,X86   ,Avx512Vbmi_VL        ,                   ,38 ,AVX512v2              ,avx512v2
 
-instructionset     ,X86   ,Avx512Bitalg         ,                   ,70 ,AVX512v3              ,avx512v3
-instructionset     ,X86   ,Avx512Bitalg_VL      ,                   ,71 ,AVX512v3              ,avx512v3
+instructionset     ,X86   ,                     ,Avx512Bitalg       ,70 ,AVX512v3              ,avx512v3
+instructionset     ,X86   ,                     ,Avx512Bitalg_VL    ,71 ,AVX512v3              ,avx512v3
 instructionset     ,X86   ,Avx512Vbmi2          ,                   ,77 ,AVX512v3              ,avx512v3
 instructionset     ,X86   ,Avx512Vbmi2_VL       ,                   ,78 ,AVX512v3              ,avx512v3
 instructionset     ,X86   ,                     ,Avx512Vnni         ,79 ,AVX512v3              ,avx512v3
-instructionset     ,X86   ,Avx512Vpopcntdq      ,                   ,82 ,AVX512v3              ,avx512v3
-instructionset     ,X86   ,Avx512Vpopcntdq_VL   ,                   ,83 ,AVX512v3              ,avx512v3
+instructionset     ,X86   ,                     ,Avx512Vpopcntdq    ,82 ,AVX512v3              ,avx512v3
+instructionset     ,X86   ,                     ,Avx512Vpopcntdq_VL ,83 ,AVX512v3              ,avx512v3
 
-instructionset     ,X86   ,Avx512Bf16           ,                   ,72 ,AVX10v1               ,avx10v1
-instructionset     ,X86   ,Avx512Bf16_VL        ,                   ,73 ,AVX10v1               ,avx10v1
-instructionset     ,X86   ,Avx512Fp16           ,                   ,74 ,AVX10v1               ,avx10v1
-instructionset     ,X86   ,Avx512Fp16_VL        ,                   ,75 ,AVX10v1               ,avx10v1
+instructionset     ,X86   ,                     ,Avx512Bf16         ,72 ,AVX10v1               ,avx10v1
+instructionset     ,X86   ,                     ,Avx512Bf16_VL      ,73 ,AVX10v1               ,avx10v1
+instructionset     ,X86   ,                     ,Avx512Fp16         ,74 ,AVX10v1               ,avx10v1
+instructionset     ,X86   ,                     ,Avx512Fp16_VL      ,75 ,AVX10v1               ,avx10v1
 instructionset     ,X86   ,Avx10v1              ,                   ,44 ,AVX10v1               ,avx10v1
 instructionset     ,X86   ,Avx10v1_V512         ,                   ,46 ,AVX10v1               ,avx10v1
 
@@ -86,26 +86,26 @@ instructionset     ,X86   ,Avx10v2_V512         ,                   ,52 ,AVX10v2
 instructionset     ,X86   ,                     ,Apx                ,48 ,APX                   ,apx
 
 instructionset     ,X86   ,Aes                  ,                   ,9  ,AES                   ,aes
-instructionset     ,X86   ,Aes_V256             ,                   ,64 ,AES_V256              ,aes_v256
-instructionset     ,X86   ,Aes_V512             ,                   ,65 ,AES_V512              ,aes_v512
+instructionset     ,X86   ,                     ,Aes_V256           ,64 ,AES_V256              ,aes_v256
+instructionset     ,X86   ,                     ,Aes_V512           ,65 ,AES_V512              ,aes_v512
 
 instructionset     ,X86   ,Pclmulqdq            ,                   ,14 ,AES                   ,aes
 instructionset     ,X86   ,Pclmulqdq_V256       ,                   ,49 ,AES_V256              ,aes_v256
 instructionset     ,X86   ,Pclmulqdq_V512       ,                   ,50 ,AES_V512              ,aes_v512
 
-instructionset     ,X86   ,Avx512Vp2intersect   ,                   ,80 ,AVX512VP2INTERSECT    ,avx512vp2intersect
-instructionset     ,X86   ,Avx512Vp2intersect_VL,                   ,81 ,AVX512VP2INTERSECT    ,avx512vp2intersect
+instructionset     ,X86   ,                     ,Avx512Vp2intersect    ,80 ,AVX512VP2INTERSECT    ,avx512vp2intersect
+instructionset     ,X86   ,                     ,Avx512Vp2intersect_VL ,81 ,AVX512VP2INTERSECT    ,avx512vp2intersect
 
-instructionset     ,X86   ,AvxIfma              ,                   ,66 ,AVXIFMA               ,avxifma
+instructionset     ,X86   ,                     ,AvxIfma            ,66 ,AVXIFMA               ,avxifma
 instructionset     ,X86   ,AvxVnni              ,                   ,25 ,AVXVNNI               ,avxvnni
 
 instructionset     ,X86   ,Gfni                 ,                   ,53 ,GFNI                  ,gfni
 instructionset     ,X86   ,Gfni_V256            ,                   ,54 ,GFNI_V256             ,gfni_v256
 instructionset     ,X86   ,Gfni_V512            ,                   ,55 ,GFNI_V512             ,gfni_v512
 
-instructionset     ,X86   ,Sha                  ,                   ,68 ,SHA                   ,sha
+instructionset     ,X86   ,                     ,Sha                ,68 ,SHA                   ,sha
 
-instructionset     ,X86   ,WaitPkg              ,                   ,69 ,WAITPKG               ,waitpkg
+instructionset     ,X86   ,                     ,WaitPkg            ,69 ,WAITPKG               ,waitpkg
 instructionset     ,X86   ,X86Serialize         ,                   ,28 ,X86Serialize          ,x86serialize
 
 instructionset     ,X86   ,                     ,                   ,   ,Vector128             ,
