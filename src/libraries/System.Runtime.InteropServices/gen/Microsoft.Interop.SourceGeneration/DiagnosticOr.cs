@@ -110,5 +110,15 @@ namespace Microsoft.Interop
             ctx.RegisterDiagnostics(diagnostics);
             return values;
         }
+
+        /// <summary>
+        /// Filters the <see cref="IncrementalValuesProvider{TValue}"/> by whether or not the element has a value, discarding diagnostics.
+        /// Use this when diagnostics are reported by an analyzer instead of the generator.
+        /// </summary>
+        public static IncrementalValuesProvider<T> FilterWithoutReportingDiagnostics<T>(this IncrementalValuesProvider<DiagnosticOr<T>> diagnosticOrValues)
+        {
+            var (values, _) = diagnosticOrValues.Split();
+            return values;
+        }
     }
 }

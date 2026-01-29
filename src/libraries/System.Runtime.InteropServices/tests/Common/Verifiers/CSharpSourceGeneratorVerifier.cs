@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Threading;
@@ -11,6 +12,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.Interop.Analyzers;
 
 namespace Microsoft.Interop.UnitTests.Verifiers
 {
@@ -105,6 +107,17 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                 DisabledDiagnostics.Add(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
 
                 SolutionTransforms.Add(CSharpVerifierHelper.GetAllDiagnosticsEnabledTransform(GetDiagnosticAnalyzers()));
+            }
+
+            protected override IEnumerable<DiagnosticAnalyzer> GetDiagnosticAnalyzers()
+            {
+                // Include the LibraryImportDiagnosticsAnalyzer so it runs alongside the source generator.
+                // This is needed because diagnostics have been moved from the generator to the analyzer.
+                foreach (var analyzer in base.GetDiagnosticAnalyzers())
+                {
+                    yield return analyzer;
+                }
+                yield return new LibraryImportDiagnosticsAnalyzer();
             }
 
             protected override CompilationWithAnalyzers CreateCompilationWithAnalyzers(Compilation compilation, ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerOptions options, CancellationToken cancellationToken)
