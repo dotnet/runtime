@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
@@ -131,7 +130,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs))
                 .Message
                     .Should().Contain("rel/app.repeat")
-                    .And.Contain(sharedTestState.App.AppDll);
+                     .Contain(sharedTestState.App.AppDll);
         }
 
         [Fact]
@@ -232,9 +231,9 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs))
                 .Message
                     .Should().Contain("rel/system.repeat.dll")
-                    .And.NotContain("rel/app.repeat.dll")
-                    .And.Contain(appPath)
-                    .And.Contain(systemLibPath);
+                     .NotContain("rel/app.repeat.dll")
+                     .Contain(appPath)
+                     .Contain(systemLibPath);
         }
 
         [Fact]
