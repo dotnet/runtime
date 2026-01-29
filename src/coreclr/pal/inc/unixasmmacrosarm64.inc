@@ -309,6 +309,21 @@ C_FUNC(\Name\()_End):
 
 .endm
 
+// Same as EPILOG_WITH_TRANSITION_BLOCK_RETURN but skips restoring x21 (SwiftError)
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
+
+        EPILOG_STACK_FREE                 __PWTB_StackAlloc
+
+        EPILOG_RESTORE_REG_PAIR   x19, x20, 16
+        EPILOG_RESTORE_REG   x22, 40
+        EPILOG_RESTORE_REG_PAIR   x23, x24, 48
+        EPILOG_RESTORE_REG_PAIR   x25, x26, 64
+        EPILOG_RESTORE_REG_PAIR   x27, x28, 80
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
+        ret
+
+.endm
+
 //-----------------------------------------------------------------------------
 // Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and ends by preparing for tail-calling.
 // Since this is a tail call argument registers are restored.
@@ -410,7 +425,7 @@ C_FUNC(\Name\()_End):
         PROLOG_SAVE_REG_PAIR   x27, x28, 80
 
         mov     \target, sp
-.endm 
+.endm
 
 .macro POP_COOP_PINVOKE_FRAME
         EPILOG_RESTORE_REG_PAIR   x19, x20, 16

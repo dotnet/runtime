@@ -61,6 +61,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc0()
     {
         Console.Write("Running SwiftCallbackFunc0: ");
@@ -172,6 +173,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc1()
     {
         Console.Write("Running SwiftCallbackFunc1: ");
@@ -263,6 +265,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc2()
     {
         Console.Write("Running SwiftCallbackFunc2: ");
@@ -373,6 +376,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc3()
     {
         Console.Write("Running SwiftCallbackFunc3: ");
@@ -458,6 +462,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc4()
     {
         Console.Write("Running SwiftCallbackFunc4: ");
@@ -586,6 +591,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc5()
     {
         Console.Write("Running SwiftCallbackFunc5: ");
@@ -710,6 +716,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc6()
     {
         Console.Write("Running SwiftCallbackFunc6: ");
@@ -783,6 +790,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc7()
     {
         Console.Write("Running SwiftCallbackFunc7: ");
@@ -864,6 +872,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc8()
     {
         Console.Write("Running SwiftCallbackFunc8: ");
@@ -1010,6 +1019,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc9()
     {
         Console.Write("Running SwiftCallbackFunc9: ");
@@ -1059,6 +1069,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc10()
     {
         Console.Write("Running SwiftCallbackFunc10: ");
@@ -1167,6 +1178,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc11()
     {
         Console.Write("Running SwiftCallbackFunc11: ");
@@ -1249,6 +1261,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc12()
     {
         Console.Write("Running SwiftCallbackFunc12: ");
@@ -1350,6 +1363,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc13()
     {
         Console.Write("Running SwiftCallbackFunc13: ");
@@ -1405,6 +1419,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc14()
     {
         Console.Write("Running SwiftCallbackFunc14: ");
@@ -1487,6 +1502,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc15()
     {
         Console.Write("Running SwiftCallbackFunc15: ");
@@ -1586,6 +1602,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc16()
     {
         Console.Write("Running SwiftCallbackFunc16: ");
@@ -1655,6 +1672,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc17()
     {
         Console.Write("Running SwiftCallbackFunc17: ");
@@ -1740,6 +1758,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc18()
     {
         Console.Write("Running SwiftCallbackFunc18: ");
@@ -1853,6 +1872,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc19()
     {
         Console.Write("Running SwiftCallbackFunc19: ");
@@ -1958,6 +1978,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc20()
     {
         Console.Write("Running SwiftCallbackFunc20: ");
@@ -2032,6 +2053,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc21()
     {
         Console.Write("Running SwiftCallbackFunc21: ");
@@ -2155,6 +2177,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc22()
     {
         Console.Write("Running SwiftCallbackFunc22: ");
@@ -2209,6 +2232,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc23()
     {
         Console.Write("Running SwiftCallbackFunc23: ");
@@ -2312,6 +2336,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc24()
     {
         Console.Write("Running SwiftCallbackFunc24: ");
@@ -2413,6 +2438,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc25()
     {
         Console.Write("Running SwiftCallbackFunc25: ");
@@ -2509,6 +2535,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc26()
     {
         Console.Write("Running SwiftCallbackFunc26: ");
@@ -2600,6 +2627,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc27()
     {
         Console.Write("Running SwiftCallbackFunc27: ");
@@ -2699,6 +2727,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc28()
     {
         Console.Write("Running SwiftCallbackFunc28: ");
@@ -2826,6 +2855,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc29()
     {
         Console.Write("Running SwiftCallbackFunc29: ");
@@ -2904,6 +2934,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc30()
     {
         Console.Write("Running SwiftCallbackFunc30: ");
@@ -2979,6 +3010,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc31()
     {
         Console.Write("Running SwiftCallbackFunc31: ");
@@ -3032,6 +3064,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc32()
     {
         Console.Write("Running SwiftCallbackFunc32: ");
@@ -3137,6 +3170,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc33()
     {
         Console.Write("Running SwiftCallbackFunc33: ");
@@ -3186,6 +3220,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc34()
     {
         Console.Write("Running SwiftCallbackFunc34: ");
@@ -3275,6 +3310,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc35()
     {
         Console.Write("Running SwiftCallbackFunc35: ");
@@ -3325,6 +3361,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc36()
     {
         Console.Write("Running SwiftCallbackFunc36: ");
@@ -3411,6 +3448,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc37()
     {
         Console.Write("Running SwiftCallbackFunc37: ");
@@ -3489,6 +3527,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc38()
     {
         Console.Write("Running SwiftCallbackFunc38: ");
@@ -3585,6 +3624,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc39()
     {
         Console.Write("Running SwiftCallbackFunc39: ");
@@ -3673,6 +3713,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc40()
     {
         Console.Write("Running SwiftCallbackFunc40: ");
@@ -3728,6 +3769,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc41()
     {
         Console.Write("Running SwiftCallbackFunc41: ");
@@ -3786,6 +3828,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc42()
     {
         Console.Write("Running SwiftCallbackFunc42: ");
@@ -3846,6 +3889,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc43()
     {
         Console.Write("Running SwiftCallbackFunc43: ");
@@ -3950,6 +3994,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc44()
     {
         Console.Write("Running SwiftCallbackFunc44: ");
@@ -4034,6 +4079,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc45()
     {
         Console.Write("Running SwiftCallbackFunc45: ");
@@ -4093,6 +4139,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc46()
     {
         Console.Write("Running SwiftCallbackFunc46: ");
@@ -4209,6 +4256,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc47()
     {
         Console.Write("Running SwiftCallbackFunc47: ");
@@ -4284,6 +4332,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc48()
     {
         Console.Write("Running SwiftCallbackFunc48: ");
@@ -4352,6 +4401,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc49()
     {
         Console.Write("Running SwiftCallbackFunc49: ");
@@ -4469,6 +4519,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc50()
     {
         Console.Write("Running SwiftCallbackFunc50: ");
@@ -4529,6 +4580,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc51()
     {
         Console.Write("Running SwiftCallbackFunc51: ");
@@ -4602,6 +4654,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc52()
     {
         Console.Write("Running SwiftCallbackFunc52: ");
@@ -4761,6 +4814,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc53()
     {
         Console.Write("Running SwiftCallbackFunc53: ");
@@ -4880,6 +4934,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc54()
     {
         Console.Write("Running SwiftCallbackFunc54: ");
@@ -4978,6 +5033,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc55()
     {
         Console.Write("Running SwiftCallbackFunc55: ");
@@ -5021,6 +5077,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc56()
     {
         Console.Write("Running SwiftCallbackFunc56: ");
@@ -5112,6 +5169,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc57()
     {
         Console.Write("Running SwiftCallbackFunc57: ");
@@ -5186,6 +5244,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc58()
     {
         Console.Write("Running SwiftCallbackFunc58: ");
@@ -5220,6 +5279,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc59()
     {
         Console.Write("Running SwiftCallbackFunc59: ");
@@ -5276,6 +5336,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc60()
     {
         Console.Write("Running SwiftCallbackFunc60: ");
@@ -5377,6 +5438,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc61()
     {
         Console.Write("Running SwiftCallbackFunc61: ");
@@ -5432,6 +5494,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc62()
     {
         Console.Write("Running SwiftCallbackFunc62: ");
@@ -5474,6 +5537,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc63()
     {
         Console.Write("Running SwiftCallbackFunc63: ");
@@ -5558,6 +5622,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc64()
     {
         Console.Write("Running SwiftCallbackFunc64: ");
@@ -5657,6 +5722,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc65()
     {
         Console.Write("Running SwiftCallbackFunc65: ");
@@ -5724,6 +5790,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc66()
     {
         Console.Write("Running SwiftCallbackFunc66: ");
@@ -5822,6 +5889,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc67()
     {
         Console.Write("Running SwiftCallbackFunc67: ");
@@ -5931,6 +5999,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc68()
     {
         Console.Write("Running SwiftCallbackFunc68: ");
@@ -6030,6 +6099,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc69()
     {
         Console.Write("Running SwiftCallbackFunc69: ");
@@ -6146,6 +6216,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc70()
     {
         Console.Write("Running SwiftCallbackFunc70: ");
@@ -6201,6 +6272,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc71()
     {
         Console.Write("Running SwiftCallbackFunc71: ");
@@ -6258,6 +6330,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc72()
     {
         Console.Write("Running SwiftCallbackFunc72: ");
@@ -6358,6 +6431,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc73()
     {
         Console.Write("Running SwiftCallbackFunc73: ");
@@ -6416,6 +6490,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc74()
     {
         Console.Write("Running SwiftCallbackFunc74: ");
@@ -6509,6 +6584,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc75()
     {
         Console.Write("Running SwiftCallbackFunc75: ");
@@ -6616,6 +6692,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc76()
     {
         Console.Write("Running SwiftCallbackFunc76: ");
@@ -6707,6 +6784,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc77()
     {
         Console.Write("Running SwiftCallbackFunc77: ");
@@ -6803,6 +6881,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc78()
     {
         Console.Write("Running SwiftCallbackFunc78: ");
@@ -6865,6 +6944,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc79()
     {
         Console.Write("Running SwiftCallbackFunc79: ");
@@ -6944,6 +7024,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc80()
     {
         Console.Write("Running SwiftCallbackFunc80: ");
@@ -7005,6 +7086,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc81()
     {
         Console.Write("Running SwiftCallbackFunc81: ");
@@ -7103,6 +7185,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc82()
     {
         Console.Write("Running SwiftCallbackFunc82: ");
@@ -7154,6 +7237,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc83()
     {
         Console.Write("Running SwiftCallbackFunc83: ");
@@ -7258,6 +7342,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc84()
     {
         Console.Write("Running SwiftCallbackFunc84: ");
@@ -7380,6 +7465,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc85()
     {
         Console.Write("Running SwiftCallbackFunc85: ");
@@ -7484,6 +7570,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc86()
     {
         Console.Write("Running SwiftCallbackFunc86: ");
@@ -7538,6 +7625,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc87()
     {
         Console.Write("Running SwiftCallbackFunc87: ");
@@ -7632,6 +7720,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc88()
     {
         Console.Write("Running SwiftCallbackFunc88: ");
@@ -7701,6 +7790,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc89()
     {
         Console.Write("Running SwiftCallbackFunc89: ");
@@ -7809,6 +7899,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc90()
     {
         Console.Write("Running SwiftCallbackFunc90: ");
@@ -7929,6 +8020,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc91()
     {
         Console.Write("Running SwiftCallbackFunc91: ");
@@ -8022,6 +8114,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc92()
     {
         Console.Write("Running SwiftCallbackFunc92: ");
@@ -8085,6 +8178,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc93()
     {
         Console.Write("Running SwiftCallbackFunc93: ");
@@ -8194,6 +8288,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc94()
     {
         Console.Write("Running SwiftCallbackFunc94: ");
@@ -8283,6 +8378,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc95()
     {
         Console.Write("Running SwiftCallbackFunc95: ");
@@ -8353,6 +8449,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc96()
     {
         Console.Write("Running SwiftCallbackFunc96: ");
@@ -8446,6 +8543,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc97()
     {
         Console.Write("Running SwiftCallbackFunc97: ");
@@ -8491,6 +8589,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc98()
     {
         Console.Write("Running SwiftCallbackFunc98: ");
@@ -8557,6 +8656,7 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSwiftCallbackFunc99()
     {
         Console.Write("Running SwiftCallbackFunc99: ");
