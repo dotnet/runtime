@@ -377,12 +377,14 @@ namespace ILAssembler
 
             if (Assembly is not null)
             {
+                // Combine the base flags with the architecture bits
+                var assemblyFlags = Assembly.Flags | (AssemblyFlags)((int)Assembly.ProcessorArchitecture << 4);
                 builder.AddAssembly(
                     builder.GetOrAddString(Assembly.Name),
                     Assembly.Version ?? new Version(),
                     Assembly.Culture is null ? default : builder.GetOrAddString(Assembly.Culture),
                     Assembly.PublicKeyOrToken is null ? default : builder.GetOrAddBlob(Assembly.PublicKeyOrToken),
-                    Assembly.Flags,
+                    assemblyFlags,
                     Assembly.HashAlgorithm);
             }
 
@@ -397,7 +399,7 @@ namespace ILAssembler
             foreach (ExportedTypeEntity exportedType in GetSeenEntities(TableIndex.ExportedType))
             {
                 // Implementation must be a valid handle type: AssemblyFileHandle, AssemblyReferenceHandle, or ExportedTypeHandle
-                // If implementation is null, skip emitting this exported type (like native ilasm does)
+                // COMPAT: If implementation is null, skip emitting this exported type
                 if (exportedType.Implementation is null)
                 {
                     continue;

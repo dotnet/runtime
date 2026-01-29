@@ -179,8 +179,7 @@ namespace ILAssembler
             DebugDirectoryBuilder? debugDirectoryBuilder = BuildDebugDirectory(entryPoint, out int debugDataSize);
 
             // Use custom PE builder if we have vtable fixups, exports, or data label reference fixups
-            bool hasDataLabelFixups = _mappedFieldDataReferenceFixups.Count > 0;
-            if (_vtableFixups.Count > 0 || exports.Count > 0 || hasDataLabelFixups)
+            if (_vtableFixups.Count > 0 || exports.Count > 0 || _mappedFieldDataReferenceFixups.Count > 0)
             {
                 var vtableFixupInfos = BuildVTableFixupInfos();
 
@@ -196,7 +195,7 @@ namespace ILAssembler
                     vtableFixups: vtableFixupInfos,
                     exports: exports.ToImmutable(),
                     mappedFieldDataOffsets: _mappedFieldDataNames,
-                    dataLabelFixups: hasDataLabelFixups ? _mappedFieldDataReferenceFixups : null,
+                    dataLabelFixups: _mappedFieldDataReferenceFixups,
                     metadataSize: metadataSize,
                     debugDataSize: debugDataSize);
 

@@ -1693,9 +1693,6 @@ namespace ILAssembler.Tests
         public void ExplicitLayout_SetsTypeLayoutFlags()
         {
             // Test that ExplicitLayout (0x10) is set for structs with field offsets
-            // This was a regression bug - the EXPLICIT token wasn't being parsed correctly
-            // because 'explicit' was defined as both a literal and a named token in the grammar,
-            // and HasFlag(0) for AnsiClass was clearing the layout flags.
             string source = """
                 .class public explicit ansi sealed beforefieldinit Test
                     extends [System.Runtime]System.ValueType
@@ -1955,10 +1952,9 @@ namespace ILAssembler.Tests
         [Fact]
         public void AssemblyNoPlatform_WithKeyword_SetsNoPlatformFlag()
         {
-            // Test the 'noplatform' assembly attribute (exercises MetadataExtensions.NoPlatform)
-            // Native ilasm stores this in the Architecture bits of AssemblyFlags
+            // Test the 'noplatform' assembly attribute
             string source = """
-                .assembly test noplatform
+                .assembly noplatform test
                 {
                     .ver 1:0:0:0
                 }
@@ -1969,16 +1965,16 @@ namespace ILAssembler.Tests
             var reader = pe.GetMetadataReader();
             var assembly = reader.GetAssemblyDefinition();
 
-            // Verify it compiled successfully by checking the assembly name
-            Assert.Equal("test", reader.GetString(assembly.Name));
+            // NoPlatform = 0x70 (stored in architecture bits of AssemblyFlags)
+            Assert.Equal((System.Reflection.AssemblyFlags)0x70, assembly.Flags & (System.Reflection.AssemblyFlags)0xF0);
         }
 
         [Fact]
         public void AssemblyArchitecture_SetsArchitectureFlags()
         {
-            // Test the architecture assembly attributes (exercises MetadataExtensions.ArchitectureMask)
+            // Test the x86 architecture assembly attribute
             string source = """
-                .assembly test x86
+                .assembly x86 test
                 {
                     .ver 1:0:0:0
                 }
@@ -1989,8 +1985,8 @@ namespace ILAssembler.Tests
             var reader = pe.GetMetadataReader();
             var assembly = reader.GetAssemblyDefinition();
 
-            // Verify it compiled successfully by checking the assembly name
-            Assert.Equal("test", reader.GetString(assembly.Name));
+            // x86 = ProcessorArchitecture.X86 (2) << 4 = 0x20
+            Assert.Equal((System.Reflection.AssemblyFlags)0x20, assembly.Flags & (System.Reflection.AssemblyFlags)0xF0);
         }
 
         [Fact]
@@ -2035,7 +2031,11 @@ namespace ILAssembler.Tests
             var methodDef = reader.MethodDefinitions
                 .Select(h => reader.GetMethodDefinition(h))
                 .First(m => reader.GetString(m.Name) == "VarargMethod");
-            Assert.True(methodDef.RelativeVirtualAddress != 0);
+
+            // VarArgs calling convention = 0x5
+            var signature = reader.GetBlobReader(methodDef.Signature);
+            var header = signature.ReadByte();
+            Assert.Equal(0x5, header & 0x0F);
         }
 
         [Fact]
