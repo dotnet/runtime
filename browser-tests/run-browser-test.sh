@@ -77,9 +77,10 @@ echo "========================================"
 
 # Run the test and capture output
 # Using set +e to continue even if tests fail
+# Using nohup to allow tests to continue if terminal disconnects
 set +e
 
-./dotnet.sh build -bl \
+nohup ./dotnet.sh build -bl \
     /p:TargetOS=browser \
     /p:TargetArchitecture=wasm \
     /p:Configuration=${CONFIGURATION} \
