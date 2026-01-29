@@ -269,6 +269,23 @@
     NESTED_END RhpThrowHwEx, _TEXT
 
 //
+// RhpThrowExact
+//
+// SUMMARY:  Similar to RhpThrowEx, except that it sets the rethrow flag
+//
+// INPUT:  a0:  exception object
+//
+// OUTPUT:
+//
+
+    LEAF_ENTRY RhpThrowExact, _TEXT
+
+        ori  $a4, $zero, 4                               // a4 = ExKind.RethrowFlag
+        b  RhpThrowExImpl
+
+    LEAF_END RhpThrowExact, _TEXT
+
+//
 // RhpThrowEx
 //
 // INPUT:  a0:  exception object
@@ -277,6 +294,10 @@
 //
 
     NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+
+        ori  $a4, $zero, 1                               // a4 = ExKind.Throw
+
+ALTERNATE_ENTRY RhpThrowExImpl
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
@@ -331,8 +352,7 @@ LOCAL_LABEL(NotHijacked):
         st.b  $a3, $a1, OFFSETOF__ExInfo__m_passNumber   // pExInfo->m_passNumber = 1
         addi.w  $a3, $zero, -1
         st.w  $a3, $a1, OFFSETOF__ExInfo__m_idxCurClause // pExInfo->m_idxCurClause = MaxTryRegionIdx
-        ori  $a3, $zero, 1
-        st.b  $a3, $a1, OFFSETOF__ExInfo__m_kind         // pExInfo->m_kind = ExKind.Throw
+        st.b  $a4, $a1, OFFSETOF__ExInfo__m_kind         // pExInfo->m_kind = ExKind (from a4)
 
         // link the ExInfo into the thread's ExInfo chain
         ld.d  $a3, $a2, OFFSETOF__Thread__m_pExInfoStackHead
@@ -352,7 +372,6 @@ LOCAL_LABEL(NotHijacked):
         // no return
         EMIT_BREAKPOINT
     NESTED_END RhpThrowEx, _TEXT
-
 
 //
 // void FASTCALL RhpRethrow()

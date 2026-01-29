@@ -229,6 +229,14 @@ namespace System.Runtime.CompilerServices
         [ThreadStatic]
         private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
 
+#if !NATIVEAOT
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AsyncHelpers_AddContinuationToExInternal")]
+        private static unsafe partial void AddContinuationToExInternal(void* diagnosticIP, ObjectHandleOnStack ex);
+
+        internal static unsafe void AddContinuationToExInternal(void* diagnosticIP, Exception e)
+            => AddContinuationToExInternal(diagnosticIP, ObjectHandleOnStack.Create(ref e));
+#endif
+
         private static unsafe Continuation AllocContinuation(Continuation prevContinuation, MethodTable* contMT)
         {
 #if NATIVEAOT
@@ -436,6 +444,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
+            [StackTraceHidden]
             private unsafe void DispatchContinuations()
             {
                 ExecutionAndSyncBlockStore contexts = default;
@@ -469,7 +478,7 @@ namespace System.Runtime.CompilerServices
                     }
                     catch (Exception ex)
                     {
-                        Continuation? handlerContinuation = UnwindToPossibleHandler(asyncDispatcherInfo.NextContinuation);
+                        Continuation? handlerContinuation = UnwindToPossibleHandler(asyncDispatcherInfo.NextContinuation, ex);
                         if (handlerContinuation == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
@@ -520,10 +529,19 @@ namespace System.Runtime.CompilerServices
 
             private ref byte GetResultStorage() => ref Unsafe.As<T?, byte>(ref m_result);
 
-            private static Continuation? UnwindToPossibleHandler(Continuation? continuation)
+            private static unsafe Continuation? UnwindToPossibleHandler(Continuation? continuation, Exception ex)
             {
                 while (true)
                 {
+                    if (continuation != null && continuation.ResumeInfo != null && continuation.ResumeInfo->DiagnosticIP != null)
+                    {
+#if !NATIVEAOT
+                        AddContinuationToExInternal(continuation.ResumeInfo->DiagnosticIP, ex);
+#else
+                        IntPtr ip = (IntPtr)continuation.ResumeInfo->DiagnosticIP;
+                        System.Exception.AppendExceptionStackFrame(ex, ip, 0);
+#endif
+                    }
                     if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
                         return continuation;
 
@@ -769,12 +787,14 @@ namespace System.Runtime.CompilerServices
             flags |= ContinuationFlags.ContinueOnThreadPool;
         }
 
+        [StackTraceHidden]
         internal static T CompletedTaskResult<T>(Task<T> task)
         {
             TaskAwaiter.ValidateEnd(task);
             return task.ResultOnSuccess;
         }
 
+        [StackTraceHidden]
         internal static void CompletedTask(Task task)
         {
             TaskAwaiter.ValidateEnd(task);

@@ -284,6 +284,32 @@ static void GetStackFrames(DebugStackTrace::GetStackFramesData *pData)
     }
 }
 
+extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
+    void* diagnosticIP,
+    QCall::ObjectHandleOnStack exception)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF pException = (OBJECTREF)exception.Get();
+    _ASSERTE(pException != NULL);
+    // populate exception with information from the continuation object
+    EECodeInfo codeInfo((PCODE)diagnosticIP);
+    _ASSERTE(codeInfo.IsValid());
+    MethodDesc* methodDesc = codeInfo.GetMethodDesc();
+    StackTraceInfo::AppendElement(
+        pException,
+        (UINT_PTR)diagnosticIP,
+        0,
+        methodDesc,
+        NULL);
+
+    END_QCALL;
+}
+
 extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     QCall::ObjectHandleOnStack stackFrameHelper,
     BOOL fNeedFileInfo,
@@ -951,25 +977,37 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 // push frames and the method body is therefore non-contiguous.
                 // Currently such methods always return an IP of 0, so they're easy
                 // to spot.
-                DWORD dwNativeOffset;
-
+                DWORD dwNativeOffset = 0;
                 UINT_PTR ip = cur.ip;
-#if defined(DACCESS_COMPILE) && defined(TARGET_AMD64)
-                // Compensate for a bug in the old EH that for a frame that faulted
-                // has the ip pointing to an address before the faulting instruction
-                if ((i == 0) && ((cur.flags & STEF_IP_ADJUSTED) == 0))
+                if (cur.flags & STEF_CONTINUATION)
                 {
-                    ip -= 1;
+                    EECodeInfo codeInfo((PCODE)ip);
+                    if (codeInfo.IsValid())
+                    {
+                        PCODE startAddress = codeInfo.GetStartAddress();
+                        dwNativeOffset = (DWORD)(ip - startAddress);
+                    }
                 }
-#endif // DACCESS_COMPILE && TARGET_AMD64
-                if (ip)
-                {
-                    EECodeInfo codeInfo(ip);
-                    dwNativeOffset = codeInfo.GetRelOffset();
-                }
+
                 else
                 {
-                    dwNativeOffset = 0;
+#if defined(DACCESS_COMPILE) && defined(TARGET_AMD64)
+                    // Compensate for a bug in the old EH that for a frame that faulted
+                    // has the ip pointing to an address before the faulting instruction
+                    if ((i == 0) && ((cur.flags & STEF_IP_ADJUSTED) == 0))
+                    {
+                        ip -= 1;
+                    }
+#endif // DACCESS_COMPILE && TARGET_AMD64
+                    if (ip)
+                    {
+                        EECodeInfo codeInfo(ip);
+                        dwNativeOffset = codeInfo.GetRelOffset();
+                    }
+                    else
+                    {
+                        dwNativeOffset = 0;
+                    }
                 }
 
                 pData->pElements[i].InitPass1(
@@ -1554,7 +1592,7 @@ void DebugStackTrace::Element::InitPass2()
 
     bool bRes = false;
 
-    bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0;
+    bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0 && !(this->flags & STEF_CONTINUATION);
 
     // Check the cache!
     uint32_t dwILOffsetFromCache;
