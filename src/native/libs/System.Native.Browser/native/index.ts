@@ -10,7 +10,7 @@ import GitHash from "consts:gitHash";
 export { SystemJS_RandomBytes } from "./crypto";
 export { SystemJS_GetLocaleInfo } from "./globalization-locale";
 export { SystemJS_RejectMainPromise, SystemJS_ResolveMainPromise, SystemJS_ConsoleClear } from "./main";
-export { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob } from "./timer";
+export { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob } from "./scheduling";
 
 export const gitHash = GitHash;
 export function dotnetInitializeModule(internals: InternalExchange): void {

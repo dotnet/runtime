@@ -344,33 +344,6 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     return hr;
 }
 
-//
-// Allocate free memory with specific alignment.
-//
-LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect, SIZE_T alignment)
-{
-    // Verify that the alignment is a power of 2
-    _ASSERTE(alignment != 0);
-    _ASSERTE((alignment & (alignment - 1)) == 0);
-
-#ifdef HOST_WINDOWS
-
-    // The VirtualAlloc on Windows ensures 64kB alignment
-    _ASSERTE(alignment <= 0x10000);
-    return ClrVirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
-
-#else // HOST_WINDOWS
-
-    if(alignment < GetOsPageSize()) alignment = GetOsPageSize();
-
-    // UNIXTODO: Add a specialized function to PAL so that we don't have to waste memory
-    dwSize += alignment;
-    SIZE_T addr = (SIZE_T)ClrVirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
-    return (LPVOID)((addr + (alignment - 1)) & ~(alignment - 1));
-
-#endif // HOST_WINDOWS
-}
-
 #ifdef _DEBUG
 static DWORD ShouldInjectFaultInRange()
 {
@@ -1140,78 +1113,6 @@ uint32_t GetOsPageSize()
 #else
     return 0x1000;
 #endif
-}
-
-/**************************************************************************/
-
-/**************************************************************************/
-void ConfigMethodSet::init(const CLRConfig::ConfigStringInfo & info)
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    // make sure that the memory was zero initialized
-    _ASSERTE(m_inited == 0 || m_inited == 1);
-
-    LPWSTR str = CLRConfig::GetConfigValue(info);
-    if (str)
-    {
-        m_list.Insert(str);
-        delete[] str;
-    }
-    m_inited = 1;
-}
-
-/**************************************************************************/
-bool ConfigMethodSet::contains(LPCUTF8 methodName, LPCUTF8 className, int argCount)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_inited == 1);
-
-    if (m_list.IsEmpty())
-        return false;
-    return(m_list.IsInList(methodName, className, argCount));
-}
-
-/**************************************************************************/
-bool ConfigMethodSet::contains(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SIG_INFO* pSigInfo)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_inited == 1);
-
-    if (m_list.IsEmpty())
-        return false;
-    return(m_list.IsInList(methodName, className, pSigInfo));
-}
-
-/**************************************************************************/
-void ConfigString::init(const CLRConfig::ConfigStringInfo & info)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    // make sure that the memory was zero initialized
-    _ASSERTE(m_inited == 0 || m_inited == 1);
-
-    // Note: m_value will be leaking
-    m_value = CLRConfig::GetConfigValue(info);
-    m_inited = 1;
 }
 
 //=============================================================================

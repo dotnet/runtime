@@ -317,7 +317,12 @@ static const Entry s_QCall[] =
 #endif // FEATURE_COMINTEROP
     DllImportEntry(Monitor_GetOrCreateLockObject)
     DllImportEntry(ClrConfig_GetConfigBoolValue)
+#ifdef TARGET_SUNOS
+    // Work around illumos.org/issues/17832
+    {"memset", (void*)&std::memset},
+#else // TARGET_SUNOS
     DllImportEntry(memset)
+#endif // TARGET_SUNOS
     DllImportEntry(memmove)
     DllImportEntry(DependentHandle_InternalAllocWithGCTransition)
     DllImportEntry(DependentHandle_InternalFreeWithGCTransition)

@@ -2009,6 +2009,8 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         pArgumentRegisters->RCX = (INT_PTR)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_ARM64)
         pArgumentRegisters->x[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
+    #elif defined(TARGET_ARM)
+        pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_RISCV64)
         pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
     #elif defined(TARGET_WASM)
@@ -2390,6 +2392,22 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // need to free the Stub allocation now.
             pStub->DecRef();
         }
+#if defined(FEATURE_INTERPRETER) && defined(HAS_FIXUP_PRECODE)
+        if (GetOrCreatePrecode()->GetType() == PRECODE_FIXUP)
+        {
+            // Check to see if the entrypoint is into the interpreter. If so, grab the interpreter codes from the stub and put that directly
+            // into the MethodDesc
+            TADDR functionAddress = GetOrCreatePrecode()->GetTarget();
+            TADDR byteCodeStartOrFunctionAddress = GetInterpreterCodeFromInterpreterPrecodeIfPresent(functionAddress);
+            if (byteCodeStartOrFunctionAddress != functionAddress)
+            {
+                // Then we must have an InterpByteCodeStart
+                InterpByteCodeStart* ilStubInterpData = (InterpByteCodeStart*)byteCodeStartOrFunctionAddress;
+                SetInterpreterCode(ilStubInterpData);
+            }
+        }
+#endif // FEATURE_INTERPRETER
+
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 

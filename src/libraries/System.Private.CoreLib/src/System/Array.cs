@@ -1553,15 +1553,27 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
 
-            List<T> list = new List<T>();
-            for (int i = 0; i < array.Length; i++)
+            InlineArray4<T> stackAllocatedMatches = default;
+            Span<T> span = stackAllocatedMatches;
+            int foundCount = 0;
+            T[]? values = null;
+
+            foreach (T value in array)
             {
-                if (match(array[i]))
+                if (match(value))
                 {
-                    list.Add(array[i]);
+                    if (foundCount >= span.Length)
+                    {
+                        values = new T[Math.Min((uint)span.Length * 2, (uint)array.Length)];
+                        span.CopyTo(values);
+                        span = values;
+                    }
+
+                    span[foundCount++] = value;
                 }
             }
-            return list.ToArray();
+
+            return values?.Length == foundCount ? values : span[..foundCount].ToArray();
         }
 
         public static int FindIndex<T>(T[] array, Predicate<T> match)

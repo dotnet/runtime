@@ -326,7 +326,7 @@ namespace System.Text.Json
                     if (propertyName.AsSpan().ContainsSpecialCharacters())
                     {
                         sb.Append(@"['");
-                        sb.Append(propertyName);
+                        sb.AppendEscapedPropertyName(propertyName);
                         sb.Append(@"']");
                     }
                     else

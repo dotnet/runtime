@@ -14784,7 +14784,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             regNumber extraReg = codeGen->internalRegisters.GetSingle(dst);
             assert(extraReg != dst->GetRegNum());
 
-            if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+            if (dst->IsUnsigned())
             {
                 if (attr == EA_4BYTE)
                 {
