@@ -36,6 +36,18 @@ export RuntimeFlavor="CoreCLR"
 export Scenario="WasmTestOnChrome"
 export InstallFirefoxForTests="false"
 export XunitShowProgress="true"
+
+# Required for HTTPS test server (xharness uses HTTPS)
+export SSL_CERT_DIR="$HOME/.aspnet/dev-certs/trust:/usr/lib/ssl/certs"
+```
+
+### HTTPS Developer Certificate (one-time setup)
+
+The xharness test runner starts a local HTTPS server. You need to generate a developer certificate:
+
+```bash
+dotnet dev-certs https
+dotnet dev-certs https --trust  # May show warnings on Linux, that's OK
 ```
 
 ## Build Commands

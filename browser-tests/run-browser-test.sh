@@ -53,6 +53,10 @@ TEST_PROJECT_NAME=$(basename "$CSPROJ_PATH" .csproj)
 export RuntimeFlavor="CoreCLR"
 export Scenario="WasmTestOnChrome"
 export InstallFirefoxForTests="false"
+export XunitShowProgress="true"
+
+# Required for HTTPS test server (xharness uses HTTPS)
+export SSL_CERT_DIR="$HOME/.aspnet/dev-certs/trust:/usr/lib/ssl/certs"
 
 # Create results directory (relative to repo root)
 RESULTS_DIR="${REPO_ROOT}/browser-tests/results/${TEST_PROJECT_NAME}"
