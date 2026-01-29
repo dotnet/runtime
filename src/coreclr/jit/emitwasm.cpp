@@ -161,7 +161,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
     assert(params.argSize % REGSIZE_BYTES == 0);
 
-
     instruction ins;
 
     // FIXME-WASM: Currently while we're loading SP onto the stack we're not loading PEP, so generate one here.
