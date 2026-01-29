@@ -961,6 +961,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             conditions.Add($"!{ConditionClass}.IsGCStressC");
         }
 
+        if (conditions.Count == 0)
+        {
+            // If all configurations are skipped, just skip the test as a whole
+            return ImmutableArray<ITestInfo>.Empty;
+        }
+
         return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(t => new ConditionalTest(t, string.Join(" && ", conditions))));
     }
 
