@@ -171,7 +171,64 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 //
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
-    NYI_WASM("LowerBlockStore");
+    GenTree* dstAddr = blkNode->Addr();
+    GenTree* src     = blkNode->Data();
+    unsigned size    = blkNode->Size();
+
+    if (blkNode->OperIsInitBlkOp())
+    {
+        if (src->OperIs(GT_INIT_VAL))
+        {
+            src->SetContained();
+            src = src->AsUnOp()->gtGetOp1();
+        }
+
+        if (blkNode->IsZeroingGcPointersOnHeap())
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+            src->SetContained();
+            // memory.fill
+        }
+        else
+        {
+            // memory.fill
+        }
+    }
+    else
+    {
+        assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
+        src->SetContained();
+
+        if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            // TODO-WASM: Is this true for wasm as well?
+            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
+        }
+
+        ClassLayout* layout               = blkNode->GetLayout();
+        bool         doCpObj              = layout->HasGCPtr();
+        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
+
+        // CopyObj or CopyBlk
+        if (doCpObj)
+        {
+            // Try to use bulk copy helper
+            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
+            {
+                return;
+            }
+
+            assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
+        }
+        else
+        {
+            assert(blkNode->OperIs(GT_STORE_BLK));
+            // memory.copy
+        }
+    }
 }
 
 //------------------------------------------------------------------------
