@@ -48,7 +48,10 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtime/issues/82859') type([TestLibrary]TestLibrary.PlatformDetection) string[2] ('IsMonoMiniJIT' 'IsArm64Process') }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('ldtoken in default interface methods does not appear to work in minijit or interp')
+        int32(0x2) // Mono
+    }
     .entrypoint
     .locals (valuetype [System.Runtime]System.RuntimeTypeHandle)
     newobj instance void class Fooer::.ctor()

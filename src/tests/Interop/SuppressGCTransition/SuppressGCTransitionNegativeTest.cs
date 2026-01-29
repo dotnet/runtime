@@ -94,7 +94,7 @@ unsafe static class SuppressGCTransitionNative
             $"lib{nameof(SuppressGCTransitionNative)}.dylib",
         };
 
-        string binDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string binDir = AppContext.BaseDirectory;
         foreach (var ln in libNames)
         {
             if (NativeLibrary.TryLoad(Path.Combine(binDir, ln), out IntPtr mod))
@@ -152,7 +152,6 @@ public unsafe class SuppressGCTransitionTest
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
-    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/165", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestEntryPoint()
     {
         CheckGCMode.Initialize(&SuppressGCTransitionNative.SetIsInCooperativeModeFunction);

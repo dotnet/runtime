@@ -25,6 +25,7 @@
 
     <!-- This test is very specific to RyuJIT tooling. -->
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' != 'coreclr'">true</DisableProjectBuild>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>
