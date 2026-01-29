@@ -1696,11 +1696,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
         // use that to adjust the stack, likely saving some stack space.
 
 #if defined(TARGET_AMD64)
-        // If calls push the return address, we need to simulate that here, so the OSR
-        // method sees the "expected" SP misalgnment on entry.
-        _ASSERTE(currentSP % 16 == 0);
-        currentSP -= 8;
-
 #if defined(TARGET_WINDOWS)
         DWORD64 ssp = GetSSP(pFrameContext);
         if (ssp != 0)
