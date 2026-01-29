@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -12,11 +12,8 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 using System.Text;
-using System.Xml.XPath;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
@@ -92,6 +89,14 @@ namespace ILAssembler
         // Typedef aliases - maps alias name to the resolved entity
         private readonly Dictionary<string, TypedefEntry> _typedefs = new();
 
+        // Debug info tracking
+        private Guid _currentLanguageGuid = Guid.Empty;
+        private Guid _currentLanguageVendorGuid = Guid.Empty;
+        private Guid _currentDocumentTypeGuid = Guid.Empty;
+        private string? _currentDocumentPath;
+        private readonly Dictionary<string, DocumentHandle> _documentHandles = new();
+        private readonly MetadataBuilder _pdbBuilder = new();
+
         public GrammarVisitor(IReadOnlyDictionary<string, SourceText> documents, Options options, Func<string, byte[]> resourceLocator)
         {
             _documents = documents;
@@ -124,7 +129,11 @@ namespace ILAssembler
 
         public (ImmutableArray<Diagnostic> Diagnostics, PEBuilder? Image) BuildImage()
         {
-            if (_diagnostics.Any(diag => diag.Severity == DiagnosticSeverity.Error))
+            // Return early if there are structural errors that prevent building valid metadata.
+            // However, allow errors in method bodies (ILA0016-0019) to pass through so we can
+            // emit the assembly with the errors reported.
+            var structuralErrors = _diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && !IsRecoverableError(d.Id));
+            if (structuralErrors.Any())
             {
                 return (_diagnostics.ToImmutable(), null);
             }
@@ -143,15 +152,201 @@ namespace ILAssembler
                 entryPoint = (MethodDefinitionHandle)_entityRegistry.EntryPoint.Handle;
             }
 
+            // Build debug directory if we have any debug info
+            DebugDirectoryBuilder? debugDirectoryBuilder = BuildDebugDirectory(entryPoint);
+
             ManagedPEBuilder peBuilder = new(
                 header,
                 rootBuilder,
                 ilStream,
                 _mappedFieldData,
                 _manifestResources,
-                flags: CorFlags.ILOnly, entryPoint: entryPoint);
+                flags: CorFlags.ILOnly,
+                entryPoint: entryPoint,
+                debugDirectoryBuilder: debugDirectoryBuilder);
 
             return (_diagnostics.ToImmutable(), peBuilder);
+        }
+
+        private DebugDirectoryBuilder? BuildDebugDirectory(MethodDefinitionHandle entryPoint)
+        {
+            // Check if we have any methods with debug info
+            bool hasDebugInfo = false;
+            foreach (var entity in _entityRegistry.GetSeenEntities(TableIndex.MethodDef))
+            {
+                if (entity is EntityRegistry.MethodDefinitionEntity method &&
+                    method.DebugInfo.SequencePoints.Count > 0)
+                {
+                    hasDebugInfo = true;
+                    break;
+                }
+            }
+
+            if (!hasDebugInfo)
+            {
+                return null;
+            }
+
+            // Build PDB metadata
+            BuildPdbMetadata();
+
+            // Get row counts from main metadata for the portable PDB
+            var typeSystemRowCounts = _metadataBuilder.GetRowCounts();
+
+            // Create the portable PDB
+            var pdbBuilder = new PortablePdbBuilder(
+                _pdbBuilder,
+                typeSystemRowCounts,
+                entryPoint,
+                idProvider: content => new BlobContentId(Guid.NewGuid(), 0x04030201));
+
+            var pdbBlob = new BlobBuilder();
+            var pdbContentId = pdbBuilder.Serialize(pdbBlob);
+
+            // Create debug directory with embedded PDB
+            var debugDirectoryBuilder = new DebugDirectoryBuilder();
+            debugDirectoryBuilder.AddCodeViewEntry(
+                $"assembly.pdb",
+                pdbContentId,
+                pdbBuilder.FormatVersion);
+            debugDirectoryBuilder.AddEmbeddedPortablePdbEntry(pdbBlob, pdbBuilder.FormatVersion);
+
+            return debugDirectoryBuilder;
+        }
+
+        private void BuildPdbMetadata()
+        {
+            // Add documents and sequence points to the PDB metadata builder
+            foreach (var entity in _entityRegistry.GetSeenEntities(TableIndex.MethodDef))
+            {
+                if (entity is not EntityRegistry.MethodDefinitionEntity method)
+                {
+                    continue;
+                }
+
+                var debugInfo = method.DebugInfo;
+                if (debugInfo.SequencePoints.Count == 0)
+                {
+                    // Add empty debug info entry for methods without sequence points
+                    _pdbBuilder.AddMethodDebugInformation(default, default);
+                    continue;
+                }
+
+                // Get or create document handle
+                DocumentHandle documentHandle = default;
+                if (debugInfo.DocumentPath is not null)
+                {
+                    if (!_documentHandles.TryGetValue(debugInfo.DocumentPath, out documentHandle))
+                    {
+                        var nameHandle = _pdbBuilder.GetOrAddDocumentName(debugInfo.DocumentPath);
+                        var languageGuidHandle = _currentLanguageGuid != Guid.Empty
+                            ? _pdbBuilder.GetOrAddGuid(_currentLanguageGuid)
+                            : default;
+                        documentHandle = _pdbBuilder.AddDocument(
+                            nameHandle,
+                            default, // hash algorithm
+                            default, // hash
+                            languageGuidHandle);
+                        _documentHandles[debugInfo.DocumentPath] = documentHandle;
+                    }
+                }
+
+                // Encode sequence points
+                var sequencePointsBlob = EncodeSequencePoints(debugInfo.SequencePoints);
+                var sequencePointsBlobHandle = _pdbBuilder.GetOrAddBlob(sequencePointsBlob);
+
+                _pdbBuilder.AddMethodDebugInformation(documentHandle, sequencePointsBlobHandle);
+            }
+        }
+
+        private static BlobBuilder EncodeSequencePoints(List<EntityRegistry.SequencePoint> sequencePoints)
+        {
+            var builder = new BlobBuilder();
+
+            if (sequencePoints.Count == 0)
+            {
+                return builder;
+            }
+
+            // LocalSignature (not used here, write 0)
+            builder.WriteCompressedInteger(0);
+
+            int previousOffset = 0;
+            int previousStartLine = 0;
+            int previousStartColumn = 0;
+
+            foreach (var sp in sequencePoints)
+            {
+                // IL offset delta
+                int offsetDelta = sp.ILOffset - previousOffset;
+                builder.WriteCompressedInteger(offsetDelta);
+                previousOffset = sp.ILOffset;
+
+                if (sp.IsHidden)
+                {
+                    // Hidden sequence point: delta lines = 0, delta columns = 0
+                    builder.WriteCompressedInteger(0);
+                    builder.WriteCompressedInteger(0);
+                }
+                else
+                {
+                    // Delta lines
+                    int deltaLines = sp.EndLine - sp.StartLine;
+                    builder.WriteCompressedInteger(deltaLines);
+
+                    // Delta columns
+                    int deltaColumns = sp.EndColumn - sp.StartColumn;
+                    if (deltaLines == 0)
+                    {
+                        builder.WriteCompressedInteger(deltaColumns);
+                    }
+                    else
+                    {
+                        builder.WriteCompressedSignedInteger(deltaColumns);
+                    }
+
+                    // Start line delta (signed)
+                    if (previousStartLine == 0)
+                    {
+                        builder.WriteCompressedInteger(sp.StartLine);
+                    }
+                    else
+                    {
+                        builder.WriteCompressedSignedInteger(sp.StartLine - previousStartLine);
+                    }
+
+                    // Start column delta (signed)
+                    if (previousStartColumn == 0)
+                    {
+                        builder.WriteCompressedInteger(sp.StartColumn);
+                    }
+                    else
+                    {
+                        builder.WriteCompressedSignedInteger(sp.StartColumn - previousStartColumn);
+                    }
+
+                    previousStartLine = sp.StartLine;
+                    previousStartColumn = sp.StartColumn;
+                }
+            }
+
+            return builder;
+        }
+
+        private static bool IsRecoverableError(string diagnosticId)
+        {
+            // Method body and signature diagnostics are recoverable - we emit the assembly but report the error.
+            // This matches native ilasm behavior where errors during method/field emission don't prevent
+            // the assembly from being written when the /ERR (OnErrGo) flag is set.
+            return diagnosticId is DiagnosticIds.ByteArrayTooShort
+                or DiagnosticIds.ArgumentNotFound
+                or DiagnosticIds.LocalNotFound
+                or DiagnosticIds.LabelNotFound
+                or DiagnosticIds.GenericParameterIndexOutOfRange
+                or DiagnosticIds.ParameterIndexOutOfRange
+                or DiagnosticIds.GenericParameterNotFound
+                or DiagnosticIds.UnknownGenericParameter
+                or DiagnosticIds.MissingInstanceCallConv;
         }
 
         public GrammarResult Visit(IParseTree tree) => tree.Accept(this);
@@ -531,6 +726,10 @@ namespace ILAssembler
 
             public Dictionary<string, LabelHandle> Labels { get; } = new();
 
+            public HashSet<string> DeclaredLabels { get; } = new();
+
+            public Dictionary<string, ParserRuleContext> UndefinedLabelReferences { get; } = new();
+
             public Dictionary<string, int> ArgumentNames { get; } = new();
 
             public List<Dictionary<string, int>> LocalsScopes { get; } = new();
@@ -552,6 +751,8 @@ namespace ILAssembler
             {
                 _currentMethod = new(VisitMethodHead(methodHead).Value);
                 VisitMethodDecls(context.methodDecls());
+                // Validate that all referenced labels were declared
+                ValidateLabelReferences();
                 _currentMethod = null;
             }
             else if (context.secDecl() is {} secDecl)
@@ -819,7 +1020,12 @@ namespace ILAssembler
                     TypeName typeName = VisitSlashedName(slashedName).Value;
                     if (typeName.ContainingTypeName is null)
                     {
-                        // TODO: Check for typedef.
+                        // Check for typedef.
+                        var typedefResult = TryResolveTypedefAsType(typeName.DottedName);
+                        if (typedefResult is not null)
+                        {
+                            return typedefResult;
+                        }
                     }
                     Stack<TypeName> containingTypes = new();
                     for (TypeName? containingType = typeName; containingType is not null; containingType = containingType.ContainingTypeName)
@@ -936,6 +1142,25 @@ namespace ILAssembler
                 // Typedef not found - could report diagnostic here
                 return new(null);
             }
+            if (context.customDescrWithOwner() is {} descrWithOwner)
+            {
+                // Visit the custom attribute descriptor to record it,
+                // but don't return it as it will already have its owner recorded.
+                _ = VisitCustomDescrWithOwner(descrWithOwner);
+                return new(null);
+            }
+            if (context.customDescr() is {} descr)
+            {
+#nullable disable // Disable nullability to work around lack of variance.
+                return VisitCustomDescr(descr);
+#nullable restore
+            }
+            throw new UnreachableException();
+        }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitCustomDescrInMethodBody(CILParser.CustomDescrInMethodBodyContext context) => VisitCustomDescrInMethodBody(context);
+        public GrammarResult.Literal<EntityRegistry.CustomAttributeEntity?> VisitCustomDescrInMethodBody(CILParser.CustomDescrInMethodBodyContext context)
+        {
             if (context.customDescrWithOwner() is {} descrWithOwner)
             {
                 // Visit the custom attribute descriptor to record it,
@@ -1536,7 +1761,9 @@ namespace ILAssembler
         }
 
         public GrammarResult VisitErrorNode(IErrorNode node) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
-        public GrammarResult VisitEsHead(CILParser.EsHeadContext context) => throw new NotImplementedException("TODO: Symbols");
+
+        // esHead is '.line' or '#line' - this is just the keyword, actual parsing is in VisitExtSourceSpec.
+        public GrammarResult VisitEsHead(CILParser.EsHeadContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitEventAttr(CILParser.EventAttrContext context) => VisitEventAttr(context);
         public GrammarResult.Flag<EventAttributes> VisitEventAttr(CILParser.EventAttrContext context)
@@ -1586,7 +1813,6 @@ namespace ILAssembler
         }
 
         public GrammarResult VisitExportHead(CILParser.ExportHeadContext context) => throw new NotImplementedException("Obsolete syntax");
-
         GrammarResult ICILVisitor<GrammarResult>.VisitExptAttr(CILParser.ExptAttrContext context) => VisitExptAttr(context);
         public static GrammarResult.Flag<TypeAttributes> VisitExptAttr(CILParser.ExptAttrContext context)
         {
@@ -1704,7 +1930,8 @@ namespace ILAssembler
                 TypeName typeName = VisitSlashedName(slashedName).Value;
                 if (typeName.ContainingTypeName is null)
                 {
-                    // TODO: Check for typedef.
+                    // Check for typedef - typedefs resolve to TypeEntity, not ExportedTypeEntity
+                    // so we skip the typedef check for exported type resolution
                 }
                 Stack<TypeName> containingTypes = new();
                 for (TypeName? containingType = typeName; containingType is not null; containingType = containingType.ContainingTypeName)
@@ -1753,7 +1980,86 @@ namespace ILAssembler
             }
         }
 
-        public GrammarResult VisitExtSourceSpec(CILParser.ExtSourceSpecContext context) => throw new NotImplementedException("TODO: Symbols");
+        public GrammarResult VisitExtSourceSpec(CILParser.ExtSourceSpecContext context)
+        {
+            // Parse .line directive to extract source location info
+            // Grammar: esHead int32 (',' int32)? (':' int32 (',' int32)?)? (SQSTRING | QSTRING)?
+            var int32s = context.int32();
+            var sqstring = context.SQSTRING();
+            var qstring = context.QSTRING();
+
+            // Extract line/column info based on number of int32s
+            int startLine = 0, endLine = 0, startColumn = 0, endColumn = 0;
+
+            if (int32s.Length >= 1)
+            {
+                startLine = VisitInt32(int32s[0]).Value;
+                endLine = startLine;
+            }
+            if (int32s.Length >= 2)
+            {
+                // Could be endLine or startColumn depending on separator
+                string contextText = context.GetText();
+                if (contextText.Contains(',') && contextText.IndexOf(',') < contextText.IndexOf(':'))
+                {
+                    // Format: startLine,endLine:...
+                    endLine = VisitInt32(int32s[1]).Value;
+                }
+                else
+                {
+                    // Format: line:column...
+                    startColumn = VisitInt32(int32s[1]).Value;
+                    endColumn = startColumn;
+                }
+            }
+            if (int32s.Length >= 3)
+            {
+                startColumn = VisitInt32(int32s[2]).Value;
+                endColumn = startColumn;
+            }
+            if (int32s.Length >= 4)
+            {
+                endColumn = VisitInt32(int32s[3]).Value;
+            }
+
+            // Extract filename if present
+            string? filePath = null;
+            if (sqstring is not null)
+            {
+                filePath = StringHelpers.ParseQuotedString(sqstring.GetText());
+            }
+            else if (qstring is not null)
+            {
+                filePath = StringHelpers.ParseQuotedString(qstring.GetText());
+            }
+
+            // Update current document path if specified
+            if (filePath is not null)
+            {
+                _currentDocumentPath = filePath;
+            }
+
+            // If we're in a method, record the sequence point
+            if (_currentMethod is not null && _currentDocumentPath is not null)
+            {
+                int ilOffset = _currentMethod.Definition.MethodBody.Offset;
+                _currentMethod.Definition.DebugInfo.DocumentPath ??= _currentDocumentPath;
+
+                // 0xFEEFEE indicates a hidden sequence point
+                if (startLine == 0xFEEFEE)
+                {
+                    _currentMethod.Definition.DebugInfo.SequencePoints.Add(
+                        EntityRegistry.SequencePoint.Hidden(ilOffset));
+                }
+                else
+                {
+                    _currentMethod.Definition.DebugInfo.SequencePoints.Add(
+                        new EntityRegistry.SequencePoint(ilOffset, startLine, startColumn, endLine, endColumn));
+                }
+            }
+
+            return GrammarResult.SentinelValue.Result;
+        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitF32seq(CILParser.F32seqContext context) => VisitF32seq(context);
         public GrammarResult.FormattedBlob VisitF32seq(CILParser.F32seqContext context)
@@ -1828,7 +2134,7 @@ namespace ILAssembler
             var name = VisitDottedName(context.dottedName()).Value;
             var rvaOffset = VisitAtOpt(context.atOpt()).Value;
             var fieldOffset = VisitRepeatOpt(context.repeatOpt()).Value;
-            _ = VisitInitOpt(context.initOpt());
+            var constantValue = VisitInitOpt(context.initOpt()).Value;
 
             var signature = new BlobEncoder(new BlobBuilder());
             _ = signature.Field();
@@ -1841,12 +2147,67 @@ namespace ILAssembler
                 field.MarshallingDescriptor = marshalBlob;
                 field.DataDeclarationName = rvaOffset;
                 field.Offset = fieldOffset;
+                if (constantValue is not NoConstantSentinel)
+                {
+                    field.ConstantValue = constantValue;
+                    field.HasConstant = true;
+                }
             }
 
             return GrammarResult.SentinelValue.Result;
         }
 
-        public GrammarResult VisitFieldInit(CILParser.FieldInitContext context) => throw new NotImplementedException("TODO-SRM: Need support for an arbitrary byte blob as a constant value");
+        GrammarResult ICILVisitor<GrammarResult>.VisitFieldInit(CILParser.FieldInitContext context) => VisitFieldInit(context);
+        public GrammarResult.Literal<object?> VisitFieldInit(CILParser.FieldInitContext context)
+        {
+            // fieldInit: fieldSerInit | compQstring | NULLREF;
+            if (context.NULLREF() is not null)
+            {
+                return new(null);
+            }
+            if (context.compQstring() is CILParser.CompQstringContext compQstring)
+            {
+                return new(VisitCompQstring(compQstring).Value);
+            }
+            if (context.fieldSerInit() is CILParser.FieldSerInitContext fieldSerInit)
+            {
+                // fieldSerInit returns a blob with type byte prefix - extract the actual value
+                var blob = VisitFieldSerInit(fieldSerInit).Value;
+                return new(ExtractConstantFromSerInit(blob));
+            }
+            return new(null);
+        }
+
+        private static object? ExtractConstantFromSerInit(BlobBuilder blob)
+        {
+            var bytes = blob.ToImmutableArray();
+            if (bytes.Length == 0)
+            {
+                return null;
+            }
+
+            var typeCode = (SerializationTypeCode)bytes[0];
+            var valueBytes = bytes.AsSpan().Slice(1);
+
+            return typeCode switch
+            {
+                SerializationTypeCode.Boolean => valueBytes.Length >= 1 && valueBytes[0] != 0,
+                SerializationTypeCode.Char => valueBytes.Length >= 2 ? BitConverter.ToChar(valueBytes) : '\0',
+                SerializationTypeCode.SByte => valueBytes.Length >= 1 ? (sbyte)valueBytes[0] : (sbyte)0,
+                SerializationTypeCode.Byte => valueBytes.Length >= 1 ? valueBytes[0] : (byte)0,
+                SerializationTypeCode.Int16 => valueBytes.Length >= 2 ? BitConverter.ToInt16(valueBytes) : (short)0,
+                SerializationTypeCode.UInt16 => valueBytes.Length >= 2 ? BitConverter.ToUInt16(valueBytes) : (ushort)0,
+                SerializationTypeCode.Int32 => valueBytes.Length >= 4 ? BitConverter.ToInt32(valueBytes) : 0,
+                SerializationTypeCode.UInt32 => valueBytes.Length >= 4 ? BitConverter.ToUInt32(valueBytes) : 0u,
+                SerializationTypeCode.Int64 => valueBytes.Length >= 8 ? BitConverter.ToInt64(valueBytes) : 0L,
+                SerializationTypeCode.UInt64 => valueBytes.Length >= 8 ? BitConverter.ToUInt64(valueBytes) : 0uL,
+                SerializationTypeCode.Single => valueBytes.Length >= 4 ? BitConverter.ToSingle(valueBytes) : 0f,
+                SerializationTypeCode.Double => valueBytes.Length >= 8 ? BitConverter.ToDouble(valueBytes) : 0d,
+                SerializationTypeCode.String => Encoding.Unicode.GetString(valueBytes),
+                // TODO: Support arbitrary byte blobs that don't correspond to any currently-valid format.
+                _ => null
+            };
+        }
 
         public GrammarResult VisitFieldOrProp(CILParser.FieldOrPropContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
 
@@ -2186,17 +2547,24 @@ namespace ILAssembler
             return new(builder.ToImmutable());
         }
 
-        public GrammarResult VisitInitOpt(CILParser.InitOptContext context)
+        GrammarResult ICILVisitor<GrammarResult>.VisitInitOpt(CILParser.InitOptContext context) => VisitInitOpt(context);
+        public GrammarResult.Literal<object?> VisitInitOpt(CILParser.InitOptContext context)
         {
-            if (context.fieldInit() is {})
+            if (context.fieldInit() is CILParser.FieldInitContext fieldInit)
             {
-                // TODO: Change fieldSerInit to return a parsed System.Object value to construct the constant row entry.
-                // TODO-SRM: AddConstant does not support providing an arbitrary byte array as a constant value.
-                // Propose MetadataBuilder.AddConstant(EntityHandle parent, PrimitiveTypeCode type, BlobBuilder value) overload?
-                throw new NotImplementedException();
+                return VisitFieldInit(fieldInit);
             }
-            return GrammarResult.SentinelValue.Result;
+            // No initializer - return a sentinel indicating no constant
+            return new(NoConstantSentinel.Instance);
         }
+
+        // Sentinel to distinguish "no constant" from "constant is null"
+        private sealed class NoConstantSentinel
+        {
+            public static readonly NoConstantSentinel Instance = new();
+            private NoConstantSentinel() { }
+        }
+
         public GrammarResult VisitInstr(CILParser.InstrContext context)
         {
             var instrContext = context.GetRuleContext<ParserRuleContext>(0);
@@ -2211,7 +2579,13 @@ namespace ILAssembler
                             string label = VisitId(id).Value;
                             if (!_currentMethod!.Labels.TryGetValue(label, out var handle))
                             {
-                                _currentMethod.Labels.Add(label, handle = _currentMethod.Definition.MethodBody.DefineLabel());
+                                handle = _currentMethod.Definition.MethodBody.DefineLabel();
+                                _currentMethod.Labels[label] = handle;
+                                // Track undefined label references for later validation
+                                if (!_currentMethod.UndefinedLabelReferences.ContainsKey(label))
+                                {
+                                    _currentMethod.UndefinedLabelReferences[label] = context;
+                                }
                             }
                             _currentMethod.Definition.MethodBody.Branch(opcode, handle);
                         }
@@ -2401,7 +2775,13 @@ namespace ILAssembler
                                 string labelName = VisitId(id).Value;
                                 if (!_currentMethod!.Labels.TryGetValue(labelName, out var handle))
                                 {
-                                    _currentMethod.Labels.Add(labelName, handle = _currentMethod.Definition.MethodBody.DefineLabel());
+                                    handle = _currentMethod.Definition.MethodBody.DefineLabel();
+                                    _currentMethod.Labels[labelName] = handle;
+                                    // Track undefined label references for later validation
+                                    if (!_currentMethod.UndefinedLabelReferences.ContainsKey(labelName))
+                                    {
+                                        _currentMethod.UndefinedLabelReferences[labelName] = context;
+                                    }
                                 }
                                 labels.Add((handle, null));
                             }
@@ -2637,8 +3017,68 @@ namespace ILAssembler
 
         GrammarResult ICILVisitor<GrammarResult>.VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => VisitIntOrWildcard(context);
         public GrammarResult.Literal<int?> VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => context.int32() is {} int32 ? new(VisitInt32(int32).Value) : new(null);
+
+        private void ValidateLabelReferences()
+        {
+            if (_currentMethod is null)
+            {
+                return;
+            }
+
+            // Report errors for any labels that were referenced but never declared
+            foreach (var undefinedLabel in _currentMethod.UndefinedLabelReferences)
+            {
+                string labelName = undefinedLabel.Key;
+                ParserRuleContext context = undefinedLabel.Value;
+
+                // Only report if the label was never declared
+                if (!_currentMethod.DeclaredLabels.Contains(labelName))
+                {
+                    ReportError(DiagnosticIds.LabelNotFound,
+                        string.Format(DiagnosticMessageTemplates.LabelNotFound, labelName),
+                        context);
+                }
+            }
+        }
+
         public GrammarResult VisitLabels(CILParser.LabelsContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
-        public GrammarResult VisitLanguageDecl(CILParser.LanguageDeclContext context) => throw new NotImplementedException("TODO: Symbols");
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitLabelDecl(CILParser.LabelDeclContext context) => VisitLabelDecl(context);
+        public GrammarResult VisitLabelDecl(CILParser.LabelDeclContext context)
+        {
+            var labelId = context.id();
+            string labelName = VisitId(labelId).Value;
+            _currentMethod!.DeclaredLabels.Add(labelName);
+            if (!_currentMethod!.Labels.TryGetValue(labelName, out var label))
+            {
+                label = _currentMethod.Definition.MethodBody.DefineLabel();
+                _currentMethod.Labels[labelName] = label;
+            }
+            _currentMethod.Definition.MethodBody.MarkLabel(label);
+            return GrammarResult.SentinelValue.Result;
+        }
+
+        public GrammarResult VisitLanguageDecl(CILParser.LanguageDeclContext context)
+        {
+            // .language SQSTRING (',' SQSTRING (',' SQSTRING)?)?
+            // First GUID: language (e.g., C#, VB, IL)
+            // Second GUID: vendor (optional)
+            // Third GUID: document type (optional)
+            var strings = context.SQSTRING();
+            if (strings.Length >= 1 && Guid.TryParse(StringHelpers.ParseQuotedString(strings[0].GetText()), out var languageGuid))
+            {
+                _currentLanguageGuid = languageGuid;
+            }
+            if (strings.Length >= 2 && Guid.TryParse(StringHelpers.ParseQuotedString(strings[1].GetText()), out var vendorGuid))
+            {
+                _currentLanguageVendorGuid = vendorGuid;
+            }
+            if (strings.Length >= 3 && Guid.TryParse(StringHelpers.ParseQuotedString(strings[2].GetText()), out var docTypeGuid))
+            {
+                _currentDocumentTypeGuid = docTypeGuid;
+            }
+            return GrammarResult.SentinelValue.Result;
+        }
 
         public GrammarResult VisitManifestResDecl(CILParser.ManifestResDeclContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
         GrammarResult ICILVisitor<GrammarResult>.VisitManifestResDecls(CILParser.ManifestResDeclsContext context) => VisitManifestResDecls(context);
@@ -2798,11 +3238,11 @@ namespace ILAssembler
                 _ => throw new UnreachableException(),
             };
         }
-
         public GrammarResult VisitMethodDecl(CILParser.MethodDeclContext context)
         {
             Debug.Assert(_currentMethod is not null);
             var currentMethod = _currentMethod!;
+
             if (context.EMITBYTE() is not null)
             {
                 currentMethod.Definition.MethodBody.CodeBuilder.WriteByte((byte)VisitInt32(context.GetChild<CILParser.Int32Context>(0)).Value);
@@ -2845,8 +3285,9 @@ namespace ILAssembler
                     currentMethod.AllLocals.Add(loc);
                 }
             }
-            else if (context.ChildCount == 2 && context.GetChild(0) is CILParser.IdContext labelId)
+            else if (context.labelDecl() is CILParser.LabelDeclContext labelDecl)
             {
+                var labelId = labelDecl.id();
                 string labelName = VisitId(labelId).Value;
                 if (!currentMethod.Labels.TryGetValue(labelName, out var label))
                 {
@@ -2910,7 +3351,9 @@ namespace ILAssembler
                         int index = VisitInt32(int32[0]).Value;
                         if (index < 0 || index >= currentMethod.Definition.GenericParameters.Count)
                         {
-                            // TODO: Report generic parameter index out of range
+                            ReportError(DiagnosticIds.GenericParameterIndexOutOfRange,
+                                string.Format(DiagnosticMessageTemplates.GenericParameterIndexOutOfRange, index),
+                                context);
                             return GrammarResult.SentinelValue.Result;
                         }
                         param = currentMethod.Definition.GenericParameters[index];
@@ -2928,7 +3371,9 @@ namespace ILAssembler
                         }
                         if (param is null)
                         {
-                            // TODO: Report unknown generic parameter
+                            ReportError(DiagnosticIds.UnknownGenericParameter,
+                                string.Format(DiagnosticMessageTemplates.UnknownGenericParameter, name),
+                                context);
                             return GrammarResult.SentinelValue.Result;
                         }
                     }
@@ -2947,7 +3392,9 @@ namespace ILAssembler
                         int index = VisitInt32(int32[0]).Value;
                         if (index < 0 || index >= currentMethod.Definition.GenericParameters.Count)
                         {
-                            // TODO: Report generic parameter index out of range
+                            ReportError(DiagnosticIds.GenericParameterIndexOutOfRange,
+                                string.Format(DiagnosticMessageTemplates.GenericParameterIndexOutOfRange, index),
+                                context);
                             return GrammarResult.SentinelValue.Result;
                         }
                         param = currentMethod.Definition.GenericParameters[index];
@@ -2965,7 +3412,9 @@ namespace ILAssembler
                         }
                         if (param is null)
                         {
-                            // TODO: Report unknown generic parameter
+                            ReportError(DiagnosticIds.UnknownGenericParameter,
+                                string.Format(DiagnosticMessageTemplates.UnknownGenericParameter, name),
+                                context);
                             return GrammarResult.SentinelValue.Result;
                         }
                     }
@@ -2998,7 +3447,9 @@ namespace ILAssembler
                     int index = VisitInt32(context.int32()[0]).Value;
                     if (index < 0 || index >= currentMethod.Definition.Parameters.Count)
                     {
-                        // TODO: Report parameter index out of range
+                        ReportError(DiagnosticIds.ParameterIndexOutOfRange,
+                            string.Format(DiagnosticMessageTemplates.ParameterIndexOutOfRange, index),
+                            context);
                         return GrammarResult.SentinelValue.Result;
                     }
 
@@ -3020,20 +3471,20 @@ namespace ILAssembler
                 var declarativeSecurity = VisitSecDecl(secDecl).Value;
                 declarativeSecurity?.Parent = currentMethod.Definition;
             }
-            else if (context.customAttrDecl() is {} customAttr)
+            else if (context.GetChild(0) is CILParser.InstrContext instr)
             {
-                foreach (var attr in customAttr)
-                {
-                    var customAttrDecl = VisitCustomAttrDecl(attr).Value;
-                    customAttrDecl?.Owner = currentMethod.Definition;
-                }
+                _ = VisitInstr(instr);
             }
             else
             {
-                _ = context.children[0].Accept(this);
+                // Handle other methodDecl alternatives
+                var child = context.children[0];
+                _ = child.Accept(this);
             }
             return GrammarResult.SentinelValue.Result;
         }
+
+
         public GrammarResult VisitMethodDecls(CILParser.MethodDeclsContext context)
         {
             foreach (var decl in context.methodDecl())
@@ -3065,7 +3516,9 @@ namespace ILAssembler
 
             if (methodDefinition.MethodAttributes.HasFlag(MethodAttributes.Abstract) && !methodDefinition.ContainingType.Attributes.HasFlag(TypeAttributes.Abstract))
             {
-                // TODO:Emit error
+                ReportError(DiagnosticIds.AbstractMethodNotInAbstractType,
+                    string.Format(DiagnosticMessageTemplates.AbstractMethodNotInAbstractType, methodDefinition.Name),
+                    context);
             }
 
             (EntityRegistry.ModuleReferenceEntity Module, string? EntryPoint, MethodImportAttributes Attributes)? pInvokeInformation = null;
@@ -3074,7 +3527,9 @@ namespace ILAssembler
                 var (moduleName, entryPoint, attributes) = VisitPinvImpl(pInvokeInfo).Value;
                 if (moduleName is null)
                 {
-                    // TODO: Emit error
+                    ReportError(DiagnosticIds.InvalidPInvokeSignature,
+                        DiagnosticMessageTemplates.InvalidPInvokeSignature,
+                        pInvokeInfo);
                     continue;
                 }
                 pInvokeInformation = (_entityRegistry.GetOrCreateModuleReference(moduleName, _ => { }), entryPoint, attributes);
@@ -3130,7 +3585,9 @@ namespace ILAssembler
             methodDefinition.ImplementationAttributes = context.implAttr().Aggregate((MethodImplAttributes)0, (acc, attr) => acc | VisitImplAttr(attr));
             if (!EntityRegistry.TryAddMethodDefinitionToContainingType(methodDefinition))
             {
-                // TODO: Report duplicate method
+                ReportError(DiagnosticIds.DuplicateMethod,
+                    DiagnosticMessageTemplates.DuplicateMethod,
+                    context);
             }
 
             return new(methodDefinition);
@@ -3205,7 +3662,9 @@ namespace ILAssembler
             }
             if (_expectInstance && (callConv & (byte)SignatureAttributes.Instance) == 0)
             {
-                // TODO: Warn for missing instance call-conv
+                ReportWarning(DiagnosticIds.MissingInstanceCallConv,
+                    DiagnosticMessageTemplates.MissingInstanceCallConv,
+                    context);
                 callConv |= (byte)SignatureAttributes.Instance;
             }
             methodRefSignature.WriteByte(callConv);
@@ -3243,6 +3702,10 @@ namespace ILAssembler
             _entityRegistry.Module.Name = VisitDottedName(context.dottedName()).Value;
             return GrammarResult.SentinelValue.Result;
         }
+
+        // .mscorlib directive indicates the assembly being compiled is mscorlib itself.
+        // This is currently a no-op; the flag would be used to affect type resolution
+        // when support for compiling mscorlib is added.
         public GrammarResult VisitMscorlib(CILParser.MscorlibContext context) => GrammarResult.SentinelValue.Result;
 
         GrammarResult ICILVisitor<GrammarResult>.VisitNameSpaceHead(CILParser.NameSpaceHeadContext context) => VisitNameSpaceHead(context);
@@ -3273,7 +3736,9 @@ namespace ILAssembler
             {
                 if (arrayPointerInfo[i] is CILParser.PointerNativeTypeContext)
                 {
-                    // TODO: warn on deprecated native type
+                    ReportWarning(DiagnosticIds.DeprecatedNativeType,
+                        string.Format(DiagnosticMessageTemplates.DeprecatedNativeType, "pointer in array"),
+                        context);
                     const int NATIVE_TYPE_PTR = 0x10;
                     prefix.WriteByte(NATIVE_TYPE_PTR);
                 }
@@ -3342,7 +3807,9 @@ namespace ILAssembler
                         CILParser.CompQstringContext[] strings = context.compQstring();
                         if (strings.Length == 4)
                         {
-                            // TODO: warn on deprecated 4-string form of custom marshaller.
+                            ReportWarning(DiagnosticIds.DeprecatedCustomMarshaller,
+                                DiagnosticMessageTemplates.DeprecatedCustomMarshaller,
+                                context);
                             blob.WriteSerializedString(VisitCompQstring(strings[0]).Value);
                             blob.WriteSerializedString(VisitCompQstring(strings[1]).Value);
                             blob.WriteSerializedString(VisitCompQstring(strings[2]).Value);
@@ -3368,7 +3835,9 @@ namespace ILAssembler
                     blob.LinkSuffix(VisitNativeType(context.nativeType()).Value);
                     break;
                 case CILParser.VARIANT:
-                    // TODO: warn on deprecated native type
+                    ReportWarning(DiagnosticIds.DeprecatedNativeType,
+                        string.Format(DiagnosticMessageTemplates.DeprecatedNativeType, "VARIANT"),
+                        context);
                     const int NATIVE_TYPE_VARIANT = 0xe;
                     blob.WriteByte(NATIVE_TYPE_VARIANT);
                     break;
@@ -3378,12 +3847,16 @@ namespace ILAssembler
                     break;
 #pragma warning restore CS0618 // Type or member is obsolete
                 case CILParser.SYSCHAR:
-                    // TODO: warn on deprecated native type
+                    ReportWarning(DiagnosticIds.DeprecatedNativeType,
+                        string.Format(DiagnosticMessageTemplates.DeprecatedNativeType, "SYSCHAR"),
+                        context);
                     const int NATIVE_TYPE_SYSCHAR = 0xd;
                     blob.WriteByte(NATIVE_TYPE_SYSCHAR);
                     break;
                 case CILParser.VOID:
-                    // TODO: warn on deprecated native type
+                    ReportWarning(DiagnosticIds.DeprecatedNativeType,
+                        string.Format(DiagnosticMessageTemplates.DeprecatedNativeType, "VOID"),
+                        context);
                     const int NATIVE_TYPE_VOID = 0x1;
                     blob.WriteByte(NATIVE_TYPE_VOID);
                     break;
@@ -3424,12 +3897,16 @@ namespace ILAssembler
                     blob.WriteByte((byte)UnmanagedType.U8);
                     break;
                 case CILParser.DECIMAL:
-                    // TODO: warn on deprecated native type
+                    ReportWarning(DiagnosticIds.DeprecatedNativeType,
+                        string.Format(DiagnosticMessageTemplates.DeprecatedNativeType, "DECIMAL"),
+                        context);
                     const int NATIVE_TYPE_DECIMAL = 0x11;
                     blob.WriteByte(NATIVE_TYPE_DECIMAL);
                     break;
                 case CILParser.DATE:
-                    // TODO: warn on deprecated native type
+                    ReportWarning(DiagnosticIds.DeprecatedNativeType,
+                        string.Format(DiagnosticMessageTemplates.DeprecatedNativeType, "DATE"),
+                        context);
                     const int NATIVE_TYPE_DATE = 0x12;
                     blob.WriteByte(NATIVE_TYPE_DATE);
                     break;
@@ -3446,7 +3923,9 @@ namespace ILAssembler
                     blob.WriteByte((byte)UnmanagedType.LPTStr);
                     break;
                 case CILParser.OBJECTREF:
-                    // TODO: warn on deprecated native type
+                    ReportWarning(DiagnosticIds.DeprecatedNativeType,
+                        string.Format(DiagnosticMessageTemplates.DeprecatedNativeType, "OBJECTREF"),
+                        context);
                     const int NATIVE_TYPE_OBJECTREF = 0x18;
                     blob.WriteByte(NATIVE_TYPE_OBJECTREF);
                     break;
@@ -3500,7 +3979,9 @@ namespace ILAssembler
                     blob.WriteByte((byte)UnmanagedType.SysUInt);
                     break;
                 case CILParser.NESTEDSTRUCT:
-                    // TODO: warn on deprecated native type
+                    ReportWarning(DiagnosticIds.DeprecatedNativeType,
+                        string.Format(DiagnosticMessageTemplates.DeprecatedNativeType, "NESTEDSTRUCT"),
+                        context);
                     const int NATIVE_TYPE_NESTEDSTRUCT = 0x21;
                     blob.WriteByte(NATIVE_TYPE_NESTEDSTRUCT);
                     break;
@@ -3777,8 +4258,9 @@ namespace ILAssembler
         {
             if (context.PERMISSION() is not null)
             {
-                // TODO: Report unsupported error
-                // Cannot convert individual SecurityAttribute-based permissions to a PermissionSet without a runtime.
+                ReportError(DiagnosticIds.UnsupportedSecurityDeclaration,
+                    DiagnosticMessageTemplates.UnsupportedSecurityDeclaration,
+                    context);
                 return new(null);
             }
             DeclarativeSecurityAction action = VisitSecAction(context.secAction()).Value;

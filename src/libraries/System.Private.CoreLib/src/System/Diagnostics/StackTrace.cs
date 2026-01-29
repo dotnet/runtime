@@ -18,10 +18,10 @@ namespace System.Diagnostics
     public partial class StackTrace
     {
         [FeatureSwitchDefinition("System.Diagnostics.StackTrace.IsSupported")]
-        internal static bool IsSupported { get; } = InitializeIsSupported();
+        internal static bool IsSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.StackTrace.IsSupported", out bool isSupported) ? isSupported : true;
 
-        private static bool InitializeIsSupported() =>
-            AppContext.TryGetSwitch("System.Diagnostics.StackTrace.IsSupported", out bool isSupported) ? isSupported : true;
+        [FeatureSwitchDefinition("System.Diagnostics.StackTrace.IsLineNumberSupported")]
+        internal static bool IsLineNumberSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.StackTrace.IsLineNumberSupported", out bool isSupported) ? isSupported : true;
 
         public const int METHODS_TO_SKIP = 0;
 
