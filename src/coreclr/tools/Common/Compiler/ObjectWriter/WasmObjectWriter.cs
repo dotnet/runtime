@@ -110,32 +110,9 @@ namespace ILCompiler.ObjectWriter
             writer.WriteUtf8WithLength(import.Name);
             writer.WriteByte((byte)import.Kind);
 
-            switch (import.Kind)
-            {
-                case WasmExternalKind.Function:
-                    // TODO-WASM: Handle function imports
-                    throw new NotImplementedException("Function imports are not yet implemented.");
-                case WasmExternalKind.Table:
-                    // TODO-WASM: Handle table imports
-                    throw new NotImplementedException("Table imports are not yet implemented.");
-
-                case WasmExternalKind.Memory:
-                {
-                    int size = import.WasmMemory.EncodeSize();
-                    import.WasmMemory.Encode(writer.Buffer.GetSpan(size));
-                    writer.Buffer.Advance(size);
-                    break;
-                }
-                case WasmExternalKind.Global:
-                {
-                    int size = import.WasmGlobal.EncodeSize();
-                    import.WasmGlobal.Encode(writer.Buffer.GetSpan(size));
-                    writer.Buffer.Advance(size);
-                    break;
-                }
-                default:
-                    throw new NotImplementedException($"Import kind not implemented: {import.Kind}");
-            }
+            int size = import.EncodeSize();
+            import.Encode(writer.Buffer.GetSpan(size));
+            writer.Buffer.Advance((int)size);
 
             _numImports++;
             return writer;
@@ -210,9 +187,9 @@ namespace ILCompiler.ObjectWriter
             WasmInstructionGroup GetR2StartOffset(int offset)
             {
                 return new WasmInstructionGroup([
-                    new WasmConstExpr(WasmExprKind.GlobalGet, 1),     // global.get(__r2r_start)
-                    new WasmConstExpr(WasmExprKind.I32Const, offset), // i32.const offset
-                    new WasmBinaryExpr(WasmExprKind.I32Add),          // i32.add
+                    Global.Get(1), // __r2r_start
+                    I32.Const(offset),
+                    I32.Add,
                 ]);
             }
 
@@ -344,8 +321,8 @@ namespace ILCompiler.ObjectWriter
         private WasmImport[] _defaultImports = new[]
         {
             null, // placeholder for memory, which is set up dynamically in WriteImports()
-            new WasmImport("env", "__stack_pointer", new WasmGlobalType(WasmValueType.I32, WasmMutabilityType.Mut)),
-            new WasmImport("env", "__r2r_start", new WasmGlobalType(WasmValueType.I32, WasmMutabilityType.Const)),
+            new WasmImport("env", "__stack_pointer", WasmExternalKind.Global, new WasmGlobalType(WasmValueType.I32, WasmMutabilityType.Mut)),
+            new WasmImport("env", "__r2r_start", WasmExternalKind.Global, new WasmGlobalType(WasmValueType.I32, WasmMutabilityType.Const)),
         };
 
         private void WriteImports()
@@ -354,7 +331,7 @@ namespace ILCompiler.ObjectWriter
             ulong contentSize = (ulong)SectionByName(WasmObjectNodeSection.CombinedDataSection.Name).ContentSize;
             ulong numPages = (contentSize + (1<<16) - 1) >> 16;
 
-            _defaultImports[0] = new WasmImport("env", "memory",
+            _defaultImports[0] = new WasmImport("env", "memory", WasmExternalKind.Memory,
                 new WasmMemoryType(0x00, (uint)numPages)); // memory limits: flags (0 = only minimum)
 
             foreach (WasmImport import in _defaultImports)

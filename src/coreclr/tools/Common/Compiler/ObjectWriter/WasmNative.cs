@@ -78,7 +78,7 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-    #nullable enable
+#nullable enable
     public readonly struct WasmResultType : IEquatable<WasmResultType>
     {
         private readonly WasmValueType[] _types;
@@ -162,7 +162,7 @@ namespace ILCompiler.ObjectWriter
             buffer[0] = 0x60; // function type indicator
 
             int paramSize = _params.Encode(buffer.Slice(1));
-            int returnSize = _returns.Encode(buffer.Slice(1+paramSize));
+            int returnSize = _returns.Encode(buffer.Slice(1 + paramSize));
             Debug.Assert(totalSize == 1 + paramSize + returnSize);
 
             return totalSize;
@@ -170,7 +170,7 @@ namespace ILCompiler.ObjectWriter
 
         public bool Equals(WasmFuncType other)
         {
-           return _params.Equals(other._params) && _returns.Equals(other._returns);   
+            return _params.Equals(other._params) && _returns.Equals(other._returns);
         }
 
         public override bool Equals(object? obj)
@@ -272,7 +272,7 @@ namespace ILCompiler.ObjectWriter
     {
         long ConstValue;
 
-        public WasmConstExpr(WasmExprKind kind, long value): base(kind)
+        public WasmConstExpr(WasmExprKind kind, long value) : base(kind)
         {
             if (kind == WasmExprKind.I32Const)
             {
@@ -285,8 +285,8 @@ namespace ILCompiler.ObjectWriter
 
         public override int EncodeSize()
         {
-           uint valSize = DwarfHelper.SizeOfSLEB128(ConstValue);
-           return base.EncodeSize() + (int)valSize;
+            uint valSize = DwarfHelper.SizeOfSLEB128(ConstValue);
+            return base.EncodeSize() + (int)valSize;
         }
 
         public override int Encode(Span<byte> buffer)
@@ -298,10 +298,29 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
+    // Simple DSL wrapper for creating Wasm expressions
+    static class Global
+    {
+        public static WasmExpr Get(int index)
+        {
+            return new WasmGlobalVarExpr(WasmExprKind.GlobalGet, index);
+        }
+    }
+
+    static class I32
+    {
+        public static WasmExpr Const(long value)
+        {
+            return new WasmConstExpr(WasmExprKind.I32Const, value);
+        }
+
+        public static WasmExpr Add => new WasmBinaryExpr(WasmExprKind.I32Add);
+    }
+
     class WasmGlobalVarExpr : WasmExpr
     {
         public readonly int GlobalIndex;
-        public WasmGlobalVarExpr(WasmExprKind kind, int globalIndex): base(kind)
+        public WasmGlobalVarExpr(WasmExprKind kind, int globalIndex) : base(kind)
         {
             Debug.Assert(globalIndex >= 0);
             Debug.Assert(kind.IsGlobalVarExpr());
@@ -324,13 +343,19 @@ namespace ILCompiler.ObjectWriter
     // Represents a binary expression (e.g., i32.add)
     class WasmBinaryExpr : WasmExpr
     {
-        public WasmBinaryExpr(WasmExprKind kind): base(kind)
+        public WasmBinaryExpr(WasmExprKind kind) : base(kind)
         {
             Debug.Assert(kind.IsBinaryExpr());
         }
 
         // base class defaults are sufficient as the base class encodes just the opcode
     }
+    public abstract class WasmImportType : IWasmEncodable
+    {
+        public abstract int Encode(Span<byte> buffer);
+        public abstract int EncodeSize();
+    }
+
 
     public enum WasmExternalKind : byte
     {
@@ -341,7 +366,7 @@ namespace ILCompiler.ObjectWriter
         Tag = 0x04
     }
 
-    public class WasmGlobalType
+    public class WasmGlobalType : WasmImportType
     {
         WasmValueType ValueType;
         WasmMutabilityType Mutability;
@@ -352,14 +377,14 @@ namespace ILCompiler.ObjectWriter
             Mutability = mutability;
         }
 
-        public int Encode(Span<byte> buffer)
+        public override int Encode(Span<byte> buffer)
         {
             buffer[0] = (byte)ValueType;
             buffer[1] = (byte)Mutability;
             return 2;
         }
 
-        public int EncodeSize() => 2;
+        public override int EncodeSize() => 2;
     }
 
     public enum WasmLimitType : byte
@@ -367,8 +392,8 @@ namespace ILCompiler.ObjectWriter
         HasMin = 0x00,
         HasMinAndMax = 0x01
     }
-
-    public class WasmMemoryType 
+  
+    public class WasmMemoryType : WasmImportType
     {
         WasmLimitType LimitType;
         uint Min;
@@ -386,7 +411,7 @@ namespace ILCompiler.ObjectWriter
             Max = max;
         }
 
-        public int Encode(Span<byte> buffer)
+        public override int Encode(Span<byte> buffer)
         {
             int pos = 0;
             buffer[pos++] = (byte)LimitType;
@@ -398,54 +423,27 @@ namespace ILCompiler.ObjectWriter
             return pos;
         }
 
-        public int EncodeSize() => 2;
+        public override int EncodeSize() => 2;
     }
 
-    public class WasmImport
+    public class WasmImport : IWasmEncodable
     {
         public string Module;
         public string Name;
         public WasmExternalKind Kind;
+        WasmImportType Import;
 
-        WasmMemoryType? _wasmMemory = null;
-        WasmGlobalType? _wasmGlobal = null;
-
-        public WasmMemoryType? WasmMemory
-        {
-            get
-            {
-                Debug.Assert(_wasmGlobal == null);
-                ArgumentNullException.ThrowIfNull(_wasmMemory, "WasmImport does not represent a WasmMemoryType");
-                return _wasmMemory;
-            }
-        }
-
-        public WasmGlobalType? WasmGlobal
-        {
-            get
-            {
-                Debug.Assert( _wasmMemory == null);
-                ArgumentNullException.ThrowIfNull(_wasmGlobal, "WasmImport does not represent a WasmGlobalType");
-                return _wasmGlobal;
-            }
-        }
-
-        public WasmImport(string module, string name, WasmMemoryType wasmMemory)
+        public WasmImport(string module, string name, WasmExternalKind kind, WasmImportType import)
         {
             Module = module;
             Name = name;
-            _wasmMemory = wasmMemory;
-            Kind = WasmExternalKind.Memory;
+            Kind = kind;
+            Import = import;
         }
 
-        public WasmImport(string module, string name, WasmGlobalType wasmGlobal)
-        {
-            Module = module;
-            Name = name;
-            _wasmGlobal = wasmGlobal;
-            Kind = WasmExternalKind.Global;
-        }
-    }
+        public int Encode(Span<byte> buffer) => Import.Encode(buffer);
+        public int EncodeSize() => Import.EncodeSize();
+
 #nullable disable
-
+    }
 }
