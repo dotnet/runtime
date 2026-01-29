@@ -508,16 +508,15 @@ namespace System.IO.Compression
                     }
                 }
 
-                // if they start modifying it and the compression method is not "store", we should make sure it will get deflated
-                if (CompressionMethod != ZipCompressionMethod.Stored)
-                {
-                    CompressionMethod = ZipCompressionMethod.Deflate;
-                }
+                // NOTE: CompressionMethod normalization is deferred to MarkAsModified() to avoid
+                // corrupting entries that are opened in Update mode but not actually written to.
+                // If we normalized here and the entry wasn't modified, we'd write a header with
+                // CompressionMethod=Deflate but the original _compressedBytes would still be in
+                // their original format (e.g., Deflate64), producing an invalid entry.
             }
 
             return _storedUncompressedData;
         }
-
         // does almost everything you need to do to forget about this entry
         // writes the local header/data, gets rid of all the data,
         // closes all of the streams except for the very outermost one that
@@ -906,10 +905,20 @@ namespace System.IO.Compression
         /// <summary>
         /// Marks this entry as modified, indicating that its data has changed and needs to be rewritten.
         /// </summary>
+        /// <summary>
+        /// Marks this entry as modified, indicating that its data has changed and needs to be rewritten.
+        /// </summary>
         internal void MarkAsModified()
         {
             _everOpenedForWrite = true;
             Changes |= ZipArchive.ChangeState.StoredData;
+
+            // Normalize compression method when actually modifying - Deflate64 data will be
+            // re-compressed as Deflate since we don't support writing Deflate64.
+            if (CompressionMethod != ZipCompressionMethod.Stored)
+            {
+                CompressionMethod = ZipCompressionMethod.Deflate;
+            }
         }
 
         private bool IsOpenable(bool needToUncompress, bool needToLoadIntoMemory, out string? message)

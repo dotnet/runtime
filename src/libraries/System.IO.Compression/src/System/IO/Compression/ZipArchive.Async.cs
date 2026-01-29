@@ -103,7 +103,6 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     if (zipArchive._archiveStream.Length == 0)
                     {
                         zipArchive._readEntries = true;
-                        zipArchive._isNewArchive = true;
                     }
                     else
                     {

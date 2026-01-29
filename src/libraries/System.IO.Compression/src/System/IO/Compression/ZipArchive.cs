@@ -31,7 +31,6 @@ namespace System.IO.Compression
         private byte[] _archiveComment;
         private Encoding? _entryNameAndCommentEncoding;
         private long _firstDeletedEntryOffset;
-        private bool _isNewArchive; // true if archive was created on an empty stream
 
 #if DEBUG_FORCE_ZIP64
         public bool _forceZip64;
@@ -154,7 +153,6 @@ namespace System.IO.Compression
                         if (_archiveStream.Length == 0)
                         {
                             _readEntries = true;
-                            _isNewArchive = true;
                         }
                         else
                         {
@@ -395,7 +393,7 @@ namespace System.IO.Compression
             get
             {
                 // A new archive (created on empty stream) always needs to write the structure
-                if (_isNewArchive)
+                if (_archiveStream.Length == 0)
                     return true;
 
                 // Archive-level changes (e.g., comment)
