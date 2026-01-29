@@ -179,7 +179,7 @@ namespace Microsoft.Interop.Analyzers
             }
 
             // Create the signature context to collect marshalling-related diagnostics
-            _ = SignatureContext.Create(
+            var signatureContext = SignatureContext.Create(
                 symbol,
                 DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, libraryImportData, libraryImportAttr),
                 environment,
@@ -189,13 +189,6 @@ namespace Microsoft.Interop.Analyzers
             // If forwarders are not being generated, we need to run stub generation logic to get those diagnostics too
             if (!options.GenerateForwarders)
             {
-                var signatureContext = SignatureContext.Create(
-                    symbol,
-                    DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, libraryImportData, libraryImportAttr),
-                    environment,
-                    new CodeEmitOptions(SkipInit: true),
-                    typeof(LibraryImportGenerator).Assembly);
-
                 IMarshallingGeneratorResolver resolver = DefaultMarshallingGeneratorResolver.Create(
                     environment.EnvironmentFlags,
                     MarshalDirection.ManagedToUnmanaged,
