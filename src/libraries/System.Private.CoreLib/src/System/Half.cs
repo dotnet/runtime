@@ -1441,9 +1441,9 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static Half BitDecrement(Half x)
         {
-            ushort bits = x._value;
+            uint bits = x._value;
 
-            if ((~bits & PositiveInfinityBits) == 0)
+            if (!IsFinite(x))
             {
                 // NaN returns NaN
                 // -Infinity returns -Infinity
@@ -1454,30 +1454,29 @@ namespace System
             if (bits == PositiveZeroBits)
             {
                 // +0.0 returns -Epsilon
-                return new Half(SignMask | EpsilonBits);
+                return -Epsilon;
             }
 
             // Negative values need to be incremented
             // Positive values need to be decremented
 
-            if ((short)bits < 0)
+            if (IsNegative(x))
             {
-                bits++;
+                bits += 1;
             }
             else
             {
-                bits--;
+                bits -= 1;
             }
-
-            return new Half(bits);
+            return new Half((ushort)bits);
         }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
         public static Half BitIncrement(Half x)
         {
-            ushort bits = x._value;
+            uint bits = x._value;
 
-            if ((~bits & PositiveInfinityBits) == 0)
+            if (!IsFinite(x))
             {
                 // NaN returns NaN
                 // -Infinity returns MinValue
@@ -1488,22 +1487,21 @@ namespace System
             if (bits == NegativeZeroBits)
             {
                 // -0.0 returns Epsilon
-                return new Half(EpsilonBits);
+                return Epsilon;
             }
 
             // Negative values need to be decremented
             // Positive values need to be incremented
 
-            if ((short)bits < 0)
+            if (IsNegative(x))
             {
-                bits--;
+                bits -= 1;
             }
             else
             {
-                bits++;
+                bits += 1;
             }
-
-            return new Half(bits);
+            return new Half((ushort)bits);
         }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
