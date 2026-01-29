@@ -62,7 +62,7 @@
   <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(Crossgen2SdkOverridePropsPath)' != '' and Exists('$(Crossgen2SdkOverridePropsPath)')" />
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
     <AfterMicrosoftNETSdkTargets Condition="'$(Crossgen2SdkOverrideTargetsPath)' != '' and Exists('$(Crossgen2SdkOverrideTargetsPath)')">$(AfterMicrosoftNETSdkTargets);$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
-    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.ReadyToRun.targets</AfterMicrosoftNETSdkTargets>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)AppleBuild.ReadyToRun.targets</AfterMicrosoftNETSdkTargets>
   </PropertyGroup>
 
   <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' != 'false'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
