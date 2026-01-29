@@ -92,6 +92,7 @@ namespace TestLibrary
 
         // return whether or not the OS is a 64 bit OS
         public static bool Is64 => (IntPtr.Size == 8);
+        public static bool Is32 => (IntPtr.Size == 4);
 
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
