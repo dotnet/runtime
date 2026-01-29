@@ -1132,8 +1132,7 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
     // We can't set a breakpoint in the async thunk so a call to an unjitted async thunk
     // has to be handled here as opposed to the AsyncThunkStubManager below.
     // We use GetParallelMethodDesc directly rather than GetAsyncOtherVariantNoCreate
-    // because FindOrCreateAssociatedMethodDesc can fail with null-deref when
-    // GetParallelMethodDesc returns NULL.
+    // because FindOrCreateAssociatedMethodDesc is not available in DAC builds.
     if (pMD->IsAsyncThunkMethod())
     {
         MethodDesc* pMDVariant = pMD->GetMethodTable()->GetCanonicalMethodTable()->GetParallelMethodDesc(pMD, AsyncVariantLookup::AsyncOtherVariant);
@@ -2252,10 +2251,6 @@ BOOL AsyncThunkStubManager::TraceManager(Thread *thread,
         {
             trace->InitForUnjittedMethod(pOtherMD);
             return TRUE;
-        }
-        {
-            LOG((LF_CORDB,LL_INFO10000, "ATSM::TraceManager Unable to determine stub target, pMD %p\n", pMD));
-            return FALSE;
         }
 
         trace->InitForManaged(target);
