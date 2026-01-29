@@ -46,7 +46,7 @@ namespace System.IO
             SafeFileHandle safeHandle = new SafeFileHandle(handle, ownsHandle: ownsHandle);
             try
             {
-                ValidateHandle(safeHandle, access, bufferSize, isAsync);
+                ValidateHandle(safeHandle, access, bufferSize);
 
                 _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, bufferSize, safeHandle.IsAsync);
             }
@@ -84,11 +84,6 @@ namespace System.IO
             }
         }
 
-        private static void ValidateHandle(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
-        {
-            ValidateHandle(handle, access, bufferSize);
-        }
-
         public FileStream(SafeFileHandle handle, FileAccess access)
             : this(handle, access, DefaultBufferSize)
         {
@@ -103,7 +98,7 @@ namespace System.IO
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
-            ValidateHandle(handle, access, bufferSize, isAsync);
+            ValidateHandle(handle, access, bufferSize);
 
             _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, handle.IsAsync);
         }
