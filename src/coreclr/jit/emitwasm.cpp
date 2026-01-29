@@ -122,7 +122,7 @@ bool emitter::emitInsIsStore(instruction ins)
  *  Add a call instruction (direct or indirect).
  *      argSize<0 means that the caller will pop the arguments
  *
- * Unless callType is EC_FUNCTION_INDEX, addr needs to be null.
+ * Unless callType is EC_FUNC_TOKEN, addr needs to be null.
  *
  */
 
@@ -162,17 +162,16 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     assert(params.argSize % REGSIZE_BYTES == 0);
     int argCnt = (int)(params.argSize / (int)REGSIZE_BYTES);
 
-    // All Wasm calls we generate are indirect, it's just a question of *how* much indirection
     instruction ins;
 
-    // TODO-WASM: Currently while we're loading SP onto the stack we're not loading PEP, so generate one here.
+    // FIXME-WASM: Currently while we're loading SP onto the stack we're not loading PEP, so generate one here.
     emitIns_I(INS_i32_const, EA_4BYTE, 0);
 
     switch (params.callType)
     {
         case EC_FUNC_TOKEN:
             ins = params.isJump ? INS_return_call : INS_call;
-            id  = emitNewInstrSC(EA_8BYTE, (cnsval_ssize_t)(ssize_t)params.addr /* function index */);
+            id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: function index reloc */);
             id->idIns(ins);
             id->idInsFmt(IF_ULEB128);
             break;
@@ -180,7 +179,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             // Indirect load of actual ftn ptr from indirection cell (on the stack)
             emitIns_I(INS_i32_load, EA_8BYTE, 0);
             ins = params.isJump ? INS_return_call_indirect : INS_call_indirect;
-            id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: type index */);
+            id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: type index reloc */);
             id->idIns(ins);
             id->idInsFmt(IF_CALL_INDIRECT);
             break;
