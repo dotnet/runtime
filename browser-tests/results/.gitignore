@@ -1,0 +1,3 @@
+# Override parent .gitignore - keep all result files including logs
+!*.log
+!*.xml

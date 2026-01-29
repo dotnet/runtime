@@ -1,0 +1,122 @@
+# Test Suite Execution Guide
+
+This document describes the process for running individual Browser/WASM CoreCLR library test suites.
+
+**Prerequisites:** Complete the [before-testing.md](before-testing.md) setup first.
+
+
+## Running Tests
+
+### Using the Script
+
+```bash
+./browser-tests/run-browser-test.sh <path-to-test-csproj>
+./browser-tests/run-browser-test.sh -c Release <path-to-test-csproj>
+```
+
+### Manual Command
+
+```bash
+./dotnet.sh build -bl \
+    /p:TargetOS=browser \
+    /p:TargetArchitecture=wasm \
+    /p:Configuration=Debug \
+    /t:Test \
+    src/libraries/<LibraryName>/tests/<TestProject>.csproj
+```
+
+## Test Result Locations
+
+| Artifact | Location |
+|----------|----------|
+| Build logs | `artifacts/log/Debug/` |
+| Test results XML | `artifacts/bin/<TestProject>/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output/testResults.xml` |
+| Console log | `artifacts/bin/<TestProject>/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output/wasm-console.log` |
+| Collected results | `browser-tests/results/<TestProject>/` |
+
+**Timeout Configuration:** `WasmXHarnessTestsTimeout` in `eng/testing/tests.wasm.targets` (default: 00:30:00)
+
+## Processing Test Failures
+
+### For Each Failing Test:
+
+1. **Identify the failure** from `testResults.xml` or `wasm-console.log`
+2. **Extract full information:**
+   - Full test name (namespace.class.method)
+   - Full stack trace
+   - Failure reason/exception type
+3. **Create failure record** in `/browser-tests/failures/<TestSuiteName>/<TestName>.md`
+4. **Mark test** with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011")]`
+5. **Rebuild and re-run** the test suite to continue
+
+### Handling Timeouts/Crashes/Aborts
+
+If the test suite hangs, times out, VM crashes, or exits with non-zero code:
+
+1. **Find the last running test** in `wasm-console.log`:
+   ```
+   [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSleep
+   ```
+2. **Mark that test** with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011")]`
+3. **Re-run the suite** to discover remaining failures
+4. **Repeat** until the suite completes (pass or fail, but not hang/crash)
+
+### Failure Documentation Template
+
+```markdown
+# Test: <FullTestName>
+
+## Test Suite
+<TestSuiteName>
+
+## Failure Type
+<crash|timeout|exception|assertion>
+
+## Exception Type
+<ExceptionType>
+
+## Stack Trace
+\```
+<full stack trace>
+\```
+
+## Notes
+- Platform: Browser/WASM + CoreCLR
+- Category: [threading|gc|finalizer|interpreter|other]
+```
+
+## Test Marking Guidelines
+
+### Existing Skip Attributes to Be Aware Of
+
+```csharp
+// Skips on Mono - may need review for CoreCLR+Browser
+[SkipOnMono("reason")]
+
+// Skips on Browser platform entirely
+[SkipOnPlatform(TestPlatforms.Browser, "reason")]
+
+// Our new marker for CoreCLR+Browser specific issues
+[ActiveIssue("https://github.com/dotnet/runtime/issues/123011")]
+```
+
+### When to Use Each
+
+| Scenario | Attribute |
+|----------|-----------|
+| Test fails only on Browser+CoreCLR | `[ActiveIssue("...123011")]` |
+| Test fails on all Browser (Mono+CoreCLR) | `[SkipOnPlatform(TestPlatforms.Browser)]` |
+| Test timeout/hang | `[ActiveIssue("...123011")]` with note |
+
+## Comparing with Mono Baseline
+
+Each test suite has a corresponding Mono baseline from Helix. To compare:
+
+1. Look up the workitem in [Mono-chrome-workitems.json](Mono-chrome-workitems.json)
+2. Use the `DetailsUrl` to fetch workitem details
+3. Download `ConsoleOutputUri` to see Mono's test execution summary
+4. Compare test counts: `Tests run: X Passed: Y Failed: Z Skipped: N`
+
+### Mono Baseline Log Location
+
+The script caches Mono logs at: `browser-tests/results/<TestProject>/mono-console.log`
