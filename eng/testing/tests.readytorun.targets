@@ -1,0 +1,17 @@
+<Project>
+  <!-- Override the path to the in-tree crossgen2. -->
+  <Target Name="ResolveReadyToRunCompilers">
+    <PropertyGroup>
+      <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</Crossgen2Path>
+      <_CrossGenTargetOS Condition="'$(TargetsAndroid)' != 'true'">$(TargetOS)</_CrossGenTargetOS>
+      <_CrossGenTargetOS Condition="'$(TargetsAndroid)' == 'true'">linux</_CrossGenTargetOS>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Crossgen2Tool Include="$(Crossgen2Path)"
+                     TargetArch="$(TargetArchitecture)"
+                     TargetOS="$(_CrossGenTargetOS)"
+                     PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
+    </ItemGroup>
+  </Target>
+</Project>
