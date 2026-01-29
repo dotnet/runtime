@@ -242,11 +242,12 @@ namespace System.Numerics.Tensors
                 Vector128<ushort> isNegativeZero = Vector128.Equals(bits, Vector128.Create(NegativeZeroBits));
                 Vector128<ushort> specialValue = Vector128.Create(EpsilonBits) & isNegativeZero;
 
-                // NaN or +Infinity: preserve original value
-                // NaN: (bits & 0x7FFF) > 0x7C00, +Infinity: bits == 0x7C00
+                // NaN: (bits & 0x7FFF) > 0x7C00 (both positive and negative NaN)
+                // +Infinity: bits == 0x7C00
                 Vector128<ushort> absValue = bits & Vector128.Create((ushort)0x7FFF);
-                Vector128<ushort> isNaNOrPosInf = Vector128.GreaterThanOrEqual(absValue, Vector128.Create(PositiveInfinityBits)) &
-                                                  Vector128.LessThan(bits, Vector128.Create(SignMask));
+                Vector128<ushort> isNaN = Vector128.GreaterThan(absValue, Vector128.Create(PositiveInfinityBits));
+                Vector128<ushort> isPosInf = Vector128.Equals(bits, Vector128.Create(PositiveInfinityBits));
+                Vector128<ushort> isNaNOrPosInf = isNaN | isPosInf;
                 specialValue |= bits & isNaNOrPosInf;
 
                 Vector128<ushort> specialMask = isNegativeZero | isNaNOrPosInf;
@@ -269,10 +270,12 @@ namespace System.Numerics.Tensors
                 Vector256<ushort> isNegativeZero = Vector256.Equals(bits, Vector256.Create(NegativeZeroBits));
                 Vector256<ushort> specialValue = Vector256.Create(EpsilonBits) & isNegativeZero;
 
-                // NaN or +Infinity: preserve original value
+                // NaN: (bits & 0x7FFF) > 0x7C00 (both positive and negative NaN)
+                // +Infinity: bits == 0x7C00
                 Vector256<ushort> absValue = bits & Vector256.Create((ushort)0x7FFF);
-                Vector256<ushort> isNaNOrPosInf = Vector256.GreaterThanOrEqual(absValue, Vector256.Create(PositiveInfinityBits)) &
-                                                  Vector256.LessThan(bits, Vector256.Create(SignMask));
+                Vector256<ushort> isNaN = Vector256.GreaterThan(absValue, Vector256.Create(PositiveInfinityBits));
+                Vector256<ushort> isPosInf = Vector256.Equals(bits, Vector256.Create(PositiveInfinityBits));
+                Vector256<ushort> isNaNOrPosInf = isNaN | isPosInf;
                 specialValue |= bits & isNaNOrPosInf;
 
                 Vector256<ushort> specialMask = isNegativeZero | isNaNOrPosInf;
@@ -295,10 +298,12 @@ namespace System.Numerics.Tensors
                 Vector512<ushort> isNegativeZero = Vector512.Equals(bits, Vector512.Create(NegativeZeroBits));
                 Vector512<ushort> specialValue = Vector512.Create(EpsilonBits) & isNegativeZero;
 
-                // NaN or +Infinity: preserve original value
+                // NaN: (bits & 0x7FFF) > 0x7C00 (both positive and negative NaN)
+                // +Infinity: bits == 0x7C00
                 Vector512<ushort> absValue = bits & Vector512.Create((ushort)0x7FFF);
-                Vector512<ushort> isNaNOrPosInf = Vector512.GreaterThanOrEqual(absValue, Vector512.Create(PositiveInfinityBits)) &
-                                                  Vector512.LessThan(bits, Vector512.Create(SignMask));
+                Vector512<ushort> isNaN = Vector512.GreaterThan(absValue, Vector512.Create(PositiveInfinityBits));
+                Vector512<ushort> isPosInf = Vector512.Equals(bits, Vector512.Create(PositiveInfinityBits));
+                Vector512<ushort> isNaNOrPosInf = isNaN | isPosInf;
                 specialValue |= bits & isNaNOrPosInf;
 
                 Vector512<ushort> specialMask = isNegativeZero | isNaNOrPosInf;

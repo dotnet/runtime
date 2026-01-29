@@ -198,6 +198,7 @@ namespace System.Numerics.Tensors
             // Half constants
             private const ushort SignMask = 0x8000;
             private const ushort PositiveInfinityBits = 0x7C00;
+            private const ushort NegativeInfinityBits = 0xFC00;
             private const ushort PositiveZeroBits = 0x0000;
             private const ushort NegativeEpsilonBits = 0x8001;
             private const ushort MaxValueBits = 0x7BFF;
@@ -241,11 +242,12 @@ namespace System.Numerics.Tensors
                 Vector128<ushort> isPositiveZero = Vector128.Equals(bits, Vector128<ushort>.Zero);
                 Vector128<ushort> specialValue = Vector128.Create(NegativeEpsilonBits) & isPositiveZero;
 
-                // NaN or -Infinity: preserve original value
-                // NaN: (bits & 0x7FFF) > 0x7C00, -Infinity: bits == 0xFC00
+                // NaN: (bits & 0x7FFF) > 0x7C00 (both positive and negative NaN)
+                // -Infinity: bits == 0xFC00
                 Vector128<ushort> absValue = bits & Vector128.Create((ushort)0x7FFF);
-                Vector128<ushort> isNaNOrNegInf = Vector128.GreaterThanOrEqual(absValue, Vector128.Create(PositiveInfinityBits)) &
-                                                  Vector128.GreaterThanOrEqual(bits, Vector128.Create(SignMask));
+                Vector128<ushort> isNaN = Vector128.GreaterThan(absValue, Vector128.Create(PositiveInfinityBits));
+                Vector128<ushort> isNegInf = Vector128.Equals(bits, Vector128.Create(NegativeInfinityBits));
+                Vector128<ushort> isNaNOrNegInf = isNaN | isNegInf;
                 specialValue |= bits & isNaNOrNegInf;
 
                 Vector128<ushort> specialMask = isPositiveZero | isNaNOrNegInf;
@@ -268,10 +270,12 @@ namespace System.Numerics.Tensors
                 Vector256<ushort> isPositiveZero = Vector256.Equals(bits, Vector256<ushort>.Zero);
                 Vector256<ushort> specialValue = Vector256.Create(NegativeEpsilonBits) & isPositiveZero;
 
-                // NaN or -Infinity: preserve original value
+                // NaN: (bits & 0x7FFF) > 0x7C00 (both positive and negative NaN)
+                // -Infinity: bits == 0xFC00
                 Vector256<ushort> absValue = bits & Vector256.Create((ushort)0x7FFF);
-                Vector256<ushort> isNaNOrNegInf = Vector256.GreaterThanOrEqual(absValue, Vector256.Create(PositiveInfinityBits)) &
-                                                  Vector256.GreaterThanOrEqual(bits, Vector256.Create(SignMask));
+                Vector256<ushort> isNaN = Vector256.GreaterThan(absValue, Vector256.Create(PositiveInfinityBits));
+                Vector256<ushort> isNegInf = Vector256.Equals(bits, Vector256.Create(NegativeInfinityBits));
+                Vector256<ushort> isNaNOrNegInf = isNaN | isNegInf;
                 specialValue |= bits & isNaNOrNegInf;
 
                 Vector256<ushort> specialMask = isPositiveZero | isNaNOrNegInf;
@@ -294,10 +298,12 @@ namespace System.Numerics.Tensors
                 Vector512<ushort> isPositiveZero = Vector512.Equals(bits, Vector512<ushort>.Zero);
                 Vector512<ushort> specialValue = Vector512.Create(NegativeEpsilonBits) & isPositiveZero;
 
-                // NaN or -Infinity: preserve original value
+                // NaN: (bits & 0x7FFF) > 0x7C00 (both positive and negative NaN)
+                // -Infinity: bits == 0xFC00
                 Vector512<ushort> absValue = bits & Vector512.Create((ushort)0x7FFF);
-                Vector512<ushort> isNaNOrNegInf = Vector512.GreaterThanOrEqual(absValue, Vector512.Create(PositiveInfinityBits)) &
-                                                  Vector512.GreaterThanOrEqual(bits, Vector512.Create(SignMask));
+                Vector512<ushort> isNaN = Vector512.GreaterThan(absValue, Vector512.Create(PositiveInfinityBits));
+                Vector512<ushort> isNegInf = Vector512.Equals(bits, Vector512.Create(NegativeInfinityBits));
+                Vector512<ushort> isNaNOrNegInf = isNaN | isNegInf;
                 specialValue |= bits & isNaNOrNegInf;
 
                 Vector512<ushort> specialMask = isPositiveZero | isNaNOrNegInf;
