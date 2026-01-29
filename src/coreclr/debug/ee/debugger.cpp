@@ -4753,13 +4753,6 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
     Module      *pModule =          g_pEEInterface->MethodDescGetModule(fd);
     mdMethodDef md =                fd->GetMemberDef();
 
-    if (fd->IsAsyncThunkMethod())
-    {
-        LOG((LF_CORDB,LL_INFO10000,"D::MABFP: Do not bind the breakpoint to the async thunk method: %x\n",
-            md));
-        return S_OK;
-    }
-
     LOG((LF_CORDB,LL_INFO10000,"D::MABFP: All BPs will be mapped to encVersion: %zx (DJI:%p)\n",
         djiNew->m_methodInfo->GetCurrentEnCVersion(), djiNew));
 
@@ -4791,6 +4784,14 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
             if (dcp->key.module != pModule || dcp->key.md != md)
             {
                 LOG((LF_CORDB, LL_INFO10000, "D::MABFP: Patch not in this method\n"));
+                continue;
+            }
+
+            // Do not bind breakpoints to async thunks unless they were specifically
+            // filtered to that method desc.
+            if (dcp->pMethodDescFilter == NULL && fd->IsAsyncThunkMethod())
+            {
+                LOG((LF_CORDB,LL_INFO10000,"D::MABFP: Do not bind the breakpoint to the async thunk method by token and module\n"));
                 continue;
             }
 

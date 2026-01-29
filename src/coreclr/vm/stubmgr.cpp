@@ -1128,23 +1128,6 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
 
     _ASSERTE(pMD != NULL);
 
-    // For async thunk methods, we need to redirect to the actual async method.
-    // We can't set a breakpoint in the async thunk so a call to an unjitted async thunk
-    // has to be handled here as opposed to the AsyncThunkStubManager below.
-    // We use GetParallelMethodDesc directly rather than GetAsyncOtherVariantNoCreate
-    // because FindOrCreateAssociatedMethodDesc is not available in DAC builds.
-    if (pMD->IsAsyncThunkMethod())
-    {
-        MethodDesc* pMDVariant = pMD->GetMethodTable()->GetCanonicalMethodTable()->GetParallelMethodDesc(pMD, AsyncVariantLookup::AsyncOtherVariant);
-        if (pMDVariant != NULL)
-        {
-            LOG((LF_CORDB, LL_INFO10000, "PrecodeStubManager::DoTraceStub - async thunk %p, tracing to underlying method %p\n", pMD, pMDVariant));
-            trace->InitForUnjittedMethod(pMDVariant);
-            LOG_TRACE_DESTINATION(trace, stubStartAddress, "PrecodeStubManager::DoTraceStub - async thunk redirect");
-            return TRUE;
-        }
-    }
-
     // If the method is not IL, then we patch the prestub because no one will ever change the call here at the
     // MethodDesc. If, however, this is an IL method, then we are at risk to have another thread backpatch the call
     // here, so we'd miss if we patched the prestub. Therefore, we go right to the IL method and patch IL offset 0
