@@ -61,7 +61,9 @@ namespace System.Reflection.Metadata
                 return null;
             }
 
+#pragma warning disable IDE0071
             Debug.Assert(parsedName.GetNodeCount() == recursiveDepth, $"Node count mismatch for '{typeName.ToString()}'");
+#pragma warning restore IDE0071
 
             return parsedName;
         }
