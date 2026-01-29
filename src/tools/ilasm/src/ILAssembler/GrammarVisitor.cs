@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -97,13 +97,15 @@ namespace ILAssembler
         private readonly Dictionary<string, DocumentHandle> _documentHandles = new();
         private readonly MetadataBuilder _pdbBuilder = new();
 
+        // VTable fixup tracking - uses types from VTableFixupSupport
+        private readonly List<VTableFixupSupport.VTableFixupEntry> _vtableFixups = new();
+
         public GrammarVisitor(IReadOnlyDictionary<string, SourceText> documents, Options options, Func<string, byte[]> resourceLocator)
         {
             _documents = documents;
             _options = options;
             _resourceLocator = resourceLocator;
         }
-
         /// <summary>
         /// Represents a typedef alias entry.
         /// </summary>
@@ -138,9 +140,30 @@ namespace ILAssembler
                 return (_diagnostics.ToImmutable(), null);
             }
 
+            // Check for vtable fixups and exports - collect export info
+            var exports = ImmutableArray.CreateBuilder<VTableExportPEBuilder.ExportInfo>();
+            foreach (var entity in _entityRegistry.GetSeenEntities(TableIndex.MethodDef))
+            {
+                if (entity is EntityRegistry.MethodDefinitionEntity method && method.ExportOrdinal >= 0)
+                {
+                    exports.Add(new VTableExportPEBuilder.ExportInfo(
+                        method.ExportOrdinal,
+                        method.ExportAlias ?? method.Name,
+                        MetadataTokens.GetToken(method.Handle),
+                        method.VTableEntry,
+                        method.VTableSlot));
+                }
+            }
+
             BlobBuilder ilStream = new();
             _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames);
             MetadataRootBuilder rootBuilder = new(_metadataBuilder);
+
+            // Compute metadata size from the MetadataSizes
+            // We need this for data label fixup RVA calculations
+            var sizes = rootBuilder.Sizes;
+            int metadataSize = ComputeMetadataSize(sizes);
+
             PEHeaderBuilder header = new(
                 fileAlignment: _alignment,
                 imageBase: (ulong)_imageBase,
@@ -153,9 +176,34 @@ namespace ILAssembler
             }
 
             // Build debug directory if we have any debug info
-            DebugDirectoryBuilder? debugDirectoryBuilder = BuildDebugDirectory(entryPoint);
+            DebugDirectoryBuilder? debugDirectoryBuilder = BuildDebugDirectory(entryPoint, out int debugDataSize);
 
-            ManagedPEBuilder peBuilder = new(
+            // Use custom PE builder if we have vtable fixups, exports, or data label reference fixups
+            bool hasDataLabelFixups = _mappedFieldDataReferenceFixups.Count > 0;
+            if (_vtableFixups.Count > 0 || exports.Count > 0 || hasDataLabelFixups)
+            {
+                var vtableFixupInfos = BuildVTableFixupInfos();
+
+                VTableExportPEBuilder peBuilder = new(
+                    header,
+                    rootBuilder,
+                    ilStream,
+                    _mappedFieldData,
+                    _manifestResources,
+                    debugDirectoryBuilder: debugDirectoryBuilder,
+                    entryPoint: entryPoint,
+                    flags: CorFlags.ILOnly,
+                    vtableFixups: vtableFixupInfos,
+                    exports: exports.ToImmutable(),
+                    mappedFieldDataOffsets: _mappedFieldDataNames,
+                    dataLabelFixups: hasDataLabelFixups ? _mappedFieldDataReferenceFixups : null,
+                    metadataSize: metadataSize,
+                    debugDataSize: debugDataSize);
+
+                return (_diagnostics.ToImmutable(), peBuilder);
+            }
+
+            ManagedPEBuilder standardBuilder = new(
                 header,
                 rootBuilder,
                 ilStream,
@@ -165,11 +213,53 @@ namespace ILAssembler
                 entryPoint: entryPoint,
                 debugDirectoryBuilder: debugDirectoryBuilder);
 
-            return (_diagnostics.ToImmutable(), peBuilder);
+            return (_diagnostics.ToImmutable(), standardBuilder);
         }
 
-        private DebugDirectoryBuilder? BuildDebugDirectory(MethodDefinitionHandle entryPoint)
+        private ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> BuildVTableFixupInfos()
         {
+            if (_vtableFixups.Count == 0)
+                return ImmutableArray<VTableExportPEBuilder.VTableFixupInfo>.Empty;
+
+            var builder = ImmutableArray.CreateBuilder<VTableExportPEBuilder.VTableFixupInfo>(_vtableFixups.Count);
+
+            for (int entryIndex = 0; entryIndex < _vtableFixups.Count; entryIndex++)
+            {
+                var vtf = _vtableFixups[entryIndex];
+                var methodTokens = ImmutableArray.CreateBuilder<int>(vtf.SlotCount);
+
+                // Initialize with zeros
+                for (int i = 0; i < vtf.SlotCount; i++)
+                {
+                    methodTokens.Add(0);
+                }
+
+                // Find methods that reference this vtable entry
+                foreach (var entity in _entityRegistry.GetSeenEntities(TableIndex.MethodDef))
+                {
+                    if (entity is EntityRegistry.MethodDefinitionEntity method &&
+                        method.VTableEntry == entryIndex + 1 && // 1-based
+                        method.VTableSlot > 0 &&
+                        method.VTableSlot <= vtf.SlotCount)
+                    {
+                        methodTokens[method.VTableSlot - 1] = MetadataTokens.GetToken(method.Handle);
+                    }
+                }
+
+                builder.Add(new VTableExportPEBuilder.VTableFixupInfo(
+                    vtf.DataLabel,
+                    vtf.SlotCount,
+                    vtf.Flags,
+                    methodTokens.ToImmutable()));
+            }
+
+            return builder.ToImmutable();
+        }
+
+        private DebugDirectoryBuilder? BuildDebugDirectory(MethodDefinitionHandle entryPoint, out int debugDataSize)
+        {
+            debugDataSize = 0;
+
             // Check if we have any methods with debug info
             bool hasDebugInfo = false;
             foreach (var entity in _entityRegistry.GetSeenEntities(TableIndex.MethodDef))
@@ -210,6 +300,17 @@ namespace ILAssembler
                 pdbContentId,
                 pdbBuilder.FormatVersion);
             debugDirectoryBuilder.AddEmbeddedPortablePdbEntry(pdbBlob, pdbBuilder.FormatVersion);
+
+            // Calculate debug data size:
+            // 2 debug directory entries (28 bytes each) + CodeView data (~24 bytes) + Embedded PDB data (compressed pdbBlob + 8 header)
+            // CodeView entry: signature (4) + guid (16) + age (4) + path (variable, ~12 for "assembly.pdb\0")
+            const int debugDirEntrySize = 28;
+            int codeViewDataSize = 4 + 16 + 4 + "assembly.pdb".Length + 1; // signature + guid + age + path + null
+            int embeddedPdbHeaderSize = 8; // MPDB signature (4) + uncompressed size (4)
+            // The embedded PDB is compressed, estimate conservatively as same size
+            int embeddedPdbDataSize = embeddedPdbHeaderSize + pdbBlob.Count;
+
+            debugDataSize = (2 * debugDirEntrySize) + codeViewDataSize + embeddedPdbDataSize;
 
             return debugDirectoryBuilder;
         }
@@ -693,6 +794,15 @@ namespace ILAssembler
                 // COMPAT: ilasm implies the Sealed flag when using the 'value' keyword in a type declaration
                 return new((new(TypeAttributes.Sealed), EntityRegistry.WellKnownBaseType.System_ValueType, true));
             }
+            else if (context.EXPLICIT() is not null)
+            {
+                return new((new(TypeAttributes.ExplicitLayout), null, false));
+            }
+            else if (context.INTERFACE() is not null)
+            {
+                // COMPAT: interface implies abstract
+                return new((new(TypeAttributes.Interface | TypeAttributes.Abstract), null, false));
+            }
 
             switch (context.GetText())
             {
@@ -706,8 +816,6 @@ namespace ILAssembler
                     return new((new(TypeAttributes.AutoLayout), null, false));
                 case "sequential":
                     return new((new(TypeAttributes.SequentialLayout), null, false));
-                case "explicit":
-                    return new((new(TypeAttributes.ExplicitLayout), null, false));
                 case "extended":
                     return new((new(TypeAttributes.ExtendedLayout), null, false));
                 default:
@@ -782,6 +890,34 @@ namespace ILAssembler
                     }
                 }
             }
+            else if (context.propHead() is CILParser.PropHeadContext propHead)
+            {
+                var property = VisitPropHead(propHead).Value;
+                var currentType = _currentTypeDefinition.PeekOrDefault();
+                if (currentType is not null)
+                {
+                    currentType.Properties.Add(property);
+                    var accessors = VisitPropDecls(context.propDecls()).Value;
+                    foreach (var accessor in accessors)
+                    {
+                        property.Accessors.Add(accessor);
+                    }
+                }
+            }
+            else if (context.eventHead() is CILParser.EventHeadContext eventHead)
+            {
+                var evt = VisitEventHead(eventHead).Value;
+                var currentType = _currentTypeDefinition.PeekOrDefault();
+                if (currentType is not null)
+                {
+                    currentType.Events.Add(evt);
+                    var accessors = VisitEventDecls(context.eventDecls()).Value;
+                    foreach (var accessor in accessors)
+                    {
+                        evt.Accessors.Add(accessor);
+                    }
+                }
+            }
 
             return GrammarResult.SentinelValue.Result;
         }
@@ -830,7 +966,8 @@ namespace ILAssembler
                     isNewType = true;
                     EntityRegistry.WellKnownBaseType? fallbackBase = _options.NoAutoInherit ? null : EntityRegistry.WellKnownBaseType.System_Object;
                     bool requireSealed = false;
-                    newTypeDef.Attributes = context.classAttr().Select(VisitClassAttr).Aggregate(
+                    var classAttrs = context.classAttr();
+                    newTypeDef.Attributes = classAttrs.Select(VisitClassAttr).Aggregate(
                         (TypeAttributes)0,
                         (acc, result) =>
                         {
@@ -850,11 +987,13 @@ namespace ILAssembler
                                 return attribute.Value;
                             }
                             requireSealed |= attrRequireSealed;
-                            if (TypeAttributes.LayoutMask.HasFlag(attribute.Value))
+                            // Note: We check attribute.Value != 0 because HasFlag(0) always returns true,
+                            // but AutoLayout (0) and AnsiClass (0) should not clear other flags.
+                            if (attribute.Value != 0 && TypeAttributes.LayoutMask.HasFlag(attribute.Value))
                             {
                                 return (acc & ~TypeAttributes.LayoutMask) | attribute.Value;
                             }
-                            if (TypeAttributes.StringFormatMask.HasFlag(attribute.Value))
+                            if (attribute.Value != 0 && TypeAttributes.StringFormatMask.HasFlag(attribute.Value))
                             {
                                 return (acc & ~TypeAttributes.StringFormatMask) | attribute.Value;
                             }
@@ -867,7 +1006,7 @@ namespace ILAssembler
                                 // COMPAT: ILASM ignores the rtspecialname directive on a type.
                                 return acc;
                             }
-                            if (attribute.Value == TypeAttributes.Interface)
+                            if ((attribute.Value & TypeAttributes.Interface) != 0)
                             {
                                 // COMPAT: interface implies abstract
                                 return acc | TypeAttributes.Interface | TypeAttributes.Abstract;
@@ -1330,13 +1469,15 @@ namespace ILAssembler
             }
             else if (context.id() is CILParser.IdContext id)
             {
+                // Reference to another data label - this will be patched with the target's RVA
+                // during PE serialization by VTableExportPEBuilder.ApplyDataLabelFixups()
                 string name = VisitId(id).Value;
                 if (!_mappedFieldDataReferenceFixups.TryGetValue(name, out var fixups))
                 {
                     _mappedFieldDataReferenceFixups[name] = fixups = new();
                 }
 
-                // TODO: Figure out how to handle relocs correctly
+                // Reserve 4 bytes for the RVA that will be patched later
                 fixups.Add(_mappedFieldData.ReserveBytes(4));
                 return GrammarResult.SentinelValue.Result;
             }
@@ -1478,6 +1619,14 @@ namespace ILAssembler
                 var (attrs, dottedName) = VisitExptypeHead(exptypeHead).Value;
                 (string typeNamespace, string name) = NameHelpers.SplitDottedNameToNamespaceAndName(dottedName);
                 var (impl, typeDefId, customAttrs) = VisitExptypeDecls(context.exptypeDecls()).Value;
+                if (impl is null)
+                {
+                    // COMPAT: Like native ilasm, warn and skip the exported type when implementation is not specified
+                    ReportWarning(DiagnosticIds.MissingExportedTypeImplementation,
+                        string.Format(DiagnosticMessageTemplates.MissingExportedTypeImplementation, dottedName),
+                        exptypeHead);
+                    return GrammarResult.SentinelValue.Result;
+                }
                 var exp = _entityRegistry.GetOrCreateExportedType(impl, typeNamespace, name, exp =>
                 {
                     exp.Attributes = attrs;
@@ -1831,7 +1980,7 @@ namespace ILAssembler
             };
         }
 
-        // TODO: Implement multimodule type exports and fowarders
+        // Type exports and forwarders are implemented via VisitExptypeDecls
         public GrammarResult VisitExptypeDecl(CILParser.ExptypeDeclContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitExptypeDecls(CILParser.ExptypeDeclsContext context) => VisitExptypeDecls(context);
@@ -2204,9 +2353,63 @@ namespace ILAssembler
                 SerializationTypeCode.Single => valueBytes.Length >= 4 ? BitConverter.ToSingle(valueBytes) : 0f,
                 SerializationTypeCode.Double => valueBytes.Length >= 8 ? BitConverter.ToDouble(valueBytes) : 0d,
                 SerializationTypeCode.String => Encoding.Unicode.GetString(valueBytes),
-                // TODO: Support arbitrary byte blobs that don't correspond to any currently-valid format.
-                _ => null
+                // Type is encoded as a SerString (compressed length followed by UTF-8 type name)
+                SerializationTypeCode.Type => ExtractSerString(valueBytes),
+                // SZArray: element type followed by element count followed by elements
+                // Return the raw bytes for arrays since we can't easily represent them
+                SerializationTypeCode.SZArray => valueBytes.ToArray(),
+                // TaggedObject: type tag followed by value - return raw bytes
+                SerializationTypeCode.TaggedObject => valueBytes.ToArray(),
+                // Enum: type name (SerString) followed by underlying value - return raw bytes
+                SerializationTypeCode.Enum => valueBytes.ToArray(),
+                // For unknown/future type codes, return the raw bytes to preserve the data
+                _ => bytes.AsSpan().ToArray()
             };
+        }
+
+        /// <summary>
+        /// Extracts a SerString (compressed length + UTF-8 string) from the given bytes.
+        /// Returns null if the first byte is 0xFF (null string marker).
+        /// </summary>
+        private static string? ExtractSerString(ReadOnlySpan<byte> bytes)
+        {
+            if (bytes.Length == 0)
+            {
+                return null;
+            }
+            // 0xFF indicates null string
+            if (bytes[0] == 0xFF)
+            {
+                return null;
+            }
+            // Decode compressed length
+            int length;
+            int bytesRead;
+            if ((bytes[0] & 0x80) == 0)
+            {
+                // 1-byte length
+                length = bytes[0];
+                bytesRead = 1;
+            }
+            else if ((bytes[0] & 0xC0) == 0x80)
+            {
+                // 2-byte length
+                if (bytes.Length < 2) return null;
+                length = ((bytes[0] & 0x3F) << 8) | bytes[1];
+                bytesRead = 2;
+            }
+            else
+            {
+                // 4-byte length
+                if (bytes.Length < 4) return null;
+                length = ((bytes[0] & 0x1F) << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
+                bytesRead = 4;
+            }
+            if (bytes.Length < bytesRead + length)
+            {
+                return null;
+            }
+            return Encoding.UTF8.GetString(bytes.Slice(bytesRead, length));
         }
 
         public GrammarResult VisitFieldOrProp(CILParser.FieldOrPropContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
@@ -2279,11 +2482,11 @@ namespace ILAssembler
                 case CILParser.UINT16:
                     builder.WriteInt16((short)VisitInt32(context.int32()).Value);
                     break;
-                case CILParser.INT32:
+                case CILParser.INT32_:
                 case CILParser.UINT32:
                     builder.WriteInt32(VisitInt32(context.int32()).Value);
                     break;
-                case CILParser.INT64:
+                case CILParser.INT64_:
                 case CILParser.UINT64:
                     builder.WriteInt64(VisitInt64(context.int64()).Value);
                     break;
@@ -2413,13 +2616,15 @@ namespace ILAssembler
                 _currentMethod.Definition.MethodBody.MarkLabel(end);
                 return new((start, end));
             }
-            if (context.id() is CILParser.IdContext[] ids)
+            var ids = context.id();
+            if (ids.Length == 2)
             {
                 var start = _currentMethod!.Labels.TryGetValue(VisitId(ids[0]).Value, out LabelHandle startLabel) ? startLabel : _currentMethod.Labels[VisitId(ids[0]).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
                 var end = _currentMethod!.Labels.TryGetValue(VisitId(ids[1]).Value, out LabelHandle endLabel) ? endLabel : _currentMethod.Labels[VisitId(ids[1]).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
                 return new((start, end));
             }
-            if (context.int32() is CILParser.Int32Context[] offsets)
+            var offsets = context.int32();
+            if (offsets.Length == 2)
             {
                 var start = _currentMethod!.Definition.MethodBody.DefineLabel();
                 var end = _currentMethod.Definition.MethodBody.DefineLabel();
@@ -3289,19 +3494,31 @@ namespace ILAssembler
             {
                 var labelId = labelDecl.id();
                 string labelName = VisitId(labelId).Value;
+                currentMethod.DeclaredLabels.Add(labelName);
                 if (!currentMethod.Labels.TryGetValue(labelName, out var label))
                 {
                     label = currentMethod.Definition.MethodBody.DefineLabel();
+                    currentMethod.Labels[labelName] = label;
                 }
                 currentMethod.Definition.MethodBody.MarkLabel(label);
             }
             else if (context.EXPORT() is not null)
             {
-                // TODO: Need custom ManagedPEBuilder subclass to write the exports directory.
+                // .export [ordinal] or .export [ordinal] as alias
+                int ordinal = VisitInt32(context.int32()[0]).Value;
+                string? alias = context.id() is { } aliasId ? VisitId(aliasId).Value : null;
+
+                currentMethod.Definition.ExportOrdinal = ordinal;
+                currentMethod.Definition.ExportAlias = alias;
             }
             else if (context.VTENTRY() is not null)
             {
-                // TODO: Need custom ManagedPEBuilder subclass to write the exports directory.
+                // .vtentry vtableIndex : slotIndex
+                int vtableEntry = VisitInt32(context.int32()[0]).Value;
+                int vtableSlot = VisitInt32(context.int32()[1]).Value;
+
+                currentMethod.Definition.VTableEntry = vtableEntry;
+                currentMethod.Definition.VTableSlot = vtableSlot;
             }
             else if (context.OVERRIDE() is not null)
             {
@@ -3443,7 +3660,7 @@ namespace ILAssembler
                 }
                 else
                 {
-                    // Adding attibutes to parameters.
+                    // Adding attributes to parameters.
                     int index = VisitInt32(context.int32()[0]).Value;
                     if (index < 0 || index >= currentMethod.Definition.Parameters.Count)
                     {
@@ -3453,8 +3670,14 @@ namespace ILAssembler
                         return GrammarResult.SentinelValue.Result;
                     }
 
-                    // TODO: Visit initOpt to get the Constant table entry if a constant value is provided.
+                    // Handle initOpt to get the Constant table entry if a constant value is provided.
+                    var constantValue = VisitInitOpt(context.initOpt()).Value;
                     var param = currentMethod.Definition.Parameters[index];
+                    if (constantValue is not NoConstantSentinel)
+                    {
+                        param.ConstantValue = constantValue;
+                        param.HasConstant = true;
+                    }
                     foreach (var attr in customAttrDeclarations ?? Array.Empty<CILParser.CustomAttrDeclContext>())
                     {
                         var customAttrDecl = VisitCustomAttrDecl(attr).Value;
@@ -4178,9 +4401,16 @@ namespace ILAssembler
                 arg.SignatureBlob.WriteContentTo(signature);
             }
 
-            // TODO: Handle initOpt
-            _ = VisitInitOpt(context.initOpt());
-            return new(new(propAttrs, signature, name));
+            // Handle initOpt to set the Constant table entry if a constant value is provided.
+            var constantValue = VisitInitOpt(context.initOpt()).Value;
+            var property = new EntityRegistry.PropertyEntity(propAttrs, signature, name);
+            if (constantValue is not NoConstantSentinel)
+            {
+                property.ConstantValue = constantValue;
+                property.HasConstant = true;
+                property.Attributes |= PropertyAttributes.HasDefault;
+            }
+            return new(property);
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitRepeatOpt(CILParser.RepeatOptContext context) => VisitRepeatOpt(context);
@@ -4584,13 +4814,15 @@ namespace ILAssembler
                 _currentMethod.Definition.MethodBody.MarkLabel(end);
                 return new((start, end));
             }
-            if (context.id() is CILParser.IdContext[] ids)
+            var ids = context.id();
+            if (ids.Length == 2)
             {
                 var start = _currentMethod!.Labels.TryGetValue(VisitId(ids[0]).Value, out LabelHandle startLabel) ? startLabel : _currentMethod.Labels[VisitId(ids[0]).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
                 var end = _currentMethod!.Labels.TryGetValue(VisitId(ids[1]).Value, out LabelHandle endLabel) ? endLabel : _currentMethod.Labels[VisitId(ids[1]).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
                 return new((start, end));
             }
-            if (context.int32() is CILParser.Int32Context[] offsets)
+            var offsets = context.int32();
+            if (offsets.Length == 2)
             {
                 var start = _currentMethod!.Definition.MethodBody.DefineLabel();
                 var end = _currentMethod.Definition.MethodBody.DefineLabel();
@@ -5018,19 +5250,133 @@ namespace ILAssembler
 
         public GrammarResult VisitVtableDecl(CILParser.VtableDeclContext context)
         {
-            // TODO: Need custom ManagedPEBuilder subclass to write the exports directory.
-            throw new NotImplementedException("raw vtable fixups blob not supported");
+            // Raw .vtable directive with bytes - not commonly used
+            // For now, we don't support this legacy syntax
+            throw new NotImplementedException("raw vtable fixups blob (.vtable) not supported - use .vtfixup instead");
         }
 
-        public GrammarResult VisitVtfixupAttr(CILParser.VtfixupAttrContext context)
+        GrammarResult ICILVisitor<GrammarResult>.VisitVtfixupAttr(CILParser.VtfixupAttrContext context) => VisitVtfixupAttr(context);
+        public GrammarResult.Literal<ushort> VisitVtfixupAttr(CILParser.VtfixupAttrContext context)
         {
-            // TODO: Need custom ManagedPEBuilder subclass to write the exports directory.
-            throw new NotImplementedException("vtable fixups not supported");
+            // vtfixupAttr: | vtfixupAttr INT32_ | vtfixupAttr INT64_ | vtfixupAttr 'fromunmanaged' | vtfixupAttr 'callmostderived' | vtfixupAttr 'retainappdomain'
+            ushort flags = 0;
+            foreach (var child in context.children ?? [])
+            {
+                string text = child.GetText();
+                flags |= text switch
+                {
+                    "int32" => VTableFixupSupport.COR_VTABLE_32BIT,
+                    "int64" => VTableFixupSupport.COR_VTABLE_64BIT,
+                    "fromunmanaged" => VTableFixupSupport.COR_VTABLE_FROM_UNMANAGED,
+                    "callmostderived" => VTableFixupSupport.COR_VTABLE_CALL_MOST_DERIVED,
+                    "retainappdomain" => VTableFixupSupport.COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN,
+                    _ => 0
+                };
+            }
+
+            // Default to 32-bit if neither 32 nor 64 is specified
+            if ((flags & (VTableFixupSupport.COR_VTABLE_32BIT | VTableFixupSupport.COR_VTABLE_64BIT)) == 0)
+            {
+                flags |= VTableFixupSupport.COR_VTABLE_32BIT;
+            }
+
+            return new(flags);
         }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitVtfixupDecl(CILParser.VtfixupDeclContext context) => VisitVtfixupDecl(context);
         public GrammarResult VisitVtfixupDecl(CILParser.VtfixupDeclContext context)
         {
-            // TODO: Need custom ManagedPEBuilder subclass to write the exports directory.
-            throw new NotImplementedException("raw vtable fixups blob not supported");
+            // vtfixupDecl: '.vtfixup' '[' int32 ']' vtfixupAttr 'at' id;
+            int slotCount = VisitInt32(context.int32()).Value;
+            ushort flags = VisitVtfixupAttr(context.vtfixupAttr()).Value;
+            string dataLabel = VisitId(context.id()).Value;
+
+            _vtableFixups.Add(new VTableFixupSupport.VTableFixupEntry(slotCount, flags, dataLabel));
+
+            return GrammarResult.SentinelValue.Result;
+        }
+
+        /// <summary>
+        /// Computes the total metadata size from MetadataSizes.
+        /// This replicates the internal MetadataSizes.MetadataSize calculation.
+        /// </summary>
+        private static int ComputeMetadataSize(MetadataSizes sizes)
+        {
+            // Metadata header size (fixed structure):
+            // - signature (4)
+            // - major/minor version (4)
+            // - reserved (4)
+            // - version string length (4)
+            // - version string padded to 4 bytes ("v4.0.30319" = 12 bytes padded)
+            // - storage header (4)
+            // - 5 stream headers (#~, #Strings, #US, #GUID, #Blob) = 76 bytes
+            // Total header: ~108 bytes
+            const int metadataHeaderSize = 108;
+
+            // Stream storage: heaps (#Strings, #US, #GUID, #Blob) - we can get aligned sizes
+            int heapStorageSize = 0;
+            heapStorageSize += sizes.GetAlignedHeapSize(HeapIndex.String);
+            heapStorageSize += sizes.GetAlignedHeapSize(HeapIndex.UserString);
+            heapStorageSize += sizes.GetAlignedHeapSize(HeapIndex.Guid);
+            heapStorageSize += sizes.GetAlignedHeapSize(HeapIndex.Blob);
+
+            // Table stream (#~): header + table data
+            // Header: Reserved(4) + Version(2) + HeapSizes(1) + RowIdBitWidth(1) + ValidMask(8) + SortedMask(8)
+            //         + 4 bytes per present table for row counts
+            int tableStreamSize = 24; // base header
+            var rowCounts = sizes.RowCounts;
+
+            // Count present tables and add 4 bytes each for row count
+            for (int i = 0; i < rowCounts.Length; i++)
+            {
+                if (rowCounts[i] > 0)
+                {
+                    tableStreamSize += 4;
+                }
+            }
+
+            // Add table data size with estimated row sizes
+            // Row sizes depend on index sizes (2 or 4 bytes) which we don't have access to
+            // For small assemblies, all indexes are 2 bytes
+            tableStreamSize += rowCounts[(int)TableIndex.Module] * 10;       // 2+2+2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.TypeRef] * 6;       // 2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.TypeDef] * 14;      // 4+2+2+2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.Field] * 6;         // 2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.MethodDef] * 14;    // 4+2+2+2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.Param] * 6;         // 2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.InterfaceImpl] * 4; // 2+2
+            tableStreamSize += rowCounts[(int)TableIndex.MemberRef] * 6;     // 2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.Constant] * 6;      // 2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.CustomAttribute] * 6; // 2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.FieldMarshal] * 4;  // 2+2
+            tableStreamSize += rowCounts[(int)TableIndex.DeclSecurity] * 6;  // 2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.ClassLayout] * 8;   // 2+4+2
+            tableStreamSize += rowCounts[(int)TableIndex.FieldLayout] * 6;   // 4+2
+            tableStreamSize += rowCounts[(int)TableIndex.StandAloneSig] * 2; // 2
+            tableStreamSize += rowCounts[(int)TableIndex.EventMap] * 4;      // 2+2
+            tableStreamSize += rowCounts[(int)TableIndex.Event] * 6;         // 2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.PropertyMap] * 4;   // 2+2
+            tableStreamSize += rowCounts[(int)TableIndex.Property] * 6;      // 2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.MethodSemantics] * 6; // 2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.MethodImpl] * 6;    // 2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.ModuleRef] * 2;     // 2
+            tableStreamSize += rowCounts[(int)TableIndex.TypeSpec] * 2;      // 2
+            tableStreamSize += rowCounts[(int)TableIndex.ImplMap] * 8;       // 2+2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.FieldRva] * 6;      // 4+2
+            tableStreamSize += rowCounts[(int)TableIndex.Assembly] * 22;     // 16+2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.AssemblyRef] * 20;  // 12+2+2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.File] * 8;          // 4+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.ExportedType] * 14; // 8+2+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.ManifestResource] * 12; // 8+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.NestedClass] * 4;   // 2+2
+            tableStreamSize += rowCounts[(int)TableIndex.GenericParam] * 8;  // 4+2+2
+            tableStreamSize += rowCounts[(int)TableIndex.MethodSpec] * 4;    // 2+2
+            tableStreamSize += rowCounts[(int)TableIndex.GenericParamConstraint] * 4; // 2+2
+
+            // Align table stream to 4 bytes (includes +1 for terminating 0 byte)
+            tableStreamSize = ((tableStreamSize + 1) + 3) & ~3;
+
+            return metadataHeaderSize + heapStorageSize + tableStreamSize;
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitOptionalModifier(CILParser.OptionalModifierContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
