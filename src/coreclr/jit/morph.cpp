@@ -2989,7 +2989,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     }
 
 #ifdef FEATURE_SIMD
-    if (varTypeIsStruct(elemTyp) && structSizeMightRepresentSIMDType(elemSize))
+    if (varTypeIsStruct(elemTyp) && structSizeMightRepresentAcceleratedType(elemSize))
     {
         elemTyp = impNormStructType(elemStructType);
     }
@@ -15009,7 +15009,7 @@ PhaseStatus Compiler::fgPromoteStructs()
             }
             tooManyLocalsReported = true;
         }
-        else if (varTypeIsStruct(varDsc))
+        else if (varTypeIsStruct(varDsc) && TypeGet(varDsc) != TYP_HALF)
         {
             assert(structPromotionHelper != nullptr);
             promotedVar = structPromotionHelper->TryPromoteStructVar(lclNum);
