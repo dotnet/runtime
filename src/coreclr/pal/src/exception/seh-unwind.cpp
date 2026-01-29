@@ -168,6 +168,7 @@ enum
 #define ASSIGN_UNWIND_REGS \
     ASSIGN_REG(Nip)        \
     ASSIGN_REG(R1)	   \
+    ASSIGN_REG(R2)	   \
     ASSIGN_REG(R14)        \
     ASSIGN_REG(R15)        \
     ASSIGN_REG(R16)        \
@@ -482,6 +483,7 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_RISCV_X27, (unw_word_t *) &winContext->S11);
 #elif (defined(HOST_UNIX) && defined(HOST_POWERPC64))
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R1);
+    unw_get_reg(cursor, UNW_PPC64_R2, (unw_word_t *) &winContext->R2);
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Nip);
     unw_get_reg(cursor, UNW_PPC64_R14, (unw_word_t *) &winContext->R14);
     unw_get_reg(cursor, UNW_PPC64_R15, (unw_word_t *) &winContext->R15);
