@@ -40,7 +40,7 @@ using Mono.Collections.Generic;
 
 namespace Mono.Linker.Steps
 {
-    public class SweepStep : BaseStep
+    internal class SweepStep : BaseStep
     {
         readonly bool sweepSymbols;
 

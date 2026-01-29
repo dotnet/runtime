@@ -8,7 +8,7 @@ using Mono.Collections.Generic;
 
 namespace Mono.Linker.Steps
 {
-    public class SealerStep : BaseStep
+    internal class SealerStep : BaseStep
     {
         HashSet<TypeDefinition>? referencedBaseTypeCache;
 
