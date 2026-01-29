@@ -10178,6 +10178,25 @@ CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
     return result;
 }
 
+CorInfoHelpFunc CEEInfo::getSpecialIndirectLoadStoreHelper(CORINFO_CLASS_HANDLE type)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
+
+    JIT_TO_EE_TRANSITION();
+
+    // Default implementation returns CORINFO_HELP_UNDEF
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 /*********************************************************************/
 CORINFO_JUST_MY_CODE_HANDLE CEEInfo::getJustMyCodeHandle(
                 CORINFO_METHOD_HANDLE       method,

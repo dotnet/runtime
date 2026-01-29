@@ -2039,3 +2039,11 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDL
     mc->recGetSpecialCopyHelper(type, temp);
     return temp;
 }
+
+CorInfoHelpFunc interceptor_ICJI::getSpecialIndirectLoadStoreHelper(CORINFO_CLASS_HANDLE type)
+{
+    mc->cr->AddCall("getSpecialIndirectLoadStoreHelper");
+    CorInfoHelpFunc temp = original_ICorJitInfo->getSpecialIndirectLoadStoreHelper(type);
+    mc->recGetSpecialIndirectLoadStoreHelper(type, temp);
+    return temp;
+}

@@ -5859,13 +5859,79 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         case GT_BLK:
         case GT_IND:
         {
+            CORINFO_CLASS_HANDLE retClsHnd = comp->info.compMethodInfo->args.retTypeClass;
+
+            // Check if the type requires a special helper for indirect load
+            CorInfoHelpFunc specialHelper = comp->info.compCompHnd->getSpecialIndirectLoadStoreHelper(retClsHnd);
+            if (specialHelper != CORINFO_HELP_UNDEF)
+            {
+                // Create a temp to hold the loaded value
+                unsigned tmpNum = comp->lvaGrabTemp(true DEBUGARG("special indirect load return temp"));
+                comp->lvaSetStruct(tmpNum, retClsHnd, false);
+
+                // Get source address from the indirection
+                GenTree* srcAddr = retVal->AsIndir()->Addr();
+
+                // Get the address of the temp (destination)
+                GenTree* destAddr = comp->gtNewLclVarAddrNode(tmpNum, TYP_BYREF);
+
+                // Create the type handle node
+                GenTree* typeHandleOp = comp->gtNewIconEmbClsHndNode(retClsHnd);
+
+                // Create placeholder nodes for fgMorphArgs
+                GenTree* typeHandlePlaceholder = comp->gtNewZeroConNode(TYP_I_IMPL);
+                GenTree* destPlaceholder       = comp->gtNewZeroConNode(TYP_BYREF);
+                GenTree* srcPlaceholder        = comp->gtNewZeroConNode(TYP_BYREF);
+
+                // Create the helper call: helper(TypeHandle, dest, src)
+                GenTreeCall* helperCall = comp->gtNewHelperCallNode(specialHelper, TYP_VOID, typeHandlePlaceholder,
+                                                                    destPlaceholder, srcPlaceholder);
+                comp->fgMorphArgs(helperCall);
+
+                LIR::Range helperRange = LIR::SeqTree(comp, helperCall);
+                GenTree*   rangeStart  = helperRange.FirstNode();
+                GenTree*   rangeEnd    = helperRange.LastNode();
+
+                // Insert the helper call and its arguments before the return
+                BlockRange().InsertBefore(ret, std::move(helperRange));
+                BlockRange().InsertBefore(rangeStart, typeHandleOp);
+                BlockRange().InsertBefore(rangeStart, destAddr);
+
+                // srcAddr is already in the LIR before ret, just need to keep it there
+                // We need to replace the placeholders with the real values
+                LIR::Use typeHandleUse;
+                LIR::Use destUse;
+                LIR::Use srcUse;
+                BlockRange().TryGetUse(typeHandlePlaceholder, &typeHandleUse);
+                BlockRange().TryGetUse(destPlaceholder, &destUse);
+                BlockRange().TryGetUse(srcPlaceholder, &srcUse);
+                typeHandleUse.ReplaceWith(typeHandleOp);
+                destUse.ReplaceWith(destAddr);
+                srcUse.ReplaceWith(srcAddr);
+                typeHandlePlaceholder->SetUnusedValue();
+                destPlaceholder->SetUnusedValue();
+                srcPlaceholder->SetUnusedValue();
+
+                // Remove the original indirection node
+                BlockRange().Remove(retVal);
+
+                LowerRange(rangeStart, rangeEnd);
+                MovePutArgNodesUpToCall(helperCall);
+
+                // Update the return to use the temp
+                LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
+                ReplaceWithLclVar(retValUse, tmpNum);
+                LowerRetSingleRegStructLclVar(ret);
+                break;
+            }
+
             // Spill to a local if sizes don't match so we can avoid the "load more than requested"
             // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
             if (genTypeSize(nativeReturnType) > retVal->AsIndir()->Size())
             {
                 LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
                 unsigned tmpNum = comp->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
-                comp->lvaSetStruct(tmpNum, comp->info.compMethodInfo->args.retTypeClass, false);
+                comp->lvaSetStruct(tmpNum, retClsHnd, false);
 
                 ReplaceWithLclVar(retValUse, tmpNum);
                 LowerRetSingleRegStructLclVar(ret);

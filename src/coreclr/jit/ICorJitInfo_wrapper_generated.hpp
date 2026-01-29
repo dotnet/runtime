@@ -1758,6 +1758,15 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::getSpecialCopyHelper(
     return temp;
 }
 
+CorInfoHelpFunc WrapICorJitInfo::getSpecialIndirectLoadStoreHelper(
+          CORINFO_CLASS_HANDLE type)
+{
+    API_ENTER(getSpecialIndirectLoadStoreHelper);
+    CorInfoHelpFunc temp = wrapHnd->getSpecialIndirectLoadStoreHelper(type);
+    API_LEAVE(getSpecialIndirectLoadStoreHelper);
+    return temp;
+}
+
 /**********************************************************************************/
 // clang-format on
 /**********************************************************************************/

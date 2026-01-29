@@ -10779,6 +10779,23 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val; // Src addr
                 op1 = impPopStack().val; // Dest addr
 
+                // Check if the type requires a special helper for indirect copy
+                CorInfoHelpFunc specialHelper =
+                    info.compCompHnd->getSpecialIndirectLoadStoreHelper(resolvedToken.hClass);
+                if (specialHelper != CORINFO_HELP_UNDEF)
+                {
+                    // Helper expects: TypeHandle, destination pointer, source pointer
+                    GenTree* typeHandleOp = impTokenToHandle(&resolvedToken, nullptr, true);
+                    if (typeHandleOp == nullptr)
+                    {
+                        return; // compDonotInline()
+                    }
+
+                    // op1 is destination, op2 is source
+                    op1 = gtNewHelperCallNode(specialHelper, TYP_VOID, typeHandleOp, op1, op2);
+                    goto SPILL_APPEND;
+                }
+
                 op2 = gtNewLoadValueNode(layout, op2);
                 op1 = gtNewStoreValueNode(layout, op1, op2);
                 goto SPILL_APPEND;
@@ -10803,6 +10820,27 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val; // Value
                 op1 = impPopStack().val; // Ptr
                 assertImp(varTypeIsStruct(op2));
+
+                // Check if the type requires a special helper for indirect store
+                CorInfoHelpFunc specialHelper =
+                    info.compCompHnd->getSpecialIndirectLoadStoreHelper(resolvedToken.hClass);
+                if (specialHelper != CORINFO_HELP_UNDEF)
+                {
+                    // Helper expects: TypeHandle, destination pointer, source pointer
+                    GenTree* typeHandleOp = impTokenToHandle(&resolvedToken, nullptr, true);
+                    if (typeHandleOp == nullptr)
+                    {
+                        return; // compDonotInline()
+                    }
+
+                    // Get address of the source value
+                    GenTreeFlags srcIndirFlags = GTF_EMPTY;
+                    GenTree*     srcAddr       = impGetNodeAddr(op2, CHECK_SPILL_ALL, GTF_EMPTY, &srcIndirFlags);
+
+                    // op1 is already the destination pointer
+                    op1 = gtNewHelperCallNode(specialHelper, TYP_VOID, typeHandleOp, op1, srcAddr);
+                    goto SPILL_APPEND;
+                }
 
                 GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
                 if (eeIsByrefLike(resolvedToken.hClass))
@@ -10871,6 +10909,40 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1 = impPopStack().val;
                 assertImp((genActualType(op1) == TYP_I_IMPL) || op1->TypeIs(TYP_BYREF));
+
+                // Check if the type requires a special helper for indirect load
+                if (varTypeIsStruct(lclTyp))
+                {
+                    CorInfoHelpFunc specialHelper =
+                        info.compCompHnd->getSpecialIndirectLoadStoreHelper(resolvedToken.hClass);
+                    if (specialHelper != CORINFO_HELP_UNDEF)
+                    {
+                        // Helper expects: TypeHandle, destination pointer, source pointer
+                        // For load, we create a temp as the destination
+                        GenTree* typeHandleOp = impTokenToHandle(&resolvedToken, nullptr, true);
+                        if (typeHandleOp == nullptr)
+                        {
+                            return; // compDonotInline()
+                        }
+
+                        // Create a temp to hold the loaded value
+                        unsigned tmpNum = lvaGrabTemp(true DEBUGARG("special indirect load temp"));
+                        lvaSetStruct(tmpNum, resolvedToken.hClass, false);
+
+                        // Get the address of the temp (destination)
+                        GenTree* destAddr = gtNewLclVarAddrNode(tmpNum, TYP_BYREF);
+
+                        // op1 is the source pointer
+                        GenTree* helperCall =
+                            gtNewHelperCallNode(specialHelper, TYP_VOID, typeHandleOp, destAddr, op1);
+                        impAppendTree(helperCall, CHECK_SPILL_ALL, impCurStmtDI);
+
+                        // Push the temp value onto the stack
+                        op1 = gtNewLclvNode(tmpNum, lclTyp);
+                        impPushOnStack(op1, tiRetVal);
+                        break;
+                    }
+                }
 
                 op1 = gtNewLoadValueNode(lclTyp, layout, op1, impPrefixFlagsToIndirFlags(prefixFlags));
                 impPushOnStack(op1, tiRetVal);

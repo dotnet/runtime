@@ -3461,6 +3461,10 @@ public:
     virtual void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) = 0;
 
     virtual CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;
+
+    // Get the helper function to use when loading/storing a value of the given type via
+    // an indirect address (e.g. from or to a byref or pointer value), if any.
+    virtual CorInfoHelpFunc getSpecialIndirectLoadStoreHelper(CORINFO_CLASS_HANDLE type) = 0;
 };
 
 /**********************************************************************************/
