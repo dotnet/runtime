@@ -694,10 +694,6 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
         intrinsic = NI_X86Base_BlendVariable;
     }
 
-    if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
-    {
-        node->SetSimdBaseType(varTypeIsUnsigned(simdBaseType) ? TYP_UINT : TYP_INT);
-    }
     node->ChangeHWIntrinsicId(intrinsic);
 }
 
