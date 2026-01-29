@@ -1,4 +1,16 @@
 <Project>
+  <!-- Enable runtime async for all .NET 11+ test projects. -->
+  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))
+    and '$(TestNativeAot)' != 'true'
+    and '$(TestReadyToRun)' != 'true'
+    and '$(UseNativeAOTRuntime)' != 'true'
+    and '$(TargetOS)' != 'browser'
+    and '$(TargetOS)' != 'wasi'
+    and '$(RuntimeFlavor)' != 'Mono'
+    and '$(UseRuntimeAsync)' != 'false'">
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
   <PropertyGroup>
     <RunScriptWindowsCmd Condition="'$(OS)' == 'Windows_NT' and '$(RunScriptWindowsCmd)' == ''">true</RunScriptWindowsCmd>
     <RunScriptWindowsCmd Condition="'$(OS)' != 'Windows_NT' and '$(RunScriptWindowsCmd)' == ''">false</RunScriptWindowsCmd>
@@ -79,7 +91,7 @@
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(BuildTestsOnHelix)' == 'true')"
           AfterTargets="$(ArchiveTestsAfterTargets)"
           DependsOnTargets="GenerateRunScript;ZipTestArchive" />
-  
+
   <Target Name="ZipTestArchive"
           Condition="'$(TargetsAppleMobile)' != 'true'">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
