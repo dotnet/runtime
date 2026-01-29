@@ -3740,102 +3740,28 @@ namespace System.Runtime.Intrinsics
             // - atan2(±y, -∞) = ±pi
 
             const double PI = 3.141592653589793;           // 0x1.921fb54442d18p1
-            const double PI_BY_2 = 1.5707963267948966;     // 0x1.921fb54442d18p0
 
-            const double SQRT3 = 1.7320508075688772;       // 0x1.bb67ae8584caap0
-            const double RANGE = 0.2679491924311227;       // 0x1.126145e9ecd56p-2 (2-sqrt(3))
-            const double PI_BY_6 = 0.5235987755982989;     // 0x1.0c152382d7366p-1
-            const double PI_BY_3 = 1.0471975511965979;     // 0x1.0c152382d7366p0
+            // Compute atan(y/x) using the regular Atan function
+            TVectorDouble ratio = y / x;
+            TVectorDouble atanResult = AtanDouble<TVectorDouble>(ratio);
 
-            // Polynomial coefficients
-            const double C0 = -0.33333333333333265;        // -0x1.5555555555549p-2
-            const double C1 = 0.19999999999969587;         // 0x1.9999999996eccp-3
-            const double C2 = -0.1428571428026078;         // -0x1.24924922b2972p-3
-            const double C3 = 0.11111110613838616;         // 0x1.c71c707163579p-4
-            const double C4 = -0.09090882990193784;        // -0x1.745cd1358b0f1p-4
-            const double C5 = 0.07691470703415716;         // 0x1.3b0aea74b0a51p-4
-            const double C6 = -0.06649949387937557;        // -0x1.1061c5f6997a6p-4
-            const double C7 = 0.05677994137264123;         // 0x1.d1242ae875135p-5
-            const double C8 = -0.038358962102069113;       // -0x1.3a3c92f7949aep-5
+            // Adjust for quadrant based on sign of x
+            // If x < 0 and y >= 0: add pi
+            // If x < 0 and y < 0: subtract pi (which is same as add pi, then result is negative from atan)
+            TVectorDouble xNegative = TVectorDouble.LessThan(x, TVectorDouble.Zero);
+            TVectorDouble yNonNegative = TVectorDouble.GreaterThanOrEqual(y, TVectorDouble.Zero);
 
-            // Extract signs of y
-            TVectorDouble signY = y & TVectorDouble.Create(-0.0);
-
-            TVectorDouble ay = TVectorDouble.Abs(y);
-            TVectorDouble ax = TVectorDouble.Abs(x);
-
-            // Compute u = ay/ax (division by zero handled naturally)
-            TVectorDouble u = ay / ax;
-
-            const double F = 1.0 / RANGE;
-
-            // Argument reduction for atan(u), same as in Atan
-            TVectorDouble cmp1 = TVectorDouble.GreaterThanOrEqual(u, TVectorDouble.Create(F));
-            TVectorDouble cmp2 = TVectorDouble.GreaterThan(u, TVectorDouble.One);
-            TVectorDouble cmp3 = TVectorDouble.GreaterThan(u, TVectorDouble.Create(RANGE));
-
-            TVectorDouble aux1 = TVectorDouble.One / u;
-            TVectorDouble pival1 = TVectorDouble.Create(PI_BY_2);
-
-            TVectorDouble aux2 = (aux1 * TVectorDouble.Create(SQRT3) - TVectorDouble.One) / (TVectorDouble.Create(SQRT3) + aux1);
-            TVectorDouble pival2 = TVectorDouble.Create(PI_BY_3);
-
-            TVectorDouble aux3 = (u * TVectorDouble.Create(SQRT3) - TVectorDouble.One) / (TVectorDouble.Create(SQRT3) + u);
-            TVectorDouble pival3 = TVectorDouble.Create(PI_BY_6);
-
-            TVectorDouble aux4 = u;
-            TVectorDouble pival4 = TVectorDouble.Zero;
-
-            TVectorDouble aux = TVectorDouble.ConditionalSelect(cmp1, aux1,
-                                TVectorDouble.ConditionalSelect(cmp2, aux2,
-                                TVectorDouble.ConditionalSelect(cmp3, aux3, aux4)));
-
-            TVectorDouble pival = TVectorDouble.ConditionalSelect(cmp1, pival1,
-                                  TVectorDouble.ConditionalSelect(cmp2, pival2,
-                                  TVectorDouble.ConditionalSelect(cmp3, pival3, pival4)));
-
-            TVectorDouble polysignMask = TVectorDouble.ConditionalSelect(cmp1 | cmp2, TVectorDouble.Create(-0.0), TVectorDouble.Zero);
-
-            // Polynomial evaluation
-            TVectorDouble aux2_poly = aux * aux;
-            TVectorDouble poly = TVectorDouble.MultiplyAddEstimate(
-                TVectorDouble.MultiplyAddEstimate(
-                    TVectorDouble.MultiplyAddEstimate(
-                        TVectorDouble.MultiplyAddEstimate(
-                            TVectorDouble.MultiplyAddEstimate(
-                                TVectorDouble.MultiplyAddEstimate(
-                                    TVectorDouble.MultiplyAddEstimate(
-                                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C8), aux2_poly, TVectorDouble.Create(C7)),
-                                        aux2_poly, TVectorDouble.Create(C6)),
-                                    aux2_poly, TVectorDouble.Create(C5)),
-                                aux2_poly, TVectorDouble.Create(C4)),
-                            aux2_poly, TVectorDouble.Create(C3)),
-                        aux2_poly, TVectorDouble.Create(C2)),
-                    aux2_poly, TVectorDouble.Create(C1)),
-                aux2_poly, TVectorDouble.Create(C0)
-            );
-
-            poly = TVectorDouble.MultiplyAddEstimate(poly * aux2_poly, aux, aux);
-            poly ^= polysignMask;
-
-            TVectorDouble atanU = pival + poly;
-
-            // Adjust for quadrant
-            // If x < 0, add or subtract pi based on sign of y
             TVectorDouble piAdjust = TVectorDouble.ConditionalSelect(
-                TVectorDouble.GreaterThanOrEqual(y, TVectorDouble.Zero),
+                yNonNegative,
                 TVectorDouble.Create(PI),
                 TVectorDouble.Create(-PI)
             );
 
             TVectorDouble result = TVectorDouble.ConditionalSelect(
-                TVectorDouble.LessThan(x, TVectorDouble.Zero),
-                atanU + piAdjust,
-                atanU
+                xNegative,
+                atanResult + piAdjust,
+                atanResult
             );
-
-            // Apply sign of y to result
-            result |= signY;
 
             return result;
         }
