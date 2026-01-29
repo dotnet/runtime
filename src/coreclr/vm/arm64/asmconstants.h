@@ -101,37 +101,11 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 #endif
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 
-#define OFFSETOF__CONTEXT__ContextFlags 0x0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__ContextFlags == offsetof(T_CONTEXT, ContextFlags));
-
-// CONTEXT_INTEGER_BIT is bit 1 in ContextFlags (from pal.h CONTEXT_INTEGER definition)
-#define CONTEXT_INTEGER_BIT           1
-
-#define OFFSETOF__CONTEXT__X0         0x08
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__X0 == offsetof(T_CONTEXT, X0));
-
 #define OFFSETOF__CONTEXT__X19        0xA0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__X19 == offsetof(T_CONTEXT, X19));
 
 #define OFFSETOF__CONTEXT__Fp         0xF0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Fp == offsetof(T_CONTEXT, Fp));
-
-#define OFFSETOF__CONTEXT__Lr         0xF8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Lr == offsetof(T_CONTEXT, Lr));
-
-#define OFFSETOF__CONTEXT__Sp         0x100
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Sp == offsetof(T_CONTEXT, Sp));
-
-#define OFFSETOF__CONTEXT__Pc         0x108
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Pc == offsetof(T_CONTEXT, Pc));
-
-// Floating point registers V[0..31] start at 0x110, each is 16 bytes (NEON128)
-// Non-volatile FP registers are V8-V15 (d8-d15)
-#define OFFSETOF__CONTEXT__V0         0x110
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__V0 == offsetof(T_CONTEXT, V));
-
-// CONTEXT_FLOATING_POINT_BIT is bit 2 in ContextFlags
-#define CONTEXT_FLOATING_POINT_BIT    2
 
 #define               OFFSETOF__DynamicHelperStubArgs__Constant1    0x0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicHelperStubArgs__Constant1
