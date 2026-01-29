@@ -12,16 +12,16 @@ namespace System.IO.Hashing
         // All of these checks except the length check are elided by JIT, so the JITted implementation
         // will be either a return false or a length check against a constant. This means this method
         // should be inlined into the caller.
-        private static bool CanBeVectorized(ReadOnlySpan<byte> source) =>
-            BitConverter.IsLittleEndian
-            && VectorHelper.IsSupported
-            && source.Length > Vector128<byte>.Count;
+        // private static bool CanBeVectorized(ReadOnlySpan<byte> source) =>
+        //     BitConverter.IsLittleEndian
+        //     && VectorHelper.IsSupported
+        //     && source.Length > Vector128<byte>.Count;
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static uint UpdateVectorized(uint adler, ReadOnlySpan<byte> source)
-        {
-            // Placeholder implementation until a vectorized implementation is provided.
-            return adler;
-        }
+        // Commented out until a vectorized implementation is available.
+        // [MethodImpl(MethodImplOptions.NoInlining)]
+        // private static uint UpdateVectorized(uint adler, ReadOnlySpan<byte> buf)
+        // {
+        //     return adler;
+        // }
     }
 }
