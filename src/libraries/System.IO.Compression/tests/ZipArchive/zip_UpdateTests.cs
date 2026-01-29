@@ -330,13 +330,19 @@ namespace System.IO.Compression.Tests
 
             ZipArchiveEntry edeleted = target.GetEntry("first.txt");
 
+            // Record original values before opening
+            long originalLength = edeleted.Length;
+            long originalCompressedLength = edeleted.CompressedLength;
+
             Stream s = await OpenEntryStream(async, edeleted);
 
             //invalid ops while entry open
             await Assert.ThrowsAsync<IOException>(() => OpenEntryStream(async, edeleted));
 
-            Assert.Throws<InvalidOperationException>(() => { var x = edeleted.Length; });
-            Assert.Throws<InvalidOperationException>(() => { var x = edeleted.CompressedLength; });
+            // Length and CompressedLength should still be accessible while stream is open but no writes occurred
+            Assert.Equal(originalLength, edeleted.Length);
+            Assert.Equal(originalCompressedLength, edeleted.CompressedLength);
+
             Assert.Throws<IOException>(() => edeleted.Delete());
 
             await DisposeStream(async, s);
@@ -344,8 +350,9 @@ namespace System.IO.Compression.Tests
             //invalid ops on stream after entry closed
             Assert.Throws<ObjectDisposedException>(() => s.ReadByte());
 
-            Assert.Throws<InvalidOperationException>(() => { var x = edeleted.Length; });
-            Assert.Throws<InvalidOperationException>(() => { var x = edeleted.CompressedLength; });
+            // Length and CompressedLength should still be accessible after stream closed without writes
+            Assert.Equal(originalLength, edeleted.Length);
+            Assert.Equal(originalCompressedLength, edeleted.CompressedLength);
 
             edeleted.Delete();
 
@@ -365,6 +372,34 @@ namespace System.IO.Compression.Tests
 
             Assert.Throws<ObjectDisposedException>(() => e.Delete());
             Assert.Throws<ObjectDisposedException>(() => { e.LastWriteTime = new DateTimeOffset(); });
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task UpdateModeInvalidOperations_AfterWrite(bool async)
+        {
+            using LocalMemoryStream ms = await LocalMemoryStream.ReadAppFileAsync(zfile("normal.zip"));
+
+            ZipArchive target = await CreateZipArchive(async, ms, ZipArchiveMode.Update, true);
+
+            ZipArchiveEntry entry = target.GetEntry("first.txt");
+
+            Stream s = await OpenEntryStream(async, entry);
+
+            // Write to the stream - this should mark the entry as modified
+            s.WriteByte(42);
+
+            // After writing, Length and CompressedLength should throw
+            Assert.Throws<InvalidOperationException>(() => { var x = entry.Length; });
+            Assert.Throws<InvalidOperationException>(() => { var x = entry.CompressedLength; });
+
+            await DisposeStream(async, s);
+
+            // After stream is closed with writes, Length and CompressedLength should still throw
+            Assert.Throws<InvalidOperationException>(() => { var x = entry.Length; });
+            Assert.Throws<InvalidOperationException>(() => { var x = entry.CompressedLength; });
+
+            await DisposeZipArchive(async, target);
         }
 
         [Theory]
@@ -1253,6 +1288,96 @@ namespace System.IO.Compression.Tests
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Tests that opening an entry stream and disposing it without writing does not mark the archive as modified,
+        /// thus not triggering a rewrite on Dispose. This is the scenario from the bug where using a non-expandable
+        /// MemoryStream with ZipArchiveMode.Update would throw NotSupportedException on Dispose if any entry was opened.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_OpenEntryWithoutWriting_DoesNotTriggerRewrite(bool async)
+        {
+            // Create a valid zip file
+            byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            byte[] sampleZipFile = await CreateZipFile(3, sampleEntryContents, async);
+            long originalLength = sampleZipFile.Length;
+
+            // Use a non-expandable MemoryStream (fixed buffer)
+            // This would throw NotSupportedException if Dispose tries to write/grow the stream
+            using (MemoryStream ms = new MemoryStream(sampleZipFile, writable: true))
+            {
+                ZipArchive archive = async
+                    ? await ZipArchive.CreateAsync(ms, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding: null)
+                    : new ZipArchive(ms, ZipArchiveMode.Update, leaveOpen: true);
+
+                // Open an entry and read it without writing
+                ZipArchiveEntry entry = archive.Entries[0];
+                Stream entryStream = async ? await entry.OpenAsync() : entry.Open();
+                byte[] buffer = new byte[sampleEntryContents.Length + 1]; // +1 for the index byte added by CreateZipFile
+                int bytesRead = async
+                    ? await entryStream.ReadAsync(buffer)
+                    : entryStream.Read(buffer, 0, buffer.Length);
+
+                // Close the entry stream without writing anything
+                if (async)
+                    await entryStream.DisposeAsync();
+                else
+                    entryStream.Dispose();
+
+                // Dispose should not throw NotSupportedException because no writes occurred
+                // and the archive should not try to grow the stream
+                if (async)
+                    await archive.DisposeAsync();
+                else
+                    archive.Dispose();
+
+                // Verify the stream was not modified
+                Assert.Equal(originalLength, ms.Length);
+            }
+        }
+
+        /// <summary>
+        /// Regression test for the exact scenario from the bug report https://github.com/dotnet/runtime/issues/123419
+        /// Opening a Package-like zip archive (with [Content_Types].xml) on a non-expandable MemoryStream, disposing
+        /// without modifications, should not throw NotSupportedException. This mimics Package.Open behavior where simply opening
+        /// and closing a package without changes should not attempt to rewrite the archive.
+        /// </summary>
+        [Fact]
+        public void Update_PackageLikeArchive_DisposeWithoutChanges_DoesNotThrow()
+        {
+            // This is the exact byte array from the bug report
+            byte[] compressed =
+            [
+                80,75,3,4,20,0,6,0,8,0,0,0,33,0,42,221,170,64,210,0,0,0,55,1,0,0,19,0,8,2,91,67,111,110,116,101,110,116,95,84,121,112,101,115,93,46,120,109,108,32,162,4,2,40,160,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,108,143,189,78,196,48,16,132,123,36,222,193,218,254,178,129,2,33,148,228,10,126,74,184,226,120,128,149,179,201,89,216,107,203,94,80,238,237,113,46,84,64,185,63,51,223,76,183,95,130,55,159,156,139,139,210,195,77,211,130,97,177,113,116,50,247,240,126,124,217,221,131,41,74,50,146,143,194,61,156,185,192,126,184,190,234,142,231,196,197,84,181,148,30,78,170,233,1,177,216,19,7,42,77,76,44,245,50,197,28,72,235,152,103,76,100,63,104,102,188,109,219,59,180,81,148,69,119,186,122,192,208,61,241,68,159,94,205,243,82,215,91,146,0,230,113,251,90,65,61,40,47,138,201,147,19,192,127,5,149,247,75,66,41,121,103,73,107,51,92,175,85,247,86,155,102,55,178,57,80,214,87,10,213,24,43,102,114,51,30,182,128,205,95,159,11,250,199,0,47,181,135,111,0,0,0,255,255,3,0,80,75,3,4,20,0,2,0,8,0,0,0,33,0,10,177,174,11,172,0,0,0,247,0,0,0,18,0,0,0,67,111,110,102,105,103,47,80,97,99,107,97,103,101,46,120,109,108,132,143,189,14,130,48,28,196,119,19,223,129,116,167,31,160,11,41,101,112,149,196,132,104,92,27,104,164,17,254,53,180,88,222,205,193,71,242,21,132,40,234,230,120,119,191,228,238,30,183,59,207,134,182,9,174,170,179,218,64,138,24,166,40,176,78,66,37,27,3,42,69,96,80,38,150,11,190,147,229,89,158,84,48,210,96,147,193,86,41,170,157,187,36,132,120,239,177,143,177,233,78,36,162,148,145,99,190,45,202,90,181,18,125,96,253,31,14,53,76,181,165,66,130,31,94,107,68,132,25,91,227,104,21,99,202,201,108,242,92,195,23,136,198,193,83,250,99,242,77,223,184,190,83,66,65,184,47,56,153,37,39,239,15,226,9,0,0,255,255,3,0,80,75,3,4,20,0,2,0,8,0,0,0,33,0,98,124,210,234,150,0,0,0,177,2,0,0,19,0,0,0,70,111,114,109,117,108,97,115,47,83,101,99,116,105,111,110,49,46,109,42,78,77,46,201,204,207,83,8,134,208,134,214,92,92,197,25,137,69,169,41,10,129,165,169,69,149,62,249,137,41,169,41,33,249,33,137,73,57,169,10,182,10,57,169,37,188,92,10,64,16,156,95,90,148,12,18,81,82,226,229,202,204,67,22,196,103,132,75,98,73,162,111,126,74,106,14,101,102,5,100,150,229,151,80,193,77,8,115,208,28,134,110,30,208,56,194,166,57,231,231,229,65,130,209,63,47,167,146,50,151,161,154,69,13,215,129,253,234,12,148,40,161,66,152,129,205,161,196,85,225,153,37,25,249,165,37,8,111,18,235,40,0,0,0,0,255,255,3,0,80,75,1,2,45,0,20,0,6,0,8,0,0,0,33,0,42,221,170,64,210,0,0,0,55,1,0,0,19,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,91,67,111,110,116,101,110,116,95,84,121,112,101,115,93,46,120,109,108,80,75,1,2,45,0,20,0,2,0,8,0,0,0,33,0,10,177,174,11,172,0,0,0,247,0,0,0,18,0,0,0,0,0,0,0,0,0,0,0,0,0,11,3,0,0,67,111,110,102,105,103,47,80,97,99,107,97,103,101,46,120,109,108,80,75,1,2,45,0,20,0,2,0,8,0,0,0,33,0,98,124,210,234,150,0,0,0,177,2,0,0,19,0,0,0,0,0,0,0,0,0,0,0,0,0,231,3,0,0,70,111,114,109,117,108,97,115,47,83,101,99,116,105,111,110,49,46,109,80,75,5,6,0,0,0,0,3,0,3,0,194,0,0,0,174,4,0,0,0,0
+            ];
+
+            long originalLength = compressed.Length;
+
+            // Use a non-expandable MemoryStream (fixed buffer) - this is what Package.Open does internally
+            // This would throw NotSupportedException if Dispose tries to write/grow the stream
+            using MemoryStream stream = new MemoryStream(compressed);
+
+            // Open in Update mode (like Package.Open with FileAccess.ReadWrite)
+            using ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Update, leaveOpen: true);
+
+            // Access entries (simulating what Package does when reading [Content_Types].xml)
+            Assert.Equal(3, archive.Entries.Count);
+            ZipArchiveEntry contentTypesEntry = archive.GetEntry("[Content_Types].xml");
+            Assert.NotNull(contentTypesEntry);
+
+            // Open and read the entry without writing (like Package reading [Content_Types].xml)
+            using (Stream entryStream = contentTypesEntry.Open())
+            {
+                using StreamReader reader = new StreamReader(entryStream);
+                string content = reader.ReadToEnd();
+                Assert.Contains("ContentType", content);
+            }
+
+            // Archive will be disposed here - should NOT throw NotSupportedException
+            // because no actual modifications were made
+
         }
     }
 }
