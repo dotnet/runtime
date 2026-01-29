@@ -345,6 +345,7 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 #if HAVE_SYS_MMAN_H && HAVE_MEMFD_CREATE && HAVE_UNISTD_H
 		// Create a mapping to signal that the diagnostic server IPC is available.
 		// External tools can use this to detect when the runtime is ready to accept diagnostic commands.
+		// The mapping's lifetime is tied to the process, so tools that start after the .NET process can still detect it.
 		if (default_listen_port_ready) {
 			int fd = (int)syscall (__NR_memfd_create, "dotnet_ipc_created", (unsigned int)MFD_CLOEXEC);
 			if (fd >= 0) {
