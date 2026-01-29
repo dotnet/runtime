@@ -20,6 +20,7 @@
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <WasmXHarnessTestsTimeout>02:30:00</WasmXHarnessTestsTimeout>
   </PropertyGroup>
 
   <!--
