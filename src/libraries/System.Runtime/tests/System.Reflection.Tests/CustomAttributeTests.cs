@@ -284,5 +284,32 @@ namespace System.Reflection.Tests
             object[] attributesWithInherit = objectType.GetCustomAttributes(inherit: true);
             Assert.Equal(attributesWithoutInherit.Length, attributesWithInherit.Length);
         }
+
+        // Test for generic enum argument with function pointer array - related to https://github.com/dotnet/runtime/pull/123439
+        private class GenericEnumAttributeWithFunctionPointer : Attribute
+        {
+            public unsafe GenericEnumAttributeWithFunctionPointer(GenericClassForEnum<delegate*<void>[]>.E e) { }
+        }
+
+        private class GenericClassForEnum<T>
+        {
+            public enum E { }
+        }
+
+        [GenericEnumAttributeWithFunctionPointer(default)]
+        private unsafe class ClassWithGenericEnumAttribute { }
+
+        [Fact]
+        public void CustomAttributeCtor_WithGenericEnumArgument_DecodesCorrectly()
+        {
+            // This test ensures correct reflection behavior when loading a custom attribute
+            // whose constructor argument is a generic enum instance involving a function pointer array.
+            // This scenario was causing a crash in Mono (see https://github.com/dotnet/runtime/pull/123439)
+            var attr = typeof(ClassWithGenericEnumAttribute).CustomAttributes.Single(d => d.AttributeType == typeof(GenericEnumAttributeWithFunctionPointer));
+            var arg = attr.ConstructorArguments.Single();
+            
+            // Verify that we can successfully decode the attribute without crashing
+            Assert.Equal(typeof(CustomAttributeTypedArgument), arg.GetType());
+        }
     }
 }
