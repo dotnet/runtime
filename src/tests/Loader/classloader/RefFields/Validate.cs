@@ -131,55 +131,52 @@ public class Validate
     }
 }
 
-namespace InvalidCSharp
+public ref struct WithRefField
 {
-    public ref struct WithRefField
+    public ref string Str;
+
+    public WithRefField(ref string str)
     {
-        public ref string Str;
-
-        public WithRefField(ref string str)
-        {
-            Str = ref str;
-        }
-
-        public bool ConfirmFieldInstance(string value)
-        {
-            return object.ReferenceEquals(Str, value);
-        }
+        Str = ref str;
     }
 
-    public ref struct WithRefStructField
+    public bool ConfirmFieldInstance(string value)
     {
-        public ref WithRefField Field;
+        return object.ReferenceEquals(Str, value);
+    }
+}
 
-        public WithRefStructField(ref WithRefField field)
-        {
-            Field = ref field;
-        }
+public ref struct WithRefStructField
+{
+    public ref WithRefField Field;
 
-        public bool ConfirmFieldInstance(ref WithRefField field)
-        {
-            return Unsafe.AreSame(ref Field, ref field);
-        }
+    public WithRefStructField(ref WithRefField field)
+    {
+        Field = ref field;
     }
 
-    public ref struct WithTypedReferenceField<T>
+    public bool ConfirmFieldInstance(ref WithRefField field)
     {
-        public TypedReference Field;
+        return Unsafe.AreSame(ref Field, ref field);
+    }
+}
 
-        public WithTypedReferenceField(ref T value)
-        {
-            Field = __makeref(value);
-        }
+public ref struct WithTypedReferenceField<T>
+{
+    public TypedReference Field;
 
-        public Type GetFieldType()
-        {
-            return __reftype(Field);
-        }
+    public WithTypedReferenceField(ref T value)
+    {
+        Field = __makeref(value);
+    }
 
-        public bool ConfirmFieldInstance(T value)
-        {
-            return object.ReferenceEquals(__refvalue(Field, T), value);
-        }
+    public Type GetFieldType()
+    {
+        return __reftype(Field);
+    }
+
+    public bool ConfirmFieldInstance(T value)
+    {
+        return object.ReferenceEquals(__refvalue(Field, T), value);
     }
 }
