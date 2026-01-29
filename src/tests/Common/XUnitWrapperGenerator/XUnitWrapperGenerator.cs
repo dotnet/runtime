@@ -671,6 +671,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             var hasSkip = attr.NamedArguments.Any(x => x.Key == "Skip");
 
+            if (attr.AttributeClass is IErrorTypeSymbol)
+            {
+                System.Diagnostics.Debugger.Launch();
+            }
+
             switch (attr.AttributeClass?.ToDisplayString())
             {
                 case "Xunit.ConditionalFactAttribute":

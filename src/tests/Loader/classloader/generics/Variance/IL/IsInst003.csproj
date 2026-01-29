@@ -7,6 +7,9 @@
     <Compile Include="IsInst003.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="ILLib.ilproj" />
   </ItemGroup>
 </Project>

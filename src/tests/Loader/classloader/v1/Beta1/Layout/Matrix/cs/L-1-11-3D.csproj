@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="L-1-11-3D.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>
