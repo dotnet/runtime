@@ -260,6 +260,86 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+#if NET
+    internal struct StructReadOnlySet<T> : IReadOnlySet<T>
+    {
+        private HashSet<T> _set = new HashSet<T>();
+
+        // we track count separately to make sure tests are not passing by accident because we use reference to list inside of struct
+        private int _count;
+
+        public int Count => _count;
+
+        public StructReadOnlySet() { }
+
+        /// <remarks>
+        /// This method is used to initialize the HashSet because IReadOnlySet<T> does not have an Add method.
+        /// We use this instead of a constructor to allow for parameterless construction, which is important for some tests.
+        /// </remarks>
+        public StructReadOnlySet<T> Initialize(HashSet<T> items)
+        {
+            foreach (T item in items)
+            {
+                _set.Add(item);
+                _count++;
+            }
+
+            return this;
+        }
+
+        public bool Contains(T item)
+        {
+            return _set.Contains(item);
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return ((IReadOnlySet<T>)_set).GetEnumerator();
+        }
+
+        public bool IsProperSubsetOf(IEnumerable<T> other)
+        {
+            return _set.IsProperSubsetOf(other);
+        }
+
+        public bool IsProperSupersetOf(IEnumerable<T> other)
+        {
+            return _set.IsProperSupersetOf(other);
+        }
+
+        public bool IsSubsetOf(IEnumerable<T> other)
+        {
+            return _set.IsSubsetOf(other);
+        }
+
+        public bool IsSupersetOf(IEnumerable<T> other)
+        {
+            return _set.IsSupersetOf(other);
+        }
+
+        public bool Overlaps(IEnumerable<T> other)
+        {
+            return _set.Overlaps(other);
+        }
+
+        public bool SetEquals(IEnumerable<T> other)
+        {
+            return _set.SetEquals(other);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IReadOnlySet<T>)_set).GetEnumerator();
+        }
+
+        public void Validate()
+        {
+            // This can fail only if we modified a copy of this struct
+            Assert.Equal(_count, _set.Count);
+        }
+    }
+#endif
+
     internal struct StructDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary
     {
         private Dictionary<TKey, TValue> _dict = new();

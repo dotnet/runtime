@@ -543,6 +543,10 @@
   <!-- browser smoke tests CoreCLR -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Threading.Tasks.Tests\System.Threading.Tasks.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
   </ItemGroup>
 
   <!-- wasi/interp smoke tests -->
@@ -816,12 +820,12 @@
 
     <ItemGroup>
       <NormalTestAppBundles Include="$(NormalTestsAppBundleRoot)*/AppBundle/CMakeLists.txt" />
-      <NormalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.20)" />
+      <NormalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.26)" />
       <NormalTestCMakeEntries Include="project(NormalTestAppBundles)" />
       <NormalTestCMakeEntries Include="add_subdirectory(%(NormalTestAppBundles.RootDir)%(NormalTestAppBundles.Directory) %(NormalTestAppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
 
       <FunctionalTestAppBundles Include="$(FunctionalTestsAppBundleRoot)*/AppBundle/CMakeLists.txt" />
-      <FunctionalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.20)" />
+      <FunctionalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.26)" />
       <FunctionalTestCMakeEntries Include="project(FunctionalTestAppBundles)" />
       <FunctionalTestCMakeEntries Include="add_subdirectory(%(FunctionalTestAppBundles.RootDir)%(FunctionalTestAppBundles.Directory) %(FunctionalTestAppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
     </ItemGroup>
