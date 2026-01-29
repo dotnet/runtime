@@ -2649,6 +2649,14 @@ void ObjectAllocator::RewriteUses()
             }
             else if (newType == TYP_STRUCT)
             {
+                // For struct stores there is no upwards type propagation.
+                // These nodes and any ancestors will remain TYP_STRUCT.
+                //
+                if (tree->OperIs(GT_STORE_LCL_VAR, GT_STORE_LCL_FLD))
+                {
+                    return Compiler::fgWalkResult::WALK_CONTINUE;
+                }
+
                 newLayout    = lclVarDsc->GetLayout();
                 newType      = newLayout->HasGCPtr() ? TYP_BYREF : TYP_I_IMPL;
                 retypeFields = true;

@@ -1138,12 +1138,15 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        // All ComObjects except for __ComObject
-        // have dynamic Interface maps
-        return GetNumInterfaces() > 0
-            && IsComObjectType()
-            && !ParentEquals(g_pObjectClass)
-            && this != g_pBaseCOMObject;
+        // All ComObjects except for __ComObject have dynamic Interface maps
+        // to avoid costly QIs on required managed interfaces. The __ComObject
+        // type is inserted automatically when a COM object enters the runtime.
+        // For example, an incoming COM interface pointer or activation via a
+        // COM coclass. See ComObject::SupportsInterface() for relevant use of
+        // the dynamic interface map.
+        return IsComObjectType()
+            && GetNumInterfaces() > g_pBaseCOMObject->GetNumInterfaces()
+            && !ParentEquals(g_pObjectClass);
     }
 #endif // FEATURE_COMINTEROP
 
