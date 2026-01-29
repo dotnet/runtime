@@ -10,6 +10,15 @@
 #include "ep.h"
 #include "ds-rt.h"
 
+#if HAVE_SYS_MMAN_H && HAVE_MEMFD_CREATE && HAVE_UNISTD_H
+#include <sys/mman.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#ifndef MFD_CLOEXEC
+#define MFD_CLOEXEC 0x0001U
+#endif
+#endif
+
 /*
  * Globals and volatile access functions.
  */
@@ -332,7 +341,19 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 		default_port_builder.suspend_mode = port_suspend > 0 ? DS_PORT_SUSPEND_MODE_SUSPEND : DS_PORT_SUSPEND_MODE_NOSUSPEND;
 		default_port_builder.type = DS_PORT_TYPE_LISTEN;
 
-		result &= ipc_stream_factory_build_and_add_port (&default_port_builder, callback, true);
+		bool default_listen_port_ready = ipc_stream_factory_build_and_add_port (&default_port_builder, callback, true);
+#if HAVE_SYS_MMAN_H && HAVE_MEMFD_CREATE && HAVE_UNISTD_H
+		// Create a mapping to signal that the diagnostic server IPC is available.
+		// External tools can use this to detect when the runtime is ready to accept diagnostic commands.
+		if (default_listen_port_ready) {
+			int fd = (int)syscall (__NR_memfd_create, "dotnet_ipc_created", (unsigned int)MFD_CLOEXEC);
+			if (fd >= 0) {
+				mmap (NULL, 1, PROT_EXEC | PROT_READ, MAP_PRIVATE, fd, 0);
+				close (fd);
+			}
+		}
+#endif
+		result &= default_listen_port_ready;
 
 		ds_port_builder_fini (&default_port_builder);
 	} else {
