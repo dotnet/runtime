@@ -19,7 +19,7 @@ internal static partial class Interop
             MsgEncodingType dwCertEncodingType,
             nint lpszStructType,
             void* pvStructInfo,
-            byte[]? pbEncoded,
+            [Out] byte[]? pbEncoded,
             ref int pcbEncoded);
     }
 }

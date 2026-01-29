@@ -15,10 +15,10 @@ internal static partial class Interop
             short wType,
             ushort wcategory,
             uint dwEventID,
-            byte[] lpUserSid,
+            [In] byte[] lpUserSid,
             short wNumStrings,
             int dwDataSize,
             IntPtr lpStrings,
-            byte[] lpRawData);
+            [In] byte[] lpRawData);
     }
 }

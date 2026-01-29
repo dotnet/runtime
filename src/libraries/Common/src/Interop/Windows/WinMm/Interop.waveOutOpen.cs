@@ -46,6 +46,6 @@ internal static partial class Interop
         /// <param name="fdwOpen">Flags for opening the device.</param>
         /// <returns>MMSYSERR</returns>
         [LibraryImport(Libraries.WinMM)]
-        internal static partial MMSYSERR waveOutOpen(ref IntPtr phwo, int uDeviceID, byte[] pwfx, WaveOutProc dwCallback, IntPtr dwInstance, uint fdwOpen);
+        internal static partial MMSYSERR waveOutOpen(ref IntPtr phwo, int uDeviceID, [In] byte[] pwfx, WaveOutProc dwCallback, IntPtr dwInstance, uint fdwOpen);
     }
 }

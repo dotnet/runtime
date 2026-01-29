@@ -12,5 +12,5 @@ internal partial interface IPrepareInfo
 {
     void GetPrepareInfoSize(out uint pcbPrepInfo);
 
-    void GetPrepareInfo([MarshalAs(UnmanagedType.LPArray)] byte[] pPrepInfo);
+    void GetPrepareInfo([MarshalAs(UnmanagedType.LPArray), Out] byte[] pPrepInfo);
 }

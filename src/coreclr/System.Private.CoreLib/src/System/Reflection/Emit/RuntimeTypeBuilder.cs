@@ -66,23 +66,23 @@ namespace System.Reflection.Emit
 
         #region Internal Static FCalls
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethod", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int DefineMethod(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
+        internal static partial int DefineMethod(QCallModule module, int tkParent, string name, [In] byte[] signature, int sigLength,
             MethodAttributes attributes);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodSpec")]
-        internal static partial int DefineMethodSpec(QCallModule module, int tkParent, byte[] signature, int sigLength);
+        internal static partial int DefineMethodSpec(QCallModule module, int tkParent, [In] byte[] signature, int sigLength);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineField", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int DefineField(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
+        internal static partial int DefineField(QCallModule module, int tkParent, string name, [In] byte[] signature, int sigLength,
             FieldAttributes attributes);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetMethodIL")]
         private static partial void SetMethodIL(QCallModule module, int tk, [MarshalAs(UnmanagedType.Bool)] bool isInitLocals,
-            byte[]? body, int bodyLength,
-            byte[] LocalSig, int sigLength,
+            [In] byte[]? body, int bodyLength,
+            [In] byte[] LocalSig, int sigLength,
             int maxStackSize,
-            ExceptionHandler[]? exceptions, int numExceptions,
-            int[]? tokenFixups, int numTokenFixups);
+            [In] ExceptionHandler[]? exceptions, int numExceptions,
+            [In] int[]? tokenFixups, int numTokenFixups);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineCustomAttribute")]
         private static partial void DefineCustomAttribute(QCallModule module, int tkAssociate, int tkConstructor,
@@ -97,7 +97,7 @@ namespace System.Reflection.Emit
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineProperty", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineProperty(QCallModule module, int tkParent, string name, PropertyAttributes attributes,
-            byte[] signature, int sigLength);
+            [In] byte[] signature, int sigLength);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineEvent", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DefineEvent(QCallModule module, int tkParent, string name, EventAttributes attributes, int tkEventType);
@@ -117,7 +117,7 @@ namespace System.Reflection.Emit
             ParameterAttributes iParamAttributes, string? strParamName);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_GetTokenFromSig")]
-        internal static partial int GetTokenFromSig(QCallModule module, byte[] signature, int sigLength);
+        internal static partial int GetTokenFromSig(QCallModule module, [In] byte[] signature, int sigLength);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetFieldLayoutOffset")]
         internal static partial void SetFieldLayoutOffset(QCallModule module, int fdToken, int iOffset);
@@ -535,11 +535,11 @@ namespace System.Reflection.Emit
         #region FCalls
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineType", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int DefineType(QCallModule module,
-            string fullname, int tkParent, TypeAttributes attributes, int tkEnclosingType, int[] interfaceTokens);
+            string fullname, int tkParent, TypeAttributes attributes, int tkEnclosingType, [In] int[] interfaceTokens);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineGenericParam", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int DefineGenericParam(QCallModule module,
-            string name, int tkParent, GenericParameterAttributes attributes, int position, int[] constraints);
+            string name, int tkParent, GenericParameterAttributes attributes, int position, [In] int[] constraints);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_TermCreateClass")]
         private static partial void TermCreateClass(QCallModule module, int tk, ObjectHandleOnStack type);

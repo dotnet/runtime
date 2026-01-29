@@ -15,7 +15,7 @@ internal static partial class Interop
             SafeLsaPolicyHandle handle,
             int flags,
             int count,
-            MARSHALLED_UNICODE_STRING[] names,
+            [In] MARSHALLED_UNICODE_STRING[] names,
             out SafeLsaMemoryHandle referencedDomains,
             out SafeLsaMemoryHandle sids
         );

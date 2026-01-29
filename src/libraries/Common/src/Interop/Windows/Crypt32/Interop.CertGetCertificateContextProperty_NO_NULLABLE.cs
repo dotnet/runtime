@@ -13,7 +13,7 @@ internal static partial class Interop
         internal static partial bool CertGetCertificateContextProperty(
             SafeCertContextHandle pCertContext,
             CertContextPropId dwPropId,
-            byte[]? pvData,
+            [Out] byte[]? pvData,
             ref int pcbData);
     }
 }

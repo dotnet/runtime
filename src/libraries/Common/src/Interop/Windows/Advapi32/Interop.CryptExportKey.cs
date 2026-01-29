@@ -15,7 +15,7 @@ internal static partial class Interop
             SafeCapiKeyHandle hExpKey,
             int dwBlobType,
             int dwFlags,
-            byte[]? pbData,
+            [Out] byte[]? pbData,
             ref int dwDataLen);
     }
 }
