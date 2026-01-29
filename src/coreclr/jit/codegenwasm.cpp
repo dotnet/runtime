@@ -1020,7 +1020,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 //
 void CodeGen::genCodeForConstant(GenTree* treeNode)
 {
-    instruction    ins  = INS_unreachable;
+    instruction    ins  = INS_none;
     cnsval_ssize_t bits = 0;
     var_types      type = treeNode->TypeIs(TYP_REF, TYP_BYREF) ? TYP_I_IMPL : treeNode->TypeGet();
     static_assert(sizeof(cnsval_ssize_t) >= sizeof(double));
@@ -1031,8 +1031,8 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         icon = treeNode->AsIntConCommon();
         if (icon->ImmedValNeedsReloc(compiler))
         {
-            // WASM-TODO: Generate reloc for this handle; 64-bit support
-            ins  = INS_i32_const;
+            // WASM-TODO: Generate reloc for this handle
+            ins  = INS_I_const;
             bits = 0;
         }
         else
@@ -1041,7 +1041,7 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         }
     }
 
-    if (ins == INS_unreachable)
+    if (ins == INS_none)
     {
         switch (type)
         {
@@ -1476,20 +1476,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         //  ready for call_indirect. Consume it.
         genConsumeReg(target);
 
-        if (target->isContainedIntOrIImmed())
-        {
-            NYI_WASM("Contained int or iimmed call target");
-        }
-        else
-        {
-            params.callType = EC_INDIR_R;
-            // TODO-WASM: Figure out whether we need this. I think the target should always be on stack, not in a local.
-            // params.ireg     = target->GetRegNum();
-        }
-
-        // TODO-WASM: Assert disabled due to above
-        // assert(genIsValidIntReg(params.ireg));
-
+        params.callType = EC_INDIR_R;
         genEmitCallWithCurrentGC(params);
     }
     else

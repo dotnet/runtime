@@ -716,7 +716,7 @@ void emitter::emitDispIns(
         case IF_CALL_INDIRECT:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" 0 %llu", (uint64_t)imm);
+            printf(" %llu 0", (uint64_t)imm);
         }
         break;
 
