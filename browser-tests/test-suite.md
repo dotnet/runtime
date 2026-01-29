@@ -7,14 +7,18 @@ This document describes the process for running individual Browser/WASM CoreCLR 
 
 ## Downloading Mono Baseline
 
-Each test suite has a corresponding Mono baseline from Helix. To compare:
+Each test suite has a corresponding Mono baseline from Helix. Download it before running tests:
 
-Before running the test suite for the first time;
+```bash
+./browser-tests/download-mono-baseline.sh <TestProjectName>
+```
 
-1. Look up the workitem in [Mono-chrome-workitems.json](Mono-chrome-workitems.json)
-2. Use the `DetailsUrl` to fetch workitem details
-3. Download `ConsoleOutputUri` to see Mono's test execution summary
-4. Store the log as `browser-tests/results/<TestProject>/mono-console.log` for later comparison.
+Example:
+```bash
+./browser-tests/download-mono-baseline.sh System.Runtime.InteropServices.JavaScript.Tests
+```
+
+This downloads to `browser-tests/results/<TestProject>/mono-console.log` and displays the Mono test summary.
 
 ## Running Tests
 
