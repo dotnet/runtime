@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.Interop;
 using Microsoft.Interop.Analyzers;
 
 namespace Microsoft.Interop.UnitTests.Verifiers
@@ -111,13 +112,18 @@ namespace Microsoft.Interop.UnitTests.Verifiers
 
             protected override IEnumerable<DiagnosticAnalyzer> GetDiagnosticAnalyzers()
             {
-                // Include the LibraryImportDiagnosticsAnalyzer so it runs alongside the source generator.
-                // This is needed because diagnostics have been moved from the generator to the analyzer.
+                // Include the corresponding diagnostics analyzer when testing specific generators.
+                // This is needed because diagnostics have been moved from the generators to the analyzers.
                 foreach (var analyzer in base.GetDiagnosticAnalyzers())
                 {
                     yield return analyzer;
                 }
-                yield return new LibraryImportDiagnosticsAnalyzer();
+
+                // Only add the LibraryImportDiagnosticsAnalyzer when testing LibraryImportGenerator
+                if (typeof(TSourceGenerator) == typeof(LibraryImportGenerator))
+                {
+                    yield return new LibraryImportDiagnosticsAnalyzer();
+                }
             }
 
             protected override CompilationWithAnalyzers CreateCompilationWithAnalyzers(Compilation compilation, ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerOptions options, CancellationToken cancellationToken)

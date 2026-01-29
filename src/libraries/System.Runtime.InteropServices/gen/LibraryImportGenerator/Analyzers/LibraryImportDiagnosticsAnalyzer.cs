@@ -59,11 +59,34 @@ namespace Microsoft.Interop.Analyzers
                     context.Compilation,
                     context.Compilation.GetEnvironmentFlags());
 
-                context.RegisterSymbolAction(symbolContext => AnalyzeMethod(symbolContext, env), SymbolKind.Method);
+                // Track if we found any LibraryImport methods to report RequiresAllowUnsafeBlocks once
+                bool foundLibraryImportMethod = false;
+                bool unsafeEnabled = context.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true };
+
+                context.RegisterSymbolAction(symbolContext =>
+                {
+                    if (AnalyzeMethod(symbolContext, env))
+                    {
+                        foundLibraryImportMethod = true;
+                    }
+                }, SymbolKind.Method);
+
+                // Report RequiresAllowUnsafeBlocks once per compilation if there are LibraryImport methods and unsafe is not enabled
+                context.RegisterCompilationEndAction(endContext =>
+                {
+                    if (foundLibraryImportMethod && !unsafeEnabled)
+                    {
+                        endContext.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, null).ToDiagnostic());
+                    }
+                });
             });
         }
 
-        private static void AnalyzeMethod(SymbolAnalysisContext context, StubEnvironment env)
+        /// <summary>
+        /// Analyzes a method for LibraryImport diagnostics.
+        /// </summary>
+        /// <returns>True if the method has LibraryImportAttribute, false otherwise.</returns>
+        private static bool AnalyzeMethod(SymbolAnalysisContext context, StubEnvironment env)
         {
             IMethodSymbol method = (IMethodSymbol)context.Symbol;
 
@@ -79,7 +102,7 @@ namespace Microsoft.Interop.Analyzers
             }
 
             if (libraryImportAttr is null)
-                return;
+                return false;
 
             // Find the method syntax
             foreach (SyntaxReference syntaxRef in method.DeclaringSyntaxReferences)
@@ -90,6 +113,8 @@ namespace Microsoft.Interop.Analyzers
                     break;
                 }
             }
+
+            return true;
         }
 
         private static void AnalyzeMethodSyntax(
@@ -107,11 +132,7 @@ namespace Microsoft.Interop.Analyzers
                 return; // Don't continue analysis if the method is invalid
             }
 
-            // Check for unsafe blocks requirement
-            if (context.Compilation.Options is not CSharpCompilationOptions { AllowUnsafe: true })
-            {
-                context.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, null).ToDiagnostic());
-            }
+            // Note: RequiresAllowUnsafeBlocks is reported once per compilation in Initialize method
 
             // Get generator options
             LibraryImportGeneratorOptions options = new(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions);
