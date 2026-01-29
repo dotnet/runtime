@@ -1603,8 +1603,13 @@ void emitIns_R_R_R_Ext(instruction ins,
                        insOpts     opt         = INS_OPTS_NONE,
                        int         shiftAmount = -1);
 
-void emitIns_R_R_I_I(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_R_I_I(instruction ins,
+                     emitAttr    attr,
+                     regNumber   reg1,
+                     regNumber   reg2,
+                     ssize_t     imm1,
+                     ssize_t     imm2,
+                     insOpts     opt = INS_OPTS_NONE);
 
 void emitIns_R_R_R_R(instruction     ins,
                      emitAttr        attr,

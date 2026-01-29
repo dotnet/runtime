@@ -7438,7 +7438,7 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
  */
 
 void emitter::emitIns_R_R_I_I(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt)
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm1, ssize_t imm2, insOpts opt)
 {
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
