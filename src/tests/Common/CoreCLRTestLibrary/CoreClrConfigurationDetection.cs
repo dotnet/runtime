@@ -27,6 +27,8 @@ public static class CoreClrConfigurationDetection
     {
         get
         {
+            if (PlatformDetection.IsWasm)
+                return true;
             if (!string.IsNullOrWhiteSpace(GetEnvironmentVariableValue("Interpreter", "")))
                 return true;
             if (int.TryParse(GetEnvironmentVariableValue("InterpMode", "0"), out int mode) && (mode > 0))
