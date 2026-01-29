@@ -56,8 +56,7 @@ namespace System.IO.Enumeration
                 // We can never filter when recursing, as we need to find all subdirectories to recurse into them.
                 expression = null;
             }
-
-            if (expression is not null)
+            else if (expression is not null)
             {
                 // We need to ensure that the expression is prepped to be used as an NtQueryDirectoryFile filter.
                 // If the match type is simple, we need to escape the special DOS wildcard characters. If it is
