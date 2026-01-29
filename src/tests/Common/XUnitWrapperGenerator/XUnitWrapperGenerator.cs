@@ -847,9 +847,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         continue;
                     }
 
-                    Xunit.TestPlatforms skippedTestPlatforms = 0;
-                    Xunit.RuntimeConfiguration skippedConfigurations = 0;
-                    Xunit.RuntimeTestModes skippedTestModes = 0;
+                    Xunit.TestPlatforms skippedTestPlatforms = Xunit.TestPlatforms.Any;
+                    Xunit.RuntimeConfiguration skippedConfigurations = Xunit.RuntimeConfiguration.Any;
+                    Xunit.RuntimeTestModes skippedTestModes = Xunit.RuntimeTestModes.Any;
 
                     for (int i = 1; i < filterAttribute.ConstructorArguments.Length; i++)
                     {
@@ -959,12 +959,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         else if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.GCStressC))
         {
             conditions.Add($"!{ConditionClass}.IsGCStressC");
-        }
-
-        if (conditions.Count == 0)
-        {
-            // If all configurations are skipped, just skip the test as a whole
-            return ImmutableArray<ITestInfo>.Empty;
         }
 
         return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(t => new ConditionalTest(t, string.Join(" && ", conditions))));
