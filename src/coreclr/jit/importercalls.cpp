@@ -3557,6 +3557,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_String_StartsWith:
             {
                 retNode = impUtf16StringComparison(StringComparisonKind::StartsWith, sig, methodFlags);
+                // Mark as special intrinsic even if import-time vectorization failed,
+                // so we can attempt VN-based vectorization later when one argument
+                // may be proven to be a frozen string from a static readonly field.
+                if (retNode == nullptr)
+                {
+                    isSpecial = true;
+                }
                 break;
             }
 
