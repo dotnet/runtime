@@ -10054,13 +10054,14 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     // We must account for the post-callee-saves push SP movement
     // done by the Tier0 frame and by the OSR transition.
     //
-    // tier0FrameSize is the Tier0 FP-SP delta plus the fake call slot added by
-    // JIT_Patchpoint. We add one slot to account for the saved FP.
+    // tier0FrameSize is the Tier0 FP-SP delta plus the fake call slot we push in genFnProlog.
+    // We subtract the fake call slot since we will add it as unwind after the instruction itself.
+    // We then add back one slot to account for the saved FP.
     //
     // We then need to subtract off the size the Tier0 callee saves as SP
     // adjusts for those will have been modelled by the unwind pushes above.
     //
-    int const tier0FrameSize = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
+    int const tier0FrameSize = patchpointInfo->TotalFrameSize() - REGSIZE_BYTES + REGSIZE_BYTES;
     int const tier0NetSize   = tier0FrameSize - tier0IntCalleeSaveUsedSize;
     compiler->unwindAllocStack(tier0NetSize);
 }
