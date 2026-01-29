@@ -63,9 +63,10 @@ This downloads to `browser-tests/results/<TestProject>/mono-console.log` and dis
 3. **Create failure record** for each individual test/method/Fact/Theory in `/browser-tests/failures/<TestSuiteName>/<ClassName.MethodName>.md` (e.g., `JSImportTest.JsImportSleep.md`)
 4. **Mark test** with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011")]`
 5. **Compare test counts**: `Tests run: X Passed: Y Failed: Z Skipped: N` with the Mono baseline at: `browser-tests/results/<TestProject>/mono-console.log`
-6. **Create or update** `browser-tests/results/<TestProject>/Summary.md` with the outcome
-7. **Stop and ask for feedback before proceeding.**
-8. **Rebuild and re-run** the test suite to continue until all enabled tests pass.
+6. **Compare test sets** with the Mono baseline at: `browser-tests/results/<TestProject>/mono-testResults.xml`. Which tests are missing and which are extra ?
+7. **Create or update** `browser-tests/results/<TestProject>/Summary.md` with the outcome
+8. **Stop and ask for feedback before proceeding.**
+9. **Rebuild and re-run** the test suite to continue until all enabled tests pass.
 
 ### Handling Timeouts/Crashes/Aborts
 
@@ -126,6 +127,23 @@ If the test suite hangs, times out, VM crashes, or exits with non-zero code:
 | Test fails on all Browser (Mono+CoreCLR) | `[SkipOnPlatform(TestPlatforms.Browser)]` |
 | Test timeout/hang | `[ActiveIssue("...123011")]` with note |
 
+## Comparing Test Sets
+
+Use the comparison script to identify differences between CoreCLR and Mono test sets:
+
+```bash
+./browser-tests/compare-test-results.sh <TestProjectName>
+```
+
+This uses `sort` and `comm` to compare sorted test name lists and reports:
+- **Extra in CoreCLR**: Tests that ran on CoreCLR but not Mono (usually `[SkipOnMono]` tests)
+- **Missing in CoreCLR**: Tests that ran on Mono but not CoreCLR (potential issues)
+
+Common benign differences:
+- DateTime/timestamp values in test names (e.g., `2026-01-28T02:18:05` vs `2026-01-29T16:09:02`)
+- Random string suffixes (e.g., `Ahoj1082296292` vs `Ahoj487988353`)
+- Renamed tests between versions
+
 ## Summary.md Template
 
 Create or update `browser-tests/results/<TestProject>/Summary.md` after each test run:
@@ -138,6 +156,26 @@ Create or update `browser-tests/results/<TestProject>/Summary.md` after each tes
 - **CoreCLR:** Tests run: X, Passed: Y, Failed: Z, Skipped: N
 - **Mono Baseline:** Tests run: X, Passed: Y, Failed: Z, Skipped: N
 - **Status:** ✅ All pass | ⚠️ Tests disabled | ❌ Failures
+
+## Test Set Comparison
+
+Run: `./browser-tests/compare-test-results.sh <TestProject>`
+
+### Extra in CoreCLR (X tests)
+
+_Tests that run on CoreCLR but were skipped on Mono._
+
+| Test Name | Reason |
+|-----------|--------|
+| ClassName.MethodName | [SkipOnMono] or new test |
+
+### Missing in CoreCLR (X tests)
+
+_Tests that ran on Mono but not CoreCLR. Investigate if unexpected._
+
+| Test Name | Reason |
+|-----------|--------|
+| ClassName.MethodName | renamed / timestamp diff / actual issue |
 
 ## Disabled Tests (ActiveIssue #123011)
 
