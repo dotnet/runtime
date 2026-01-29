@@ -251,11 +251,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
     private static void AddRunnerSource(SourceProductionContext context, ImmutableArray<ITestInfo> methods, AnalyzerConfigOptionsProvider configOptions, ImmutableDictionary<string, string> aliasMap, CompData compData)
     {
-        bool isMergedTestRunnerAssembly = configOptions.GlobalOptions.IsMergedTestRunnerAssembly();
+        bool buildAsMergedRunner = configOptions.GlobalOptions.IsMergedTestRunnerAssembly() && !configOptions.GlobalOptions.BuildAsStandalone();
         configOptions.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
         string assemblyName = compData.AssemblyName;
 
-        if (isMergedTestRunnerAssembly)
+        if (buildAsMergedRunner)
         {
             if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser")
             {

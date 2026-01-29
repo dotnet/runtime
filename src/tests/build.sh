@@ -59,7 +59,7 @@ build_Tests()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    if [[ "$__SkipNative" != 1 && "$__BuildTestWrappersOnly" != 1 && "$__GenerateLayoutOnly" != 1 && "$__CopyNativeTestBinaries" != 1 && \
+    if [[ "$__SkipNative" != 1 && "$__GenerateLayoutOnly" != 1 && "$__CopyNativeTestBinaries" != 1 && \
         "$__TargetOS" != "android" && "$__TargetOS" != "ios" && "$__TargetOS" != "iossimulator" && "$__TargetOS" != "tvos" && "$__TargetOS" != "tvossimulator" ]]; then
         build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "$__CMakeArgs" "CoreCLR test component"
 
@@ -91,7 +91,6 @@ build_Tests()
     export __SkipManaged
     export __SkipRestorePackages
     export __SkipGenerateLayout
-    export __SkipTestWrappers
     export __BuildTestProject
     export __BuildTestDir
     export __BuildTestTree
@@ -101,7 +100,6 @@ build_Tests()
     export __Priority
     export __CreatePerfmap
     export __CompositeBuildMode
-    export __BuildTestWrappersOnly
     export __GenerateLayoutOnly
     export __TestBuildMode
     export __MonoAot
@@ -144,12 +142,10 @@ usage_list+=("-rebuild - Clean up all test artifacts prior to building tests.")
 usage_list+=("-skiprestorepackages - Skip package restore.")
 usage_list+=("-skipmanaged - Skip the managed tests build.")
 usage_list+=("-skipnative - Skip the native tests build.")
-usage_list+=("-skiptestwrappers - Skip generating test wrappers.")
 usage_list+=("-skipgeneratelayout - Skip generating the Core_Root layout.")
 usage_list+=("")
 usage_list+=("-copynativeonly - Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-generatelayoutonly - Only generate the Core_Root layout without building managed or native test components.")
-usage_list+=("-buildtestwrappersonly - Only generate test wrappers without building managed or native test components or generating layouts.")
 usage_list+=("")
 usage_list+=("-crossgen2 - Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
 usage_list+=("-composite - Use Crossgen2 composite mode (all framework gets compiled into a single native R2R library).")
@@ -181,7 +177,6 @@ handle_arguments_local() {
     case "$opt" in
         skipmanaged|-skipmanaged)
             __SkipManaged=1
-            __BuildTestWrappers=0
             ;;
 
         skipnative|-skipnative)
@@ -189,20 +184,11 @@ handle_arguments_local() {
             __CopyNativeProjectsAfterCombinedTestBuild=false
             ;;
 
-        buildtestwrappersonly|-buildtestwrappersonly)
-            __BuildTestWrappersOnly=1
-            ;;
-
-        skiptestwrappers|-skiptestwrappers)
-            __SkipTestWrappers=1
-            ;;
-
         copynativeonly|-copynativeonly)
             __SkipNative=1
             __CopyNativeTestBinaries=1
             __CopyNativeProjectsAfterCombinedTestBuild=false
             __SkipGenerateLayout=1
-            __SkipTestWrappers=1
             ;;
 
         crossgen2|-crossgen2)
@@ -334,8 +320,6 @@ __IncludeTests=INCLUDE_TESTS
 __ProjectDir="$__ProjectRoot"
 export __ProjectDir
 
-__SkipTestWrappers=0
-__BuildTestWrappersOnly=0
 __Compiler=clang
 __ConfigureOnly=0
 __CopyNativeProjectsAfterCombinedTestBuild=true
