@@ -3,7 +3,7 @@
 
 import type { TimeStamp } from "./types";
 
-import { dotnetAssert, dotnetDiagnosticsExports, dotnetLoaderExports } from "./cross-module";
+import { dotnetAssert, dotnetDiagnosticsExports, dotnetLoaderExports, Module } from "./cross-module";
 import { jsInteropState } from "./marshal";
 import { ENVIRONMENT_IS_WEB } from "./per-module";
 
@@ -64,9 +64,12 @@ export function endMeasure(start: TimeStamp, block: string, id?: string) {
 
 let textDecoderUtf8Relaxed: TextDecoder | undefined = undefined;
 export function utf8ToStringRelaxed(buffer: Uint8Array): string {
-    if (textDecoderUtf8Relaxed === undefined) {
-        textDecoderUtf8Relaxed = new TextDecoder("utf-8", { fatal: false });
+    if (textDecoderUtf8Relaxed === undefined && typeof globalThis.TextDecoder !== "undefined") {
+        textDecoderUtf8Relaxed = new globalThis.TextDecoder("utf-8", { fatal: false });
+    } else if (textDecoderUtf8Relaxed === undefined) {
+        return Module.UTF8ArrayToString(buffer, 0, buffer.byteLength);
     }
+
     // TODO-WASM: When threading is enabled, TextDecoder does not accept a view of a
     // SharedArrayBuffer, we must make a copy of the array first.
     // See https://github.com/whatwg/encoding/issues/172

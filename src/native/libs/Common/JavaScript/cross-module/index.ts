@@ -150,6 +150,7 @@ export function dotnetUpdateInternalsSubscriber() {
             loadIcuData: table[2],
             initializeCoreCLR: table[3],
             registerPdbBytes: table[4],
+            instantiateWasm: table[5],
         };
         Object.assign(native, nativeLocal);
     }

@@ -11,9 +11,9 @@ export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): n
     const batchedQuotaMax = 65536;
 
     if (!globalThis.crypto || !globalThis.crypto.getRandomValues) {
-        if (!(globalThis as any)["cryptoWarnOnce"]) {
-            _ems_.dotnetLogger.warn("This engine doesn't support crypto.getRandomValues. Please use a modern version or provide polyfill for 'globalThis.crypto.getRandomValues'.");
-            (globalThis as any)["cryptoWarnOnce"] = true;
+        if (!_ems_.DOTNET["cryptoWarnOnce"]) {
+            _ems_.dotnetLogger.debug("This engine doesn't support crypto.getRandomValues. Please use a modern version or provide polyfill for 'globalThis.crypto.getRandomValues'.");
+            _ems_.DOTNET["cryptoWarnOnce"] = true;
         }
         return -1;
     }

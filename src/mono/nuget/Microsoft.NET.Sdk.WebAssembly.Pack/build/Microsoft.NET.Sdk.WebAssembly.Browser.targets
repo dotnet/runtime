@@ -249,7 +249,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="ComputeWasmVfs">
     <ItemGroup>
       <WasmFilesToIncludeInFileSystem Condition="'%(WasmFilesToIncludeInFileSystem.TargetPath)' == ''">
-        <TargetPath>/%(WasmFilesToIncludeInFileSystem.Identity)</TargetPath>
+        <TargetPath>%(WasmFilesToIncludeInFileSystem.Identity)</TargetPath>
       </WasmFilesToIncludeInFileSystem>
     </ItemGroup>
     

@@ -116,11 +116,11 @@ target_link_options(browserhost PRIVATE
     -sMODULARIZE=1
     -sEXPORT_ES6=1
     -sEXIT_RUNTIME=1
+    -sALLOW_TABLE_GROWTH=1
     -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
     -sEXPORTED_FUNCTIONS=${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
     -sENVIRONMENT=web,webview,worker,node,shell
-    -lnodefs.js
     -Wl,-error-limit=0)
 
 target_link_libraries(browserhost PRIVATE
