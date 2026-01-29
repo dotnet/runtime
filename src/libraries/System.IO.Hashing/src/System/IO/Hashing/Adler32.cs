@@ -185,35 +185,11 @@ namespace System.IO.Hashing
                 return adler;
             }
 
-#if NET
-            // if (CanBeVectorized(buf))
-            // {
-            //     return UpdateVectorized(adler, buf);
-            // }
-#endif
-
             return UpdateScalar(adler, buf);
         }
 
         private static uint UpdateScalar(uint adler, ReadOnlySpan<byte> buf)
         {
-#if NET
-            // Similar to Crc32's UpdateScalar, but use Arm/Avx2/Sse if available
-            // if the vectorized path is not available.
-            // if (System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported)
-            // {
-            //     return UpdateScalarArm(adler, buf);
-            // }
-            // if (System.Runtime.Intrinsics.X86.Avx2.IsSupported)
-            // {
-            //     return UpdateScalarAvx2(adler, buf);
-            // }
-
-            // if (System.Runtime.Intrinsics.X86.Ssse3.IsSupported)
-            // {
-            //     return UpdateScalarSse(adler, buf);
-            // }
-#endif
             const uint Base = 65521; // largest prime smaller than 65536
             const int NMax = 5552; // NMax is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1
 
