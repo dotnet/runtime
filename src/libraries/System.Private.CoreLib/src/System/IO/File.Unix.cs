@@ -7,6 +7,12 @@ namespace System.IO
 {
     public static partial class File
     {
+        private static SafeFileHandle OpenNullHandleCore()
+        {
+            // Open /dev/null on Unix with read/write access and CLOEXEC (no inheritance)
+            return SafeFileHandle.Open("/dev/null", FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.None, preallocationSize: 0);
+        }
+
         private static UnixFileMode GetUnixFileModeCore(string path)
             => FileSystem.GetUnixFileMode(Path.GetFullPath(path));
 
