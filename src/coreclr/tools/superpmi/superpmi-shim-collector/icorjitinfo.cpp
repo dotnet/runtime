@@ -580,6 +580,15 @@ unsigned interceptor_ICJI::getClassSize(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
+// return the number of bytes needed by an instance of the class when accessed indirectly
+unsigned interceptor_ICJI::getClassIndirectSize(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getClassIndirectSize");
+    unsigned temp = original_ICorJitInfo->getClassIndirectSize(cls);
+    mc->recGetClassIndirectSize(cls, temp);
+    return temp;
+}
+
 // return the number of bytes needed by an instance of the class allocated on the heap
 unsigned interceptor_ICJI::getHeapClassSize(CORINFO_CLASS_HANDLE cls)
 {

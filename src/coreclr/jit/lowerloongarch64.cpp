@@ -292,7 +292,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
     GenTree* dstAddr = blkNode->Addr();
     GenTree* src     = blkNode->Data();
-    unsigned size    = blkNode->Size();
+    unsigned size    = blkNode->IndirectSize();
 
     if (blkNode->OperIsInitBlkOp())
     {
@@ -498,7 +498,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
 
         // Codegen supports containment of local addresses under BLKs.
         if (src->OperIs(GT_BLK) && src->AsBlk()->Addr()->IsLclVarAddr() &&
-            IsContainableLclAddr(src->AsBlk()->Addr()->AsLclFld(), src->AsBlk()->Size()))
+            IsContainableLclAddr(src->AsBlk()->Addr()->AsLclFld(), src->AsBlk()->IndirectSize()))
         {
             // TODO-LOONGARCH64-CQ: support containment of LCL_ADDR with non-zero offset too.
             MakeSrcContained(src, src->AsBlk()->Addr());

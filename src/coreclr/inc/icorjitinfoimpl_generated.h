@@ -233,6 +233,9 @@ bool getStaticBaseAddress(
 unsigned getClassSize(
           CORINFO_CLASS_HANDLE cls) override;
 
+unsigned getClassIndirectSize(
+          CORINFO_CLASS_HANDLE cls) override;
+
 unsigned getHeapClassSize(
           CORINFO_CLASS_HANDLE cls) override;
 

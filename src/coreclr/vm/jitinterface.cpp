@@ -1827,6 +1827,31 @@ CEEInfo::getClassSize(
 
 //---------------------------------------------------------------------------------------
 //
+// Get the size of a class when accessed indirectly.
+unsigned
+CEEInfo::getClassIndirectSize(
+    CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    unsigned result = 0;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle VMClsHnd(clsHnd);
+    result = VMClsHnd.GetSize();
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+//---------------------------------------------------------------------------------------
+//
 // Get the size of a reference type as allocated on the heap. This includes the size of the fields
 // (and any padding between the fields) and the size of a method table pointer but doesn't include
 // object header size or any padding for minimum size.
@@ -2482,7 +2507,7 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 #if defined(UNIX_AMD64_ABI)
                 SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
                 bool result = methodTablePtr->ClassifyEightBytes(&helper, useNativeLayout);
-                
+
                 // The answer must be true at this point.
                 _ASSERTE(result);
 #endif // UNIX_AMD64_ABI
@@ -8818,13 +8843,13 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     {
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
-    
+
     // This is generic virtual method devirtualization.
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(
             pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
-        
+
         // We still can't handle shared generic methods because we don't have
         // the right generic context for runtime lookup.
         // TODO: Remove this limitation.

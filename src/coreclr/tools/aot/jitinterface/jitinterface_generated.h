@@ -63,6 +63,7 @@ struct JitInterfaceCallbacks
     void* (* getClassStaticDynamicInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clr);
     bool (* getStaticBaseAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr);
     unsigned (* getClassSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
+    unsigned (* getClassIndirectSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getHeapClassSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     bool (* canAllocateOnStack)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getClassAlignmentRequirement)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint);
@@ -708,6 +709,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     unsigned temp = _callbacks->getClassSize(_thisHandle, &pException, cls);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual unsigned getClassIndirectSize(
+          CORINFO_CLASS_HANDLE cls)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    unsigned temp = _callbacks->getClassIndirectSize(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

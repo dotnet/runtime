@@ -521,6 +521,15 @@ unsigned WrapICorJitInfo::getClassSize(
     return temp;
 }
 
+unsigned WrapICorJitInfo::getClassIndirectSize(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(getClassIndirectSize);
+    unsigned temp = wrapHnd->getClassIndirectSize(cls);
+    API_LEAVE(getClassIndirectSize);
+    return temp;
+}
+
 unsigned WrapICorJitInfo::getHeapClassSize(
           CORINFO_CLASS_HANDLE cls)
 {

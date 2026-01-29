@@ -10147,7 +10147,7 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     }
 
     // Size is a constant
-    size = comp->gtNewIconNode(blkNode->Size(), TYP_I_IMPL);
+    size = comp->gtNewIconNode(blkNode->IndirectSize(), TYP_I_IMPL);
     BlockRange().InsertBefore(data, size);
 
     // A hacky way to safely call fgMorphTree in Lower

@@ -67,6 +67,9 @@ private:
     // for cpblk/initblk.
     const unsigned m_size;
 
+    // Size of the layout in bytes when accessed indirectly (as reported by ICorJitInfo::getClassIndirectSize).
+    unsigned m_indirectSize;
+
     const unsigned m_isValueClass : 1;
     // The number of GC pointers in this layout. Since the maximum size is 2^32-1 the count
     // can fit in at most 30 bits.
@@ -100,6 +103,7 @@ private:
     ClassLayout(unsigned size)
         : m_classHandle(NO_CLASS_HANDLE)
         , m_size(size)
+        , m_indirectSize(size)
         , m_isValueClass(false)
         , m_gcPtrCount(0)
         , m_gcPtrs(nullptr)
@@ -120,6 +124,7 @@ private:
                 var_types type       DEBUGARG(const char* className) DEBUGARG(const char* shortClassName))
         : m_classHandle(classHandle)
         , m_size(size)
+        , m_indirectSize(0)
         , m_isValueClass(isValueClass)
         , m_gcPtrCount(0)
         , m_gcPtrs(nullptr)
@@ -170,6 +175,11 @@ public:
     unsigned GetSize() const
     {
         return m_size;
+    }
+
+    unsigned GetIndirectSize() const
+    {
+        return m_indirectSize;
     }
 
     var_types GetType() const

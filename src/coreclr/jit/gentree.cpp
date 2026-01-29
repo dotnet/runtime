@@ -18362,7 +18362,7 @@ ssize_t GenTreeIndir::Offset()
 unsigned GenTreeIndir::Size() const
 {
     assert(isIndir() || OperIsBlk());
-    return OperIsBlk() ? AsBlk()->Size() : genTypeSize(TypeGet());
+    return OperIsBlk() ? AsBlk()->IndirectSize() : genTypeSize(TypeGet());
 }
 
 //------------------------------------------------------------------------

@@ -2225,6 +2225,25 @@ namespace Internal.JitInterface
             return (uint)classSize.AsInt;
         }
 
+        private uint getClassIndirectSize(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+            LayoutInt classSize = type.GetElementSize();
+#if READYTORUN
+            if (classSize.IsIndeterminate)
+            {
+                throw new RequiresRuntimeJitException(type);
+            }
+
+            if (NeedsTypeLayoutCheck(type))
+            {
+                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                AddPrecodeFixup(node);
+            }
+#endif
+            return (uint)classSize.AsInt;
+        }
+
         private uint getHeapClassSize(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);

@@ -2512,6 +2512,11 @@ public:
             CORINFO_CLASS_HANDLE    cls
             ) = 0;
 
+    // return the number of bytes needed by an instance of the class when accessed indirectly
+    virtual unsigned getClassIndirectSize (
+            CORINFO_CLASS_HANDLE    cls
+            ) = 0;
+
     // return the number of bytes needed by an instance of the class allocated on the heap
     virtual unsigned getHeapClassSize(
             CORINFO_CLASS_HANDLE     cls

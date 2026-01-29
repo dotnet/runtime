@@ -222,6 +222,7 @@ FUNCTIONS
     void* getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE clr)
     bool getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, REF_CORINFO_CONST_LOOKUP addr)
     unsigned getClassSize(CORINFO_CLASS_HANDLE cls)
+    unsigned getClassIndirectSize(CORINFO_CLASS_HANDLE cls)
     unsigned getHeapClassSize(CORINFO_CLASS_HANDLE        cls)
     bool canAllocateOnStack(CORINFO_CLASS_HANDLE cls)
     unsigned getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDoubleAlignHint)

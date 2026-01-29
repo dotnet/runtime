@@ -432,6 +432,13 @@ unsigned interceptor_ICJI::getClassSize(
     return original_ICorJitInfo->getClassSize(cls);
 }
 
+unsigned interceptor_ICJI::getClassIndirectSize(
+          CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("getClassIndirectSize");
+    return original_ICorJitInfo->getClassIndirectSize(cls);
+}
+
 unsigned interceptor_ICJI::getHeapClassSize(
           CORINFO_CLASS_HANDLE cls)
 {

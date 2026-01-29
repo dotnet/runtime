@@ -491,7 +491,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
     GenTree* dstAddr = blkNode->Addr();
     GenTree* src     = blkNode->Data();
-    unsigned size    = blkNode->Size();
+    unsigned size    = blkNode->IndirectSize();
 
     if (blkNode->OperIsInitBlkOp())
     {

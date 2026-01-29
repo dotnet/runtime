@@ -6417,7 +6417,7 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
 
     // Finally, account for the struct fields and type mismatches.
     var_types loadType    = loadTree->TypeGet();
-    unsigned  loadSize    = loadTree->OperIsBlk() ? loadTree->AsBlk()->Size() : genTypeSize(loadTree);
+    unsigned  loadSize    = loadTree->OperIsBlk() ? loadTree->AsBlk()->IndirectSize() : genTypeSize(loadTree);
     ValueNum  loadValueVN = vnStore->VNForLoad(VNK_Liberal, fieldValueVN, fieldSize, loadType, offset, loadSize);
 
     loadTree->gtVNPair.SetLiberal(loadValueVN);
