@@ -190,6 +190,13 @@ INTERPRETER_NORETURN void BADCODE(const char* message)
     throw InterpException(message, CORJIT_BADCODE);
 }
 
+INTERPRETER_NORETURN void SKIPCODE(const char* message)
+{
+    if (IsInterpDumpActive())
+        printf("Skip during interpreter method compilation: %s\n", message ? message : "unknown error");
+    throw InterpException(message, CORJIT_SKIPPED);
+}
+
 INTERPRETER_NORETURN void NOMEM()
 {
     throw InterpException(NULL, CORJIT_OUTOFMEM);
