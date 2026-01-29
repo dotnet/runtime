@@ -1920,8 +1920,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         align = INTERP_STACK_SLOT_SIZE;
     }
 
+    m_ofsStack = ALIGN_UP(m_ofsStack, align);
+
     int cbArg = ALIGN_UP(argSize, INTERP_STACK_SLOT_SIZE);
-    int argOfs = TransitionBlock::GetOffsetOfArgs() + ALIGN_UP(m_ofsStack, align);
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
 
     m_ofsStack += cbArg;
 
