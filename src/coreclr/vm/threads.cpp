@@ -1708,8 +1708,7 @@ FAILURE:
     return FALSE;
 }
 
-
-void Thread::HandleThreadStartupFailure()
+OBJECTREF Thread::GetExceptionDuringStartup()
 {
     CONTRACTL
     {
@@ -1721,37 +1720,11 @@ void Thread::HandleThreadStartupFailure()
 
     _ASSERTE(GetThreadNULLOk() != NULL);
 
-    struct
-    {
-        OBJECTREF pThrowable;
-        OBJECTREF pReason;
-    } gc;
-    gc.pThrowable = NULL;
-    gc.pReason = NULL;
+    OBJECTREF throwable = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
+    Exception::Delete(m_pExceptionDuringStartup);
+    m_pExceptionDuringStartup = NULL;
 
-    GCPROTECT_BEGIN(gc);
-
-    MethodTable *pMT = CoreLibBinder::GetException(kThreadStartException);
-    gc.pThrowable = AllocateObject(pMT);
-
-    MethodDescCallSite exceptionCtor(METHOD__THREAD_START_EXCEPTION__EX_CTOR);
-
-    if (m_pExceptionDuringStartup)
-    {
-        gc.pReason = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
-        Exception::Delete(m_pExceptionDuringStartup);
-        m_pExceptionDuringStartup = NULL;
-    }
-
-    ARG_SLOT args1[] = {
-        ObjToArgSlot(gc.pThrowable),
-        ObjToArgSlot(gc.pReason),
-    };
-    exceptionCtor.Call(args1);
-
-    GCPROTECT_END(); //Prot
-
-    RaiseTheExceptionInternalOnly(gc.pThrowable, FALSE);
+    return throwable;
 }
 
 #ifndef TARGET_UNIX

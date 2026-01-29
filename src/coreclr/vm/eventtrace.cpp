@@ -4411,27 +4411,13 @@ TADDR MethodAndStartAddressToEECodeInfoPointer(MethodDesc *pMethodDesc, PCODE pN
     } CONTRACTL_END;
 
     // MethodDesc ==> Code Address ==>JitManager
-    TADDR start = PCODEToPINSTR(pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode());
+    TADDR start = pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode();
     if(start == 0) {
         // this method hasn't been jitted
         return 0;
     }
 
-#ifdef FEATURE_INTERPRETER
-    RangeSection * pRS = ExecutionManager::FindCodeRange(PINSTRToPCODE(start), ExecutionManager::GetScanFlags());
-    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
-    {
-        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
-        {
-            if (((StubPrecode*)start)->GetType() == PRECODE_INTERPRETER)
-            {
-                start = ((InterpreterPrecode*)start)->GetData()->ByteCodeAddr;
-            }
-        }
-    }
-#endif // FEATURE_INTERPRETER
-
-    return start;
+    return GetInterpreterCodeFromInterpreterPrecodeIfPresent(start);
 }
 
 /****************************************************************************/

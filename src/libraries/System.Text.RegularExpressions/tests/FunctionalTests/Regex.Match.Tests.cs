@@ -611,10 +611,47 @@ namespace System.Text.RegularExpressions.Tests
             // "x" option. Removes unescaped whitespace from the pattern. : Actual - "\x20([^/]+)\x20","x"
             yield return ("\x20([^/]+)\x20\x20\x20\x20\x20\x20\x20", " abc       ", RegexOptions.IgnorePatternWhitespace, 0, 10, true, " abc      ");
 
-            // "x" option. Vertical tab should be ignored as whitespace
+            // Comprehensive tests for IgnorePatternWhitespace - whitespace characters that should be ignored
+            // Tab (\t), newline (\n), form feed (\f), carriage return (\r), and space
+            yield return ("a\tb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("a\nb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("a\fb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("a\rb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("a b", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+
+            // Whitespace in various positions
+            yield return (" a", "a", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "a");
+            yield return ("a ", "a", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "a");
+            yield return (" a ", "a", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "a");
+
+            // Escaped whitespace should NOT be ignored - it should match literally
+            yield return (@"a\ b", "a b", RegexOptions.IgnorePatternWhitespace, 0, 3, true, "a b");
+            yield return ("a\\\tb", "a\tb", RegexOptions.IgnorePatternWhitespace, 0, 3, true, "a\tb");
+
+            // Comments with # should extend to end of line
+            yield return ("ab#comment", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("ab#comment\ncd", "abcd", RegexOptions.IgnorePatternWhitespace, 0, 4, true, "abcd");
+            yield return ("a#comment\nb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+
+            // Escaped # should match literally
+            yield return (@"a\#b", "a#b", RegexOptions.IgnorePatternWhitespace, 0, 3, true, "a#b");
+
+            // Whitespace inside character classes should NOT be ignored
+            yield return ("[ ]", " ", RegexOptions.IgnorePatternWhitespace, 0, 1, true, " ");
+            yield return ("[\t]", "\t", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "\t");
+            yield return ("[a b]", "a", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "a");
+            yield return ("[a b]", " ", RegexOptions.IgnorePatternWhitespace, 0, 1, true, " ");
+            yield return ("[a b]", "b", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "b");
+
+            // # inside character class should NOT start a comment
+            yield return ("[#]", "#", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "#");
+            yield return ("[a#b]", "#", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "#");
+
+            // Vertical tab (\v) tests - only on .NET Core (not .NET Framework)
             if (!PlatformDetection.IsNetFramework)
             {
                 yield return ("a\vb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+                yield return ("a \t\n\v\f\r b", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
             }
 
             // Turning on case insensitive option in mid-pattern : Actual - "aaa(?i:match this)bbb"
@@ -778,6 +815,21 @@ namespace System.Text.RegularExpressions.Tests
             }
             yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
             yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
+
+            // Alternations with many branches starting with unique characters (switch optimization)
+            if (!RegexHelpers.IsNonBacktracking(engine))
+            {
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "hij", RegexOptions.None, 0, 3, true, "hij");
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "efg", RegexOptions.None, 0, 3, true, "efg");
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "xyz", RegexOptions.None, 0, 3, false, "");
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "ab", RegexOptions.None, 0, 2, false, "");
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "abcdef", RegexOptions.None, 0, 6, true, "abc");
+                yield return (@"(?>a1|b2|c3|d4|e5|f6|g7|h8)", "e5", RegexOptions.None, 0, 2, true, "e5");
+                yield return (@"(?>a1|b2|c3|d4|e5|f6|g7|h8)", "h8", RegexOptions.None, 0, 2, true, "h8");
+                yield return (@"(?>a1|b2|c3|d4|e5|f6|g7|h8)", "a1", RegexOptions.None, 0, 2, true, "a1");
+                yield return (@"(?>a1|b2|c3|d4|e5|f6|g7|h8)", "z9", RegexOptions.None, 0, 2, false, "");
+            }
+
             foreach (string aOptional in new[] { "(a|)", "(|a)", "(a?)", "(a??)" })
             {
                 yield return (@$"^{aOptional}{{0,2}}?b", "aab", RegexOptions.None, 0, 3, true, "aab");
