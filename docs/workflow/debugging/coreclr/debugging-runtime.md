@@ -4,6 +4,7 @@
   * [Using Visual Studio](#using-visual-studio)
     * [Using Visual Studio Open Folder with CMake](#using-visual-studio-open-folder-with-cmake)
     * [Using Visual Studio to debug CLI builds](#using-visual-studio-to-debug-cli-builds)
+    * [Using Visual Studio with WSL or Remote Linux](#using-visual-studio-with-wsl-or-remote-linux)
   * [Using Visual Studio Code](#using-visual-studio-code)
   * [Using SOS with Windbg or Cdb on Windows](#using-sos-with-windbg-or-cdb-on-windows)
 * [Debugging CoreCLR on Linux and macOS](#debugging-coreclr-on-linux-and-macos)
@@ -60,17 +61,19 @@ Visual Studio's capabilities as a full IDE provide a lot of help making the runt
 * This points to the folder containing core libraries except `System.Private.CoreLib`.
 * This step can be skipped if you are debugging CLR tests that reference only `System.Private.CoreLib`. Otherwise, it's required to debug a real-world application that references anything else, including `System.Runtime`.
 
-9. Right-click the **INSTALL** project and choose `Build`. This will load necessary information from _CMake_ to Visual Studio.
-10. Press F11 to start debugging at `wmain` in _corerun_, or set a breakpoint in source and press F5 to run to it. As an example, set a breakpoint for the `EEStartup()` function in `ceemain.cpp` to break into CoreCLR startup.
+10. Right-click the **INSTALL** project and choose `Build`. This will build any changed code and load the layout under `artifacts\bin\coreclr` folder.
+11. Press F11 to start debugging at `wmain` in _corerun_, or set a breakpoint in source and press F5 to run to it. As an example, set a breakpoint for the `EEStartup()` function in `ceemain.cpp` to break into CoreCLR startup.
 
-Steps 1-9 only need to be done once as long as there's been no changes to the CMake files in the repository. Afterwards, step 10 can be repeated whenever you want to start debugging. As of now, it is highly recommended to use Visual Studio 2022 or Visual Studio 2019.
+Steps 1-9 only need to be done once as long as there's been no changes to the CMake files in the repository. Afterwards, step 10-11 can be repeated whenever you want to start debugging. It is highly recommended to use latest version of Visual Studio.
 
 #### Using Visual Studio Open Folder with CMake
 
-1. Open the _dotnet/runtime_ repository in Visual Studio using the _open folder_ feature. When opening the repository root, Visual Studio will prompt about finding _CMake_ files. Select `src\coreclr\CMakeList.txt` as the CMake workspace.
-2. Set the `corerun` project as startup project. When using the folder view instead of the CMake targets view, right click `coreclr\hosts\corerun\CMakeLists.txt` to set as startup project, or select it from debug target dropdown of Visual Studio.
-3. Right click the `corerun` project and open the `Debug` configuration. You can also click on _Debug -> Debug and Launch Configuration_ from the Visual Studio main bar menu.
-4. In the opened `launch.vs.json`, set following properties to the configuration of `corerun`:
+1. Run `.\build.cmd clr.nativeprereqs -a <architecture> -c <configuration>`. This will build some of the tools requiremented for the native build. This step only needs to be run once as long you don't clean the `artifacts` directory.
+2. Open the _coreclr_ folder in Visual Studio using the _open folder_ feature. The CMake project system will do necessary configuration automatically.
+3. In Visual Studio toolbar, select _Local Machine_ and _Windows.\<architecture\>.Debug_ as the debug target.
+4. Set the `corerun` project as startup project. When using the folder view instead of the CMake targets view, right click `hosts\corerun\CMakeLists.txt` to set as startup project, or select it from debug target dropdown of Visual Studio.
+5. Right click the `corerun` project and select _Open debug configuration_. You can also click on _Debug -> Debug and Launch Configuration_ from the Visual Studio main bar menu.
+6. In the opened `launch.vs.json`, set following properties to the configuration of `corerun`:
 
 ```json
     {
@@ -97,12 +100,14 @@ Steps 1-9 only need to be done once as long as there's been no changes to the CM
     }
 ```
 
-**NOTE**: For Visual Studio 17.3, changing the location of launched executable doesn't work, so the `CORE_ROOT` is necessary.
+**NOTE**: As of Visual Studio 17.3, changing the location of launched executable doesn't work, so the `CORE_ROOT` is necessary.
 
-5. Right click the CoreCLR project or `coreclr\CMakeLists.txt` in the folder view, and then invoke the _Install_ command.
+5. Right click the CoreCLR project or `coreclr\CMakeLists.txt` in the folder view, and then invoke the _Install_ command. This will build any changed code and load the layout under `artifacts\bin\coreclr` folder.
 6. Press F10 or F11 to start debugging at main, or set a breakpoint and press F5.
 
-Whenever you make changes to the CoreCLR source code, don't forget to invoke the _Install_ command again to have them set in place.
+Changes to CMake files will be processed by the *Open Folder* mechanism. Sometimes you may need to restart Visual Studio to trigger reconfiguration of CMake.
+
+Whenever you make changes to the CoreCLR source code, don't forget to invoke the _Install_ command again instead of simply F5 to have them set in place.
 
 #### Using Visual Studio to debug CLI builds
 Visual Studio can also be used to debug builds built externally from CLI scripts.
@@ -115,6 +120,75 @@ Visual Studio can also be used to debug builds built externally from CLI scripts
 6. Set breakpoints and run the application with `F5` to start debugging.
 
 Note, the `.slnx` file can be saved and stores paths to `corerun.exe`, included files, and debug settings. It can be reused as long as the paths do not change.
+
+#### Using Visual Studio with WSL or Remote Linux
+
+When you are primarily working with Windows and want to check compatibility with Unix systems, it's convenient to keep using Visual Studio.
+
+There are two versions of toolchain available, referred as WSL1 and WSL2 toolchain.
+- WSL1 toolchain is operating all the files in-place, leveraging the complex folder layout. It can also run on WSL2, which is recommended for convenience.
+- WSL2 toolchain requires some manual bookkeeping about the layout. It performs much better, and can be also applied to remote system.
+For more information, see [Visual Studio Remote Settings vendor map](https://learn.microsoft.com/cpp/build/cmake-presets-json-reference#visual-studio-remote-settings-vendor-map).
+
+Setup steps for WSL1 toolchain:
+1. In WSL environment, execute `/mnt/<path-to-runtime>/eng/native/version/copy_version_files.sh` at mounted Windows file system. to generate additional required files.
+2. Create `CMakeUserPresets.json` besides `src\coreclr\CMakePresets.json`. Duplicate the version etc from `CMakeUserPresets.json` and clean the `configurePresets` array. Add a new `configurePresets` element with following:
+```json
+"configurePresets": [
+  {
+    "name": "WSL.x64.Debug", // Can be arbitrarily named
+    "cacheVariables": {
+      "CMAKE_C_COMPILER": "clang", // or gcc if prefer the gcc toolchain
+      "CMAKE_CXX_COMPILER": "clang++" // or g++ if prefer the gcc toolchain
+    },
+    "inherits": [
+      "linux.x64.Debug"
+    ],
+    "vendor": {
+      "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
+        "forceWSL1Toolset": true
+      }
+    }
+  }
+]
+```
+
+Setup steps for WSL2 toolchain:
+1. Establish a root folder corresponding to root of _runtime_ repository on target file system, referred as `<wsl-runtime-root>`.
+2. Copy the _eng/native_ and _src/native_ folder to the root folder, as the same layout in the repository. Can be achieved with:
+```sh
+rsync -t -r --delete --delete-excluded /mnt/c/<path-to-runtime>/src/native/ <wsl-runtime-root>/src/native/
+rsync -t -r --delete --delete-excluded /mnt/c/<path-to-runtime>/eng/native/ <wsl-runtime-root>/eng/native/
+```
+3. Any time when those files are changed, you need to sync them manually. The F12 navigated versions of them are only cached, and any edit won't take effect.
+4. Execute `<wsl-runtime-root>/eng/native/version/copy_version_files.sh` to generate additional required files.
+5. Create `CMakeUserPresets.json` besides `src\coreclr\CMakePresets.json`. Duplicate the version etc from `CMakeUserPresets.json` and clean the `configurePresets` array. Add a new `configurePresets` element with following:
+```json
+"configurePresets": [
+  {
+    "name": "WSL.x64.Debug", // Can be arbitrarily named
+    "cacheVariables": {
+      "CMAKE_C_COMPILER": "clang", // or gcc if prefer the gcc toolchain
+      "CMAKE_CXX_COMPILER": "clang++" // or g++ if prefer the gcc toolchain
+    },
+    "inherits": [
+      "linux.x64.Debug"
+    ],
+    "vendor": {
+      "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
+        "sourceDir": "<wsl-runtime-root>/src/coreclr" // In the corresponding layout. Use $env{HOME} to replace home directory (~)
+      }
+    }
+  },
+]
+```
+
+The following steps are common:
+1. Switch debug target from "Local Machine" to the Linux system, for example "WSL: Ubuntu". The Linux-based configurations will be selected instead of Windows-based ones.
+2. Select _WSL.x64.Debug_ as debug target.
+3. Then you can follow Step 5 and after of using Open Folder experience on Windows. Some difference to note:
+    * All pathes are for target system, Use `/` instead of `\\` in debug settings for Visual Studio, and WSL mounted path instead of Windows path.
+    * To actually execute managed code, a Linux build of CoreLib and the libraries is required. The documents currently doesn't cover it, but the repository layout doens't like invoking .NET SDK from different OS with a same checkout of working directory.
 
 ### Using Visual Studio Code
 
