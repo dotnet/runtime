@@ -45,6 +45,7 @@ namespace System.Globalization
             {
                 throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
             }
+
             return GetStringForOutput(unicodeString, unicode, outputHeap.AsSpan(0, actualLength));
         }
 
@@ -58,13 +59,13 @@ namespace System.Globalization
 
             int actualLength = Interop.Globalization.ToAscii(flags, unicode, unicode.Length, destination, destination.Length);
 
-            if (actualLength == 0)
-            {
-                throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
-            }
-
             if (actualLength <= destination.Length)
             {
+                if (actualLength == 0)
+                {
+                    throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
+                }
+
                 charsWritten = actualLength;
                 return true;
             }
@@ -129,13 +130,13 @@ namespace System.Globalization
 
             int actualLength = Interop.Globalization.ToUnicode(flags, ascii, ascii.Length, destination, destination.Length);
 
-            if (actualLength == 0)
-            {
-                throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
-            }
-
             if (actualLength <= destination.Length)
             {
+                if (actualLength == 0)
+                {
+                    throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
+                }
+
                 charsWritten = actualLength;
                 return true;
             }
