@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback } from "./types";
+import { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback } from "./types";
 
 import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module } from "./cross-module";
-import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE } from "./per-module";
+import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, browserVirtualAppBase } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
 import { fetchLike, responseLike } from "./polyfills";
@@ -39,9 +39,9 @@ export async function loadJSModule(asset: JsAsset): Promise<any> {
         }
         assetInternal.behavior = "js-module-dotnet";
         if (typeof loadBootResourceCallback === "function") {
-            const type = behaviorToBlazorAssetTypeMap[assetInternal.behavior];
-            dotnetAssert.check(type, `Unsupported asset behavior: ${assetInternal.behavior}`);
-            const customLoadResult = loadBootResourceCallback(type, assetInternal.name, asset.resolvedUrl!, assetInternal.integrity!, assetInternal.behavior);
+            const blazorType = behaviorToBlazorAssetTypeMap[assetInternal.behavior];
+            dotnetAssert.check(blazorType, `Unsupported asset behavior: ${assetInternal.behavior}`);
+            const customLoadResult = loadBootResourceCallback(blazorType, assetInternal.name, asset.resolvedUrl!, assetInternal.integrity!, assetInternal.behavior);
             dotnetAssert.check(typeof customLoadResult === "string", "loadBootResourceCallback for JS modules must return string URL");
             asset.resolvedUrl = makeURLAbsoluteWithApplicationBase(customLoadResult);
         }
@@ -91,10 +91,15 @@ export async function fetchIcu(asset: IcuAsset): Promise<void> {
 export async function fetchDll(asset: AssemblyAsset): Promise<void> {
     totalAssetsToDownload++;
     const assetInternal = asset as AssetEntryInternal;
+    dotnetAssert.check(assetInternal.virtualPath, "Assembly asset must have virtualPath");
     if (assetInternal.name && !asset.resolvedUrl) {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
     assetInternal.behavior = "assembly";
+    assetInternal.virtualPath = assetInternal.virtualPath.startsWith("/")
+        ? assetInternal.virtualPath
+        : browserVirtualAppBase + "/" + assetInternal.virtualPath;
+
     const bytes = await fetchBytes(assetInternal);
     await nativeModulePromiseController.promise;
 
@@ -107,11 +112,15 @@ export async function fetchDll(asset: AssemblyAsset): Promise<void> {
 export async function fetchPdb(asset: AssemblyAsset): Promise<void> {
     totalAssetsToDownload++;
     const assetInternal = asset as AssetEntryInternal;
+    dotnetAssert.check(assetInternal.virtualPath, "PDB asset must have virtualPath");
     if (assetInternal.name && !asset.resolvedUrl) {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
     assetInternal.behavior = "pdb";
     assetInternal.isOptional = assetInternal.isOptional || loaderConfig.ignorePdbLoadErrors;
+    assetInternal.virtualPath = assetInternal.virtualPath.startsWith("/")
+        ? assetInternal.virtualPath
+        : browserVirtualAppBase + "/" + assetInternal.virtualPath;
     const bytes = await fetchBytes(assetInternal);
     await nativeModulePromiseController.promise;
 
@@ -255,9 +264,9 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
         return asset.pendingDownload.response;
     }
     if (typeof loadBootResourceCallback === "function") {
-        const type = behaviorToBlazorAssetTypeMap[asset.behavior];
-        dotnetAssert.check(type, `Unsupported asset behavior: ${asset.behavior}`);
-        const customLoadResult = loadBootResourceCallback(type, asset.name, asset.resolvedUrl!, asset.integrity!, asset.behavior);
+        const blazorType = behaviorToBlazorAssetTypeMap[asset.behavior];
+        dotnetAssert.check(blazorType, `Unsupported asset behavior: ${asset.behavior}`);
+        const customLoadResult = loadBootResourceCallback(blazorType, asset.name, asset.resolvedUrl!, asset.integrity!, asset.behavior);
         if (typeof customLoadResult === "string") {
             asset.resolvedUrl = makeURLAbsoluteWithApplicationBase(customLoadResult);
         } else if (typeof customLoadResult === "object") {

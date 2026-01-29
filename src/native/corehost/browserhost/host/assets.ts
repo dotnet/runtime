@@ -92,26 +92,25 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
     if (fileName.startsWith("/")) {
         fileName = fileName.substring(1);
     }
-    if (!parentDirectory.startsWith("/"))
+    if (!parentDirectory.startsWith("/")) {
         parentDirectory = browserVirtualAppBase + "/" + parentDirectory;
+    }
 
     _ems_.dotnetLogger.debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
     _ems_.FS.createPath("/", parentDirectory, true, true);
-    _ems_.FS.createDataFile(parentDirectory, fileName, bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
-    );
+    _ems_.FS.createDataFile(parentDirectory, fileName, bytes, true /* canRead */, true /* canWrite */, true /* canOwn */);
 }
 
 export async function instantiateWasm(wasmPromise: Promise<Response>, imports: WebAssembly.Imports, isStreaming: boolean, isMainModule: boolean): Promise<{ instance: WebAssembly.Instance; module: WebAssembly.Module; }> {
     let instance: WebAssembly.Instance;
     let module: WebAssembly.Module;
-    if (!hasInstantiateStreaming || !isStreaming) {
-        const res = await checkResponseOk(wasmPromise);
+    const res = await checkResponseOk(wasmPromise);
+    if (!hasInstantiateStreaming || !isStreaming || !res.isMimeTypeOk) {
         const data = await res.arrayBuffer();
         module = await WebAssembly.compile(data);
         instance = await WebAssembly.instantiate(module, imports);
     } else {
         const instantiated = await WebAssembly.instantiateStreaming(wasmPromise, imports);
-        await checkResponseOk(wasmPromise);
         instance = instantiated.instance;
         module = instantiated.module;
     }
@@ -122,15 +121,17 @@ export async function instantiateWasm(wasmPromise: Promise<Response>, imports: W
     return { instance, module };
 }
 
-async function checkResponseOk(wasmPromise: Promise<Response> | undefined): Promise<Response> {
+async function checkResponseOk(wasmPromise: Promise<Response> | undefined): Promise<Response & { isMimeTypeOk?: boolean }> {
     dotnetAssert.check(wasmPromise, "WASM binary promise was not initialized");
-    const res = await wasmPromise;
+    const res = (await wasmPromise) as Response & { isMimeTypeOk?: boolean };
     if (!res || res.ok === false) {
         throw new Error(`Failed to load WebAssembly module. HTTP status: ${res?.status} ${res?.statusText}`);
     }
     const contentType = res.headers && res.headers.get ? res.headers.get("Content-Type") : undefined;
+    res.isMimeTypeOk = true;
     if (ENVIRONMENT_IS_WEB && contentType !== "application/wasm") {
         dotnetLogger.warn("WebAssembly resource does not have the expected content type \"application/wasm\", so falling back to slower ArrayBuffer instantiation.");
+        res.isMimeTypeOk = false;
     }
     return res;
 }

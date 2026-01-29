@@ -11,7 +11,6 @@ import { loaderConfig, validateLoaderConfig } from "./config";
 import { fetchDll, fetchIcu, fetchPdb, fetchVfs, fetchWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded } from "./assets";
 import { initPolyfills } from "./polyfills";
 import { validateWasmFeatures } from "./bootstrap";
-import { ENVIRONMENT_IS_NODE } from "./per-module";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
@@ -52,20 +51,18 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         const wasmNativePromise: Promise<Response> = fetchWasm(loaderConfig.resources.wasmNative[0]);
 
         const coreAssembliesPromise = Promise.all(loaderConfig.resources.coreAssembly.map(fetchDll));
-        const coreVfsPromise = ENVIRONMENT_IS_NODE
-            ? Promise.resolve([]) // NodeJS is mapping current host directory to VFS /managed and so we assume all files are already there. See also browserVirtualAppBase and libBrowserHost.footer.js
-            : Promise.all((loaderConfig.resources.coreVfs || []).map(fetchVfs));
+        const coreVfsPromise = Promise.all((loaderConfig.resources.coreVfs || []).map(fetchVfs));
 
         const assembliesPromise = Promise.all(loaderConfig.resources.assembly.map(fetchDll));
-        const vfsPromise = ENVIRONMENT_IS_NODE
-            ? Promise.resolve([]) // NodeJS is mapping current host directory to VFS /managed and so we assume all files are already there. See also browserVirtualAppBase and libBrowserHost.footer.js
-            : Promise.all((loaderConfig.resources.vfs || []).map(fetchVfs));
+        const vfsPromise = Promise.all((loaderConfig.resources.vfs || []).map(fetchVfs));
 
         const icuResourceName = getIcuResourceName();
         const icuDataPromise = icuResourceName ? Promise.all((loaderConfig.resources.icu || []).filter(asset => asset.name === icuResourceName).map(fetchIcu)) : Promise.resolve([]);
 
-        const corePDBsPromise = Promise.all((loaderConfig.resources.corePdb || []).map(fetchPdb));
-        const pdbsPromise = Promise.all((loaderConfig.resources.pdb || []).map(fetchPdb));
+        // WASM-TODO: also check that the debugger is linked in and check feature flags
+        const isDebuggingSupported = loaderConfig.debugLevel != 0;
+        const corePDBsPromise = isDebuggingSupported ? Promise.all((loaderConfig.resources.corePdb || []).map(fetchPdb)) : Promise.resolve([]);
+        const pdbsPromise = isDebuggingSupported ? Promise.all((loaderConfig.resources.pdb || []).map(fetchPdb)) : Promise.resolve([]);
         const modulesAfterRuntimeReadyPromise = Promise.all((loaderConfig.resources.modulesAfterRuntimeReady || []).map(loadJSModule));
 
         const nativeModule = await nativeModulePromise;

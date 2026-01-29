@@ -22,14 +22,9 @@ export function initializeCoreCLR(): number {
             runtimeConfigProperties.set(key, "" + value);
         }
     }
-    const virtualDllPath = (virtualPath: string): string => {
-        return virtualPath.startsWith("/")
-            ? virtualPath
-            : browserVirtualAppBase + "/" + virtualPath;
-    };
 
-    const assemblyPaths = loaderConfig.resources!.assembly.map(asset => virtualDllPath(asset.virtualPath));
-    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(asset => virtualDllPath(asset.virtualPath));
+    const assemblyPaths = loaderConfig.resources!.assembly.map(asset => asset.virtualPath);
+    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(asset => asset.virtualPath);
     const tpa = [...coreAssemblyPaths, ...assemblyPaths].join(":");
     runtimeConfigProperties.set(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, tpa);
     runtimeConfigProperties.set(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, loaderConfig.virtualWorkingDirectory!);
