@@ -48,7 +48,7 @@ namespace System.IO
             {
                 ValidateHandle(safeHandle, access, bufferSize, isAsync);
 
-                _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, bufferSize, isAsync);
+                _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, bufferSize, safeHandle.IsAsync);
             }
             catch
             {
@@ -87,15 +87,6 @@ namespace System.IO
         private static void ValidateHandle(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             ValidateHandle(handle, access, bufferSize);
-
-            if (isAsync && !handle.IsAsync)
-            {
-                ThrowHelper.ThrowArgumentException_HandleNotAsync(nameof(handle));
-            }
-            else if (!isAsync && handle.IsAsync)
-            {
-                ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(handle));
-            }
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access)
@@ -114,7 +105,7 @@ namespace System.IO
         {
             ValidateHandle(handle, access, bufferSize, isAsync);
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, isAsync);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, handle.IsAsync);
         }
 
         public FileStream(string path, FileMode mode)
