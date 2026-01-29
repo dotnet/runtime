@@ -3384,7 +3384,7 @@ Compiler::AddCodeDscMap* Compiler::fgGetAddCodeDscMap()
 }
 
 //------------------------------------------------------------------------
-// fgAddCodeRef: Indicate that a particular throw helper block will
+// fgCreateAddCodeDsc: Indicate that a particular throw helper block will
 //   be needed by the method.
 //
 // Arguments:
@@ -3395,42 +3395,18 @@ Compiler::AddCodeDscMap* Compiler::fgGetAddCodeDscMap()
 //   You can call this method after throw helpers have been created,
 //   but it will assert if this entails creation of a new helper.
 //
-void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
+Compiler::AddCodeDsc* Compiler::fgCreateAddCodeDsc(BasicBlock* srcBlk, SpecialCodeKind kind)
 {
-    // Record that the code will call a THROW_HELPER
-    // so on Windows Amd64 we can allocate the 4 outgoing
-    // arg slots on the stack frame if there are no other calls.
-    //
-    compUsesThrowHelper = true;
-
-    if (!fgUseThrowHelperBlocks() && (kind != SCK_FAIL_FAST))
-    {
-        // FailFast will still use a common throw helper, even in debuggable modes.
-        //
-        return;
-    }
+    assert(!fgRngChkThrowAdded);
 
     // Fetch block data and designator
     //
     AcdKeyDesignator dsg     = AcdKeyDesignator::KD_NONE;
     unsigned const   refData = (kind == SCK_FAIL_FAST) ? 0 : bbThrowIndex(srcBlk, &dsg);
 
-    // Look for an existing entry that matches what we're looking for
-    //
-    AddCodeDsc* add = fgFindExcptnTarget(kind, srcBlk);
-
-    if (add != nullptr)
-    {
-        JITDUMP(FMT_BB " requires throw helper block for %s, sharing ACD%u (data 0x%08x)\n", srcBlk->bbNum,
-                sckName(kind), add->acdNum, refData);
-        return;
-    }
-
-    assert(!fgRngChkThrowAdded);
-
     // Allocate a new entry and prepend it to the list
     //
-    add              = new (this, CMK_Unknown) AddCodeDsc;
+    AddCodeDsc* add  = new (this, CMK_BasicBlock) AddCodeDsc;
     add->acdDstBlk   = nullptr;
     add->acdTryIndex = srcBlk->bbTryIndex;
 
@@ -3467,24 +3443,25 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     assert(map->Lookup(key2, &add2));
     assert(add == add2);
 #endif
+
+    return add;
 }
 
 //------------------------------------------------------------------------
-// fgCreateThrowHelperBlocks: create the needed throw helpers
+// fgCreateThrowHelperBlock: create a throw helper block
 //
-// Returns:
-//   Suitable phase status
+// Arguments:
+//    add -- addCodeDesc describing the block to create
 //
-PhaseStatus Compiler::fgCreateThrowHelperBlocks()
+// Notes:
+//   Creates a new block if necessary, and sets the add->acdDstBlk to the new block.
+//
+void Compiler::fgCreateThrowHelperBlock(AddCodeDsc* add)
 {
-    if (fgAddCodeDscMap == nullptr)
+    if (add->acdDstBlk != nullptr)
     {
-        return PhaseStatus::MODIFIED_NOTHING;
+        return;
     }
-
-    // We should not have added throw helper blocks yet.
-    //
-    assert(!fgRngChkThrowAdded);
 
     const static BBKinds jumpKinds[] = {
         BBJ_ALWAYS, // SCK_NONE
@@ -3499,89 +3476,82 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
 
-    for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(fgAddCodeDscMap))
-    {
-        // Create the target basic block in the region indicated by the acd info
-        //
-        assert(add->acdKind != SCK_NONE);
-        bool const        putInFilter = (add->acdKeyDsg == AcdKeyDesignator::KD_FLT);
-        BasicBlock* const newBlk      = fgNewBBinRegion(jumpKinds[add->acdKind], add->acdTryIndex, add->acdHndIndex,
-                                                        /* nearBlk */ nullptr, putInFilter,
-                                                        /* runRarely */ true, /* insertAtEnd */ true);
+    // Create the target basic block in the region indicated by the acd info
+    //
+    assert(add->acdKind != SCK_NONE);
+    bool const        putInFilter = (add->acdKeyDsg == AcdKeyDesignator::KD_FLT);
+    BasicBlock* const newBlk      = fgNewBBinRegion(jumpKinds[add->acdKind], add->acdTryIndex, add->acdHndIndex,
+                                                    /* nearBlk */ nullptr, putInFilter,
+                                                    /* runRarely */ true, /* insertAtEnd */ true);
 
-        // Update the descriptor so future lookups can find the block
-        //
-        add->acdDstBlk = newBlk;
+    // Update the descriptor so future lookups can find the block
+    //
+    add->acdDstBlk = newBlk;
 
 #ifdef DEBUG
-        if (verbose)
+    if (verbose)
+    {
+        const char* msgWhere = "";
+        switch (add->acdKeyDsg)
         {
-            const char* msgWhere = "";
-            switch (add->acdKeyDsg)
-            {
-                case AcdKeyDesignator::KD_NONE:
-                    msgWhere = "non-EH region";
-                    break;
+            case AcdKeyDesignator::KD_NONE:
+                msgWhere = "non-EH region";
+                break;
 
-                case AcdKeyDesignator::KD_HND:
-                    msgWhere = "handler";
-                    break;
+            case AcdKeyDesignator::KD_HND:
+                msgWhere = "handler";
+                break;
 
-                case AcdKeyDesignator::KD_TRY:
-                    msgWhere = "try";
-                    break;
+            case AcdKeyDesignator::KD_TRY:
+                msgWhere = "try";
+                break;
 
-                case AcdKeyDesignator::KD_FLT:
-                    msgWhere = "filter";
-                    break;
+            case AcdKeyDesignator::KD_FLT:
+                msgWhere = "filter";
+                break;
 
-                default:
-                    msgWhere = "? unexpected";
-            }
-
-            const char* msg;
-            switch (add->acdKind)
-            {
-                case SCK_RNGCHK_FAIL:
-                    msg = " for RNGCHK_FAIL";
-                    break;
-                case SCK_DIV_BY_ZERO:
-                    msg = " for DIV_BY_ZERO";
-                    break;
-                case SCK_OVERFLOW:
-                    msg = " for OVERFLOW";
-                    break;
-                case SCK_ARG_EXCPN:
-                    msg = " for ARG_EXCPN";
-                    break;
-                case SCK_ARG_RNG_EXCPN:
-                    msg = " for ARG_RNG_EXCPN";
-                    break;
-                case SCK_FAIL_FAST:
-                    msg = " for FAIL_FAST";
-                    break;
-                case SCK_NULL_CHECK:
-                    msg = " for NULL_CHECK";
-                    break;
-                default:
-                    msg = " for ??";
-                    break;
-            }
-
-            printf("\nAdding throw helper " FMT_BB " for ACD%u %s in %s%s\n", newBlk->bbNum, add->acdNum,
-                   sckName(add->acdKind), msgWhere, msg);
+            default:
+                msgWhere = "? unexpected";
         }
+
+        const char* msg;
+        switch (add->acdKind)
+        {
+            case SCK_RNGCHK_FAIL:
+                msg = " for RNGCHK_FAIL";
+                break;
+            case SCK_DIV_BY_ZERO:
+                msg = " for DIV_BY_ZERO";
+                break;
+            case SCK_OVERFLOW:
+                msg = " for OVERFLOW";
+                break;
+            case SCK_ARG_EXCPN:
+                msg = " for ARG_EXCPN";
+                break;
+            case SCK_ARG_RNG_EXCPN:
+                msg = " for ARG_RNG_EXCPN";
+                break;
+            case SCK_FAIL_FAST:
+                msg = " for FAIL_FAST";
+                break;
+            case SCK_NULL_CHECK:
+                msg = " for NULL_CHECK";
+                break;
+            default:
+                msg = " for ??";
+                break;
+        }
+
+        printf("\nAdding throw helper " FMT_BB " for ACD%u %s in %s%s\n", newBlk->bbNum, add->acdNum,
+               sckName(add->acdKind), msgWhere, msg);
+    }
 #endif // DEBUG
 
-        // Mark the block as added by the compiler and not removable by future flow
-        // graph optimizations. Note that no target block points to these blocks.
-        //
-        newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
-    }
-
-    fgRngChkThrowAdded = true;
-
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    // Mark the block as added by the compiler and not removable by future flow
+    // graph optimizations. Note that no target block points to these blocks.
+    //
+    newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
 }
 
 //------------------------------------------------------------------------
@@ -3668,7 +3638,7 @@ void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
 //    Code descriptor for the appropriate throw helper block, or nullptr if no such
 //    descriptor exists.
 //
-Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock)
+Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock, bool createIfNeeded)
 {
     assert(fgUseThrowHelperBlocks() || (kind == SCK_FAIL_FAST));
     AddCodeDsc*          add = nullptr;
@@ -3678,20 +3648,14 @@ Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, BasicBl
 
     if (add == nullptr)
     {
-        // We shouldn't be asking for these blocks late in compilation
-        // unless we know there are entries to be found.
-        if (fgRngChkThrowAdded)
+        add = fgCreateAddCodeDsc(fromBlock, kind);
+
+        // Create the block...
+        //
+        if (createIfNeeded)
         {
-            JITDUMP(FMT_BB ": unexpected request for new throw helper: kind %d (%s), data 0x%08x\n", fromBlock->bbNum,
-                    kind, sckName(kind), key.Data());
-
-            if (kind == SCK_NULL_CHECK)
-            {
-                NYI_WASM("Missing null check demand");
-            }
+            fgCreateThrowHelperBlock(add);
         }
-
-        assert(!fgRngChkThrowAdded);
     }
 
     return add;
