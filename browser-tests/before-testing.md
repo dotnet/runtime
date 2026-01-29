@@ -21,7 +21,7 @@ export Scenario="WasmTestOnChrome"
 export InstallFirefoxForTests="false"
 export XunitShowProgress="true"
 export SSL_CERT_DIR="$HOME/.aspnet/dev-certs/trust:/usr/lib/ssl/certs"
-./build.sh -os browser -subset clr+libs+host -c Debug
+./build.sh -os browser -subset clr+libs+host -c Release
 ```
 
 **Note:** This build can take 30-40+ minutes.

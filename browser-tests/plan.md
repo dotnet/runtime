@@ -39,7 +39,7 @@ Each work item has a `DetailsUrl` that links to Helix logs with `ConsoleOutputUr
 | Question | Decision |
 |----------|----------|
 | GitHub Issue | Use single umbrella issue **#123011** for all Browser+CoreCLR failures |
-| Build Configuration | **Debug** - for better stack traces and more asserts |
+| Build Configuration | **Release** - faster |
 | Failure Categories | Decide when all failures collected (threading, gc, finalizer, interpreter, other) |
 | Automation | Keep simple, improve as we go |
 | Timeouts | Keep current defaults (`WasmXHarnessTestsTimeout` = 00:30:00) |

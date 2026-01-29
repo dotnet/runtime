@@ -15,7 +15,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 # Default configuration
-CONFIGURATION="Debug"
+CONFIGURATION="Release"
 
 # Parse optional arguments
 while getopts "c:" opt; do
@@ -33,7 +33,7 @@ shift $((OPTIND-1))
 
 if [ -z "$1" ]; then
     echo "Usage: $0 [-c Configuration] <path-to-test-csproj>"
-    echo "  -c Configuration  Build configuration (default: Debug)"
+    echo "  -c Configuration  Build configuration (default: Release)"
     echo "Example: $0 src/libraries/System.Runtime.InteropServices.JavaScript/tests/System.Runtime.InteropServices.JavaScript.UnitTests/System.Runtime.InteropServices.JavaScript.Tests.csproj"
     echo "Example: $0 -c Release src/libraries/System.Runtime.InteropServices.JavaScript/tests/System.Runtime.InteropServices.JavaScript.UnitTests/System.Runtime.InteropServices.JavaScript.Tests.csproj"
     exit 1
