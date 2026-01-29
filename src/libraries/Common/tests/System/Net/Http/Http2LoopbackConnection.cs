@@ -155,7 +155,7 @@ namespace System.Net.Test.Common
                 // so that SocketsHttpHandler will not induce retry.
                 // The contents of what we send don't really matter, as long as it is interpreted by SocketsHttpHandler as an invalid response.
                 await _connectionStream.WriteAsync("HTTP/2.0 400 Bad Request\r\n\r\n"u8.ToArray());
-                _connectionSocket.Shutdown(SocketShutdown.Send);
+                await _connectionSocket.ShutdownAsync(SocketShutdown.Send);
                 // If WinHTTP doesn't support streaming a request without a length then it will fallback
                 // to HTTP/1.1. Throwing an exception to detect this case in WinHttpHandler tests.
                 throw new Exception("HTTP/1.1 request sent to HTTP/2 connection.");
@@ -397,9 +397,12 @@ namespace System.Net.Test.Common
             _ignoreWindowUpdates = false;
         }
 
-        public void ShutdownSend()
+        public async Task ShutdownSendAsync()
         {
-            _connectionSocket?.Shutdown(SocketShutdown.Send);
+            if (_connectionSocket != null)
+            {
+                await _connectionSocket.ShutdownAsync(SocketShutdown.Send);
+            }
         }
 
         // This will cause a server-initiated shutdown of the connection.
@@ -408,7 +411,7 @@ namespace System.Net.Test.Common
         public async Task WaitForConnectionShutdownAsync(bool ignoreUnexpectedFrames = false)
         {
             // Shutdown our send side, so the client knows there won't be any more frames coming.
-            ShutdownSend();
+            await ShutdownSendAsync();
 
             await WaitForClientDisconnectAsync(ignoreUnexpectedFrames: ignoreUnexpectedFrames);
         }

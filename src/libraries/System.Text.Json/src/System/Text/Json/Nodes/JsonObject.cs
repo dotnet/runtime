@@ -270,7 +270,7 @@ namespace System.Text.Json.Nodes
                 if (propertyName.AsSpan().ContainsSpecialCharacters())
                 {
                     path.Append("['");
-                    path.Append(propertyName);
+                    path.AppendEscapedPropertyName(propertyName);
                     path.Append("']");
                 }
                 else

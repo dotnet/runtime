@@ -524,11 +524,15 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Returns the offset of a <paramref name="position" /> within this sequence from the start.
+        /// Returns the offset of a <paramref name="position" /> within this sequence.
         /// </summary>
         /// <param name="position">The <see cref="System.SequencePosition"/> of which to get the offset.</param>
-        /// <returns>The offset from the start of the sequence.</returns>
+        /// <returns>The offset in the sequence.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException">The position is out of range.</exception>
+        /// <remarks>
+        /// The returned offset is not a zero-based index from the start.
+        /// To obtain the zero-based index offset, subtract <code>mySequence.GetOffset(mySequence.Start)</code> from the returned offset.
+        /// </remarks>
         public long GetOffset(SequencePosition position)
         {
             object? positionSequenceObject = position.GetObject();
