@@ -3,6 +3,9 @@
 
 #ifdef FEATURE_INTERPRETER
 
+#include <limits>
+#include <functional>
+
 #include "threads.h"
 #include "gcenv.h"
 #include "interpexec.h"
@@ -11,10 +14,6 @@
 #include "comdelegate.h"
 #include "gchelpers.inl"
 #include "arraynative.inl"
-
-// for numeric_limits
-#include <limits>
-#include <functional>
 
 #ifdef TARGET_WASM
 // Unused on WASM

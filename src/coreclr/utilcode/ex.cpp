@@ -96,12 +96,7 @@ void Exception::Delete(Exception* pvMemory)
         return;
     }
 
-#ifdef DACCESS_COMPILE
     delete pvMemory;
-#else
-    ::delete pvMemory;
-#endif
-
 }
 
 void Exception::GetMessage(SString &result)
