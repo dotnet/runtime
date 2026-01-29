@@ -148,19 +148,6 @@ def install_dotnet_sdk(python_path, performance_directory, arch):
         performance_directory (string): Path to performance directory
         arch (string): Architecture
     """
-    dotnet_script = os.path.join(performance_directory, "scripts", "dotnet.py")
-    # Install the sdk
-    # use run_command to run the command in powershell on windows to avoid ssl/tls issues
-    # TODO: this is currently broken on windows because of the default tls version on runners,
-    # PR to fix it is here (needs to be in the performance repo dotnet install script): 
-    run_command([python_path, 
-                dotnet_script,
-                "install",
-                "--architecture",
-                    arch,
-                "--channels",
-                "main",
-                "--verbose"])
 
 def build_and_run(coreclr_args, output_mch_name):
     """Build the microbenchmarks/real-world and run them under "superpmi collect"
@@ -199,8 +186,23 @@ def build_and_run(coreclr_args, output_mch_name):
         corerun_exe = "corerun"
         script_name = "run_benchmarks.sh"
 
+    # Set up NuGet cache locations to be within the performance_directory which is on a separate disk
+    # so that we don't fill up the OS disk (space is limited on helix machines)
+    os.environ["NUGET_PLUGINS_CACHE_PATH"] = os.path.join(performance_directory, "NUGET_PLUGINS_CACHE_PATH")
+    os.environ["NUGET_PACKAGES"] = os.path.join(performance_directory, "NUGET_PACKAGES")
+    os.environ["NUGET_HTTP_CACHE_PATH"] = os.path.join(performance_directory, "NUGET_HTTP_CACHE_PATH")
+    os.environ["NUGET_SCRATCH"] = os.path.join(performance_directory, "NUGET_SCRATCH")
+
     # Install the dotnet sdk using the script within the performance repo
-    install_dotnet_sdk(python_path, performance_directory, arch)
+    dotnet_script = os.path.join(performance_directory, "scripts", "dotnet.py")
+    run_command([python_path,
+                dotnet_script,
+                "install",
+                "--architecture",
+                    arch,
+                "--channels",
+                "main",
+                "--verbose"])
 
     # Start with a "dotnet --info" to see what we've got.
     run_command([dotnet_exe, "--info"])

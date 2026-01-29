@@ -396,7 +396,7 @@ def setup_benchmark(workitem_directory, arch):
     performance_directory = os.path.join(workitem_directory, "performance")
 
     run_command(
-        ["git", "clone", "--quiet", "--depth", "1", "https://github.com/adamperlin/performance", performance_directory])
+        ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/performance", performance_directory])
 
     try:
         shutil.rmtree(os.path.join(performance_directory, ".git"))
