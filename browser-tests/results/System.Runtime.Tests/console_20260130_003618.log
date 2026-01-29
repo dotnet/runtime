@@ -1,0 +1,20 @@
+nohup: ignoring input
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  System.Runtime.Serialization.Formatters -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Serialization.Formatters/ref/Release/net10.0/System.Runtime.Serialization.Formatters.dll
+  System.Runtime.Serialization.Formatters -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Serialization.Formatters/Release/net10.0/System.Runtime.Serialization.Formatters.dll
+  TestILAssembly -> /home/pavelsavara/dev/runtime/artifacts/bin/TestILAssembly/Release/netstandard2.0/TestILAssembly.dll
+  System.Reflection.TestModule -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.TestModule/Release/netstandard2.0/System.Reflection.TestModule.dll
+  System.TestStructs -> /home/pavelsavara/dev/runtime/artifacts/bin/System.TestStructs/Release/netstandard2.0/System.TestStructs.dll
+  Microsoft.Interop.SourceGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Interop.SourceGeneration/Release/netstandard2.0/Microsoft.Interop.SourceGeneration.dll
+  TestUtilities.Unicode -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities.Unicode/Release/net11.0/TestUtilities.Unicode.dll
+  DownlevelLibraryImportGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/DownlevelLibraryImportGenerator/Release/netstandard2.0/Microsoft.Interop.LibraryImportGenerator.Downlevel.dll
+  TestCollectibleAssembly -> /home/pavelsavara/dev/runtime/artifacts/bin/TestCollectibleAssembly/Release/netstandard2.0/TestCollectibleAssembly.dll
+  TestLoadAssembly -> /home/pavelsavara/dev/runtime/artifacts/bin/TestLoadAssembly/Release/netstandard2.0/TestLoadAssembly.dll
