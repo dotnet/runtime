@@ -39,6 +39,7 @@ VPTR_CLASS(InteropDispatchStubManager)
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 VPTR_CLASS(TailCallStubManager)
 #endif
+VPTR_CLASS(AsyncThunkStubManager)
 #ifdef FEATURE_TIERED_COMPILATION
 VPTR_CLASS(CallCountingStubManager)
 #endif // FEATURE_TIERED_COMPILATION
