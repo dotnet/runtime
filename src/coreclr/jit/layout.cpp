@@ -471,14 +471,17 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classH
 {
     bool     isValueClass = compiler->eeIsValueClass(classHandle);
     unsigned size;
+    unsigned indirectSize;
 
     if (isValueClass)
     {
-        size = compiler->info.compCompHnd->getClassSize(classHandle);
+        size         = compiler->info.compCompHnd->getClassSize(classHandle);
+        indirectSize = compiler->info.compCompHnd->getClassIndirectSize(classHandle);
     }
     else
     {
-        size = compiler->info.compCompHnd->getHeapClassSize(classHandle);
+        size         = compiler->info.compCompHnd->getHeapClassSize(classHandle);
+        indirectSize = size;
     }
 
     var_types type = compiler->impNormStructType(classHandle);
@@ -488,6 +491,8 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classH
 
     ClassLayout* layout = new (compiler, CMK_ClassLayout)
         ClassLayout(classHandle, isValueClass, size, type DEBUGARG(className) DEBUGARG(shortClassName));
+
+    layout->m_indirectSize = indirectSize;
 
     if (layout->m_size < TARGET_POINTER_SIZE)
     {

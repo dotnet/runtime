@@ -7962,6 +7962,12 @@ public:
         return m_layout->GetSize();
     }
 
+    // The size of the buffer when accessed indirectly (via ldobj/stobj).
+    unsigned IndirectSize() const
+    {
+        return m_layout->GetIndirectSize();
+    }
+
     // Instruction selection: during codegen time, what code sequence we will be using
     // to encode this operation.
     enum
