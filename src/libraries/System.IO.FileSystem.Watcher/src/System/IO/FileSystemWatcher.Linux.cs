@@ -1,21 +1,51 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    // Note: This class has an OS Limitation where the inotify API can miss events if a directory is created and immediately has
-    //       changes underneath. This is due to the inotify* APIs not being recursive and needing to call inotify_add_watch on
-    //       each subdirectory, causing a race between adding the watch and file system events happening.
+    // Implementation notes:
+    //
+    // Missed events for recursive watching:
+    //   The inotify APIs are not recursive. We need to call inotify_add_watch when we detect a child directory to track it.
+    //   Events that occurred on the directory before we've added it will be lost.
+    //
+    // Path vs directory:
+    //   Note that inotify does not watch a path, but it watches directories.
+    //   When a path is passed to inotify_add_watch, the directory is looked up by the kernel and a watch descriptor (wd) is returned for watching that directory.
+    //   If the directory is moved to a different path, inotify will continue to reports its events.
+    //   If we have previously added a watch for a path, and we call inotify_add_watch again for that path then:
+    //   - if the looked up directory is still the same, the same wd will be returned, or
+    //   - if the path now refers to a different directory, another wd will be returned.
+    //
+    //   For each FileSystemWatcher we use a Watcher object that represents all inotify operations performed for that FileSystemWatcher.
+    //   To represent the difference explained above (path vs directory) we use a WatchedDirectory object to represent a path that is watched
+    //   and a separate Watch object that represent the wd returned by the inotify_add_watch.
+    //   Each WatchedDirectory has a single Watch, while a Watch may be used by several WatchDirectories.
+    //   When there are no more WatchDirectories using the Watch, we can remove it.
+    //
+    // Locking:
+    //   To prevent deadlocks, the locks (as needed) should be taken in this order: s_watchersLock, _addLock, lock on Watcher instance, lock on Watch instance.
+    //
+    // Shared inotify instance:
+    //   By default, the number of inotify instances per user is limited to 128.
+    //   Because of this low limit, we make all the FileSystemWatchers share a single inotify instance to reduce contention with other processes.
+    //   A dedicated thread dequeues the inotify events. From the inotify events, FileSystemWatcher events are emitted from the ThreadPool.
+    //   This stops FileSystemWatcher event handlers to block one another, or them blocking the inotify thread which could cause the inotify event queue to overflow.
+    //   This requires us to use IN_MASK_ADD which may cause us to continue receive events that no FileSystemWatcher is still interested in.
     public partial class FileSystemWatcher
     {
+        private const int PATH_MAX = 4096;
+
         /// <summary>Starts a new watch operation if one is not currently running.</summary>
         private void StartRaisingEvents()
         {
@@ -26,76 +56,16 @@ namespace System.IO
                 return;
             }
 
-            // If we already have a cancellation object, we're already running.
-            if (_cancellation != null)
+            // If we already have a watcher object, we're already running.
+            if (_watcher != null)
             {
                 return;
             }
 
-            // Open an inotify file descriptor.
-            SafeFileHandle handle = Interop.Sys.INotifyInit();
-            if (handle.IsInvalid)
-            {
-                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                handle.Dispose();
-                switch (error.Error)
-                {
-                    case Interop.Error.EMFILE:
-                        string? maxValue = ReadMaxUserLimit(MaxUserInstancesPath);
-                        string message = !string.IsNullOrEmpty(maxValue) ?
-                            SR.Format(SR.IOException_INotifyInstanceUserLimitExceeded_Value, maxValue) :
-                            SR.IOException_INotifyInstanceUserLimitExceeded;
-                        throw new IOException(message, error.RawErrno);
-                    case Interop.Error.ENFILE:
-                        throw new IOException(SR.IOException_INotifyInstanceSystemLimitExceeded, error.RawErrno);
-                    default:
-                        throw Interop.GetExceptionForIoErrno(error);
-                }
-            }
+            _watcher = new INotify.Watcher(this);
+            _enabled = true;
 
-            try
-            {
-                // Create the cancellation object that will be used by this FileSystemWatcher to cancel the new watch operation
-                CancellationTokenSource cancellation = new CancellationTokenSource();
-
-                // Start running.  All state associated with the watch operation is stored in a separate object; this is done
-                // to avoid race conditions that could result if the users quickly starts/stops/starts/stops/etc. causing multiple
-                // active operations to all be outstanding at the same time.
-                var runner = new RunningInstance(
-                    this, handle, _directory,
-                    IncludeSubdirectories, NotifyFilter, cancellation.Token);
-
-                // Now that we've created the runner, store the cancellation object and mark the instance
-                // as running.  We wait to do this so that if there was a failure, StartRaisingEvents
-                // may be called to try again without first having to call StopRaisingEvents.
-                _cancellation = cancellation;
-                _enabled = true;
-
-                // Start the runner
-                runner.Start();
-            }
-            catch
-            {
-                // If we fail to actually start the watching even though we've opened the
-                // inotify handle, close the inotify handle proactively rather than waiting for it
-                // to be finalized.
-                handle.Dispose();
-                throw;
-            }
-        }
-
-        /// <summary>Allocates a buffer of the requested internal buffer size.</summary>
-        /// <returns>The allocated buffer.</returns>
-        private byte[] AllocateBuffer()
-        {
-            try
-            {
-                return new byte[_internalBufferSize];
-            }
-            catch (OutOfMemoryException)
-            {
-                throw new OutOfMemoryException(SR.Format(SR.BufferSizeTooLarge, _internalBufferSize));
-            }
+            _watcher.Start();
         }
 
         /// <summary>Cancels the currently running watch operation if there is one.</summary>
@@ -106,21 +76,14 @@ namespace System.IO
             if (IsSuspended())
                 return;
 
-            // If there's an active cancellation token, cancel and release it.
-            // The cancellation token and the processing task respond to cancellation
-            // to handle all other cleanup.
-            var cts = _cancellation;
-            if (cts != null)
-            {
-                _cancellation = null;
-                cts.Cancel();
-            }
+            _watcher?.Stop();
+            _watcher = null;
         }
 
         /// <summary>Called when FileSystemWatcher is finalized.</summary>
         private void FinalizeDispose()
         {
-            // The RunningInstance remains rooted and holds open the SafeFileHandle until it's explicitly
+            // The Watcher remains rooted and holds open the SafeFileHandle until it's explicitly
             // torn down.  FileSystemWatcher.Dispose will call StopRaisingEvents, but not on finalization;
             // thus we need to explicitly call it here.
             StopRaisingEvents();
@@ -132,11 +95,12 @@ namespace System.IO
         /// <summary>Path to the procfs file that contains the maximum number of inotify watches an individual user may create.</summary>
         private const string MaxUserWatchesPath = "/proc/sys/fs/inotify/max_user_watches";
 
-        /// <summary>
-        /// Cancellation for the currently running watch operation.
-        /// This is non-null if an operation has been started and null if stopped.
-        /// </summary>
-        private CancellationTokenSource? _cancellation;
+        private INotify.Watcher? _watcher;
+
+        private static void RestartForInternalBufferSize()
+        {
+            // The implementation is not using InternalBufferSize. There's no need to restart.
+        }
 
         /// <summary>Reads the value of a max user limit path from procfs.</summary>
         /// <param name="path">The path to read.</param>
@@ -147,656 +111,729 @@ namespace System.IO
             catch { return null; }
         }
 
-        /// <summary>
-        /// Maps the FileSystemWatcher's NotifyFilters enumeration to the
-        /// corresponding Interop.Sys.NotifyEvents values.
-        /// </summary>
-        /// <param name="filters">The filters provided the by user.</param>
-        /// <returns>The corresponding NotifyEvents values to use with inotify.</returns>
-        private static Interop.Sys.NotifyEvents TranslateFilters(NotifyFilters filters)
-        {
-            Interop.Sys.NotifyEvents result = 0;
-
-            // We always include a few special inotify watch values that configure
-            // the watch's behavior.
-            result |=
-                Interop.Sys.NotifyEvents.IN_ONLYDIR |     // we only allow watches on directories
-                Interop.Sys.NotifyEvents.IN_EXCL_UNLINK;  // we want to stop monitoring unlinked files
-
-            // For the Created and Deleted events, we need to always
-            // register for the created/deleted inotify events, regardless
-            // of the supplied filters values. We explicitly don't include IN_DELETE_SELF.
-            // The Windows implementation doesn't include notifications for the root directory,
-            // and having this for subdirectories results in duplicate notifications, one from
-            // the parent and one from self.
-            result |=
-                Interop.Sys.NotifyEvents.IN_CREATE |
-                Interop.Sys.NotifyEvents.IN_DELETE;
-
-            // For the Changed event, which inotify events we subscribe to
-            // are based on the NotifyFilters supplied.
-            const NotifyFilters filtersForAccess =
-                NotifyFilters.LastAccess;
-            const NotifyFilters filtersForModify =
-                NotifyFilters.LastAccess |
-                NotifyFilters.LastWrite |
-                NotifyFilters.Security |
-                NotifyFilters.Size;
-            const NotifyFilters filtersForAttrib =
-                NotifyFilters.Attributes |
-                NotifyFilters.CreationTime |
-                NotifyFilters.LastAccess |
-                NotifyFilters.LastWrite |
-                NotifyFilters.Security |
-                NotifyFilters.Size;
-            if ((filters & filtersForAccess) != 0)
-            {
-                result |= Interop.Sys.NotifyEvents.IN_ACCESS;
-            }
-            if ((filters & filtersForModify) != 0)
-            {
-                result |= Interop.Sys.NotifyEvents.IN_MODIFY;
-            }
-            if ((filters & filtersForAttrib) != 0)
-            {
-                result |= Interop.Sys.NotifyEvents.IN_ATTRIB;
-            }
-
-            // For the Rename event, we'll register for the corresponding move inotify events if the
-            // caller's NotifyFilters asks for notifications related to names.
-            const NotifyFilters filtersForMoved =
-                NotifyFilters.FileName |
-                NotifyFilters.DirectoryName;
-            if ((filters & filtersForMoved) != 0)
-            {
-                result |=
-                    Interop.Sys.NotifyEvents.IN_MOVED_FROM |
-                    Interop.Sys.NotifyEvents.IN_MOVED_TO;
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// State and processing associated with an active watch operation.  This state is kept separate from FileSystemWatcher to avoid
-        /// race conditions when a user starts/stops/starts/stops/etc. in quick succession, resulting in the potential for multiple
-        /// active operations. It also helps with avoiding rooted cycles and enabling proper finalization.
-        /// </summary>
-        private sealed class RunningInstance
+        private sealed class INotify
         {
             /// <summary>
             /// The size of the native struct inotify_event.  4 32-bit integer values, the last of which is a length
             /// that indicates how many bytes follow to form the string name.
             /// </summary>
-            private const int c_INotifyEventSize = 16;
+            private const int INotifyEventSize = 16;
 
-            /// <summary>
-            /// Weak reference to the associated watcher.  A weak reference is used so that the FileSystemWatcher may be collected and finalized,
-            /// causing an active operation to be torn down.  With a strong reference, a blocking read on the inotify handle will keep alive this
-            /// instance which will keep alive the FileSystemWatcher which will not be finalizable and thus which will never signal to the blocking
-            /// read to wake up in the event that the user neglects to stop raising events.
-            /// </summary>
-            private readonly WeakReference<FileSystemWatcher> _weakWatcher;
-            /// <summary>
-            /// The path for the primary watched directory.
-            /// </summary>
-            private readonly string _directoryPath;
-            /// <summary>
-            /// The inotify handle / file descriptor
-            /// </summary>
+            // The name buffer in struct inotify_event is 0-256 bytes making the total inotify_event size 16-272 bytes.
+            // The below buffer fits at 60+ events of the largest events.
+            // For a typical file name size of <32 bytes, we can receive 300+ events in a single read.
+            // This buffer size is assumed to be plenty because the read loop dispatches the work for user event handling to the ThreadPool and then performs a new read.
+            private const int BufferSize = 16384;
+
+            // Guards the watchers of the inotify instance and starting the inotify thread.
+            private static readonly object s_watchersLock = new();
+            private static INotify? s_currentINotify;
+            private readonly List<Watcher> _watchers = new();
+            private readonly byte[] _buffer = new byte[BufferSize];
             private readonly SafeFileHandle _inotifyHandle;
-            /// <summary>
-            /// Buffer used to store raw bytes read from the inotify handle.
-            /// </summary>
-            private readonly byte[] _buffer;
-            /// <summary>
-            /// The number of bytes read into the _buffer.
-            /// </summary>
+            private readonly ConcurrentDictionary<int, Watch> _wdToWatch = new ConcurrentDictionary<int, Watch>();
+            private readonly ReaderWriterLockSlim _addLock = new(LockRecursionPolicy.NoRecursion);
+            private bool _isThreadStopping;
+            private bool _allWatchersStopped;
             private int _bufferAvailable;
-            /// <summary>
-            /// The next position in _buffer from which an event should be read.
-            /// </summary>
             private int _bufferPos;
-            /// <summary>
-            /// Filters to use when adding a watch on directories.
-            /// </summary>
-            private readonly NotifyFilters _notifyFilters;
-            private readonly Interop.Sys.NotifyEvents _watchFilters;
-            /// <summary>
-            /// Whether to monitor subdirectories.  Unlike Win32, inotify does not implicitly monitor subdirectories;
-            /// watches must be explicitly added for those subdirectories.
-            /// </summary>
-            private readonly bool _includeSubdirectories;
-            /// <summary>
-            /// Token to monitor for cancellation requests, upon which processing is stopped and all
-            /// state is cleaned up.
-            /// </summary>
-            private readonly CancellationToken _cancellationToken;
-            /// <summary>
-            /// Mapping from watch descriptor (as returned by inotify_add_watch) to state for
-            /// the associated directory being watched.  Events from inotify include only relative
-            /// names, so the watch descriptor in an event must be used to look up the associated
-            /// directory path in order to convert the relative filename into a full path.
-            /// </summary>
-            private readonly Dictionary<int, WatchedDirectory> _wdToPathMap = new Dictionary<int, WatchedDirectory>();
-            /// <summary>
-            /// Maximum length of a name returned from inotify event.
-            /// </summary>
-            private const int NAME_MAX = 255; // from limits.h
+            private WatchedDirectory[] _dirBuffer = new WatchedDirectory[4];
 
-            /// <summary>Initializes the instance with all state necessary to operate a watch.</summary>
-            internal RunningInstance(
-                FileSystemWatcher watcher, SafeFileHandle inotifyHandle, string directoryPath,
-                bool includeSubdirectories, NotifyFilters notifyFilters, CancellationToken cancellationToken)
+            public INotify()
             {
-                Debug.Assert(watcher != null);
-                Debug.Assert(inotifyHandle != null && !inotifyHandle.IsInvalid && !inotifyHandle.IsClosed);
-                Debug.Assert(directoryPath != null);
+                _inotifyHandle = CreateINotifyHandle();
 
-                _weakWatcher = new WeakReference<FileSystemWatcher>(watcher);
-                _inotifyHandle = inotifyHandle;
-                _directoryPath = directoryPath;
-                _buffer = watcher.AllocateBuffer();
-                Debug.Assert(_buffer != null && _buffer.Length > (c_INotifyEventSize + NAME_MAX + 1));
-                _includeSubdirectories = includeSubdirectories;
-                _notifyFilters = notifyFilters;
-                _watchFilters = TranslateFilters(notifyFilters);
-                _cancellationToken = cancellationToken;
-
-                // Add a watch for this starting directory.  We keep track of the watch descriptor => directory information
-                // mapping in a dictionary; this is needed in order to be able to determine the containing directory
-                // for all notifications so that we can reconstruct the full path.
-                AddDirectoryWatchUnlocked(null, directoryPath);
-            }
-
-            internal void Start()
-            {
-                // Spawn a thread to read from the inotify queue and process the events.
-                new Thread(obj => ((RunningInstance)obj!).ProcessEvents())
+                static SafeFileHandle CreateINotifyHandle()
                 {
-                    IsBackground = true,
-                    Name = ".NET File Watcher"
-                }.Start(this);
+                    SafeFileHandle handle = Interop.Sys.INotifyInit();
 
-                // PERF: As needed, we can look into making this use async I/O rather than burning
-                // a thread that blocks in the read syscall.
-            }
-
-            /// <summary>Object to use for synchronizing access to state when necessary.</summary>
-            private object SyncObj { get { return _wdToPathMap; } }
-
-            /// <summary>Adds a watch on a directory to the existing inotify handle.</summary>
-            /// <param name="parent">The parent directory entry.</param>
-            /// <param name="directoryName">The new directory path to monitor, relative to the root.</param>
-            private void AddDirectoryWatch(WatchedDirectory parent, string directoryName)
-            {
-                lock (SyncObj)
-                {
-                    // The read syscall on the file descriptor will block until either close is called or until
-                    // all previously added watches are removed.  We don't want to rely on close, as a) that could
-                    // lead to race conditions where we inadvertently read from a recycled file descriptor, and b)
-                    // the SafeFileHandle that wraps the file descriptor can't be disposed (thus closing
-                    // the underlying file descriptor and allowing read to wake up) while there's an active ref count
-                    // against the handle, so we'd deadlock if we relied on that approach.  Instead, we want to follow
-                    // the approach of removing all watches when we're done, which means we also don't want to
-                    // add any new watches once the count hits zero.
-                    if (_wdToPathMap.Count > 0)
+                    if (handle.IsInvalid)
                     {
-                        AddDirectoryWatchUnlocked(parent, directoryName);
+                        Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                        handle.Dispose();
+                        switch (error.Error)
+                        {
+                            case Interop.Error.EMFILE:
+                                string? maxValue = ReadMaxUserLimit(MaxUserInstancesPath);
+                                string message = !string.IsNullOrEmpty(maxValue) ?
+                                    SR.Format(SR.IOException_INotifyInstanceUserLimitExceeded_Value, maxValue) :
+                                    SR.IOException_INotifyInstanceUserLimitExceeded;
+                                throw new IOException(message, error.RawErrno);
+                            case Interop.Error.ENFILE:
+                                throw new IOException(SR.IOException_INotifyInstanceSystemLimitExceeded, error.RawErrno);
+                            default:
+                                throw Interop.GetExceptionForIoErrno(error);
+                        }
+                    }
+
+                    return handle;
+                }
+            }
+
+            private bool IsStopped => _isThreadStopping || _allWatchersStopped;
+
+            private void AddWatcher(Watcher watcher)
+            {
+                Debug.Assert(Monitor.IsEntered(s_watchersLock));
+                _watchers.Add(watcher);
+            }
+
+            private void StartThread()
+            {
+                Debug.Assert(Monitor.IsEntered(s_watchersLock));
+
+                try
+                {
+                    // Spawn a thread to read from the inotify queue and process the events.
+                    Thread thread = new Thread(obj => ((INotify)obj!).ProcessEvents())
+                    {
+                        IsBackground = true,
+                        Name = ".NET File Watcher"
+                    };
+                    thread.Start(this);
+                }
+                catch
+                {
+                    StopINotify();
+
+                    throw;
+                }
+            }
+
+            private void StopINotify()
+            {
+                // This method gets called only on the ProcessEvents thread, or when that thread fails to start.
+                // It closes the inotify handle.
+                Debug.Assert(!_isThreadStopping);
+
+                // Sync with AddOrUpdateWatchedDirectory and RemoveUnusedINotifyWatches to stop using the inotify handle.
+                _addLock.EnterWriteLock();
+                _isThreadStopping = true;
+                _addLock.ExitWriteLock();
+
+                // Close the handle.
+                _inotifyHandle.Dispose();
+            }
+
+            private WatchedDirectory? AddOrUpdateWatchedDirectory(Watcher watcher, WatchedDirectory? parent, string directoryPath, Interop.Sys.NotifyEvents watchFilters, bool ignoreMissing = true)
+            {
+                Debug.Assert(!Monitor.IsEntered(watcher)); // We mustn't hold the watcher lock prior to taking the _addLock.
+
+                WatchedDirectory? inotifyWatchesToRemove = null;
+                WatchedDirectory dir;
+
+                // This locks prevents removing watches while watches are being added.
+                // It is also used to synchronize with Stop.
+                _addLock.EnterReadLock();
+                try
+                {
+                    // Serialize adding watches to the same watcher.
+                    // Concurrently adding watches may happen during the initial recursive iteration of the directory.
+                    // This ensures the WatchedDirectory matches with the most recent INotifyAddWatch directory.
+                    lock (watcher)
+                    {
+                        if (_isThreadStopping // inotify thread stopping
+                            || watcher.IsWatcherStopped // user stopped raising events
+                            || (parent is not null && watcher.RootDirectory is null)) // process events removed the root
+                        {
+                            return null;
+                        }
+
+                        Interop.Sys.NotifyEvents mask = watchFilters |
+                            Interop.Sys.NotifyEvents.IN_ONLYDIR |     // we only allow watches on directories
+                            Interop.Sys.NotifyEvents.IN_EXCL_UNLINK | // we want to stop monitoring unlinked files
+                            (parent == null ? 0 : Interop.Sys.NotifyEvents.IN_DONT_FOLLOW); // Follow links only for the root path, not the subdirs.
+
+                        // To support multiple FileSystemWatchers on the same inotify instance, we need to use IN_MASK_ADD
+                        // so we don't remove events another watcher is interested in.
+                        // The downside is that we won't unsubscribe from events that are unique to a watcher when it stops.
+                        mask |= Interop.Sys.NotifyEvents.IN_MASK_ADD;
+
+                        // Track when directories are added/removed.
+                        if (watcher.IncludeSubdirectories)
+                        {
+                            mask |= Interop.Sys.NotifyEvents.IN_MOVED_TO | Interop.Sys.NotifyEvents.IN_MOVED_FROM;
+                        }
+
+                        int wd = Interop.Sys.INotifyAddWatch(_inotifyHandle, directoryPath, (uint)mask);
+                        if (wd == -1)
+                        {
+                            // If we get an error when trying to add the watch, don't let that tear down processing.
+                            // Instead, raise the Error event with the exception and let the user decide how to handle it.
+                            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+
+                            // Don't report an error when we can't add a watch because the child directory was removed or replaced by a file.
+                            if (ignoreMissing && (error.Error == Interop.Error.ENOENT || error.Error == Interop.Error.ENOTDIR))
+                            {
+                                return null;
+                            }
+
+                            Exception exc;
+                            if (error.Error == Interop.Error.ENOSPC)
+                            {
+                                string? maxValue = ReadMaxUserLimit(MaxUserWatchesPath);
+                                string message = !string.IsNullOrEmpty(maxValue) ?
+                                    SR.Format(SR.IOException_INotifyWatchesUserLimitExceeded_Value, maxValue) :
+                                    SR.IOException_INotifyWatchesUserLimitExceeded;
+                                exc = new IOException(message, error.RawErrno);
+                            }
+                            else
+                            {
+                                exc = Interop.GetExceptionForIoErrno(error, directoryPath);
+                            }
+
+                            watcher.QueueError(exc);
+
+                            return null;
+                        }
+
+                        Watch watch = _wdToWatch.AddOrUpdate(wd, (int watchDescriptor) => new Watch(watchDescriptor), (int watchDescriptor, Watch current) => current);
+
+                        if (parent is null)
+                        {
+                            Debug.Assert(watcher.RootDirectory is null);
+                            dir = new WatchedDirectory(watch, watcher, "", parent);
+                            watcher.RootDirectory = dir;
+                        }
+                        else
+                        {
+                            // Check if the parent already has a watch for this child name.
+                            string name = System.IO.Path.GetFileName(directoryPath);
+                            int idx = parent.FindChild(name);
+                            if (idx != -1)
+                            {
+                                dir = parent.Children![idx];
+                                if (dir.Watch == watch)
+                                {
+                                    // The inotify watch is the same.
+                                    return dir;
+                                }
+
+                                // The current watch is watching a different directory which was moved/deleted, use the new watch instead.
+                                bool removeINotifyWatches = false;
+
+                                RemoveWatchedDirectoryFromParentAndWatches(dir, ref removeINotifyWatches);
+
+                                if (removeINotifyWatches)
+                                {
+                                    inotifyWatchesToRemove = dir;
+                                }
+                            }
+                            dir = new WatchedDirectory(watch, watcher, name, parent);
+                            parent.InitializedChildren.Add(dir);
+                        }
+
+                        lock (watch)
+                        {
+                            watch.Watchers.Add(dir);
+                        }
                     }
                 }
-            }
-
-            /// <summary>Adds a watch on a directory to the existing inotify handle.</summary>
-            /// <param name="parent">The parent directory entry.</param>
-            /// <param name="directoryName">The new directory path to monitor, relative to the root.</param>
-            private void AddDirectoryWatchUnlocked(WatchedDirectory? parent, string directoryName)
-            {
-                bool hasParent = parent != null;
-                string fullPath = hasParent ? parent!.GetPath(false, directoryName) : directoryName;
-
-                // inotify_add_watch will fail if this is a symlink, so check that we didn't get a symlink
-                // with the exception of the watched directory where we try to dereference the path.
-                if (hasParent &&
-                    (Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus status) == 0) &&
-                    ((status.Mode & (uint)Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK))
+                finally
                 {
-                    return;
+                    _addLock.ExitReadLock();
                 }
 
-                // Add a watch for the full path.  If the path is already being watched, this will return
-                // the existing descriptor.  This works even in the case of a rename. We also add the DONT_FOLLOW (for subdirectories only)
-                // and EXCL_UNLINK flags to keep parity with Windows where we don't pickup symlinks or unlinked
-                // files (which don't exist in Windows)
-                uint mask = (uint)(_watchFilters | Interop.Sys.NotifyEvents.IN_EXCL_UNLINK | (hasParent ? Interop.Sys.NotifyEvents.IN_DONT_FOLLOW : 0));
-                int wd = Interop.Sys.INotifyAddWatch(_inotifyHandle, fullPath, mask);
-                if (wd == -1)
+                if (inotifyWatchesToRemove is not null)
                 {
-                    // If we get an error when trying to add the watch, don't let that tear down processing.  Instead,
-                    // raise the Error event with the exception and let the user decide how to handle it.
+                    RemoveUnusedINotifyWatches(inotifyWatchesToRemove);
+                }
 
-                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                return dir;
+            }
 
-                    // Don't report an error when we can't add a watch because the child directory
-                    // was removed or replaced by a file.
-                    if (hasParent && (error.Error == Interop.Error.ENOENT ||
-                                      error.Error == Interop.Error.ENOTDIR))
+            private void RemoveWatchedDirectory(WatchedDirectory dir, int ignoredFd = -1)
+            {
+                bool removeINotifyWatches = false;
+
+                RemoveWatchedDirectoryFromParentAndWatches(dir, ref removeINotifyWatches);
+
+                if (removeINotifyWatches)
+                {
+                    RemoveUnusedINotifyWatches(dir, ignoredFd);
+                }
+            }
+
+            private void RemoveUnusedINotifyWatches(WatchedDirectory removedDir, int ignoredFd = -1)
+            {
+                Debug.Assert(!Monitor.IsEntered(removedDir.Watcher)); // We mustn't hold the watcher lock prior to taking the _addLock.
+
+                // _addLock stops handles from being added while we're removing watches.
+                // This is needed to prevent removing watch descriptors between INotifyAddWatch and adding them to the Watch.Watchers.
+                // _addLock is also used to synchronize with Stop.
+                _addLock.EnterWriteLock();
+                try
+                {
+                    if (_isThreadStopping)
                     {
                         return;
                     }
 
-                    Exception exc;
-                    if (error.Error == Interop.Error.ENOSPC)
+                    RemoveINotifyWatchWhenNoMoreWatchers(removedDir.Watch, ignoredFd);
+
+                    // We don't need to remove the children when all watchers have stopped and the inotify will be closed.
+                    if (_allWatchersStopped)
                     {
-                        string? maxValue = ReadMaxUserLimit(MaxUserWatchesPath);
-                        string message = !string.IsNullOrEmpty(maxValue) ?
-                            SR.Format(SR.IOException_INotifyWatchesUserLimitExceeded_Value, maxValue) :
-                            SR.IOException_INotifyWatchesUserLimitExceeded;
-                        exc = new IOException(message, error.RawErrno);
+                        return;
+                    }
+
+                    lock (removedDir.Watcher)
+                    {
+                        if (removedDir.Children is { } children)
+                        {
+                            foreach (WatchedDirectory child in children)
+                            {
+                                RemoveINotifyWatchWhenNoMoreWatchers(child.Watch, ignoredFd);
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    _addLock.ExitWriteLock();
+                }
+
+                void RemoveINotifyWatchWhenNoMoreWatchers(Watch watch, int ignoredFd)
+                {
+                    lock (watch)
+                    {
+                        if (watch.Watchers.Count == 0)
+                        {
+                            if (_wdToWatch.TryRemove(watch.WatchDescriptor, out _))
+                            {
+                                if (watch.WatchDescriptor != ignoredFd)
+                                {
+                                    Interop.Sys.INotifyRemoveWatch(_inotifyHandle, watch.WatchDescriptor);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            private void RemoveWatchedDirectoryFromParentAndWatches(WatchedDirectory dir, ref bool removeINotifyWatches)
+            {
+                if (dir.IsRootDir)
+                {
+                    lock (s_watchersLock)
+                    {
+                        _watchers.Remove(dir.Watcher);
+
+                        // Set _allWatchersStopped before we update the Watch and _wdToWatch.
+                        _allWatchersStopped = _watchers.Count == 0;
+                    }
+                }
+
+                Watcher watcher = dir.Watcher;
+                lock (watcher)
+                {
+                    if (dir.IsRootDir)
+                    {
+                        if (watcher.RootDirectory == null)
+                        {
+                            return; // Already removed.
+                        }
+                        watcher.RootDirectory = null;
                     }
                     else
                     {
-                        exc = Interop.GetExceptionForIoErrno(error, fullPath);
+                        Debug.Assert(dir.Parent is not null); // !IsRootDirectory
+                        int idx = dir.Parent.FindChild(dir.Name);
+                        Debug.Assert(idx != -1);
+                        if (idx == -1)
+                        {
+                            return; // Already removed.
+                        }
+                        dir.Parent.Children!.RemoveAt(idx);
                     }
 
-                    if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
+                    RemoveFromWatch(dir, ref removeINotifyWatches);
+
+                    if (dir.Children is { } children)
                     {
-                        watcher.OnError(new ErrorEventArgs(exc));
+                        foreach (var child in children)
+                        {
+                            RemoveFromWatch(child, ref removeINotifyWatches);
+                        }
                     }
-
-                    return;
                 }
 
-                // Then store the path information into our map.
-                WatchedDirectory? directoryEntry;
-                bool isNewDirectory = false;
-                if (_wdToPathMap.TryGetValue(wd, out directoryEntry))
+                static void RemoveFromWatch(WatchedDirectory dir, ref bool removeINotifyWatches)
                 {
-                    // The watch descriptor was already in the map.  Hard links on directories
-                    // aren't possible, and symlinks aren't annotated as IN_ISDIR,
-                    // so this is a rename. (In extremely remote cases, this could be
-                    // a recycled watch descriptor if many, many events were lost
-                    // such that our dictionary got very inconsistent with the state
-                    // of the world, but there's little that can be done about that.)
-                    if (directoryEntry.Parent != parent)
+                    Watch watch = dir.Watch;
+                    lock (watch)
                     {
-                        // Work around https://github.com/dotnet/csharplang/issues/3393 preventing Parent?.Children!. from behaving as expected
-                        if (directoryEntry.Parent != null)
-                        {
-                            directoryEntry.Parent.Children!.Remove(directoryEntry);
-                        }
-
-                        directoryEntry.Parent = parent;
-                        if (hasParent)
-                        {
-                            parent!.InitializedChildren.Add(directoryEntry);
-                        }
-                    }
-                    directoryEntry.Name = directoryName;
-                }
-                else
-                {
-                    // The watch descriptor wasn't in the map.  This is a creation.
-                    directoryEntry = new WatchedDirectory
-                    {
-                        Parent = parent,
-                        WatchDescriptor = wd,
-                        Name = directoryName
-                    };
-                    if (hasParent)
-                    {
-                        parent!.InitializedChildren.Add(directoryEntry);
-                    }
-                    _wdToPathMap.Add(wd, directoryEntry);
-                    isNewDirectory = true;
-                }
-
-                // Since inotify doesn't handle nesting implicitly, explicitly
-                // add a watch for each child directory if the developer has
-                // asked for subdirectories to be included.
-                if (isNewDirectory && _includeSubdirectories)
-                {
-                    try
-                    {
-                        // This method is recursive.  If we expect to see hierarchies
-                        // so deep that it would cause us to overflow the stack, we could
-                        // consider using an explicit stack object rather than recursion.
-                        // This is unlikely, however, given typical directory names
-                        // and max path limits.
-                        foreach (string subDir in Directory.EnumerateDirectories(fullPath))
-                        {
-                            AddDirectoryWatchUnlocked(directoryEntry, System.IO.Path.GetFileName(subDir));
-                            // AddDirectoryWatchUnlocked will add the new directory to
-                            // this.Children, so we don't have to / shouldn't also do it here.
-                        }
-                    }
-                    catch (DirectoryNotFoundException)
-                    { } // The child directory was removed.
-                    catch (IOException ex) when (ex.HResult == Interop.Error.ENOTDIR.Info().RawErrno)
-                    { } // The child directory was replaced by a file.
-                    catch (Exception ex)
-                    {
-                        if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
-                        {
-                            watcher.OnError(new ErrorEventArgs(ex));
-                        }
+                        watch.Watchers.Remove(dir);
+                        removeINotifyWatches |= watch.Watchers.Count == 0;
                     }
                 }
             }
 
-            /// <summary>Removes the watched directory from our state, and optionally removes the inotify watch itself.</summary>
-            /// <param name="directoryEntry">The directory entry to remove.</param>
-            /// <param name="removeInotify">true to remove the inotify watch; otherwise, false.  The default is true.</param>
-            private void RemoveWatchedDirectory(WatchedDirectory directoryEntry, bool removeInotify = true)
+            private void ProcessEvents()
             {
-                Debug.Assert(_includeSubdirectories);
-                lock (SyncObj)
+                try
                 {
-                    // Work around https://github.com/dotnet/csharplang/issues/3393 preventing Parent?.Children!. from behaving as expected
-                    if (directoryEntry.Parent != null)
+                    lock (s_watchersLock)
                     {
-                        directoryEntry.Parent.Children!.Remove(directoryEntry);
+                        // We've started an INotify, but no root watch was created for the FileSystemWatcher that started it.
+                        if (_watchers.Count == 0)
+                        {
+                            StopINotify();
+                            return;
+                        }
                     }
 
-                    RemoveWatchedDirectoryUnlocked(directoryEntry, removeInotify);
+                    // Carry over information from MOVED_FROM to MOVED_TO events.
+                    int movedFromWatchCount = 0;
+                    string movedFromName = "";
+                    uint movedFromCookie = 0;
+                    bool movedFromIsDir = false;
+
+                    while (TryReadEvent(out NotifyEvent nextEvent))
+                    {
+                        if (!ProcessEvent(nextEvent, ref movedFromWatchCount, ref movedFromName, ref movedFromCookie, ref movedFromIsDir))
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    lock (s_watchersLock)
+                    {
+                        StopINotify();
+
+                        foreach (var watcher in _watchers)
+                        {
+                            watcher.QueueError(ex);
+                        }
+                    }
+                }
+                finally
+                {
+                    Debug.Assert(_inotifyHandle.IsClosed);
                 }
             }
 
-            /// <summary>Removes the watched directory from our state, and optionally removes the inotify watch itself.</summary>
-            /// <param name="directoryEntry">The directory entry to remove.</param>
-            /// <param name="removeInotify">true to remove the inotify watch; otherwise, false.  The default is true.</param>
-            private void RemoveWatchedDirectoryUnlocked(WatchedDirectory directoryEntry, bool removeInotify)
+            private bool ProcessEvent(NotifyEvent nextEvent, ref int movedFromWatchCount, ref string movedFromName, ref uint movedFromCookie, ref bool movedFromIsDir)
             {
-                // If the directory has children, recursively remove them (see comments on recursion in AddDirectoryWatch).
-                if (directoryEntry.Children != null)
+                // Subset of EventMask that are emitted conditionally based on NotifyFilters.DirectoryName/FileName.
+                const Interop.Sys.NotifyEvents FileDirEvents =
+                    Interop.Sys.NotifyEvents.IN_CREATE |
+                    Interop.Sys.NotifyEvents.IN_DELETE |
+                    Interop.Sys.NotifyEvents.IN_MOVED_FROM |
+                    Interop.Sys.NotifyEvents.IN_MOVED_TO;
+                // NotifyEvents that generate FileSystemWatcher events.
+                const Interop.Sys.NotifyEvents EventMask =
+                    FileDirEvents |
+                    Interop.Sys.NotifyEvents.IN_ACCESS |
+                    Interop.Sys.NotifyEvents.IN_MODIFY |
+                    Interop.Sys.NotifyEvents.IN_ATTRIB;
+
+                Span<char> pathBuffer = stackalloc char[PATH_MAX];
+                Interop.Sys.NotifyEvents mask = (Interop.Sys.NotifyEvents)nextEvent.mask;
+
+                // An overflow event means we missed events.
+                if ((mask & Interop.Sys.NotifyEvents.IN_Q_OVERFLOW) != 0)
                 {
-                    foreach (WatchedDirectory child in directoryEntry.Children)
+                    lock (s_watchersLock)
                     {
-                        RemoveWatchedDirectoryUnlocked(child, removeInotify);
-                    }
-                    directoryEntry.Children = null;
-                }
+                        StopINotify();
 
-                // Then remove the directory itself.
-                _wdToPathMap.Remove(directoryEntry.WatchDescriptor);
-
-                // And if the caller has requested, remove the associated inotify watch.
-                if (removeInotify)
-                {
-                    // Remove the inotify watch.  This could fail if our state has become inconsistent
-                    // with the state of the world (e.g. due to lost events).  So we don't want failures
-                    // to throw exceptions, but we do assert to detect coding problems during debugging.
-                    int result = Interop.Sys.INotifyRemoveWatch(_inotifyHandle, directoryEntry.WatchDescriptor);
-                    Debug.Assert(result >= 0);
-                }
-            }
-
-            /// <summary>
-            /// Callback invoked when cancellation is requested.  Removes all watches,
-            /// which will cause the active processing loop to shutdown.
-            /// </summary>
-            private void CancellationCallback()
-            {
-                lock (SyncObj)
-                {
-                    // Remove all watches (inotiy_rm_watch) and clear out the map.
-                    // No additional watches will be added after this point.
-                    foreach (int wd in this._wdToPathMap.Keys)
-                    {
-                        int result = Interop.Sys.INotifyRemoveWatch(_inotifyHandle, wd);
-                        Debug.Assert(result >= 0); // ignore errors; they're non-fatal, but they also shouldn't happen
-                    }
-
-                    _wdToPathMap.Clear();
-                }
-            }
-
-            /// <summary>
-            /// Processes the next event. Method does not inline to prevent a strong reference to the watcher.
-            /// </summary>
-            /// <param name="nextEvent">The next event.</param>
-            /// <param name="previousEventName">The previous event's name.</param>
-            /// <param name="previousEventParent">The previous event's parent.</param>
-            /// <param name="previousEventCookie">The previous event's cookie.</param>
-            /// <returns><see langword="true"/> if we can continue processing events, <see langword="false"/> otherwise.</returns>
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            private bool ProcessEvent(NotifyEvent nextEvent, ref ReadOnlySpan<char> previousEventName, ref WatchedDirectory? previousEventParent, ref uint previousEventCookie)
-            {
-                // Try to get the actual watcher from our weak reference.  We maintain a weak reference most of the time
-                // so as to avoid a rooted cycle that would prevent our processing loop from ever ending
-                // if the watcher is dropped by the user without being disposed. If we can't get the watcher,
-                // there's nothing more to do (we can't raise events), so bail.
-                FileSystemWatcher? watcher;
-                if (!_weakWatcher.TryGetTarget(out watcher))
-                {
-                    return false;
-                }
-
-                uint mask = nextEvent.mask;
-
-                // An overflow event means that we can't trust our state without restarting since we missed events and
-                // some of those events could be a directory create, meaning we wouldn't have added the directory to the
-                // watch and would not provide correct data to the caller.
-                if ((mask & (uint)Interop.Sys.NotifyEvents.IN_Q_OVERFLOW) != 0)
-                {
-                    // Notify the caller of the error and, if the includeSubdirectories flag is set, restart to pick up any
-                    // potential directories we missed due to the overflow.
-                    watcher.NotifyInternalBufferOverflowEvent();
-                    if (_includeSubdirectories)
-                    {
-                        watcher.Restart();
+                        foreach (var watcher in _watchers)
+                        {
+                            watcher.QueueError(CreateBufferOverflowException(watcher.BasePath));
+                        }
                     }
                     return false;
                 }
 
-                // Look up the directory information for the supplied wd
-                WatchedDirectory? associatedDirectoryEntry = null;
-                lock (SyncObj)
+                // Renames come in the form of two events: IN_MOVED_FROM and IN_MOVED_TO.
+                // These should come as a sequence, one immediately after the other.
+                // This holds the directories from the previous event in case it was IN_MOVED_FROM.
+                ReadOnlySpan<WatchedDirectory> movedFromDirs = _dirBuffer.AsSpan(0, movedFromWatchCount);
+
+                // Look up the Watch in _wdToWatch.
+                // Synchronize with AddOrUpdateWatchedDirectory to make sure newly added watch descriptors can be found in _wdToWatch.
+                _addLock.EnterWriteLock();
+                _addLock.ExitWriteLock();
+                _wdToWatch.TryGetValue(nextEvent.wd, out Watch? watch);
+
+                // Watches for this event.
+                ReadOnlySpan<WatchedDirectory> dirs = watch is not null ? GetWatchedDirectories(watch, ref _dirBuffer, offset: movedFromDirs.Length) : default;
+
+                // If the event after IN_MOVED_FROM is not a matching IN_MOVED_TO, we treat the IN_MOVED_FROM as a 'Deleted' in the next block.
+                // A matching IN_MOVED_TO will be handled as a 'Renamed' later on.
+                if (!movedFromDirs.IsEmpty)
                 {
-                    if (!_wdToPathMap.TryGetValue(nextEvent.wd, out associatedDirectoryEntry))
+                    bool isMatchingMovedTo = (mask & Interop.Sys.NotifyEvents.IN_MOVED_TO) != 0 && movedFromCookie == nextEvent.cookie;
+
+                    foreach (var movedFrom in movedFromDirs)
                     {
-                        // The watch descriptor could be missing from our dictionary if it was removed
-                        // due to cancellation, or if we already removed it and this is a related event
-                        // like IN_IGNORED.  In any case, just ignore it... even if for some reason we
-                        // should have the value, there's little we can do about it at this point,
-                        // and there's no more processing of this event we can do without it.
-                        return true;
+                        bool isRename = isMatchingMovedTo && FindMatchingWatchedDirectory(dirs, movedFrom.Watcher) is not null;
+                        if (isRename)
+                        {
+                            continue; // Handled as a Rename.
+                        }
+
+                        if (movedFromIsDir)
+                        {
+                            RemoveWatchedDirectoryChild(movedFrom, movedFromName);
+                        }
+
+                        var watcher = movedFrom.Watcher;
+                        if (!IsIgnoredEvent(watcher, Interop.Sys.NotifyEvents.IN_DELETE, movedFromIsDir))
+                        {
+                            watcher.QueueEvent(WatcherEvent.Deleted(movedFrom, movedFromName));
+                        }
                     }
-                }
 
-                ReadOnlySpan<char> expandedName = associatedDirectoryEntry.GetPath(true, nextEvent.name);
-
-                // To match Windows, ignore all changes that happen on the root folder itself
-                if (expandedName.IsEmpty)
-                {
-                    return true;
+                    if (!isMatchingMovedTo)
+                    {
+                        movedFromDirs = default;
+                    }
                 }
 
                 // Determine whether the affected object is a directory (rather than a file).
                 // If it is, we may need to do special processing, such as adding a watch for new
                 // directories if IncludeSubdirectories is enabled.  Since we're only watching
                 // directories, any IN_IGNORED event is also for a directory.
-                bool isDir = (mask & (uint)(Interop.Sys.NotifyEvents.IN_ISDIR | Interop.Sys.NotifyEvents.IN_IGNORED)) != 0;
+                bool isDir = (mask & (Interop.Sys.NotifyEvents.IN_ISDIR | Interop.Sys.NotifyEvents.IN_IGNORED)) != 0;
 
-                // Renames come in the form of two events: IN_MOVED_FROM and IN_MOVED_TO.
-                // In general, these should come as a sequence, one immediately after the other.
-                // So, we delay raising an event for IN_MOVED_FROM until we see what comes next.
-                if (!previousEventName.IsEmpty && ((mask & (uint)Interop.Sys.NotifyEvents.IN_MOVED_TO) == 0 || previousEventCookie != nextEvent.cookie))
+                // For IN_MOVED_FROM we check if there is an event pending that may be a matching IN_MOVED_TO.
+                // If there is, we defer the handling to the next ProcessEvent.
+                // If there isn't, we'll handle it as a 'Deleted' later on.
+                if ((mask & Interop.Sys.NotifyEvents.IN_MOVED_FROM) != 0)
                 {
-                    // IN_MOVED_FROM without an immediately-following corresponding IN_MOVED_TO.
-                    // We have to assume that it was moved outside of our root watch path, which
-                    // should be considered a deletion to match Win32 behavior.
-                    // But since we explicitly added watches on directories, if it's a directory it'll
-                    // still be watched, so we need to explicitly remove the watch.
-                    if (previousEventParent != null && previousEventParent.Children != null)
+                    bool eventAvailable = _bufferPos != _bufferAvailable;
+                    if (!eventAvailable)
                     {
-                        // previousEventParent will be non-null iff the IN_MOVED_FROM
-                        // was for a directory, in which case previousEventParent is that directory's
-                        // parent and previousEventName is the name of the directory to be removed.
-                        foreach (WatchedDirectory child in previousEventParent.Children)
+                        // Do the poll with a small timeout value.  Community research showed that a few milliseconds
+                        // was enough to allow the vast majority of MOVED_TO events that were going to show
+                        // up to actually arrive.  This doesn't need to be perfect; there's always the chance
+                        // that a MOVED_TO could show up after whatever timeout is specified, in which case
+                        // it'll just result in a delete + create instead of a rename.  We need the value to be
+                        // small so that we don't significantly delay the delivery of the deleted event in case
+                        // that's actually what's needed (otherwise it'd be fine to block indefinitely waiting
+                        // for the next event to arrive).
+                        const int MillisecondsTimeout = 2;
+                        Interop.PollEvents events;
+                        Interop.Sys.Poll(_inotifyHandle, Interop.PollEvents.POLLIN, MillisecondsTimeout, out events);
+
+                        eventAvailable = events != Interop.PollEvents.POLLNONE;
+                    }
+                    if (eventAvailable)
+                    {
+                        movedFromName = nextEvent.name;
+                        dirs.CopyTo(_dirBuffer); // dirs won't be at the start of _dirBuffer when movedFromWatchCount was not zero.
+                        movedFromWatchCount = dirs.Length;
+                        movedFromCookie = nextEvent.cookie;
+                        movedFromIsDir = isDir;
+                        return true;
+                    }
+                }
+                movedFromWatchCount = 0;
+
+                foreach (WatchedDirectory dir in dirs)
+                {
+                    Watcher watcher = dir.Watcher;
+                    WatchedDirectory? matchingFromFound = null; // cache FindMatchingFrom result.
+
+                    if (isDir && watcher.IncludeSubdirectories)
+                    {
+                        if ((mask & (Interop.Sys.NotifyEvents.IN_CREATE | Interop.Sys.NotifyEvents.IN_MOVED_TO)) != 0)
                         {
-                            if (previousEventName.Equals(child.Name, StringComparison.Ordinal))
+                            // If this is a rename, move over the watches from the source.
+                            // We'll still call WatchChildDirectories in case the source was still being iterated for adding watches.
+                            if (FindMatchingFrom(movedFromDirs) is WatchedDirectory matchingFrom)
                             {
-                                RemoveWatchedDirectory(child);
-                                return false;
+                                RenameWatchedDirectories(dir, nextEvent.name, matchingFrom, movedFromName);
                             }
+
+                            string directoryPath = dir.GetPath(nextEvent.name, pathBuffer, fullPath: true).ToString();
+                            watcher.WatchChildDirectories(parent: dir, directoryPath);
+                        }
+                        else if ((mask & Interop.Sys.NotifyEvents.IN_MOVED_FROM) != 0)
+                        {
+                            RemoveWatchedDirectoryChild(dir, nextEvent.name);
                         }
                     }
+                    // IN_IGNORED: Watch was removed explicitly or automatically because the directory was deleted.
+                    if ((mask & Interop.Sys.NotifyEvents.IN_IGNORED) != 0)
+                    {
+                        RemoveWatchedDirectory(dir, ignoredFd: nextEvent.wd);
+                        continue;
+                    }
 
-                    // Then fire the deletion event, even though the event was IN_MOVED_FROM.
-                    watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, previousEventName);
+                    // To match Windows, don't emit events for the root directory.
+                    if (dir.IsRootDir && nextEvent.name.Length == 0)
+                    {
+                        continue;
+                    }
 
-                    previousEventName = null;
-                    previousEventParent = null;
-                    previousEventCookie = 0;
-                }
+                    if (IsIgnoredEvent(watcher, mask, isDir))
+                    {
+                        continue;
+                    }
 
-                // If the event signaled that there's a new subdirectory and if we're monitoring subdirectories,
-                // add a watch for it.
-                const Interop.Sys.NotifyEvents AddMaskFilters = Interop.Sys.NotifyEvents.IN_CREATE | Interop.Sys.NotifyEvents.IN_MOVED_TO;
-                bool addWatch = ((mask & (uint)AddMaskFilters) != 0);
-                if (addWatch && isDir && _includeSubdirectories)
-                {
-                    AddDirectoryWatch(associatedDirectoryEntry, nextEvent.name);
-                }
-
-                // Check if the event should have been filtered but was unable because of inotify's inability
-                // to filter files vs directories.
-                const Interop.Sys.NotifyEvents fileDirEvents = Interop.Sys.NotifyEvents.IN_CREATE |
-                        Interop.Sys.NotifyEvents.IN_DELETE |
-                        Interop.Sys.NotifyEvents.IN_MOVED_FROM |
-                        Interop.Sys.NotifyEvents.IN_MOVED_TO;
-                if ((((uint)fileDirEvents & mask) > 0) &&
-                    (isDir && ((_notifyFilters & NotifyFilters.DirectoryName) == 0) ||
-                    (!isDir && ((_notifyFilters & NotifyFilters.FileName) == 0))))
-                {
-                    return true;
-                }
-
-                const Interop.Sys.NotifyEvents switchMask = fileDirEvents | Interop.Sys.NotifyEvents.IN_IGNORED |
-                    Interop.Sys.NotifyEvents.IN_ACCESS | Interop.Sys.NotifyEvents.IN_MODIFY | Interop.Sys.NotifyEvents.IN_ATTRIB;
-                switch ((Interop.Sys.NotifyEvents)(mask & (uint)switchMask))
-                {
-                    case Interop.Sys.NotifyEvents.IN_CREATE:
-                        watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Created, expandedName);
-                        break;
-                    case Interop.Sys.NotifyEvents.IN_IGNORED:
-                        // We're getting an IN_IGNORED because a directory watch was removed.
-                        // and we're getting this far in our code because we still have an entry for it
-                        // in our dictionary.  So we want to clean up the relevant state, but not clean
-                        // attempt to call back to inotify to remove the watches.
-                        RemoveWatchedDirectory(associatedDirectoryEntry, removeInotify: false);
-                        break;
-                    case Interop.Sys.NotifyEvents.IN_DELETE:
-                        watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, expandedName);
-                        // We don't explicitly RemoveWatchedDirectory here, as that'll be handled
-                        // by IN_IGNORED processing if this is a directory.
-                        break;
-                    case Interop.Sys.NotifyEvents.IN_ACCESS:
-                    case Interop.Sys.NotifyEvents.IN_MODIFY:
-                    case Interop.Sys.NotifyEvents.IN_ATTRIB:
-                        watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Changed, expandedName);
-                        break;
-                    case Interop.Sys.NotifyEvents.IN_MOVED_FROM:
-                        // We need to check if this MOVED_FROM event is standalone - meaning the item was moved out
-                        // of scope. We do this by checking if we are at the end of our buffer (meaning no more events)
-                        // and if there is data to be read by polling the fd. If there aren't any more events, fire the
-                        // deleted event; if there are more events, handle it via next pass. This adds an additional
-                        // edge case where we get the MOVED_FROM event and the MOVED_TO event hasn't been generated yet
-                        // so we will send a DELETE for this event and a CREATE when the MOVED_TO is eventually processed.
-                        if (_bufferPos == _bufferAvailable)
-                        {
-                            // Do the poll with a small timeout value.  Community research showed that a few milliseconds
-                            // was enough to allow the vast majority of MOVED_TO events that were going to show
-                            // up to actually arrive.  This doesn't need to be perfect; there's always the chance
-                            // that a MOVED_TO could show up after whatever timeout is specified, in which case
-                            // it'll just result in a delete + create instead of a rename.  We need the value to be
-                            // small so that we don't significantly delay the delivery of the deleted event in case
-                            // that's actually what's needed (otherwise it'd be fine to block indefinitely waiting
-                            // for the next event to arrive).
-                            const int MillisecondsTimeout = 2;
-                            Interop.PollEvents events;
-                            Interop.Sys.Poll(_inotifyHandle, Interop.PollEvents.POLLIN, MillisecondsTimeout, out events);
-
-                            // If we error or don't have any signaled handles, send the deleted event
-                            if (events == Interop.PollEvents.POLLNONE)
+                    switch (mask & EventMask)
+                    {
+                        case Interop.Sys.NotifyEvents.IN_CREATE:
+                            watcher.QueueEvent(WatcherEvent.Created(dir, nextEvent.name));
+                            break;
+                        case Interop.Sys.NotifyEvents.IN_DELETE:
+                            watcher.QueueEvent(WatcherEvent.Deleted(dir, nextEvent.name));
+                            break;
+                        case Interop.Sys.NotifyEvents.IN_ACCESS:
+                        case Interop.Sys.NotifyEvents.IN_MODIFY:
+                        case Interop.Sys.NotifyEvents.IN_ATTRIB:
+                            watcher.QueueEvent(WatcherEvent.Changed(dir, nextEvent.name));
+                            break;
+                        case Interop.Sys.NotifyEvents.IN_MOVED_FROM:
+                            watcher.QueueEvent(WatcherEvent.Deleted(dir, nextEvent.name));
+                            break;
+                        case Interop.Sys.NotifyEvents.IN_MOVED_TO:
+                            if (FindMatchingFrom(movedFromDirs) is WatchedDirectory matchingFrom)
                             {
-                                // There isn't any more data in the queue so this is a deleted event
-                                watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, expandedName);
-                                break;
+                                watcher.QueueEvent(WatcherEvent.Renamed(dir, nextEvent.name, matchingFrom, movedFromName));
                             }
-                        }
+                            else
+                            {
+                                watcher.QueueEvent(WatcherEvent.Created(dir, nextEvent.name));
+                            }
+                            break;
+                    }
 
-                        // We will set these values if the buffer has more data OR if the poll call tells us that more data is available.
-                        previousEventName = expandedName;
-                        previousEventParent = isDir ? associatedDirectoryEntry : null;
-                        previousEventCookie = nextEvent.cookie;
+                    WatchedDirectory? FindMatchingFrom(ReadOnlySpan<WatchedDirectory> dirs)
+                        => matchingFromFound ??= (mask & Interop.Sys.NotifyEvents.IN_MOVED_TO) != 0 ? FindMatchingWatchedDirectory(dirs, watcher) : null;
+                }
 
-                        break;
-                    case Interop.Sys.NotifyEvents.IN_MOVED_TO:
-                        if (!previousEventName.IsEmpty)
-                        {
-                            // If the previous name from IN_MOVED_FROM is non-empty, then this is a rename.
-                            watcher.NotifyRenameEventArgs(WatcherChangeTypes.Renamed, expandedName, previousEventName);
-                        }
-                        else
-                        {
-                            // If it is null, then we didn't get an IN_MOVED_FROM (or we got it a long time
-                            // ago and treated it as a deletion), in which case this is considered a creation.
-                            watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Created, expandedName);
-                        }
-                        previousEventName = ReadOnlySpan<char>.Empty;
-                        previousEventParent = null;
-                        previousEventCookie = 0;
-                        break;
+                // For each Watcher we'll receive an IN_IGNORED for its root watch.
+                // If the root watch was found back as a WatchedDirectory via _wdToWatch above, then _allWatchersStopped will be updated by calling RemoveWatchedDirectory.
+                // If we didn't find back the WatchedDirectory, then RemoveWatchedDirectory was called already and it has updated _allWatchersStopped.
+                if (_allWatchersStopped)
+                {
+                    StopINotify();
+                    return false;
                 }
 
                 return true;
+
+                void RemoveWatchedDirectoryChild(WatchedDirectory dir, string movedFromName)
+                {
+                    Watcher watcher = dir.Watcher;
+                    WatchedDirectory? child = null;
+                    lock (watcher)
+                    {
+                        int idx = dir.FindChild(movedFromName);
+                        if (idx != -1)
+                        {
+                            child = dir.Children![idx];
+                        }
+                    }
+                    if (child is not null)
+                    {
+                        RemoveWatchedDirectory(child);
+                    }
+                }
+
+                static ReadOnlySpan<WatchedDirectory> GetWatchedDirectories(Watch watch, ref WatchedDirectory[] buffer, int offset)
+                {
+                    lock (watch)
+                    {
+                        int watchersCount = watch.Watchers.Count;
+                        int lengthNeeded = watchersCount + offset;
+                        if (lengthNeeded > buffer.Length)
+                        {
+                            Array.Resize(ref buffer, lengthNeeded);
+                        }
+                        watch.Watchers.CopyTo(buffer.AsSpan(offset));
+                        return buffer.AsSpan(offset, watchersCount);
+                    }
+                }
+
+                static WatchedDirectory? FindMatchingWatchedDirectory(ReadOnlySpan<WatchedDirectory> dir, Watcher watcher)
+                {
+                    foreach (var d in dir)
+                    {
+                        if (d.Watcher == watcher)
+                        {
+                            return d;
+                        }
+                    }
+
+                    return null;
+                }
+
+                static bool IsIgnoredEvent(Watcher watcher, Interop.Sys.NotifyEvents mask, bool isDir)
+                {
+                    return (watcher.WatchFilters & mask) == 0 ||
+                            ((mask & FileDirEvents) != 0) &&
+                                ((isDir && ((watcher.NotifyFilters & NotifyFilters.DirectoryName) == 0)) ||
+                                 (!isDir && ((watcher.NotifyFilters & NotifyFilters.FileName) == 0)));
+                }
             }
 
-            /// <summary>
-            /// Main processing loop.  This is currently implemented as a synchronous operation that continually
-            /// reads events and processes them... in the future, this could be changed to use asynchronous processing
-            /// if the impact of using a thread-per-FileSystemWatcher is too high.
-            /// </summary>
-            private void ProcessEvents()
+            private void RenameWatchedDirectories(WatchedDirectory moveTo, string moveToName, WatchedDirectory moveFrom, string moveFromName)
             {
-                // When cancellation is requested, clear out all watches.  This should force any active or future reads
-                // on the inotify handle to return 0 bytes read immediately, allowing us to wake up from the blocking call
-                // and exit the processing loop and clean up.
-                var ctr = _cancellationToken.UnsafeRegister(obj => ((RunningInstance)obj!).CancellationCallback(), this);
-                try
-                {
-                    // Previous event information
-                    ReadOnlySpan<char> previousEventName = ReadOnlySpan<char>.Empty;
-                    WatchedDirectory? previousEventParent = null;
-                    uint previousEventCookie = 0;
+                WatchedDirectory? sourceToRemove = null;
 
-                    // Process events as long as we're not canceled and there are more to read...
-                    NotifyEvent nextEvent;
-                    while (!_cancellationToken.IsCancellationRequested && TryReadEvent(out nextEvent))
+                Watcher watcher = moveFrom.Watcher;
+                Debug.Assert(moveTo.Watcher == watcher);
+                lock (watcher)
+                {
+                    int sourceIdx = moveFrom.FindChild(moveFromName);
+                    if (sourceIdx == -1)
                     {
-                        if (!ProcessEvent(nextEvent, ref previousEventName, ref previousEventParent, ref previousEventCookie))
-                            break;
+                        // unexpected: source not found.
+                        return;
+                    }
+                    WatchedDirectory source = moveFrom.Children![sourceIdx];
+
+                    int dstIdx = moveTo.FindChild(moveToName);
+                    if (dstIdx != -1)
+                    {
+                        // unexpected: the destination already exists. Leave it and stop watching the source.
+                        sourceToRemove = source;
+                    }
+                    else
+                    {
+                        // We'll re-use the Watches.
+                        moveFrom.Children.RemoveAt(sourceIdx);
+                        WatchedDirectory renamed = CreateWatchedDirectoryFrom(moveTo, source, moveToName);
+                        moveTo.InitializedChildren.Add(renamed);
                     }
                 }
-                catch (Exception exc)
+
+                if (sourceToRemove is not null)
                 {
-                    if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
-                    {
-                        watcher.OnError(new ErrorEventArgs(exc));
-                    }
+                    RemoveWatchedDirectory(sourceToRemove);
                 }
-                finally
+
+                static WatchedDirectory CreateWatchedDirectoryFrom(WatchedDirectory parent, WatchedDirectory src, string name)
                 {
-                    ctr.Dispose();
-                    _inotifyHandle.Dispose();
+                    Watcher watcher = src.Watcher;
+                    Debug.Assert(Monitor.IsEntered(watcher));
+
+                    WatchedDirectory newDir;
+                    Watch watch = src.Watch;
+                    lock (watch)
+                    {
+                        newDir = new WatchedDirectory(watch, watcher, name, parent);
+                        watch.Watchers.Remove(src);
+                        watch.Watchers.Add(newDir);
+                    }
+
+                    if (src.Children is { } children)
+                    {
+                        foreach (var child in children)
+                        {
+                            newDir.InitializedChildren.Add(CreateWatchedDirectoryFrom(newDir, child, child.Name));
+                        }
+                    }
+
+                    return newDir;
                 }
             }
 
-            /// <summary>Read event from the inotify handle into the supplied event object.</summary>
-            /// <param name="notifyEvent">The event object to be populated.</param>
-            /// <returns><see langword="true"/> if event was read successfully, <see langword="false"/> otherwise.</returns>
             private bool TryReadEvent(out NotifyEvent notifyEvent)
             {
                 Debug.Assert(_buffer != null);
@@ -831,7 +868,7 @@ namespace System.IO
                         notifyEvent = default(NotifyEvent);
                         return false;
                     }
-                    Debug.Assert(_bufferAvailable >= c_INotifyEventSize);
+                    Debug.Assert(_bufferAvailable >= INotifyEventSize);
                     _bufferPos = 0;
                 }
 
@@ -843,14 +880,14 @@ namespace System.IO
                 //         uint32_t len;
                 //         char     name[]; // length determined by len; at least 1 for required null termination
                 //     };
-                Debug.Assert(_bufferPos + c_INotifyEventSize <= _bufferAvailable);
+                Debug.Assert(_bufferPos + INotifyEventSize <= _bufferAvailable);
                 NotifyEvent readEvent;
                 readEvent.wd = BitConverter.ToInt32(_buffer, _bufferPos);
                 readEvent.mask = BitConverter.ToUInt32(_buffer, _bufferPos + 4);       // +4  to get past wd
                 readEvent.cookie = BitConverter.ToUInt32(_buffer, _bufferPos + 8);     // +8  to get past wd, mask
                 int nameLength = (int)BitConverter.ToUInt32(_buffer, _bufferPos + 12); // +12 to get past wd, mask, cookie
-                readEvent.name = ReadName(_bufferPos + c_INotifyEventSize, nameLength);  // +16 to get past wd, mask, cookie, len
-                _bufferPos += c_INotifyEventSize + nameLength;
+                readEvent.name = ReadName(_bufferPos + INotifyEventSize, nameLength);  // +16 to get past wd, mask, cookie, len
+                _bufferPos += INotifyEventSize + nameLength;
 
                 notifyEvent = readEvent;
                 return true;
@@ -893,105 +930,486 @@ namespace System.IO
                 internal string name;
             }
 
-            /// <summary>State associated with a watched directory.</summary>
-            private sealed class WatchedDirectory
+            internal struct WatcherEvent
             {
-                /// <summary>A StringBuilder cached on the current thread to avoid allocations when possible.</summary>
-                [ThreadStatic]
-                private static StringBuilder? t_builder;
+                public const WatcherChangeTypes ErrorType = WatcherChangeTypes.All;
 
-                /// <summary>The parent directory.</summary>
-                internal WatchedDirectory? Parent;
+                public string? Name { get; }
+                public WatchedDirectory? Directory { get; }
+                public string? OldName { get; }
+                public WatchedDirectory? OldDirectory { get; }
+                public Exception? Exception { get; }
+                public WatcherChangeTypes Type { get; }
 
-                /// <summary>The watch descriptor associated with this directory.</summary>
-                internal int WatchDescriptor;
-
-                /// <summary>The filename of this directory.</summary>
-                internal string? Name;
-
-                /// <summary>Child directories of this directory for which we added explicit watches.</summary>
-                internal List<WatchedDirectory>? Children;
-
-                /// <summary>Child directories of this directory for which we added explicit watches.  This is the same as Children, but ensured to be initialized as non-null.</summary>
-                internal List<WatchedDirectory> InitializedChildren => Children ??= new List<WatchedDirectory>();
-
-                // PERF: Work is being done here proportionate to depth of watch directories.
-                // If this becomes a bottleneck, we'll need to come up with another mechanism
-                // for obtaining and keeping paths up to date, for example storing the full path
-                // in each WatchedDirectory node and recursively updating all children on a move,
-                // which we can do given that we store all children.  For now we're not doing that
-                // because it's not a clear win: either you update all children recursively when
-                // a directory moves / is added, or you compute each name when an event occurs.
-                // The former is better if there are going to be lots of events causing lots
-                // of traversals to compute names, and the latter is better for big directory
-                // structures that incur fewer file events.
-
-                /// <summary>Gets the path of this directory.</summary>
-                /// <param name="relativeToRoot">Whether to get a path relative to the root directory being watched, or a full path.</param>
-                /// <param name="additionalName">An additional name to include in the path, relative to this directory.</param>
-                /// <returns>The computed path.</returns>
-                internal string GetPath(bool relativeToRoot, string? additionalName = null)
+                private WatcherEvent(WatcherChangeTypes type, WatchedDirectory watch, string name, WatchedDirectory? oldWatch = null, string? oldName = null)
                 {
-                    // Use our cached builder
-                    StringBuilder builder = (t_builder ??= new StringBuilder());
-                    builder.Clear();
-
-                    // Write the directory's path.  Then if an additional filename was supplied, append it
-                    Write(builder, relativeToRoot);
-                    if (additionalName != null)
-                    {
-                        AppendSeparatorIfNeeded(builder);
-                        builder.Append(additionalName);
-                    }
-                    return builder.ToString();
+                    Type = type;
+                    Directory = watch;
+                    Name = name;
+                    OldDirectory = oldWatch;
+                    OldName = oldName;
                 }
 
-                /// <summary>Write's this directory's path to the builder.</summary>
-                /// <param name="builder">The builder to which to write.</param>
-                /// <param name="relativeToRoot">
-                /// true if the path should be relative to the root directory being watched.
-                /// false if the path should be a full file system path, including that of
-                /// the root directory being watched.
-                /// </param>
-                private void Write(StringBuilder builder, bool relativeToRoot)
+                private WatcherEvent(Exception exception)
                 {
-                    // This method is recursive.  If we expect to see hierarchies
-                    // so deep that it would cause us to overflow the stack, we could
-                    // consider using an explicit stack object rather than recursion.
-                    // This is unlikely, however, given typical directory names
-                    // and max path limits.
+                    Type = ErrorType;
+                    Exception = exception;
+                }
 
-                    // First append the parent's path
-                    if (Parent != null)
+                public static WatcherEvent Deleted(WatchedDirectory dir, string name)
+                    => new WatcherEvent(WatcherChangeTypes.Deleted, dir, name);
+
+                public static WatcherEvent Created(WatchedDirectory dir, string name)
+                    => new WatcherEvent(WatcherChangeTypes.Created, dir, name);
+
+                public static WatcherEvent Changed(WatchedDirectory dir, string name)
+                    => new WatcherEvent(WatcherChangeTypes.Changed, dir, name);
+
+                public static WatcherEvent Renamed(WatchedDirectory dir, string name, WatchedDirectory oldDir, string oldName)
+                    => new WatcherEvent(WatcherChangeTypes.Renamed, dir, name, oldDir, oldName);
+
+                public static WatcherEvent Error(Exception exception)
+                    => new WatcherEvent(exception);
+
+                public ReadOnlySpan<char> GetName(Span<char> pathBuffer)
+                    => Directory!.GetPath(Name, pathBuffer);
+
+                public ReadOnlySpan<char> GetOldName(Span<char> pathBuffer)
+                    => OldDirectory!.GetPath(OldName, pathBuffer);
+            }
+
+            public sealed class Watcher
+            {
+                // Ignore links.
+                private static readonly EnumerationOptions ChildEnumerationOptions =
+                    new() { RecurseSubdirectories = false, MatchType = MatchType.Win32, AttributesToSkip = FileAttributes.ReparsePoint, IgnoreInaccessible = false };
+
+                /// <summary>
+                /// Weak reference to the associated watcher.  A weak reference is used so that the FileSystemWatcher may be collected and finalized,
+                /// causing an active operation to be torn down.  With a strong reference, a blocking read on the inotify handle will keep alive this
+                /// instance which will keep alive the FileSystemWatcher which will not be finalizable and thus which will never signal to the blocking
+                /// read to wake up in the event that the user neglects to stop raising events.
+                /// </summary>
+                private readonly WeakReference<FileSystemWatcher> _weakFsw;
+                private readonly Channel<WatcherEvent> _eventQueue;
+                private INotify? _inotify;
+                private bool _emitEvents;
+
+                public string BasePath { get; }
+                public NotifyFilters NotifyFilters { get; }
+                public Interop.Sys.NotifyEvents WatchFilters { get; }
+                public bool IncludeSubdirectories { get; }
+                public bool IsWatcherStopped { get; set; }
+
+                public WatchedDirectory? RootDirectory
+                {
+                    get
                     {
-                        Parent.Write(builder, relativeToRoot);
-                        AppendSeparatorIfNeeded(builder);
+                        Debug.Assert(Monitor.IsEntered(this));
+                        return field;
                     }
-
-                    // Then append ours.  In the case of the root directory
-                    // being watched, we only append its name if the caller
-                    // has asked for a full path.
-                    if (Parent != null || !relativeToRoot)
+                    set
                     {
-                        builder.Append(Name);
+                        Debug.Assert(Monitor.IsEntered(this));
+                        field = value;
                     }
                 }
 
-                /// <summary>Adds a directory path separator to the end of the builder if one isn't there.</summary>
-                /// <param name="builder">The builder.</param>
-                private static void AppendSeparatorIfNeeded(StringBuilder builder)
+                public Watcher(FileSystemWatcher fsw)
                 {
-                    if (builder.Length > 0)
+                    _weakFsw = new WeakReference<FileSystemWatcher>(fsw);
+                    BasePath = System.IO.Path.TrimEndingDirectorySeparator(System.IO.Path.GetFullPath(fsw.Path));
+                    IncludeSubdirectories = fsw.IncludeSubdirectories;
+                    NotifyFilters = fsw.NotifyFilter;
+                    WatchFilters = TranslateFilters(NotifyFilters);
+
+                    // This channel is unbounded which means that if the FileSystemWatcher event handlers can't keep up, the queue size will increase and consume memory.
+                    // We could implement a bound that is based on the FileSystemWatcher.InternalBufferSize property.
+                    // If InternalBufferSize were used, RestartForInternalBufferSize can be removed/should be updated.
+                    _eventQueue = Channel.CreateUnbounded<WatcherEvent>(new UnboundedChannelOptions() { AllowSynchronousContinuations = false, SingleReader = true });
+                }
+
+                public void Start()
+                {
+                    Debug.Assert(_inotify is null);
+
+                    INotify? inotify;
+                    WatchedDirectory? rootDirectory;
+                    lock (s_watchersLock)
                     {
-                        char c = builder[builder.Length - 1];
-                        if (c != System.IO.Path.DirectorySeparatorChar && c != System.IO.Path.AltDirectorySeparatorChar)
+                        inotify = s_currentINotify;
+                        // If there is no running instance, start one.
+                        if (inotify is null || inotify.IsStopped)
                         {
-                            builder.Append(System.IO.Path.DirectorySeparatorChar);
+                            inotify = new();
+                            inotify.StartThread();
+                            s_currentINotify = inotify;
+                        }
+
+                        _inotify = inotify;
+
+                        rootDirectory = CreateRootWatch();
+                        if (rootDirectory is not null)
+                        {
+                            _inotify.AddWatcher(this);
+                        }
+                    }
+
+                    _ = DequeueEvents();
+
+                    if (rootDirectory is not null && IncludeSubdirectories)
+                    {
+                        WatchChildDirectories(rootDirectory, BasePath, includeBasePath: false);
+                    }
+
+                    _emitEvents = true;
+
+                    WatchedDirectory? CreateRootWatch()
+                        => _inotify.AddOrUpdateWatchedDirectory(this, parent: null, BasePath, WatchFilters, ignoreMissing: false);
+                }
+
+                public void Stop()
+                {
+                    WatchedDirectory? root;
+                    lock (this)
+                    {
+                        if (IsWatcherStopped)
+                        {
+                            return;
+                        }
+                        IsWatcherStopped = true;
+                        _emitEvents = false;
+
+                        root = RootDirectory;
+                    }
+
+                    _eventQueue.Writer.Complete();
+
+                    if (root is not null)
+                    {
+                        Debug.Assert(_inotify is not null);
+                        _inotify.RemoveWatchedDirectory(root);
+                    }
+                }
+
+                private async Task DequeueEvents()
+                {
+                    char[] pathBuffer = new char[PATH_MAX];
+                    try
+                    {
+                        await foreach (WatcherEvent @event in _eventQueue.Reader.ReadAllAsync().ConfigureAwait(false))
+                        {
+                            if (IsWatcherStopped)
+                            {
+                                break;
+                            }
+                            EmitEvent(@event, pathBuffer);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (!IsWatcherStopped)
+                        {
+                            Stop();
+
+                            try
+                            {
+                                Fsw?.OnError(new ErrorEventArgs(ex));
+                            }
+                            catch
+                            { }
                         }
                     }
                 }
+
+                private void EmitEvent(WatcherEvent @event, char[] pathBuffer)
+                {
+                    FileSystemWatcher? fsw = Fsw;
+                    if (fsw is null)
+                    {
+                        return;
+                    }
+
+                    switch (@event.Type)
+                    {
+                        case WatcherEvent.ErrorType:
+                            fsw.OnError(new ErrorEventArgs(@event.Exception!));
+
+                            // On InternalBufferOverflowException, the inotify is stopped.
+                            // If the Watcher wasn't stopped, Restart it against a new inotify instance.
+                            if (@event.Exception is InternalBufferOverflowException)
+                            {
+                                if (!IsWatcherStopped)
+                                {
+                                    fsw.Restart();
+                                }
+                            }
+
+                            break;
+                        case WatcherChangeTypes.Created:
+                        case WatcherChangeTypes.Deleted:
+                        case WatcherChangeTypes.Changed:
+                            {
+                                ReadOnlySpan<char> name = @event.GetName(pathBuffer);
+                                fsw.NotifyFileSystemEventArgs(@event.Type, name);
+                            }
+                            break;
+                        case WatcherChangeTypes.Renamed:
+                            {
+                                string name = @event.GetName(pathBuffer).ToString();
+                                ReadOnlySpan<char> oldName = @event.GetOldName(pathBuffer);
+                                fsw.NotifyRenameEventArgs(WatcherChangeTypes.Renamed, name, oldName);
+                            }
+                            break;
+                    }
+                }
+
+                internal bool WatchChildDirectories(WatchedDirectory parent, string path, bool includeBasePath = true)
+                {
+                    Debug.Assert(_inotify is not null);
+                    if (IsWatcherStopped)
+                    {
+                        return false;
+                    }
+
+                    if (includeBasePath)
+                    {
+                        WatchedDirectory? newParent = AddOrUpdateWatch(parent, path);
+                        if (newParent is null)
+                        {
+                            // We couldn't recurse this path, but we should continue to try the others.
+                            return true;
+                        }
+                        parent = newParent;
+                    }
+
+                    try
+                    {
+                        foreach (string childDir in Directory.EnumerateDirectories(path, "*", ChildEnumerationOptions))
+                        {
+                            if (!WatchChildDirectories(parent, childDir))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                    catch (DirectoryNotFoundException)
+                    { } // path was removed
+                    catch (IOException ex) when (ex.HResult == Interop.Error.ENOTDIR.Info().RawErrno)
+                    { }  // path was replaced by a file.
+                    catch (Exception ex)
+                    {
+                        QueueError(ex);
+                    }
+
+                    return true;
+
+                    WatchedDirectory? AddOrUpdateWatch(WatchedDirectory parent, string path)
+                        => _inotify.AddOrUpdateWatchedDirectory(this, parent, path, WatchFilters, ignoreMissing: true);
+                }
+
+                internal void QueueEvent(WatcherEvent ev)
+                {
+                    Debug.Assert(ev.Type != WatcherEvent.ErrorType);
+                    if (!_emitEvents)
+                    {
+                        return;
+                    }
+                    _eventQueue.Writer.TryWrite(ev);
+                }
+
+                internal void QueueError(Exception exception)
+                {
+                    if (IsWatcherStopped)
+                    {
+                        return;
+                    }
+                    _eventQueue.Writer.TryWrite(WatcherEvent.Error(exception));
+                }
+
+                private FileSystemWatcher? Fsw
+                {
+                    get
+                    {
+                        _weakFsw.TryGetTarget(out FileSystemWatcher? watcher);
+                        return watcher;
+                    }
+                }
+
+                /// <summary>
+                /// Maps the FileSystemWatcher's NotifyFilters enumeration to the
+                /// corresponding Interop.Sys.NotifyEvents values.
+                /// </summary>
+                /// <param name="filters">The filters provided the by user.</param>
+                /// <returns>The corresponding NotifyEvents values to use with inotify.</returns>
+                private static Interop.Sys.NotifyEvents TranslateFilters(NotifyFilters filters)
+                {
+                    Interop.Sys.NotifyEvents result = 0;
+
+                    // For the Created and Deleted events, we need to always
+                    // register for the created/deleted inotify events, regardless
+                    // of the supplied filters values. We explicitly don't include IN_DELETE_SELF.
+                    // The Windows implementation doesn't include notifications for the root directory,
+                    // and having this for subdirectories results in duplicate notifications, one from
+                    // the parent and one from self.
+                    result |=
+                        Interop.Sys.NotifyEvents.IN_CREATE |
+                        Interop.Sys.NotifyEvents.IN_DELETE;
+
+                    // For the Changed event, which inotify events we subscribe to
+                    // are based on the NotifyFilters supplied.
+                    const NotifyFilters filtersForAccess =
+                        NotifyFilters.LastAccess;
+                    const NotifyFilters filtersForModify =
+                        NotifyFilters.LastAccess |
+                        NotifyFilters.LastWrite |
+                        NotifyFilters.Security |
+                        NotifyFilters.Size;
+                    const NotifyFilters filtersForAttrib =
+                        NotifyFilters.Attributes |
+                        NotifyFilters.CreationTime |
+                        NotifyFilters.LastAccess |
+                        NotifyFilters.LastWrite |
+                        NotifyFilters.Security |
+                        NotifyFilters.Size;
+                    if ((filters & filtersForAccess) != 0)
+                    {
+                        result |= Interop.Sys.NotifyEvents.IN_ACCESS;
+                    }
+                    if ((filters & filtersForModify) != 0)
+                    {
+                        result |= Interop.Sys.NotifyEvents.IN_MODIFY;
+                    }
+                    if ((filters & filtersForAttrib) != 0)
+                    {
+                        result |= Interop.Sys.NotifyEvents.IN_ATTRIB;
+                    }
+
+                    // For the Rename event, we'll register for the corresponding move inotify events if the
+                    // caller's NotifyFilters asks for notifications related to names.
+                    const NotifyFilters filtersForMoved =
+                        NotifyFilters.FileName |
+                        NotifyFilters.DirectoryName;
+                    if ((filters & filtersForMoved) != 0)
+                    {
+                        result |=
+                            Interop.Sys.NotifyEvents.IN_MOVED_FROM |
+                            Interop.Sys.NotifyEvents.IN_MOVED_TO;
+                    }
+
+                    return result;
+                }
+            }
+
+            internal sealed class WatchedDirectory
+            {
+                private List<WatchedDirectory>? _children;
+
+                public Watch Watch { get; }
+                public Watcher Watcher { get; }
+                public string Name { get; }
+                public WatchedDirectory? Parent { get; }
+                public bool IsRootDir => Parent is null;
+
+                public WatchedDirectory(Watch watch, Watcher watcher, string name, WatchedDirectory? parent)
+                {
+                    Watch = watch;
+                    Watcher = watcher;
+                    Name = name;
+                    Parent = parent;
+                }
+
+                public List<WatchedDirectory>? Children
+                {
+                    get
+                    {
+                        Debug.Assert(Monitor.IsEntered(Watcher));
+                        return _children;
+                    }
+                    set
+                    {
+                        Debug.Assert(Monitor.IsEntered(Watcher));
+                        _children = value;
+                    }
+                }
+                public List<WatchedDirectory> InitializedChildren => Children ??= new List<WatchedDirectory>();
+
+                public int FindChild(string name)
+                {
+                    Debug.Assert(Monitor.IsEntered(Watcher));
+                    var children = Children;
+                    if (children is null)
+                    {
+                        return -1;
+                    }
+                    for (int i = 0; i < children.Count; i++)
+                    {
+                        if (children[i].Name == name)
+                        {
+                            return i;
+                        }
+                    }
+                    return -1;
+                }
+
+                internal ReadOnlySpan<char> GetPath(ReadOnlySpan<char> childName, Span<char> pathBuffer, bool fullPath = false)
+                {
+                    int length = 0;
+
+                    if (Parent is not null)
+                    {
+                        length = Parent.GetPath("", pathBuffer, fullPath).Length;
+                        fullPath = false;
+                    }
+
+                    if (fullPath)
+                    {
+                        Append(pathBuffer, Watcher.BasePath);
+                    }
+
+                    Append(pathBuffer, Name);
+                    Append(pathBuffer, childName);
+
+                    return pathBuffer.Slice(0, length);
+
+                    void Append(Span<char> pathBuffer, ReadOnlySpan<char> path)
+                    {
+                        if (path.Length == 0)
+                        {
+                            return;
+                        }
+
+                        if (length != 0 && pathBuffer[length - 1] != '/')
+                        {
+                            pathBuffer[length] = '/';
+                            length++;
+                        }
+
+                        path.CopyTo(pathBuffer.Slice(length));
+                        length += path.Length;
+                    }
+                }
+            }
+
+            internal sealed class Watch
+            {
+                private List<WatchedDirectory> _watchers = new();
+
+                public int WatchDescriptor { get; }
+                public List<WatchedDirectory> Watchers
+                {
+                    get
+                    {
+                        Debug.Assert(Monitor.IsEntered(this));
+                        return _watchers;
+                    }
+                }
+
+                public Watch(int watchDescriptor)
+                {
+                    WatchDescriptor = watchDescriptor;
+                }
             }
         }
-
     }
 }

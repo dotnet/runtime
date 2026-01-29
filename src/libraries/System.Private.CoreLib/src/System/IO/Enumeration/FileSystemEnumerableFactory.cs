@@ -256,7 +256,9 @@ namespace System.IO.Enumeration
             return new FileSystemEnumerable<string>(
                 directory,
                 (ref FileSystemEntry entry) => entry.ToSpecifiedFullPath(),
-                options)
+                options,
+                isNormalized: false,
+                expression)
             {
                 ShouldIncludePredicate = GetPredicate<string>(expression, options, FileSystemEntryType.Files)
             };
@@ -269,7 +271,9 @@ namespace System.IO.Enumeration
             return new FileSystemEnumerable<string>(
                 directory,
                 (ref FileSystemEntry entry) => entry.ToSpecifiedFullPath(),
-                options)
+                options,
+                isNormalized: false,
+                expression)
             {
                 ShouldIncludePredicate = GetPredicate<string>(expression, options, FileSystemEntryType.Directories)
             };
@@ -282,7 +286,9 @@ namespace System.IO.Enumeration
             return new FileSystemEnumerable<string>(
                 directory,
                 (ref FileSystemEntry entry) => entry.ToSpecifiedFullPath(),
-                options)
+                options,
+                isNormalized: false,
+                expression)
             {
                 ShouldIncludePredicate = GetPredicate<string>(expression, options, FileSystemEntryType.All)
             };
@@ -298,7 +304,8 @@ namespace System.IO.Enumeration
                directory,
                (ref FileSystemEntry entry) => (FileInfo)entry.ToFileSystemInfo(),
                options,
-               isNormalized)
+               isNormalized,
+               expression)
             {
                 ShouldIncludePredicate = GetPredicate<FileInfo>(expression, options, FileSystemEntryType.Files)
             };
@@ -314,7 +321,8 @@ namespace System.IO.Enumeration
                directory,
                (ref FileSystemEntry entry) => (DirectoryInfo)entry.ToFileSystemInfo(),
                options,
-               isNormalized)
+               isNormalized,
+               expression)
             {
                 ShouldIncludePredicate = GetPredicate<DirectoryInfo>(expression, options, FileSystemEntryType.Directories)
             };
@@ -330,7 +338,8 @@ namespace System.IO.Enumeration
                directory,
                (ref FileSystemEntry entry) => entry.ToFileSystemInfo(),
                options,
-               isNormalized)
+               isNormalized,
+               expression)
             {
                 ShouldIncludePredicate = GetPredicate<FileSystemInfo>(expression, options, FileSystemEntryType.All)
             };
