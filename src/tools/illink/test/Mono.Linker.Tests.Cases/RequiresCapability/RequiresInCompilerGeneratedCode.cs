@@ -70,8 +70,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
             static IEnumerable<int> TestReflectionAccess()
             {
                 yield return 0;
@@ -82,15 +82,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
 #if !RELEASE
-            [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "Trimmer/NativeAOT do not warn on compiler-generated code", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
 #else
             // In release mode, the compiler optimizes away the unused Action (and reference to MethodWithRequires)
 #endif
-            [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Analyzer, "")]
-            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer, "")]
-            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer, "")]
+            [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Analyzer, "Analyzer does not support compiler-generated code warning suppression")]
+            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer, "Analyzer-specific behavior")]
+            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer, "Analyzer-specific behavior")]
             static IEnumerable<int> TestLdftn()
             {
                 yield return 0;
@@ -112,8 +112,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
             static IEnumerable<int> TestDynamicallyAccessedMethod()
             {
                 typeof(TypeWithMethodWithRequires).RequiresNonPublicMethods();
@@ -254,8 +254,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
             static async void TestReflectionAccess()
             {
                 await MethodAsync();
@@ -266,13 +266,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
 #if !RELEASE
-            [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "Trimmer/NativeAOT do not warn on compiler-generated code", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
 #endif
-            [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Analyzer, "")]
-            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer, "")]
-            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer, "")]
+            [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Analyzer, "Analyzer does not support compiler-generated code warning suppression")]
+            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer, "Analyzer-specific behavior")]
+            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer, "Analyzer-specific behavior")]
             static async void TestLdftn()
             {
                 await MethodAsync();
@@ -291,8 +291,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
             static async void TestDynamicallyAccessedMethod()
             {
                 typeof(TypeWithMethodWithRequires).RequiresNonPublicMethods();
@@ -431,8 +431,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
             static async IAsyncEnumerable<int> TestReflectionAccess()
             {
                 yield return 0;
@@ -445,13 +445,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
 #if !RELEASE
-            [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "Trimmer/NativeAOT do not warn on compiler-generated code", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
 #endif
-            [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Analyzer, "")]
-            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer, "")]
-            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer, "")]
+            [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Analyzer, "Analyzer does not support compiler-generated code warning suppression")]
+            [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer, "Analyzer-specific behavior")]
+            [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer, "Analyzer-specific behavior")]
             static async IAsyncEnumerable<int> TestLdftn()
             {
                 await MethodAsync();
@@ -472,8 +472,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
             static async IAsyncEnumerable<int> TestDynamicallyAccessedMethod()
             {
                 typeof(TypeWithMethodWithRequires).RequiresNonPublicMethods();
@@ -659,8 +659,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 LocalFunction();
 
                 [ExpectedWarning("IL2026", "--MethodWithRequires--")]
-                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "")]
-                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "")]
+                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
                 void LocalFunction() => typeof(RequiresInCompilerGeneratedCode)
                     .GetMethod("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
                     .Invoke(null, new object[] { });
@@ -671,13 +671,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 LocalFunction();
 
 #if !RELEASE
-                [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "")]
-                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "")]
+                [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "Trimmer/NativeAOT warn on compiler-generated code accessing RUC")]
+                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
 #endif
-                [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Analyzer, "")]
-                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer, "")]
-                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer, "")]
+                [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Analyzer, "Analyzer does not support compiler-generated code warning suppression")]
+                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer, "Analyzer-specific behavior")]
+                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer, "Analyzer-specific behavior")]
                 void LocalFunction()
                 {
                     var action = new Action(MethodWithRequires);
@@ -704,8 +704,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 LocalFunction();
 
                 [ExpectedWarning("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--")]
-                [ExpectedWarning("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "")]
-                [ExpectedWarning("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "")]
+                [ExpectedWarning("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+                [ExpectedWarning("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
                 void LocalFunction() => typeof(TypeWithMethodWithRequires).RequiresNonPublicMethods();
             }
 
@@ -950,8 +950,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026")]
-            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
             static void TestSuppressionOnLocalFunction()
             {
                 LocalFunction(); // This will produce a warning since the local function has Requires on it
@@ -967,8 +967,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026")]
-            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
             static void TestSuppressionOnLocalFunctionWithAssignment()
             {
                 LocalFunction(); // This will produce a warning since the local function has Requires on it
@@ -987,8 +987,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             static Type typeWithNonPublicMethods;
 
             [ExpectedWarning("IL2026")]
-            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
             static void TestSuppressionOnLocalFunctionWithNestedLocalFunction()
             {
                 LocalFunction(); // This will produce a warning since the local function has Requires on it
@@ -1002,9 +1002,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
                     // ILLink doesn't have enough information to associate the Requires on LocalFunction
                     // with this nested local function.
-                    [ExpectedWarning("IL2026", Tool.Trimmer | Tool.NativeAot, "")]
-                    [ExpectedWarning("IL3002", Tool.NativeAot, "")]
-                    [ExpectedWarning("IL3050", Tool.NativeAot, "")]
+                    [ExpectedWarning("IL2026", Tool.Trimmer | Tool.NativeAot, "Trimmer/NativeAOT specific warning")]
+                    [ExpectedWarning("IL3002", Tool.NativeAot, "NativeAOT specific warning")]
+                    [ExpectedWarning("IL3050", Tool.NativeAot, "NativeAOT specific warning")]
                     void NestedLocalFunction() => MethodWithRequires();
                 }
             }
@@ -1052,8 +1052,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                     LocalFunction();
 
                     [ExpectedWarning("IL2026", "--MethodWithRequires--")]
-                    [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "")]
-                    [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "")]
+                    [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
+                    [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
                     void LocalFunction() => MethodWithRequires();
                 }
             }
@@ -1184,13 +1184,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
                 Action _ =
 #if !RELEASE
-                [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "")]
-                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "")]
+                [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "Trimmer/NativeAOT warn on compiler-generated code accessing RUC")]
+                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
 #endif
-                [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Analyzer, "")]
-                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer, "")]
-                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer, "")]
+                [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Analyzer, "Analyzer does not support compiler-generated code warning suppression")]
+                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer, "Analyzer-specific behavior")]
+                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer, "Analyzer-specific behavior")]
                 () =>
                 {
                     p++;
@@ -1202,8 +1202,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
                 Action _ =
                 [ExpectedWarning("IL2026", "--MethodWithRequires--")]
-                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "")]
-                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "")]
+                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
                 () =>
                 {
                     typeof(RequiresInCompilerGeneratedCode)
@@ -1216,13 +1216,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
                 Action _ =
 #if !RELEASE
-                [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "")]
-                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "")]
-                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "")]
+                [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "Trimmer/NativeAOT warn on compiler-generated code accessing RUC")]
+                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
 #endif
-                [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Analyzer, "")]
-                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer, "")]
-                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer, "")]
+                [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Analyzer, "Analyzer does not support compiler-generated code warning suppression")]
+                [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.Analyzer, "Analyzer-specific behavior")]
+                [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.Analyzer, "Analyzer-specific behavior")]
                 () =>
                 {
                     var action = new Action(MethodWithRequires);
@@ -1246,8 +1246,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
                 Action _ =
                 [ExpectedWarning("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--")]
-                [ExpectedWarning("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "")]
-                [ExpectedWarning("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "")]
+                [ExpectedWarning("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+                [ExpectedWarning("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
                 () =>
                 {
                     typeof(TypeWithMethodWithRequires).RequiresNonPublicMethods();
@@ -1398,8 +1398,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026")]
-            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
             static void TestSuppressionOnLambda()
             {
                 var lambda =
@@ -1412,8 +1412,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026")]
-            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
             static void TestSuppressionOnLambdaWithNestedLambda()
             {
                 var lambda =
@@ -1427,9 +1427,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                     // an IL reference to the generated lambda method, unlike local functions.
                     // However, we don't make this association, for consistency with local functions.
                     var nestedLambda =
-                    [ExpectedWarning("IL2026", Tool.Trimmer | Tool.NativeAot, "")]
-                    [ExpectedWarning("IL3002", Tool.NativeAot | Tool.NativeAot, "")]
-                    [ExpectedWarning("IL3050", Tool.NativeAot | Tool.NativeAot, "")]
+                    [ExpectedWarning("IL2026", Tool.Trimmer | Tool.NativeAot, "Trimmer/NativeAOT specific warning")]
+                    [ExpectedWarning("IL3002", Tool.NativeAot | Tool.NativeAot, "NativeAOT specific warning")]
+                    [ExpectedWarning("IL3050", Tool.NativeAot | Tool.NativeAot, "NativeAOT specific warning")]
                     () => MethodWithRequires();
                 };
 
@@ -1479,8 +1479,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 {
                     var lambda =
                     [ExpectedWarning("IL2026", "--MethodWithRequires--")]
-                    [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "")]
-                    [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "")]
+                    [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
+                    [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
                     () => MethodWithRequires();
 
                     lambda();
@@ -1791,9 +1791,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                     yield return 1;
 
                     // Trimmer doesn't try to associate LocalFunction with IteratorLocalFunction
-                    [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "")]
-                    [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "")]
-                    [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "")]
+                    [ExpectedWarning("IL2026", "--MethodWithRequires--", Tool.Trimmer | Tool.NativeAot, "Trimmer/NativeAOT warn on compiler-generated code accessing RUC")]
+                    [ExpectedWarning("IL3002", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+                    [ExpectedWarning("IL3050", "--MethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
                     void LocalFunction() => MethodWithRequires();
                 }
             }
@@ -1867,8 +1867,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
             static IEnumerable<int> TestIteratorOnlyReferencedViaReflectionWhichShouldWarn()
             {
                 yield return 0;
@@ -1876,8 +1876,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
-            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3002", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning", CompilerGeneratedCode = true)]
             static async void TestAsyncOnlyReferencedViaReflectionWhichShouldWarn()
             {
                 await MethodAsync();
@@ -1885,22 +1885,22 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--")]
-            [ExpectedWarning("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "NativeAOT specific warning")]
             [ExpectedWarning("IL2026", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--")]
-            [ExpectedWarning("IL3002", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "NativeAOT specific warning")]
             static void TestAll()
             {
                 typeof(StateMachinesOnlyReferencedViaReflection).RequiresAll();
             }
 
             [ExpectedWarning("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--")]
-            [ExpectedWarning("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "NativeAOT specific warning")]
             [ExpectedWarning("IL2026", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--")]
-            [ExpectedWarning("IL3002", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "NativeAOT specific warning")]
             // NonPublicMethods doesn't warn for members emitted into compiler-generated state machine types.
             static void TestNonPublicMethods()
             {
@@ -1990,14 +1990,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
             // Warnings for Reflection access to methods with Requires
             [ExpectedWarning("IL2026", "--TestLocalFunctionInMethodWithRequires--")]
-            [ExpectedWarning("IL3002", "--TestLocalFunctionInMethodWithRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestLocalFunctionInMethodWithRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestLocalFunctionInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestLocalFunctionInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             [ExpectedWarning("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--")]
-            [ExpectedWarning("IL3002", "--TestLocalFunctionWithClosureInMethodWithRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestLocalFunctionWithClosureInMethodWithRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestLocalFunctionWithClosureInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestLocalFunctionWithClosureInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             [ExpectedWarning("IL2026", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--")]
-            [ExpectedWarning("IL3002", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", Tool.NativeAot, "NativeAOT specific warning")]
             static void TestAll()
             {
                 typeof(LocalFunctionsReferencedViaReflection).RequiresAll();
@@ -2005,14 +2005,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
             // Warnings for Reflection access to methods with Requires
             [ExpectedWarning("IL2026", "--TestLocalFunctionInMethodWithRequires--")]
-            [ExpectedWarning("IL3002", "--TestLocalFunctionInMethodWithRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestLocalFunctionInMethodWithRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestLocalFunctionInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestLocalFunctionInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             [ExpectedWarning("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--")]
-            [ExpectedWarning("IL3002", "--TestLocalFunctionWithClosureInMethodWithRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestLocalFunctionWithClosureInMethodWithRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestLocalFunctionWithClosureInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestLocalFunctionWithClosureInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             [ExpectedWarning("IL2026", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--")]
-            [ExpectedWarning("IL3002", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", Tool.NativeAot, "NativeAOT specific warning")]
             static void TestNonPublicMethods()
             {
                 typeof(LocalFunctionsReferencedViaReflection).RequiresNonPublicMethods();
@@ -2085,11 +2085,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
             // Warnings for Reflection access to methods with Requires
             [ExpectedWarning("IL2026", "--TestLambdaInMethodWithRequires--")]
-            [ExpectedWarning("IL3002", "--TestLambdaInMethodWithRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestLambdaInMethodWithRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestLambdaInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestLambdaInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             [ExpectedWarning("IL2026", "--TestLambdaWithClosureInMethodWithRequires--")]
-            [ExpectedWarning("IL3002", "--TestLambdaWithClosureInMethodWithRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestLambdaWithClosureInMethodWithRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestLambdaWithClosureInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestLambdaWithClosureInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             static void TestAll()
             {
                 typeof(LambdasReferencedViaReflection).RequiresAll();
@@ -2097,11 +2097,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
             // Warnings for Reflection access to methods with Requires
             [ExpectedWarning("IL2026", "--TestLambdaInMethodWithRequires--")]
-            [ExpectedWarning("IL3002", "--TestLambdaInMethodWithRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestLambdaInMethodWithRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestLambdaInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestLambdaInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             [ExpectedWarning("IL2026", "--TestLambdaWithClosureInMethodWithRequires--")]
-            [ExpectedWarning("IL3002", "--TestLambdaWithClosureInMethodWithRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--TestLambdaWithClosureInMethodWithRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--TestLambdaWithClosureInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--TestLambdaWithClosureInMethodWithRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             static void TestNonPublicMethods()
             {
                 typeof(LambdasReferencedViaReflection).RequiresNonPublicMethods();

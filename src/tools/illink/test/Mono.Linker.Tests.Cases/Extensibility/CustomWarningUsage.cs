@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.Extensibility
     [ExpectedNoWarnings]
     public class CustomWarningUsage
     {
-        [ExpectedWarning("IL2026", "--RUCMethod--", Tool.Analyzer, "")]
+        [ExpectedWarning("IL2026", "--RUCMethod--", Tool.Analyzer, "Analyzer does not support compiler-generated code warning suppression")]
         public static void Main()
         {
             new KnownTypeThatShouldWarn();

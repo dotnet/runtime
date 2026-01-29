@@ -42,7 +42,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
 
                 // Analyzer doesn't implement constant propagation and branch removal, so it reaches this code
-                [ExpectedWarning("IL2026", Tool.Analyzer, "")]
+                [ExpectedWarning("IL2026", Tool.Analyzer, "Analyzer does not implement constant prop and branch removal")]
                 void LocalWithWarning()
                 {
                     // No warning
@@ -63,7 +63,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             // Analyzer doesn't implement constant propagation and branch removal, so it reaches this code
-            [ExpectedWarning("IL2026", Tool.Analyzer, "")]
+            [ExpectedWarning("IL2026", Tool.Analyzer, "Analyzer does not implement constant prop and branch removal")]
             void LocalWithWarning()
             {
                 Requires();
