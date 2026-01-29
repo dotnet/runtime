@@ -1088,6 +1088,47 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <inheritdoc cref="Vector64.Atanh(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Atanh(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AtanhDouble<Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Atanh(vector._lower),
+                    Vector64.Atanh(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Atanh(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Atanh(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.AtanhSingle<Vector128<float>, Vector128<int>, Vector128<uint>, Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AtanhSingle<Vector128<float>, Vector128<int>, Vector128<uint>, Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Atanh(vector._lower),
+                    Vector64.Atanh(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector64.Cos(Vector64{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<double> Cos(Vector128<double> vector)

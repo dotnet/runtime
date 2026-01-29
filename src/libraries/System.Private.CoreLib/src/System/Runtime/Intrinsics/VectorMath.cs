@@ -3346,6 +3346,85 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        public static TVectorDouble AtanhDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // This code is based on `atanhf` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // atanh(x) = 0.5 * log((1 + x) / (1 - x))
+            // Domain: -1 < x < 1, returns NaN for |x| >= 1
+            //
+            // For very small |x|: atanh(x) ≈ x
+
+            const double TINY_THRESHOLD = 2.98023223876953125e-08; // 2^-25
+
+            TVectorDouble sign = x & TVectorDouble.Create(-0.0);
+            TVectorDouble ax = TVectorDouble.Abs(x);
+
+            // Return NaN for |x| >= 1
+            TVectorDouble nanMask = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.One);
+
+            // For very small values, return x
+            TVectorDouble tinyMask = TVectorDouble.LessThanOrEqual(ax, TVectorDouble.Create(TINY_THRESHOLD));
+
+            // Normal case: 0.5 * log((1 + |x|) / (1 - |x|))
+            TVectorDouble onePlusX = TVectorDouble.One + ax;
+            TVectorDouble oneMinusX = TVectorDouble.One - ax;
+            TVectorDouble ratio = onePlusX / oneMinusX;
+            TVectorDouble normal = TVectorDouble.Create(0.5) * LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(ratio);
+
+            // Select appropriate result based on magnitude
+            TVectorDouble result = TVectorDouble.ConditionalSelect(tinyMask, ax, normal);
+            result = TVectorDouble.ConditionalSelect(nanMask, TVectorDouble.Create(double.NaN), result);
+
+            // Restore sign
+            result |= sign;
+
+            return result;
+        }
+
+        public static TVectorSingle AtanhSingle<TVectorSingle, TVectorInt32, TVectorUInt32, TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
+            where TVectorUInt32 : unmanaged, ISimdVector<TVectorUInt32, uint>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // This code is based on `atanhf` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // atanh(x) = 0.5 * log((1 + x) / (1 - x))
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dx = Widen<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(AtanhDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dx));
+            }
+            else
+            {
+                TVectorDouble dxLo = WidenLower<TVectorSingle, TVectorDouble>(x);
+                TVectorDouble dxHi = WidenUpper<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(
+                    AtanhDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dxLo),
+                    AtanhDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dxHi)
+                );
+            }
+        }
+
         public static TVectorDouble AcosDouble<TVectorDouble>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
