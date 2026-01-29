@@ -152,6 +152,10 @@ def setup_and_run_crank_agent(workdir: Path):
     os.environ['DOTNET_CLI_TELEMETRY_OPTOUT'] = '1'
     os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
     os.environ['UseSharedCompilation'] = 'false'
+    os.environ['NUGET_PLUGINS_CACHE_PATH'] = str(workdir / "NUGET_PLUGINS_CACHE_PATH")
+    os.environ['NUGET_PACKAGES'] = str(workdir / "NUGET_PACKAGES")
+    os.environ['NUGET_HTTP_CACHE_PATH'] = str(workdir / "NUGET_HTTP_CACHE_PATH")
+    os.environ['NUGET_SCRATCH'] = str(workdir / "NUGET_SCRATCH")
 
     print("Installing tools ...")
     logs_dir.mkdir(parents=True, exist_ok=True)
