@@ -287,12 +287,29 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(typeInfo.Converter.ConstructorInfo != null);
             ParameterInfo[] parameters = typeInfo.Converter.ConstructorInfo.GetParameters();
-            int parameterCount = parameters.Length;
-            JsonParameterInfoValues[] jsonParameters = new JsonParameterInfoValues[parameterCount];
 
-            for (int i = 0; i < parameterCount; i++)
+            // Count non-out parameters - out parameters don't receive values from JSON.
+            int nonOutParameterCount = 0;
+            foreach (ParameterInfo param in parameters)
+            {
+                if (!param.IsOut)
+                {
+                    nonOutParameterCount++;
+                }
+            }
+
+            JsonParameterInfoValues[] jsonParameters = new JsonParameterInfoValues[nonOutParameterCount];
+
+            int jsonParamIndex = 0;
+            for (int i = 0; i < parameters.Length; i++)
             {
                 ParameterInfo reflectionInfo = parameters[i];
+
+                // Skip out parameters - they don't receive values from JSON deserialization.
+                if (reflectionInfo.IsOut)
+                {
+                    continue;
+                }
 
                 // Trimmed parameter names are reported as null in CoreCLR or "" in Mono.
                 if (string.IsNullOrEmpty(reflectionInfo.Name))
@@ -301,17 +318,25 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowNotSupportedException_ConstructorContainsNullParameterNames(typeInfo.Converter.ConstructorInfo.DeclaringType);
                 }
 
+                // For byref parameters (in/ref), use the underlying element type.
+                Type parameterType = reflectionInfo.ParameterType;
+                if (parameterType.IsByRef)
+                {
+                    parameterType = parameterType.GetElementType()!;
+                }
+
                 JsonParameterInfoValues jsonInfo = new()
                 {
                     Name = reflectionInfo.Name,
-                    ParameterType = reflectionInfo.ParameterType,
-                    Position = reflectionInfo.Position,
+                    ParameterType = parameterType,
+                    Position = jsonParamIndex, // Use the position in the args array, not the constructor parameter index
                     HasDefaultValue = reflectionInfo.HasDefaultValue,
                     DefaultValue = reflectionInfo.GetDefaultValue(),
                     IsNullable = DetermineParameterNullability(reflectionInfo, nullabilityCtx) is not NullabilityState.NotNull,
                 };
 
-                jsonParameters[i] = jsonInfo;
+                jsonParameters[jsonParamIndex] = jsonInfo;
+                jsonParamIndex++;
             }
 
             typeInfo.PopulateParameterInfoValues(jsonParameters);
