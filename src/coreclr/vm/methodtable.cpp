@@ -505,7 +505,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
             FALSE,              // allowInstParam
             TRUE);              // forceRemotableMethod
 
-        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD, false));
+        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD));
     }
 #endif // !FEATURE_COMINTEROP
 
@@ -536,8 +536,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 #ifdef FEATURE_COMINTEROP
 //==========================================================================================
 // get the method desc given the interface method desc on a COM implemented server
-// (if fNullOk is set then NULL is an allowable return value)
-MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, bool fNullOk)
+MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
 {
     CONTRACT(MethodDesc*)
     {
@@ -547,7 +546,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(IsComObjectType());
-        POSTCONDITION(fNullOk || CheckPointer(RETVAL));
+        POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
 
@@ -577,17 +576,12 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
 
         // The interface is not in the static class definition so we need to look at the
         // dynamic interfaces.
-        else if (FindDynamicallyAddedInterface(pItfMT))
-        {
-            // This interface was added to the class dynamically so it is implemented
-            // by the COM object. We treat this dynamically added interfaces the same
-            // way we treat COM objects. That is by using the interface vtable.
-            RETURN(pItfMD);
-        }
-        else
-        {
-            RETURN(NULL);
-        }
+        _ASSERTE(FindDynamicallyAddedInterface(pItfMT));
+
+        // This interface was added to the class dynamically so it is implemented
+        // by the COM object. We treat this dynamically added interface the same
+        // way we treat COM objects. That is by using the interface vtable.
+        RETURN(pItfMD);
     }
 }
 #endif // FEATURE_COMINTEROP
