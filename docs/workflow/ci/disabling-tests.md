@@ -46,7 +46,7 @@ expedient to disable the test more broadly than possibly required.
 The runtime tests use an XUnit-based model for test execution. There are [a number of attributes provided for filtering](../testing/libraries/filtering-tests.md)
 based on different test modes. Here are some examples of attributes that can be applied to tests to prevent them from running in certain configurations:
 
-- Prevent a test from running on Mono: `[SkipOnMono]`
+- Prevent a test from running on Mono: `OnMono]`
 - Prevent a test from running on CoreCLR: `[SkipOnCoreClr]`
 - Prevent a test from running under GCStress: `[SkipOnCoreClr("Reason", RuntimeTestModes.AnyGCStress)]`
 - Prevent a test from running under HeapVerify: `[SkipOnCoreClr("Reason", RuntimeTestModes.HeapVerify)]`
