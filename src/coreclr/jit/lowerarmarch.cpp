@@ -3454,7 +3454,8 @@ void Lowering::TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond)
 
 //----------------------------------------------------------------------------------------------
 // TryLowerCnsIntCselToCinc: Try converting SELECT/SELECTCC to SELECT_INC/SELECT_INCCC.
-// Conversion is possible only if both the trueVal and falseVal are integer constants and abs(trueVal - falseVal) = 1.
+// Conversion is possible if both the trueVal and falseVal are integer constants and abs(trueVal - falseVal) = 1,
+// or if one of trueVal/falseVal is 1 greater than the value being compared against
 //
 // Arguments:
 //     select - The select node that is now SELECT or SELECTCC
@@ -3466,56 +3467,128 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
 
     GenTree* trueVal  = select->gtOp1;
     GenTree* falseVal = select->gtOp2;
-    size_t   op1Val   = (size_t)trueVal->AsIntCon()->IconValue();
-    size_t   op2Val   = (size_t)falseVal->AsIntCon()->IconValue();
 
-    if ((op1Val + 1 == op2Val) || (op2Val + 1 == op1Val))
+    if (trueVal->IsCnsIntOrI() && falseVal->IsCnsIntOrI())
     {
-        const bool shouldReverseCondition = (op1Val + 1 == op2Val);
+        size_t op1Val = (size_t)trueVal->AsIntCon()->IconValue();
+        size_t op2Val = (size_t)falseVal->AsIntCon()->IconValue();
 
-        if (select->OperIs(GT_SELECT))
+        if ((op1Val + 1 == op2Val) || (op2Val + 1 == op1Val))
         {
-            if (shouldReverseCondition)
+            const bool shouldReverseCondition = (op1Val + 1 == op2Val);
+
+            if (select->OperIs(GT_SELECT))
             {
-                // Reverse the condition so that op2 will be selected
-                if (!cond->OperIsCompare())
+                if (shouldReverseCondition)
                 {
-                    // Non-compare nodes add additional GT_NOT node after reversing.
-                    // This would remove gains from this optimisation so don't proceed.
-                    return;
+                    // Reverse the condition so that op2 will be selected
+                    if (!cond->OperIsCompare())
+                    {
+                        // Non-compare nodes add additional GT_NOT node after reversing.
+                        // This would remove gains from this optimisation so don't proceed.
+                        return;
+                    }
+                    GenTree* revCond = comp->gtReverseCond(cond);
+                    assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
                 }
-                GenTree* revCond = comp->gtReverseCond(cond);
-                assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
-            }
-            BlockRange().Remove(select->gtOp2, true);
-            select->gtOp2 = nullptr;
-            select->SetOper(GT_SELECT_INC);
-            JITDUMP("Converted to: GT_SELECT_INC\n");
-            DISPTREERANGE(BlockRange(), select);
-            JITDUMP("\n");
-        }
-        else
-        {
-            GenTreeOpCC* selectcc   = select->AsOpCC();
-            GenCondition selectCond = selectcc->gtCondition;
-
-            if (shouldReverseCondition)
-            {
-                // Reverse the condition so that op2 will be selected
-                selectcc->gtCondition = GenCondition::Reverse(selectCond);
+                BlockRange().Remove(select->gtOp2, true);
+                select->gtOp2 = nullptr;
+                select->SetOper(GT_SELECT_INC);
+                JITDUMP("Converted to: GT_SELECT_INC\n");
+                DISPTREERANGE(BlockRange(), select);
+                JITDUMP("\n");
             }
             else
             {
-                std::swap(selectcc->gtOp1, selectcc->gtOp2);
-            }
+                GenTreeOpCC* selectcc   = select->AsOpCC();
+                GenCondition selectCond = selectcc->gtCondition;
 
-            BlockRange().Remove(selectcc->gtOp2, true);
-            selectcc->gtOp2 = nullptr;
-            selectcc->SetOper(GT_SELECT_INCCC);
-            JITDUMP("Converted to: GT_SELECT_INCCC\n");
-            DISPTREERANGE(BlockRange(), selectcc);
-            JITDUMP("\n");
+                if (shouldReverseCondition)
+                {
+                    // Reverse the condition so that op2 will be selected
+                    selectcc->gtCondition = GenCondition::Reverse(selectCond);
+                }
+                else
+                {
+                    std::swap(selectcc->gtOp1, selectcc->gtOp2);
+                }
+
+                BlockRange().Remove(selectcc->gtOp2, true);
+                selectcc->gtOp2 = nullptr;
+                selectcc->SetOper(GT_SELECT_INCCC);
+                JITDUMP("Converted to: GT_SELECT_INCCC\n");
+                DISPTREERANGE(BlockRange(), selectcc);
+                JITDUMP("\n");
+            }
         }
+    }
+    else
+    {
+        // Look for cases like this to convert to conditional increment
+        // if (myvar==0) myvar = 1;
+        // If we're comparing a local to a constant int, and branch has a use of the value+1
+
+        if (!cond->OperIs(GT_CMP) || !select->OperIs(GT_SELECTCC))
+        {
+            return;
+        }
+        if ((!cond->gtGetOp1()->IsIntegralConst() && !cond->gtGetOp2()->IsIntegralConst()) ||
+            (!cond->gtGetOp1()->OperIs(GT_LCL_VAR) && !cond->gtGetOp2()->OperIs(GT_LCL_VAR)))
+        {
+            return;
+        }
+
+        // One of the CMP operands is a constant int
+        GenCondition::Code code     = select->AsOpCC()->gtCondition.GetCode();
+        int64_t            constVal = 0;
+        unsigned           lclNum   = 0;
+
+        if (cond->gtGetOp1()->IsIntegralConst())
+        {
+            constVal = cond->gtGetOp1()->AsIntCon()->IntegralValue();
+            lclNum   = cond->gtGetOp2()->AsLclVar()->GetLclNum();
+        }
+        else
+        {
+            constVal = cond->gtGetOp2()->AsIntCon()->IntegralValue();
+            lclNum   = cond->gtGetOp1()->AsLclVar()->GetLclNum();
+        }
+
+        if (code != GenCondition::EQ && code != GenCondition::NE)
+        {
+            return;
+        }
+        // Look for constVal+1 along the branch where the local is known to be == constVal
+        if (code == GenCondition::EQ &&
+            (!trueVal->IsIntegralConst() || trueVal->AsIntCon()->IntegralValue() - constVal != 1))
+        {
+            return;
+        }
+        if (code == GenCondition::NE &&
+            (!falseVal->IsIntegralConst() || falseVal->AsIntCon()->IntegralValue() - constVal != 1))
+        {
+            return;
+        }
+
+        // The increment needs to occur along the false path,
+        // reverse condition if that's not the case
+        if (code == GenCondition::EQ)
+        {
+            GenTreeOpCC* selectcc = select->AsOpCC();
+            selectcc->gtCondition = GenCondition::Reverse(selectcc->gtCondition);
+            std::swap(selectcc->gtOp1, selectcc->gtOp2);
+            falseVal = selectcc->gtOp2;
+        }
+
+        GenTree* newLocal = comp->gtNewLclvNode(lclNum, falseVal->TypeGet());
+        BlockRange().InsertBefore(falseVal, newLocal);
+        BlockRange().Remove(falseVal);
+        select->gtOp2 = newLocal;
+        select->SetOper(GT_SELECT_INCCC);
+
+        JITDUMP("Converted to: GT_SELECT_INCCC\n");
+        DISPTREERANGE(BlockRange(), select);
+        JITDUMP("\n");
     }
 }
 
