@@ -1498,15 +1498,11 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
 
 #ifdef FEATURE_INTERPRETER
         EECodeInfo codeInfo((PCODE)patch->address);
-        if (codeInfo.IsValid())
+        if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
         {
-            IJitManager* pJitManager = codeInfo.GetJitManager();
-            if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
-            {
-                IExecutionControl* pExecControl = pJitManager->GetExecutionControl();
-                _ASSERTE(pExecControl != NULL);
-                return pExecControl->ApplyPatch(patch);
-            }
+            IExecutionControl* pExecControl = codeInfo.GetJitManager()->GetExecutionControl();
+            _ASSERTE(pExecControl != NULL);
+            return pExecControl->ApplyPatch(patch);
         }
 #endif // FEATURE_INTERPRETER
 
@@ -1625,15 +1621,11 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
 
 #ifdef FEATURE_INTERPRETER
         EECodeInfo codeInfo((PCODE)patch->address);
-        if (codeInfo.IsValid())
+        if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
         {
-            IJitManager* pJitManager = codeInfo.GetJitManager();
-            if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
-            {
-                IExecutionControl* pExecControl = pJitManager->GetExecutionControl();
-                _ASSERTE(pExecControl != NULL);
-                return pExecControl->UnapplyPatch(patch);
-            }
+            IExecutionControl* pExecControl = codeInfo.GetJitManager()->GetExecutionControl();
+            _ASSERTE(pExecControl != NULL);
+            return pExecControl->UnapplyPatch(patch);
         }
 #endif // FEATURE_INTERPRETER
 
@@ -2012,6 +2004,10 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
     _ASSERTE(primary->IsILPrimaryPatch());
     _ASSERTE(dji != NULL);
 
+    LOG((LF_CORDB, LL_INFO10000,
+        "DC::ABAI: Adding/binding/activating IL replica patch for primary patch %p in DJI %p\n",
+        primary, dji));
+
     BOOL result = FALSE;
     MethodDesc* pMD = dji->m_nativeCodeVersion.GetMethodDesc();
 
@@ -2020,9 +2016,25 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
         // Zero is the only native offset that we allow to bind across different jitted
         // code bodies.
         _ASSERTE(primary->offset == 0);
+
+        SIZE_T nativeOffset = 0;
+
+#ifdef FEATURE_INTERPRETER
+        // For interpreter code, native offset 0 is within the bytecode header area and cannot
+        // have a breakpoint. Use the first sequence map entry's native offset instead.
+        EECodeInfo codeInfo((PCODE)dji->m_addrOfCode);
+        if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
+        {
+            if (dji->GetSequenceMapCount() > 0)
+            {
+                nativeOffset = dji->GetSequenceMap()[0].nativeStartOffset;
+            }
+        }
+#endif // FEATURE_INTERPRETER
+
         INDEBUG(BOOL fOk = )
             AddBindAndActivatePatchForMethodDesc(pMD, dji,
-                0, PATCH_KIND_IL_REPLICA,
+                nativeOffset, PATCH_KIND_IL_REPLICA,
                 LEAF_MOST_FRAME, m_pAppDomain);
         _ASSERTE(fOk);
         result = TRUE;
@@ -2711,6 +2723,18 @@ DebuggerPatchSkip *DebuggerController::ActivatePatchSkip(Thread *thread,
 
     if (patch != NULL && patch->IsNativePatch())
     {
+#ifdef FEATURE_INTERPRETER
+        // Interpreter patches don't need DebuggerPatchSkip - the interpreter
+        // uses GetOriginalOpcode() to read the saved opcode from the patch table
+        // and executes it directly without modifying the bytecode stream.
+        EECodeInfo codeInfo((PCODE)PC);
+        if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
+        {
+            LOG((LF_CORDB,LL_INFO10000, "DC::APS: Interpreter patch at PC=0x%p - no skip needed\n", PC));
+            return NULL;
+        }
+#endif // FEATURE_INTERPRETER
+
         //
         // We adjust the thread's PC to someplace where we write
         // the next instruction, then

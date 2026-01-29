@@ -12,6 +12,10 @@
 #include "gchelpers.inl"
 #include "arraynative.inl"
 
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
+#include "../debug/ee/executioncontrol.h"
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
+
 // for numeric_limits
 #include <limits>
 #include <functional>
@@ -486,15 +490,15 @@ static void InterpHalt()
 }
 #endif // DEBUG
 
-#ifdef DEBUGGING_SUPPORTED
-static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame)
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
+static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame, DWORD exceptionCode, bool isStepOut)
 {
     Thread *pThread = GetThread();
     if (pThread != NULL && g_pDebugInterface != NULL)
     {
         EXCEPTION_RECORD exceptionRecord;
         memset(&exceptionRecord, 0, sizeof(EXCEPTION_RECORD));
-        exceptionRecord.ExceptionCode = STATUS_BREAKPOINT;
+        exceptionRecord.ExceptionCode = exceptionCode;
         exceptionRecord.ExceptionAddress = (PVOID)ip;
 
         // Construct a CONTEXT for the debugger
@@ -507,22 +511,36 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
         SetIP(&ctx, (DWORD64)ip);
         SetFirstArgReg(&ctx, dac_cast<TADDR>(pInterpreterFrame)); // Enable debugger to iterate over interpreter frames
 
-        // We need to add a FaultingExceptionFrame because debugger checks for it
-        // before adjusting the IP (see `AdjustIPAfterException`).
-        FaultingExceptionFrame fef;
-        fef.InitAndLink(&ctx);
+        // Check if this is a step-out breakpoint (from Debugger.Break() via TrapStepOut).
+        // Step-out breakpoints need FaultingExceptionFrame to trigger AdjustIPAfterException,
+        // which adjusts the IP backward to show the correct source line.
+        // IDE breakpoints don't need this adjustment since the IP already points to the correct location.
+        if (isStepOut)
+        {
+            // Step-out breakpoint: use FaultingExceptionFrame to trigger AdjustIPAfterException
+            FaultingExceptionFrame fef;
+            fef.InitAndLink(&ctx);
 
-        // Notify the debugger of the exception
-        g_pDebugInterface->FirstChanceNativeException(
-            &exceptionRecord,
-            &ctx,
-            STATUS_BREAKPOINT,
-            pThread);
+            g_pDebugInterface->FirstChanceNativeException(
+                &exceptionRecord,
+                &ctx,
+                exceptionCode,
+                pThread);
 
-        fef.Pop();
+            fef.Pop();
+        }
+        else
+        {
+            // IDE breakpoint: don't use FaultingExceptionFrame, IP is already correct
+            g_pDebugInterface->FirstChanceNativeException(
+                &exceptionRecord,
+                &ctx,
+                exceptionCode,
+                pThread);
+        }
     }
 }
-#endif // DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
 
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
@@ -992,6 +1010,11 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     int32_t returnOffset, callArgsOffset, methodSlot;
     bool frameNeedsTailcallUpdate = false;
     MethodDesc* targetMethod;
+    uint32_t opcode;
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
+    InterpreterExecutionControl *execControl = InterpreterExecutionControl::GetInstance();
+    BreakpointInfo bpInfo;
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
 
     SAVE_THE_LOWEST_SP;
 
@@ -1008,8 +1031,11 @@ MAIN_LOOP:
             // It will be useful for testing e.g. the debug info at various locations in the current method, so let's
             // keep it for such purposes until we don't need it anymore.
             pFrame->ip = (int32_t*)ip;
-
-            switch (*ip)
+            opcode = ip[0];
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
+SWITCH_OPCODE:
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
+            switch (opcode)
             {
 #ifdef DEBUG
                 case INTOP_HALT:
@@ -1017,13 +1043,25 @@ MAIN_LOOP:
                     ip++;
                     break;
 #endif // DEBUG
-#ifdef DEBUGGING_SUPPORTED
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
                 case INTOP_BREAKPOINT:
                 {
-                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
+                    bpInfo = execControl->GetBreakpointInfo(ip);
+                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_BREAKPOINT, bpInfo.isStepOut);
+                    if (!bpInfo.isStepOut)
+                    {
+                        opcode = bpInfo.originalOpcode;
+                        goto SWITCH_OPCODE;
+                    } else {
+                        break;
+                    }
+                }
+                case INTOP_SINGLESTEP:
+                {
+                    // InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_SINGLE_STEP);
                     break;
                 }
-#endif // DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
                 case INTOP_INITLOCALS:
                     memset(LOCAL_VAR_ADDR(ip[1], void), 0, ip[2]);
                     ip += 3;
