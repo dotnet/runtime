@@ -174,17 +174,35 @@ def build_and_run(coreclr_args, output_mch_name):
         shim_name = "%JitName%"
         corerun_exe = "CoreRun.exe"
         script_name = "run_benchmarks.bat"
+        python_exe = ["py", "-3"]
     else:
         shim_name = "$JitName"
         corerun_exe = "corerun"
         script_name = "run_benchmarks.sh"
+        python_exe = ["python3"]
+
+    with ChangeDir(performance_directory):
+        dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
+        dotnet_install_script = os.path.join(performance_directory, "scripts", "dotnet.py")
+        if not os.path.isfile(dotnet_install_script):
+            print("Missing " + dotnet_install_script)
+            return
+        run_command(python_exe + [dotnet_install_script, "install", "--channels", "10.0", "--architecture", arch, "--install-dir",
+                                 dotnet_directory, "--verbose"])
+
+    os.environ["PATH"] = dotnet_directory + os.pathsep + os.environ["PATH"]
+    os.environ["DOTNET_ROOT"] = dotnet_directory
+    os.environ["NUGET_PLUGINS_CACHE_PATH"] = os.path.join(performance_directory, "NUGET_PLUGINS_CACHE_PATH")
+    os.environ["NUGET_PACKAGES"] = os.path.join(performance_directory, "NUGET_PACKAGES")
+    os.environ["NUGET_HTTP_CACHE_PATH"] = os.path.join(performance_directory, "NUGET_HTTP_CACHE_PATH")
+    os.environ["NUGET_SCRATCH"] = os.path.join(performance_directory, "NUGET_SCRATCH")
 
     make_executable(dotnet_exe)
 
     # Start with a "dotnet --info" to see what we've got.
     run_command([dotnet_exe, "--info"])
 
-    tfm = "net11.0"
+    tfm = "net10.0"
     os.environ["PERFLAB_TARGET_FRAMEWORKS"] = tfm
 
     env_for_restore = os.environ.copy()
