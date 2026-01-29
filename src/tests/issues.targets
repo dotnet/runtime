@@ -2142,6 +2142,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b39946/b39946/**">
             <Issue>https://github.com/dotnet/runtime/issues/54393</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Coverage/b39946/b39946/**">
+            <Issue>JIT stress test with dead code elimination - interpreter executes literally and throws OverflowException</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/M00/b109878/b109878/**">
             <Issue>https://github.com/dotnet/runtime/issues/54392</Issue>
         </ExcludeList>
