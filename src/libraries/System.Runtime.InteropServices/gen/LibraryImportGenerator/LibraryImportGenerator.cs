@@ -59,8 +59,7 @@ namespace Microsoft.Interop
                     : DiagnosticOr<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol)>.From((data.Syntax, data.Symbol));
             });
 
-            // Filter methods but don't report diagnostics - the analyzer will handle that
-            var methodsToGenerate = methodsWithDiagnostics.FilterWithoutReportingDiagnostics();
+            var methodsToGenerate = context.FilterAndReportDiagnostics(methodsWithDiagnostics);
 
             // Compute generator options
             IncrementalValueProvider<LibraryImportGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
@@ -68,7 +67,21 @@ namespace Microsoft.Interop
 
             IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
 
-            // Note: RequiresAllowUnsafeBlocks diagnostic is now reported by the analyzer
+            // Validate environment that is being used to generate stubs.
+            context.RegisterDiagnostics(
+                context.CompilationProvider
+                .Select((comp, ct) => comp.Options is CSharpCompilationOptions { AllowUnsafe: true })
+                .Combine(attributedMethods.Collect())
+                .SelectMany((data, ct) =>
+            {
+                if (data.Right.IsEmpty // no attributed methods
+                    || data.Left) // Unsafe code enabled
+                {
+                    return ImmutableArray<DiagnosticInfo>.Empty;
+                }
+
+                return ImmutableArray.Create(DiagnosticInfo.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, null));
+            }));
 
             IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
@@ -91,7 +104,7 @@ namespace Microsoft.Interop
                 .WithComparer(Comparers.GeneratedSyntax)
                 .WithTrackingName(StepNames.GenerateSingleStub);
 
-            // Note: Diagnostics are now reported by the analyzer, so we don't register them here
+            context.RegisterDiagnostics(generateSingleStub.SelectMany((stubInfo, ct) => stubInfo.Item2));
 
             context.RegisterConcatenatedSyntaxOutputs(generateSingleStub.Select((data, ct) => data.Item1), "LibraryImports.g.cs");
         }
