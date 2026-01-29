@@ -16,7 +16,7 @@ To build the runtime repo on *macOS*, you will need to install the *Xcode* devel
 
 To build the runtime repo, you will also need to install the following dependencies:
 
-- `CMake` 3.20 or newer
+- `CMake` 3.26 or newer
 - `icu4c`
 - `pkg-config`
 - `python3`

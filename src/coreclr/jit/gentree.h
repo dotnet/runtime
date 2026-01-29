@@ -62,6 +62,7 @@ enum SpecialCodeKind
     SCK_ARG_EXCPN,                  // target on ArgumentException (currently used only for SIMD intrinsics)
     SCK_ARG_RNG_EXCPN,              // target on ArgumentOutOfRangeException (currently used only for SIMD intrinsics)
     SCK_FAIL_FAST,                  // target for fail fast exception
+    SCK_NULL_CHECK,                 // target for NullReferenceException (Wasm)
     SCK_COUNT
 };
 
@@ -493,8 +494,8 @@ enum GenTreeFlags : unsigned
 
     GTF_IND_FLAGS = GTF_IND_COPYABLE_FLAGS | GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP | GTF_IND_INVARIANT | GTF_IND_ALLOW_NON_ATOMIC,
 
-    GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
-                                              //                         addressing mode
+    GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH/GT_CAST -- Do not CSE this node only, forms complex
+                                              //                                 addressing mode
 
     GTF_MUL_64RSLT              = 0x40000000, // GT_MUL     -- produce 64-bit result
 
@@ -2160,13 +2161,16 @@ public:
 
     void SetUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
+#if defined(TARGET_64BIT)
+        assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST));
+#else
+        assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST, GT_ADD_HI, GT_SUB_HI));
+#endif
         gtFlags |= GTF_UNSIGNED;
     }
 
     void ClearUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
         gtFlags &= ~GTF_UNSIGNED;
     }
 
@@ -2199,7 +2203,7 @@ public:
 
     bool IsPartOfAddressMode()
     {
-        return OperIs(GT_ADD, GT_MUL, GT_LSH) && ((gtFlags & GTF_ADDRMODE_NO_CSE) != 0);
+        return OperIs(GT_ADD, GT_MUL, GT_LSH, GT_CAST) && ((gtFlags & GTF_ADDRMODE_NO_CSE) != 0);
     }
 
     void SetAllEffectsFlags(GenTree* source)
@@ -4633,6 +4637,8 @@ enum class WellKnownArg : unsigned
     RuntimeMethodHandle,
     AsyncExecutionContext,
     AsyncSynchronizationContext,
+    WasmShadowStackPointer,
+    WasmPortableEntryPoint
 };
 
 #ifdef DEBUG
@@ -5273,7 +5279,7 @@ struct GenTreeCall final : public GenTree
                                               gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)));
     }
 
-    bool IsDevirtualizationCandidate(Compiler* compiler, CORINFO_METHOD_HANDLE* pMethHandle = nullptr) const;
+    bool IsDevirtualizationCandidate(Compiler* compiler) const;
 
     bool IsInlineCandidate() const
     {
