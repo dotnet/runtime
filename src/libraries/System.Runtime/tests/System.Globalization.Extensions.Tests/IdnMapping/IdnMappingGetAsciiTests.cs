@@ -246,7 +246,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetAscii_TestData))]
+        [MemberData(nameof(GetAscii_Std3Compatible_TestData))]
         public void TryGetAscii_WithFlags(string unicode, int index, int count, string expected)
         {
             // Test with UseStd3AsciiRules = true and AllowUnassigned = true
@@ -263,6 +263,23 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new string(destination, 0, charsWritten), StringComparer.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Test data compatible with UseStd3AsciiRules=true (excludes special ASCII characters).
+        /// </summary>
+        public static IEnumerable<object[]> GetAscii_Std3Compatible_TestData()
+        {
+            // Only include alphanumeric ASCII and non-ASCII test data that works with Std3 rules
+            yield return new object[] { "\u0101", 0, 1, "xn--yda" };
+            yield return new object[] { "\u0101\u0061\u0041", 0, 3, "xn--aa-cla" };
+            yield return new object[] { "\u0061\u0101\u0062", 0, 3, "xn--ab-dla" };
+            yield return new object[] { "\u0061\u0062\u0101", 0, 3, "xn--ab-ela" };
+            yield return new object[] { "\uD800\uDF00\uD800\uDF01\uD800\uDF02", 0, 6, "xn--097ccd" }; // Surrogate pairs
+            yield return new object[] { "\u0061\u0062\u0063", 0, 3, "\u0061\u0062\u0063" }; // ASCII only code points
+            yield return new object[] { "\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067", 0, 7, "xn--d9juau41awczczp" }; // Non-ASCII only code points
+            yield return new object[] { "\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 0, 9, "xn--de-jg4avhby1noc0d" }; // ASCII and non-ASCII code points
+            yield return new object[] { "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0", 0, 21, "abc.xn--d9juau41awczczp.xn--de-jg4avhby1noc0d" }; // Fully qualified domain name
+        }
+
         [Theory]
         [MemberData(nameof(GetAscii_Invalid_TestData))]
         public void TryGetAscii_Invalid(string unicode, int index, int count, Type exceptionType)
@@ -270,6 +287,19 @@ namespace System.Globalization.Tests
             if (unicode is null)
             {
                 return; // TryGetAscii takes ReadOnlySpan<char>, which can't be null
+            }
+
+            // Skip entries with invalid index/count (those test the GetAscii(string, int, int) validation, not the span content validation)
+            if (index < 0 || count < 0 || index > unicode.Length || index + count > unicode.Length)
+            {
+                return;
+            }
+
+            // Also skip empty count tests - they test ArgumentException for empty string validation
+            // but TryGetAscii span-based API doesn't have index/count overloads
+            if (count == 0)
+            {
+                return;
             }
 
             string slice = unicode.Substring(index, count);

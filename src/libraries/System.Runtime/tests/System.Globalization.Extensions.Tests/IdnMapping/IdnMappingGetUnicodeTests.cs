@@ -208,6 +208,19 @@ namespace System.Globalization.Tests
                 return; // TryGetUnicode takes ReadOnlySpan<char>, which can't be null
             }
 
+            // Skip entries with invalid index/count (those test the GetUnicode(string, int, int) validation, not the span content validation)
+            if (index < 0 || count < 0 || index > ascii.Length || index + count > ascii.Length)
+            {
+                return;
+            }
+
+            // Also skip empty count tests - they test ArgumentException for empty string validation
+            // but TryGetUnicode span-based API doesn't have index/count overloads
+            if (count == 0)
+            {
+                return;
+            }
+
             string slice = ascii.Substring(index, count);
             char[] destination = new char[100];
 
