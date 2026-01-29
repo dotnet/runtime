@@ -24,6 +24,14 @@ struct probe_paths_t
     pal::string_t coreclr;
 };
 
+enum class probe_result_t
+{
+    not_found,
+    bundled,
+    serviced,
+    found
+};
+
 struct deps_resolved_asset_t
 {
     deps_resolved_asset_t(const deps_asset_t& asset, const pal::string_t& resolved_path)
@@ -218,12 +226,11 @@ private:
         std::unordered_set<pal::string_t>* breadcrumb);
 
     // Probe entry in probe configurations and deps dir.
-    bool probe_deps_entry(
+    probe_result_t probe_deps_entry(
         const deps_entry_t& entry,
         const pal::string_t& deps_dir,
         int fx_level,
-        pal::string_t* candidate,
-        bool &found_in_bundle);
+        pal::string_t* candidate);
 
 private:
     const fx_definition_vector_t& m_fx_definitions;

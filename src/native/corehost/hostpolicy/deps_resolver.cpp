@@ -44,7 +44,7 @@ namespace
         std::unordered_set<pal::string_t>* existing,
         pal::string_t* serviced,
         pal::string_t* non_serviced,
-        const pal::string_t& svc_dir)
+        bool is_serviced)
     {
         // To optimize startup time, we avoid calling realpath here.
         // Because of this, there might be duplicates in the output
@@ -56,7 +56,7 @@ namespace
 
         trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], path.c_str());
 
-        if (utils::starts_with(path, svc_dir.c_str(), svc_dir.length(), false))
+        if (is_serviced)
         {
             serviced->append(path);
             serviced->push_back(PATH_SEPARATOR);
@@ -269,12 +269,10 @@ void deps_resolver_t::setup_probe_config(
  *   -- When a deps json based probe is performed, the deps entry's package name and version must match.
  *   -- When looking into a published dir, for rid specific assets lookup rid split folders; for non-rid assets lookup the layout dir.
  * The path to the resolved file is returned in candidate out parameter
- * If the candidate is embedded within the single-file bundle (rather than an actual file on disk), found_in_bundle will be set to true.
  */
-bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::string_t& deps_dir, int fx_level, pal::string_t* candidate, bool & found_in_bundle)
+probe_result_t deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::string_t& deps_dir, int fx_level, pal::string_t* candidate)
 {
     candidate->clear();
-    found_in_bundle = false;
 
     for (const auto& config : m_probes)
     {
@@ -315,11 +313,12 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             // If the deps json has the package name and version, then someone has already done rid selection and
             // put the right asset in the dir. So checking just package name and version would suffice.
             // No need to check further for the exact asset relative sub path.
+            bool found_in_bundle = false;
             if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(config.probe_dir, candidate, search_options, found_in_bundle))
             {
                 assert(!found_in_bundle);
                 trace::verbose(_X("    Probed deps json and matched '%s'"), candidate->c_str());
-                return true;
+                return probe_result_t::found;
             }
 
             trace::verbose(_X("    Skipping... not found in deps json."));
@@ -333,18 +332,19 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 if (entry.to_package_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle))
                 {
                     trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
-                    return true;
+                    return probe_result_t::found;
                 }
             }
             else
             {
                 // Look up assets relative to the deps directory
+                bool found_in_bundle = false;
                 if (entry.to_dir_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle, found_in_bundle))
                 {
                     // Bundles are expected to be RID-specific themselves, so RID-specific assets are not expected to be found in the bundle.
                     assert(!entry.is_rid_specific || !found_in_bundle);
                     trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
-                    return true;
+                    return found_in_bundle ? probe_result_t::bundled : probe_result_t::found;
                 }
             }
 
@@ -360,7 +360,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             if (entry.to_library_package_path(config.probe_dir, candidate, search_options))
             {
                 trace::verbose(_X("    Probed package dir and matched '%s'"), candidate->c_str());
-                return true;
+                return config.is_servicing() ? probe_result_t::serviced : probe_result_t::found;
             }
 
             trace::verbose(_X("    Skipping... not found in probe dir '%s'"), config.probe_dir.c_str());
@@ -368,7 +368,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
 
         // continue to try next probe config
     }
-    return false;
+    return probe_result_t::not_found;
 }
 
 bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continueResolving = false)
@@ -444,12 +444,12 @@ bool deps_resolver_t::resolve_tpa_list(
         name_to_resolved_asset_map_t::iterator existing = items.find(entry.asset.name);
         if (existing == items.end())
         {
-            bool found_in_bundle = false;
-            if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path, found_in_bundle))
+            probe_result_t probe_result = probe_deps_entry(entry, deps_dir, fx_level, &resolved_path);
+            if (probe_result != probe_result_t::not_found)
             {
                 // Assemblies loaded directly from the bundle are not added to the TPA list.
                 // The runtime directly probes the bundle-manifest using a host-callback.
-                if (!found_in_bundle)
+                if (probe_result != probe_result_t::bundled)
                 {
                     add_tpa_asset(entry.asset, resolved_path, &items);
                 }
@@ -481,8 +481,8 @@ bool deps_resolver_t::resolve_tpa_list(
             if (entry.asset.assembly_version > existing_entry->asset.assembly_version ||
                 (entry.asset.assembly_version == existing_entry->asset.assembly_version && entry.asset.file_version >= existing_entry->asset.file_version))
             {
-                bool found_in_bundle = false;
-                if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path, found_in_bundle))
+                probe_result_t probe_result = probe_deps_entry(entry, deps_dir, fx_level, &resolved_path);
+                if (probe_result != probe_result_t::not_found)
                 {
                     // If the path is the same, then no need to replace
                     if (resolved_path != existing_entry->resolved_path)
@@ -494,7 +494,7 @@ bool deps_resolver_t::resolve_tpa_list(
                         existing_entry = nullptr;
                         items.erase(existing);
 
-                        if (!found_in_bundle)
+                        if (probe_result != probe_result_t::bundled)
                         {
                             deps_asset_t asset(entry.asset.name, entry.asset.relative_path, entry.asset.assembly_version, entry.asset.file_version);
                             add_tpa_asset(asset, resolved_path, &items);
@@ -757,9 +757,6 @@ bool deps_resolver_t::resolve_probe_dirs(
     // Set for de-duplication
     std::unordered_set<pal::string_t> items;
 
-    pal::string_t core_servicing = m_core_servicing;
-    pal::fullpath(&core_servicing, true);
-
     // Filter out non-serviced assets so the paths can be added after servicing paths.
     pal::string_t non_serviced;
 
@@ -787,13 +784,13 @@ bool deps_resolver_t::resolve_probe_dirs(
         trace::verbose(_X("Processing native/culture for deps entry [%s, %s, %s, local_path: %s]"),
             entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str(), entry.asset.local_path.empty() ? _X("<not_set>") : entry.asset.local_path.c_str());
 
-        bool found_in_bundle = false;
-        if (probe_deps_entry(entry, deps_dir, fx_level, &candidate, found_in_bundle))
+        probe_result_t probe_result = probe_deps_entry(entry, deps_dir, fx_level, &candidate);
+        if (probe_result != probe_result_t::not_found)
         {
-            if (!found_in_bundle)
+            if (probe_result != probe_result_t::bundled)
             {
                 init_known_entry_path(entry, candidate);
-                add_unique_path(asset_type, action(candidate), &items, output, &non_serviced, core_servicing);
+                add_unique_path(asset_type, action(candidate), &items, output, &non_serviced, probe_result == probe_result_t::serviced);
             }
         }
         else
@@ -828,7 +825,7 @@ bool deps_resolver_t::resolve_probe_dirs(
         assert(!m_app_dir.empty());
 
         // App local path
-        add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
+        add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, false);
 
         if (m_coreclr_path.empty())
         {
