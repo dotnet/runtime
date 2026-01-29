@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Dynamic.Utils;
+using System.Threading;
 
 namespace System.Linq.Expressions.Compiler
 {
