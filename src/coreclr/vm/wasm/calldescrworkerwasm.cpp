@@ -30,7 +30,7 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
 
     size_t argsSize = pCallDescrData->nArgsSize;
     if (pCallDescrData->hasRetBuff) {
-        argsSize -= TARGET_REGISTER_SIZE;
+        argsSize -= INTERP_STACK_SLOT_SIZE;
     }
 
     ExecuteInterpretedMethodWithArgs((TADDR)targetIp, SPECIAL_ARG_ADDR(pCallDescrData->hasRetBuff ? 1 : 0), argsSize, pCallDescrData->hasRetBuff ? *(int8_t**)SPECIAL_ARG_ADDR(0) : (int8_t*)pCallDescrData->returnValue, (PCODE)&CallDescrWorkerInternal);
