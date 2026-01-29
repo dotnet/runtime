@@ -25,8 +25,8 @@ This downloads to `browser-tests/results/<TestProject>/mono-console.log` and dis
 ### Using the Script
 
 ```bash
-./browser-tests/run-browser-test.sh <path-to-test-csproj>
-./browser-tests/run-browser-test.sh -c Release <path-to-test-csproj>
+./browser-tests/run-browser-test.sh <full-path-to-test-csproj>
+./browser-tests/run-browser-test.sh -c Release <full-path-to-test-csproj>
 ```
 
 ### Manual Command

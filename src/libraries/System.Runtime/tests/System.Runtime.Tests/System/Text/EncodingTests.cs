@@ -62,6 +62,7 @@ namespace System.Text.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // Moq uses Reflection.Emit
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)] // Reflection.Emit crashes on Browser+CoreCLR
         [MemberData(nameof(DisallowedEncodings))]
         public void GetEncoding_FromProvider_ByEncodingName_WithDisallowedEncoding_Throws(string encodingName, int codePage)
         {
@@ -91,6 +92,7 @@ namespace System.Text.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // Moq uses Reflection.Emit
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)] // Reflection.Emit crashes on Browser+CoreCLR
         [MemberData(nameof(DisallowedEncodings))]
         public void GetEncodings_FromProvider_DoesNotContainDisallowedEncodings(string encodingName, int codePage)
         {
