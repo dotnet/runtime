@@ -160,7 +160,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     instrDesc* id = nullptr;
 
     assert(params.argSize % REGSIZE_BYTES == 0);
-    int argCnt = (int)(params.argSize / (int)REGSIZE_BYTES);
+
 
     instruction ins;
 
@@ -177,7 +177,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             break;
         case EC_INDIR_R:
             // Indirect load of actual ftn ptr from indirection cell (on the stack)
-            emitIns_I(INS_i32_load, EA_8BYTE, 0);
+            emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
             ins = params.isJump ? INS_return_call_indirect : INS_call_indirect;
             id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: type index reloc */);
             id->idIns(ins);
@@ -537,8 +537,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_CALL_INDIRECT:
         {
             dst += emitOutputByte(dst, opcode);
-            dst += emitOutputULEB128(dst, 0);
             dst += emitOutputULEB128(dst, (uint64_t)emitGetInsSC(id));
+            dst += emitOutputULEB128(dst, 0);
             break;
         }
         case IF_F32:
