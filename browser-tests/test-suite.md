@@ -56,11 +56,12 @@ Before running the test suite for the first time;
    - Full test name (namespace.class.method)
    - Full stack trace
    - Failure reason/exception type
-3. **Create failure record** for each individual test/method/Fact/Theory in `/browser-tests/failures/<TestSuiteName>/<TestName>.md`
+3. **Create failure record** for each individual test/method/Fact/Theory in `/browser-tests/failures/<TestSuiteName>/<ClassName.MethodName>.md` (e.g., `JSImportTest.JsImportSleep.md`)
 4. **Mark test** with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011")]`
 5. **Compare test counts**: `Tests run: X Passed: Y Failed: Z Skipped: N` with the Mono baseline at: `browser-tests/results/<TestProject>/mono-console.log`
 6. **Create or update** `browser-tests/results/<TestProject>/Summary.md` with the outcome
-5. **Rebuild and re-run** the test suite to continue until all enabled tests pass.
+7. **Stop and ask for feedback before proceeding.**
+8. **Rebuild and re-run** the test suite to continue until all enabled tests pass.
 
 ### Handling Timeouts/Crashes/Aborts
 
@@ -120,3 +121,27 @@ If the test suite hangs, times out, VM crashes, or exits with non-zero code:
 | Test fails only on Browser+CoreCLR | `[ActiveIssue("...123011")]` |
 | Test fails on all Browser (Mono+CoreCLR) | `[SkipOnPlatform(TestPlatforms.Browser)]` |
 | Test timeout/hang | `[ActiveIssue("...123011")]` with note |
+
+## Summary.md Template
+
+Create or update `browser-tests/results/<TestProject>/Summary.md` after each test run:
+
+```markdown
+# <TestProject> Summary
+
+## Latest Run
+- **Date:** YYYY-MM-DD
+- **CoreCLR:** Tests run: X, Passed: Y, Failed: Z, Skipped: N
+- **Mono Baseline:** Tests run: X, Passed: Y, Failed: Z, Skipped: N
+- **Status:** ✅ All pass | ⚠️ Tests disabled | ❌ Failures
+
+## Disabled Tests (ActiveIssue #123011)
+
+| Test Name | Failure Type | Category |
+|-----------|--------------|----------|
+| ClassName.MethodName | timeout | threading |
+
+## Notes
+
+_Any observations or patterns._
+```
