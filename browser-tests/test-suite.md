@@ -49,6 +49,10 @@ This downloads to `browser-tests/results/<TestProject>/mono-console.log` and dis
 | Console log | `artifacts/bin/<TestProject>/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output/wasm-console.log` |
 | Collected results | `browser-tests/results/<TestProject>/` |
 
+**Note:** The output path may vary (e.g., `net11.0/browser-wasm` instead of `net11.0-browser/browser-wasm`). The `run-browser-test.sh` script handles this automatically and copies results to `browser-tests/results/<TestProject>/testResults_<timestamp>.xml`.
+
+**Important:** The `compare-test-results.sh` script expects files named `testResults_*.xml` in the results directory. If you manually copy test results, use this naming pattern.
+
 **Timeout Configuration:** `WasmXHarnessTestsTimeout` in `eng/testing/tests.wasm.targets` (default: 00:30:00)
 
 ## Processing Test Failures

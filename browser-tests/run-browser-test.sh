@@ -119,7 +119,40 @@ if [ -d "$XHARNESS_OUTPUT_DIR" ]; then
 else
     echo "Warning: xharness output directory not found: $XHARNESS_OUTPUT_DIR"
     echo "Looking for alternative locations..."
-    find "${REPO_ROOT}/artifacts/bin" -name "testResults.xml" -path "*${TEST_PROJECT_NAME}*" 2>/dev/null | head -5
+    
+    # Try alternative path pattern (net11.0/browser-wasm instead of net11.0-browser/browser-wasm)
+    ALT_XHARNESS_OUTPUT_DIR="${REPO_ROOT}/artifacts/bin/${TEST_PROJECT_NAME}/${CONFIGURATION}/net11.0/browser-wasm/wwwroot/xharness-output"
+    
+    if [ -d "$ALT_XHARNESS_OUTPUT_DIR" ]; then
+        echo "Found alternative location: $ALT_XHARNESS_OUTPUT_DIR"
+        
+        if [ -f "${ALT_XHARNESS_OUTPUT_DIR}/testResults.xml" ]; then
+            cp "${ALT_XHARNESS_OUTPUT_DIR}/testResults.xml" "${RESULTS_DIR}/testResults_${TIMESTAMP}.xml"
+            echo "  - Copied testResults.xml"
+        fi
+        
+        if [ -f "${ALT_XHARNESS_OUTPUT_DIR}/wasm-console.log" ]; then
+            cp "${ALT_XHARNESS_OUTPUT_DIR}/wasm-console.log" "${RESULTS_DIR}/wasm-console_${TIMESTAMP}.log"
+            echo "  - Copied wasm-console.log"
+        fi
+    else
+        # Last resort: find and copy any testResults.xml for this project
+        FOUND_RESULTS=$(find "${REPO_ROOT}/artifacts/bin" -name "testResults.xml" -path "*${TEST_PROJECT_NAME}*" 2>/dev/null | head -1)
+        if [ -n "$FOUND_RESULTS" ]; then
+            echo "Found: $FOUND_RESULTS"
+            cp "$FOUND_RESULTS" "${RESULTS_DIR}/testResults_${TIMESTAMP}.xml"
+            echo "  - Copied testResults.xml"
+            
+            # Try to find matching wasm-console.log
+            FOUND_CONSOLE=$(dirname "$FOUND_RESULTS")/wasm-console.log
+            if [ -f "$FOUND_CONSOLE" ]; then
+                cp "$FOUND_CONSOLE" "${RESULTS_DIR}/wasm-console_${TIMESTAMP}.log"
+                echo "  - Copied wasm-console.log"
+            fi
+        else
+            echo "No testResults.xml found for ${TEST_PROJECT_NAME}"
+        fi
+    fi
 fi
 
 echo ""

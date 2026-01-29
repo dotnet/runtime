@@ -1,0 +1,9 @@
+Test Comparison: System.Linq.AsyncEnumerable.Tests
+Generated: 2026-01-30T00:11:27+01:00
+
+Mono tests:    678
+CoreCLR tests: 678
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

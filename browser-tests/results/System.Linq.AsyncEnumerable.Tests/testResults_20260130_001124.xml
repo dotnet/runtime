@@ -1,0 +1,755 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Linq.AsyncEnumerable.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-29" run-time="23:07:07" total="613" passed="613" failed="0" skipped="0" time="218.859" errors="0">
+    <errors />
+    <collection total="4" passed="4" failed="0" skipped="0" name="Test collection for System.Linq.Tests.InfiniteSequenceTests" time="0.260">
+      <test name="System.Linq.Tests.InfiniteSequenceTests.InfiniteSequence_ProducesExpectedSequence" type="System.Linq.Tests.InfiniteSequenceTests" method="InfiniteSequence_ProducesExpectedSequence" time="0.1349" result="Pass" />
+      <test name="System.Linq.Tests.InfiniteSequenceTests.MultipleGetEnumeratorCalls_ReturnsUniqueInstances" type="System.Linq.Tests.InfiniteSequenceTests" method="MultipleGetEnumeratorCalls_ReturnsUniqueInstances" time="0.0021" result="Pass" />
+      <test name="System.Linq.Tests.InfiniteSequenceTests.NullArguments_Throws" type="System.Linq.Tests.InfiniteSequenceTests" method="NullArguments_Throws" time="0.0491" result="Pass" />
+      <test name="System.Linq.Tests.InfiniteSequenceTests.InfiniteSequence_AllZeroes_MatchesExpectedOutput" type="System.Linq.Tests.InfiniteSequenceTests" method="InfiniteSequence_AllZeroes_MatchesExpectedOutput" time="0.0739999" result="Pass" />
+    </collection>
+    <collection total="13" passed="13" failed="0" skipped="0" name="Test collection for System.Linq.Tests.IntersectByTests" time="0.443">
+      <test name="System.Linq.Tests.IntersectByTests.InterfaceCalls_ExpectedCounts(useAsync: False)" type="System.Linq.Tests.IntersectByTests" method="InterfaceCalls_ExpectedCounts" time="0.0770999" result="Pass" />
+      <test name="System.Linq.Tests.IntersectByTests.InterfaceCalls_ExpectedCounts(useAsync: True)" type="System.Linq.Tests.IntersectByTests" method="InterfaceCalls_ExpectedCounts" time="0.0189" result="Pass" />
+      <test name="System.Linq.Tests.IntersectByTests.Empty_ProducesEmpty" type="System.Linq.Tests.IntersectByTests" method="Empty_ProducesEmpty" time="0.0031999" result="Pass" />
+      <test name="System.Linq.Tests.IntersectByTests.InvalidInputs_Throws" type="System.Linq.Tests.IntersectByTests" method="InvalidInputs_Throws" time="0.0112" result="Pass" />
+      <test name="System.Linq.Tests.IntersectByTests.Cancellation_Cancels" type="System.Linq.Tests.IntersectByTests" method="Cancellation_Cancels" time="0.0581" result="Pass" />
+      <test name="System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [], second: [])" type="System.Linq.Tests.IntersectByTests" method="VariousValues_MatchesEnumerable" time="0.0590999" result="Pass" />
+      <test name="System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [], second: [42])" type="System.Linq.Tests.IntersectByTests" method="VariousValues_MatchesEnumerable" time="0.0252" result="Pass" />
+      <test name="System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [42, 43], second: [])" type="System.Linq.Tests.IntersectByTests" method="VariousValues_MatchesEnumerable" time="0.0216" result="Pass" />
+      <test name="System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [1], second: [2, 3])" type="System.Linq.Tests.IntersectByTests" method="VariousValues_MatchesEnumerable" time="0.0375" result="Pass" />
+      <test name="System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [2, 4, 8], second: [3, 5])" type="System.Linq.Tests.IntersectByTests" method="VariousValues_MatchesEnumerable" time="0.0202999" result="Pass" />
+      <test name="System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [2, 4, 8], second: [2, 4, 8])" type="System.Linq.Tests.IntersectByTests" method="VariousValues_MatchesEnumerable" time="0.0366" result="Pass" />
+      <test name="System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [2, 4, 8], second: [2, 5, 8])" type="System.Linq.Tests.IntersectByTests" method="VariousValues_MatchesEnumerable" time="0.0392998" result="Pass" />
+      <test name="System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])" type="System.Linq.Tests.IntersectByTests" method="VariousValues_MatchesEnumerable" time="0.0348" result="Pass" />
+    </collection>
+    <collection total="8" passed="8" failed="0" skipped="0" name="Test collection for System.Linq.Tests.AllAsyncTests" time="0.094">
+      <test name="System.Linq.Tests.AllAsyncTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.AllAsyncTests" method="Callbacks_InvokedOnOriginalContext" time="0.0264" result="Pass" />
+      <test name="System.Linq.Tests.AllAsyncTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.AllAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0111" result="Pass" />
+      <test name="System.Linq.Tests.AllAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.AllAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0097999" result="Pass" />
+      <test name="System.Linq.Tests.AllAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.AllAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0033" result="Pass" />
+      <test name="System.Linq.Tests.AllAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.AllAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0028" result="Pass" />
+      <test name="System.Linq.Tests.AllAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.AllAsyncTests" method="InvalidInputs_Throws" time="0.0033999" result="Pass" />
+      <test name="System.Linq.Tests.AllAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.AllAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0235" result="Pass" />
+      <test name="System.Linq.Tests.AllAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.AllAsyncTests" method="Cancellation_Cancels" time="0.0140999" result="Pass" />
+    </collection>
+    <collection total="8" passed="8" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ReverseTests" time="0.063">
+      <test name="System.Linq.Tests.ReverseTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ReverseTests" method="InterfaceCalls_ExpectedCounts" time="0.0133999" result="Pass" />
+      <test name="System.Linq.Tests.ReverseTests.Empty_ProducesEmpty" type="System.Linq.Tests.ReverseTests" method="Empty_ProducesEmpty" time="0.0011" result="Pass" />
+      <test name="System.Linq.Tests.ReverseTests.InvalidInputs_Throws" type="System.Linq.Tests.ReverseTests" method="InvalidInputs_Throws" time="0.0021" result="Pass" />
+      <test name="System.Linq.Tests.ReverseTests.Cancellation_Cancels" type="System.Linq.Tests.ReverseTests" method="Cancellation_Cancels" time="0.0084999" result="Pass" />
+      <test name="System.Linq.Tests.ReverseTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.ReverseTests" method="VariousValues_MatchesEnumerable" time="0.0063" result="Pass" />
+      <test name="System.Linq.Tests.ReverseTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.ReverseTests" method="VariousValues_MatchesEnumerable" time="0.0076" result="Pass" />
+      <test name="System.Linq.Tests.ReverseTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.ReverseTests" method="VariousValues_MatchesEnumerable" time="0.0141" result="Pass" />
+      <test name="System.Linq.Tests.ReverseTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.ReverseTests" method="VariousValues_MatchesEnumerable" time="0.0103" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.SkipLastTests" time="0.131">
+      <test name="System.Linq.Tests.SkipLastTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.SkipLastTests" method="InterfaceCalls_ExpectedCounts" time="0.0165" result="Pass" />
+      <test name="System.Linq.Tests.SkipLastTests.Empty_ProducesEmpty" type="System.Linq.Tests.SkipLastTests" method="Empty_ProducesEmpty" time="0.0018999" result="Pass" />
+      <test name="System.Linq.Tests.SkipLastTests.InvalidInputs_Throws" type="System.Linq.Tests.SkipLastTests" method="InvalidInputs_Throws" time="0.0021" result="Pass" />
+      <test name="System.Linq.Tests.SkipLastTests.Cancellation_Cancels" type="System.Linq.Tests.SkipLastTests" method="Cancellation_Cancels" time="0.0064999" result="Pass" />
+      <test name="System.Linq.Tests.SkipLastTests.VariousValues_MatchesEnumerable(ints: [])" type="System.Linq.Tests.SkipLastTests" method="VariousValues_MatchesEnumerable" time="0.0054" result="Pass" />
+      <test name="System.Linq.Tests.SkipLastTests.VariousValues_MatchesEnumerable(ints: [42])" type="System.Linq.Tests.SkipLastTests" method="VariousValues_MatchesEnumerable" time="0.024" result="Pass" />
+      <test name="System.Linq.Tests.SkipLastTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])" type="System.Linq.Tests.SkipLastTests" method="VariousValues_MatchesEnumerable" time="0.0413999" result="Pass" />
+      <test name="System.Linq.Tests.SkipLastTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])" type="System.Linq.Tests.SkipLastTests" method="VariousValues_MatchesEnumerable" time="0.0212999" result="Pass" />
+      <test name="System.Linq.Tests.SkipLastTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])" type="System.Linq.Tests.SkipLastTests" method="VariousValues_MatchesEnumerable" time="0.0120999" result="Pass" />
+    </collection>
+    <collection total="7" passed="7" failed="0" skipped="0" name="Test collection for System.Linq.Tests.SequenceTests" time="17.860">
+      <test name="System.Linq.Tests.SequenceTests.SmallIntegers_ProducesFullRange" type="System.Linq.Tests.SequenceTests" method="SmallIntegers_ProducesFullRange" time="9.308" result="Pass" />
+      <test name="System.Linq.Tests.SequenceTests.MultipleGetEnumeratorCalls_ReturnsUniqueInstances" type="System.Linq.Tests.SequenceTests" method="MultipleGetEnumeratorCalls_ReturnsUniqueInstances" time="0.0057" result="Pass" />
+      <test name="System.Linq.Tests.SequenceTests.InvalidArguments_Throws" type="System.Linq.Tests.SequenceTests" method="InvalidArguments_Throws" time="0.0165" result="Pass" />
+      <test name="System.Linq.Tests.SequenceTests.Numbers_ProduceExpectedSequence" type="System.Linq.Tests.SequenceTests" method="Numbers_ProduceExpectedSequence" time="0.7992999" result="Pass" />
+      <test name="System.Linq.Tests.SequenceTests.FloatingPoints_ProduceExpectedSequence" type="System.Linq.Tests.SequenceTests" method="FloatingPoints_ProduceExpectedSequence" time="0.0095" result="Pass" />
+      <test name="System.Linq.Tests.SequenceTests.Step1_MatchesRange" type="System.Linq.Tests.SequenceTests" method="Step1_MatchesRange" time="7.516" result="Pass" />
+      <test name="System.Linq.Tests.SequenceTests.EndOutOfRange_Throws" type="System.Linq.Tests.SequenceTests" method="EndOutOfRange_Throws" time="0.2045999" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.SingleAsyncTests" time="0.107">
+      <test name="System.Linq.Tests.SingleAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.SingleAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0206" result="Pass" />
+      <test name="System.Linq.Tests.SingleAsyncTests.EmptyInputs_Throws" type="System.Linq.Tests.SingleAsyncTests" method="EmptyInputs_Throws" time="0.0233999" result="Pass" />
+      <test name="System.Linq.Tests.SingleAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.SingleAsyncTests" method="InvalidInputs_Throws" time="0.0044" result="Pass" />
+      <test name="System.Linq.Tests.SingleAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.SingleAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0110999" result="Pass" />
+      <test name="System.Linq.Tests.SingleAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.SingleAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0073" result="Pass" />
+      <test name="System.Linq.Tests.SingleAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.SingleAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0065" result="Pass" />
+      <test name="System.Linq.Tests.SingleAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])" type="System.Linq.Tests.SingleAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0041" result="Pass" />
+      <test name="System.Linq.Tests.SingleAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.SingleAsyncTests" method="Cancellation_Cancels" time="0.0187" result="Pass" />
+      <test name="System.Linq.Tests.SingleAsyncTests.DoubleInputs_Throws" type="System.Linq.Tests.SingleAsyncTests" method="DoubleInputs_Throws" time="0.0113999" result="Pass" />
+    </collection>
+    <collection total="7" passed="7" failed="0" skipped="0" name="Test collection for System.Linq.Tests.CountByTests" time="1.284">
+      <test name="System.Linq.Tests.CountByTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.CountByTests" method="Callbacks_InvokedOnOriginalContext" time="0.0217" result="Pass" />
+      <test name="System.Linq.Tests.CountByTests.Empty_ProducesEmpty" type="System.Linq.Tests.CountByTests" method="Empty_ProducesEmpty" time="0.0051" result="Pass" />
+      <test name="System.Linq.Tests.CountByTests.InvalidInputs_Throws" type="System.Linq.Tests.CountByTests" method="InvalidInputs_Throws" time="0.0039999" result="Pass" />
+      <test name="System.Linq.Tests.CountByTests.Cancellation_Cancels" type="System.Linq.Tests.CountByTests" method="Cancellation_Cancels" time="0.0304999" result="Pass" />
+      <test name="System.Linq.Tests.CountByTests.InterfaceCalls_ExpectedCounts(useAsync: False)" type="System.Linq.Tests.CountByTests" method="InterfaceCalls_ExpectedCounts" time="0.0058" result="Pass" />
+      <test name="System.Linq.Tests.CountByTests.InterfaceCalls_ExpectedCounts(useAsync: True)" type="System.Linq.Tests.CountByTests" method="InterfaceCalls_ExpectedCounts" time="0.0037" result="Pass" />
+      <test name="System.Linq.Tests.CountByTests.VariousValues_MatchesEnumerable_Strings" type="System.Linq.Tests.CountByTests" method="VariousValues_MatchesEnumerable_Strings" time="1.2128" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for System.Linq.Tests.EmptyTests" time="0.004">
+      <test name="System.Linq.Tests.EmptyTests.Empty_ContainsZeroElements" type="System.Linq.Tests.EmptyTests" method="Empty_ContainsZeroElements" time="0.0015" result="Pass" />
+      <test name="System.Linq.Tests.EmptyTests.Empty_Idempotent" type="System.Linq.Tests.EmptyTests" method="Empty_Idempotent" time="0.0022" result="Pass" />
+    </collection>
+    <collection total="12" passed="12" failed="0" skipped="0" name="Test collection for System.Linq.Tests.UnionTests" time="0.289">
+      <test name="System.Linq.Tests.UnionTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.UnionTests" method="InterfaceCalls_ExpectedCounts" time="0.0154" result="Pass" />
+      <test name="System.Linq.Tests.UnionTests.Empty_ProducesEmpty" type="System.Linq.Tests.UnionTests" method="Empty_ProducesEmpty" time="0.0016999" result="Pass" />
+      <test name="System.Linq.Tests.UnionTests.InvalidInputs_Throws" type="System.Linq.Tests.UnionTests" method="InvalidInputs_Throws" time="0.0027" result="Pass" />
+      <test name="System.Linq.Tests.UnionTests.Cancellation_Cancels" type="System.Linq.Tests.UnionTests" method="Cancellation_Cancels" time="0.0093999" result="Pass" />
+      <test name="System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [], second: [])" type="System.Linq.Tests.UnionTests" method="VariousValues_MatchesEnumerable" time="0.0181" result="Pass" />
+      <test name="System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [], second: [42])" type="System.Linq.Tests.UnionTests" method="VariousValues_MatchesEnumerable" time="0.0386" result="Pass" />
+      <test name="System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [42, 43], second: [])" type="System.Linq.Tests.UnionTests" method="VariousValues_MatchesEnumerable" time="0.0505" result="Pass" />
+      <test name="System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [1], second: [2, 3])" type="System.Linq.Tests.UnionTests" method="VariousValues_MatchesEnumerable" time="0.0271" result="Pass" />
+      <test name="System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [3, 5])" type="System.Linq.Tests.UnionTests" method="VariousValues_MatchesEnumerable" time="0.0292" result="Pass" />
+      <test name="System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 4, 8])" type="System.Linq.Tests.UnionTests" method="VariousValues_MatchesEnumerable" time="0.0271" result="Pass" />
+      <test name="System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 5, 8])" type="System.Linq.Tests.UnionTests" method="VariousValues_MatchesEnumerable" time="0.0293" result="Pass" />
+      <test name="System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])" type="System.Linq.Tests.UnionTests" method="VariousValues_MatchesEnumerable" time="0.0395" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ToArrayAsyncTests" time="0.058">
+      <test name="System.Linq.Tests.ToArrayAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ToArrayAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0049" result="Pass" />
+      <test name="System.Linq.Tests.ToArrayAsyncTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.ToArrayAsyncTests" method="VariousValues_MatchesEnumerable" time="0.009" result="Pass" />
+      <test name="System.Linq.Tests.ToArrayAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.ToArrayAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0077999" result="Pass" />
+      <test name="System.Linq.Tests.ToArrayAsyncTests.VariousValues_MatchesEnumerable(values: [1, 1, 1])" type="System.Linq.Tests.ToArrayAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0046999" result="Pass" />
+      <test name="System.Linq.Tests.ToArrayAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.ToArrayAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0074" result="Pass" />
+      <test name="System.Linq.Tests.ToArrayAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.ToArrayAsyncTests" method="VariousValues_MatchesEnumerable" time="0.008" result="Pass" />
+      <test name="System.Linq.Tests.ToArrayAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.ToArrayAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0097999" result="Pass" />
+      <test name="System.Linq.Tests.ToArrayAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.ToArrayAsyncTests" method="InvalidInputs_Throws" time="0.0017" result="Pass" />
+      <test name="System.Linq.Tests.ToArrayAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.ToArrayAsyncTests" method="Cancellation_Cancels" time="0.0052" result="Pass" />
+    </collection>
+    <collection total="24" passed="24" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ConcatTests" time="0.361">
+      <test name="System.Linq.Tests.ConcatTests.ParallelEnumeration_ConcatClones" type="System.Linq.Tests.ConcatTests" method="ParallelEnumeration_ConcatClones" time="0.028" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ConcatTests" method="InterfaceCalls_ExpectedCounts" time="0.0061999" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.InvalidInputs_Throws" type="System.Linq.Tests.ConcatTests" method="InvalidInputs_Throws" time="0.0028999" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.ConcatWithAppendPrepend_WorksCorrectly" type="System.Linq.Tests.ConcatTests" method="ConcatWithAppendPrepend_WorksCorrectly" time="0.0235999" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.DisposeBeforeComplete_DoesNotThrow" type="System.Linq.Tests.ConcatTests" method="DisposeBeforeComplete_DoesNotThrow" time="0.0037" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.Concat_TransitionsCorrectlyBetweenSources" type="System.Linq.Tests.ConcatTests" method="Concat_TransitionsCorrectlyBetweenSources" time="0.0087" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.LongConcatChain_WorksCorrectly" type="System.Linq.Tests.ConcatTests" method="LongConcatChain_WorksCorrectly" time="0.0438999" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [], second: [])" type="System.Linq.Tests.ConcatTests" method="VariousValues_MatchesEnumerable" time="0.0078" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [], second: [42])" type="System.Linq.Tests.ConcatTests" method="VariousValues_MatchesEnumerable" time="0.021" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [42, 43], second: [])" type="System.Linq.Tests.ConcatTests" method="VariousValues_MatchesEnumerable" time="0.0287" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [1], second: [2, 3])" type="System.Linq.Tests.ConcatTests" method="VariousValues_MatchesEnumerable" time="0.0203998" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [3, 5])" type="System.Linq.Tests.ConcatTests" method="VariousValues_MatchesEnumerable" time="0.0199999" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 4, 8])" type="System.Linq.Tests.ConcatTests" method="VariousValues_MatchesEnumerable" time="0.0217998" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 5, 8])" type="System.Linq.Tests.ConcatTests" method="VariousValues_MatchesEnumerable" time="0.0218998" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])" type="System.Linq.Tests.ConcatTests" method="VariousValues_MatchesEnumerable" time="0.026" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.Cancellation_Cancels" type="System.Linq.Tests.ConcatTests" method="Cancellation_Cancels" time="0.0101" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.ConcatEmptySequences_ReturnsEmpty" type="System.Linq.Tests.ConcatTests" method="ConcatEmptySequences_ReturnsEmpty" time="0.0022" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.MultipleEnumerations_ProducesSameResults" type="System.Linq.Tests.ConcatTests" method="MultipleEnumerations_ProducesSameResults" time="0.0205999" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.Empty_ProducesEmpty" type="System.Linq.Tests.ConcatTests" method="Empty_ProducesEmpty" time="0.0019998" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.MultipleConcat_Coalesced" type="System.Linq.Tests.ConcatTests" method="MultipleConcat_Coalesced" time="0.0113" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.ChainedConcat_ProducesCorrectSequence(concatCount: 2)" type="System.Linq.Tests.ConcatTests" method="ChainedConcat_ProducesCorrectSequence" time="0.0075" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.ChainedConcat_ProducesCorrectSequence(concatCount: 3)" type="System.Linq.Tests.ConcatTests" method="ChainedConcat_ProducesCorrectSequence" time="0.0056" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.ChainedConcat_ProducesCorrectSequence(concatCount: 5)" type="System.Linq.Tests.ConcatTests" method="ChainedConcat_ProducesCorrectSequence" time="0.0082" result="Pass" />
+      <test name="System.Linq.Tests.ConcatTests.ChainedConcat_ProducesCorrectSequence(concatCount: 10)" type="System.Linq.Tests.ConcatTests" method="ChainedConcat_ProducesCorrectSequence" time="0.0093" result="Pass" />
+    </collection>
+    <collection total="7" passed="7" failed="0" skipped="0" name="Test collection for System.Linq.Tests.DefaultIfEmptyTests" time="0.064">
+      <test name="System.Linq.Tests.DefaultIfEmptyTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.DefaultIfEmptyTests" method="InterfaceCalls_ExpectedCounts" time="0.0104999" result="Pass" />
+      <test name="System.Linq.Tests.DefaultIfEmptyTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.DefaultIfEmptyTests" method="VariousValues_MatchesEnumerable" time="0.0123" result="Pass" />
+      <test name="System.Linq.Tests.DefaultIfEmptyTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.DefaultIfEmptyTests" method="VariousValues_MatchesEnumerable" time="0.0084" result="Pass" />
+      <test name="System.Linq.Tests.DefaultIfEmptyTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.DefaultIfEmptyTests" method="VariousValues_MatchesEnumerable" time="0.0077" result="Pass" />
+      <test name="System.Linq.Tests.DefaultIfEmptyTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.DefaultIfEmptyTests" method="VariousValues_MatchesEnumerable" time="0.0109998" result="Pass" />
+      <test name="System.Linq.Tests.DefaultIfEmptyTests.InvalidInputs_Throws" type="System.Linq.Tests.DefaultIfEmptyTests" method="InvalidInputs_Throws" time="0.0060999" result="Pass" />
+      <test name="System.Linq.Tests.DefaultIfEmptyTests.Cancellation_Cancels" type="System.Linq.Tests.DefaultIfEmptyTests" method="Cancellation_Cancels" time="0.0075999" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ToListAsyncTests" time="0.081">
+      <test name="System.Linq.Tests.ToListAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ToListAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0046" result="Pass" />
+      <test name="System.Linq.Tests.ToListAsyncTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.ToListAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0173999" result="Pass" />
+      <test name="System.Linq.Tests.ToListAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.ToListAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0116" result="Pass" />
+      <test name="System.Linq.Tests.ToListAsyncTests.VariousValues_MatchesEnumerable(values: [1, 1, 1])" type="System.Linq.Tests.ToListAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0066" result="Pass" />
+      <test name="System.Linq.Tests.ToListAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.ToListAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0065999" result="Pass" />
+      <test name="System.Linq.Tests.ToListAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.ToListAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0148" result="Pass" />
+      <test name="System.Linq.Tests.ToListAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.ToListAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0122" result="Pass" />
+      <test name="System.Linq.Tests.ToListAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.ToListAsyncTests" method="InvalidInputs_Throws" time="0.0016999" result="Pass" />
+      <test name="System.Linq.Tests.ToListAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.ToListAsyncTests" method="Cancellation_Cancels" time="0.0056" result="Pass" />
+    </collection>
+    <collection total="11" passed="11" failed="0" skipped="0" name="Test collection for System.Linq.Tests.MinAsyncTests" time="1.002">
+      <test name="System.Linq.Tests.MinAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.MinAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.3214" result="Pass" />
+      <test name="System.Linq.Tests.MinAsyncTests.EmptyInputs_NonNullable_Throws" type="System.Linq.Tests.MinAsyncTests" method="EmptyInputs_NonNullable_Throws" time="0.0344" result="Pass" />
+      <test name="System.Linq.Tests.MinAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.MinAsyncTests" method="InvalidInputs_Throws" time="0.0084999" result="Pass" />
+      <test name="System.Linq.Tests.MinAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.MinAsyncTests" method="Cancellation_Cancels" time="0.0749" result="Pass" />
+      <test name="System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.MinAsyncTests" method="VariousValues_MatchesEnumerable" time="0.161" result="Pass" />
+      <test name="System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [0])" type="System.Linq.Tests.MinAsyncTests" method="VariousValues_MatchesEnumerable" time="0.1133" result="Pass" />
+      <test name="System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.MinAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0389" result="Pass" />
+      <test name="System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.MinAsyncTests" method="VariousValues_MatchesEnumerable" time="0.062" result="Pass" />
+      <test name="System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.MinAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0841999" result="Pass" />
+      <test name="System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [-1000, 1000])" type="System.Linq.Tests.MinAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0461" result="Pass" />
+      <test name="System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [-1, -2, -3])" type="System.Linq.Tests.MinAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0573999" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.SingleOrDefaultAsyncTests" time="0.094">
+      <test name="System.Linq.Tests.SingleOrDefaultAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.SingleOrDefaultAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0244" result="Pass" />
+      <test name="System.Linq.Tests.SingleOrDefaultAsyncTests.EmptyInputs_DefaultValueReturned" type="System.Linq.Tests.SingleOrDefaultAsyncTests" method="EmptyInputs_DefaultValueReturned" time="0.0072999" result="Pass" />
+      <test name="System.Linq.Tests.SingleOrDefaultAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.SingleOrDefaultAsyncTests" method="InvalidInputs_Throws" time="0.0077" result="Pass" />
+      <test name="System.Linq.Tests.SingleOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.SingleOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0076999" result="Pass" />
+      <test name="System.Linq.Tests.SingleOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.SingleOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0041" result="Pass" />
+      <test name="System.Linq.Tests.SingleOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.SingleOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0051" result="Pass" />
+      <test name="System.Linq.Tests.SingleOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])" type="System.Linq.Tests.SingleOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0039999" result="Pass" />
+      <test name="System.Linq.Tests.SingleOrDefaultAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.SingleOrDefaultAsyncTests" method="Cancellation_Cancels" time="0.0187999" result="Pass" />
+      <test name="System.Linq.Tests.SingleOrDefaultAsyncTests.DoubleInputs_Throws" type="System.Linq.Tests.SingleOrDefaultAsyncTests" method="DoubleInputs_Throws" time="0.0149" result="Pass" />
+    </collection>
+    <collection total="10" passed="10" failed="0" skipped="0" name="Test collection for System.Linq.Tests.DistinctTests" time="0.074">
+      <test name="System.Linq.Tests.DistinctTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.DistinctTests" method="InterfaceCalls_ExpectedCounts" time="0.0104" result="Pass" />
+      <test name="System.Linq.Tests.DistinctTests.Empty_ProducesEmpty" type="System.Linq.Tests.DistinctTests" method="Empty_ProducesEmpty" time="0.0011" result="Pass" />
+      <test name="System.Linq.Tests.DistinctTests.InvalidInputs_Throws" type="System.Linq.Tests.DistinctTests" method="InvalidInputs_Throws" time="0.0017" result="Pass" />
+      <test name="System.Linq.Tests.DistinctTests.Cancellation_Cancels" type="System.Linq.Tests.DistinctTests" method="Cancellation_Cancels" time="0.0068" result="Pass" />
+      <test name="System.Linq.Tests.DistinctTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.DistinctTests" method="VariousValues_MatchesEnumerable" time="0.0048999" result="Pass" />
+      <test name="System.Linq.Tests.DistinctTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.DistinctTests" method="VariousValues_MatchesEnumerable" time="0.0102999" result="Pass" />
+      <test name="System.Linq.Tests.DistinctTests.VariousValues_MatchesEnumerable(values: [1, 1, 1, 2, 2, ···])" type="System.Linq.Tests.DistinctTests" method="VariousValues_MatchesEnumerable" time="0.0109" result="Pass" />
+      <test name="System.Linq.Tests.DistinctTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.DistinctTests" method="VariousValues_MatchesEnumerable" time="0.0078" result="Pass" />
+      <test name="System.Linq.Tests.DistinctTests.VariousValues_MatchesEnumerable(values: [2, 4, 8, 2, 4, ···])" type="System.Linq.Tests.DistinctTests" method="VariousValues_MatchesEnumerable" time="0.01" result="Pass" />
+      <test name="System.Linq.Tests.DistinctTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.DistinctTests" method="VariousValues_MatchesEnumerable" time="0.0105" result="Pass" />
+    </collection>
+    <collection total="10" passed="10" failed="0" skipped="0" name="Test collection for System.Linq.Tests.AverageAsyncTests" time="0.411">
+      <test name="System.Linq.Tests.AverageAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.AverageAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.1408" result="Pass" />
+      <test name="System.Linq.Tests.AverageAsyncTests.EmptyInputs_NonNullable_Throws" type="System.Linq.Tests.AverageAsyncTests" method="EmptyInputs_NonNullable_Throws" time="0.0212" result="Pass" />
+      <test name="System.Linq.Tests.AverageAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.AverageAsyncTests" method="InvalidInputs_Throws" time="0.0055" result="Pass" />
+      <test name="System.Linq.Tests.AverageAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.AverageAsyncTests" method="Cancellation_Cancels" time="0.0421" result="Pass" />
+      <test name="System.Linq.Tests.AverageAsyncTests.VariousValues_MatchesEnumerable(values: [0])" type="System.Linq.Tests.AverageAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0748999" result="Pass" />
+      <test name="System.Linq.Tests.AverageAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.AverageAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0153" result="Pass" />
+      <test name="System.Linq.Tests.AverageAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.AverageAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0263999" result="Pass" />
+      <test name="System.Linq.Tests.AverageAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.AverageAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0400999" result="Pass" />
+      <test name="System.Linq.Tests.AverageAsyncTests.VariousValues_MatchesEnumerable(values: [-2147483647, 2147483647])" type="System.Linq.Tests.AverageAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0194999" result="Pass" />
+      <test name="System.Linq.Tests.AverageAsyncTests.VariousValues_MatchesEnumerable(values: [-1, -2, -3])" type="System.Linq.Tests.AverageAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0247999" result="Pass" />
+    </collection>
+    <collection total="19" passed="19" failed="0" skipped="0" name="Test collection for System.Linq.Tests.PrependTests" time="0.166">
+      <test name="System.Linq.Tests.PrependTests.ParallelEnumeration_PrependClones" type="System.Linq.Tests.PrependTests" method="ParallelEnumeration_PrependClones" time="0.0100999" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.MultiplePrepends_Coalesced" type="System.Linq.Tests.PrependTests" method="MultiplePrepends_Coalesced" time="0.0065" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.InvalidInputs_Throws" type="System.Linq.Tests.PrependTests" method="InvalidInputs_Throws" time="0.0016999" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.MultipleEnumerations_ProducesSameResults" type="System.Linq.Tests.PrependTests" method="MultipleEnumerations_ProducesSameResults" time="0.0105999" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.PrependOnEmptySource_WorksCorrectly" type="System.Linq.Tests.PrependTests" method="PrependOnEmptySource_WorksCorrectly" time="0.0030999" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.AppendAfterPrepend_BothWork" type="System.Linq.Tests.PrependTests" method="AppendAfterPrepend_BothWork" time="0.0057" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.LongPrependChain_WorksCorrectly" type="System.Linq.Tests.PrependTests" method="LongPrependChain_WorksCorrectly" time="0.0733" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.Cancellation_Cancels" type="System.Linq.Tests.PrependTests" method="Cancellation_Cancels" time="0.0063999" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.PrependTests" method="InterfaceCalls_ExpectedCounts" time="0.0047" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.DisposeBeforeComplete_DoesNotThrow" type="System.Linq.Tests.PrependTests" method="DisposeBeforeComplete_DoesNotThrow" time="0.0017999" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.PrependThenAppend_Coalesced" type="System.Linq.Tests.PrependTests" method="PrependThenAppend_Coalesced" time="0.0063999" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.PrependTests" method="VariousValues_MatchesEnumerable" time="0.0097999" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.PrependTests" method="VariousValues_MatchesEnumerable" time="0.0057999" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.PrependTests" method="VariousValues_MatchesEnumerable" time="0.0046" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.PrependTests" method="VariousValues_MatchesEnumerable" time="0.0062" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.ChainedPrepends_ProducesCorrectSequence(prependCount: 1)" type="System.Linq.Tests.PrependTests" method="ChainedPrepends_ProducesCorrectSequence" time="0.0032999" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.ChainedPrepends_ProducesCorrectSequence(prependCount: 2)" type="System.Linq.Tests.PrependTests" method="ChainedPrepends_ProducesCorrectSequence" time="0.0022" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.ChainedPrepends_ProducesCorrectSequence(prependCount: 5)" type="System.Linq.Tests.PrependTests" method="ChainedPrepends_ProducesCorrectSequence" time="0.0016999" result="Pass" />
+      <test name="System.Linq.Tests.PrependTests.ChainedPrepends_ProducesCorrectSequence(prependCount: 10)" type="System.Linq.Tests.PrependTests" method="ChainedPrepends_ProducesCorrectSequence" time="0.0022" result="Pass" />
+    </collection>
+    <collection total="20" passed="20" failed="0" skipped="0" name="Test collection for System.Linq.Tests.AppendTests" time="2.964">
+      <test name="System.Linq.Tests.AppendTests.ParallelEnumeration_AppendClones" type="System.Linq.Tests.AppendTests" method="ParallelEnumeration_AppendClones" time="0.0087999" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.MultipleAppends_Coalesced" type="System.Linq.Tests.AppendTests" method="MultipleAppends_Coalesced" time="0.0067999" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.InvalidInputs_Throws" type="System.Linq.Tests.AppendTests" method="InvalidInputs_Throws" time="0.0016" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.VeryLongAppendChain_MatchesBenchmarkScenario" type="System.Linq.Tests.AppendTests" method="VeryLongAppendChain_MatchesBenchmarkScenario" time="2.7935999" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.AppendOnEmptySource_WorksCorrectly" type="System.Linq.Tests.AppendTests" method="AppendOnEmptySource_WorksCorrectly" time="0.0036" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.PrependAfterAppend_BothWork" type="System.Linq.Tests.AppendTests" method="PrependAfterAppend_BothWork" time="0.0055" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.LongAppendChain_WorksCorrectly" type="System.Linq.Tests.AppendTests" method="LongAppendChain_WorksCorrectly" time="0.0687" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.Cancellation_Cancels" type="System.Linq.Tests.AppendTests" method="Cancellation_Cancels" time="0.009" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.AppendTests" method="InterfaceCalls_ExpectedCounts" time="0.0054999" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.DisposeBeforeComplete_DoesNotThrow" type="System.Linq.Tests.AppendTests" method="DisposeBeforeComplete_DoesNotThrow" time="0.0039999" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.MultipleEnumerations_ProducesSameResults" type="System.Linq.Tests.AppendTests" method="MultipleEnumerations_ProducesSameResults" time="0.0095999" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.AppendTests" method="VariousValues_MatchesEnumerable" time="0.0083" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.AppendTests" method="VariousValues_MatchesEnumerable" time="0.0065999" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.AppendTests" method="VariousValues_MatchesEnumerable" time="0.0051" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.AppendTests" method="VariousValues_MatchesEnumerable" time="0.0066" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.ChainedAppends_ProducesCorrectSequence(appendCount: 1)" type="System.Linq.Tests.AppendTests" method="ChainedAppends_ProducesCorrectSequence" time="0.0031999" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.ChainedAppends_ProducesCorrectSequence(appendCount: 2)" type="System.Linq.Tests.AppendTests" method="ChainedAppends_ProducesCorrectSequence" time="0.0029" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.ChainedAppends_ProducesCorrectSequence(appendCount: 5)" type="System.Linq.Tests.AppendTests" method="ChainedAppends_ProducesCorrectSequence" time="0.0026" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.ChainedAppends_ProducesCorrectSequence(appendCount: 10)" type="System.Linq.Tests.AppendTests" method="ChainedAppends_ProducesCorrectSequence" time="0.0036999" result="Pass" />
+      <test name="System.Linq.Tests.AppendTests.AppendThenPrepend_Coalesced" type="System.Linq.Tests.AppendTests" method="AppendThenPrepend_Coalesced" time="0.0083" result="Pass" />
+    </collection>
+    <collection total="7" passed="7" failed="0" skipped="0" name="Test collection for System.Linq.Tests.OrderByTests" time="51.974">
+      <test name="System.Linq.Tests.OrderByTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.OrderByTests" method="Callbacks_InvokedOnOriginalContext" time="0.0252999" result="Pass" />
+      <test name="System.Linq.Tests.OrderByTests.VariousValues_MatchesEnumerable_Int32" type="System.Linq.Tests.OrderByTests" method="VariousValues_MatchesEnumerable_Int32" time="14.674" result="Pass" />
+      <test name="System.Linq.Tests.OrderByTests.InvalidInputs_Throws" type="System.Linq.Tests.OrderByTests" method="InvalidInputs_Throws" time="0.0162" result="Pass" />
+      <test name="System.Linq.Tests.OrderByTests.Cancellation_Cancels" type="System.Linq.Tests.OrderByTests" method="Cancellation_Cancels" time="0.0202999" result="Pass" />
+      <test name="System.Linq.Tests.OrderByTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.OrderByTests" method="InterfaceCalls_ExpectedCounts" time="0.0955" result="Pass" />
+      <test name="System.Linq.Tests.OrderByTests.VariousValues_MatchesEnumerable_String" type="System.Linq.Tests.OrderByTests" method="VariousValues_MatchesEnumerable_String" time="37.1352" result="Pass" />
+      <test name="System.Linq.Tests.OrderByTests.Empty_ProducesEmpty" type="System.Linq.Tests.OrderByTests" method="Empty_ProducesEmpty" time="0.0071999" result="Pass" />
+    </collection>
+    <collection total="4" passed="4" failed="0" skipped="0" name="Test collection for System.Linq.Tests.SequenceEqualAsyncTests" time="0.080">
+      <test name="System.Linq.Tests.SequenceEqualAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.SequenceEqualAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0117999" result="Pass" />
+      <test name="System.Linq.Tests.SequenceEqualAsyncTests.VariousValues_MatchesEnumerable" type="System.Linq.Tests.SequenceEqualAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0597999" result="Pass" />
+      <test name="System.Linq.Tests.SequenceEqualAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.SequenceEqualAsyncTests" method="InvalidInputs_Throws" time="0.003" result="Pass" />
+      <test name="System.Linq.Tests.SequenceEqualAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.SequenceEqualAsyncTests" method="Cancellation_Cancels" time="0.0054" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.AnyAsyncTests" time="0.074">
+      <test name="System.Linq.Tests.AnyAsyncTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.AnyAsyncTests" method="Callbacks_InvokedOnOriginalContext" time="0.0097999" result="Pass" />
+      <test name="System.Linq.Tests.AnyAsyncTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.AnyAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0102999" result="Pass" />
+      <test name="System.Linq.Tests.AnyAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.AnyAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0075" result="Pass" />
+      <test name="System.Linq.Tests.AnyAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.AnyAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0026" result="Pass" />
+      <test name="System.Linq.Tests.AnyAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.AnyAsyncTests" method="VariousValues_MatchesEnumerable" time="0.003" result="Pass" />
+      <test name="System.Linq.Tests.AnyAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])" type="System.Linq.Tests.AnyAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0043999" result="Pass" />
+      <test name="System.Linq.Tests.AnyAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.AnyAsyncTests" method="InvalidInputs_Throws" time="0.0039" result="Pass" />
+      <test name="System.Linq.Tests.AnyAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.AnyAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0192998" result="Pass" />
+      <test name="System.Linq.Tests.AnyAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.AnyAsyncTests" method="Cancellation_Cancels" time="0.0134999" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.CountAsyncTests" time="0.140">
+      <test name="System.Linq.Tests.CountAsyncTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.CountAsyncTests" method="Callbacks_InvokedOnOriginalContext" time="0.0132999" result="Pass" />
+      <test name="System.Linq.Tests.CountAsyncTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.CountAsyncTests" method="VariousValues_MatchesEnumerable" time="0.016" result="Pass" />
+      <test name="System.Linq.Tests.CountAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.CountAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0145" result="Pass" />
+      <test name="System.Linq.Tests.CountAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.CountAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0086" result="Pass" />
+      <test name="System.Linq.Tests.CountAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.CountAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0106" result="Pass" />
+      <test name="System.Linq.Tests.CountAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])" type="System.Linq.Tests.CountAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0077" result="Pass" />
+      <test name="System.Linq.Tests.CountAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.CountAsyncTests" method="InvalidInputs_Throws" time="0.0088999" result="Pass" />
+      <test name="System.Linq.Tests.CountAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.CountAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0369" result="Pass" />
+      <test name="System.Linq.Tests.CountAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.CountAsyncTests" method="Cancellation_Cancels" time="0.0232999" result="Pass" />
+    </collection>
+    <collection total="12" passed="12" failed="0" skipped="0" name="Test collection for System.Linq.Tests.MaxByAsyncTests" time="0.347">
+      <test name="System.Linq.Tests.MaxByAsyncTests.InterfaceCalls_ExpectedCounts(useAsync: False)" type="System.Linq.Tests.MaxByAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0105" result="Pass" />
+      <test name="System.Linq.Tests.MaxByAsyncTests.InterfaceCalls_ExpectedCounts(useAsync: True)" type="System.Linq.Tests.MaxByAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0110999" result="Pass" />
+      <test name="System.Linq.Tests.MaxByAsyncTests.EmptyInputs_ThrowsForNonNullableTypes" type="System.Linq.Tests.MaxByAsyncTests" method="EmptyInputs_ThrowsForNonNullableTypes" time="0.0264999" result="Pass" />
+      <test name="System.Linq.Tests.MaxByAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.MaxByAsyncTests" method="InvalidInputs_Throws" time="0.0034999" result="Pass" />
+      <test name="System.Linq.Tests.MaxByAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.MaxByAsyncTests" method="Cancellation_Cancels" time="0.0148999" result="Pass" />
+      <test name="System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [0])" type="System.Linq.Tests.MaxByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0411999" result="Pass" />
+      <test name="System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.MaxByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0177" result="Pass" />
+      <test name="System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.MaxByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0323" result="Pass" />
+      <test name="System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.MaxByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0554999" result="Pass" />
+      <test name="System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [1, 8, 2, 7, 3, ···])" type="System.Linq.Tests.MaxByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0676999" result="Pass" />
+      <test name="System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [-1000, 1000])" type="System.Linq.Tests.MaxByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0297999" result="Pass" />
+      <test name="System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [-1, -2, -3])" type="System.Linq.Tests.MaxByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0362999" result="Pass" />
+    </collection>
+    <collection total="12" passed="12" failed="0" skipped="0" name="Test collection for System.Linq.Tests.MinByAsyncTests" time="0.372">
+      <test name="System.Linq.Tests.MinByAsyncTests.InterfaceCalls_ExpectedCounts(useAsync: False)" type="System.Linq.Tests.MinByAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0134999" result="Pass" />
+      <test name="System.Linq.Tests.MinByAsyncTests.InterfaceCalls_ExpectedCounts(useAsync: True)" type="System.Linq.Tests.MinByAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0147" result="Pass" />
+      <test name="System.Linq.Tests.MinByAsyncTests.EmptyInputs_ThrowsForNonNullableTypes" type="System.Linq.Tests.MinByAsyncTests" method="EmptyInputs_ThrowsForNonNullableTypes" time="0.0274" result="Pass" />
+      <test name="System.Linq.Tests.MinByAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.MinByAsyncTests" method="InvalidInputs_Throws" time="0.0037998" result="Pass" />
+      <test name="System.Linq.Tests.MinByAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.MinByAsyncTests" method="Cancellation_Cancels" time="0.0140999" result="Pass" />
+      <test name="System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [0])" type="System.Linq.Tests.MinByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0454999" result="Pass" />
+      <test name="System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.MinByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0181999" result="Pass" />
+      <test name="System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.MinByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0362999" result="Pass" />
+      <test name="System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.MinByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0600999" result="Pass" />
+      <test name="System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [1, 8, 2, 7, 3, ···])" type="System.Linq.Tests.MinByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0706999" result="Pass" />
+      <test name="System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [-1000, 1000])" type="System.Linq.Tests.MinByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0307" result="Pass" />
+      <test name="System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [-1, -2, -3])" type="System.Linq.Tests.MinByAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0368999" result="Pass" />
+    </collection>
+    <collection total="10" passed="10" failed="0" skipped="0" name="Test collection for System.Linq.Tests.SkipWhileTests" time="0.238">
+      <test name="System.Linq.Tests.SkipWhileTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.SkipWhileTests" method="Callbacks_InvokedOnOriginalContext" time="0.0118999" result="Pass" />
+      <test name="System.Linq.Tests.SkipWhileTests.Empty_ProducesEmpty" type="System.Linq.Tests.SkipWhileTests" method="Empty_ProducesEmpty" time="0.0052999" result="Pass" />
+      <test name="System.Linq.Tests.SkipWhileTests.InvalidInputs_Throws" type="System.Linq.Tests.SkipWhileTests" method="InvalidInputs_Throws" time="0.0087" result="Pass" />
+      <test name="System.Linq.Tests.SkipWhileTests.Cancellation_Cancels" type="System.Linq.Tests.SkipWhileTests" method="Cancellation_Cancels" time="0.0481" result="Pass" />
+      <test name="System.Linq.Tests.SkipWhileTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.SkipWhileTests" method="InterfaceCalls_ExpectedCounts" time="0.0148999" result="Pass" />
+      <test name="System.Linq.Tests.SkipWhileTests.VariousValues_MatchesEnumerable(ints: [])" type="System.Linq.Tests.SkipWhileTests" method="VariousValues_MatchesEnumerable" time="0.0099" result="Pass" />
+      <test name="System.Linq.Tests.SkipWhileTests.VariousValues_MatchesEnumerable(ints: [42])" type="System.Linq.Tests.SkipWhileTests" method="VariousValues_MatchesEnumerable" time="0.0251" result="Pass" />
+      <test name="System.Linq.Tests.SkipWhileTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])" type="System.Linq.Tests.SkipWhileTests" method="VariousValues_MatchesEnumerable" time="0.0516999" result="Pass" />
+      <test name="System.Linq.Tests.SkipWhileTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])" type="System.Linq.Tests.SkipWhileTests" method="VariousValues_MatchesEnumerable" time="0.0403" result="Pass" />
+      <test name="System.Linq.Tests.SkipWhileTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])" type="System.Linq.Tests.SkipWhileTests" method="VariousValues_MatchesEnumerable" time="0.0218" result="Pass" />
+    </collection>
+    <collection total="8" passed="8" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ElementAtAsyncTests" time="0.104">
+      <test name="System.Linq.Tests.ElementAtAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ElementAtAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0173" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtAsyncTests.OutOfRange_Throws" type="System.Linq.Tests.ElementAtAsyncTests" method="OutOfRange_Throws" time="0.0246999" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.ElementAtAsyncTests" method="InvalidInputs_Throws" time="0.0021" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.ElementAtAsyncTests" method="Cancellation_Cancels" time="0.0127" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.ElementAtAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0075" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.ElementAtAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0079999" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.ElementAtAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0205" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])" type="System.Linq.Tests.ElementAtAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0108" result="Pass" />
+    </collection>
+    <collection total="12" passed="12" failed="0" skipped="0" name="Test collection for System.Linq.Tests.DistinctByTests" time="0.362">
+      <test name="System.Linq.Tests.DistinctByTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.DistinctByTests" method="Callbacks_InvokedOnOriginalContext" time="0.0151999" result="Pass" />
+      <test name="System.Linq.Tests.DistinctByTests.Empty_ProducesEmpty" type="System.Linq.Tests.DistinctByTests" method="Empty_ProducesEmpty" time="0.0016" result="Pass" />
+      <test name="System.Linq.Tests.DistinctByTests.InvalidInputs_Throws" type="System.Linq.Tests.DistinctByTests" method="InvalidInputs_Throws" time="0.0042" result="Pass" />
+      <test name="System.Linq.Tests.DistinctByTests.Cancellation_Cancels" type="System.Linq.Tests.DistinctByTests" method="Cancellation_Cancels" time="0.0352999" result="Pass" />
+      <test name="System.Linq.Tests.DistinctByTests.InterfaceCalls_ExpectedCounts(useAsync: False)" type="System.Linq.Tests.DistinctByTests" method="InterfaceCalls_ExpectedCounts" time="0.0062999" result="Pass" />
+      <test name="System.Linq.Tests.DistinctByTests.InterfaceCalls_ExpectedCounts(useAsync: True)" type="System.Linq.Tests.DistinctByTests" method="InterfaceCalls_ExpectedCounts" time="0.0037999" result="Pass" />
+      <test name="System.Linq.Tests.DistinctByTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.DistinctByTests" method="VariousValues_MatchesEnumerable" time="0.0116" result="Pass" />
+      <test name="System.Linq.Tests.DistinctByTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.DistinctByTests" method="VariousValues_MatchesEnumerable" time="0.0397" result="Pass" />
+      <test name="System.Linq.Tests.DistinctByTests.VariousValues_MatchesEnumerable(values: [1, 1, 1, 2, 2, ···])" type="System.Linq.Tests.DistinctByTests" method="VariousValues_MatchesEnumerable" time="0.0564" result="Pass" />
+      <test name="System.Linq.Tests.DistinctByTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.DistinctByTests" method="VariousValues_MatchesEnumerable" time="0.0452" result="Pass" />
+      <test name="System.Linq.Tests.DistinctByTests.VariousValues_MatchesEnumerable(values: [2, 4, 8, 2, 4, ···])" type="System.Linq.Tests.DistinctByTests" method="VariousValues_MatchesEnumerable" time="0.0697" result="Pass" />
+      <test name="System.Linq.Tests.DistinctByTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.DistinctByTests" method="VariousValues_MatchesEnumerable" time="0.0735" result="Pass" />
+    </collection>
+    <collection total="5" passed="5" failed="0" skipped="0" name="Test collection for System.Linq.Tests.OfTypeTests" time="0.052">
+      <test name="System.Linq.Tests.OfTypeTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.OfTypeTests" method="InterfaceCalls_ExpectedCounts" time="0.0156" result="Pass" />
+      <test name="System.Linq.Tests.OfTypeTests.Empty_ProducesEmpty" type="System.Linq.Tests.OfTypeTests" method="Empty_ProducesEmpty" time="0.0015999" result="Pass" />
+      <test name="System.Linq.Tests.OfTypeTests.InvalidInputs_Throws" type="System.Linq.Tests.OfTypeTests" method="InvalidInputs_Throws" time="0.0026" result="Pass" />
+      <test name="System.Linq.Tests.OfTypeTests.Cancellation_Cancels" type="System.Linq.Tests.OfTypeTests" method="Cancellation_Cancels" time="0.0141999" result="Pass" />
+      <test name="System.Linq.Tests.OfTypeTests.NullAndNonNull_SkipsNulls" type="System.Linq.Tests.OfTypeTests" method="NullAndNonNull_SkipsNulls" time="0.0178" result="Pass" />
+    </collection>
+    <collection total="10" passed="10" failed="0" skipped="0" name="Test collection for System.Linq.Tests.SelectTests" time="0.174">
+      <test name="System.Linq.Tests.SelectTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.SelectTests" method="Callbacks_InvokedOnOriginalContext" time="0.0086" result="Pass" />
+      <test name="System.Linq.Tests.SelectTests.Empty_ProducesEmpty" type="System.Linq.Tests.SelectTests" method="Empty_ProducesEmpty" time="0.0053999" result="Pass" />
+      <test name="System.Linq.Tests.SelectTests.InvalidInputs_Throws" type="System.Linq.Tests.SelectTests" method="InvalidInputs_Throws" time="0.0097999" result="Pass" />
+      <test name="System.Linq.Tests.SelectTests.Cancellation_Cancels" type="System.Linq.Tests.SelectTests" method="Cancellation_Cancels" time="0.0413999" result="Pass" />
+      <test name="System.Linq.Tests.SelectTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.SelectTests" method="InterfaceCalls_ExpectedCounts" time="0.0124999" result="Pass" />
+      <test name="System.Linq.Tests.SelectTests.VariousValues_MatchesEnumerable(ints: [])" type="System.Linq.Tests.SelectTests" method="VariousValues_MatchesEnumerable" time="0.0144" result="Pass" />
+      <test name="System.Linq.Tests.SelectTests.VariousValues_MatchesEnumerable(ints: [42])" type="System.Linq.Tests.SelectTests" method="VariousValues_MatchesEnumerable" time="0.0211" result="Pass" />
+      <test name="System.Linq.Tests.SelectTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])" type="System.Linq.Tests.SelectTests" method="VariousValues_MatchesEnumerable" time="0.0272" result="Pass" />
+      <test name="System.Linq.Tests.SelectTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])" type="System.Linq.Tests.SelectTests" method="VariousValues_MatchesEnumerable" time="0.0208" result="Pass" />
+      <test name="System.Linq.Tests.SelectTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])" type="System.Linq.Tests.SelectTests" method="VariousValues_MatchesEnumerable" time="0.0130999" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.Linq.Tests.RangeTests" time="0.026">
+      <test name="System.Linq.Tests.RangeTests.VariousValues_MatchesEnumerable" type="System.Linq.Tests.RangeTests" method="VariousValues_MatchesEnumerable" time="0.0226" result="Pass" />
+      <test name="System.Linq.Tests.RangeTests.InvalidInputs_Throws" type="System.Linq.Tests.RangeTests" method="InvalidInputs_Throws" time="0.0028" result="Pass" />
+      <test name="System.Linq.Tests.RangeTests.Empty_ProducesEmpty" type="System.Linq.Tests.RangeTests" method="Empty_ProducesEmpty" time="0.0006" result="Pass" />
+    </collection>
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for System.Linq.Tests.QueryComprehensionTests" time="6.149">
+      <test name="System.Linq.Tests.QueryComprehensionTests.GroupClauses" type="System.Linq.Tests.QueryComprehensionTests" method="GroupClauses" time="0.0739999" result="Pass" />
+      <test name="System.Linq.Tests.QueryComprehensionTests.ExplicitRangeVariableTypes" type="System.Linq.Tests.QueryComprehensionTests" method="ExplicitRangeVariableTypes" time="0.0261999" result="Pass" />
+      <test name="System.Linq.Tests.QueryComprehensionTests.QueryExpressionsWithContinuations" type="System.Linq.Tests.QueryComprehensionTests" method="QueryExpressionsWithContinuations" time="0.0752999" result="Pass" />
+      <test name="System.Linq.Tests.QueryComprehensionTests.OrderByClauses" type="System.Linq.Tests.QueryComprehensionTests" method="OrderByClauses" time="0.0313" result="Pass" />
+      <test name="System.Linq.Tests.QueryComprehensionTests.SelectClauses" type="System.Linq.Tests.QueryComprehensionTests" method="SelectClauses" time="0.0191" result="Pass" />
+      <test name="System.Linq.Tests.QueryComprehensionTests.FromLetWhereJoinClauses" type="System.Linq.Tests.QueryComprehensionTests" method="FromLetWhereJoinClauses" time="5.9231" result="Pass" />
+    </collection>
+    <collection total="13" passed="13" failed="0" skipped="0" name="Test collection for System.Linq.Tests.UnionByTests" time="0.377">
+      <test name="System.Linq.Tests.UnionByTests.InterfaceCalls_ExpectedCounts(useAsync: False)" type="System.Linq.Tests.UnionByTests" method="InterfaceCalls_ExpectedCounts" time="0.0146999" result="Pass" />
+      <test name="System.Linq.Tests.UnionByTests.InterfaceCalls_ExpectedCounts(useAsync: True)" type="System.Linq.Tests.UnionByTests" method="InterfaceCalls_ExpectedCounts" time="0.0142" result="Pass" />
+      <test name="System.Linq.Tests.UnionByTests.Empty_ProducesEmpty" type="System.Linq.Tests.UnionByTests" method="Empty_ProducesEmpty" time="0.0024999" result="Pass" />
+      <test name="System.Linq.Tests.UnionByTests.InvalidInputs_Throws" type="System.Linq.Tests.UnionByTests" method="InvalidInputs_Throws" time="0.0075999" result="Pass" />
+      <test name="System.Linq.Tests.UnionByTests.Cancellation_Cancels" type="System.Linq.Tests.UnionByTests" method="Cancellation_Cancels" time="0.0211" result="Pass" />
+      <test name="System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [], second: [])" type="System.Linq.Tests.UnionByTests" method="VariousValues_MatchesEnumerable" time="0.0236" result="Pass" />
+      <test name="System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [], second: [42])" type="System.Linq.Tests.UnionByTests" method="VariousValues_MatchesEnumerable" time="0.05" result="Pass" />
+      <test name="System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [42, 43], second: [])" type="System.Linq.Tests.UnionByTests" method="VariousValues_MatchesEnumerable" time="0.0526999" result="Pass" />
+      <test name="System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [1], second: [2, 3])" type="System.Linq.Tests.UnionByTests" method="VariousValues_MatchesEnumerable" time="0.0307999" result="Pass" />
+      <test name="System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [3, 5])" type="System.Linq.Tests.UnionByTests" method="VariousValues_MatchesEnumerable" time="0.0362999" result="Pass" />
+      <test name="System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 4, 8])" type="System.Linq.Tests.UnionByTests" method="VariousValues_MatchesEnumerable" time="0.0381" result="Pass" />
+      <test name="System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 5, 8])" type="System.Linq.Tests.UnionByTests" method="VariousValues_MatchesEnumerable" time="0.0388999" result="Pass" />
+      <test name="System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])" type="System.Linq.Tests.UnionByTests" method="VariousValues_MatchesEnumerable" time="0.047" result="Pass" />
+    </collection>
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for System.Linq.Tests.SelectManyTests" time="9.143">
+      <test name="System.Linq.Tests.SelectManyTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.SelectManyTests" method="Callbacks_InvokedOnOriginalContext" time="0.0135999" result="Pass" />
+      <test name="System.Linq.Tests.SelectManyTests.Empty_ProducesEmpty" type="System.Linq.Tests.SelectManyTests" method="Empty_ProducesEmpty" time="0.0135999" result="Pass" />
+      <test name="System.Linq.Tests.SelectManyTests.InvalidInputs_Throws" type="System.Linq.Tests.SelectManyTests" method="InvalidInputs_Throws" time="0.0324999" result="Pass" />
+      <test name="System.Linq.Tests.SelectManyTests.Cancellation_Cancels" type="System.Linq.Tests.SelectManyTests" method="Cancellation_Cancels" time="0.1294999" result="Pass" />
+      <test name="System.Linq.Tests.SelectManyTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.SelectManyTests" method="InterfaceCalls_ExpectedCounts" time="0.0483" result="Pass" />
+      <test name="System.Linq.Tests.SelectManyTests.VariousValues_MatchesEnumerable" type="System.Linq.Tests.SelectManyTests" method="VariousValues_MatchesEnumerable" time="8.9059" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ToAsyncEnumerableTests" time="0.106">
+      <test name="System.Linq.Tests.ToAsyncEnumerableTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ToAsyncEnumerableTests" method="InterfaceCalls_ExpectedCounts" time="0.0049" result="Pass" />
+      <test name="System.Linq.Tests.ToAsyncEnumerableTests.Empty_ProducesEmpty" type="System.Linq.Tests.ToAsyncEnumerableTests" method="Empty_ProducesEmpty" time="0.0046998" result="Pass" />
+      <test name="System.Linq.Tests.ToAsyncEnumerableTests.InvalidInputs_Throws" type="System.Linq.Tests.ToAsyncEnumerableTests" method="InvalidInputs_Throws" time="0.0018" result="Pass" />
+      <test name="System.Linq.Tests.ToAsyncEnumerableTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.ToAsyncEnumerableTests" method="VariousValues_MatchesEnumerable" time="0.0118" result="Pass" />
+      <test name="System.Linq.Tests.ToAsyncEnumerableTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.ToAsyncEnumerableTests" method="VariousValues_MatchesEnumerable" time="0.0142" result="Pass" />
+      <test name="System.Linq.Tests.ToAsyncEnumerableTests.VariousValues_MatchesEnumerable(values: [1, 1, 1])" type="System.Linq.Tests.ToAsyncEnumerableTests" method="VariousValues_MatchesEnumerable" time="0.0128999" result="Pass" />
+      <test name="System.Linq.Tests.ToAsyncEnumerableTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.ToAsyncEnumerableTests" method="VariousValues_MatchesEnumerable" time="0.0134" result="Pass" />
+      <test name="System.Linq.Tests.ToAsyncEnumerableTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.ToAsyncEnumerableTests" method="VariousValues_MatchesEnumerable" time="0.0184999" result="Pass" />
+      <test name="System.Linq.Tests.ToAsyncEnumerableTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.ToAsyncEnumerableTests" method="VariousValues_MatchesEnumerable" time="0.0237999" result="Pass" />
+    </collection>
+    <collection total="13" passed="13" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ExceptByTests" time="0.305">
+      <test name="System.Linq.Tests.ExceptByTests.InterfaceCalls_ExpectedCounts(useAsync: False)" type="System.Linq.Tests.ExceptByTests" method="InterfaceCalls_ExpectedCounts" time="0.0141" result="Pass" />
+      <test name="System.Linq.Tests.ExceptByTests.InterfaceCalls_ExpectedCounts(useAsync: True)" type="System.Linq.Tests.ExceptByTests" method="InterfaceCalls_ExpectedCounts" time="0.0149999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptByTests.Empty_ProducesEmpty" type="System.Linq.Tests.ExceptByTests" method="Empty_ProducesEmpty" time="0.0031" result="Pass" />
+      <test name="System.Linq.Tests.ExceptByTests.InvalidInputs_Throws" type="System.Linq.Tests.ExceptByTests" method="InvalidInputs_Throws" time="0.0116999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptByTests.Cancellation_Cancels" type="System.Linq.Tests.ExceptByTests" method="Cancellation_Cancels" time="0.0242999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [], second: [])" type="System.Linq.Tests.ExceptByTests" method="VariousValues_MatchesEnumerable" time="0.0287999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [], second: [42])" type="System.Linq.Tests.ExceptByTests" method="VariousValues_MatchesEnumerable" time="0.0088999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [42, 43], second: [])" type="System.Linq.Tests.ExceptByTests" method="VariousValues_MatchesEnumerable" time="0.0554" result="Pass" />
+      <test name="System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [1], second: [2, 3])" type="System.Linq.Tests.ExceptByTests" method="VariousValues_MatchesEnumerable" time="0.0218999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [2, 4, 8], second: [3, 5])" type="System.Linq.Tests.ExceptByTests" method="VariousValues_MatchesEnumerable" time="0.0320999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [2, 4, 8], second: [2, 4, 8])" type="System.Linq.Tests.ExceptByTests" method="VariousValues_MatchesEnumerable" time="0.0209999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [2, 4, 8], second: [2, 5, 8])" type="System.Linq.Tests.ExceptByTests" method="VariousValues_MatchesEnumerable" time="0.0271" result="Pass" />
+      <test name="System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])" type="System.Linq.Tests.ExceptByTests" method="VariousValues_MatchesEnumerable" time="0.0416999" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ToHashSetAsyncTests" time="0.124">
+      <test name="System.Linq.Tests.ToHashSetAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ToHashSetAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0094998" result="Pass" />
+      <test name="System.Linq.Tests.ToHashSetAsyncTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.ToHashSetAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0243" result="Pass" />
+      <test name="System.Linq.Tests.ToHashSetAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.ToHashSetAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0178999" result="Pass" />
+      <test name="System.Linq.Tests.ToHashSetAsyncTests.VariousValues_MatchesEnumerable(values: [1, 1, 1])" type="System.Linq.Tests.ToHashSetAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0126999" result="Pass" />
+      <test name="System.Linq.Tests.ToHashSetAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.ToHashSetAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0119999" result="Pass" />
+      <test name="System.Linq.Tests.ToHashSetAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.ToHashSetAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0182999" result="Pass" />
+      <test name="System.Linq.Tests.ToHashSetAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.ToHashSetAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0222" result="Pass" />
+      <test name="System.Linq.Tests.ToHashSetAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.ToHashSetAsyncTests" method="InvalidInputs_Throws" time="0.0017999" result="Pass" />
+      <test name="System.Linq.Tests.ToHashSetAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.ToHashSetAsyncTests" method="Cancellation_Cancels" time="0.0052999" result="Pass" />
+    </collection>
+    <collection total="11" passed="11" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ContainsAsyncTests" time="0.053">
+      <test name="System.Linq.Tests.ContainsAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ContainsAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0092" result="Pass" />
+      <test name="System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [])" type="System.Linq.Tests.ContainsAsyncTests" method="VariousValues_MatchesEnumerable_Int32" time="0.0066999" result="Pass" />
+      <test name="System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [1])" type="System.Linq.Tests.ContainsAsyncTests" method="VariousValues_MatchesEnumerable_Int32" time="0.0037999" result="Pass" />
+      <test name="System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [2, 4, 8])" type="System.Linq.Tests.ContainsAsyncTests" method="VariousValues_MatchesEnumerable_Int32" time="0.002" result="Pass" />
+      <test name="System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [-1, 5, 6, 7, 8, ···])" type="System.Linq.Tests.ContainsAsyncTests" method="VariousValues_MatchesEnumerable_Int32" time="0.0034999" result="Pass" />
+      <test name="System.Linq.Tests.ContainsAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.ContainsAsyncTests" method="InvalidInputs_Throws" time="0.0021999" result="Pass" />
+      <test name="System.Linq.Tests.ContainsAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.ContainsAsyncTests" method="Cancellation_Cancels" time="0.0059" result="Pass" />
+      <test name="System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_String(values: [])" type="System.Linq.Tests.ContainsAsyncTests" method="VariousValues_MatchesEnumerable_String" time="0.0083999" result="Pass" />
+      <test name="System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_String(values: [\&quot;1\&quot;])" type="System.Linq.Tests.ContainsAsyncTests" method="VariousValues_MatchesEnumerable_String" time="0.0047999" result="Pass" />
+      <test name="System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_String(values: [\&quot;2\&quot;, \&quot;4\&quot;, \&quot;8\&quot;])" type="System.Linq.Tests.ContainsAsyncTests" method="VariousValues_MatchesEnumerable_String" time="0.0028999" result="Pass" />
+      <test name="System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_String(values: [\&quot;-1\&quot;, \&quot;5\&quot;, \&quot;6\&quot;, \&quot;7\&quot;, \&quot;8\&quot;, ···])" type="System.Linq.Tests.ContainsAsyncTests" method="VariousValues_MatchesEnumerable_String" time="0.0036" result="Pass" />
+    </collection>
+    <collection total="12" passed="12" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ExceptTests" time="0.209">
+      <test name="System.Linq.Tests.ExceptTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ExceptTests" method="InterfaceCalls_ExpectedCounts" time="0.0178" result="Pass" />
+      <test name="System.Linq.Tests.ExceptTests.Empty_ProducesEmpty" type="System.Linq.Tests.ExceptTests" method="Empty_ProducesEmpty" time="0.0011999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptTests.InvalidInputs_Throws" type="System.Linq.Tests.ExceptTests" method="InvalidInputs_Throws" time="0.0026999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptTests.Cancellation_Cancels" type="System.Linq.Tests.ExceptTests" method="Cancellation_Cancels" time="0.0108" result="Pass" />
+      <test name="System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [], second: [])" type="System.Linq.Tests.ExceptTests" method="VariousValues_MatchesEnumerable" time="0.0158999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [], second: [42])" type="System.Linq.Tests.ExceptTests" method="VariousValues_MatchesEnumerable" time="0.0183998" result="Pass" />
+      <test name="System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [42, 43], second: [])" type="System.Linq.Tests.ExceptTests" method="VariousValues_MatchesEnumerable" time="0.0288999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [1], second: [2, 3])" type="System.Linq.Tests.ExceptTests" method="VariousValues_MatchesEnumerable" time="0.0186" result="Pass" />
+      <test name="System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [3, 5])" type="System.Linq.Tests.ExceptTests" method="VariousValues_MatchesEnumerable" time="0.0258999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 4, 8])" type="System.Linq.Tests.ExceptTests" method="VariousValues_MatchesEnumerable" time="0.0151999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 5, 8])" type="System.Linq.Tests.ExceptTests" method="VariousValues_MatchesEnumerable" time="0.0225999" result="Pass" />
+      <test name="System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])" type="System.Linq.Tests.ExceptTests" method="VariousValues_MatchesEnumerable" time="0.0313999" result="Pass" />
+    </collection>
+    <collection total="10" passed="10" failed="0" skipped="0" name="Test collection for System.Linq.Tests.TakeWhileTests" time="0.231">
+      <test name="System.Linq.Tests.TakeWhileTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.TakeWhileTests" method="Callbacks_InvokedOnOriginalContext" time="0.0137998" result="Pass" />
+      <test name="System.Linq.Tests.TakeWhileTests.Empty_ProducesEmpty" type="System.Linq.Tests.TakeWhileTests" method="Empty_ProducesEmpty" time="0.0041999" result="Pass" />
+      <test name="System.Linq.Tests.TakeWhileTests.InvalidInputs_Throws" type="System.Linq.Tests.TakeWhileTests" method="InvalidInputs_Throws" time="0.0082999" result="Pass" />
+      <test name="System.Linq.Tests.TakeWhileTests.Cancellation_Cancels" type="System.Linq.Tests.TakeWhileTests" method="Cancellation_Cancels" time="0.0579" result="Pass" />
+      <test name="System.Linq.Tests.TakeWhileTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.TakeWhileTests" method="InterfaceCalls_ExpectedCounts" time="0.0154999" result="Pass" />
+      <test name="System.Linq.Tests.TakeWhileTests.VariousValues_MatchesEnumerable(ints: [])" type="System.Linq.Tests.TakeWhileTests" method="VariousValues_MatchesEnumerable" time="0.0103" result="Pass" />
+      <test name="System.Linq.Tests.TakeWhileTests.VariousValues_MatchesEnumerable(ints: [42])" type="System.Linq.Tests.TakeWhileTests" method="VariousValues_MatchesEnumerable" time="0.028" result="Pass" />
+      <test name="System.Linq.Tests.TakeWhileTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])" type="System.Linq.Tests.TakeWhileTests" method="VariousValues_MatchesEnumerable" time="0.0392" result="Pass" />
+      <test name="System.Linq.Tests.TakeWhileTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])" type="System.Linq.Tests.TakeWhileTests" method="VariousValues_MatchesEnumerable" time="0.0313999" result="Pass" />
+      <test name="System.Linq.Tests.TakeWhileTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])" type="System.Linq.Tests.TakeWhileTests" method="VariousValues_MatchesEnumerable" time="0.0222999" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.SkipTests" time="0.095">
+      <test name="System.Linq.Tests.SkipTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.SkipTests" method="InterfaceCalls_ExpectedCounts" time="0.0114" result="Pass" />
+      <test name="System.Linq.Tests.SkipTests.Empty_ProducesEmpty" type="System.Linq.Tests.SkipTests" method="Empty_ProducesEmpty" time="0.0018999" result="Pass" />
+      <test name="System.Linq.Tests.SkipTests.InvalidInputs_Throws" type="System.Linq.Tests.SkipTests" method="InvalidInputs_Throws" time="0.0016" result="Pass" />
+      <test name="System.Linq.Tests.SkipTests.Cancellation_Cancels" type="System.Linq.Tests.SkipTests" method="Cancellation_Cancels" time="0.0061" result="Pass" />
+      <test name="System.Linq.Tests.SkipTests.VariousValues_MatchesEnumerable(ints: [])" type="System.Linq.Tests.SkipTests" method="VariousValues_MatchesEnumerable" time="0.0045999" result="Pass" />
+      <test name="System.Linq.Tests.SkipTests.VariousValues_MatchesEnumerable(ints: [42])" type="System.Linq.Tests.SkipTests" method="VariousValues_MatchesEnumerable" time="0.0105999" result="Pass" />
+      <test name="System.Linq.Tests.SkipTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])" type="System.Linq.Tests.SkipTests" method="VariousValues_MatchesEnumerable" time="0.0289999" result="Pass" />
+      <test name="System.Linq.Tests.SkipTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])" type="System.Linq.Tests.SkipTests" method="VariousValues_MatchesEnumerable" time="0.0192" result="Pass" />
+      <test name="System.Linq.Tests.SkipTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])" type="System.Linq.Tests.SkipTests" method="VariousValues_MatchesEnumerable" time="0.0102999" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.TakeTests" time="0.319">
+      <test name="System.Linq.Tests.TakeTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.TakeTests" method="InterfaceCalls_ExpectedCounts" time="0.0133" result="Pass" />
+      <test name="System.Linq.Tests.TakeTests.Empty_ProducesEmpty" type="System.Linq.Tests.TakeTests" method="Empty_ProducesEmpty" time="0.0023998" result="Pass" />
+      <test name="System.Linq.Tests.TakeTests.InvalidInputs_Throws" type="System.Linq.Tests.TakeTests" method="InvalidInputs_Throws" time="0.0025999" result="Pass" />
+      <test name="System.Linq.Tests.TakeTests.Cancellation_Cancels" type="System.Linq.Tests.TakeTests" method="Cancellation_Cancels" time="0.0097999" result="Pass" />
+      <test name="System.Linq.Tests.TakeTests.VariousValues_MatchesEnumerable(ints: [])" type="System.Linq.Tests.TakeTests" method="VariousValues_MatchesEnumerable" time="0.0171" result="Pass" />
+      <test name="System.Linq.Tests.TakeTests.VariousValues_MatchesEnumerable(ints: [42])" type="System.Linq.Tests.TakeTests" method="VariousValues_MatchesEnumerable" time="0.0399" result="Pass" />
+      <test name="System.Linq.Tests.TakeTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])" type="System.Linq.Tests.TakeTests" method="VariousValues_MatchesEnumerable" time="0.1108" result="Pass" />
+      <test name="System.Linq.Tests.TakeTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])" type="System.Linq.Tests.TakeTests" method="VariousValues_MatchesEnumerable" time="0.0762999" result="Pass" />
+      <test name="System.Linq.Tests.TakeTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])" type="System.Linq.Tests.TakeTests" method="VariousValues_MatchesEnumerable" time="0.0470999" result="Pass" />
+    </collection>
+    <collection total="5" passed="5" failed="0" skipped="0" name="Test collection for System.Linq.Tests.GroupJoinTests" time="6.688">
+      <test name="System.Linq.Tests.GroupJoinTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.GroupJoinTests" method="InterfaceCalls_ExpectedCounts" time="0.0432999" result="Pass" />
+      <test name="System.Linq.Tests.GroupJoinTests.Empty_ProducesEmpty" type="System.Linq.Tests.GroupJoinTests" method="Empty_ProducesEmpty" time="0.0033999" result="Pass" />
+      <test name="System.Linq.Tests.GroupJoinTests.InvalidInputs_Throws" type="System.Linq.Tests.GroupJoinTests" method="InvalidInputs_Throws" time="0.0102" result="Pass" />
+      <test name="System.Linq.Tests.GroupJoinTests.Cancellation_Cancels" type="System.Linq.Tests.GroupJoinTests" method="Cancellation_Cancels" time="0.0369" result="Pass" />
+      <test name="System.Linq.Tests.GroupJoinTests.VariousValues_MatchesEnumerable_String" type="System.Linq.Tests.GroupJoinTests" method="VariousValues_MatchesEnumerable_String" time="6.5937999" result="Pass" />
+    </collection>
+    <collection total="5" passed="5" failed="0" skipped="0" name="Test collection for System.Linq.Tests.RightJoinTests" time="29.329">
+      <test name="System.Linq.Tests.RightJoinTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.RightJoinTests" method="InterfaceCalls_ExpectedCounts" time="0.0403999" result="Pass" />
+      <test name="System.Linq.Tests.RightJoinTests.Empty_ProducesEmpty" type="System.Linq.Tests.RightJoinTests" method="Empty_ProducesEmpty" time="0.0072" result="Pass" />
+      <test name="System.Linq.Tests.RightJoinTests.InvalidInputs_Throws" type="System.Linq.Tests.RightJoinTests" method="InvalidInputs_Throws" time="0.0095999" result="Pass" />
+      <test name="System.Linq.Tests.RightJoinTests.Cancellation_Cancels" type="System.Linq.Tests.RightJoinTests" method="Cancellation_Cancels" time="0.0375" result="Pass" />
+      <test name="System.Linq.Tests.RightJoinTests.VariousValues_MatchesEnumerable_String" type="System.Linq.Tests.RightJoinTests" method="VariousValues_MatchesEnumerable_String" time="29.2338999" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.WhereTests" time="0.147">
+      <test name="System.Linq.Tests.WhereTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.WhereTests" method="InterfaceCalls_ExpectedCounts" time="0.0337" result="Pass" />
+      <test name="System.Linq.Tests.WhereTests.Empty_ProducesEmpty" type="System.Linq.Tests.WhereTests" method="Empty_ProducesEmpty" time="0.0016999" result="Pass" />
+      <test name="System.Linq.Tests.WhereTests.InvalidInputs_Throws" type="System.Linq.Tests.WhereTests" method="InvalidInputs_Throws" time="0.0057999" result="Pass" />
+      <test name="System.Linq.Tests.WhereTests.Cancellation_Cancels" type="System.Linq.Tests.WhereTests" method="Cancellation_Cancels" time="0.0329" result="Pass" />
+      <test name="System.Linq.Tests.WhereTests.VariousValues_MatchesEnumerable(ints: [])" type="System.Linq.Tests.WhereTests" method="VariousValues_MatchesEnumerable" time="0.0069999" result="Pass" />
+      <test name="System.Linq.Tests.WhereTests.VariousValues_MatchesEnumerable(ints: [42])" type="System.Linq.Tests.WhereTests" method="VariousValues_MatchesEnumerable" time="0.0183999" result="Pass" />
+      <test name="System.Linq.Tests.WhereTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])" type="System.Linq.Tests.WhereTests" method="VariousValues_MatchesEnumerable" time="0.0173" result="Pass" />
+      <test name="System.Linq.Tests.WhereTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])" type="System.Linq.Tests.WhereTests" method="VariousValues_MatchesEnumerable" time="0.0182" result="Pass" />
+      <test name="System.Linq.Tests.WhereTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])" type="System.Linq.Tests.WhereTests" method="VariousValues_MatchesEnumerable" time="0.0116" result="Pass" />
+    </collection>
+    <collection total="8" passed="8" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ElementAtOrDefaultAsyncTests" time="0.102">
+      <test name="System.Linq.Tests.ElementAtOrDefaultAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ElementAtOrDefaultAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0095998" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtOrDefaultAsyncTests.OutOfRange_ReturnsDefault" type="System.Linq.Tests.ElementAtOrDefaultAsyncTests" method="OutOfRange_ReturnsDefault" time="0.0283999" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtOrDefaultAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.ElementAtOrDefaultAsyncTests" method="InvalidInputs_Throws" time="0.0025" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtOrDefaultAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.ElementAtOrDefaultAsyncTests" method="Cancellation_Cancels" time="0.0125" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.ElementAtOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0072999" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.ElementAtOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0082999" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.ElementAtOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0216" result="Pass" />
+      <test name="System.Linq.Tests.ElementAtOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])" type="System.Linq.Tests.ElementAtOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0116" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.LastOrDefaultAsyncTests" time="0.095">
+      <test name="System.Linq.Tests.LastOrDefaultAsyncTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.LastOrDefaultAsyncTests" method="Callbacks_InvokedOnOriginalContext" time="0.0124999" result="Pass" />
+      <test name="System.Linq.Tests.LastOrDefaultAsyncTests.EmptyInputs_DefaultValueReturned" type="System.Linq.Tests.LastOrDefaultAsyncTests" method="EmptyInputs_DefaultValueReturned" time="0.0149" result="Pass" />
+      <test name="System.Linq.Tests.LastOrDefaultAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.LastOrDefaultAsyncTests" method="InvalidInputs_Throws" time="0.0078999" result="Pass" />
+      <test name="System.Linq.Tests.LastOrDefaultAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.LastOrDefaultAsyncTests" method="Cancellation_Cancels" time="0.0195" result="Pass" />
+      <test name="System.Linq.Tests.LastOrDefaultAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.LastOrDefaultAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0091" result="Pass" />
+      <test name="System.Linq.Tests.LastOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.LastOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0092" result="Pass" />
+      <test name="System.Linq.Tests.LastOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.LastOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0067" result="Pass" />
+      <test name="System.Linq.Tests.LastOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.LastOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0083" result="Pass" />
+      <test name="System.Linq.Tests.LastOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])" type="System.Linq.Tests.LastOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0067" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.Linq.Tests.RepeatTests" time="0.034">
+      <test name="System.Linq.Tests.RepeatTests.VariousValues_MatchesEnumerable" type="System.Linq.Tests.RepeatTests" method="VariousValues_MatchesEnumerable" time="0.0314" result="Pass" />
+      <test name="System.Linq.Tests.RepeatTests.InvalidInputs_Throws" type="System.Linq.Tests.RepeatTests" method="InvalidInputs_Throws" time="0.0019998" result="Pass" />
+      <test name="System.Linq.Tests.RepeatTests.Empty_ProducesEmpty" type="System.Linq.Tests.RepeatTests" method="Empty_ProducesEmpty" time="0.0009" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ShuffleTests" time="0.515">
+      <test name="System.Linq.Tests.ShuffleTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ShuffleTests" method="InterfaceCalls_ExpectedCounts" time="0.0113" result="Pass" />
+      <test name="System.Linq.Tests.ShuffleTests.Empty_ProducesEmpty" type="System.Linq.Tests.ShuffleTests" method="Empty_ProducesEmpty" time="0.0016" result="Pass" />
+      <test name="System.Linq.Tests.ShuffleTests.InvalidInputs_Throws" type="System.Linq.Tests.ShuffleTests" method="InvalidInputs_Throws" time="0.0016" result="Pass" />
+      <test name="System.Linq.Tests.ShuffleTests.ToArrayAsync_ElementsAreRandomized" type="System.Linq.Tests.ShuffleTests" method="ToArrayAsync_ElementsAreRandomized" time="0.4689" result="Pass" />
+      <test name="System.Linq.Tests.ShuffleTests.Cancellation_Cancels" type="System.Linq.Tests.ShuffleTests" method="Cancellation_Cancels" time="0.0141999" result="Pass" />
+      <test name="System.Linq.Tests.ShuffleTests.VariousValues_ContainsAllInputValues(values: [])" type="System.Linq.Tests.ShuffleTests" method="VariousValues_ContainsAllInputValues" time="0.0045" result="Pass" />
+      <test name="System.Linq.Tests.ShuffleTests.VariousValues_ContainsAllInputValues(values: [1])" type="System.Linq.Tests.ShuffleTests" method="VariousValues_ContainsAllInputValues" time="0.0062" result="Pass" />
+      <test name="System.Linq.Tests.ShuffleTests.VariousValues_ContainsAllInputValues(values: [2, 4, 8])" type="System.Linq.Tests.ShuffleTests" method="VariousValues_ContainsAllInputValues" time="0.0032" result="Pass" />
+      <test name="System.Linq.Tests.ShuffleTests.VariousValues_ContainsAllInputValues(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.ShuffleTests" method="VariousValues_ContainsAllInputValues" time="0.0038" result="Pass" />
+    </collection>
+    <collection total="5" passed="5" failed="0" skipped="0" name="Test collection for System.Linq.Tests.JoinTests" time="29.683">
+      <test name="System.Linq.Tests.JoinTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.JoinTests" method="InterfaceCalls_ExpectedCounts" time="0.0341" result="Pass" />
+      <test name="System.Linq.Tests.JoinTests.Empty_ProducesEmpty" type="System.Linq.Tests.JoinTests" method="Empty_ProducesEmpty" time="0.0040999" result="Pass" />
+      <test name="System.Linq.Tests.JoinTests.InvalidInputs_Throws" type="System.Linq.Tests.JoinTests" method="InvalidInputs_Throws" time="0.0099999" result="Pass" />
+      <test name="System.Linq.Tests.JoinTests.Cancellation_Cancels" type="System.Linq.Tests.JoinTests" method="Cancellation_Cancels" time="0.0379999" result="Pass" />
+      <test name="System.Linq.Tests.JoinTests.VariousValues_MatchesEnumerable_String" type="System.Linq.Tests.JoinTests" method="VariousValues_MatchesEnumerable_String" time="29.5969999" result="Pass" />
+    </collection>
+    <collection total="10" passed="10" failed="0" skipped="0" name="Test collection for System.Linq.Tests.SumAsyncTests" time="0.446">
+      <test name="System.Linq.Tests.SumAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.SumAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.1932999" result="Pass" />
+      <test name="System.Linq.Tests.SumAsyncTests.EmptyInputs_NonNullable_Throws" type="System.Linq.Tests.SumAsyncTests" method="EmptyInputs_NonNullable_Throws" time="0.0099" result="Pass" />
+      <test name="System.Linq.Tests.SumAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.SumAsyncTests" method="InvalidInputs_Throws" time="0.0084" result="Pass" />
+      <test name="System.Linq.Tests.SumAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.SumAsyncTests" method="Cancellation_Cancels" time="0.0544998" result="Pass" />
+      <test name="System.Linq.Tests.SumAsyncTests.VariousValues_MatchesEnumerable(values: [0])" type="System.Linq.Tests.SumAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0445999" result="Pass" />
+      <test name="System.Linq.Tests.SumAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.SumAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0239" result="Pass" />
+      <test name="System.Linq.Tests.SumAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.SumAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0257999" result="Pass" />
+      <test name="System.Linq.Tests.SumAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.SumAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0402" result="Pass" />
+      <test name="System.Linq.Tests.SumAsyncTests.VariousValues_MatchesEnumerable(values: [-2147483647, 2147483647])" type="System.Linq.Tests.SumAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0205999" result="Pass" />
+      <test name="System.Linq.Tests.SumAsyncTests.VariousValues_MatchesEnumerable(values: [-1, -2, -3])" type="System.Linq.Tests.SumAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0246" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.LastAsyncTests" time="0.084">
+      <test name="System.Linq.Tests.LastAsyncTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.LastAsyncTests" method="Callbacks_InvokedOnOriginalContext" time="0.0103" result="Pass" />
+      <test name="System.Linq.Tests.LastAsyncTests.EmptyInputs_Throws" type="System.Linq.Tests.LastAsyncTests" method="EmptyInputs_Throws" time="0.0219999" result="Pass" />
+      <test name="System.Linq.Tests.LastAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.LastAsyncTests" method="InvalidInputs_Throws" time="0.0036999" result="Pass" />
+      <test name="System.Linq.Tests.LastAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.LastAsyncTests" method="Cancellation_Cancels" time="0.0182" result="Pass" />
+      <test name="System.Linq.Tests.LastAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.LastAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0081999" result="Pass" />
+      <test name="System.Linq.Tests.LastAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.LastAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0076" result="Pass" />
+      <test name="System.Linq.Tests.LastAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.LastAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0044999" result="Pass" />
+      <test name="System.Linq.Tests.LastAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.LastAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0053" result="Pass" />
+      <test name="System.Linq.Tests.LastAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])" type="System.Linq.Tests.LastAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0045" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.TakeLastTests" time="0.074">
+      <test name="System.Linq.Tests.TakeLastTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.TakeLastTests" method="InterfaceCalls_ExpectedCounts" time="0.0064999" result="Pass" />
+      <test name="System.Linq.Tests.TakeLastTests.Empty_ProducesEmpty" type="System.Linq.Tests.TakeLastTests" method="Empty_ProducesEmpty" time="0.0014" result="Pass" />
+      <test name="System.Linq.Tests.TakeLastTests.InvalidInputs_Throws" type="System.Linq.Tests.TakeLastTests" method="InvalidInputs_Throws" time="0.0018999" result="Pass" />
+      <test name="System.Linq.Tests.TakeLastTests.Cancellation_Cancels" type="System.Linq.Tests.TakeLastTests" method="Cancellation_Cancels" time="0.0056" result="Pass" />
+      <test name="System.Linq.Tests.TakeLastTests.VariousValues_MatchesEnumerable(ints: [])" type="System.Linq.Tests.TakeLastTests" method="VariousValues_MatchesEnumerable" time="0.0051" result="Pass" />
+      <test name="System.Linq.Tests.TakeLastTests.VariousValues_MatchesEnumerable(ints: [42])" type="System.Linq.Tests.TakeLastTests" method="VariousValues_MatchesEnumerable" time="0.0116" result="Pass" />
+      <test name="System.Linq.Tests.TakeLastTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])" type="System.Linq.Tests.TakeLastTests" method="VariousValues_MatchesEnumerable" time="0.0169" result="Pass" />
+      <test name="System.Linq.Tests.TakeLastTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])" type="System.Linq.Tests.TakeLastTests" method="VariousValues_MatchesEnumerable" time="0.0135" result="Pass" />
+      <test name="System.Linq.Tests.TakeLastTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])" type="System.Linq.Tests.TakeLastTests" method="VariousValues_MatchesEnumerable" time="0.0112999" result="Pass" />
+    </collection>
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for System.Linq.Tests.CastTests" time="0.077">
+      <test name="System.Linq.Tests.CastTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.CastTests" method="InterfaceCalls_ExpectedCounts" time="0.0114999" result="Pass" />
+      <test name="System.Linq.Tests.CastTests.Empty_ProducesEmpty" type="System.Linq.Tests.CastTests" method="Empty_ProducesEmpty" time="0.0017999" result="Pass" />
+      <test name="System.Linq.Tests.CastTests.InvalidInputs_Throws" type="System.Linq.Tests.CastTests" method="InvalidInputs_Throws" time="0.0018" result="Pass" />
+      <test name="System.Linq.Tests.CastTests.IncorrectType_Throws" type="System.Linq.Tests.CastTests" method="IncorrectType_Throws" time="0.0292999" result="Pass" />
+      <test name="System.Linq.Tests.CastTests.Cancellation_Cancels" type="System.Linq.Tests.CastTests" method="Cancellation_Cancels" time="0.0066999" result="Pass" />
+      <test name="System.Linq.Tests.CastTests.NullAndNonNull_IncludesNulls" type="System.Linq.Tests.CastTests" method="NullAndNonNull_IncludesNulls" time="0.0260999" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.FirstAsyncTests" time="0.129">
+      <test name="System.Linq.Tests.FirstAsyncTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.FirstAsyncTests" method="Callbacks_InvokedOnOriginalContext" time="0.0118" result="Pass" />
+      <test name="System.Linq.Tests.FirstAsyncTests.EmptyInputs_Throws" type="System.Linq.Tests.FirstAsyncTests" method="EmptyInputs_Throws" time="0.0492" result="Pass" />
+      <test name="System.Linq.Tests.FirstAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.FirstAsyncTests" method="InvalidInputs_Throws" time="0.0058" result="Pass" />
+      <test name="System.Linq.Tests.FirstAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.FirstAsyncTests" method="Cancellation_Cancels" time="0.0277999" result="Pass" />
+      <test name="System.Linq.Tests.FirstAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.FirstAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0092999" result="Pass" />
+      <test name="System.Linq.Tests.FirstAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.FirstAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0089999" result="Pass" />
+      <test name="System.Linq.Tests.FirstAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.FirstAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0056" result="Pass" />
+      <test name="System.Linq.Tests.FirstAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.FirstAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0059" result="Pass" />
+      <test name="System.Linq.Tests.FirstAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])" type="System.Linq.Tests.FirstAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0046" result="Pass" />
+    </collection>
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for System.Linq.Tests.GroupByTests" time="11.481">
+      <test name="System.Linq.Tests.GroupByTests.IGrouping_ImplementsIList" type="System.Linq.Tests.GroupByTests" method="IGrouping_ImplementsIList" time="0.0375" result="Pass" />
+      <test name="System.Linq.Tests.GroupByTests.Empty_ProducesEmpty" type="System.Linq.Tests.GroupByTests" method="Empty_ProducesEmpty" time="0.011" result="Pass" />
+      <test name="System.Linq.Tests.GroupByTests.InvalidInputs_Throws" type="System.Linq.Tests.GroupByTests" method="InvalidInputs_Throws" time="0.0233998" result="Pass" />
+      <test name="System.Linq.Tests.GroupByTests.Cancellation_Cancels" type="System.Linq.Tests.GroupByTests" method="Cancellation_Cancels" time="0.0738999" result="Pass" />
+      <test name="System.Linq.Tests.GroupByTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.GroupByTests" method="InterfaceCalls_ExpectedCounts" time="0.058" result="Pass" />
+      <test name="System.Linq.Tests.GroupByTests.VariousValues_MatchesEnumerable_String" type="System.Linq.Tests.GroupByTests" method="VariousValues_MatchesEnumerable_String" time="11.2772999" result="Pass" />
+    </collection>
+    <collection total="13" passed="13" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ZipTests" time="0.439">
+      <test name="System.Linq.Tests.ZipTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.ZipTests" method="Callbacks_InvokedOnOriginalContext" time="0.0148" result="Pass" />
+      <test name="System.Linq.Tests.ZipTests.Empty_ProducesEmpty" type="System.Linq.Tests.ZipTests" method="Empty_ProducesEmpty" time="0.0184999" result="Pass" />
+      <test name="System.Linq.Tests.ZipTests.InvalidInputs_Throws" type="System.Linq.Tests.ZipTests" method="InvalidInputs_Throws" time="0.0152999" result="Pass" />
+      <test name="System.Linq.Tests.ZipTests.Cancellation_Cancels" type="System.Linq.Tests.ZipTests" method="Cancellation_Cancels" time="0.0392" result="Pass" />
+      <test name="System.Linq.Tests.ZipTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ZipTests" method="InterfaceCalls_ExpectedCounts" time="0.0259" result="Pass" />
+      <test name="System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [], second: [])" type="System.Linq.Tests.ZipTests" method="VariousValues_MatchesEnumerable" time="0.0465" result="Pass" />
+      <test name="System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [], second: [42])" type="System.Linq.Tests.ZipTests" method="VariousValues_MatchesEnumerable" time="0.0109999" result="Pass" />
+      <test name="System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [42, 43], second: [])" type="System.Linq.Tests.ZipTests" method="VariousValues_MatchesEnumerable" time="0.0167999" result="Pass" />
+      <test name="System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [1], second: [2, 3])" type="System.Linq.Tests.ZipTests" method="VariousValues_MatchesEnumerable" time="0.0491999" result="Pass" />
+      <test name="System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [3, 5])" type="System.Linq.Tests.ZipTests" method="VariousValues_MatchesEnumerable" time="0.0483999" result="Pass" />
+      <test name="System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 4, 8])" type="System.Linq.Tests.ZipTests" method="VariousValues_MatchesEnumerable" time="0.056" result="Pass" />
+      <test name="System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 5, 8])" type="System.Linq.Tests.ZipTests" method="VariousValues_MatchesEnumerable" time="0.0533" result="Pass" />
+      <test name="System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])" type="System.Linq.Tests.ZipTests" method="VariousValues_MatchesEnumerable" time="0.0444999" result="Pass" />
+    </collection>
+    <collection total="11" passed="11" failed="0" skipped="0" name="Test collection for System.Linq.Tests.AggregateByTests" time="0.458">
+      <test name="System.Linq.Tests.AggregateByTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.AggregateByTests" method="Callbacks_InvokedOnOriginalContext" time="0.0161999" result="Pass" />
+      <test name="System.Linq.Tests.AggregateByTests.Empty_ProducesEmpty" type="System.Linq.Tests.AggregateByTests" method="Empty_ProducesEmpty" time="0.004" result="Pass" />
+      <test name="System.Linq.Tests.AggregateByTests.InvalidInputs_Throws" type="System.Linq.Tests.AggregateByTests" method="InvalidInputs_Throws" time="0.0114999" result="Pass" />
+      <test name="System.Linq.Tests.AggregateByTests.Cancellation_Cancels" type="System.Linq.Tests.AggregateByTests" method="Cancellation_Cancels" time="0.0591999" result="Pass" />
+      <test name="System.Linq.Tests.AggregateByTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.AggregateByTests" method="InterfaceCalls_ExpectedCounts" time="0.0206999" result="Pass" />
+      <test name="System.Linq.Tests.AggregateByTests.VariousValues_MatchesEnumerable_String(values: [])" type="System.Linq.Tests.AggregateByTests" method="VariousValues_MatchesEnumerable_String" time="0.0751999" result="Pass" />
+      <test name="System.Linq.Tests.AggregateByTests.VariousValues_MatchesEnumerable_String(values: [\&quot;1\&quot;])" type="System.Linq.Tests.AggregateByTests" method="VariousValues_MatchesEnumerable_String" time="0.1008" result="Pass" />
+      <test name="System.Linq.Tests.AggregateByTests.VariousValues_MatchesEnumerable_String(values: [\&quot;2\&quot;, \&quot;4\&quot;, \&quot;8\&quot;])" type="System.Linq.Tests.AggregateByTests" method="VariousValues_MatchesEnumerable_String" time="0.0326" result="Pass" />
+      <test name="System.Linq.Tests.AggregateByTests.VariousValues_MatchesEnumerable_String(values: [\&quot;12\&quot;, \&quot;4\&quot;, \&quot;8\&quot;])" type="System.Linq.Tests.AggregateByTests" method="VariousValues_MatchesEnumerable_String" time="0.0337999" result="Pass" />
+      <test name="System.Linq.Tests.AggregateByTests.VariousValues_MatchesEnumerable_String(values: [\&quot;12\&quot;, \&quot;13\&quot;, \&quot;14\&quot;, \&quot;15\&quot;, \&quot;22\&quot;, ···])" type="System.Linq.Tests.AggregateByTests" method="VariousValues_MatchesEnumerable_String" time="0.0540999" result="Pass" />
+      <test name="System.Linq.Tests.AggregateByTests.VariousValues_MatchesEnumerable_String(values: [\&quot;-1\&quot;, \&quot;2\&quot;, \&quot;5\&quot;, \&quot;6\&quot;, \&quot;7\&quot;, ···])" type="System.Linq.Tests.AggregateByTests" method="VariousValues_MatchesEnumerable_String" time="0.0497" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for System.Linq.Tests.FirstOrDefaultAsyncTests" time="0.083">
+      <test name="System.Linq.Tests.FirstOrDefaultAsyncTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.FirstOrDefaultAsyncTests" method="Callbacks_InvokedOnOriginalContext" time="0.0108" result="Pass" />
+      <test name="System.Linq.Tests.FirstOrDefaultAsyncTests.EmptyInputs_DefaultValueReturned" type="System.Linq.Tests.FirstOrDefaultAsyncTests" method="EmptyInputs_DefaultValueReturned" time="0.0134" result="Pass" />
+      <test name="System.Linq.Tests.FirstOrDefaultAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.FirstOrDefaultAsyncTests" method="InvalidInputs_Throws" time="0.0076999" result="Pass" />
+      <test name="System.Linq.Tests.FirstOrDefaultAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.FirstOrDefaultAsyncTests" method="Cancellation_Cancels" time="0.0170999" result="Pass" />
+      <test name="System.Linq.Tests.FirstOrDefaultAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.FirstOrDefaultAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0108" result="Pass" />
+      <test name="System.Linq.Tests.FirstOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.FirstOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.008" result="Pass" />
+      <test name="System.Linq.Tests.FirstOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.FirstOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0049999" result="Pass" />
+      <test name="System.Linq.Tests.FirstOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.FirstOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0055" result="Pass" />
+      <test name="System.Linq.Tests.FirstOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])" type="System.Linq.Tests.FirstOrDefaultAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0048" result="Pass" />
+    </collection>
+    <collection total="8" passed="8" failed="0" skipped="0" name="Test collection for System.Linq.Tests.IndexTests" time="0.052">
+      <test name="System.Linq.Tests.IndexTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.IndexTests" method="InterfaceCalls_ExpectedCounts" time="0.0118" result="Pass" />
+      <test name="System.Linq.Tests.IndexTests.Empty_ProducesEmpty" type="System.Linq.Tests.IndexTests" method="Empty_ProducesEmpty" time="0.0032" result="Pass" />
+      <test name="System.Linq.Tests.IndexTests.InvalidInputs_Throws" type="System.Linq.Tests.IndexTests" method="InvalidInputs_Throws" time="0.0017999" result="Pass" />
+      <test name="System.Linq.Tests.IndexTests.Cancellation_Cancels" type="System.Linq.Tests.IndexTests" method="Cancellation_Cancels" time="0.0081999" result="Pass" />
+      <test name="System.Linq.Tests.IndexTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.IndexTests" method="VariousValues_MatchesEnumerable" time="0.0043" result="Pass" />
+      <test name="System.Linq.Tests.IndexTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.IndexTests" method="VariousValues_MatchesEnumerable" time="0.0097" result="Pass" />
+      <test name="System.Linq.Tests.IndexTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.IndexTests" method="VariousValues_MatchesEnumerable" time="0.0052" result="Pass" />
+      <test name="System.Linq.Tests.IndexTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.IndexTests" method="VariousValues_MatchesEnumerable" time="0.0076999" result="Pass" />
+    </collection>
+    <collection total="5" passed="5" failed="0" skipped="0" name="Test collection for System.Linq.Tests.LeftJoinTests" time="30.049">
+      <test name="System.Linq.Tests.LeftJoinTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.LeftJoinTests" method="InterfaceCalls_ExpectedCounts" time="0.0318" result="Pass" />
+      <test name="System.Linq.Tests.LeftJoinTests.Empty_ProducesEmpty" type="System.Linq.Tests.LeftJoinTests" method="Empty_ProducesEmpty" time="0.0057999" result="Pass" />
+      <test name="System.Linq.Tests.LeftJoinTests.InvalidInputs_Throws" type="System.Linq.Tests.LeftJoinTests" method="InvalidInputs_Throws" time="0.0106" result="Pass" />
+      <test name="System.Linq.Tests.LeftJoinTests.Cancellation_Cancels" type="System.Linq.Tests.LeftJoinTests" method="Cancellation_Cancels" time="0.0380999" result="Pass" />
+      <test name="System.Linq.Tests.LeftJoinTests.VariousValues_MatchesEnumerable_String" type="System.Linq.Tests.LeftJoinTests" method="VariousValues_MatchesEnumerable_String" time="29.9625999" result="Pass" />
+    </collection>
+    <collection total="12" passed="12" failed="0" skipped="0" name="Test collection for System.Linq.Tests.AggregateAsyncTests" time="0.363">
+      <test name="System.Linq.Tests.AggregateAsyncTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.AggregateAsyncTests" method="Callbacks_InvokedOnOriginalContext" time="0.016" result="Pass" />
+      <test name="System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [])" type="System.Linq.Tests.AggregateAsyncTests" method="VariousValues_MatchesEnumerable_Int32" time="0.0764998" result="Pass" />
+      <test name="System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [1])" type="System.Linq.Tests.AggregateAsyncTests" method="VariousValues_MatchesEnumerable_Int32" time="0.0168998" result="Pass" />
+      <test name="System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [2, 4, 8])" type="System.Linq.Tests.AggregateAsyncTests" method="VariousValues_MatchesEnumerable_Int32" time="0.0146" result="Pass" />
+      <test name="System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.AggregateAsyncTests" method="VariousValues_MatchesEnumerable_Int32" time="0.0196999" result="Pass" />
+      <test name="System.Linq.Tests.AggregateAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.AggregateAsyncTests" method="InvalidInputs_Throws" time="0.0174998" result="Pass" />
+      <test name="System.Linq.Tests.AggregateAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.AggregateAsyncTests" method="Cancellation_Cancels" time="0.0519" result="Pass" />
+      <test name="System.Linq.Tests.AggregateAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.AggregateAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0725" result="Pass" />
+      <test name="System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_String(values: [])" type="System.Linq.Tests.AggregateAsyncTests" method="VariousValues_MatchesEnumerable_String" time="0.0381" result="Pass" />
+      <test name="System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_String(values: [\&quot;1\&quot;])" type="System.Linq.Tests.AggregateAsyncTests" method="VariousValues_MatchesEnumerable_String" time="0.0132" result="Pass" />
+      <test name="System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_String(values: [\&quot;2\&quot;, \&quot;4\&quot;, \&quot;8\&quot;])" type="System.Linq.Tests.AggregateAsyncTests" method="VariousValues_MatchesEnumerable_String" time="0.011" result="Pass" />
+      <test name="System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_String(values: [\&quot;-1\&quot;, \&quot;2\&quot;, \&quot;5\&quot;, \&quot;6\&quot;, \&quot;7\&quot;, ···])" type="System.Linq.Tests.AggregateAsyncTests" method="VariousValues_MatchesEnumerable_String" time="0.0148999" result="Pass" />
+    </collection>
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ToDictionaryAsyncTests" time="1.641">
+      <test name="System.Linq.Tests.ToDictionaryAsyncTests.Callbacks_InvokedOnOriginalContext" type="System.Linq.Tests.ToDictionaryAsyncTests" method="Callbacks_InvokedOnOriginalContext" time="0.0145999" result="Pass" />
+      <test name="System.Linq.Tests.ToDictionaryAsyncTests.Duplicates_Throws" type="System.Linq.Tests.ToDictionaryAsyncTests" method="Duplicates_Throws" time="0.0579999" result="Pass" />
+      <test name="System.Linq.Tests.ToDictionaryAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.ToDictionaryAsyncTests" method="InvalidInputs_Throws" time="0.0142" result="Pass" />
+      <test name="System.Linq.Tests.ToDictionaryAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.ToDictionaryAsyncTests" method="Cancellation_Cancels" time="0.0504" result="Pass" />
+      <test name="System.Linq.Tests.ToDictionaryAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ToDictionaryAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0188" result="Pass" />
+      <test name="System.Linq.Tests.ToDictionaryAsyncTests.VariousValues_MatchesEnumerable" type="System.Linq.Tests.ToDictionaryAsyncTests" method="VariousValues_MatchesEnumerable" time="1.4847998" result="Pass" />
+    </collection>
+    <collection total="12" passed="12" failed="0" skipped="0" name="Test collection for System.Linq.Tests.IntersectTests" time="0.182">
+      <test name="System.Linq.Tests.IntersectTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.IntersectTests" method="InterfaceCalls_ExpectedCounts" time="0.0193" result="Pass" />
+      <test name="System.Linq.Tests.IntersectTests.Empty_ProducesEmpty" type="System.Linq.Tests.IntersectTests" method="Empty_ProducesEmpty" time="0.0011" result="Pass" />
+      <test name="System.Linq.Tests.IntersectTests.InvalidInputs_Throws" type="System.Linq.Tests.IntersectTests" method="InvalidInputs_Throws" time="0.0024999" result="Pass" />
+      <test name="System.Linq.Tests.IntersectTests.Cancellation_Cancels" type="System.Linq.Tests.IntersectTests" method="Cancellation_Cancels" time="0.0092999" result="Pass" />
+      <test name="System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [], second: [])" type="System.Linq.Tests.IntersectTests" method="VariousValues_MatchesEnumerable" time="0.0153" result="Pass" />
+      <test name="System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [], second: [42])" type="System.Linq.Tests.IntersectTests" method="VariousValues_MatchesEnumerable" time="0.0111" result="Pass" />
+      <test name="System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [42, 43], second: [])" type="System.Linq.Tests.IntersectTests" method="VariousValues_MatchesEnumerable" time="0.008" result="Pass" />
+      <test name="System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [1], second: [2, 3])" type="System.Linq.Tests.IntersectTests" method="VariousValues_MatchesEnumerable" time="0.0144999" result="Pass" />
+      <test name="System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [3, 5])" type="System.Linq.Tests.IntersectTests" method="VariousValues_MatchesEnumerable" time="0.0132" result="Pass" />
+      <test name="System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 4, 8])" type="System.Linq.Tests.IntersectTests" method="VariousValues_MatchesEnumerable" time="0.0286" result="Pass" />
+      <test name="System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 5, 8])" type="System.Linq.Tests.IntersectTests" method="VariousValues_MatchesEnumerable" time="0.0374999" result="Pass" />
+      <test name="System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])" type="System.Linq.Tests.IntersectTests" method="VariousValues_MatchesEnumerable" time="0.0219" result="Pass" />
+    </collection>
+    <collection total="5" passed="5" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ChunkTests" time="0.104">
+      <test name="System.Linq.Tests.ChunkTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ChunkTests" method="InterfaceCalls_ExpectedCounts" time="0.0130999" result="Pass" />
+      <test name="System.Linq.Tests.ChunkTests.Empty_ProducesEmpty" type="System.Linq.Tests.ChunkTests" method="Empty_ProducesEmpty" time="0.0009999" result="Pass" />
+      <test name="System.Linq.Tests.ChunkTests.InvalidInputs_Throws" type="System.Linq.Tests.ChunkTests" method="InvalidInputs_Throws" time="0.0034999" result="Pass" />
+      <test name="System.Linq.Tests.ChunkTests.Cancellation_Cancels" type="System.Linq.Tests.ChunkTests" method="Cancellation_Cancels" time="0.0075" result="Pass" />
+      <test name="System.Linq.Tests.ChunkTests.VariousValues_MatchesEnumerable" type="System.Linq.Tests.ChunkTests" method="VariousValues_MatchesEnumerable" time="0.0789" result="Pass" />
+    </collection>
+    <collection total="4" passed="4" failed="0" skipped="0" name="Test collection for System.Linq.Tests.ToLookupAsyncTests" time="2.393">
+      <test name="System.Linq.Tests.ToLookupAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.ToLookupAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.0137" result="Pass" />
+      <test name="System.Linq.Tests.ToLookupAsyncTests.VariousValues_MatchesEnumerable" type="System.Linq.Tests.ToLookupAsyncTests" method="VariousValues_MatchesEnumerable" time="2.3292" result="Pass" />
+      <test name="System.Linq.Tests.ToLookupAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.ToLookupAsyncTests" method="InvalidInputs_Throws" time="0.0095" result="Pass" />
+      <test name="System.Linq.Tests.ToLookupAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.ToLookupAsyncTests" method="Cancellation_Cancels" time="0.0402" result="Pass" />
+    </collection>
+    <collection total="11" passed="11" failed="0" skipped="0" name="Test collection for System.Linq.Tests.MaxAsyncTests" time="0.758">
+      <test name="System.Linq.Tests.MaxAsyncTests.InterfaceCalls_ExpectedCounts" type="System.Linq.Tests.MaxAsyncTests" method="InterfaceCalls_ExpectedCounts" time="0.1592999" result="Pass" />
+      <test name="System.Linq.Tests.MaxAsyncTests.EmptyInputs_NonNullable_Throws" type="System.Linq.Tests.MaxAsyncTests" method="EmptyInputs_NonNullable_Throws" time="0.0227" result="Pass" />
+      <test name="System.Linq.Tests.MaxAsyncTests.InvalidInputs_Throws" type="System.Linq.Tests.MaxAsyncTests" method="InvalidInputs_Throws" time="0.0097999" result="Pass" />
+      <test name="System.Linq.Tests.MaxAsyncTests.Cancellation_Cancels" type="System.Linq.Tests.MaxAsyncTests" method="Cancellation_Cancels" time="0.0494" result="Pass" />
+      <test name="System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [])" type="System.Linq.Tests.MaxAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0854" result="Pass" />
+      <test name="System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [0])" type="System.Linq.Tests.MaxAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0771" result="Pass" />
+      <test name="System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [1])" type="System.Linq.Tests.MaxAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0471" result="Pass" />
+      <test name="System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])" type="System.Linq.Tests.MaxAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0724" result="Pass" />
+      <test name="System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])" type="System.Linq.Tests.MaxAsyncTests" method="VariousValues_MatchesEnumerable" time="0.1039999" result="Pass" />
+      <test name="System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [-1000, 1000])" type="System.Linq.Tests.MaxAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0602" result="Pass" />
+      <test name="System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [-1, -2, -3])" type="System.Linq.Tests.MaxAsyncTests" method="VariousValues_MatchesEnumerable" time="0.0702" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

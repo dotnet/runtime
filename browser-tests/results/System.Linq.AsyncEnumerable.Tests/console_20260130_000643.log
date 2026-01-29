@@ -1,0 +1,1025 @@
+nohup: ignoring input
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Runtime.InteropServices/gen/LibraryImportGenerator/LibraryImportGenerator.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Runtime.InteropServices/gen/DownlevelLibraryImportGenerator/DownlevelLibraryImportGenerator.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Memory/ref/System.Memory.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/coreclr/System.Private.CoreLib/System.Private.CoreLib.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Linq.AsyncEnumerable/ref/System.Linq.AsyncEnumerable.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/tools/illink/src/linker/ref/Mono.Linker.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Private.Uri/src/System.Private.Uri.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/tools/illink/src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Collections.Concurrent/ref/System.Collections.Concurrent.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Threading/ref/System.Threading.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/tools/illink/src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/Microsoft.Interop.SourceGeneration.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Linq/ref/System.Linq.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Collections/src/System.Collections.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Numerics.Vectors/src/System.Numerics.Vectors.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Private.CoreLib/gen/EventSourceGenerator.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/Microsoft.Bcl.AsyncInterfaces/src/Microsoft.Bcl.AsyncInterfaces.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Diagnostics.Tracing/ref/System.Diagnostics.Tracing.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Collections.Concurrent/src/System.Collections.Concurrent.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Diagnostics.Tracing/src/System.Diagnostics.Tracing.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Runtime/ref/System.Runtime.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Runtime.Intrinsics/src/System.Runtime.Intrinsics.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Collections/ref/System.Collections.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Numerics.Vectors/ref/System.Numerics.Vectors.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/Microsoft.Bcl.Memory/src/Microsoft.Bcl.Memory.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Threading.ThreadPool/src/System.Threading.ThreadPool.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/tools/illink/src/linker/Mono.Linker.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Private.CoreLib/gen/System.Private.CoreLib.Generators.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Runtime.InteropServices/ref/System.Runtime.InteropServices.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Threading.Overlapped/ref/System.Threading.Overlapped.csproj (in 5 ms).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Runtime.Intrinsics/ref/System.Runtime.Intrinsics.csproj (in 7 ms).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Linq/src/System.Linq.csproj (in 2.4 sec).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Private.CoreLib/ref/System.Private.CoreLib.csproj (in 5 ms).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Runtime.InteropServices/src/System.Runtime.InteropServices.csproj (in 11 ms).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Threading.ThreadPool/ref/System.Threading.ThreadPool.csproj (in 5 ms).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Threading/src/System.Threading.csproj (in 9 ms).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Memory/src/System.Memory.csproj (in 8 ms).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Runtime/src/System.Runtime.csproj (in 8 ms).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Runtime.InteropServices/gen/ComInterfaceGenerator/ComInterfaceGenerator.csproj (in 19 ms).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Threading.Channels/ref/System.Threading.Channels.csproj (in 25 ms).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/Common/tests/TestUtilities/TestUtilities.csproj (in 38 ms).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Linq.AsyncEnumerable/src/System.Linq.AsyncEnumerable.csproj (in 29 ms).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Threading.Channels/src/System.Threading.Channels.csproj (in 31 ms).
+  Restored /home/pavelsavara/dev/runtime2/src/libraries/System.Linq.AsyncEnumerable/tests/System.Linq.AsyncEnumerable.Tests.csproj (in 2.51 sec).
+  TestUtilities -> /home/pavelsavara/dev/runtime2/artifacts/bin/TestUtilities/Debug/net10.0/TestUtilities.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Linq.AsyncEnumerable.Tests -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Linq.AsyncEnumerable.Tests/Debug/net11.0/browser-wasm/System.Linq.AsyncEnumerable.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime2/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime2/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime2/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime2/artifacts/bin/System.Linq.AsyncEnumerable.Tests/Debug/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime2/artifacts/bin/System.Linq.AsyncEnumerable.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime2/artifacts/bin/System.Linq.AsyncEnumerable.Tests/Debug/net11.0/browser-wasm/wwwroot ~/dev/runtime2/src/libraries/System.Linq.AsyncEnumerable/tests
+  ----- start Fri Jan 30 00:06:58 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime2/artifacts/bin/System.Linq.AsyncEnumerable.Tests/Debug/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime2/artifacts/bin/System.Linq.AsyncEnumerable.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime2/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Linq.AsyncEnumerable.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime2/artifacts/bin/System.Linq.AsyncEnumerable.Tests/Debug/net11.0/browser-wasm/wwwroot ~/dev/runtime2/artifacts/bin/System.Linq.AsyncEnumerable.Tests/Debug/net11.0/browser-wasm/wwwroot ~/dev/runtime2/src/libraries/System.Linq.AsyncEnumerable/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime2/artifacts/bin/System.Linq.AsyncEnumerable.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime2/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Linq.AsyncEnumerable.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime2/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 39843
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 39843.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:39987/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Linq.AsyncEnumerable.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Linq.AsyncEnumerable.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Linq.AsyncEnumerable.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash 713bb3f1f8bf1ec9117f81c55ac3a999ec24aa86
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Linq.AsyncEnumerable.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Linq.AsyncEnumerable.Tests.dll (found 375 of 375 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Linq.AsyncEnumerable.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.InfiniteSequenceTests.InfiniteSequence_ProducesExpectedSequence
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.InfiniteSequenceTests.MultipleGetEnumeratorCalls_ReturnsUniqueInstances
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.InfiniteSequenceTests.NullArguments_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.InfiniteSequenceTests.InfiniteSequence_AllZeroes_MatchesExpectedOutput
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectByTests.InterfaceCalls_ExpectedCounts(useAsync: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectByTests.InterfaceCalls_ExpectedCounts(useAsync: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectByTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectByTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectByTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [], second: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [42, 43], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [1], second: [2, 3])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [2, 4, 8], second: [3, 5])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [2, 4, 8], second: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [2, 4, 8], second: [2, 5, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectByTests.VariousValues_MatchesEnumerable(firstInts: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AllAsyncTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AllAsyncTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AllAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AllAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AllAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AllAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AllAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AllAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ReverseTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ReverseTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ReverseTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ReverseTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ReverseTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ReverseTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ReverseTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ReverseTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipLastTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipLastTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipLastTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipLastTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipLastTests.VariousValues_MatchesEnumerable(ints: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipLastTests.VariousValues_MatchesEnumerable(ints: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipLastTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipLastTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipLastTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SequenceTests.SmallIntegers_ProducesFullRange
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SequenceTests.MultipleGetEnumeratorCalls_ReturnsUniqueInstances
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SequenceTests.InvalidArguments_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SequenceTests.Numbers_ProduceExpectedSequence
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SequenceTests.FloatingPoints_ProduceExpectedSequence
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SequenceTests.Step1_MatchesRange
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SequenceTests.EndOutOfRange_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleAsyncTests.EmptyInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleAsyncTests.DoubleInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountByTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountByTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountByTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountByTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountByTests.InterfaceCalls_ExpectedCounts(useAsync: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountByTests.InterfaceCalls_ExpectedCounts(useAsync: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountByTests.VariousValues_MatchesEnumerable_Strings
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.EmptyTests.Empty_ContainsZeroElements
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.EmptyTests.Empty_Idempotent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [], second: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [42, 43], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [1], second: [2, 3])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [3, 5])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 5, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionTests.VariousValues_MatchesEnumerable(first: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToArrayAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToArrayAsyncTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToArrayAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToArrayAsyncTests.VariousValues_MatchesEnumerable(values: [1, 1, 1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToArrayAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToArrayAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToArrayAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToArrayAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToArrayAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.ParallelEnumeration_ConcatClones
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.ConcatWithAppendPrepend_WorksCorrectly
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.DisposeBeforeComplete_DoesNotThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.Concat_TransitionsCorrectlyBetweenSources
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.LongConcatChain_WorksCorrectly
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [], second: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [42, 43], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [1], second: [2, 3])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [3, 5])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 5, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.VariousValues_MatchesEnumerable(first: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.ConcatEmptySequences_ReturnsEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.MultipleEnumerations_ProducesSameResults
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.MultipleConcat_Coalesced
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.ChainedConcat_ProducesCorrectSequence(concatCount: 2)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.ChainedConcat_ProducesCorrectSequence(concatCount: 3)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.ChainedConcat_ProducesCorrectSequence(concatCount: 5)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ConcatTests.ChainedConcat_ProducesCorrectSequence(concatCount: 10)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DefaultIfEmptyTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DefaultIfEmptyTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DefaultIfEmptyTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DefaultIfEmptyTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DefaultIfEmptyTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DefaultIfEmptyTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DefaultIfEmptyTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToListAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToListAsyncTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToListAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToListAsyncTests.VariousValues_MatchesEnumerable(values: [1, 1, 1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToListAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToListAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToListAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToListAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToListAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinAsyncTests.EmptyInputs_NonNullable_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [-1000, 1000])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinAsyncTests.VariousValues_MatchesEnumerable(values: [-1, -2, -3])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleOrDefaultAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleOrDefaultAsyncTests.EmptyInputs_DefaultValueReturned
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleOrDefaultAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleOrDefaultAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SingleOrDefaultAsyncTests.DoubleInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctTests.VariousValues_MatchesEnumerable(values: [1, 1, 1, 2, 2, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctTests.VariousValues_MatchesEnumerable(values: [2, 4, 8, 2, 4, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AverageAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AverageAsyncTests.EmptyInputs_NonNullable_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AverageAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AverageAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AverageAsyncTests.VariousValues_MatchesEnumerable(values: [0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AverageAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AverageAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AverageAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AverageAsyncTests.VariousValues_MatchesEnumerable(values: [-2147483647, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AverageAsyncTests.VariousValues_MatchesEnumerable(values: [-1, -2, -3])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.ParallelEnumeration_PrependClones
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.MultiplePrepends_Coalesced
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.MultipleEnumerations_ProducesSameResults
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.PrependOnEmptySource_WorksCorrectly
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.AppendAfterPrepend_BothWork
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.LongPrependChain_WorksCorrectly
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.DisposeBeforeComplete_DoesNotThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.PrependThenAppend_Coalesced
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.ChainedPrepends_ProducesCorrectSequence(prependCount: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.ChainedPrepends_ProducesCorrectSequence(prependCount: 2)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.ChainedPrepends_ProducesCorrectSequence(prependCount: 5)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.PrependTests.ChainedPrepends_ProducesCorrectSequence(prependCount: 10)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.ParallelEnumeration_AppendClones
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.MultipleAppends_Coalesced
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.VeryLongAppendChain_MatchesBenchmarkScenario
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.AppendOnEmptySource_WorksCorrectly
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.PrependAfterAppend_BothWork
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.LongAppendChain_WorksCorrectly
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.DisposeBeforeComplete_DoesNotThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.MultipleEnumerations_ProducesSameResults
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.ChainedAppends_ProducesCorrectSequence(appendCount: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.ChainedAppends_ProducesCorrectSequence(appendCount: 2)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.ChainedAppends_ProducesCorrectSequence(appendCount: 5)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.ChainedAppends_ProducesCorrectSequence(appendCount: 10)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AppendTests.AppendThenPrepend_Coalesced
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.OrderByTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.OrderByTests.VariousValues_MatchesEnumerable_Int32
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.OrderByTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.OrderByTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.OrderByTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.OrderByTests.VariousValues_MatchesEnumerable_String
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.OrderByTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SequenceEqualAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SequenceEqualAsyncTests.VariousValues_MatchesEnumerable
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SequenceEqualAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SequenceEqualAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AnyAsyncTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AnyAsyncTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AnyAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AnyAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AnyAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AnyAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AnyAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AnyAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AnyAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountAsyncTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountAsyncTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CountAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxByAsyncTests.InterfaceCalls_ExpectedCounts(useAsync: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxByAsyncTests.InterfaceCalls_ExpectedCounts(useAsync: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxByAsyncTests.EmptyInputs_ThrowsForNonNullableTypes
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxByAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxByAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [1, 8, 2, 7, 3, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [-1000, 1000])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxByAsyncTests.VariousValues_MatchesEnumerable(values: [-1, -2, -3])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinByAsyncTests.InterfaceCalls_ExpectedCounts(useAsync: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinByAsyncTests.InterfaceCalls_ExpectedCounts(useAsync: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinByAsyncTests.EmptyInputs_ThrowsForNonNullableTypes
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinByAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinByAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [1, 8, 2, 7, 3, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [-1000, 1000])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MinByAsyncTests.VariousValues_MatchesEnumerable(values: [-1, -2, -3])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipWhileTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipWhileTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipWhileTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipWhileTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipWhileTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipWhileTests.VariousValues_MatchesEnumerable(ints: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipWhileTests.VariousValues_MatchesEnumerable(ints: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipWhileTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipWhileTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipWhileTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtAsyncTests.OutOfRange_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctByTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctByTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctByTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctByTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctByTests.InterfaceCalls_ExpectedCounts(useAsync: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctByTests.InterfaceCalls_ExpectedCounts(useAsync: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctByTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctByTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctByTests.VariousValues_MatchesEnumerable(values: [1, 1, 1, 2, 2, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctByTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctByTests.VariousValues_MatchesEnumerable(values: [2, 4, 8, 2, 4, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.DistinctByTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.OfTypeTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.OfTypeTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.OfTypeTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.OfTypeTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.OfTypeTests.NullAndNonNull_SkipsNulls
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectTests.VariousValues_MatchesEnumerable(ints: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectTests.VariousValues_MatchesEnumerable(ints: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.RangeTests.VariousValues_MatchesEnumerable
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.RangeTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.RangeTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.QueryComprehensionTests.GroupClauses
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.QueryComprehensionTests.ExplicitRangeVariableTypes
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.QueryComprehensionTests.QueryExpressionsWithContinuations
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.QueryComprehensionTests.OrderByClauses
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.QueryComprehensionTests.SelectClauses
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.QueryComprehensionTests.FromLetWhereJoinClauses
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionByTests.InterfaceCalls_ExpectedCounts(useAsync: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionByTests.InterfaceCalls_ExpectedCounts(useAsync: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionByTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionByTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionByTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [], second: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [42, 43], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [1], second: [2, 3])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [3, 5])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 5, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.UnionByTests.VariousValues_MatchesEnumerable(first: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectManyTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectManyTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectManyTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectManyTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectManyTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SelectManyTests.VariousValues_MatchesEnumerable
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToAsyncEnumerableTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToAsyncEnumerableTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToAsyncEnumerableTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToAsyncEnumerableTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToAsyncEnumerableTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToAsyncEnumerableTests.VariousValues_MatchesEnumerable(values: [1, 1, 1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToAsyncEnumerableTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToAsyncEnumerableTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToAsyncEnumerableTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptByTests.InterfaceCalls_ExpectedCounts(useAsync: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptByTests.InterfaceCalls_ExpectedCounts(useAsync: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptByTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptByTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptByTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [], second: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [42, 43], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [1], second: [2, 3])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [2, 4, 8], second: [3, 5])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [2, 4, 8], second: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [2, 4, 8], second: [2, 5, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptByTests.VariousValues_MatchesEnumerable(firstInts: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToHashSetAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToHashSetAsyncTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToHashSetAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToHashSetAsyncTests.VariousValues_MatchesEnumerable(values: [1, 1, 1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToHashSetAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToHashSetAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToHashSetAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToHashSetAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToHashSetAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ContainsAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [-1, 5, 6, 7, 8, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ContainsAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ContainsAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_String(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_String(values: ["1"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_String(values: ["2", "4", "8"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ContainsAsyncTests.VariousValues_MatchesEnumerable_String(values: ["-1", "5", "6", "7", "8", ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [], second: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [42, 43], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [1], second: [2, 3])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [3, 5])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 5, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ExceptTests.VariousValues_MatchesEnumerable(first: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeWhileTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeWhileTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeWhileTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeWhileTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeWhileTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeWhileTests.VariousValues_MatchesEnumerable(ints: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeWhileTests.VariousValues_MatchesEnumerable(ints: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeWhileTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeWhileTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeWhileTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipTests.VariousValues_MatchesEnumerable(ints: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipTests.VariousValues_MatchesEnumerable(ints: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SkipTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeTests.VariousValues_MatchesEnumerable(ints: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeTests.VariousValues_MatchesEnumerable(ints: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.GroupJoinTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.GroupJoinTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.GroupJoinTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.GroupJoinTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.GroupJoinTests.VariousValues_MatchesEnumerable_String
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.RightJoinTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.RightJoinTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.RightJoinTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.RightJoinTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.RightJoinTests.VariousValues_MatchesEnumerable_String
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.WhereTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.WhereTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.WhereTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.WhereTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.WhereTests.VariousValues_MatchesEnumerable(ints: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.WhereTests.VariousValues_MatchesEnumerable(ints: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.WhereTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.WhereTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.WhereTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtOrDefaultAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtOrDefaultAsyncTests.OutOfRange_ReturnsDefault
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtOrDefaultAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtOrDefaultAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ElementAtOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastOrDefaultAsyncTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastOrDefaultAsyncTests.EmptyInputs_DefaultValueReturned
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastOrDefaultAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastOrDefaultAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastOrDefaultAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.RepeatTests.VariousValues_MatchesEnumerable
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.RepeatTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.RepeatTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ShuffleTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ShuffleTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ShuffleTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ShuffleTests.ToArrayAsync_ElementsAreRandomized
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ShuffleTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ShuffleTests.VariousValues_ContainsAllInputValues(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ShuffleTests.VariousValues_ContainsAllInputValues(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ShuffleTests.VariousValues_ContainsAllInputValues(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ShuffleTests.VariousValues_ContainsAllInputValues(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.JoinTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.JoinTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.JoinTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.JoinTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.JoinTests.VariousValues_MatchesEnumerable_String
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SumAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SumAsyncTests.EmptyInputs_NonNullable_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SumAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SumAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SumAsyncTests.VariousValues_MatchesEnumerable(values: [0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SumAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SumAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SumAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SumAsyncTests.VariousValues_MatchesEnumerable(values: [-2147483647, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.SumAsyncTests.VariousValues_MatchesEnumerable(values: [-1, -2, -3])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastAsyncTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastAsyncTests.EmptyInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LastAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeLastTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeLastTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeLastTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeLastTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeLastTests.VariousValues_MatchesEnumerable(ints: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeLastTests.VariousValues_MatchesEnumerable(ints: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeLastTests.VariousValues_MatchesEnumerable(ints: [1, 2, 3, 4, 5, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeLastTests.VariousValues_MatchesEnumerable(ints: [-1, 1, -2, 2, -10, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.TakeLastTests.VariousValues_MatchesEnumerable(ints: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CastTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CastTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CastTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CastTests.IncorrectType_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CastTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.CastTests.NullAndNonNull_IncludesNulls
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstAsyncTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstAsyncTests.EmptyInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.GroupByTests.IGrouping_ImplementsIList
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.GroupByTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.GroupByTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.GroupByTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.GroupByTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.GroupByTests.VariousValues_MatchesEnumerable_String
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ZipTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ZipTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ZipTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ZipTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ZipTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [], second: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [42, 43], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [1], second: [2, 3])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [3, 5])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 5, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ZipTests.VariousValues_MatchesEnumerable(first: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateByTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateByTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateByTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateByTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateByTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateByTests.VariousValues_MatchesEnumerable_String(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateByTests.VariousValues_MatchesEnumerable_String(values: ["1"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateByTests.VariousValues_MatchesEnumerable_String(values: ["2", "4", "8"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateByTests.VariousValues_MatchesEnumerable_String(values: ["12", "4", "8"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateByTests.VariousValues_MatchesEnumerable_String(values: ["12", "13", "14", "15", "22", ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateByTests.VariousValues_MatchesEnumerable_String(values: ["-1", "2", "5", "6", "7", ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstOrDefaultAsyncTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstOrDefaultAsyncTests.EmptyInputs_DefaultValueReturned
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstOrDefaultAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstOrDefaultAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstOrDefaultAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.FirstOrDefaultAsyncTests.VariousValues_MatchesEnumerable(values: [1, 3, 5, 7])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IndexTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IndexTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IndexTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IndexTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IndexTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IndexTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IndexTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IndexTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LeftJoinTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LeftJoinTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LeftJoinTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LeftJoinTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.LeftJoinTests.VariousValues_MatchesEnumerable_String
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateAsyncTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_Int32(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_String(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_String(values: ["1"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_String(values: ["2", "4", "8"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.AggregateAsyncTests.VariousValues_MatchesEnumerable_String(values: ["-1", "2", "5", "6", "7", ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToDictionaryAsyncTests.Callbacks_InvokedOnOriginalContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToDictionaryAsyncTests.Duplicates_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToDictionaryAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToDictionaryAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToDictionaryAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToDictionaryAsyncTests.VariousValues_MatchesEnumerable
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [], second: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [42, 43], second: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [1], second: [2, 3])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [3, 5])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [2, 4, 8], second: [2, 5, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.IntersectTests.VariousValues_MatchesEnumerable(first: [-1, 2, 5, 6, 7, ···], second: [-2147483648, 2147483647])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ChunkTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ChunkTests.Empty_ProducesEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ChunkTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ChunkTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ChunkTests.VariousValues_MatchesEnumerable
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToLookupAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToLookupAsyncTests.VariousValues_MatchesEnumerable
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToLookupAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.ToLookupAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxAsyncTests.InterfaceCalls_ExpectedCounts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxAsyncTests.EmptyInputs_NonNullable_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxAsyncTests.InvalidInputs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxAsyncTests.Cancellation_Cancels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [1])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [2, 4, 8])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [-1, 2, 5, 6, 7, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [-1000, 1000])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Linq.Tests.MaxAsyncTests.VariousValues_MatchesEnumerable(values: [-1, -2, -3])
+  [40m[32minfo[39m[22m[49m: Finished:    System.Linq.AsyncEnumerable.Tests.dll
+  [40m[32minfo[39m[22m[49m: ASSERT FAILED
+  [40m[32minfo[39m[22m[49m: 	Expression: slotNumber >= GetNumVirtuals() || pMDRet == m_pDeclMT->GetMethodDescForSlot_NoThrow(slotNumber)
+  [40m[32minfo[39m[22m[49m: 	Location:   /home/pavelsavara/dev/runtime/src/coreclr/vm/methodtable.cpp:6963
+  [40m[32minfo[39m[22m[49m: 	Function:   GetImplMethodDesc
+  [40m[32minfo[39m[22m[49m: 	Process:    42
+  [40m[32minfo[39m[22m[49m: Frame (InterpreterFrame): 0x4fff2c
+  [40m[32minfo[39m[22m[49m:    0) MessageSinkMessageExtensions::Dispatch, IR_0037
+  [40m[32minfo[39m[22m[49m:    1) Microsoft.DotNet.XHarness.TestRunners.Xunit.CompletionCallbackExecutionSink::OnMessageWithTypes, IR_0030
+  [40m[32minfo[39m[22m[49m:    2) Xunit.MessageSinkAdapter::OnMessageWithTypes, IR_0015
+  [40m[32minfo[39m[22m[49m:    3) Xunit.OptimizedRemoteMessageSink::OnMessage, IR_001c
+  [40m[32minfo[39m[22m[49m:    4) Xunit.Sdk.SynchronousMessageBus::QueueMessage, IR_0032
+  [40m[32minfo[39m[22m[49m:    5) <RunAsync>d__41[__Canon]::MoveNext, IR_036e
+  [40m[32minfo[39m[22m[49m:    6) <RunAsync>d__41[__Canon]::MoveNext, IR_02be
+  [40m[32minfo[39m[22m[49m:    7) Xunit.Sdk.TestAssemblyRunner`1+<RunAsync>d__41[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:    8) AsyncStateMachineBox`1[__Canon,<RunAsync>d__41]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:    9) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestAssemblyRunner`1+<RunAsync>d__41[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   10) System.Threading.ContextCallback::IL_STUB_DelegateShuffleThunk, IR_0014
+  [40m[32minfo[39m[22m[49m:   11) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   12) AsyncStateMachineBox`1[__Canon,<RunAsync>d__41]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:   13) AsyncStateMachineBox`1[__Canon,<RunAsync>d__41]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   14) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   15) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   16) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   17) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   18) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   19) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   20) <RunTestCollectionsAsync>d__2::MoveNext, IR_0152
+  [40m[32minfo[39m[22m[49m:   21) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__2]::ExecutionContextCallback, IR_0030
+  [40m[32minfo[39m[22m[49m:   22) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[YieldingXunitTestAssemblyRunner+<RunTestCollectionsAsync>d__2, Microsoft.DotNet.XHarness.TestRunners.Xunit, Version=11.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   23) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   24) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__2]::MoveNext, IR_00c0
+  [40m[32minfo[39m[22m[49m:   25) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__2]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   26) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   27) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   28) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   29) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   30) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   31) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   32) <RunTestCollectionsAsync>d__16::MoveNext, IR_0653
+  [40m[32minfo[39m[22m[49m:   33) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__16]::ExecutionContextCallback, IR_0030
+  [40m[32minfo[39m[22m[49m:   34) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.XunitTestAssemblyRunner+<RunTestCollectionsAsync>d__16, xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   35) System.Threading.ContextCallback::IL_STUB_DelegateShuffleThunk, IR_0014
+  [40m[32minfo[39m[22m[49m:   36) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   37) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__16]::MoveNext, IR_00c0
+  [40m[32minfo[39m[22m[49m:   38) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__16]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   39) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   40) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   41) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   42) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   43) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   44) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   45) <RunTestCollectionsAsync>d__42[__Canon]::MoveNext, IR_0181
+  [40m[32minfo[39m[22m[49m:   46) Xunit.Sdk.TestAssemblyRunner`1+<RunTestCollectionsAsync>d__42[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   47) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__42]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:   48) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestAssemblyRunner`1+<RunTestCollectionsAsync>d__42[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   49) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   50) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__42]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:   51) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__42]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   52) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   53) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   54) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   55) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   56) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   57) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   58) <RunTestCollectionAsync>d__1::MoveNext, IR_0182
+  [40m[32minfo[39m[22m[49m:   59) AsyncStateMachineBox`1[__Canon,<RunTestCollectionAsync>d__1]::ExecutionContextCallback, IR_0030
+  [40m[32minfo[39m[22m[49m:   60) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[YieldingXunitTestAssemblyRunner+<RunTestCollectionAsync>d__1, Microsoft.DotNet.XHarness.TestRunners.Xunit, Version=11.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   61) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   62) AsyncStateMachineBox`1[__Canon,<RunTestCollectionAsync>d__1]::MoveNext, IR_00c0
+  [40m[32minfo[39m[22m[49m:   63) AsyncStateMachineBox`1[__Canon,<RunTestCollectionAsync>d__1]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   64) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   65) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   66) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   67) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   68) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   69) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   70) <RunAsync>d__27[__Canon]::MoveNext, IR_0283
+  [40m[32minfo[39m[22m[49m:   71) Xunit.Sdk.TestCollectionRunner`1+<RunAsync>d__27[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   72) AsyncStateMachineBox`1[__Canon,<RunAsync>d__27]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:   73) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestCollectionRunner`1+<RunAsync>d__27[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   74) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   75) AsyncStateMachineBox`1[__Canon,<RunAsync>d__27]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:   76) AsyncStateMachineBox`1[__Canon,<RunAsync>d__27]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   77) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   78) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   79) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   80) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   81) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   82) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   83) <RunTestClassesAsync>d__28[__Canon]::MoveNext, IR_020a
+  [40m[32minfo[39m[22m[49m:   84) Xunit.Sdk.TestCollectionRunner`1+<RunTestClassesAsync>d__28[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   85) AsyncStateMachineBox`1[__Canon,<RunTestClassesAsync>d__28]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:   86) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestCollectionRunner`1+<RunTestClassesAsync>d__28[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   87) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   88) AsyncStateMachineBox`1[__Canon,<RunTestClassesAsync>d__28]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:   89) AsyncStateMachineBox`1[__Canon,<RunTestClassesAsync>d__28]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   90) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   91) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   92) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   93) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   94) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   95) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   96) <RunTestClassAsync>d__1::MoveNext, IR_0190
+  [40m[32minfo[39m[22m[49m:   97) AsyncStateMachineBox`1[__Canon,<RunTestClassAsync>d__1]::ExecutionContextCallback, IR_0030
+  [40m[32minfo[39m[22m[49m:   98) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[YieldingXunitTestCollectionRunner+<RunTestClassAsync>d__1, Microsoft.DotNet.XHarness.TestRunners.Xunit, Version=11.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   99) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  100) AsyncStateMachineBox`1[__Canon,<RunTestClassAsync>d__1]::MoveNext, IR_00c0
+  [40m[32minfo[39m[22m[49m:  101) AsyncStateMachineBox`1[__Canon,<RunTestClassAsync>d__1]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  102) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  103) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  104) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  105) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:  106) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:  107) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:  108) <RunAsync>d__37[__Canon]::MoveNext, IR_0283
+  [40m[32minfo[39m[22m[49m:  109) Xunit.Sdk.TestClassRunner`1+<RunAsync>d__37[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  110) AsyncStateMachineBox`1[__Canon,<RunAsync>d__37]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:  111) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestClassRunner`1+<RunAsync>d__37[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  112) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  113) AsyncStateMachineBox`1[__Canon,<RunAsync>d__37]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:  114) AsyncStateMachineBox`1[__Canon,<RunAsync>d__37]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  115) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  116) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  117) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  118) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:  119) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:  120) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:  121) <RunTestMethodsAsync>d__38[__Canon]::MoveNext, IR_024d
+  [40m[32minfo[39m[22m[49m:  122) Xunit.Sdk.TestClassRunner`1+<RunTestMethodsAsync>d__38[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  123) AsyncStateMachineBox`1[__Canon,<RunTestMethodsAsync>d__38]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:  124) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestClassRunner`1+<RunTestMethodsAsync>d__38[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  125) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  126) AsyncStateMachineBox`1[__Canon,<RunTestMethodsAsync>d__38]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:  127) AsyncStateMachineBox`1[__Canon,<RunTestMethodsAsync>d__38]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  128) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  129) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  130) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  131) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:  132) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:  133) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:  134) <RunTestMethodAsync>d__1::MoveNext, IR_0160
+  [40m[32minfo[39m[22m[49m:  135) AsyncStateMachineBox`1[__Canon,<RunTestMethodAsync>d__1]::ExecutionContextCallback, IR_0030
+  [40m[32minfo[39m[22m[49m:  136) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[YieldingXunitTestClassRunner+<RunTestMethodAsync>d__1, Microsoft.DotNet.XHarness.TestRunners.Xunit, Version=11.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  137) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  138) AsyncStateMachineBox`1[__Canon,<RunTestMethodAsync>d__1]::MoveNext, IR_00c0
+  [40m[32minfo[39m[22m[49m:  139) AsyncStateMachineBox`1[__Canon,<RunTestMethodAsync>d__1]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  140) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  141) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  142) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  143) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:  144) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:  145) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:  146) <RunAsync>d__31[__Canon]::MoveNext, IR_0198
+  [40m[32minfo[39m[22m[49m:  147) Xunit.Sdk.TestMethodRunner`1+<RunAsync>d__31[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  148) AsyncStateMachineBox`1[__Canon,<RunAsync>d__31]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:  149) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestMethodRunner`1+<RunAsync>d__31[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  150) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  151) AsyncStateMachineBox`1[__Canon,<RunAsync>d__31]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:  152) AsyncStateMachineBox`1[__Canon,<RunAsync>d__31]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  153) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  154) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  155) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  156) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:  157) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:  158) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:  159) <RunTestCasesAsync>d__32[__Canon]::MoveNext, IR_017e
+  [40m[32minfo[39m[22m[49m:  160) Xunit.Sdk.TestMethodRunner`1+<RunTestCasesAsync>d__32[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  161) AsyncStateMachineBox`1[__Canon,<RunTestCasesAsync>d__32]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:  162) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestMethodRunner`1+<RunTestCasesAsync>d__32[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  163) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  164) AsyncStateMachineBox`1[__Canon,<RunTestCasesAsync>d__32]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:  165) AsyncStateMachineBox`1[__Canon,<RunTestCasesAsync>d__32]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  166) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  167) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  168) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  169) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:  170) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:  171) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:  172) <RunAsync>d__19[__Canon]::MoveNext, IR_0267
+  [40m[32minfo[39m[22m[49m:  173) Xunit.Sdk.TestCaseRunner`1+<RunAsync>d__19[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  174) AsyncStateMachineBox`1[__Canon,<RunAsync>d__19]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:  175) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestCaseRunner`1+<RunAsync>d__19[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  176) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  177) AsyncStateMachineBox`1[__Canon,<RunAsync>d__19]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:  178) AsyncStateMachineBox`1[__Canon,<RunAsync>d__19]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  179) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  180) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  181) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  182) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:  183) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:  184) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:  185) <RunTestAsync>d__11::MoveNext, IR_01e3
+  [40m[32minfo[39m[22m[49m:  186) AsyncStateMachineBox`1[__Canon,<RunTestAsync>d__11]::ExecutionContextCallback, IR_0030
+  [40m[32minfo[39m[22m[49m:  187) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.XunitTheoryTestCaseRunner+<RunTestAsync>d__11, xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  188) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  189) AsyncStateMachineBox`1[__Canon,<RunTestAsync>d__11]::MoveNext, IR_00c0
+  [40m[32minfo[39m[22m[49m:  190) AsyncStateMachineBox`1[__Canon,<RunTestAsync>d__11]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  191) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  192) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  193) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  194) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:  195) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:  196) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:  197) <RunAsync>d__43[__Canon]::MoveNext, IR_0345
+  [40m[32minfo[39m[22m[49m:  198) Xunit.Sdk.TestRunner`1+<RunAsync>d__43[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  199) AsyncStateMachineBox`1[__Canon,<RunAsync>d__43]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:  200) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestRunner`1+<RunAsync>d__43[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  201) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  202) AsyncStateMachineBox`1[__Canon,<RunAsync>d__43]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:  203) AsyncStateMachineBox`1[__Canon,<RunAsync>d__43]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  204) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  205) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  206) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  207) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:  208) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:  209) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:  210) <RunAsync>d__10`1[__Canon]::MoveNext, IR_00ce
+  [40m[32minfo[39m[22m[49m:  211) Xunit.Sdk.ExceptionAggregator+<RunAsync>d__10`1[[System.Tuple`2[[System.Decimal, System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  212) AsyncStateMachineBox`1[__Canon,<RunAsync>d__10`1]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:  213) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[System.Tuple`2[[System.Decimal, System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[Xunit.Sdk.ExceptionAggregator+<RunAsync>d__10`1[[System.Tuple`2[[System.Decimal, System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  214) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  215) AsyncStateMachineBox`1[__Canon,<RunAsync>d__10`1]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:  216) AsyncStateMachineBox`1[__Canon,<RunAsync>d__10`1]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  217) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  218) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  219) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  220) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:  221) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:  222) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:  223) <InvokeTestAsync>d__4::MoveNext, IR_01fc
+  [40m[32minfo[39m[22m[49m:  224) AsyncStateMachineBox`1[__Canon,<InvokeTestAsync>d__4]::ExecutionContextCallback, IR_0030
+  [40m[32minfo[39m[22m[49m:  225) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[System.Tuple`2[[System.Decimal, System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[Xunit.Sdk.XunitTestRunner+<InvokeTestAsync>d__4, xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  226) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  227) AsyncStateMachineBox`1[__Canon,<InvokeTestAsync>d__4]::MoveNext, IR_00c0
+  [40m[32minfo[39m[22m[49m:  228) AsyncStateMachineBox`1[__Canon,<InvokeTestAsync>d__4]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  229) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  230) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  231) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  232) System.Threading.Tasks.Task`1[Decimal]::TrySetResult, IR_0074
+  [40m[32minfo[39m[22m[49m:  233) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[Decimal]::SetExistingTaskResult, IR_004b
+  [40m[32minfo[39m[22m[49m:  234) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[Decimal]::SetResult, IR_003a
+  [40m[32minfo[39m[22m[49m:  235) <RunAsync>d__10`1[Decimal]::MoveNext, IR_00c0
+  [40m[32minfo[39m[22m[49m:  236) AsyncStateMachineBox`1[Decimal,<RunAsync>d__10`1]::ExecutionContextCallback, IR_002e
+  [40m[32minfo[39m[22m[49m:  237) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  238) AsyncStateMachineBox`1[Decimal,<RunAsync>d__10`1]::MoveNext, IR_00be
+  [40m[32minfo[39m[22m[49m:  239) AsyncStateMachineBox`1[Decimal,<RunAsync>d__10`1]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  240) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  241) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  242) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  243) System.Threading.Tasks.Task`1[Decimal]::TrySetResult, IR_0074
+  [40m[32minfo[39m[22m[49m:  244) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[Decimal]::SetExistingTaskResult, IR_004b
+  [40m[32minfo[39m[22m[49m:  245) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[Decimal]::SetResult, IR_003a
+  [40m[32minfo[39m[22m[49m:  246) <<RunAsync>b__46_0>d[__Canon]::MoveNext, IR_0391
+  [40m[32minfo[39m[22m[49m:  247) Xunit.Sdk.TestInvoker`1+<<RunAsync>b__46_0>d[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  248) AsyncStateMachineBox`1[Decimal,<<RunAsync>b__46_0>d]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:  249) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[System.Decimal, System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[Xunit.Sdk.TestInvoker`1+<<RunAsync>b__46_0>d[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  250) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  251) AsyncStateMachineBox`1[Decimal,<<RunAsync>b__46_0>d]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:  252) AsyncStateMachineBox`1[Decimal,<<RunAsync>b__46_0>d]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  253) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  254) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  255) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  256) System.Threading.Tasks.Task`1[Decimal]::TrySetResult, IR_0074
+  [40m[32minfo[39m[22m[49m:  257) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[Decimal]::SetExistingTaskResult, IR_004b
+  [40m[32minfo[39m[22m[49m:  258) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[Decimal]::SetResult, IR_003a
+  [40m[32minfo[39m[22m[49m:  259) <InvokeTestMethodAsync>d__47[__Canon]::MoveNext, IR_013d
+  [40m[32minfo[39m[22m[49m:  260) Xunit.Sdk.TestInvoker`1+<InvokeTestMethodAsync>d__47[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  261) AsyncStateMachineBox`1[Decimal,<InvokeTestMethodAsync>d__47]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:  262) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[System.Decimal, System.Private.CoreLib, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[Xunit.Sdk.TestInvoker`1+<InvokeTestMethodAsync>d__47[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  263) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  264) AsyncStateMachineBox`1[Decimal,<InvokeTestMethodAsync>d__47]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:  265) AsyncStateMachineBox`1[Decimal,<InvokeTestMethodAsync>d__47]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  266) <>c::<.cctor>b__8_0, IR_002b
+  [40m[32minfo[39m[22m[49m:  267) <>c__DisplayClass7_0::<Post>b__0, IR_0019
+  [40m[32minfo[39m[22m[49m:  268) <>c::<QueueUserWorkItem>b__5_0, IR_001d
+  [40m[32minfo[39m[22m[49m:  269) System.Threading.Tasks.Task::InnerInvoke, IR_0074
+  [40m[32minfo[39m[22m[49m:  270) <>c::<.cctor>b__289_0, IR_002a
+  [40m[32minfo[39m[22m[49m:  271) System.Threading.ExecutionContext::RunFromThreadPoolDispatchLoop, IR_0060
+  [40m[32minfo[39m[22m[49m:  272) System.Threading.Tasks.Task::ExecuteWithThreadLocal, IR_0119
+  [40m[32minfo[39m[22m[49m:  273) System.Threading.Tasks.Task::ExecuteEntryUnsafe, IR_0056
+  [40m[32minfo[39m[22m[49m:  274) System.Threading.Tasks.Task::ExecuteFromThreadPool, IR_000e
+  [40m[32minfo[39m[22m[49m:  275) System.Threading.ThreadPoolWorkQueue::DispatchWorkItem, IR_0028
+  [40m[32minfo[39m[22m[49m:  276) System.Threading.ThreadPoolWorkQueue::Dispatch, IR_0140
+  [40m[32minfo[39m[22m[49m:  277) System.Threading.ThreadPool::BackgroundJobHandler, IR_0012
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime2/artifacts/bin/System.Linq.AsyncEnumerable.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 136560 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 136560 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 613 Passed: 613 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: ASSERT FAILED
+  [40m[32minfo[39m[22m[49m: 	Expression: slotNumber >= GetNumVirtuals() || pMDRet == m_pDeclMT->GetMethodDescForSlot_NoThrow(slotNumber)
+  [40m[32minfo[39m[22m[49m: 	Location:   /home/pavelsavara/dev/runtime/src/coreclr/vm/methodtable.cpp:6963
+  [40m[32minfo[39m[22m[49m: 	Function:   GetImplMethodDesc
+  [40m[32minfo[39m[22m[49m: 	Process:    42
+  [40m[32minfo[39m[22m[49m: Frame (InterpreterFrame): 0x4fff2c
+  [40m[32minfo[39m[22m[49m:    0) <>c::<.cctor>b__289_0, IR_002a
+  [40m[32minfo[39m[22m[49m:    1) System.Threading.ExecutionContext::RunFromThreadPoolDispatchLoop, IR_0060
+  [40m[32minfo[39m[22m[49m:    2) System.Threading.Tasks.Task::ExecuteWithThreadLocal, IR_0119
+  [40m[32minfo[39m[22m[49m:    3) System.Threading.Tasks.Task::ExecuteEntryUnsafe, IR_0056
+  [40m[32minfo[39m[22m[49m:    4) System.Threading.Tasks.Task::ExecuteFromThreadPool, IR_000e
+  [40m[32minfo[39m[22m[49m:    5) System.Threading.ThreadPoolWorkQueue::DispatchWorkItem, IR_0028
+  [40m[32minfo[39m[22m[49m:    6) System.Threading.ThreadPoolWorkQueue::Dispatch, IR_0140
+  [40m[32minfo[39m[22m[49m:    7) System.Threading.ThreadPool::BackgroundJobHandler, IR_0012
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Linq.AsyncEnumerable.Tests.dll after 3.69705 minutes with result 0 and linear memory 481165312 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime2/artifacts/bin/System.Linq.AsyncEnumerable.Tests/Debug/net11.0/browser-wasm/wwwroot ~/dev/runtime2/src/libraries/System.Linq.AsyncEnumerable/tests
+  ----- end Fri Jan 30 00:10:44 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime2/artifacts/bin/System.Linq.AsyncEnumerable.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:04:00.22

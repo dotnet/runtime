@@ -9,4 +9,4 @@ Then we want to run `browser-tests/test-suite.md` process for `System.Runtime.Te
 
 Read the `browser-tests/plan.md`
 The before testing steps are already done.
-We want to run `browser-tests/test-suite.md` process for `System.Runtime.Tests`
+Now we want to run `browser-tests/test-suite.md` process for `System.Collections.Immutable.Tests`

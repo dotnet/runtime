@@ -1,0 +1,130 @@
+nohup: ignoring input
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime/tests/System.Runtime.Tests/TestCollectibleAssembly/TestCollectibleAssembly.csproj (in 152 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime/tests/System.Runtime.Tests/TestLoadAssembly/TestLoadAssembly.csproj (in 217 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/Common/tests/TestUtilities/TestUtilities.csproj (in 1.84 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime/tests/System.Runtime.Tests/TestModule/System.Reflection.TestModule.ilproj (in 1.88 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/Common/tests/System/TestILAssembly/TestILAssembly.ilproj (in 1.88 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime/tests/System.Runtime.Tests/TestStructs/System.TestStructs.ilproj (in 1.88 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/Common/tests/TestUtilities.Unicode/TestUtilities.Unicode.csproj (in 2.65 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime/tests/System.Runtime.Tests/System.Runtime.Tests.csproj (in 5.17 sec).
+  34 of 42 projects are up-to-date for restore.
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Debug/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Debug/netstandard2.0/ILLink.CodeFixProvider.dll
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Debug/net10.0/TestUtilities.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Debug/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Debug/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Debug/net/ILLink.Tasks.dll
+  System.Runtime.Serialization.Formatters -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Serialization.Formatters/ref/Debug/net10.0/System.Runtime.Serialization.Formatters.dll
+  System.Runtime.Serialization.Formatters -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Serialization.Formatters/Debug/net10.0/System.Runtime.Serialization.Formatters.dll
+  System.Reflection.TestModule -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.TestModule/Debug/netstandard2.0/System.Reflection.TestModule.dll
+  TestILAssembly -> /home/pavelsavara/dev/runtime/artifacts/bin/TestILAssembly/Debug/netstandard2.0/TestILAssembly.dll
+  System.TestStructs -> /home/pavelsavara/dev/runtime/artifacts/bin/System.TestStructs/Debug/netstandard2.0/System.TestStructs.dll
+  Microsoft.Interop.SourceGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Interop.SourceGeneration/Debug/netstandard2.0/Microsoft.Interop.SourceGeneration.dll
+  TestUtilities.Unicode -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities.Unicode/Debug/net11.0/TestUtilities.Unicode.dll
+  DownlevelLibraryImportGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/DownlevelLibraryImportGenerator/Debug/netstandard2.0/Microsoft.Interop.LibraryImportGenerator.Downlevel.dll
+  TestLoadAssembly -> /home/pavelsavara/dev/runtime/artifacts/bin/TestLoadAssembly/Debug/netstandard2.0/TestLoadAssembly.dll
+  TestCollectibleAssembly -> /home/pavelsavara/dev/runtime/artifacts/bin/TestCollectibleAssembly/Debug/netstandard2.0/TestCollectibleAssembly.dll
+  System.Private.CoreLib.Generators -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.CoreLib.Generators/Debug/netstandard2.0/System.Private.CoreLib.Generators.dll
+  System.Private.CoreLib -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.CoreLib/ref/Debug/net11.0/System.Private.CoreLib.dll
+  EventSourceGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/EventSourceGenerator/Debug/netstandard2.0/EventSourceGenerator.dll
+  LibraryImportGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/LibraryImportGenerator/Debug/netstandard2.0/Microsoft.Interop.LibraryImportGenerator.dll
+  System.Private.CoreLib -> /home/pavelsavara/dev/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL/System.Private.CoreLib.dll
+  System.Private.Uri -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.Uri/Debug/net11.0/System.Private.Uri.dll
+  System.Runtime -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime/ref/Debug/net11.0/System.Runtime.dll
+  System.Runtime -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime/Debug/net11.0/System.Runtime.dll
+  System.Drawing.Common -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Drawing.Common/stub/Debug/net11.0/System.Drawing.Common.dll
+  System.Windows.Extensions -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Windows.Extensions/ref/Debug/net11.0/System.Windows.Extensions.dll
+  System.Windows.Extensions -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Windows.Extensions/Debug/net11.0/System.Windows.Extensions.dll
+  System.Security.Permissions -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Security.Permissions/ref/Debug/net11.0/System.Security.Permissions.dll
+  System.Security.Permissions -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Security.Permissions/Debug/net11.0/System.Security.Permissions.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Runtime.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Tests/Debug/net11.0-browser/browser-wasm/System.Runtime.Tests.dll
+  ** Installing chrome version 143.0.7499.40, rev: 1536371. To disable this set the msuild property InstallChromeForTests=false .
+  Downloading from "https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1536376/chrome-linux.zip" to "/home/pavelsavara/dev/runtime/artifacts/obj/chrome-linux.zip" (216,026,174 bytes).
+  ** Installing chromedriver version 143.0.7499.40, rev: 1536371. To disable this set the msuild property InstallChromeForTests=false .
+  Downloading from "https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1536376/chromedriver_linux64.zip" to "/home/pavelsavara/dev/runtime/artifacts/obj/chromedriver_linux64.zip" (10,764,194 bytes).
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Tests/Debug/net11.0-browser/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.Runtime.Tests/Debug/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Runtime/tests/System.Runtime.Tests
+  ----- start Thu Jan 29 23:43:24 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Tests/Debug/net11.0-browser/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=02:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Runtime.Tests.dll  -notrait category=AdditionalTimezoneChecks -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.Runtime.Tests/Debug/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.Runtime.Tests/Debug/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Runtime/tests/System.Runtime.Tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=02:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Runtime.Tests.dll -notrait category=AdditionalTimezoneChecks -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  /home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64/chromedriver: error while loading shared libraries: libnspr4.so: cannot open shared object file: No such file or directory
+  [40m[1m[33mwarn[39m[22m[49m: Failed to start the browser, attempt #0: OpenQA.Selenium.WebDriverException: Cannot start the driver service on http://localhost:37765/
+           at OpenQA.Selenium.DriverService.Start()
+           at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.Execute(Command commandToExecute)
+           at OpenQA.Selenium.Remote.RemoteWebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+           at OpenQA.Selenium.Remote.RemoteWebDriver.StartSession(ICapabilities desiredCapabilities)
+           at OpenQA.Selenium.Remote.RemoteWebDriver..ctor(ICommandExecutor commandExecutor, ICapabilities desiredCapabilities)
+           at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+           at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+           at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Constructor(Object obj, IntPtr* args)
+           at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+  /home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64/chromedriver: error while loading shared libraries: libnspr4.so: cannot open shared object file: No such file or directory
+  Connection refused [::ffff:127.0.0.1]:37113 (localhost:37113)
+  [40m[1m[33mwarn[39m[22m[49m: Failed to start the browser, attempt #1: OpenQA.Selenium.WebDriverException: Cannot start the driver service on http://localhost:37113/
+           at OpenQA.Selenium.DriverService.Start()
+           at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.Execute(Command commandToExecute)
+           at OpenQA.Selenium.Remote.RemoteWebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+           at OpenQA.Selenium.Remote.RemoteWebDriver.StartSession(ICapabilities desiredCapabilities)
+           at OpenQA.Selenium.Remote.RemoteWebDriver..ctor(ICommandExecutor commandExecutor, ICapabilities desiredCapabilities)
+           at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+           at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+           at InvokeStub_ChromeDriver..ctor(Object, Span`1)
+           at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  /home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64/chromedriver: error while loading shared libraries: libnspr4.so: cannot open shared object file: No such file or directory
+  Connection refused [::ffff:127.0.0.1]:43741 (localhost:43741)
+  [41m[1m[37mcrit[39m[22m[49m: System.Reflection.TargetInvocationException: Exception has been thrown by the target of an invocation.
+         ---> OpenQA.Selenium.WebDriverException: Cannot start the driver service on http://localhost:43741/
+           at OpenQA.Selenium.DriverService.Start()
+           at OpenQA.Selenium.Remote.DriverServiceCommandExecutor.Execute(Command commandToExecute)
+           at OpenQA.Selenium.Remote.RemoteWebDriver.Execute(String driverCommandToExecute, Dictionary`2 parameters)
+           at OpenQA.Selenium.Remote.RemoteWebDriver.StartSession(ICapabilities desiredCapabilities)
+           at OpenQA.Selenium.Remote.RemoteWebDriver..ctor(ICommandExecutor commandExecutor, ICapabilities desiredCapabilities)
+           at OpenQA.Selenium.Chromium.ChromiumDriver..ctor(ChromiumDriverService service, ChromiumOptions options, TimeSpan commandTimeout)
+           at OpenQA.Selenium.Chrome.ChromeDriver..ctor(ChromeDriverService service, ChromeOptions options, TimeSpan commandTimeout)
+           at InvokeStub_ChromeDriver..ctor(Object, Span`1)
+           at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+           --- End of inner exception stack trace ---
+           at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+           at System.Reflection.RuntimeConstructorInfo.Invoke(BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+           at System.RuntimeType.CreateInstanceImpl(BindingFlags bindingAttr, Binder binder, Object[] args, CultureInfo culture)
+           at Microsoft.DotNet.XHarness.CLI.Commands.Wasm.WasmTestBrowserCommand.GetChromiumDriver[TDriverOptions,TDriver,TDriverService](String driverName, String sessionLanguage, Func`2 getDriverService, ILogger logger) in /_/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmTestBrowserCommand.cs:line 315
+           at Microsoft.DotNet.XHarness.CLI.Commands.Wasm.WasmTestBrowserCommand.GetChromeDriver(String sessionLanguage, ILogger logger) in /_/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmTestBrowserCommand.cs:line 190
+           at Microsoft.DotNet.XHarness.CLI.Commands.Wasm.WasmTestBrowserCommand.InvokeInternal(ILogger logger) in /_/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmTestBrowserCommand.cs:line 70
+           at Microsoft.DotNet.XHarness.CLI.Commands.XHarnessCommand`1.Invoke(IEnumerable`1 arguments) in /_/src/Microsoft.DotNet.XHarness.CLI/Commands/XHarnessCommand.cs:line 145
+  XHarness exit code: 71 (GENERAL_FAILURE)
+  ~/dev/runtime/artifacts/bin/System.Runtime.Tests/Debug/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Runtime/tests/System.Runtime.Tests
+  ----- end Thu Jan 29 23:43:24 CET 2026 ----- exit code 71 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output
+/home/pavelsavara/dev/runtime/eng/testing/tests.targets(206,5): error : One or more tests failed while running tests from 'System.Runtime.Tests'. [/home/pavelsavara/dev/runtime/src/libraries/System.Runtime/tests/System.Runtime.Tests/System.Runtime.Tests.csproj::TargetFramework=net11.0-browser]
+
+Build FAILED.
+
+/home/pavelsavara/dev/runtime/eng/testing/tests.targets(206,5): error : One or more tests failed while running tests from 'System.Runtime.Tests'. [/home/pavelsavara/dev/runtime/src/libraries/System.Runtime/tests/System.Runtime.Tests/System.Runtime.Tests.csproj::TargetFramework=net11.0-browser]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:42.26
