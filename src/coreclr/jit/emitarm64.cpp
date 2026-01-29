@@ -7448,8 +7448,8 @@ void emitter::emitIns_R_R_I_I(
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
-        int        lsb;
-        int        width;
+        ssize_t    lsb;
+        ssize_t    width;
         bitMaskImm bmi;
         unsigned   registerListSize;
 
