@@ -1,0 +1,654 @@
+
+  Determining projects to restore...
+  Restored /workspaces/runtime/src/libraries/System.Runtime.InteropServices.JavaScript/tests/System.Runtime.InteropServices.JavaScript.UnitTests/System.Runtime.InteropServices.JavaScript.Tests.csproj (in 2.14 sec).
+  Restored /workspaces/runtime/src/libraries/System.Runtime.InteropServices.JavaScript/tests/JavaScriptLibrary/JavaScriptLibrary.csproj (in 2.13 sec).
+  39 of 41 projects are up-to-date for restore.
+  TestUtilities -> /workspaces/runtime/artifacts/bin/TestUtilities/Debug/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /workspaces/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Debug/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /workspaces/runtime/artifacts/bin/ILLink.CodeFixProvider/Debug/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /workspaces/runtime/artifacts/bin/Mono.Linker/ref/Debug/net11.0/illink.dll
+  Mono.Linker -> /workspaces/runtime/artifacts/bin/Mono.Linker/Debug/net11.0/illink.dll
+  ILLink.Tasks -> /workspaces/runtime/artifacts/bin/ILLink.Tasks/Debug/net/ILLink.Tasks.dll
+  System.Private.CoreLib.Generators -> /workspaces/runtime/artifacts/bin/System.Private.CoreLib.Generators/Debug/netstandard2.0/System.Private.CoreLib.Generators.dll
+  System.Private.CoreLib -> /workspaces/runtime/artifacts/bin/System.Private.CoreLib/ref/Debug/net11.0/System.Private.CoreLib.dll
+  EventSourceGenerator -> /workspaces/runtime/artifacts/bin/EventSourceGenerator/Debug/netstandard2.0/EventSourceGenerator.dll
+  Microsoft.Interop.SourceGeneration -> /workspaces/runtime/artifacts/bin/Microsoft.Interop.SourceGeneration/Debug/netstandard2.0/Microsoft.Interop.SourceGeneration.dll
+  LibraryImportGenerator -> /workspaces/runtime/artifacts/bin/LibraryImportGenerator/Debug/netstandard2.0/Microsoft.Interop.LibraryImportGenerator.dll
+  System.Private.CoreLib -> /workspaces/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL/System.Private.CoreLib.dll
+  System.Private.Uri -> /workspaces/runtime/artifacts/bin/System.Private.Uri/Debug/net11.0/System.Private.Uri.dll
+  System.Runtime -> /workspaces/runtime/artifacts/bin/System.Runtime/ref/Debug/net11.0/System.Runtime.dll
+  System.Memory -> /workspaces/runtime/artifacts/bin/System.Memory/ref/Debug/net11.0/System.Memory.dll
+  System.Runtime -> /workspaces/runtime/artifacts/bin/System.Runtime/Debug/net11.0/System.Runtime.dll
+  System.Threading -> /workspaces/runtime/artifacts/bin/System.Threading/ref/Debug/net11.0/System.Threading.dll
+  System.Collections -> /workspaces/runtime/artifacts/bin/System.Collections/ref/Debug/net11.0/System.Collections.dll
+  System.Memory -> /workspaces/runtime/artifacts/bin/System.Memory/Debug/net11.0/System.Memory.dll
+  System.Collections -> /workspaces/runtime/artifacts/bin/System.Collections/Debug/net11.0/System.Collections.dll
+  System.Threading.Thread -> /workspaces/runtime/artifacts/bin/System.Threading.Thread/ref/Debug/net11.0/System.Threading.Thread.dll
+  System.Threading -> /workspaces/runtime/artifacts/bin/System.Threading/Debug/net11.0/System.Threading.dll
+  System.Threading.Thread -> /workspaces/runtime/artifacts/bin/System.Threading.Thread/Debug/net11.0/System.Threading.Thread.dll
+  System.Threading.Overlapped -> /workspaces/runtime/artifacts/bin/System.Threading.Overlapped/ref/Debug/net11.0/System.Threading.Overlapped.dll
+  System.Threading.ThreadPool -> /workspaces/runtime/artifacts/bin/System.Threading.ThreadPool/ref/Debug/net11.0/System.Threading.ThreadPool.dll
+  System.Diagnostics.Tracing -> /workspaces/runtime/artifacts/bin/System.Diagnostics.Tracing/ref/Debug/net11.0/System.Diagnostics.Tracing.dll
+  System.Threading.ThreadPool -> /workspaces/runtime/artifacts/bin/System.Threading.ThreadPool/Debug/net11.0/System.Threading.ThreadPool.dll
+  System.Diagnostics.Tracing -> /workspaces/runtime/artifacts/bin/System.Diagnostics.Tracing/Debug/net11.0/System.Diagnostics.Tracing.dll
+  System.Collections.Concurrent -> /workspaces/runtime/artifacts/bin/System.Collections.Concurrent/ref/Debug/net11.0/System.Collections.Concurrent.dll
+  System.Collections.Concurrent -> /workspaces/runtime/artifacts/bin/System.Collections.Concurrent/Debug/net11.0/System.Collections.Concurrent.dll
+  System.Threading.Channels -> /workspaces/runtime/artifacts/bin/System.Threading.Channels/ref/Debug/net11.0/System.Threading.Channels.dll
+  System.Threading.Channels -> /workspaces/runtime/artifacts/bin/System.Threading.Channels/Debug/net11.0/System.Threading.Channels.dll
+  JSImportGenerator -> /workspaces/runtime/artifacts/bin/JSImportGenerator/Debug/netstandard2.0/Microsoft.Interop.JavaScript.JSImportGenerator.dll
+  System.Runtime.InteropServices.JavaScript -> /workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript/ref/Debug/net11.0/System.Runtime.InteropServices.JavaScript.dll
+  System.Runtime.InteropServices.JavaScript -> /workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript/Debug/net11.0-browser/System.Runtime.InteropServices.JavaScript.dll
+  JavaScriptLibrary -> /workspaces/runtime/artifacts/bin/JavaScriptLibrary/Debug/net11.0-browser/JavaScriptLibrary.dll
+/workspaces/runtime/.dotnet/sdk/11.0.100-alpha.1.26060.102/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(351,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/workspaces/runtime/src/libraries/Common/tests/System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj]
+/workspaces/runtime/.dotnet/sdk/11.0.100-alpha.1.26060.102/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(351,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/workspaces/runtime/src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj]
+  RemoteLoopServer -> /workspaces/runtime/artifacts/bin/RemoteLoopServer/Debug/net10.0/RemoteLoopServer.dll
+  NetCoreServer -> /workspaces/runtime/artifacts/bin/NetCoreServer/Debug/net10.0/NetCoreServer.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Runtime.InteropServices.JavaScript.Tests -> /workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript.Tests/Debug/net11.0-browser/browser-wasm/System.Runtime.InteropServices.JavaScript.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export V8_PATH_FOR_TESTS=/workspaces/runtime/artifacts/bin/v8-14.3.127/v8-14.3.127.sh
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/workspaces/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/workspaces/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/vscode/.jsvu/bin:/workspaces/runtime/.dotnet:/home/vscode/.vscode-remote/data/User/globalStorage/github.copilot-chat/debugCommand:/home/vscode/.vscode-remote/data/User/globalStorage/github.copilot-chat/copilotCli:/vscode/bin/linux-x64/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/workspaces/runtime/.dotnet:/workspaces/runtime/.dotnet-tools-global:/usr/local/share/nvm/versions/node/v24.13.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/vscode/.dotnet:/home/vscode/.dotnet/tools:/home/vscode/.local/bin
+  EXECUTION_DIR=/workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript.Tests/Debug/net11.0-browser/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  /workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript.Tests/Debug/net11.0-browser/browser-wasm/wwwroot /workspaces/runtime/src/libraries/System.Runtime.InteropServices.JavaScript/tests/System.Runtime.InteropServices.JavaScript.UnitTests
+  ----- start Thu Jan 29 04:08:29 PM UTC 2026 =============== To repro directly: =====================================================
+  pushd /workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript.Tests/Debug/net11.0-browser/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output  --web-server-use-cors --web-server-use-https --set-web-server-http-env=DOTNET_TEST_WEBSOCKETHOST,DOTNET_TEST_HTTPHOST,DOTNET_TEST_REMOTE_LOOP_HOST --set-web-server-https-env=DOTNET_TEST_SECUREWEBSOCKETHOST,DOTNET_TEST_SECUREHTTPHOST,DOTNET_TEST_HTTP2HOST --web-server-middleware=/workspaces/runtime/artifacts/bin/RemoteLoopServer/Debug/net10.0/RemoteLoopServer.dll,RemoteLoopServer.GenericHandler --web-server-middleware=/workspaces/runtime/artifacts/bin/NetCoreServer/Debug/net10.0/NetCoreServer.dll,NetCoreServer.GenericHandler --engine-arg=--expose-gc --web-server-use-cop -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/workspaces/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Runtime.InteropServices.JavaScript.Tests.dll -parallelThreads 1  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  /workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript.Tests/Debug/net11.0-browser/browser-wasm/wwwroot /workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript.Tests/Debug/net11.0-browser/browser-wasm/wwwroot /workspaces/runtime/src/libraries/System.Runtime.InteropServices.JavaScript/tests/System.Runtime.InteropServices.JavaScript.UnitTests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output --web-server-use-cors --web-server-use-https --set-web-server-http-env=DOTNET_TEST_WEBSOCKETHOST,DOTNET_TEST_HTTPHOST,DOTNET_TEST_REMOTE_LOOP_HOST --set-web-server-https-env=DOTNET_TEST_SECUREWEBSOCKETHOST,DOTNET_TEST_SECUREHTTPHOST,DOTNET_TEST_HTTP2HOST --web-server-middleware=/workspaces/runtime/artifacts/bin/RemoteLoopServer/Debug/net10.0/RemoteLoopServer.dll,RemoteLoopServer.GenericHandler --web-server-middleware=/workspaces/runtime/artifacts/bin/NetCoreServer/Debug/net10.0/NetCoreServer.dll,NetCoreServer.GenericHandler --engine-arg=--expose-gc --web-server-use-cop -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/workspaces/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Runtime.InteropServices.JavaScript.Tests.dll -parallelThreads 1 -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /workspaces/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only --no-sandbox and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 38561
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 38561.
+  warn: Microsoft.AspNetCore.Hosting.Diagnostics[15]
+        Overriding HTTP_PORTS '8080' and HTTPS_PORTS ''. Binding to values defined by URLS instead 'http://127.0.0.1:0;https://127.0.0.1:0'.
+  [40m[32minfo[39m[22m[49m: Loaded RemoteLoopServer.GenericHandler middleware
+  [40m[32minfo[39m[22m[49m: Loaded NetCoreServer.GenericHandler middleware
+  warn: Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServer[9]
+        The ASP.NET Core developer certificate is only trusted by some clients. For information about trusting the ASP.NET Core developer certificate, see https://aka.ms/aspnet/https-trust-dev-cert
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:35167/index.html?arg=--setenv%3dDOTNET_TEST_WEBSOCKETHOST%3d127.0.0.1%3a35167&arg=--setenv%3dDOTNET_TEST_HTTPHOST%3d127.0.0.1%3a35167&arg=--setenv%3dDOTNET_TEST_REMOTE_LOOP_HOST%3d127.0.0.1%3a35167&arg=--setenv%3dDOTNET_TEST_SECUREWEBSOCKETHOST%3d127.0.0.1%3a34199&arg=--setenv%3dDOTNET_TEST_SECUREHTTPHOST%3d127.0.0.1%3a34199&arg=--setenv%3dDOTNET_TEST_HTTP2HOST%3d127.0.0.1%3a34199&arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Runtime.InteropServices.JavaScript.Tests.dll&arg=-parallelThreads&arg=1&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=DOTNET_TEST_WEBSOCKETHOST=127.0.0.1:35167 --setenv=DOTNET_TEST_HTTPHOST=127.0.0.1:35167 --setenv=DOTNET_TEST_REMOTE_LOOP_HOST=127.0.0.1:35167 --setenv=DOTNET_TEST_SECUREWEBSOCKETHOST=127.0.0.1:34199 --setenv=DOTNET_TEST_SECUREHTTPHOST=127.0.0.1:34199 --setenv=DOTNET_TEST_HTTP2HOST=127.0.0.1:34199 --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Runtime.InteropServices.JavaScript.Tests.dll -parallelThreads 1 -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Runtime.InteropServices.JavaScript.Tests.dll -parallelThreads 1 -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash 40faf97e4449fb7aa0b759ba68c75e29d5079567
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Runtime.InteropServices.JavaScript.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Runtime.InteropServices.JavaScript.Tests.dll (found 175 of 178 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Runtime.InteropServices.JavaScript.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Ctor_Default_CorrectDefaults
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Ctor_NullStringUri_Accepted
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Properties_SetOptionsAndGetTheirValue_NotSet_FetchOptions(uriData: "https://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Properties_SetOptionsAndGetTheirValue_NotSet_FetchOptions(uriData: "blob:https://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Ctor_AbsoluteStringUri_CorrectValues(uri: "http://host/absolute/")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Ctor_AbsoluteStringUri_CorrectValues(uri: "blob:http://host/absolute/")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Ctor_AbsoluteStringUri_CorrectValues(uri: "foo://host/absolute")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Method_SetToNull_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Ctor_NullMethod_ThrowsArgumentNullException(uriData: "http://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Ctor_NullMethod_ThrowsArgumentNullException(uriData: "blob:http://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Ctor_RelativeStringUri_CorrectValues
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.ToString_NonDefaultInstanceWithNoCustomHeaders_DumpAllFields(uriData: "http://a.com/")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.ToString_NonDefaultInstanceWithNoCustomHeaders_DumpAllFields(uriData: "blob:http://a.com/")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Ctor_RelativeUri_CorrectValues
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Dispose_DisposeObject_ContentGetsDisposedAndSettersWillThrowButGettersStillWork(uriData: "http://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Dispose_DisposeObject_ContentGetsDisposedAndSettersWillThrowButGettersStillWork(uriData: "blob:http://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.ToString_DefaultInstance_DumpAllFields
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Properties_SetOptionsAndGetTheirValue_Set_FetchOptions(uriData: "https://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Properties_SetOptionsAndGetTheirValue_Set_FetchOptions(uriData: "blob:https://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Properties_SetOptionsAndGetTheirValue_NotSet_EnableStreamingResponse(uriData: "https://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Properties_SetOptionsAndGetTheirValue_NotSet_EnableStreamingResponse(uriData: "blob:https://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Ctor_AbsoluteUri_CorrectValues(uriData: "http://host/absolute/")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Ctor_AbsoluteUri_CorrectValues(uriData: "blob:http://host/absolute/")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Ctor_AbsoluteUri_CorrectValues(uriData: "foo://host/absolute")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.HttpStreamingEnabledBy_WebAssemblyEnableStreamingResponse_Option
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.HttpStreamingDisabledBy_WasmEnableStreamingResponse_InProject
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Properties_SetOptionsAndGetTheirValue_MatchingValues(uriData: "https://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Properties_SetOptionsAndGetTheirValue_MatchingValues(uriData: "blob:https://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Properties_SetOptionsAndGetTheirValue_Set_EnableStreamingResponse(uriData: "https://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Properties_SetOptionsAndGetTheirValue_Set_EnableStreamingResponse(uriData: "blob:https://example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Ctor_NullUri_Accepted
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.ToString_NonDefaultInstanceWithCustomHeaders_DumpAllFields(uriData: "http://a.com/")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.ToString_NonDefaultInstanceWithCustomHeaders_DumpAllFields(uriData: "blob:http://a.com/")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Http.Tests.HttpRequestMessageTest.Version_SetToNull_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.StructSize
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.TaskOfShortOutOfRange_ThrowsAssertionInTaskContinuation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportBigInt64(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportBigInt64(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportBigInt64(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportBigInt64(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportBigInt64(value: 9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportBigInt64(value: -9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportBigInt64(value: -9223372036854775808)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportBigInt64(value: 9223372036854775807)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.RejectException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportTaskEchoPendingResult
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [Action { Method = Void <MarshalObjectArrayCasesThrow>b__24_0(), Target = <>c { } }])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [Action`1 { Method = Void <MarshalObjectArrayCasesThrow>b__24_1(Int32), Target = <>c { } }])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [Func`2 { Method = Int32 <MarshalObjectArrayCasesThrow>b__24_2(Int32), Target = <>c { } }])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [dummyDelegate { Method = Void dummyDelegateA(), Target = null }])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [[]])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [[]])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [[···]])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.MultipleImportAsync
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportEcho_ActionAction
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.CancelableImportAsync
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportByteArray(expected: [1, 2, 3, 255, 0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportByteArray(expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportByteArray(expected: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportCallback_ActionInt
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSpanOfInt32
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportDouble(value: 3.1415926535897931)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportDouble(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportDouble(value: 1.7976931348623157E+308)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportDouble(value: -1.7976931348623157E+308)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportDouble(value: -∞)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportDouble(value: ∞)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportDouble(value: NaN)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.GlobalThis
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSleep
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableIntPtr(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableIntPtr(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableIntPtr(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableIntPtr(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableIntPtr(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableIntPtr(value: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableIntPtr(value: -2147483648)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayTaskObjectFail
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportVoidPtr(xvalue: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportVoidPtr(xvalue: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportVoidPtr(xvalue: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportVoidPtr(xvalue: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportVoidPtr(xvalue: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportVoidPtr(xvalue: -2147483648)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.RejectString
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSleep2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportBackCallback_FunctionIntInt
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportString(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportString(value: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportString(value: "Ahoj487988353")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportString(value: "Ahoj!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"···)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportString(value: "dotnet")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportTaskAwaitPendingResult(result: 3.1415926535897931)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportTaskAwaitPendingResult(result: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportTaskAwaitPendingResult(result: "test")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportTaskAwaitPendingResult(result: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportIntArray(expected: [1, 2, 3, 2147483647, -2147483648])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportIntArray(expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportIntArray(expected: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportIntPtr(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportIntPtr(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportIntPtr(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportIntPtr(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportIntPtr(value: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportIntPtr(value: -2147483648)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.DateTimeMinValueBoundaryCondition
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportCallback_Action
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportReboundInstanceMember
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportVoidTaskPending
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportCallback_Async
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportStringArray(expected: ["Příliš", "žluťoučký"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportStringArray(expected: ["hello", "", null])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportStringArray(expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportStringArray(expected: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSpanOfDouble
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.TaskOfDateTimeOutOfRange_ThrowsAssertionInTaskContinuation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.MissingImport
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.ProxyOfProxyThrows
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportReturnError
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArray(expected: ["hello", ""])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArray(expected: [1.1000000000000001, 2022-05-08T14:55:01.0000000Z, False, True])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArray(expected: [1.1000000000000001, 2022-05-08T14:55:01.0000000Z, False, True])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArray(expected: [null, Object { }, SomethingRef { }, SomethingStruct { }, System.Exception: test])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArray(expected: ["JSData"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArray(expected: [[], [], [], [], []])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArray(expected: [[1, 2, 3], [1, 2, 3], [1, 2, 3], ["a", "b", "c"], []])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArray(expected: [[[···], [···], [···], [···], Object { }, ···]])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArray(expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArray(expected: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportCallback_FunctionIntInt
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportCallback_ActionIntThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.DotnetInstance
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSObjectGetSet
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.OptimizedPaths
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportArraySegmentOfDouble
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportByte(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportByte(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportByte(value: 255)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportByte(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.RejectNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportBackCallback_FunctionIntIntIntInt
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.ByteOutOfRange(value: 1.7976931348623157E+308, message: "Value is not an integer")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.ByteOutOfRange(value: -1.7976931348623157E+308, message: "Value is not an integer")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.ByteOutOfRange(value: NaN, message: "Value is not an integer")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.ByteOutOfRange(value: -∞, message: "Value is not an integer")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.ByteOutOfRange(value: ∞, message: "Value is not an integer")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.ByteOutOfRange(value: 9007199254740991, message: "Overflow")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportDoubleArray(expected: [1, 2, 3, 1.7976931348623157E+308, -1.7976931348623157E+308, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportDoubleArray(expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportDoubleArray(expected: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportBoolean(value: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportBoolean(value: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNative
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportDateTimeOffset(value: 1970-01-01T00:00:00.0000000+00:00)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportDateTimeOffset(value: 2026-01-29T16:08:50.7660000+00:00)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportDateTimeOffset(value: 9999-12-31T23:59:59.9990000+00:00)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportTaskTypes
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInstanceMember
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDouble(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDouble(value: 3.1415926535897931)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDouble(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDouble(value: 1.7976931348623157E+308)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDouble(value: -1.7976931348623157E+308)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDouble(value: -∞)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDouble(value: ∞)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDouble(value: NaN)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportTaskAwaitPendingExceptionValue
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt32(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt32(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt32(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt32(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt32(value: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt32(value: -2147483648)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportArraySegmentOfInt32
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayToDouble(expected: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayToDouble(expected: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayToDouble(expected: [42])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayToDouble(expected: [3.1400001])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayToDouble(expected: ['A'])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportObject(value: Object { }, clazz: "ManagedObject")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportObject(value: null, clazz: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportIJSObject(value: null, clazz: "JSData")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportIJSObject(value: null, clazz: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.Int32OutOfRange(value: 1.7976931348623157E+308, message: "Value is not an integer")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.Int32OutOfRange(value: -1.7976931348623157E+308, message: "Value is not an integer")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.Int32OutOfRange(value: NaN, message: "Value is not an integer")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.Int32OutOfRange(value: -∞, message: "Value is not an integer")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.Int32OutOfRange(value: ∞, message: "Value is not an integer")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.Int32OutOfRange(value: 9007199254740991, message: "Overflow")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt16(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt16(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt16(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt16(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt16(value: 32767)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt16(value: -32768)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.DateTimeMaxValueBoundaryCondition
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.CreateFunctionDoubleThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportCallback_ActionIntLongDouble
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDateTime(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDateTime(value: 1970-01-01T00:00:00.0000000Z)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDateTime(value: 2026-01-29T16:08:57.5870000Z)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDateTime(value: 9999-12-31T23:59:59.9990000Z)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.CreateFunctionString
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportDateTime(value: 1970-01-01T00:00:00.0000000Z)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportDateTime(value: 2026-01-29T16:08:57.8160000Z)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportDateTime(value: 9999-12-31T23:59:59.9990000Z)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportChar(value: '*')
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportChar(value: 0x0001)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportChar(value: 'Ž')
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportChar(value: '♡')
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportChar(value: 0xffff)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportChar(value: '\0')
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.MissingImportAsync
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportArraySegmentOfByte
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.DateTimeMarshallingLosesMicrosecondComponentPrecisionLoss
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportException(value: System.Exception: Test, clazz: "ManagedError")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportException(value: null, clazz: "JSTestError")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportException(value: null, clazz: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.PrototypeNotEqual
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportVoidTaskComplete
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportEcho_ActionIntActionInt
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSpanOfByte
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableBoolean(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableBoolean(value: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableBoolean(value: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.CreateFunctionInternal
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportTaskEchoComplete
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportCallback_EchoActionThrows_MT
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportTaskAwaitPendingException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt32DiscardNoWait(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt32DiscardNoWait(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt32DiscardNoWait(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt32DiscardNoWait(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt32DiscardNoWait(value: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt32DiscardNoWait(value: -2147483648)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.Int32ArrayWithOutOfRangeValues
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSingle(value: 3.14159274)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSingle(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSingle(value: 3.40282347E+38)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSingle(value: -3.40282347E+38)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSingle(value: -∞)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSingle(value: ∞)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSingle(value: NaN)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportThenVoid
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportCallback_EchoAction
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.ProxyOfIntThrows
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.CreateFunctionDouble
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayTaskObject
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt52(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt52(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt52(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt52(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt52(value: 9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportInt52(value: -9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.BadCast
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableInt32(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableInt32(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableInt32(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableInt32(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableInt32(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableInt32(value: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableInt32(value: -2147483648)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableBigInt64(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableBigInt64(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableBigInt64(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableBigInt64(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableBigInt64(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableBigInt64(value: 9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableBigInt64(value: -9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableBigInt64(value: 9223372036854775807)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableBigInt64(value: -9223372036854775808)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportCallback_ActionIntInt
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportCallback_ActionLongLong
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportMath
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.OutOfRange
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportTaskEchoPendingException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportTaskAwait
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportResolvedPromiseReturnsCompletedTask
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportCallback_ActionIntLong
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayTask
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.TaskOfByteOutOfRange_ThrowsAssertionInTaskContinuation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportBoolean(value: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportBoolean(value: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportBigInt64(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportBigInt64(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportBigInt64(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportBigInt64(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportBigInt64(value: 9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportBigInt64(value: -9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportBigInt64(value: -9223372036854775808)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportBigInt64(value: 9223372036854775807)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportStructClassRecords
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt32(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt32(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt32(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt32(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt32(value: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt32(value: -2147483648)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JSExportCompletedTaskReturnsResolvedPromise
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableBoolean(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableBoolean(value: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableBoolean(value: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportChar(value: '*')
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportChar(value: 0x0001)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportChar(value: 'Ž')
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportChar(value: '♡')
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportChar(value: 0xffff)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportChar(value: '\0')
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfDateTime_TaskReturnValue_OverflowNETDateTime
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt16(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt16(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt16(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt16(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt16(value: 32767)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt16(value: -32768)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDateTimeOffset(value: 1970-01-01T00:00:00.0000000+00:00)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDateTimeOffset(value: 2026-01-29T16:09:02.6590000+00:00)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDateTimeOffset(value: 9999-12-31T23:59:59.9990000+00:00)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDateTime_ReturnValue_OverflowNETDateTime
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDouble(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDouble(value: 3.1415926535897931)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDouble(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDouble(value: 1.7976931348623157E+308)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDouble(value: -1.7976931348623157E+308)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDouble(value: -∞)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDouble(value: ∞)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDouble(value: NaN)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportException(value: System.Exception: Test, clazz: "ManagedError")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportException(value: null, clazz: "JSTestError")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportException(value: null, clazz: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt52(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt52(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt52(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt52(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt52(value: 9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportInt52(value: -9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCallback_FunctionIntIntThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportIJSObject(value: null, clazz: "JSData")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportIJSObject(value: null, clazz: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableBigInt64(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableBigInt64(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableBigInt64(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableBigInt64(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableBigInt64(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableBigInt64(value: 9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableBigInt64(value: -9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableBigInt64(value: 9223372036854775807)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableBigInt64(value: -9223372036854775808)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCatchToString
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDouble(value: 3.1415926535897931)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDouble(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDouble(value: 1.7976931348623157E+308)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDouble(value: -1.7976931348623157E+308)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDouble(value: -∞)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDouble(value: ∞)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDouble(value: NaN)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.InternalsVisibleToDoesntBreak
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCallback_FunctionLongLong_OverflowInt52_JSSide
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: 9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: -9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: -9223372036854775808)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: 9223372036854775807)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfShortOutOfRange_ThrowsAssertionInTaskContinuation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDateTime(value: 1970-01-01T00:00:00.0000000Z)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDateTime(value: 2026-01-29T16:09:03.9560000Z)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDateTime(value: 9999-12-31T23:59:59.9990000Z)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportObject(value: Object { }, clazz: "ManagedObject")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportObject(value: null, clazz: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportIntPtr(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportIntPtr(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportIntPtr(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportIntPtr(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportIntPtr(value: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportIntPtr(value: -2147483648)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfLong_TaskReturnValue_OverflowInt52
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: 9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: -9007199254740991)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: -9223372036854775808)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: 9223372036854775807)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportFunctionDateTimeDateTime
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportFuncOfDateTime_Argument_OverflowNETDateTime
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableInt32(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableInt32(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableInt32(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableInt32(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableInt32(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableInt32(value: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableInt32(value: -2147483648)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableIntPtr(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableIntPtr(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableIntPtr(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableIntPtr(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableIntPtr(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableIntPtr(value: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableIntPtr(value: -2147483648)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportSingle(value: 3.14159274)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportSingle(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportSingle(value: 3.40282347E+38)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportSingle(value: -3.40282347E+38)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportSingle(value: -∞)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportSingle(value: ∞)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportSingle(value: NaN)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportByte(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportByte(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportByte(value: 255)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportByte(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCallback_FunctionIntInt
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfInt(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfInt(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfInt(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfInt(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfInt(value: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfInt(value: -2147483648)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDateTime(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDateTime(value: 1970-01-01T00:00:00.0000000Z)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDateTime(value: 2026-01-29T16:09:05.2660000Z)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDateTime(value: 9999-12-31T23:59:59.9990000Z)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCallback_FunctionLongLong_OverflowInt52_NETSide
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfStringTypeAssertion_ThrowsAssertionInTaskContinuation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportVoidPtr(xvalue: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportVoidPtr(xvalue: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportVoidPtr(xvalue: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportVoidPtr(xvalue: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportVoidPtr(xvalue: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportVoidPtr(xvalue: -2147483648)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportString(value: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportString(value: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportString(value: "Ahoj285729770")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportString(value: "Ahoj!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"···)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportString(value: "dotnet")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportStringNoNs
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCatchStack
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportAsyncTest.SyncJsImportJsExportThrows
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportAsyncTest.JsExportBooleanAsync(value: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportAsyncTest.JsExportBooleanAsync(value: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportAsyncTest.JsExportInt32DiscardNoWait(value: 42)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportAsyncTest.JsExportInt32DiscardNoWait(value: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportAsyncTest.JsExportInt32DiscardNoWait(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportAsyncTest.JsExportInt32DiscardNoWait(value: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportAsyncTest.JsExportInt32DiscardNoWait(value: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.JSExportAsyncTest.JsExportInt32DiscardNoWait(value: -2147483648)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.SecondRuntimeTest.RunSecondRuntimeAndTestStaticState
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.YieldAwaitableTests.TaskYieldsToBrowserLoop
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.YieldAwaitableTests.TaskDelay0DoesNotYieldToBrowserLoop
+  [40m[32minfo[39m[22m[49m: [STRT] System.Runtime.InteropServices.JavaScript.Tests.YieldAwaitableTests.TaskDelay1YieldsToBrowserLoop
+  [40m[32minfo[39m[22m[49m: Finished:    System.Runtime.InteropServices.JavaScript.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output/testResults.xml results 119989 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 119989 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 457 Passed: 455 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 2
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Runtime.InteropServices.JavaScript.Tests.dll after 0.61645 minutes with result 0 and linear memory 278396928 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35066184 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35066192 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35066220 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35069828 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35069800 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Object with GCHandle 35066308 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35068932 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35068936 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35068940 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35066128 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35066132 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35066140 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35066144 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35066148 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: Proxy of JS object with JSHandle 1 was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: TaskHolder with JSHandle 2 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 3 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 4 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 5 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35066184 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: Proxy of JS Function with JSHandle 7 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: Proxy of JS string with JSHandle 8 was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 9 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 10 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 11 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 12 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Object with JSHandle 13 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 14 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Object with JSHandle 15 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: Proxy of JS Function with JSHandle 16 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Object with JSHandle 17 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 18 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: Proxy of JS Function with JSHandle 19 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 20 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 21 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 22 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 23 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 24 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 25 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Object with JSHandle 27 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 28 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 29 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 30 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 31 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 32 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 33 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 34 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: Proxy of JS Function with JSHandle 35 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: Proxy of JS Function with JSHandle 36 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 37 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35069828 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: Proxy of JS Function with JSHandle 39 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35069800 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 41 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: Proxy of JS Function with JSHandle 42 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 43 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 44 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 45 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 46 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 47 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 48 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: Proxy of JS Function with JSHandle 49 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 50 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 51 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: TaskHolder with JSHandle 52 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 53 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 54 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 55 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35068932 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35068936 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Object with JSHandle 58 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: TaskHolder with JSHandle 59 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 60 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 61 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 62 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 63 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35066132 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35066140 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35066144 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: C# Delegate with GCHandle 35066148 function was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: JS Error with JSHandle 69 object was still alive. disposing.
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 255 imports, 0 exports, 14 GCHandles, 67 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  /workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript.Tests/Debug/net11.0-browser/browser-wasm/wwwroot /workspaces/runtime/src/libraries/System.Runtime.InteropServices.JavaScript/tests/System.Runtime.InteropServices.JavaScript.UnitTests
+  ----- end Thu Jan 29 04:09:10 PM UTC 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /workspaces/runtime/artifacts/bin/System.Runtime.InteropServices.JavaScript.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:01:00.81

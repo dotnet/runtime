@@ -57,6 +57,7 @@ Each work item has a `DetailsUrl` that links to Helix logs with `ConsoleOutputUr
 
 | Test Suite | CoreCLR | Mono Baseline | Status |
 |------------|---------|---------------|--------|
+| System.Runtime.InteropServices.JavaScript.Tests | 457 run, 455 pass, 2 skip | 454 run, 452 pass, 2 skip | ✅ |
 
 ### In Progress
 

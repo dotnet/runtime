@@ -1,0 +1,92 @@
+Test Comparison: System.Runtime.InteropServices.JavaScript.Tests
+Generated: 2026-01-29T16:24:06+00:00
+
+Mono tests:    454
+CoreCLR tests: 457
+
+=== Extra in CoreCLR (43) ===
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCallback_FunctionLongLong_OverflowInt52_JSSide
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCallback_FunctionLongLong_OverflowInt52_NETSide
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: 0)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: -1)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: 1)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: 42)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: -9007199254740991)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: 9007199254740991)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: 9223372036854775807)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfBigLong(value: -9223372036854775808)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDateTimeOffset(value: 2026-01-29T16:09:02.6590000+00:00)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDateTime_ReturnValue_OverflowNETDateTime
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDateTime(value: 2026-01-29T16:09:03.9560000Z)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportFuncOfDateTime_Argument_OverflowNETDateTime
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportFunctionDateTimeDateTime
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDateTime(value: 2026-01-29T16:09:05.2660000Z)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportString(value: \&quot;Ahoj285729770\&quot;)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: 0)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: -1)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: 1)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: 42)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: -9007199254740991)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: 9007199254740991)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: 9223372036854775807)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfBigLong(value: -9223372036854775808)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfDateTime_TaskReturnValue_OverflowNETDateTime
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfLong_TaskReturnValue_OverflowInt52
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfShortOutOfRange_ThrowsAssertionInTaskContinuation
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfStringTypeAssertion_ThrowsAssertionInTaskContinuation
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.DateTimeMarshallingLosesMicrosecondComponentPrecisionLoss
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.DateTimeMaxValueBoundaryCondition
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.DateTimeMinValueBoundaryCondition
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.Int32ArrayWithOutOfRangeValues
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportDateTimeOffset(value: 2026-01-29T16:08:50.7660000+00:00)
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportDateTime(value: 2026-01-29T16:08:57.8160000Z)
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDateTime(value: 2026-01-29T16:08:57.5870000Z)
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [Action`1 { Method = Void &lt;MarshalObjectArrayCasesThrow&gt;b__24_1(Int32), Target = &lt;&gt;c { } }])
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [Action { Method = Void &lt;MarshalObjectArrayCasesThrow&gt;b__24_0(), Target = &lt;&gt;c { } }])
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [Func`2 { Method = Int32 &lt;MarshalObjectArrayCasesThrow&gt;b__24_2(Int32), Target = &lt;&gt;c { } }])
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportString(value: \&quot;Ahoj487988353\&quot;)
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.TaskOfByteOutOfRange_ThrowsAssertionInTaskContinuation
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.TaskOfDateTimeOutOfRange_ThrowsAssertionInTaskContinuation
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.TaskOfShortOutOfRange_ThrowsAssertionInTaskContinuation
+
+=== Missing in CoreCLR (40) ===
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportArraySegmentOfDouble
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportArraySegmentOfSingle
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfLong(value: 0)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfLong(value: -1)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfLong(value: 1)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfLong(value: 42)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfLong(value: -9007199254740991)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfLong(value: 9007199254740991)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfLong(value: 9223372036854775807)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportCompletedTaskOfLong(value: -9223372036854775808)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDateTimeOffset(value: 2026-01-28T02:18:05.9320000+00:00)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportDateTime(value: 2026-01-28T02:18:05.0650000Z)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportNullableDateTime(value: 2026-01-28T02:18:05.6500000Z)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportSpanOfDouble(value: [])
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportSpanOfDouble(value: [1, 2, 3, 1.7976931348623157E+308, -1.7976931348623157E+308, ···])
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportSpanOfDouble(value: null)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportSpanOfSingle(value: [])
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportSpanOfSingle(value: [1, 2, 3, 3.40282347E+38, -3.40282347E+38, ···])
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportSpanOfSingle(value: null)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportString(value: \&quot;Ahoj1082296292\&quot;)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfLong(value: 0)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfLong(value: -1)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfLong(value: 1)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfLong(value: 42)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfLong(value: -9007199254740991)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfLong(value: 9007199254740991)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfLong(value: 9223372036854775807)
+System.Runtime.InteropServices.JavaScript.Tests.JSExportTest.JsExportTaskOfLong(value: -9223372036854775808)
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportArraySegmentOfSingle
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportDateTimeOffset(value: 2026-01-28T02:18:07.0330000+00:00)
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JSImportDateTime(value: 2026-01-28T02:18:15.7850000Z)
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportNullableDateTime(value: 2026-01-28T02:18:18.0570000Z)
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [Action`1 { Method = Void &lt;MarshalObjectArrayCasesThrow&gt;b__25_1(Int32), Target = &lt;&gt;c { } }])
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [Action { Method = Void &lt;MarshalObjectArrayCasesThrow&gt;b__25_0(), Target = &lt;&gt;c { } }])
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportObjectArrayThrows(expected: [Func`2 { Method = Int32 &lt;MarshalObjectArrayCasesThrow&gt;b__25_2(Int32), Target = &lt;&gt;c { } }])
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSingleArray(expected: [])
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSingleArray(expected: [1, 2, 3, 3.40282347E+38, -3.40282347E+38, ···])
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSingleArray(expected: null)
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportSpanOfSingle
+System.Runtime.InteropServices.JavaScript.Tests.JSImportTest.JsImportString(value: \&quot;Ahoj1452530815\&quot;)
