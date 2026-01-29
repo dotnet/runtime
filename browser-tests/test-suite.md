@@ -60,13 +60,14 @@ This downloads to `browser-tests/results/<TestProject>/mono-console.log` and dis
    - Full test name (namespace.class.method)
    - Full stack trace
    - Failure reason/exception type
-3. **Create failure record** for each individual test/method/Fact/Theory in `/browser-tests/failures/<TestSuiteName>/<ClassName.MethodName>.md` (e.g., `JSImportTest.JsImportSleep.md`)
+3. **Create failure record** for each individual test/method/Fact/Theory in `/browser-tests/failures/<TestSuiteName>/<ClassName.MethodName>.md` (e.g., `JSImportTest.JsImportSleep.md`) with the [template](#Method-Failure-Documentation-Template)
 4. **Mark test** with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011")]`
-5. **Compare test counts**: `Tests run: X Passed: Y Failed: Z Skipped: N` with the Mono baseline at: `browser-tests/results/<TestProject>/mono-console.log`
-6. **Compare test sets** with the Mono baseline at: `browser-tests/results/<TestProject>/mono-testResults.xml`. Which tests are missing and which are extra ?
-7. **Create or update** `browser-tests/results/<TestProject>/Summary.md` with the outcome
-8. **Stop and ask for feedback before proceeding.**
-9. **Rebuild and re-run** the test suite to continue until all enabled tests pass.
+5. **Failing Asserts** if there are failing asserts during the run create record in `/browser-tests/failures/<TestSuiteName>/<ClassName.MethodName>.md` with the [template](#Method-Failure-Documentation-Template)
+6. **Compare test counts**: `Tests run: X Passed: Y Failed: Z Skipped: N` with the Mono baseline at: `browser-tests/results/<TestProject>/mono-console.log`
+7. **Compare test sets** with the Mono baseline at: `browser-tests/results/<TestProject>/mono-testResults.xml`. Which tests are missing and which are extra ?
+8. **Create or update** `browser-tests/results/<TestProject>/Summary.md` with the outcome
+9. **Stop and ask for feedback before proceeding.**
+10. **Rebuild and re-run** the test suite to continue until all enabled tests pass.
 
 ### Handling Timeouts/Crashes/Aborts
 
@@ -182,6 +183,15 @@ _Tests that ran on Mono but not CoreCLR. Investigate if unexpected._
 | Test Name | Failure Type | Category |
 |-----------|--------------|----------|
 | ClassName.MethodName | timeout | threading |
+
+## Failures and Asserts
+
+_Link to failure records in `/browser-tests/failures/<TestProject>/`._
+
+| Issue | Type | Link |
+|-------|------|------|
+| ClassName.MethodName | exception | [ClassName.MethodName.md](../../failures/<TestProject>/ClassName.MethodName.md) |
+| AssertName | assertion | [AssertName.Assert.md](../../failures/<TestProject>/AssertName.Assert.md) |
 
 ## Notes
 

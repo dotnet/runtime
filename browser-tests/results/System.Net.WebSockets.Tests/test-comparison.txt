@@ -1,0 +1,9 @@
+Test Comparison: System.Net.WebSockets.Tests
+Generated: 2026-01-29T16:43:18+00:00
+
+Mono tests:    276
+CoreCLR tests: 276
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

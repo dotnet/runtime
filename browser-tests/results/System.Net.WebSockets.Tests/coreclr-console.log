@@ -1,0 +1,533 @@
+========================================
+Running Browser/WASM CoreCLR Test Suite
+========================================
+Project:       System.Net.WebSockets.Tests
+Csproj:        src/libraries/System.Net.WebSockets/tests/System.Net.WebSockets.Tests.csproj
+Configuration: Debug
+Results:       /workspaces/runtime/browser-tests/results/System.Net.WebSockets.Tests
+Time:          20260129_164047
+========================================
+
+  Determining projects to restore...
+  Restored /workspaces/runtime/src/libraries/System.Net.WebSockets/tests/System.Net.WebSockets.Tests.csproj (in 2.04 sec).
+  4 of 5 projects are up-to-date for restore.
+  TestUtilities -> /workspaces/runtime/artifacts/bin/TestUtilities/Debug/net10.0/TestUtilities.dll
+  StreamConformanceTests -> /workspaces/runtime/artifacts/bin/StreamConformanceTests/Debug/net11.0/StreamConformanceTests.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Net.WebSockets.Tests -> /workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0/browser-wasm/System.Net.WebSockets.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export V8_PATH_FOR_TESTS=/workspaces/runtime/artifacts/bin/v8-14.3.127/v8-14.3.127.sh
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/workspaces/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/workspaces/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/vscode/.jsvu/bin:/workspaces/runtime/.dotnet:/home/vscode/.vscode-remote/data/User/globalStorage/github.copilot-chat/debugCommand:/home/vscode/.vscode-remote/data/User/globalStorage/github.copilot-chat/copilotCli:/vscode/bin/linux-x64/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/workspaces/runtime/.dotnet:/workspaces/runtime/.dotnet-tools-global:/usr/local/share/nvm/versions/node/v24.13.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/vscode/.dotnet:/home/vscode/.dotnet/tools:/home/vscode/.local/bin
+  EXECUTION_DIR=/workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  /workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0/browser-wasm/wwwroot /workspaces/runtime/src/libraries/System.Net.WebSockets/tests
+  ----- start Thu Jan 29 04:40:53 PM UTC 2026 =============== To repro directly: =====================================================
+  pushd /workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/workspaces/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Net.WebSockets.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  /workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0/browser-wasm/wwwroot /workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0/browser-wasm/wwwroot /workspaces/runtime/src/libraries/System.Net.WebSockets/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/workspaces/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.WebSockets.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /workspaces/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only --no-sandbox and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 33229
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 33229.
+  warn: Microsoft.AspNetCore.Hosting.Diagnostics[15]
+        Overriding HTTP_PORTS '8080' and HTTPS_PORTS ''. Binding to values defined by URLS instead 'http://127.0.0.1:0'.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:34337/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Net.WebSockets.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.WebSockets.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Net.WebSockets.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash 40faf97e4449fb7aa0b759ba68c75e29d5079567
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Net.WebSockets.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Net.WebSockets.Tests.dll (found 71 of 158 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Net.WebSockets.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_NativeError_Message_Success(nativeError: 0, webSocketError: Success, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_NativeError_Message_Success(nativeError: -2147467259, webSocketError: NativeError, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Success(error: Success)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Success(error: InvalidMessageType)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Success(error: Faulted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Success(error: NativeError)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Success(error: NotAWebSocket)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Success(error: UnsupportedVersion)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Success(error: UnsupportedProtocol)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Success(error: HeaderError)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Success(error: ConnectionClosedPrematurely)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Success(error: InvalidState)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 0, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 0, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 1, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 1, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 2, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 2, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 3, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 3, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 4, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 4, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 5, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 5, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 6, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 6, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 7, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 7, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 8, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 8, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 9, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Exception_Success(nativeError: 9, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Exception_Success(error: Success)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Exception_Success(error: InvalidMessageType)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Exception_Success(error: Faulted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Exception_Success(error: NativeError)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Exception_Success(error: NotAWebSocket)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Exception_Success(error: UnsupportedVersion)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Exception_Success(error: UnsupportedProtocol)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Exception_Success(error: HeaderError)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Exception_Success(error: ConnectionClosedPrematurely)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Exception_Success(error: InvalidState)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_NativeError_Exception_Success(nativeError: 0, webSocketError: Success, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_NativeError_Exception_Success(nativeError: -2147467259, webSocketError: NativeError, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_Message_Exception_Success
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_Parameterless_Success
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Success(error: Success)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Success(error: InvalidMessageType)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Success(error: Faulted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Success(error: NativeError)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Success(error: NotAWebSocket)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Success(error: UnsupportedVersion)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Success(error: UnsupportedProtocol)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Success(error: HeaderError)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Success(error: ConnectionClosedPrematurely)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Success(error: InvalidState)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 0, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 0, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 1, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 1, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 2, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 2, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 3, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 3, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 4, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 4, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 5, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 5, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 6, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 6, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 7, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 7, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 8, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 8, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 9, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Exception_Success(nativeError: 9, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 0, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 0, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 1, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 1, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 2, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 2, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 3, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 3, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 4, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 4, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 5, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 5, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 6, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 6, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 7, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 7, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 8, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 8, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 9, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Message_Success(nativeError: 9, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_Message_Success
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 0, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 0, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 1, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 1, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 2, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 2, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 3, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 3, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 4, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 4, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 5, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 5, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 6, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 6, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 7, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 7, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 8, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 8, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 9, error: 0, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_NativeError_Success(nativeError: 9, error: -2147467259, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Exception_Success(error: Success)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Exception_Success(error: InvalidMessageType)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Exception_Success(error: Faulted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Exception_Success(error: NativeError)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Exception_Success(error: NotAWebSocket)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Exception_Success(error: UnsupportedVersion)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Exception_Success(error: UnsupportedProtocol)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Exception_Success(error: HeaderError)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Exception_Success(error: ConnectionClosedPrematurely)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_WebSocketError_Message_Exception_Success(error: InvalidState)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_NativeError_Success(nativeError: 0, webSocketError: Success, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketExceptionTests.ConstructorTests_NativeError_Success(nativeError: -2147467259, webSocketError: NativeError, expectedHResult: -2147467259)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateOptionsTests.ServerMaxWindowBits
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateOptionsTests.ClientMaxWindowBits
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateOptionsTests.ContextTakeover
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.IsStateTerminal_TerminalReturnsTrue(state: Closed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.IsStateTerminal_TerminalReturnsTrue(state: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateClientBuffer_InvalidReceiveValues(size: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateClientBuffer_InvalidReceiveValues(size: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ReceiveAsync_WhenDisposedInParallel_DoesNotGetStuck
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateServerBuffer_ValidReceiveValues(size: 256)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateServerBuffer_ValidReceiveValues(size: 65536)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.IsStateTerminal_NonTerminalReturnsFalse(state: None)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.IsStateTerminal_NonTerminalReturnsFalse(state: Connecting)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.IsStateTerminal_NonTerminalReturnsFalse(state: Open)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.IsStateTerminal_NonTerminalReturnsFalse(state: CloseSent)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.IsStateTerminal_NonTerminalReturnsFalse(state: CloseReceived)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.IsStateTerminal_NonTerminalReturnsFalse(state: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.IsStateTerminal_NonTerminalReturnsFalse(state: 7)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ReceiveAsync_UTF8SplitAcrossMultipleBuffers_ValidDataReceived
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.DefaultKeepAliveInterval_ValidValue
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateClientBuffer_ValidSendValues(size: 16)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateClientBuffer_ValidSendValues(size: 65536)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ValueWebSocketReceiveResult_Ctor_ValidArguments_Roundtrip(count: 0, messageType: Text, endOfMessage: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ValueWebSocketReceiveResult_Ctor_ValidArguments_Roundtrip(count: 0, messageType: Text, endOfMessage: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ValueWebSocketReceiveResult_Ctor_ValidArguments_Roundtrip(count: 42, messageType: Binary, endOfMessage: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ValueWebSocketReceiveResult_Ctor_ValidArguments_Roundtrip(count: 2147483647, messageType: Close, endOfMessage: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ValueWebSocketReceiveResult_Ctor_ValidArguments_Roundtrip(count: 2147483647, messageType: Close, endOfMessage: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ReceiveAsync_ServerUnmaskedFrame_ThrowsWebSocketException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ThrowWhenContinuationWithDifferentCompressionFlags
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.IsApplicationTargeting45_AlwaysTrue
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateClientBuffer_InvalidSendValues(size: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateClientBuffer_InvalidSendValues(size: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ThrowOnInvalidState_ThrowsIfNotInValidList(state: Closed, validStates: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ThrowOnInvalidState_ThrowsIfNotInValidList(state: Closed, validStates: [Open])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ThrowOnInvalidState_ThrowsIfNotInValidList(state: Open, validStates: [Aborted, CloseSent])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateServerBuffer_InvalidReceiveValues(size: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateServerBuffer_InvalidReceiveValues(size: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateClientBuffer_ValidReceiveValues(size: 256)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateClientBuffer_ValidReceiveValues(size: 65536)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.RegisterPrefixes_Unsupported
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateFromStream_ValidBufferSizes_CreatesWebSocket
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateClientWebSocket_InvalidArguments_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.CreateFromStream_InvalidArguments_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ValueWebSocketReceiveResult_Ctor_InvalidArguments_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ReceiveAsync_InvalidPayloadLength_AbortsAndThrowsException(lenBytes: [127, 255, 255, 255, 255, ···], shouldFail: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ReceiveAsync_InvalidPayloadLength_AbortsAndThrowsException(lenBytes: [128, 0, 0, 0, 0, ···], shouldFail: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ThrowOnInvalidState_SuccessIfInList(state: Open, validStates: [Open])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ThrowOnInvalidState_SuccessIfInList(state: Open, validStates: [Open, Aborted, Closed])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ThrowOnInvalidState_SuccessIfInList(state: Open, validStates: [Aborted, Open, Closed])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketTests.ThrowOnInvalidState_SuccessIfInList(state: Open, validStates: [Aborted, CloseSent, Open])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.LargeMessageSplitInMultipleFrames(windowBits: 9)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.LargeMessageSplitInMultipleFrames(windowBits: 10)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.LargeMessageSplitInMultipleFrames(windowBits: 11)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.LargeMessageSplitInMultipleFrames(windowBits: 12)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.LargeMessageSplitInMultipleFrames(windowBits: 13)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.LargeMessageSplitInMultipleFrames(windowBits: 14)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.LargeMessageSplitInMultipleFrames(windowBits: 15)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.SendHelloWithDisableCompression
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.SendReceiveWithDifferentWindowBits(clientWindowBits: 9, serverWindowBits: 15)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.SendReceiveWithDifferentWindowBits(clientWindowBits: 15, serverWindowBits: 9)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.ReceiveHelloWithoutContextTakeover
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.Duplex(clientContextTakover: False, serverContextTakover: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.Duplex(clientContextTakover: True, serverContextTakover: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.Duplex(clientContextTakover: False, serverContextTakover: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.Duplex(clientContextTakover: True, serverContextTakover: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.DisposeShouldNotCorruptStateWhileReceiving
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.ReceiveHelloWithContextTakeover
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.SendHelloWithContextTakeover
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.PayloadShouldHaveSimilarSizeWhenSplitIntoSegments(windowBits: 9)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.PayloadShouldHaveSimilarSizeWhenSplitIntoSegments(windowBits: 10)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.PayloadShouldHaveSimilarSizeWhenSplitIntoSegments(windowBits: 11)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.PayloadShouldHaveSimilarSizeWhenSplitIntoSegments(windowBits: 12)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.PayloadShouldHaveSimilarSizeWhenSplitIntoSegments(windowBits: 13)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.PayloadShouldHaveSimilarSizeWhenSplitIntoSegments(windowBits: 14)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.PayloadShouldHaveSimilarSizeWhenSplitIntoSegments(windowBits: 15)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.ReceiveInvalidCompressedData
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.AutobahnTestCase13_3_1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.ReceiveUncompressedMessageWhenCompressionEnabled
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.TwoDeflateBlocksInOneMessage
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.SendHelloWithEmptyFrame
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.WebSocketWithoutDeflateShouldThrowOnCompressedMessage
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.SendHelloWithoutContextTakeover
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketDeflateTests.CompressedMessageWithEmptyLastFrame
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketKeepAliveTests.WebSocketServer_NoUserReadOrWrite_SendsPingAndReadsPongResponse
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketKeepAliveTests.WebSocket_NoUserReadOrWrite_SendsUnsolicitedPong(isServer: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketKeepAliveTests.WebSocket_NoUserReadOrWrite_SendsUnsolicitedPong(isServer: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketKeepAliveTests.WebSocketClient_NoServerDataSent_SendsPingAndReadsPongResponse
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleInvalidSegment_Invalid(data: [254])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleInvalidSegment_Invalid(data: [255])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleInvalidSegment_Invalid(data: [254, 254, 255, 255])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleInvalidSegment_Invalid(data: [192, 177])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleInvalidSegment_Invalid(data: [193, 177])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleInvalidSegment_Invalid(data: [224, 128, 175])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleInvalidSegment_Invalid(data: [240, 128, 128, 175])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleInvalidSegment_Invalid(data: [248, 128, 128, 128, 175])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleInvalidSegment_Invalid(data: [252, 128, 128, 128, 128, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleInvalidSegment_Invalid(data: [237, 160, 128, 101, 100, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleValidSegments_Valid(data: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleValidSegments_Valid(data: [72, 101, 108, 108, 111, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleValidSegments_Valid(data: [72, 101, 108, 108, 111, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleValidSegments_Valid(data: [104, 101, 108, 108, 111, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateSingleValidSegments_Valid(data: [240, 164, 173, 162])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateMultipleInvalidSegments_Invalid
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateMultipleValidSegments_Valid(data1: [], data2: [], data3: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateMultipleValidSegments_Valid(data1: [72, 101, 108, 108, 111, ···], data2: [], data3: [87, 111, 114, 108, 100])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateMultipleValidSegments_Valid(data1: [72, 101, 108, 108, 111, ···], data2: [181, 64, 195, 159, 195, ···], data3: [195, 188, 195, 160, 195, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketUtf8Tests.ValidateIndividualInvalidSegments_Invalid
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.ReceiveAsync_ValidCloseStatus_Success(closeStatus: EndpointUnavailable)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.ReceiveAsync_ValidCloseStatus_Success(closeStatus: InternalServerError)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.ReceiveAsync_ValidCloseStatus_Success(closeStatus: InvalidMessageType)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.ReceiveAsync_ValidCloseStatus_Success(closeStatus: InvalidPayloadData)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.ReceiveAsync_ValidCloseStatus_Success(closeStatus: MandatoryExtension)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.ReceiveAsync_ValidCloseStatus_Success(closeStatus: MessageTooBig)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.ReceiveAsync_ValidCloseStatus_Success(closeStatus: NormalClosure)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.ReceiveAsync_ValidCloseStatus_Success(closeStatus: PolicyViolation)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.ReceiveAsync_ValidCloseStatus_Success(closeStatus: ProtocolError)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.ReceiveAsync_ValidCloseStatus_Success(closeStatus: 1012)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.ReceiveAsync_ValidCloseStatus_Success(closeStatus: 1013)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.ReceiveAsync_ValidCloseStatus_Success(closeStatus: 1014)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(closeStatus: EndpointUnavailable)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(closeStatus: InternalServerError)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(closeStatus: InvalidMessageType)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(closeStatus: InvalidPayloadData)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(closeStatus: MandatoryExtension)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(closeStatus: MessageTooBig)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(closeStatus: NormalClosure)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(closeStatus: PolicyViolation)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(closeStatus: ProtocolError)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(closeStatus: 1012)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(closeStatus: 1013)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(closeStatus: 1014)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketCloseTests.CloseAsync_CancelableEvenWhenPendingReceive_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketReceiveResultTests.ConstructorTest_Success(count: 0, messageType: Text, endOfMessage: False, closeStatus: null, closeStatusDescription: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketReceiveResultTests.ConstructorTest_Success(count: 1, messageType: Text, endOfMessage: True, closeStatus: null, closeStatusDescription: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketReceiveResultTests.ConstructorTest_Success(count: 2, messageType: Binary, endOfMessage: False, closeStatus: null, closeStatusDescription: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketReceiveResultTests.ConstructorTest_Success(count: 3, messageType: Binary, endOfMessage: True, closeStatus: null, closeStatusDescription: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketReceiveResultTests.ConstructorTest_Success(count: 4, messageType: Close, endOfMessage: True, closeStatus: NormalClosure, closeStatusDescription: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketReceiveResultTests.ConstructorTest_Success(count: 5, messageType: Close, endOfMessage: True, closeStatus: NormalClosure, closeStatusDescription: "normal")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.WebSockets.Tests.WebSocketReceiveResultTests.ConstructorTest_Invalid_ThrowsArgumentException
+  [40m[32minfo[39m[22m[49m: Finished:    System.Net.WebSockets.Tests.dll
+  [40m[32minfo[39m[22m[49m: ASSERT FAILED
+  [40m[32minfo[39m[22m[49m: 	Expression: slotNumber >= GetNumVirtuals() || pMDRet == m_pDeclMT->GetMethodDescForSlot_NoThrow(slotNumber)
+  [40m[32minfo[39m[22m[49m: 	Location:   /workspaces/runtime/src/coreclr/vm/methodtable.cpp:6963
+  [40m[32minfo[39m[22m[49m: 	Function:   GetImplMethodDesc
+  [40m[32minfo[39m[22m[49m: 	Process:    42
+  [40m[32minfo[39m[22m[49m: Frame (InterpreterFrame): 0x4fff2c
+  [40m[32minfo[39m[22m[49m:    0) MessageSinkMessageExtensions::Dispatch, IR_0037
+  [40m[32minfo[39m[22m[49m:    1) Microsoft.DotNet.XHarness.TestRunners.Xunit.CompletionCallbackExecutionSink::OnMessageWithTypes, IR_0030
+  [40m[32minfo[39m[22m[49m:    2) Xunit.MessageSinkAdapter::OnMessageWithTypes, IR_0015
+  [40m[32minfo[39m[22m[49m:    3) Xunit.OptimizedRemoteMessageSink::OnMessage, IR_001c
+  [40m[32minfo[39m[22m[49m:    4) Xunit.Sdk.SynchronousMessageBus::QueueMessage, IR_0032
+  [40m[32minfo[39m[22m[49m:    5) <RunAsync>d__41[__Canon]::MoveNext, IR_036e
+  [40m[32minfo[39m[22m[49m:    6) <RunAsync>d__41[__Canon]::MoveNext, IR_02be
+  [40m[32minfo[39m[22m[49m:    7) Xunit.Sdk.TestAssemblyRunner`1+<RunAsync>d__41[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:    8) AsyncStateMachineBox`1[__Canon,<RunAsync>d__41]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:    9) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestAssemblyRunner`1+<RunAsync>d__41[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   10) System.Threading.ContextCallback::IL_STUB_DelegateShuffleThunk, IR_0014
+  [40m[32minfo[39m[22m[49m:   11) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   12) AsyncStateMachineBox`1[__Canon,<RunAsync>d__41]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:   13) AsyncStateMachineBox`1[__Canon,<RunAsync>d__41]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   14) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   15) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   16) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   17) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   18) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   19) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   20) <RunTestCollectionsAsync>d__2::MoveNext, IR_0152
+  [40m[32minfo[39m[22m[49m:   21) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__2]::ExecutionContextCallback, IR_0030
+  [40m[32minfo[39m[22m[49m:   22) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[YieldingXunitTestAssemblyRunner+<RunTestCollectionsAsync>d__2, Microsoft.DotNet.XHarness.TestRunners.Xunit, Version=11.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   23) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   24) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__2]::MoveNext, IR_00c0
+  [40m[32minfo[39m[22m[49m:   25) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__2]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   26) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   27) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   28) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   29) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   30) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   31) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   32) <RunTestCollectionsAsync>d__16::MoveNext, IR_0653
+  [40m[32minfo[39m[22m[49m:   33) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__16]::ExecutionContextCallback, IR_0030
+  [40m[32minfo[39m[22m[49m:   34) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.XunitTestAssemblyRunner+<RunTestCollectionsAsync>d__16, xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   35) System.Threading.ContextCallback::IL_STUB_DelegateShuffleThunk, IR_0014
+  [40m[32minfo[39m[22m[49m:   36) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   37) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__16]::MoveNext, IR_00c0
+  [40m[32minfo[39m[22m[49m:   38) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__16]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   39) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   40) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   41) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   42) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   43) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   44) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   45) <RunTestCollectionsAsync>d__42[__Canon]::MoveNext, IR_0181
+  [40m[32minfo[39m[22m[49m:   46) Xunit.Sdk.TestAssemblyRunner`1+<RunTestCollectionsAsync>d__42[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   47) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__42]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:   48) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestAssemblyRunner`1+<RunTestCollectionsAsync>d__42[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   49) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   50) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__42]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:   51) AsyncStateMachineBox`1[__Canon,<RunTestCollectionsAsync>d__42]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   52) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   53) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   54) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   55) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   56) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   57) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   58) <RunTestCollectionAsync>d__1::MoveNext, IR_0182
+  [40m[32minfo[39m[22m[49m:   59) AsyncStateMachineBox`1[__Canon,<RunTestCollectionAsync>d__1]::ExecutionContextCallback, IR_0030
+  [40m[32minfo[39m[22m[49m:   60) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[YieldingXunitTestAssemblyRunner+<RunTestCollectionAsync>d__1, Microsoft.DotNet.XHarness.TestRunners.Xunit, Version=11.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   61) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   62) AsyncStateMachineBox`1[__Canon,<RunTestCollectionAsync>d__1]::MoveNext, IR_00c0
+  [40m[32minfo[39m[22m[49m:   63) AsyncStateMachineBox`1[__Canon,<RunTestCollectionAsync>d__1]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   64) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   65) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   66) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   67) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   68) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   69) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   70) <RunAsync>d__27[__Canon]::MoveNext, IR_0283
+  [40m[32minfo[39m[22m[49m:   71) Xunit.Sdk.TestCollectionRunner`1+<RunAsync>d__27[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   72) AsyncStateMachineBox`1[__Canon,<RunAsync>d__27]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:   73) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestCollectionRunner`1+<RunAsync>d__27[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   74) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   75) AsyncStateMachineBox`1[__Canon,<RunAsync>d__27]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:   76) AsyncStateMachineBox`1[__Canon,<RunAsync>d__27]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   77) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   78) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   79) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   80) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   81) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   82) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   83) <RunTestClassesAsync>d__28[__Canon]::MoveNext, IR_020a
+  [40m[32minfo[39m[22m[49m:   84) Xunit.Sdk.TestCollectionRunner`1+<RunTestClassesAsync>d__28[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   85) AsyncStateMachineBox`1[__Canon,<RunTestClassesAsync>d__28]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:   86) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestCollectionRunner`1+<RunTestClassesAsync>d__28[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   87) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:   88) AsyncStateMachineBox`1[__Canon,<RunTestClassesAsync>d__28]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:   89) AsyncStateMachineBox`1[__Canon,<RunTestClassesAsync>d__28]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:   90) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:   91) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:   92) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:   93) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:   94) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:   95) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:   96) <RunTestClassAsync>d__1::MoveNext, IR_0190
+  [40m[32minfo[39m[22m[49m:   97) AsyncStateMachineBox`1[__Canon,<RunTestClassAsync>d__1]::ExecutionContextCallback, IR_0030
+  [40m[32minfo[39m[22m[49m:   98) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[YieldingXunitTestCollectionRunner+<RunTestClassAsync>d__1, Microsoft.DotNet.XHarness.TestRunners.Xunit, Version=11.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:   99) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  100) AsyncStateMachineBox`1[__Canon,<RunTestClassAsync>d__1]::MoveNext, IR_00c0
+  [40m[32minfo[39m[22m[49m:  101) AsyncStateMachineBox`1[__Canon,<RunTestClassAsync>d__1]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  102) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  103) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  104) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  105) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:  106) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:  107) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:  108) <RunAsync>d__37[__Canon]::MoveNext, IR_0283
+  [40m[32minfo[39m[22m[49m:  109) Xunit.Sdk.TestClassRunner`1+<RunAsync>d__37[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  110) AsyncStateMachineBox`1[__Canon,<RunAsync>d__37]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:  111) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestClassRunner`1+<RunAsync>d__37[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  112) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  113) AsyncStateMachineBox`1[__Canon,<RunAsync>d__37]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:  114) AsyncStateMachineBox`1[__Canon,<RunAsync>d__37]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  115) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  116) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  117) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  118) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:  119) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:  120) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:  121) <RunTestMethodsAsync>d__38[__Canon]::MoveNext, IR_024d
+  [40m[32minfo[39m[22m[49m:  122) Xunit.Sdk.TestClassRunner`1+<RunTestMethodsAsync>d__38[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  123) AsyncStateMachineBox`1[__Canon,<RunTestMethodsAsync>d__38]::ExecutionContextCallback, IR_0036
+  [40m[32minfo[39m[22m[49m:  124) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[Xunit.Sdk.TestClassRunner`1+<RunTestMethodsAsync>d__38[[Xunit.Sdk.IXunitTestCase, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  125) System.Threading.ExecutionContext::RunInternal, IR_009e
+  [40m[32minfo[39m[22m[49m:  126) AsyncStateMachineBox`1[__Canon,<RunTestMethodsAsync>d__38]::MoveNext, IR_00c7
+  [40m[32minfo[39m[22m[49m:  127) AsyncStateMachineBox`1[__Canon,<RunTestMethodsAsync>d__38]::MoveNext, IR_000d
+  [40m[32minfo[39m[22m[49m:  128) System.Threading.Tasks.AwaitTaskContinuation::RunOrScheduleAction, IR_008d
+  [40m[32minfo[39m[22m[49m:  129) System.Threading.Tasks.Task::RunContinuations, IR_00b3
+  [40m[32minfo[39m[22m[49m:  130) System.Threading.Tasks.Task::FinishContinuations, IR_0032
+  [40m[32minfo[39m[22m[49m:  131) System.Threading.Tasks.Task`1[__Canon]::TrySetResult, IR_0072
+  [40m[32minfo[39m[22m[49m:  132) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetExistingTaskResult, IR_004a
+  [40m[32minfo[39m[22m[49m:  133) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[__Canon]::SetResult, IR_0040
+  [40m[32minfo[39m[22m[49m:  134) <RunTestMethodAsync>d__1::MoveNext, IR_0160
+  [40m[32minfo[39m[22m[49m:  135) AsyncStateMachineBox`1[__Canon,<RunTestMethodAsync>d__1]::ExecutionContextCallback, IR_0030
+  [40m[32minfo[39m[22m[49m:  136) System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[Xunit.Sdk.RunSummary, xunit.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c],[YieldingXunitTestClassRunner+<RunTestMethodAsync>d__1, Microsoft.DotNet.XHarness.TestRunners.Xunit, Version=11.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]]::IL_STUB_InstantiatingStub, IR_0013
+  [40m[32minfo[39m[22m[49m:  137) System.Threading.ExecutionContext::RunFromThreadPoolDispatchLoop, IR_0060
+  [40m[32minfo[39m[22m[49m:  138) AsyncStateMachineBox`1[__Canon,<RunTestMethodAsync>d__1]::MoveNext, IR_00dc
+  [40m[32minfo[39m[22m[49m:  139) AsyncStateMachineBox`1[__Canon,<RunTestMethodAsync>d__1]::ExecuteFromThreadPool, IR_000e
+  [40m[32minfo[39m[22m[49m:  140) System.Threading.ThreadPoolWorkQueue::DispatchWorkItem, IR_0028
+  [40m[32minfo[39m[22m[49m:  141) System.Threading.ThreadPoolWorkQueue::Dispatch, IR_0140
+  [40m[32minfo[39m[22m[49m:  142) System.Threading.ThreadPool::BackgroundJobHandler, IR_0012
+  [40m[32minfo[39m[22m[49m: Stored /workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 81765 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 81765 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 268 Passed: 266 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 2
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: ASSERT FAILED
+  [40m[32minfo[39m[22m[49m: 	Expression: slotNumber >= GetNumVirtuals() || pMDRet == m_pDeclMT->GetMethodDescForSlot_NoThrow(slotNumber)
+  [40m[32minfo[39m[22m[49m: 	Location:   /workspaces/runtime/src/coreclr/vm/methodtable.cpp:6963
+  [40m[32minfo[39m[22m[49m: 	Function:   GetImplMethodDesc
+  [40m[32minfo[39m[22m[49m: 	Process:    42
+  [40m[32minfo[39m[22m[49m: Frame (InterpreterFrame): 0x4fff2c
+  [40m[32minfo[39m[22m[49m:    0) <>c::<.cctor>b__289_0, IR_002a
+  [40m[32minfo[39m[22m[49m:    1) System.Threading.ExecutionContext::RunFromThreadPoolDispatchLoop, IR_0060
+  [40m[32minfo[39m[22m[49m:    2) System.Threading.Tasks.Task::ExecuteWithThreadLocal, IR_0119
+  [40m[32minfo[39m[22m[49m:    3) System.Threading.Tasks.Task::ExecuteEntryUnsafe, IR_0056
+  [40m[32minfo[39m[22m[49m:    4) System.Threading.Tasks.Task::ExecuteFromThreadPool, IR_000e
+  [40m[32minfo[39m[22m[49m:    5) System.Threading.ThreadPoolWorkQueue::DispatchWorkItem, IR_0028
+  [40m[32minfo[39m[22m[49m:    6) System.Threading.ThreadPoolWorkQueue::Dispatch, IR_0140
+  [40m[32minfo[39m[22m[49m:    7) System.Threading.ThreadPool::BackgroundJobHandler, IR_0012
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Net.WebSockets.Tests.dll after 0.6788666666666666 minutes with result 0 and linear memory 231997440 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  /workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0/browser-wasm/wwwroot /workspaces/runtime/src/libraries/System.Net.WebSockets/tests
+  ----- end Thu Jan 29 04:41:38 PM UTC 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:50.31
+
+========================================
+Test run completed with exit code: 0
+========================================
+Warning: xharness output directory not found: /workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output
+Looking for alternative locations...
+/workspaces/runtime/artifacts/bin/System.Net.WebSockets.Tests/Debug/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml
+
+========================================
+Results saved to: /workspaces/runtime/browser-tests/results/System.Net.WebSockets.Tests
+========================================
+total 268
+drwxrwxrwx+ 2 vscode vscode  4096 Jan 29 16:40 .
+drwxrwxrwx+ 5 vscode vscode  4096 Jan 29 16:37 ..
+-rw-rw-rw-  1 vscode vscode 77382 Jan 29 16:41 console_20260129_164047.log
+-rw-rw-rw-  1 vscode vscode 78441 Jan 29 16:41 coreclr-console.log
+-rw-rw-rw-  1 vscode vscode 23652 Jan 29 16:37 mono-console.log
+-rw-rw-rw-  1 vscode vscode 81421 Jan 29 16:37 mono-testResults.xml
+

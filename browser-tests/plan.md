@@ -55,9 +55,11 @@ Each work item has a `DetailsUrl` that links to Helix logs with `ConsoleOutputUr
 
 ### Completed Test Suites
 
-| Test Suite | CoreCLR | Mono Baseline | Status |
-|------------|---------|---------------|--------|
-| System.Runtime.InteropServices.JavaScript.Tests | 457 run, 455 pass, 2 skip | 454 run, 452 pass, 2 skip | ✅ |
+| Test Suite | CoreCLR | Mono Baseline | Status | Notes |
+|------------|---------|---------------|--------|-------|
+| System.Runtime.InteropServices.JavaScript.Tests | 457 run, 455 pass, 2 skip | 454 run, 452 pass, 2 skip | ✅ | |
+| System.Net.Http.Functional.Tests | 901 run, 781 pass, 120 skip | 901 run, 781 pass, 120 skip | ✅ | **Requires Release config** |
+| System.Net.WebSockets.Tests | 268 run, 266 pass, 2 skip | 268 run, 266 pass, 2 skip | ✅ | Interpreter assert (non-fatal) |
 
 ### In Progress
 
