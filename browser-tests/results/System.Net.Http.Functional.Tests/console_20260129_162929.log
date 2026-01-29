@@ -1,0 +1,89 @@
+
+  Determining projects to restore...
+  Restored /workspaces/runtime/src/libraries/Common/tests/StreamConformanceTests/StreamConformanceTests.csproj (in 207 ms).
+  Restored /workspaces/runtime/src/libraries/System.Net.Http/tests/FunctionalTests/System.Net.Http.Functional.Tests.csproj (in 2.02 sec).
+  12 of 14 projects are up-to-date for restore.
+  TestUtilities -> /workspaces/runtime/artifacts/bin/TestUtilities/Debug/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /workspaces/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Debug/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /workspaces/runtime/artifacts/bin/ILLink.CodeFixProvider/Debug/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /workspaces/runtime/artifacts/bin/Mono.Linker/ref/Debug/net11.0/illink.dll
+  Mono.Linker -> /workspaces/runtime/artifacts/bin/Mono.Linker/Debug/net11.0/illink.dll
+  ILLink.Tasks -> /workspaces/runtime/artifacts/bin/ILLink.Tasks/Debug/net/ILLink.Tasks.dll
+  System.DirectoryServices.Protocols -> /workspaces/runtime/artifacts/bin/System.DirectoryServices.Protocols/ref/Debug/net11.0/System.DirectoryServices.Protocols.dll
+  System.DirectoryServices.Protocols -> /workspaces/runtime/artifacts/bin/System.DirectoryServices.Protocols/Debug/net11.0/System.DirectoryServices.Protocols.dll
+  StreamConformanceTests -> /workspaces/runtime/artifacts/bin/StreamConformanceTests/Debug/net11.0/StreamConformanceTests.dll
+/workspaces/runtime/.dotnet/sdk/11.0.100-alpha.1.26060.102/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(351,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/workspaces/runtime/src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj]
+/workspaces/runtime/.dotnet/sdk/11.0.100-alpha.1.26060.102/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.RuntimeIdentifierInference.targets(351,5): message NETSDK1057: You are using a preview version of .NET. See: https://aka.ms/dotnet-support-policy [/workspaces/runtime/src/libraries/Common/tests/System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj]
+  NetCoreServer -> /workspaces/runtime/artifacts/bin/NetCoreServer/Debug/net10.0/NetCoreServer.dll
+  RemoteLoopServer -> /workspaces/runtime/artifacts/bin/RemoteLoopServer/Debug/net10.0/RemoteLoopServer.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Net.Http.Functional.Tests -> /workspaces/runtime/artifacts/bin/System.Net.Http.Functional.Tests/Debug/net11.0-browser/browser-wasm/System.Net.Http.Functional.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export V8_PATH_FOR_TESTS=/workspaces/runtime/artifacts/bin/v8-14.3.127/v8-14.3.127.sh
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/workspaces/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/workspaces/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/vscode/.jsvu/bin:/workspaces/runtime/.dotnet:/home/vscode/.vscode-remote/data/User/globalStorage/github.copilot-chat/debugCommand:/home/vscode/.vscode-remote/data/User/globalStorage/github.copilot-chat/copilotCli:/vscode/bin/linux-x64/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/workspaces/runtime/.dotnet:/workspaces/runtime/.dotnet-tools-global:/usr/local/share/nvm/versions/node/v24.13.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/vscode/.dotnet:/home/vscode/.dotnet/tools:/home/vscode/.local/bin
+  EXECUTION_DIR=/workspaces/runtime/artifacts/bin/System.Net.Http.Functional.Tests/Debug/net11.0-browser/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/workspaces/runtime/artifacts/bin/System.Net.Http.Functional.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  /workspaces/runtime/artifacts/bin/System.Net.Http.Functional.Tests/Debug/net11.0-browser/browser-wasm/wwwroot /workspaces/runtime/src/libraries/System.Net.Http/tests/FunctionalTests
+  ----- start Thu Jan 29 04:29:53 PM UTC 2026 =============== To repro directly: =====================================================
+  pushd /workspaces/runtime/artifacts/bin/System.Net.Http.Functional.Tests/Debug/net11.0-browser/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/workspaces/runtime/artifacts/bin/System.Net.Http.Functional.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output  --web-server-use-cors --web-server-use-https --set-web-server-http-env=DOTNET_TEST_WEBSOCKETHOST,DOTNET_TEST_HTTPHOST,DOTNET_TEST_REMOTE_LOOP_HOST --set-web-server-https-env=DOTNET_TEST_SECUREWEBSOCKETHOST,DOTNET_TEST_SECUREHTTPHOST,DOTNET_TEST_HTTP2HOST --web-server-middleware=/workspaces/runtime/artifacts/bin/RemoteLoopServer/Debug/net10.0/RemoteLoopServer.dll,RemoteLoopServer.GenericHandler --web-server-middleware=/workspaces/runtime/artifacts/bin/NetCoreServer/Debug/net10.0/NetCoreServer.dll,NetCoreServer.GenericHandler -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/workspaces/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=01:15:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Net.Http.Functional.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  /workspaces/runtime/artifacts/bin/System.Net.Http.Functional.Tests/Debug/net11.0-browser/browser-wasm/wwwroot /workspaces/runtime/artifacts/bin/System.Net.Http.Functional.Tests/Debug/net11.0-browser/browser-wasm/wwwroot /workspaces/runtime/src/libraries/System.Net.Http/tests/FunctionalTests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/workspaces/runtime/artifacts/bin/System.Net.Http.Functional.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output --web-server-use-cors --web-server-use-https --set-web-server-http-env=DOTNET_TEST_WEBSOCKETHOST,DOTNET_TEST_HTTPHOST,DOTNET_TEST_REMOTE_LOOP_HOST --set-web-server-https-env=DOTNET_TEST_SECUREWEBSOCKETHOST,DOTNET_TEST_SECUREHTTPHOST,DOTNET_TEST_HTTP2HOST --web-server-middleware=/workspaces/runtime/artifacts/bin/RemoteLoopServer/Debug/net10.0/RemoteLoopServer.dll,RemoteLoopServer.GenericHandler --web-server-middleware=/workspaces/runtime/artifacts/bin/NetCoreServer/Debug/net10.0/NetCoreServer.dll,NetCoreServer.GenericHandler -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/workspaces/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=01:15:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.Http.Functional.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /workspaces/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only --no-sandbox and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 39513
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 39513.
+  warn: Microsoft.AspNetCore.Hosting.Diagnostics[15]
+        Overriding HTTP_PORTS '8080' and HTTPS_PORTS ''. Binding to values defined by URLS instead 'http://127.0.0.1:0;https://127.0.0.1:0'.
+  [40m[32minfo[39m[22m[49m: Loaded RemoteLoopServer.GenericHandler middleware
+  [40m[32minfo[39m[22m[49m: Loaded NetCoreServer.GenericHandler middleware
+  warn: Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServer[9]
+        The ASP.NET Core developer certificate is only trusted by some clients. For information about trusting the ASP.NET Core developer certificate, see https://aka.ms/aspnet/https-trust-dev-cert
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:34011/index.html?arg=--setenv%3dDOTNET_TEST_WEBSOCKETHOST%3d127.0.0.1%3a34011&arg=--setenv%3dDOTNET_TEST_HTTPHOST%3d127.0.0.1%3a34011&arg=--setenv%3dDOTNET_TEST_REMOTE_LOOP_HOST%3d127.0.0.1%3a34011&arg=--setenv%3dDOTNET_TEST_SECUREWEBSOCKETHOST%3d127.0.0.1%3a44827&arg=--setenv%3dDOTNET_TEST_SECUREHTTPHOST%3d127.0.0.1%3a44827&arg=--setenv%3dDOTNET_TEST_HTTP2HOST%3d127.0.0.1%3a44827&arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Net.Http.Functional.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=DOTNET_TEST_WEBSOCKETHOST=127.0.0.1:34011 --setenv=DOTNET_TEST_HTTPHOST=127.0.0.1:34011 --setenv=DOTNET_TEST_REMOTE_LOOP_HOST=127.0.0.1:34011 --setenv=DOTNET_TEST_SECUREWEBSOCKETHOST=127.0.0.1:44827 --setenv=DOTNET_TEST_SECUREHTTPHOST=127.0.0.1:44827 --setenv=DOTNET_TEST_HTTP2HOST=127.0.0.1:44827 --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.Http.Functional.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Net.Http.Functional.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash 40faf97e4449fb7aa0b759ba68c75e29d5079567
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Net.Http.Functional.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Net.Http.Functional.Tests.dll (found 0 of 1946 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Net.Http.Functional.Tests.dll
+  [40m[32minfo[39m[22m[49m: Finished:    System.Net.Http.Functional.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /workspaces/runtime/artifacts/bin/System.Net.Http.Functional.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output/testResults.xml results 372 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 372 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 0 Passed: 0 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Net.Http.Functional.Tests.dll after 1.31455 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  /workspaces/runtime/artifacts/bin/System.Net.Http.Functional.Tests/Debug/net11.0-browser/browser-wasm/wwwroot /workspaces/runtime/src/libraries/System.Net.Http/tests/FunctionalTests
+  ----- end Thu Jan 29 04:31:15 PM UTC 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /workspaces/runtime/artifacts/bin/System.Net.Http.Functional.Tests/Debug/net11.0-browser/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:01:45.93

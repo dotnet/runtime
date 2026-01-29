@@ -1,0 +1,920 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:42257/index.html?arg=--setenv%3dDOTNET_TEST_WEBSOCKETHOST%3d127.0.0.1%3a42257&arg=--setenv%3dDOTNET_TEST_HTTPHOST%3d127.0.0.1%3a42257&arg=--setenv%3dDOTNET_TEST_REMOTE_LOOP_HOST%3d127.0.0.1%3a42257&arg=--setenv%3dDOTNET_TEST_SECUREWEBSOCKETHOST%3d127.0.0.1%3a44881&arg=--setenv%3dDOTNET_TEST_SECUREHTTPHOST%3d127.0.0.1%3a44881&arg=--setenv%3dDOTNET_TEST_HTTP2HOST%3d127.0.0.1%3a44881&arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Net.Http.Functional.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+Incoming arguments: --setenv=DOTNET_TEST_WEBSOCKETHOST=127.0.0.1:42257 --setenv=DOTNET_TEST_HTTPHOST=127.0.0.1:42257 --setenv=DOTNET_TEST_REMOTE_LOOP_HOST=127.0.0.1:42257 --setenv=DOTNET_TEST_SECUREWEBSOCKETHOST=127.0.0.1:44881 --setenv=DOTNET_TEST_SECUREHTTPHOST=127.0.0.1:44881 --setenv=DOTNET_TEST_HTTP2HOST=127.0.0.1:44881 --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.Http.Functional.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Net.Http.Functional.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0-dev commit hash 4657f3c907fe31c7cc818f81c316aa74f90b9906
+Using threadless Xunit runner
+Discovering: System.Net.Http.Functional.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Net.Http.Functional.Tests.dll (found 499 of 1945 test cases)
+Starting:    System.Net.Http.Functional.Tests.dll
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_NullSource_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_EmptySource_Succeed(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_EmptySource_Succeed(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_WithSpaces_EncodedAsPlus(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_WithSpaces_EncodedAsPlus(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_TwoEntries_SeparatedByAnd(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_TwoEntries_SeparatedByAnd(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_LongSource_Succeed(c: 'F', length: 65545)
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_LongSource_Succeed(c: '/', length: 65545)
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_OneUnicodeEntry_Encoded(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_OneUnicodeEntry_Encoded(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_AllAsciiChars_EncodingMatchesHttpUtilty(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_AllAsciiChars_EncodingMatchesHttpUtilty(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_OneEntry_SeparatedByEquals(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.FormUrlEncodedContentTest.Ctor_OneEntry_SeparatedByEquals(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_ResponseContentAfterClientAndHandlerDispose_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_ResponseContentAfterClientAndHandlerDispose_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_ResponseContentAfterClientAndHandlerDispose_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), name: "X-CustomHeader", value: "x-value", uri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), name: "MyHeader", value: "1, 2, 3", uri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), name: "All-Valid-Chars-Header", value: "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQ"···, uri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), name: "X-CustomHeader", value: "x-value", uri: http://127.0.0.1:42257/Redirect.ashx?statuscode=302&uri=http%3A%2F%2F127.0.0.1%3A42257%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), name: "MyHeader", value: "1, 2, 3", uri: http://127.0.0.1:42257/Redirect.ashx?statuscode=302&uri=http%3A%2F%2F127.0.0.1%3A42257%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), name: "All-Valid-Chars-Header", value: "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQ"···, uri: http://127.0.0.1:42257/Redirect.ashx?statuscode=302&uri=http%3A%2F%2F127.0.0.1%3A42257%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), name: "X-CustomHeader", value: "x-value", uri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), name: "MyHeader", value: "1, 2, 3", uri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), name: "All-Valid-Chars-Header", value: "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQ"···, uri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), name: "X-CustomHeader", value: "x-value", uri: https://127.0.0.1:44881/Redirect.ashx?statuscode=302&uri=https%3A%2F%2F127.0.0.1%3A44881%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), name: "MyHeader", value: "1, 2, 3", uri: https://127.0.0.1:44881/Redirect.ashx?statuscode=302&uri=https%3A%2F%2F127.0.0.1%3A44881%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), name: "All-Valid-Chars-Header", value: "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQ"···, uri: https://127.0.0.1:44881/Redirect.ashx?statuscode=302&uri=https%3A%2F%2F127.0.0.1%3A44881%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), name: "X-CustomHeader", value: "x-value", uri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), name: "MyHeader", value: "1, 2, 3", uri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), name: "All-Valid-Chars-Header", value: "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQ"···, uri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), name: "X-CustomHeader", value: "x-value", uri: https://127.0.0.1:44881/Redirect.ashx?statuscode=302&uri=https%3A%2F%2F127.0.0.1%3A44881%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), name: "MyHeader", value: "1, 2, 3", uri: https://127.0.0.1:44881/Redirect.ashx?statuscode=302&uri=https%3A%2F%2F127.0.0.1%3A44881%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), name: "All-Valid-Chars-Header", value: "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQ"···, uri: https://127.0.0.1:44881/Redirect.ashx?statuscode=302&uri=https%3A%2F%2F127.0.0.1%3A44881%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "GET", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "GET", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "GET", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "HEAD", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "HEAD", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "HEAD", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "POST", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "POST", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "POST", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "PUT", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "PUT", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "PUT", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "DELETE", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "DELETE", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "DELETE", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "OPTIONS", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "OPTIONS", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "OPTIONS", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "TRACE", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "TRACE", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "TRACE", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "CUSTOM1", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "CUSTOM1", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(method: "CUSTOM1", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_RedirectWith307_LargePayload(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_RedirectWith307_LargePayload(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_RedirectWith307_LargePayload(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_EmptyContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_EmptyContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_EmptyContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "GET", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "GET", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "GET", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "POST", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "POST", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "POST", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "PUT", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "PUT", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "PUT", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "DELETE", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "DELETE", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "DELETE", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "OPTIONS", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "OPTIONS", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "OPTIONS", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "CUSTOM1", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "CUSTOM1", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(method: "CUSTOM1", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_RedirectWith302_LargePayload(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_RedirectWith302_LargePayload(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_RedirectWith302_LargePayload(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), content: [···], expectedData: [45, 45, 51, 55, 57, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), content: FormUrlEncodedContent { Headers = [···] }, expectedData: [107, 101, 121, 61, 118, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), content: [···], expectedData: [45, 45, 55, 50, 54, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), content: FormUrlEncodedContent { Headers = [···] }, expectedData: [107, 101, 121, 61, 118, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), content: [···], expectedData: [45, 45, 101, 102, 52, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), content: FormUrlEncodedContent { Headers = [···] }, expectedData: [107, 101, 121, 61, 118, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), content: [···], expectedData: [45, 45, 97, 102, 100, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), content: FormUrlEncodedContent { Headers = [···] }, expectedData: [107, 101, 121, 61, 118, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), content: [···], expectedData: [45, 45, 100, 54, 101, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), content: FormUrlEncodedContent { Headers = [···] }, expectedData: [107, 101, 121, 61, 118, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), content: [···], expectedData: [45, 45, 51, 102, 102, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), content: StreamContentWithSyncAsyncCopy { Headers = [···] }, expectedData: [62, 23, 186, 150, 174, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_StreamContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), content: FormUrlEncodedContent { Headers = [···] }, expectedData: [107, 101, 121, 61, 118, ···])
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_MultipleRequestsReusingSameClient_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_MultipleRequestsReusingSameClient_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_MultipleRequestsReusingSameClient_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_LargeRequestHeader_HeadersAndValuesSent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), uri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_LargeRequestHeader_HeadersAndValuesSent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), uri: http://127.0.0.1:42257/Redirect.ashx?statuscode=302&uri=http%3A%2F%2F127.0.0.1%3A42257%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_LargeRequestHeader_HeadersAndValuesSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), uri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_LargeRequestHeader_HeadersAndValuesSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), uri: https://127.0.0.1:44881/Redirect.ashx?statuscode=302&uri=https%3A%2F%2F127.0.0.1%3A44881%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_LargeRequestHeader_HeadersAndValuesSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), uri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_LargeRequestHeader_HeadersAndValuesSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), uri: https://127.0.0.1:44881/Redirect.ashx?statuscode=302&uri=https%3A%2F%2F127.0.0.1%3A44881%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_NullContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_NullContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_NullContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_HttpRequestMsgResponseHeadersRead_StatusCodeOK(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_HttpRequestMsgResponseHeadersRead_StatusCodeOK(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_HttpRequestMsgResponseHeadersRead_StatusCodeOK(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingNoBodyMethodToEchoServerWithContent_NoBodySent(method: "HEAD", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingNoBodyMethodToEchoServerWithContent_NoBodySent(method: "HEAD", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingNoBodyMethodToEchoServerWithContent_NoBodySent(method: "HEAD", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingNoBodyMethodToEchoServerWithContent_NoBodySent(method: "TRACE", serverUri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingNoBodyMethodToEchoServerWithContent_NoBodySent(method: "TRACE", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendRequestUsingNoBodyMethodToEchoServerWithContent_NoBodySent(method: "TRACE", serverUri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_ReuseRequestContent_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_ReuseRequestContent_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_ReuseRequestContent_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethodTwice_StringContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethodTwice_StringContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethodTwice_StringContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), uri: http://127.0.0.1:42257/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), uri: http://127.0.0.1:42257/Redirect.ashx?statuscode=302&uri=http%3A%2F%2F127.0.0.1%3A42257%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), uri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), uri: https://127.0.0.1:44881/Redirect.ashx?statuscode=302&uri=https%3A%2F%2F127.0.0.1%3A44881%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), uri: https://127.0.0.1:44881/Echo.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), uri: https://127.0.0.1:44881/Redirect.ashx?statuscode=302&uri=https%3A%2F%2F127.0.0.1%3A44881%2FEcho.ashx)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), stringContent: "12345678910", startingPosition: 0)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), stringContent: "12345678910", startingPosition: 5)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), stringContent: "12345678910", startingPosition: 0)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), stringContent: "12345678910", startingPosition: 5)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), stringContent: "12345678910", startingPosition: 0)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), stringContent: "12345678910", startingPosition: 5)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_UnicodeStringContent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_UnicodeStringContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_CallMethod_UnicodeStringContent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.SendAsync_RequestVersion20_ResponseVersion20IfHttp2Supported(server: https://127.0.0.1:44881/)
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_Redirect_ResultingGetFormattedCorrectly(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_Redirect_ResultingGetFormattedCorrectly(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandler_RemoteServerTest.PostAsync_Redirect_ResultingGetFormattedCorrectly(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ExpectedDiagnosticSourceNoLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ExpectedDiagnosticExceptionLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_CustomSocketsHttpHandlerPropagator_PropagatorIsUsed
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ExpectedDiagnosticExceptionOnlyActivityLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ExpectedDiagnosticSourceActivityLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ExpectedDiagnosticSourceUrlFilteredActivityLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_SuppressedGlobalStaticPropagationNoListenerAppCtx
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_HeadersAreInjectedOnRedirects
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteHeader
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.EventSource_ExistsWithCorrectId
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_DiagnosticListener_ExpectedTagsRecorded
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_OperationCanceledException_RecordsActivitiesWithCorrectErrorInfo
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ExpectedDiagnosticCancelledLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_PropagatorInjectsInvalidHeaders_Throws
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ExpectedDiagnosticSourceNewAndDeprecatedEventsLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_DoNotSampleAllData_NoTagsRecorded
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ExpectedDiagnosticSourceLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ActivityIsCreatedIfRequested
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_Success_ConnectionSetupActivityGraphRecorded
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.UseIPAddressInTargetUri_NoProxy_RecordsHostHeaderAsServerAddress
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_HttpTracingEnabled_Succeeds
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ExpectedDiagnosticExceptionActivityLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ExpectedDiagnosticSourceActivityLogging_InvalidBaggage
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.UseIPAddressInTargetUri_ProxyTunnel
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ConnectionFailure_RecordsActivitiesWithCorrectErrorInfo
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.Http3_WaitForConnection_RecordedWhenWaitingForStream
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteW3CTraceParentHeader
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ReuseRequestInHandler_ResetsHeadersForEachReuse
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_SuppressedGlobalStaticPropagationEnvVar
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http11.SendAsync_ActivitySource_ExpectedTagsRecorded
+[STRT] System.Net.Http.Functional.Tests.TelemetryTest_Http11.EventSource_ExistsWithCorrectId
+[STRT] System.Net.Http.Functional.Tests.HttpClientSendTest_Sync.Send_NullRequest_ThrowsException
+[STRT] System.Net.Http.Functional.Tests.HttpClientSendTest_Sync.Send_DuplicateRequest_ThrowsException
+[STRT] System.Net.Http.Functional.Tests.HttpClientSendTest_Sync.Send_InnerHandlerThrows_OriginalExceptionInformationIsCaptured
+[STRT] System.Net.Http.Functional.Tests.HttpClientSendTest_Sync.Send_RequestContentNotDisposed
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Ctor_NullBoundary_ThrowsArgumentException
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Ctor_EmptyBoundary_ThrowsArgumentException
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Serialize_QuotedName_Success
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Serialize_NamedStringContent_Success
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Add_NullName_ThrowsArgumentException
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Serialize_StringContent_Success
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Serialize_InvalidName_Encoded
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Serialize_FileNameStringContent_Success
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Add_EmptyFileName_ThrowsArgumentException
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Ctor_NoParams_CorrectMediaType
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Add_EmptyName_ThrowsArgumentException
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Serialize_EmptyList_Success
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Add_NullContent_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Serialize_InvalidQuotedName_Encoded
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Serialize_InvalidNamedFileName_Encoded
+[STRT] System.Net.Http.Functional.Tests.MultipartFormDataContentTest.Add_NullFileName_ThrowsArgumentException
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandlerTest_Url.TrimmingTrailingWhiteSpace(requestPath: "/test%20", expectedServerPath: "/test%20")
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandlerTest_Url.TrimmingTrailingWhiteSpace(requestPath: "/test ", expectedServerPath: "/test")
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandlerTest_Url.TrimmingTrailingWhiteSpace(requestPath: "/test%20?a=1", expectedServerPath: "/test%20?a=1")
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandlerTest_Url.TrimmingTrailingWhiteSpace(requestPath: "/test ?a=1", expectedServerPath: "/test%20?a=1")
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_NullString_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_EmptyString_Accept(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_EmptyString_Accept(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_UseCustomMediaTypeHeaderValue
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_PassNullHeaderValueForMediaType_NoMediaTypeUsed
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_DefineNoEncoding_DefaultEncodingUsed
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_SetsContentTypeHeader(mediaType: "text/plain")
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_SetsContentTypeHeader(mediaType: "application/json")
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_SetsContentTypeHeader(mediaType: "application/xml")
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_SetsContentTypeHeader(mediaType: "foo/bar")
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_UseCustomMediaTypeHeaderValue_SpecificEncoding
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_UseSpecificEncodingAndContentType
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_SetsDefaultContentTypeHeader
+[STRT] System.Net.Http.Functional.Tests.StringContentTest.Ctor_UseCustomEncodingAndMediaType_EncodingUsedAndContentTypeHeaderUpdated
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_General.SocketsHttpHandler_Dispose_DoesNotDisposeMeterFactory
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_General.HttpClientHandler_Dispose_DoesNotDisposeMeter
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_General.SocketsHttpHandler_SetMeterFactoryAfterStart_ThrowsInvalidOperationException
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_General.SocketsHttpHandler_SetMeterFactoryAfterDispose_ThrowsObjectDisposedException
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_General.HttpClientHandler_SetMeterFactoryAfterDispose_ThrowsObjectDisposedException
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_General.HttpClientHandler_SetMeterFactoryAfterStart_ThrowsInvalidOperationException
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.Ctor_NullSourceArrayWithRange_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.Ctor_EmptySourceArrayWithRange_ThrowsArgumentOutOfRangeException
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.CopyToAsync_NullDestination_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.ReadAsStreamAsync_EmptySourceArray_Succeed(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.ReadAsStreamAsync_EmptySourceArray_Succeed(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.Ctor_StartIndexNegative_ThrowsArgumentOutOfRangeException
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.ContentLength_UsePartialSourceArray_LengthMatchesArrayLength
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.CopyToAsync_UseWholeSourceArray_WholeContentCopied
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.ReadAsStreamAsync_Call_MemoryStreamWrappingByteArrayReturned(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.ReadAsStreamAsync_Call_MemoryStreamWrappingByteArrayReturned(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.Ctor_LengthNegative_ThrowsArgumentOutOfRangeException
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.Ctor_NullSourceArray_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.Ctor_LengthTooBig_ThrowsArgumentOutOfRangeException
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.ContentLength_UseWholeSourceArray_LengthMatchesArrayLength
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.Ctor_StartIndexTooBig_ThrowsArgumentOufOfRangeException
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.CopyToAsync_UsePartialSourceArray_PartialContentCopied
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.CopyToAsync_UseEmptySourceArray_NothingCopied
+[STRT] System.Net.Http.Functional.Tests.ByteArrayContentTest.Ctor_LengthPlusOffsetCauseIntOverflow_ThrowsArgumentOutOfRangeException
+[STRT] System.Net.Http.Functional.Tests.CustomHttpClientTest.Send_NullRequest_ThrowsException
+[STRT] System.Net.Http.Functional.Tests.CustomHttpClientTest.SendAsync_NullRequest_ThrowsException
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.Ctor_CreateWithHandlerDispose_Success
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.Ctor_CreateWithNullHandler_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.SendAsync_ProcessRequestThrowsOperationCanceledExceptionNotBoundToCts_TaskSetToIsFaulted
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.SendAsync_OperationCanceledWhileProcessRequestIsExecuted_TaskSetToIsCanceled
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.SendAsync_CallMethod_ProcessRequestAndProcessResponseCalled
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.SendAsync_OperationCanceledWhileInnerHandlerIsWorking_TaskSetToIsCanceled
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.SendAsync_ProcessResponseThrowsOperationCanceledExceptionNotBoundToCts_TaskSetToIsFaulted
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.SendAsync_OperationCanceledWhileProcessResponseIsExecuted_TaskSetToIsCanceled
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.SendAsync_ProcessRequestThrows_ThrowWithoutCallingProcessRequestNorInnerHandler
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.Ctor_CreateDispose_Success
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.SendAsync_InnerHandlerThrows_ThrowWithoutCallingProcessRequest
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.SendAsync_ProcessResponseThrows_TaskIsFaulted
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.SendAsync_NullRequest_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.SendAsync_ProcessRequestThrowsOperationCanceledExceptionUsingOtherCts_TaskSetToIsFaulted
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.SendAsync_ProcessResponseThrowsOperationCanceledExceptionUsingOtherCts_TaskSetToIsFaulted
+[STRT] System.Net.Http.Functional.Tests.MessageProcessingHandlerTest.SendAsync_InnerHandlerReturnsNullResponse_ThrowInvalidOperationExceptionWithoutCallingProcessRequest
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.BaseAddress_InvalidUri_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.Timeout_OutOfRange_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.DefaultProxy_SetGet_Roundtrips
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.Dispose_UseAfterDispose_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.Properties_CantChangeAfterOperation_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetByteArrayAsync_CanBeCanceled_AlreadyCanceledCts
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.DefaultProxy_Get_ReturnsNotNull
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.ConnectTimeout_NotWrappedInMultipleTimeoutExceptions
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetStringAsync_CanBeCanceled_AlreadyCanceledCts
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.Dispose_MultipleTimes_Success
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(maxSize: 1, contentLength: 2)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(maxSize: 1, contentLength: 127)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(maxSize: 254, contentLength: 255)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(maxSize: 10, contentLength: 256)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(maxSize: 1, contentLength: 440)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(maxSize: 2, contentLength: 1)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(maxSize: 2, contentLength: 2)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(maxSize: 1000, contentLength: 1000)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(maxSize: 1000, contentLength: 2147483647)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(maxSize: 1000, contentLength: 4294967294)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(maxSize: 2147483647, contentLength: 2147483648)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetAsync_CustomException_Synchronous_ThrowsException
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.MaxResponseContentBufferSize_Roundtrip_Equal
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.Timeout_CallerCanceledTokenAfterTimeout_TimeoutIsNotDetected(completionOption: ResponseContentRead)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.Timeout_CallerCanceledTokenAfterTimeout_TimeoutIsNotDetected(completionOption: ResponseHeadersRead)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetStreamAsync_Success
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetContentAsync_ErrorStatusCode_ExpectedExceptionThrown(withResponseContent: False)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetContentAsync_ErrorStatusCode_ExpectedExceptionThrown(withResponseContent: True)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.DefaultRequestHeaders_Idempotent
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.DefaultProxy_SetNull_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetAsync_BaseAddress_ValidUri_Success(uri: null)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetAsync_BaseAddress_ValidUri_Success(uri: "/")
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.DefaultRequestVersion_InvalidArgument_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.Timeout_Roundtrip_Equal
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetStringAsync_CanBeCanceled
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetPutPostDeleteAsync_Canceled_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.DefaultRequestVersion_InitialValueExpected
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetContentAsync_SerializingContentThrows_Asynchronous_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.DefaultRequestVersion_Roundtrips
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetStringAsync_Success
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.DefaultRequestVersion_SetAfterUse_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetStreamAsync_CanBeCanceled_AlreadyCanceledCts
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.PatchAsync_Canceled_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.UnknownOperationCanceledException_NotWrappedInATimeoutException
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.BaseAddress_UnknownScheme_DoesNotThrow
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetContentAsync_SerializingContentThrows_Synchronous_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.Send_SingleThread_Succeeds(completionOption: ResponseContentRead)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.Send_SingleThread_Succeeds(completionOption: ResponseHeadersRead)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetPutPostDeleteAsync_Success
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.PatchAsync_Success
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetAsync_NoBaseAddress_InvalidUri_ThrowsException(uri: null)
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetAsync_NoBaseAddress_InvalidUri_ThrowsException(uri: "/something.html")
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetContentAsync_NullResponse_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.DefaultRequestVersion_UsedInCreatedMessages
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.Dispose_UsePatchAfterDispose_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.DefaultProxy_Credentials_SetGet_Roundtrips
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.MaxResponseContentBufferSize_OutOfRange_Throws
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetAsync_CustomException_Asynchronous_ThrowsException
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.BaseAddress_Roundtrip_Equal
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetStreamAsync_CanBeCanceled
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetByteArrayAsync_Success
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetByteArrayAsync_CanBeCanceled
+[STRT] System.Net.Http.Functional.Tests.HttpClientTest.GetContentAsync_NullResponseContent_ReturnsDefaultValue
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandlerTest_Http1.SendAsync_HostHeader_First
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostRewindableStreamContentMultipleTimes_StreamContentFullySent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostRewindableStreamContentMultipleTimes_StreamContentFullySent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostRewindableStreamContentMultipleTimes_StreamContentFullySent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostEmptyContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostEmptyContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostEmptyContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostUsingNoSpecifiedSemantics_UsesChunkedSemantics(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostUsingNoSpecifiedSemantics_UsesChunkedSemantics(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostUsingNoSpecifiedSemantics_UsesChunkedSemantics(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostRepeatedFlushContentUsingChunkedEncoding_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostRepeatedFlushContentUsingChunkedEncoding_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostRepeatedFlushContentUsingChunkedEncoding_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostEmptyContentUsingChunkedEncoding_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostEmptyContentUsingChunkedEncoding_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostEmptyContentUsingChunkedEncoding_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostSyncBlockingContentUsingChunkedEncoding_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostSyncBlockingContentUsingChunkedEncoding_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostSyncBlockingContentUsingChunkedEncoding_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostLargeContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), contentLength: 5120)
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostLargeContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), contentLength: 64512)
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostLargeContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), contentLength: 132096)
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostLargeContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), contentLength: 5120)
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostLargeContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), contentLength: 64512)
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostLargeContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), contentLength: 132096)
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostLargeContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), contentLength: 5120)
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostLargeContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), contentLength: 64512)
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostLargeContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), contentLength: 132096)
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostUsingUsingConflictingSemantics_UsesChunkedSemantics(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostUsingUsingConflictingSemantics_UsesChunkedSemantics(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostUsingUsingConflictingSemantics_UsesChunkedSemantics(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostUsingContentLengthSemantics_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostUsingContentLengthSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostUsingContentLengthSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostNoContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostNoContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostNoContentUsingContentLengthSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostEmptyContentUsingConflictingSemantics_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostEmptyContentUsingConflictingSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostEmptyContentUsingConflictingSemantics_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostUsingChunkedEncoding_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostUsingChunkedEncoding_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostUsingChunkedEncoding_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostAsync_EmptyContent_ContentTypeHeaderNotSent(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostAsync_EmptyContent_ContentTypeHeaderNotSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_PostScenarioTest.PostAsync_EmptyContent_ContentTypeHeaderNotSent(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.HttpMessageInvokerTest.Constructor_Null_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.HttpMessageInvokerTest.SendAsync_Null_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.HttpMessageInvokerTest.Dispose_DontDisposeHandler_HandlerNotDisposed
+[STRT] System.Net.Http.Functional.Tests.HttpMessageInvokerTest.Dispose_DisposeHandler_HandlerDisposed
+[STRT] System.Net.Http.Functional.Tests.HttpMessageInvokerTest.SendAsync_Request_HandlerInvoked
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.Ctor_CreateDisposeAssign_ThrowsObjectDisposedException
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.Ctor_NullInnerHandler_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.SendAsync_SetInnerHandlerAfterCallMethod_ThrowsInvalidOperationException
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.SendAsync_CallMethod_InnerHandlerSendAsyncIsCalled
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.Ctor_SetNullInnerHandler_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.SendAsync_NullRequest_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.SendAsync_CallMethodWithoutSettingInnerHandler_ThrowsInvalidOperationException
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.SendAsync_Disposed_Throws
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.SendAsync_SetInnerHandlerTwiceCallMethod_SecondInnerHandlerSendIsCalled
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.Ctor_CreateDispose_Success
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.SendAsync_WithoutSettingInnerHandlerCallMethod_ThrowsInvalidOperationException
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.Dispose_CallDispose_OverriddenDisposeMethodCalled
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.SendAsync_SetInnerHandlerCallMethod_InnerHandlerSendIsCalled
+[STRT] System.Net.Http.Functional.Tests.DelegatingHandlerTest.Dispose_CallDisposeMultipleTimes_OverriddenDisposeMethodCalled
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ExpectedDiagnosticSourceNoLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ExpectedDiagnosticExceptionLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_CustomSocketsHttpHandlerPropagator_PropagatorIsUsed
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ExpectedDiagnosticExceptionOnlyActivityLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ExpectedDiagnosticSourceActivityLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ExpectedDiagnosticSourceUrlFilteredActivityLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_SuppressedGlobalStaticPropagationNoListenerAppCtx
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_HeadersAreInjectedOnRedirects
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteHeader
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.EventSource_ExistsWithCorrectId
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_DiagnosticListener_ExpectedTagsRecorded
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_OperationCanceledException_RecordsActivitiesWithCorrectErrorInfo
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ExpectedDiagnosticCancelledLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_PropagatorInjectsInvalidHeaders_Throws
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ExpectedDiagnosticSourceNewAndDeprecatedEventsLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_DoNotSampleAllData_NoTagsRecorded
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ExpectedDiagnosticSourceLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ActivityIsCreatedIfRequested
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_Success_ConnectionSetupActivityGraphRecorded
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.UseIPAddressInTargetUri_NoProxy_RecordsHostHeaderAsServerAddress
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_HttpTracingEnabled_Succeeds
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ExpectedDiagnosticExceptionActivityLogging
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ExpectedDiagnosticSourceActivityLogging_InvalidBaggage
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.UseIPAddressInTargetUri_ProxyTunnel
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ConnectionFailure_RecordsActivitiesWithCorrectErrorInfo
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.Http3_WaitForConnection_RecordedWhenWaitingForStream
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteW3CTraceParentHeader
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ReuseRequestInHandler_ResetsHeadersForEachReuse
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_SuppressedGlobalStaticPropagationEnvVar
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest_Http2.SendAsync_ActivitySource_ExpectedTagsRecorded
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_ValidMethodToken_Success
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_NullMethod_Exception
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_KnownMethod_UsesKnownInstances(method: CONNECT, methodName: "Connect")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_KnownMethod_UsesKnownInstances(method: DELETE, methodName: "Delete")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_KnownMethod_UsesKnownInstances(method: GET, methodName: "Get")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_KnownMethod_UsesKnownInstances(method: HEAD, methodName: "Head")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_KnownMethod_UsesKnownInstances(method: OPTIONS, methodName: "Options")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_KnownMethod_UsesKnownInstances(method: PATCH, methodName: "Patch")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_KnownMethod_UsesKnownInstances(method: POST, methodName: "Post")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_KnownMethod_UsesKnownInstances(method: PUT, methodName: "Put")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_KnownMethod_UsesKnownInstances(method: QUERY, methodName: "Query")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_KnownMethod_UsesKnownInstances(method: TRACE, methodName: "Trace")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Method_AccessProperty_MatchesCtorString
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Equals_DifferentComparisonMethodsForSameMethods_MethodsConsideredEqual
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_DifferentlyCasedMethod_SameHashCode
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_UnknownMethod_UsesNewInstances(method: "Unknown")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_UnknownMethod_UsesNewInstances(method: "custom")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Patch_VerifyValue_PropertyNameMatchesHttpMethodName
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_CustomStringMethod_SameAsStringToUpperInvariantHashCode(input: "GET")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_CustomStringMethod_SameAsStringToUpperInvariantHashCode(input: "get")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_CustomStringMethod_SameAsStringToUpperInvariantHashCode(input: "Get")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_CustomStringMethod_SameAsStringToUpperInvariantHashCode(input: "CUSTOM")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_CustomStringMethod_SameAsStringToUpperInvariantHashCode(input: "cUsToM")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.StaticProperties_VerifyValues_PropertyNameMatchesHttpMethodName
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Equals_CompareWithMethodCastedToObject_ReturnsTrue
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode(method: GET)
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode(method: PUT)
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode(method: POST)
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode(method: DELETE)
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode(method: HEAD)
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode(method: OPTIONS)
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode(method: TRACE)
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode(method: PATCH)
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_SeparatorInMethod_Exception(separator: '(')
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_SeparatorInMethod_Exception(separator: ')')
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_SeparatorInMethod_Exception(separator: '<')
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_SeparatorInMethod_Exception(separator: '>')
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_SeparatorInMethod_Exception(separator: '@')
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_SeparatorInMethod_Exception(separator: ',')
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_SeparatorInMethod_Exception(separator: ';')
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_SeparatorInMethod_Exception(separator: ':')
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_SeparatorInMethod_Exception(separator: '\\')
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_SeparatorInMethod_Exception(separator: '"')
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_SeparatorInMethod_Exception(separator: '/')
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_SeparatorInMethod_Exception(separator: '[')
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Ctor_SeparatorInMethod_Exception(separator: ']')
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_Whitespace_ThrowsArgumentException(method: "")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_Whitespace_ThrowsArgumentException(method: "    ")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.ToString_UseCustomStringMethod_SameAsString
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Equals_NullComparand_ReturnsFalse
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_InvalidToken_Throws(method: "  GET  ")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_InvalidToken_Throws(method: " Post")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_InvalidToken_Throws(method: "Put ")
+[STRT] System.Net.Http.Functional.Tests.HttpMethodTest.Parse_InvalidToken_Throws(method: "multiple things")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.MaxRequestContentBufferSize_SetInvalidValue_ThrowsArgumentOutOfRangeException(value: -1)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.MaxRequestContentBufferSize_SetInvalidValue_ThrowsArgumentOutOfRangeException(value: 2147483648)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.Properties_AddItemToDictionary_ItemPresent
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.SendRequest_UriPathHasReservedChars_ServerReceivedExpectedPath
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.Dispose_DisposingHandlerCancelsActiveOperationsWithoutResponses
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_IncompleteData_ThrowsHttpRequestException(failDuringHeaders: False, getString: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_IncompleteData_ThrowsHttpRequestException(failDuringHeaders: True, getString: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_IncompleteData_ThrowsHttpRequestException(failDuringHeaders: False, getString: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_IncompleteData_ThrowsHttpRequestException(failDuringHeaders: True, getString: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.ReadAsStreamAsync_StreamingCancellation
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.SendAsync_RequestVersion20_HttpNotHttps_NoUpgradeRequest
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.PostAsync_ThrowFromContentCopy_RequestFails(syncFailure: False, enableWasmStreaming: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.PostAsync_ThrowFromContentCopy_RequestFails(syncFailure: False, enableWasmStreaming: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.PostAsync_ThrowFromContentCopy_RequestFails(syncFailure: True, enableWasmStreaming: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.PostAsync_ThrowFromContentCopy_RequestFails(syncFailure: True, enableWasmStreaming: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(chunked: True, enableWasmStreaming: True, slowChunks: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(chunked: True, enableWasmStreaming: True, slowChunks: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(chunked: True, enableWasmStreaming: False, slowChunks: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(chunked: False, enableWasmStreaming: True, slowChunks: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(chunked: False, enableWasmStreaming: False, slowChunks: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(chunked: null, enableWasmStreaming: False, slowChunks: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.CookieContainer_SetNull_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(address: 127.0.0.1, useSsl: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(address: ::1, useSsl: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_InfiniteChunkSize_ThrowsHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_IPBasedUri_Success(address: 127.0.0.1)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_IPBasedUri_Success(address: ::1)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_InvalidUrl_ExpectedExceptionThrown
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.ReadAsStreamAsync_Cancellation
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\n", fold: "", dribble: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\n", fold: "", dribble: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\n", fold: "\n ", dribble: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\n", fold: "\n ", dribble: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\n", fold: "\n\t", dribble: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\n", fold: "\n\t", dribble: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\n", fold: "\n    ", dribble: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\n", fold: "\n    ", dribble: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\r\n", fold: "", dribble: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\r\n", fold: "", dribble: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\r\n", fold: "\r\n ", dribble: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\r\n", fold: "\r\n ", dribble: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\r\n", fold: "\r\n\t", dribble: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\r\n", fold: "\r\n\t", dribble: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\r\n", fold: "\r\n    ", dribble: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(newline: "\r\n", fold: "\r\n    ", dribble: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.Properties_Get_CountIsZero
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.SendAsync_InvalidRequestUri_Throws
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_InvalidChunkSize_ThrowsHttpRequestException(chunkSize: "")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_InvalidChunkSize_ThrowsHttpRequestException(chunkSize: "    ")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_InvalidChunkSize_ThrowsHttpRequestException(chunkSize: "10000000000000000")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_InvalidChunkSize_ThrowsHttpRequestException(chunkSize: "xyz")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_InvalidChunkSize_ThrowsHttpRequestException(chunkSize: "7gibberish")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_InvalidChunkSize_ThrowsHttpRequestException(chunkSize: "7\v\f")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.LargeUriAndHeaders_Works
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.PostAsync_ManyDifferentRequestHeaders_SentCorrectly
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.SendAsync_Unexpected1xxResponses_DropAllInterimResponses(responseStatusCode: Continue)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.SendAsync_Unexpected1xxResponses_DropAllInterimResponses(responseStatusCode: Processing)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.SendAsync_Unexpected1xxResponses_DropAllInterimResponses(responseStatusCode: EarlyHints)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.SendAsync_Unexpected1xxResponses_DropAllInterimResponses(responseStatusCode: 150)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.SendAsync_Unexpected1xxResponses_DropAllInterimResponses(responseStatusCode: 180)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.SendAsync_Unexpected1xxResponses_DropAllInterimResponses(responseStatusCode: 199)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.ReadAsStreamAsync_EmptyResponseBody_HandlerProducesWellBehavedResponseStream
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.SendAsync_RequestWithLatin1HeaderValue_Succeeds
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_InvalidChunkTerminator_ThrowsHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.SendAsync_RequestWithDangerousControlHeaderValue_ThrowsHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.HttpClientSendTest_Async.Send_NullRequest_ThrowsException
+[STRT] System.Net.Http.Functional.Tests.HttpClientSendTest_Async.Send_DuplicateRequest_ThrowsException
+[STRT] System.Net.Http.Functional.Tests.HttpClientSendTest_Async.Send_InnerHandlerThrows_OriginalExceptionInformationIsCaptured
+[STRT] System.Net.Http.Functional.Tests.HttpClientSendTest_Async.Send_RequestContentNotDisposed
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.Ctor_NullOrEmptyBoundary_ThrowsArgumentException
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.Ctor_BadBoundary_ThrowsArgumentException
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_OperationsThatDontChangePosition(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_OperationsThatDontChangePosition(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_CanSeekEvenIfAllStreamsNotSeekale(firstContentSeekable: False, secondContentSeekable: False, readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_CanSeekEvenIfAllStreamsNotSeekale(firstContentSeekable: False, secondContentSeekable: False, readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_CanSeekEvenIfAllStreamsNotSeekale(firstContentSeekable: False, secondContentSeekable: True, readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_CanSeekEvenIfAllStreamsNotSeekale(firstContentSeekable: False, secondContentSeekable: True, readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_CanSeekEvenIfAllStreamsNotSeekale(firstContentSeekable: True, secondContentSeekable: False, readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_CanSeekEvenIfAllStreamsNotSeekale(firstContentSeekable: True, secondContentSeekable: False, readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_CanSeekEvenIfAllStreamsNotSeekale(firstContentSeekable: True, secondContentSeekable: True, readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_CanSeekEvenIfAllStreamsNotSeekale(firstContentSeekable: True, secondContentSeekable: True, readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.Ctor_Headers_AutomaticallyCreated
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStringAsync_TwoSubContents_MatchesExpected(mode: ReadAsStreamAsync, async: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStringAsync_TwoSubContents_MatchesExpected(mode: ReadAsStreamAsync, async: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStringAsync_TwoSubContents_MatchesExpected(mode: CopyToAsync, async: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStringAsync_TwoSubContents_MatchesExpected(mode: CopyToAsync, async: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_CreateContentReadStreamAsyncThrows_ExceptionStoredInTask
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_Seek_JumpsToSpecifiedPosition(nestedContent: False, readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_Seek_JumpsToSpecifiedPosition(nestedContent: False, readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_Seek_JumpsToSpecifiedPosition(nestedContent: True, readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_Seek_JumpsToSpecifiedPosition(nestedContent: True, readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStringAsync_NoSubContent_MatchesExpected(mode: ReadAsStreamAsync, async: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStringAsync_NoSubContent_MatchesExpected(mode: ReadAsStreamAsync, async: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStringAsync_NoSubContent_MatchesExpected(mode: CopyToAsync, async: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStringAsync_NoSubContent_MatchesExpected(mode: CopyToAsync, async: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.Ctor_NullOrEmptySubType_ThrowsArgumentException
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.Ctor_GoodBoundary_Success
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStringAsync_OneSubContentWithHeaders_MatchesExpected(mode: ReadAsStreamAsync, async: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStringAsync_OneSubContentWithHeaders_MatchesExpected(mode: ReadAsStreamAsync, async: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStringAsync_OneSubContentWithHeaders_MatchesExpected(mode: CopyToAsync, async: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStringAsync_OneSubContentWithHeaders_MatchesExpected(mode: CopyToAsync, async: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.Dispose_Empty_Success
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStream_CreateContentReadStreamThrows
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_InvalidArgs_Throw(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_InvalidArgs_Throw(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.Dispose_InnerContent_InnerContentDisposed
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.Ctor_TooLongBoundary_ThrowsArgumentOutOfRangeException
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_CustomEncodingSelector_SelectorIsCalledWithCustomState(async: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_CustomEncodingSelector_SelectorIsCalledWithCustomState(async: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.Dispose_NestedContent_NestedContentDisposed
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_CustomEncodingSelector_CustomEncodingIsUsed(async: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_CustomEncodingSelector_CustomEncodingIsUsed(async: False)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_LargeContent_AllBytesRead(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.MultipartContentTest.ReadAsStreamAsync_LargeContent_AllBytesRead(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.UseIPAddressInTargetUri_ProxyTunnel_RequestMetricsRecordUriHostAsServerAddress
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_EnrichmentHandler_ContentLengthError_Recorded
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_RequestCancelled_ErrorReasonIsExceptionType
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_EnrichmentHandler_Success_Recorded(completionOption: ResponseContentRead, responseContentType: Empty)
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_EnrichmentHandler_Success_Recorded(completionOption: ResponseContentRead, responseContentType: ContentLength)
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_EnrichmentHandler_Success_Recorded(completionOption: ResponseContentRead, responseContentType: TransferEncodingChunked)
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_EnrichmentHandler_Success_Recorded(completionOption: ResponseHeadersRead, responseContentType: Empty)
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_EnrichmentHandler_Success_Recorded(completionOption: ResponseHeadersRead, responseContentType: ContentLength)
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_EnrichmentHandler_Success_Recorded(completionOption: ResponseHeadersRead, responseContentType: TransferEncodingChunked)
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.DurationHistograms_HaveBucketSizeHints
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_MultipleCallbacksPerRequest_AllCalledInOrder
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.AllSocketsHttpHandlerCounters_Success_Recorded
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.ActiveRequests_Redirect_RecordedForEachHttpSpan
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_HttpTracingEnabled_RecordedWhileRequestActivityRunning
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_HttpVersionDowngrade_LogsActualProtocol
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.ActiveRequests_Success_Recorded
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_CustomTags_Recorded
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_ErrorStatus_ErrorTypeRecorded(statusCode: 400)
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_ErrorStatus_ErrorTypeRecorded(statusCode: 404)
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_ErrorStatus_ErrorTypeRecorded(statusCode: 599)
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_ConnectionError_LogsExpectedErrorReason
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_CustomTags_DiagnosticListener_Recorded
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.ActiveRequests_InstrumentEnabledAfterSending_NotRecorded
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_Success_Recorded(method: "GET", statusCode: OK)
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.RequestDuration_Success_Recorded(method: "PUT", statusCode: Created)
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.UseIPAddressInTargetUri_NoProxy_RecordsHostHeaderAsServerAddress
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_Http11_Async.TimeInQueue_RecordedForNewConnectionsOnly
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.ReadAsStreamAsync_InvalidServerResponse_ThrowsIOException(transferType: ContentLength, transferError: ContentLengthTooLarge)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.ReadAsStreamAsync_InvalidServerResponse_ThrowsIOException(transferType: Chunked, transferError: MissingChunkTerminator)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.ReadAsStreamAsync_InvalidServerResponse_ThrowsIOException(transferType: Chunked, transferError: ChunkSizeTooLarge)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingRequest_ServerFail
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.ReadAsStreamAsync_Cancel_TaskIsCanceled(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.ReadAsStreamAsync_Cancel_TaskIsCanceled(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.ReadAsStreamAsync_Cancel_TaskIsCanceled(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingRequest
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingRequest_CancelRequest(cancelAsync: False, bytes: 0, throwException: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingRequest_CancelRequest(cancelAsync: True, bytes: 0, throwException: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingRequest_CancelRequest(cancelAsync: False, bytes: 1, throwException: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingRequest_CancelRequest(cancelAsync: True, bytes: 1, throwException: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingRequest_CancelRequest(cancelAsync: False, bytes: 0, throwException: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingRequest_CancelRequest(cancelAsync: True, bytes: 0, throwException: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingRequest_ThrowFromContentCopy_RequestFails(syncFailure: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingRequest_ThrowFromContentCopy_RequestFails(syncFailure: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: GET, abort: "abortBeforeHeaders")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: HEAD, abort: "abortBeforeHeaders")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: POST, abort: "abortBeforeHeaders")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: PUT, abort: "abortBeforeHeaders")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: DELETE, abort: "abortBeforeHeaders")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: OPTIONS, abort: "abortBeforeHeaders")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: PATCH, abort: "abortBeforeHeaders")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: GET, abort: "abortAfterHeaders")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: POST, abort: "abortAfterHeaders")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: PUT, abort: "abortAfterHeaders")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: DELETE, abort: "abortAfterHeaders")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: OPTIONS, abort: "abortAfterHeaders")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: PATCH, abort: "abortAfterHeaders")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: GET, abort: "abortDuringBody")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: POST, abort: "abortDuringBody")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: PUT, abort: "abortDuringBody")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: DELETE, abort: "abortDuringBody")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: OPTIONS, abort: "abortDuringBody")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponseAbort(method: PATCH, abort: "abortDuringBody")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetStreamAsync_ReadToEnd_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), readMode: 1)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetStreamAsync_ReadToEnd_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), readMode: 3)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetStreamAsync_ReadToEnd_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1), readMode: 7)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetStreamAsync_ReadToEnd_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), readMode: 1)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetStreamAsync_ReadToEnd_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), readMode: 3)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetStreamAsync_ReadToEnd_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1), readMode: 7)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetStreamAsync_ReadToEnd_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), readMode: 1)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetStreamAsync_ReadToEnd_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), readMode: 3)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetStreamAsync_ReadToEnd_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0), readMode: 7)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetStreamAsync_ReadZeroBytes_Success(remoteServer: (BaseUri: http://127.0.0.1:42257/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetStreamAsync_ReadZeroBytes_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 1.1))
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.GetStreamAsync_ReadZeroBytes_Success(remoteServer: (BaseUri: https://127.0.0.1:44881/, HttpVersion: 2.0))
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_Streaming
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponse(method: GET)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponse(method: HEAD)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponse(method: POST)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponse(method: PUT)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponse(method: DELETE)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponse(method: OPTIONS)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.BrowserHttpHandler_StreamingResponse(method: PATCH)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.ReadAsStreamAsync_StreamCanReadIsFalseAfterDispose(transferType: None, transferError: None)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.ReadAsStreamAsync_StreamCanReadIsFalseAfterDispose(transferType: ContentLength, transferError: None)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.ReadAsStreamAsync_StreamCanReadIsFalseAfterDispose(transferType: Chunked, transferError: None)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.ReadAsStreamAsync_ValidServerResponse_Success(transferType: None, transferError: None)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.ReadAsStreamAsync_ValidServerResponse_Success(transferType: ContentLength, transferError: None)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_ResponseStreamTest.ReadAsStreamAsync_ValidServerResponse_Success(transferType: Chunked, transferError: None)
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.Ctor_SpecifiedValues_CorrectValues
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.Dispose_DisposeObject_ContentGetsDisposedAndSettersWillThrowButGettersStillWork
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.Content_SetToNull_Accepted
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.ReasonPhrase_ContainsLFChar_ThrowsFormatException
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.Headers_ReadProperty_HeaderCollectionInitialized
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.ReasonPhrase_ContainsCRChar_ThrowsFormatException
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.ReasonPhrase_SetToEmpty_Accepted
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.ReasonPhrase_UnknownStatusCode_Null
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.Properties_SetPropertiesAndGetTheirValue_MatchingValues
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.Ctor_Default_CorrectDefaults
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.IsSuccessStatusCode_VariousStatusCodes_ReturnTrueFor2xxFalseOtherwise(status: null, expectedSuccess: True)
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.IsSuccessStatusCode_VariousStatusCodes_ReturnTrueFor2xxFalseOtherwise(status: OK, expectedSuccess: True)
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.IsSuccessStatusCode_VariousStatusCodes_ReturnTrueFor2xxFalseOtherwise(status: PartialContent, expectedSuccess: True)
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.IsSuccessStatusCode_VariousStatusCodes_ReturnTrueFor2xxFalseOtherwise(status: MultipleChoices, expectedSuccess: False)
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.IsSuccessStatusCode_VariousStatusCodes_ReturnTrueFor2xxFalseOtherwise(status: Continue, expectedSuccess: False)
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.IsSuccessStatusCode_VariousStatusCodes_ReturnTrueFor2xxFalseOtherwise(status: BadRequest, expectedSuccess: False)
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.IsSuccessStatusCode_VariousStatusCodes_ReturnTrueFor2xxFalseOtherwise(status: BadGateway, expectedSuccess: False)
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.EnsureSuccessStatusCode_NonSuccessStatusCode_ContentIsNotDisposed
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.Ctor_InvalidStatusCodeRange_Throw
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.StatusCode_InvalidStatusCodeRange_ThrowsArgumentOutOfRangeException
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.ReasonPhrase_SetToNull_Accepted
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.EnsureSuccessStatusCode_SuccessStatusCode_ContentIsNotDisposed
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.EnsureSuccessStatusCode_VariousStatusCodes_ThrowIfNot2xx
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.DefaultContent_ReadableNotWritable_Success
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.Version_SetToNull_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.HttpResponseMessageTest.ToString_DefaultAndNonDefaultInstance_DumpAllFields
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_Finalization_Http2_Test.IncompleteResponseStream_ResponseDropped_CancelsRequestToServer
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_DefaultMeter.ActiveRequests_Success_Recorded
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_DefaultMeter.AllSocketsHttpHandlerCounters_Success_Recorded
+[STRT] System.Net.Http.Functional.Tests.HttpMetricsTest_DefaultMeter.RequestDuration_Success_Recorded
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_RequestWithSimpleHeader_ResponseReferencesUnmodifiedRequestHeaders
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_LargeHeaders_CorrectlyWritten
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_GetWithValidHostHeader_Success(withPort: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_GetWithValidHostHeader_Success(withPort: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.HeadersAdd_CustomExpires_Success(value: "-1", isValid: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.HeadersAdd_CustomExpires_Success(value: "Thu, 01 Dec 1994 16:00:00 GMT", isValid: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_DefaultHeaders_CorrectlyWritten
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.GetAsync_MissingExpires_ReturnNull
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_RequestHeaderInResponse_Success(name: "Accept-Encoding", value: "identity,gzip")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_Expires_Success(value: "Thu, 01 Dec 1994 16:00:00 GMT", isValid: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_Expires_Success(value: "-1", isValid: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_Expires_Success(value: "0", isValid: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.GetAsync_EmptyResponseHeader_Success
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.ResponseHeaders_ExtraWhitespace_Trimmed(name: "foo ", value: "bar ")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.ResponseHeaders_ExtraWhitespace_Trimmed(name: "foo", value: " bar")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.ResponseHeaders_ExtraWhitespace_Trimmed(name: "foo", value: "bar\t")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.ResponseHeaders_ExtraWhitespace_Trimmed(name: "foo", value: "\tbar")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.ResponseHeaders_ExtraWhitespace_Trimmed(name: "foo ", value: " bar ")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.ResponseHeaders_ExtraWhitespace_Trimmed(name: "foo", value: "\tbar\t")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.ResponseHeaders_ExtraWhitespace_Trimmed(name: "foo", value: "\t bar \t")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.ResponseHeaders_ExtraWhitespace_Trimmed(name: "foo  ", value: " \t bar  \r\n ")
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_SpecialHeaderKeyOrValue_Success(key: "x-Special_name", value: "header name with underscore", parsable: True)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_SpecialHeaderKeyOrValue_Success(key: "Date", value: "invaliddateformat", parsable: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_SpecialHeaderKeyOrValue_Success(key: "Accept-CharSet", value: "text/plain, text/json", parsable: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_SpecialHeaderKeyOrValue_Success(key: "Content-Location", value: "", parsable: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_SpecialHeaderKeyOrValue_Success(key: "Max-Forwards", value: "NotAnInteger", parsable: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_ContentLengthAndTransferEncodingHeaders_IgnoreContentLength
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.GetAsync_LargeHeader_Success(headerName: "Content-Security-Policy", headerValueLength: 4618)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.GetAsync_LargeHeader_Success(headerName: "RandomCustomHeader", headerValueLength: 12345)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11.SendAsync_InvalidCharactersInResponseHeader_ReplacedWithSpaces
+[STRT] System.Net.Http.Functional.Tests.TelemetryTest_Http20.EventSource_ExistsWithCorrectId
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClient_SelectedSites_Test.RetrieveSite_Succeeds
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClient_SelectedSites_Test.RetrieveSite_Debug_Helper
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticSourceNoLogging
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticExceptionLogging
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_CustomSocketsHttpHandlerPropagator_PropagatorIsUsed
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticExceptionOnlyActivityLogging
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticSourceActivityLogging
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticSourceUrlFilteredActivityLogging
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_SuppressedGlobalStaticPropagationNoListenerAppCtx
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_HeadersAreInjectedOnRedirects
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteHeader
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.EventSource_ExistsWithCorrectId
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_DiagnosticListener_ExpectedTagsRecorded
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_OperationCanceledException_RecordsActivitiesWithCorrectErrorInfo
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticCancelledLogging
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_PropagatorInjectsInvalidHeaders_Throws
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticSourceNewAndDeprecatedEventsLogging
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_DoNotSampleAllData_NoTagsRecorded
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticSourceLogging
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ActivityIsCreatedIfRequested
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_Success_ConnectionSetupActivityGraphRecorded
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.UseIPAddressInTargetUri_NoProxy_RecordsHostHeaderAsServerAddress
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_HttpTracingEnabled_Succeeds
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticExceptionActivityLogging
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticSourceActivityLogging_InvalidBaggage
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.UseIPAddressInTargetUri_ProxyTunnel
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ConnectionFailure_RecordsActivitiesWithCorrectErrorInfo
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.Http3_WaitForConnection_RecordedWhenWaitingForStream
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticSourceActivityLoggingDoesNotOverwriteW3CTraceParentHeader
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ReuseRequestInHandler_ResetsHeadersForEachReuse
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_SuppressedGlobalStaticPropagationEnvVar
+[STRT] System.Net.Http.Functional.Tests.SyncHttpHandler_DiagnosticsTest.SendAsync_ActivitySource_ExpectedTagsRecorded
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandlerTest_General.SendAsync_Null_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.HttpClientHandlerTest_General.Send_Null_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.CopyToAsync_ThrowCustomExceptionInOverriddenAsyncMethod_ExceptionBubblesUp
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.CopyToAsync_MockContentReturnsNull_ThrowsInvalidOperationException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_SetInvalidContentTypeHeader_DefaultCharsetUsed(charset: "\"\"invalid")
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_SetInvalidContentTypeHeader_DefaultCharsetUsed(charset: "invalid\"\"")
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_SetInvalidContentTypeHeader_DefaultCharsetUsed(charset: "\"\"invalid\"\"")
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_SetInvalidContentTypeHeader_DefaultCharsetUsed(charset: "\"invalid")
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_SetInvalidContentTypeHeader_DefaultCharsetUsed(charset: "invalid\"")
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.Dispose_GetReadStreamThenDispose_ReadStreamGetsDisposed(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.Dispose_GetReadStreamThenDispose_ReadStreamGetsDisposed(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.TryComputeLength_RetrieveContentLengthFromBufferedContent_ComputeLengthIsNotCalled
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_ThrowObjectDisposedExceptionInOverriddenAsyncMethod_ThrowsHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_SetQuotedCharset_ParsesContent
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_EmptyContent_EmptyString
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_ThrowCustomExceptionInOverriddenMethod_ThrowsMockException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.CopyToAsync_CallWithMockContent_MockContentMethodCalled
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.TryComputeLength_ThrowCustomExceptionInOverriddenMethod_ExceptionBubblesUpToCaller
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_CallOnMockContentWithCalculatedContentLength_CopyToAsyncMemoryStreamCalled(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_CallOnMockContentWithCalculatedContentLength_CopyToAsyncMemoryStreamCalled(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.CopyToAsync_BufferContentFirst_UseBufferedStreamAsSource
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.CopyToAsync_UseStreamWriteByteWithBufferSizeSmallerThanContentSize_ThrowsHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_Buffered_IgnoresCancellationToken
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStream_GetFromUnbufferedContent_ThrowsAfterReadAsStreamsAsync
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.CopyToAsync_ThrowCustomExceptionInOverriddenMethod_ThrowsMockException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_SetInvalidCharset_ThrowsInvalidOperationException(charset: "invalid")
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_SetInvalidCharset_ThrowsInvalidOperationException(charset: "\"\"")
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsync_GetFromUnbufferedContent_SucceedsAfterReadAsStream
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsByteArrayAsync_Unbuffered_CanBeCanceled
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.CopyToAsync_ThrowIOExceptionInOverriddenAsyncMethod_ThrowsWrappedHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_CallMultipleTimesWithNullContentLength_CopyToAsyncMemoryStreamCalledOnce(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_CallMultipleTimesWithNullContentLength_CopyToAsyncMemoryStreamCalledOnce(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsyncShouldRewindOffset
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsByteArrayAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_BufferSizeSmallerThanContentSizeWithCalculatedContentLength_ThrowsHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsByteArrayAsync_Buffered_IgnoresCancellationToken
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_CallOnMockContentWithLessLengthThanContentLengthHeader_BufferedStreamLengthMatchesActualLengthNotContentLengthHeaderValue(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_CallOnMockContentWithLessLengthThanContentLengthHeader_BufferedStreamLengthMatchesActualLengthNotContentLengthHeaderValue(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsync_Unbuffered_IgnoresCancellationToken(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsync_Unbuffered_IgnoresCancellationToken(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsByteArrayAsync_EmptyContent_EmptyArray
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_SetNoCharset_DefaultCharsetUsed
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.CopyToAsync_ThrowObjectDisposedExceptionInOverriddenAsyncMethod_ThrowsWrappedHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsync_FirstGetFromUnbufferedContentThenGetFromBufferedContent_SameStream(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsync_FirstGetFromUnbufferedContentThenGetFromBufferedContent_SameStream(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsync_Buffered_IgnoresCancellationToken(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsync_Buffered_IgnoresCancellationToken(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_BufferSizeSmallerThanContentSizeWithNullContentLength_ThrowsHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.Dispose_DisposedObjectThenAccessMembers_ThrowsObjectDisposedException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.TryComputeLength_RetrieveContentLength_ComputeLengthShouldBeCalled
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsync_GetFromBufferedContent_CreateContentReadStreamCalled(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsync_GetFromBufferedContent_CreateContentReadStreamCalled(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsync_Unbuffered_CustomContent_CanBeCanceled
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStream_Unbuffered_CustomContent_CanBeCanceled
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsync_GetFromBufferedContent_SucceedsAfterReadAsStream
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamShouldRewindOffset
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.CopyToAsync_Buffered_CanBeCanceled
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_Unbuffered_CanBeCanceled
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_ThrowObjectDisposedExceptionInOverriddenMethod_ThrowsWrappedHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_NoCharSet_EncodingIsInferredFromPreamble(codePage: 65001)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_NoCharSet_EncodingIsInferredFromPreamble(codePage: 12000)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_NoCharSet_EncodingIsInferredFromPreamble(codePage: 1200)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_NoCharSet_EncodingIsInferredFromPreamble(codePage: 1201)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_ThrowIOExceptionInOverriddenAsyncMethod_ThrowsHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_CallMultipleTimesWithCalculatedContentLength_CopyToAsyncMemoryStreamCalledOnce(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_CallMultipleTimesWithCalculatedContentLength_CopyToAsyncMemoryStreamCalledOnce(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.Dispose_DisposeContentThenAccessContentLength_Throw
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_ThrowIOExceptionInOverriddenMethod_ThrowsWrappedHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStream_GetFromBufferedContent_ThrowsAfterReadAsStreamsAsync
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.CopyToAsync_Unbuffered_CanBeCanceled
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_UsesCharsetEncoding
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsync_GetFromUnbufferedContent_CreateContentReadStreamCalledOnce(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStreamAsync_GetFromUnbufferedContent_CreateContentReadStreamCalledOnce(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_ThrowCustomExceptionInOverriddenAsyncMethod_ExceptionBubblesUpToCaller
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.GetAsync_WithCustomHandlerReturningStringContent_PreCanceledToken_ThrowsTaskCanceledException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.ReadAsStringAsync_Buffered_IgnoresCancellationToken
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.CopyToAsync_ThrowObjectDisposedExceptionInOverriddenMethod_ThrowsWrappedHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.CopyToAsync_ThrowIOExceptionInOverriddenMethod_ThrowsWrappedHttpRequestException
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_CallOnMockContentWithNullContentLength_CopyToAsyncMemoryStreamCalled(readStreamAsync: True)
+[STRT] System.Net.Http.Functional.Tests.HttpContentTest.LoadIntoBufferAsync_CallOnMockContentWithNullContentLength_CopyToAsyncMemoryStreamCalled(readStreamAsync: False)
+[STRT] System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_Finalization_Http11_Test.IncompleteResponseStream_ResponseDropped_CancelsRequestToServer
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Ctor_RelativeStringUri_CorrectValues
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Ctor_NullStringUri_Accepted
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.ToString_HeadersDumpIsEquivalentToHttpHeadersDump
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.RequestUri_SetNonHttpUri_DoesNotThrow
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Ctor_EmptyStringUri_Accepted
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Properties_SetPropertiesAndGetTheirValue_MatchingValues
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.ToString_DefaultAndNonDefaultInstance_DumpAllFields
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Method_SetToNull_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Ctor_NonHttpUri_DoesNotThrow
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Ctor_Default_CorrectDefaults
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Ctor_RelativeUri_CorrectValues
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Ctor_NullMethod_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Ctor_AbsoluteStringUri_CorrectValues
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.HttpRequest_BodylessMethod_NoContentLength(method: "DELETE")
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.HttpRequest_BodylessMethod_NoContentLength(method: "OPTIONS")
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.HttpRequest_BodylessMethod_NoContentLength(method: "HEAD")
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Version_SetToNull_ThrowsArgumentNullException
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Ctor_NullUri_Accepted
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Ctor_AbsoluteUri_CorrectValues
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.HttpRequest_StringContent_WithoutMediaType
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.Dispose_DisposeObject_ContentGetsDisposedAndSettersWillThrowButGettersStillWork
+[STRT] System.Net.Http.Functional.Tests.HttpRequestMessageTest.HttpRequest_BodylessMethod_LargeContentLength
+Finished:    System.Net.Http.Functional.Tests.dll
+Finished uploading 431097 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 901 Passed: 781 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 120
+
+test-main.js exiting WasmTestRunner.dll System.Net.Http.Functional.Tests.dll after 0.3073166666666667 minutes with result 0 and linear memory 120586240 bytes
+MONO_WASM: forceDisposeProxies done: 27 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

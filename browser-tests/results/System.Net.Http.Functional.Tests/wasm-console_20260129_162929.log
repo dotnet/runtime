@@ -1,0 +1,19 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:34011/index.html?arg=--setenv%3dDOTNET_TEST_WEBSOCKETHOST%3d127.0.0.1%3a34011&arg=--setenv%3dDOTNET_TEST_HTTPHOST%3d127.0.0.1%3a34011&arg=--setenv%3dDOTNET_TEST_REMOTE_LOOP_HOST%3d127.0.0.1%3a34011&arg=--setenv%3dDOTNET_TEST_SECUREWEBSOCKETHOST%3d127.0.0.1%3a44827&arg=--setenv%3dDOTNET_TEST_SECUREHTTPHOST%3d127.0.0.1%3a44827&arg=--setenv%3dDOTNET_TEST_HTTP2HOST%3d127.0.0.1%3a44827&arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Net.Http.Functional.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+Incoming arguments: --setenv=DOTNET_TEST_WEBSOCKETHOST=127.0.0.1:34011 --setenv=DOTNET_TEST_HTTPHOST=127.0.0.1:34011 --setenv=DOTNET_TEST_REMOTE_LOOP_HOST=127.0.0.1:34011 --setenv=DOTNET_TEST_SECUREWEBSOCKETHOST=127.0.0.1:44827 --setenv=DOTNET_TEST_SECUREHTTPHOST=127.0.0.1:44827 --setenv=DOTNET_TEST_HTTP2HOST=127.0.0.1:44827 --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.Http.Functional.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Net.Http.Functional.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash 40faf97e4449fb7aa0b759ba68c75e29d5079567
+Using threadless Xunit runner
+Discovering: System.Net.Http.Functional.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Net.Http.Functional.Tests.dll (found 0 of 1946 test cases)
+Starting:    System.Net.Http.Functional.Tests.dll
+Finished:    System.Net.Http.Functional.Tests.dll
+Finished uploading 372 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 0 Passed: 0 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Net.Http.Functional.Tests.dll after 1.31455 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0
