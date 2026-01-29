@@ -653,9 +653,11 @@ class ValueSize
 private:
     enum class Kind : unsigned
     {
-        Exact,  // Value has size known at compile time
-        Vector, // Value represents the platform vector length (Vector<T>/TYP_SIMD)
-        Mask,   // Value represents the platform mask length (TYP_MASK)
+        Exact,   // Value has size known at compile time
+        Vector,  // Value represents the platform vector length (Vector<T>/TYP_SIMD)
+        Mask,    // Value represents the platform mask length (TYP_MASK)
+        Unknown, // Value represents some compile-time unknown size that is not
+                 // equivalent to any other value.
     };
 
     Kind m_kind;
@@ -694,6 +696,10 @@ public:
     {
         return ValueSize(Kind::Mask, 0);
     }
+    static ValueSize Unknown()
+    {
+        return ValueSize(Kind::Unknown, 0);
+    }
     static ValueSize FromJitType(var_types type);
 
     bool IsVector() const
@@ -703,6 +709,10 @@ public:
     bool IsMask() const
     {
         return Is(Kind::Mask);
+    }
+    bool IsUnknown() const
+    {
+        return Is(Kind::Unknown);
     }
 
     bool IsExact() const
@@ -723,7 +733,11 @@ public:
 
     bool operator==(const ValueSize& other) const
     {
-        if (m_kind == Kind::Exact && other.m_kind == Kind::Exact)
+        if (IsUnknown() || other.IsUnknown())
+        {
+            return false;
+        }
+        else if (IsExact() && other.IsExact())
         {
             return (m_size == other.m_size);
         }

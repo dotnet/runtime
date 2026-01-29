@@ -3839,9 +3839,9 @@ ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_ty
 
         printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s", fldName, fldHndVN, varTypeName(fieldType));
 
-        if (fieldType == TYP_STRUCT)
+        if (pSize->IsExact())
         {
-            printf(", size = %u", structSize);
+            printf(", size = %u", pSize->GetExact());
         }
         printf("\n");
     }
@@ -5952,16 +5952,13 @@ ValueNum ValueNumStore::VNForStore(
     // The caller is expected to handle identity stores, applying the appropriate normalization policy.
     assert(!LoadStoreIsEntire(locationSize, offset, storeSize));
 
-#ifdef TARGET_ARM64
     if (!locationSize.IsExact() || !storeSize.IsExact())
     {
         // TODO-SVE: This is conservative, we may be able to select better value numbers for stores
         // that we can prove are within the bounds of the minimum size of a vector/mask.
-        assert(locationSize.IsVector() || storeSize.IsVector());
         JITDUMP("    *** VNForStore: location or store size is unknown\n");
-        return VNForExpr(m_pComp->compCurBB, TYP_SIMD);
+        return NoVN;
     }
-#endif
 
     assert(storeSize.GetExact() > 0);
     unsigned exactLocationSize = locationSize.GetExact();

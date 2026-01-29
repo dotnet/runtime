@@ -19063,8 +19063,21 @@ bool Compiler::gtStoreDefinesField(LclVarDsc* fieldVarDsc,
             return true;
         }
     }
-
-    return false;
+    else
+    {
+        // One of either the field size or store size is inexact, and the store is not entire, which means we
+        // can't determine precise overlap of the field and store bounds. We assume that this will define the
+        // field in this situation and allow the caller to decide on what to do with this, based on
+        // pFieldAffectedBytes having some inexact ValueSize.
+        //
+        // TODO-SVE:
+        //     * Can we check against inequalities with vector min/max sizes?
+        //     * Can we check for exact store ranges terminating before the start of the unknown size field?
+        //     * Can we check for exact field ranges terminating before the offset of the store?
+        *pFieldRelativeOffset = (offset < fieldOffset) ? 0 : (offset - fieldOffset);
+        *pFieldAffectedBytes  = ValueSize::Unknown();
+        return true;
+    }
 }
 
 //------------------------------------------------------------------------
