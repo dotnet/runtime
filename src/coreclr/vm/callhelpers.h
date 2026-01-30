@@ -28,6 +28,7 @@ struct CallDescrData
 #ifdef TARGET_WASM
     // size of the arguments and the transition block are used to execute the method with the interpreter
     size_t                      nArgsSize;
+    bool                        hasThis;
     bool                        hasRetBuff;
 #endif // TARGET_WASM
 

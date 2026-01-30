@@ -7,7 +7,7 @@
 // Forward declaration
 void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp);
 
-#define SPECIAL_ARG_ADDR(pos) (((int8_t*)pCallDescrData->pSrc) + ((pos)*INTERP_STACK_SLOT_SIZE))
+#define SPECIAL_ARG_ADDR(pos) (void**)(((int8_t*)pCallDescrData->pSrc) + ((pos)*INTERP_STACK_SLOT_SIZE))
 
 extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
 {
@@ -29,9 +29,22 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
     }
 
     size_t argsSize = pCallDescrData->nArgsSize;
+    void* retBuff;
+    int8_t* args;
     if (pCallDescrData->hasRetBuff) {
         argsSize -= INTERP_STACK_SLOT_SIZE;
+        if (pCallDescrData->hasThis)
+        {
+            retBuff = *SPECIAL_ARG_ADDR(1);
+            *SPECIAL_ARG_ADDR(1) = *SPECIAL_ARG_ADDR(0);
+        } else {
+            retBuff = *SPECIAL_ARG_ADDR(0);
+        }
+        args = (int8_t*)SPECIAL_ARG_ADDR(1);
+    } else {
+        args = (int8_t*)pCallDescrData->pSrc;
+        retBuff = pCallDescrData->returnValue;
     }
 
-    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, SPECIAL_ARG_ADDR(pCallDescrData->hasRetBuff ? 1 : 0), argsSize, pCallDescrData->hasRetBuff ? *(int8_t**)SPECIAL_ARG_ADDR(0) : (int8_t*)pCallDescrData->returnValue, (PCODE)&CallDescrWorkerInternal);
+    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argsSize, retBuff, (PCODE)&CallDescrWorkerInternal);
 }
