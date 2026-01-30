@@ -41,6 +41,7 @@
 // static
 int Compiler::getSIMDVectorLength(unsigned simdSize, var_types baseType)
 {
+    assert(simdSize != SIZE_UNKNOWN);
     return simdSize / genTypeSize(baseType);
 }
 

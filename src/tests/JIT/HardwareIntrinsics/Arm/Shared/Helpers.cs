@@ -4333,7 +4333,8 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 int real = i;
                 int img = i + 1;
-                (float op3Real, float op3Img) = (op3[index * 2], op3[(index * 2) + 1]);
+                int segmentBase = (i / 4) * 4;
+                (float op3Real, float op3Img) = (op3[segmentBase + index * 2], op3[segmentBase + (index * 2) + 1]);
                 (float ans1, float ans2) = imm switch
                 {
                     0 => (FusedMultiplyAdd(op1[real], op2[real], op3Real), FusedMultiplyAdd(op1[img], op2[real], op3Img)),
@@ -4352,11 +4353,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static T[] MultiplyAddRotateComplexBySelectedScalar<T>(T[] op1, T[] op2, T[] op3, byte index, byte imm) where T : INumber<T>
         {
+            int elementsPerSegment = 16 / Unsafe.SizeOf<T>();
+
             for (int i = 0; i < op1.Length; i += 2)
             {
                 int real = i;
                 int img = i + 1;
-                (T op3Real, T op3Img) = (op3[index * 2], op3[(index * 2) + 1]);
+                int segmentBase = (i / elementsPerSegment) * elementsPerSegment;
+                (T op3Real, T op3Img) = (op3[segmentBase + index * 2], op3[segmentBase + (index * 2) + 1]);
                 (T ans1, T ans2) = imm switch
                 {
                     0 => (op1[real] + op2[real] * op3Real, op1[img] + op2[real] * op3Img),
@@ -6939,6 +6943,28 @@ namespace JIT.HardwareIntrinsics.Arm
             where TElem : INumberBase<TElem>
         {
             return CheckLoadVectorBehaviorCore(mask, data, result, (_, loadResult) => loadResult);
+        }
+
+        public static bool CheckLoadVector128AndReplicateToVectorBehavior<TMem, TElem>(
+            TElem[] mask, TMem[] data, TElem[] result)
+            where TMem : INumberBase<TMem>, IConvertible
+            where TElem : INumberBase<TElem>
+        {
+            int elementsPerSegment = 16 / Unsafe.SizeOf<TMem>();
+
+            for (var i = 0; i < result.Length; i++)
+            {
+                TElem expectedResult = IsMaskInactive(mask[i])
+                    ? TElem.Zero
+                    : TElem.CreateTruncating(data[i % elementsPerSegment]);
+
+                if (result[i] != expectedResult)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public static bool CheckLoadVectorBehavior<TMem, TElem>(TMem[] data, TElem[] result)

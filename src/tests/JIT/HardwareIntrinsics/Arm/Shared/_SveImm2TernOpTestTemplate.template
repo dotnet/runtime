@@ -209,9 +209,9 @@ namespace {Namespace}
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref _mask), ref Unsafe.As<{RetBaseType}, byte>(ref _maskData[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
-            for (var i = 0; i < Op1ElementCount; i++) { _data2[i] = {NextValueOp2}; }
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)sizeof({Op2VectorType}<{Op2BaseType}>));
-            for (var i = 0; i < Op1ElementCount; i++) { _data3[i] = {NextValueOp3}; }
+            for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = {NextValueOp3}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3VectorType}<{Op3BaseType}>, byte>(ref _fld3), ref Unsafe.As<{Op3BaseType}, byte>(ref _data3[0]), (uint)sizeof({Op3VectorType}<{Op3BaseType}>));
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref _falseFld), ref Unsafe.As<{Op3BaseType}, byte>(ref _data3[0]), (uint)sizeof({RetVectorType}<{RetBaseType}>));
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref _trueFld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)sizeof({RetVectorType}<{RetBaseType}>));
