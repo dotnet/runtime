@@ -15,8 +15,9 @@ using Microsoft.CodeAnalysis.Testing;
 
 namespace Microsoft.Interop.UnitTests.Verifiers
 {
-    public static class CSharpSourceGeneratorVerifier<TSourceGenerator>
+    public static class CSharpSourceGeneratorVerifier<TSourceGenerator, TAnalyzer>
         where TSourceGenerator : new()
+        where TAnalyzer : DiagnosticAnalyzer, new()
     {
         public static DiagnosticResult Diagnostic(string diagnosticId)
             => new DiagnosticResult(diagnosticId, DiagnosticSeverity.Error);
@@ -110,13 +111,11 @@ namespace Microsoft.Interop.UnitTests.Verifiers
 
             protected override IEnumerable<DiagnosticAnalyzer> GetDiagnosticAnalyzers()
             {
-                // Include the corresponding diagnostics analyzer when testing specific generators.
-                // Note: The analyzer is available alongside the generator but diagnostics are still
-                // reported by the generator for now. This will change as we migrate diagnostics to analyzers.
                 foreach (var analyzer in base.GetDiagnosticAnalyzers())
                 {
                     yield return analyzer;
                 }
+                yield return new TAnalyzer();
             }
 
             protected override CompilationWithAnalyzers CreateCompilationWithAnalyzers(Compilation compilation, ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerOptions options, CancellationToken cancellationToken)

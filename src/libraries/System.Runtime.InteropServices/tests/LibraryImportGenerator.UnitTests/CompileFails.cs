@@ -16,7 +16,7 @@ using Microsoft.Interop.UnitTests;
 using Xunit;
 
 using StringMarshalling = System.Runtime.InteropServices.StringMarshalling;
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator, Microsoft.Interop.Analyzers.LibraryImportDiagnosticsAnalyzer>;
 
 namespace LibraryImportGenerator.UnitTests
 {

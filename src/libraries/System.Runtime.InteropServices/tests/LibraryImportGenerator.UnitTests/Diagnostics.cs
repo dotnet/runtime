@@ -14,7 +14,7 @@ using Microsoft.Interop.UnitTests;
 using Xunit;
 
 using StringMarshalling = Microsoft.Interop.StringMarshalling;
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator, Microsoft.Interop.Analyzers.LibraryImportDiagnosticsAnalyzer>;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -269,7 +269,7 @@ namespace LibraryImportGenerator.UnitTests
                     .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}")
             ];
 
-            var test = new Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<DownlevelLibraryImportGenerator>.Test(TestTargetFramework.Standard2_0)
+            var test = new Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<DownlevelLibraryImportGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>.Test(TestTargetFramework.Standard2_0)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck

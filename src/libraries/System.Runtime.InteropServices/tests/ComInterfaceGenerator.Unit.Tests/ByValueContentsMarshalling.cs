@@ -10,7 +10,7 @@ using Microsoft.Interop;
 using Xunit;
 using static Microsoft.Interop.UnitTests.TestUtils;
 using StringMarshalling = System.Runtime.InteropServices.StringMarshalling;
-using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
+using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
