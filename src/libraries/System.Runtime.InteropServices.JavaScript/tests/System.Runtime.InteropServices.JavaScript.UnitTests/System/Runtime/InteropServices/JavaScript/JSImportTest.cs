@@ -524,9 +524,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void JsImportSpanOfSingle()
         {
-            var expectedBytes = stackalloc float[] { 0, 1, -1, float.Pi, 42, float.MaxValue, float.MinValue, float.NaN, float.PositiveInfinity, float.NegativeInfinity };
-            Span<float> expected = new Span<float>(expectedBytes, 10);
-            Assert.True(Unsafe.AsPointer(ref expected.GetPinnableReference()) == expectedBytes);
+            var expectedFloats = stackalloc float[] { 0, 1, -1, float.Pi, 42, float.MaxValue, float.MinValue, float.NaN, float.PositiveInfinity, float.NegativeInfinity };
+            Span<float> expected = new Span<float>(expectedFloats, 10);
+            Assert.True(Unsafe.AsPointer(ref expected.GetPinnableReference()) == expectedFloats);
             Span<float> actual = JavaScriptTestHelper.echo1_SpanOfSingle(expected, false);
             Assert.Equal(expected.Length, actual.Length);
             Assert.NotEqual(expected[0], expected[1]);
