@@ -4453,7 +4453,7 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
 
 inline bool Compiler::PreciseRefCountsRequired()
 {
-    return opts.OptimizationEnabled();
+    return opts.OptimizationEnabled() || m_asyncLiveness;
 }
 
 #define RETURN_IF_ABORT(expr)                                                                                          \

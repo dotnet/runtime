@@ -5257,6 +5257,7 @@ public:
     // 1. All loops have preheaders (single entry blocks that always enter the loop)
     // 2. All loop exits where bbIsHandlerBeg(exit) is false have only loop predecessors.
     //
+    bool m_asyncLiveness = false;
     bool optLoopsCanonical = false;
 
     bool fgBBVarSetsInited = false;
