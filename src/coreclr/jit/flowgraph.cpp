@@ -3634,17 +3634,18 @@ void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
 }
 
 //------------------------------------------------------------------------
-// fgFindExcptnTarget: finds the block to jump to that will throw a given kind of exception
+// fgGetExcptnTarget: finds the block to jump to that will throw a given kind of exception
 //
 // Arguments:
 //    kind -- kind of exception to throw
 //    fromBlock -- block that will jump to the throw helper
+//    createIfNeeded -- create the block if it does not already exist
 //
 // Return Value:
 //    Code descriptor for the appropriate throw helper block, or nullptr if no such
-//    descriptor exists.
+//    descriptor exists (only when createIfNeeded is false).
 //
-Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock, bool createIfNeeded)
+Compiler::AddCodeDsc* Compiler::fgGetExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock, bool createIfNeeded)
 {
     assert(fgUseThrowHelperBlocks() || (kind == SCK_FAIL_FAST));
     AddCodeDsc*          add = nullptr;

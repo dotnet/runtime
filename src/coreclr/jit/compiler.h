@@ -6846,7 +6846,7 @@ public:
 
     bool fgRngChkThrowAdded = false;
     bool fgHasAddCodeDscMap() const { return fgAddCodeDscMap != nullptr; }
-    AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock, bool createIfNeeded = false);
+    AddCodeDsc* fgGetExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock, bool createIfNeeded = false);
     bool fgUseThrowHelperBlocks();
     void fgCreateThrowHelperBlockCode(AddCodeDsc* add);
     void fgSequenceLocals(Statement* stmt);

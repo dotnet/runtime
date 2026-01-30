@@ -106,8 +106,9 @@ void StackLevelSetter::ProcessBlocks()
 {
 #ifndef TARGET_X86
     // Outside x86 we do not need to compute pushed/popped stack slots.
-    // However, we do optimize throw-helpers and need to process the blocks for
-    // that, but only when optimizing.
+    // However, if we are using throw helpers, we also need to process the blocks
+    // to find where the helpers are needed and create the blocks and calls.
+    //
     if (!throwHelperBlocksUsed)
     {
         return;
@@ -308,7 +309,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 //
 void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* block)
 {
-    Compiler::AddCodeDsc* add = comp->fgFindExcptnTarget(kind, block, /* createIfNeeded */ true);
+    Compiler::AddCodeDsc* add = comp->fgGetExcptnTarget(kind, block, /* createIfNeeded */ true);
     assert(add != nullptr);
 
     // We expect we'll actually need this helper.
