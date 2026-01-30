@@ -97,11 +97,13 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public string? SecurityDescriptor
+        public string SecurityDescriptor
         {
             get
             {
-                return (string?)NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelConfigAccess);
+                var descriptor = NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelConfigAccess);
+                Debug.Assert(descriptor is not null, "EvtChannelConfigAccess can only return EvtVarTypeString");
+                return (string)descriptor;
             }
             set
             {
@@ -109,11 +111,13 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public string? LogFilePath
+        public string LogFilePath
         {
             get
             {
-                return (string?)NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelLoggingConfigLogFilePath);
+                var logFilePath = NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelLoggingConfigLogFilePath);
+                Debug.Assert(logFilePath is not null, "EvtChannelLoggingConfigLogFilePath can only return EvtVarTypeString");
+                return (string)logFilePath;
             }
             set
             {
@@ -171,19 +175,23 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public string? OwningProviderName
+        public string OwningProviderName
         {
             get
             {
-                return (string?)NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelConfigOwningPublisher);
+                var owningProviderName = NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelConfigOwningPublisher);
+                Debug.Assert(owningProviderName is not null, "EvtChannelConfigOwningPublisher can only return EvtVarTypeString");
+                return (string)owningProviderName;
             }
         }
 
-        public IEnumerable<string?>? ProviderNames
+        public IEnumerable<string?> ProviderNames
         {
             get
             {
-                return (string?[]?)NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelPublisherList);
+                var providerNames = NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelPublisherList);
+                Debug.Assert(providerNames is not null, "EvtChannelPublisherList can only return EvtVarTypeString or EVT_VARIANT_TYPE_ARRAY");
+                return (string?[])providerNames;
             }
         }
 
