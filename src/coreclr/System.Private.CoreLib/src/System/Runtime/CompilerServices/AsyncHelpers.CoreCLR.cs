@@ -260,7 +260,6 @@ namespace System.Runtime.CompilerServices
             Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);
 #endif
             prevContinuation.Next = newContinuation;
-            Task.SetRuntimeAsyncContinuationTicks(newContinuation, Environment.TickCount64);
             return newContinuation;
         }
 
@@ -271,7 +270,6 @@ namespace System.Runtime.CompilerServices
             Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);
             Unsafe.As<byte, object?>(ref Unsafe.Add(ref RuntimeHelpers.GetRawData(newContinuation), keepAliveOffset)) = loaderAllocator;
             prevContinuation.Next = newContinuation;
-            Task.SetRuntimeAsyncContinuationTicks(newContinuation, Environment.TickCount64);
             return newContinuation;
         }
 
@@ -285,7 +283,6 @@ namespace System.Runtime.CompilerServices
             {
                 Unsafe.As<byte, object?>(ref Unsafe.Add(ref RuntimeHelpers.GetRawData(newContinuation), keepAliveOffset)) = GCHandle.FromIntPtr(loaderAllocatorHandle).Target;
             }
-            Task.SetRuntimeAsyncContinuationTicks(newContinuation, Environment.TickCount64);
             return newContinuation;
         }
 #endif
@@ -362,7 +359,7 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(m_stateObject == null);
                 m_stateObject = value;
-                Task.SetRuntimeAsyncContinuationTicks(value, Environment.TickCount64);
+                Task.SetRuntimeAsyncContinuationTicks(value, Stopwatch.GetTimestamp());
             }
 
             internal void HandleSuspended()
@@ -397,6 +394,13 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert((headContinuation.Flags & continueFlags) == 0);
 
                 SetContinuationState(headContinuation);
+
+                Continuation? nc = headContinuation.Next;
+                while (nc != null)
+                {
+                    Task.SetRuntimeAsyncContinuationTicks(nc, Stopwatch.GetTimestamp());
+                    nc = nc.Next;
+                }
 
                 try
                 {
@@ -489,15 +493,15 @@ namespace System.Runtime.CompilerServices
                         asyncDispatcherInfo.NextContinuation = nextContinuation;
 
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
-                        long tickCount = Task.GetRuntimeAsyncContinuationTicks(curContinuation, out long tickCountVal) ? tickCountVal : Environment.TickCount64;
-                        Task.UpdateRuntimeAsyncTaskTicks(this, tickCount);
+                        RuntimeAsyncContinuationDebugInfo debugInfo = Task.GetRuntimeAsyncContinuationDebugInfo(curContinuation, out RuntimeAsyncContinuationDebugInfo debugInfoVal) ? debugInfoVal : new RuntimeAsyncContinuationDebugInfo(Stopwatch.GetTimestamp());
+                        Task.UpdateRuntimeAsyncTaskTicks(this, debugInfo.TickCount);
                         Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
 
                         Task.RemoveRuntimeAsyncContinuationTicks(curContinuation);
 
                         if (newContinuation != null)
                         {
-                            Task.UpdateRuntimeAsyncContinuationTicks(newContinuation, tickCount);
+                            Task.UpdateRuntimeAsyncContinuationDebugInfo(newContinuation, debugInfo);
                             newContinuation.Next = nextContinuation;
                             HandleSuspended();
                             contexts.Pop();
@@ -575,6 +579,7 @@ namespace System.Runtime.CompilerServices
                     if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
                         return continuation;
 
+                    RemoveRuntimeAsyncContinuationTicks(continuation);
                     continuation = continuation.Next;
                 }
             }

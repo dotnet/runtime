@@ -184,7 +184,7 @@ namespace System.Threading.Tasks
         internal static System.Collections.Concurrent.ConcurrentDictionary<int, long>? s_runtimeAsyncTaskTicks;
 #if !MONO
         // Dictionary that relates Continuations to their creation tick count for debugging purposes
-        internal static System.Collections.Concurrent.ConcurrentDictionary<Continuation, long>? s_runtimeAsyncContinuationTicks;
+        internal static System.Collections.Concurrent.ConcurrentDictionary<Continuation, RuntimeAsyncContinuationDebugInfo>? s_runtimeAsyncContinuationTicks;
 #endif
         internal static bool AddToActiveTasks(Task task)
         {
@@ -222,27 +222,27 @@ namespace System.Threading.Tasks
         {
             if (s_asyncDebuggingEnabled)
             {
-                s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, long>(ContinuationEqualityComparer.Instance);
-                s_runtimeAsyncContinuationTicks.TryAdd(continuation, tickCount);
+                s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, RuntimeAsyncContinuationDebugInfo>(ContinuationEqualityComparer.Instance);
+                s_runtimeAsyncContinuationTicks.TryAdd(continuation, new RuntimeAsyncContinuationDebugInfo(tickCount));
             }
         }
 
-        internal static bool GetRuntimeAsyncContinuationTicks(Continuation continuation, out long tickCount)
+        internal static bool GetRuntimeAsyncContinuationDebugInfo(Continuation continuation, out RuntimeAsyncContinuationDebugInfo debugInfo)
         {
-            if (s_asyncDebuggingEnabled && s_runtimeAsyncContinuationTicks != null && s_runtimeAsyncContinuationTicks.TryGetValue(continuation, out tickCount))
+            if (s_asyncDebuggingEnabled && s_runtimeAsyncContinuationTicks != null && s_runtimeAsyncContinuationTicks.TryGetValue(continuation, out debugInfo))
             {
                 return true;
             }
-            tickCount = 0;
+            debugInfo = null;
             return false;
         }
 
-        internal static void UpdateRuntimeAsyncContinuationTicks(Continuation continuation, long tickCount)
+        internal static void UpdateRuntimeAsyncContinuationDebugInfo(Continuation continuation, RuntimeAsyncContinuationDebugInfo debugInfo)
         {
             if (s_asyncDebuggingEnabled)
             {
-                s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, long>(ContinuationEqualityComparer.Instance);
-                s_runtimeAsyncContinuationTicks[continuation] = tickCount;
+                s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, RuntimeAsyncContinuationDebugInfo>(ContinuationEqualityComparer.Instance);
+                s_runtimeAsyncContinuationTicks[continuation] = debugInfo;
             }
         }
 
@@ -7630,5 +7630,17 @@ namespace System.Threading.Tasks
         }
 
         public bool InvokeMayRunArbitraryCode => true;
+    }
+
+    internal class RuntimeAsyncContinuationDebugInfo
+    {
+        public long TickCount;
+        public int Id;
+
+        public RuntimeAsyncContinuationDebugInfo(long tickCount)
+        {
+            TickCount = tickCount;
+            Id = Task.NewId();
+        }
     }
 }
