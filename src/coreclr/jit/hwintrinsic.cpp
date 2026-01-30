@@ -1928,6 +1928,64 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
     return true;
 }
 
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+//------------------------------------------------------------------------
+// MaskVisitor: Traverses HW Intrinsic trees and applies mask types to nodes
+//
+// This visitor is used on HW intrinsic trees as they are imported to ensure
+// the tree has correct type assignments where intrinsics operate on masks.
+//
+// For example, an intrinsic marked with HW_Flag_ReturnsPerElementMask should
+// have the node type assigned to TYP_MASK.
+//
+// This work needs to be done before the 'Optimize Mask Conversions' pass, as
+// that pass requires all locals have had the opportunity to have been assigned
+// a mask type.
+//
+// Ideally mask types could be assigned correctly on creation during import, but
+// this puts the burden on the importer code to ensure these architecture
+// specific details are correct. Ideally this visitor is used sparingly on small
+// HW intrinsic trees to avoid any potential traversal cost.
+//
+class MaskVisitor : public GenTreeVisitor<MaskVisitor>
+{
+public:
+    enum
+    {
+        DoPreOrder = true,
+    };
+
+    MaskVisitor(Compiler* comp)
+        : GenTreeVisitor<MaskVisitor>(comp)
+    {
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        if ((*use)->OperIsHWIntrinsic())
+        {
+            GenTreeHWIntrinsic* intrin = (*use)->AsHWIntrinsic();
+
+            if (HWIntrinsicInfo::ReturnsPerElementMask(intrin->GetHWIntrinsicId()) && !intrin->TypeIs(TYP_MASK))
+            {
+                var_types previousType = intrin->TypeGet();
+                intrin->gtType         = TYP_MASK;
+                GenTree* converted =
+                    m_compiler->gtNewSimdCvtMaskToVectorNode(previousType, intrin, intrin->GetSimdBaseType(),
+                                                             intrin->GetSimdSize());
+                *use = converted;
+            }
+            else if (intrin->TypeIs(TYP_MASK))
+            {
+                assert(HWIntrinsicInfo::ReturnsPerElementMask(intrin->GetHWIntrinsicId()));
+            }
+        }
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+#endif
+
 //------------------------------------------------------------------------
 // impHWIntrinsic: Import a hardware intrinsic as a GT_HWINTRINSIC node if possible
 //
@@ -2233,13 +2291,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
     var_types nodeRetType = retType;
-#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
-    if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsic))
-    {
-        // Ensure the result is generated to a mask.
-        nodeRetType = TYP_MASK;
-    }
-#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
 
     // table-driven importer of simple intrinsics
     if (impIsTableDrivenHWIntrinsic(intrinsic, category))
@@ -2686,11 +2737,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    if (nodeRetType == TYP_MASK)
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    if (retNode != nullptr)
     {
-        // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
-        retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseType, simdSize);
+        // Introduce mask types into the tree.
+        MaskVisitor visitor(this);
+        visitor.WalkTree(&retNode, nullptr);
     }
+#endif
+
 #endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
 
     if ((retNode != nullptr) && retNode->OperIs(GT_HWINTRINSIC))
@@ -2698,6 +2753,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         assert(!retNode->OperMayThrow(this) || ((retNode->gtFlags & GTF_EXCEPT) != 0));
         assert(!retNode->OperRequiresAsgFlag() || ((retNode->gtFlags & GTF_ASG) != 0));
         assert(!retNode->OperIsImplicitIndir() || ((retNode->gtFlags & GTF_GLOB_REF) != 0));
+
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+        assert(!retNode->TypeIs(TYP_MASK));
+#endif
     }
 
     return retNode;

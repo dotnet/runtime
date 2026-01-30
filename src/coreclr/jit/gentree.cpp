@@ -9419,6 +9419,14 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
         vecCon->gtSimdVal     = simd_t::Zero();
         return vecCon;
     }
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    else if (varTypeIsMask(type))
+    {
+        GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
+        mskCon->gtSimdMaskVal = simdmask_t::Zero();
+        return mskCon;
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
     type = genActualType(type);
