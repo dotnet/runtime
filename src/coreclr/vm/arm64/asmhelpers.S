@@ -748,11 +748,11 @@ LOCAL_LABEL(HaveInterpThreadContext):
     // Fill in the ContinuationContext register
     ldr x2, [sp, #(__PWTB_ArgumentRegister_FirstArg + 16)]
 
-    // Check if caller has Swift error
-    ldr x11, [fp, #48]
-    mov x12, #0x5E5E
-    cmp x11, x12
-    bne LOCAL_LABEL(InterpreterStub_NoSwiftError)
+    // Check if this stub has Swift error handling
+    ldr x11, [x19]                                      // InterpMethod*
+    ldr x11, [x11, #OFFSETOF__InterpMethod__pCallStub]  // CallStubHeader*
+    ldrb w11, [x11, #OFFSETOF__CallStubHeader__HasSwiftError]
+    cbz x11, LOCAL_LABEL(InterpreterStub_NoSwiftError)
     EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
 LOCAL_LABEL(InterpreterStub_NoSwiftError):
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
@@ -1210,7 +1210,6 @@ LEAF_END Load_SwiftSelf_ByRef
 LEAF_ENTRY Load_SwiftError
     ldr x11, [x9], #8
     str x11, [fp, #40]
-    mov x23, #0x5E5E         // Signal to InterpreterStub that Swift error is used
     mov x21, xzr
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11

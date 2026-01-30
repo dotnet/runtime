@@ -24,13 +24,14 @@ struct CallStubHeader
     // Total stack size used for the arguments.
     int TotalStackSize;
     bool HasContinuationRet; // Indicates whether the stub supports returning a continuation
+    bool HasSwiftError; // Indicates whether the stub has a Swift error parameter
     // This is a pointer to a helper function that invokes the target method. There are several
     // versions of this function, depending on the return type of the target method.
     InvokeFunctionPtr Invoke;
     // This is an array of routines that translate the arguments from the interpreter stack to the CPU registers and native stack.
     PCODE Routines[0];
 
-    CallStubHeader(int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, InvokeFunctionPtr pInvokeFunction)
+    CallStubHeader(int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, bool hasSwiftError, InvokeFunctionPtr pInvokeFunction)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -39,6 +40,7 @@ struct CallStubHeader
         TotalStackSize = totalStackSize;
         Invoke = pInvokeFunction;
         HasContinuationRet = hasContinuationRet;
+        HasSwiftError = hasSwiftError;
 
         memcpy(Routines, pRoutines, NumRoutines * sizeof(PCODE));
     }
@@ -169,6 +171,8 @@ class CallStubGenerator
 
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
     bool m_interpreterToNative = false;
+    bool m_hasSwiftError = false;
+    bool m_isSwiftCallConv = false;
 
 #if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
     PCODE GetGPRegRefRoutine(int r);

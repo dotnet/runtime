@@ -2608,17 +2608,18 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     LoaderAllocator *pLoaderAllocator = pMD->GetLoaderAllocator();
     S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
     void *pHeaderStorage = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(finalStubSize));
+    bool hasSwiftError = m_isSwiftCallConv && m_hasSwiftError && pMD->IsILStub();
 
     int targetSlotIndex = m_interpreterToNative ? m_targetSlotIndex : (m_routineIndex - 1);
-    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_pInvokeFunction);
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), hasSwiftError, m_pInvokeFunction);
 
     return pHeader;
 }
 
 struct CachedCallStubKey
 {
-    CachedCallStubKey(int32_t hashCode, int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, CallStubHeader::InvokeFunctionPtr pInvokeFunction)
-     : HashCode(hashCode), NumRoutines(numRoutines), TargetSlotIndex(targetSlotIndex), TotalStackSize(totalStackSize), HasContinuationRet(hasContinuationRet), Invoke(pInvokeFunction), Routines(pRoutines)
+    CachedCallStubKey(int32_t hashCode, int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, bool hasSwiftError, CallStubHeader::InvokeFunctionPtr pInvokeFunction)
+     : HashCode(hashCode), NumRoutines(numRoutines), TargetSlotIndex(targetSlotIndex), TotalStackSize(totalStackSize), HasContinuationRet(hasContinuationRet), HasSwiftError(hasSwiftError), Invoke(pInvokeFunction), Routines(pRoutines)
     {
     }
 
@@ -2626,7 +2627,7 @@ struct CachedCallStubKey
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (HashCode != other.HashCode || NumRoutines != other.NumRoutines || TargetSlotIndex != other.TargetSlotIndex || TotalStackSize != other.TotalStackSize || Invoke != other.Invoke || HasContinuationRet != other.HasContinuationRet)
+        if (HashCode != other.HashCode || NumRoutines != other.NumRoutines || TargetSlotIndex != other.TargetSlotIndex || TotalStackSize != other.TotalStackSize || Invoke != other.Invoke || HasContinuationRet != other.HasContinuationRet || HasSwiftError != other.HasSwiftError)
             return false;
 
         for (int i = 0; i < NumRoutines; i++)
@@ -2642,15 +2643,16 @@ struct CachedCallStubKey
     const int TargetSlotIndex = 0;
     const int TotalStackSize = 0;
     const bool HasContinuationRet = false;
+    const bool HasSwiftError = false;
     const CallStubHeader::InvokeFunctionPtr Invoke = NULL; // Pointer to the invoke function
     const PCODE *Routines;
 };
 
 struct CachedCallStub
 {
-    CachedCallStub(int32_t hashCode, int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
+    CachedCallStub(int32_t hashCode, int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, bool hasSwiftError, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
         HashCode(hashCode),
-        Header(numRoutines, targetSlotIndex, pRoutines, totalStackSize, hasContinuationRet, pInvokeFunction)
+        Header(numRoutines, targetSlotIndex, pRoutines, totalStackSize, hasContinuationRet, hasSwiftError, pInvokeFunction)
     {
     }
 
@@ -2666,6 +2668,7 @@ struct CachedCallStub
             &Header.Routines[0],
             Header.TotalStackSize,
             Header.HasContinuationRet,
+            Header.HasSwiftError,
             Header.Invoke);
     }
 
@@ -2714,6 +2717,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     hashState.AddPointer((void*)m_pInvokeFunction);
     hashState.Add(sig.IsAsyncCall() ? 1 : 0);
     hashState.Add(m_targetSlotIndex);
+    hashState.Add(m_hasSwiftError ? 1 : 0);
 
     CachedCallStubKey cachedHeaderKey(
         hashState.ToHashCode(),
@@ -2722,6 +2726,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         pRoutines,
         ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE),
         sig.IsAsyncCall(),
+        m_hasSwiftError,
         m_pInvokeFunction);
 
     CrstHolder lockHolder(&s_callStubCrst);
@@ -2741,7 +2746,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         // We only need to allocate the actual pRoutines array, and then we can just use the cachedHeader we already constructed
         size_t finalCachedCallStubSize = sizeof(CachedCallStub) + m_routineIndex * sizeof(PCODE);
         void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(finalCachedCallStubSize)));
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_pInvokeFunction);
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, m_pInvokeFunction);
         s_callStubCache->Add(pHeader);
         amTracker.SuppressRelease();
 
@@ -2906,9 +2911,16 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         PInvoke::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, NULL);
         hasUnmanagedCallConv = true;
     }
-    // NOTE: IL stubs don't actually have an UnmanagedCallersOnly attribute,
-    // even though the HasUnmanagedCallersOnlyAttribute method may return true for them.
-    else if (pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute() && !pMD->IsILStub())
+    else if (pMD != NULL && pMD->IsILStub())
+    {
+        MethodDesc* pTargetMD = pMD->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
+        if (pTargetMD != NULL && pTargetMD->IsPInvoke())
+        {
+            PInvoke::GetCallingConvention_IgnoreErrors(pTargetMD, &unmanagedCallConv, NULL);
+            hasUnmanagedCallConv = true;
+        }
+    }
+    else if (pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute())
     {
         if (CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
         {
@@ -2982,6 +2994,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     {
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         isSwiftCallConv = (unmanagedCallConv == CorInfoCallConvExtension::Swift);
+        m_isSwiftCallConv = isSwiftCallConv;
         if (!isSwiftCallConv)
 #endif
         {
@@ -3169,7 +3182,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         TypeHandle thArgTypeHandle;
         CorElementType corType = argIt.GetArgType(&thArgTypeHandle);
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
-        if (isSwiftCallConv)
+        if (isSwiftCallConv && m_interpreterToNative)
         {
             MethodTable* pArgMT = nullptr;
 
@@ -3863,11 +3876,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
 void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilder &swiftSigBuilder, CQuickArray<SwiftLoweringElement> &swiftLoweringInfo, int &swiftIndirectResultCount)
 {
-    if (!m_interpreterToNative)
-    {
-        COMPlusThrow(kNotImplementedException);
-    }
-
     sig.Reset();
     TypeHandle thReturnType;
     CorElementType retCorType = sig.GetReturnTypeNormalized(&thReturnType);
@@ -3942,6 +3950,7 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
             if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_ERROR))
             {
                 swiftErrorCount++;
+                m_hasSwiftError = true;
                 if (swiftErrorCount > 1)
                 {
                     COMPlusThrow(kInvalidProgramException);
@@ -3975,6 +3984,12 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
         }
 
         newArgCount++;
+    }
+
+    if (!m_interpreterToNative)
+    {
+        sig.Reset();
+        return;
     }
 
     swiftLoweringInfo.ReSizeThrows(newArgCount);
