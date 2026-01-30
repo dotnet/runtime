@@ -349,14 +349,14 @@ namespace System.Tests
             Assert.Equal(dateOnly, parsedDateOnly);
             Assert.Equal(dateOnly, parsedDateOnly1);
 
-            Assert.Throws<ArgumentException>(() => DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out parsedDateOnly1));
-            Assert.Throws<ArgumentException>(() => DateOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal));
-            Assert.Throws<ArgumentException>(() => DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out parsedDateOnly1));
-            Assert.Throws<ArgumentException>(() => DateOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal));
-            Assert.Throws<ArgumentException>(() => DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsedDateOnly1));
-            Assert.Throws<ArgumentException>(() => DateOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal));
-            Assert.Throws<ArgumentException>(() => DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, out parsedDateOnly1));
-            Assert.Throws<ArgumentException>(() => DateOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault));
+            AssertExtensions.Throws<ArgumentException>("style", () => DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out parsedDateOnly1));
+            AssertExtensions.Throws<ArgumentException>("style", () => DateOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal));
+            AssertExtensions.Throws<ArgumentException>("style", () => DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out parsedDateOnly1));
+            AssertExtensions.Throws<ArgumentException>("style", () => DateOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal));
+            AssertExtensions.Throws<ArgumentException>("style", () => DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsedDateOnly1));
+            AssertExtensions.Throws<ArgumentException>("style", () => DateOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal));
+            AssertExtensions.Throws<ArgumentException>("style", () => DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, out parsedDateOnly1));
+            AssertExtensions.Throws<ArgumentException>("style", () => DateOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault));
 
             s = "     " + s + "     ";
             parsedDateOnly = DateOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces);
