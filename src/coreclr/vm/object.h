@@ -32,27 +32,26 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
  *  |                        it contains the MethodTable pointer and the
  *  |                        sync block index, which is at a negative offset
  *  |
- *  +-- code:StringObject       - String objects are specialized objects for string
+ *  +-- StringObject       - String objects are specialized objects for string
  *  |                        storage/retrieval for higher performance (UCS-2 / UTF-16 data)
  *  |
- *  +-- code:Utf8StringObject       - String objects are specialized objects for string
- *  |                        storage/retrieval for higher performance (UTF-8 data)
+ *  +-- ReflectClassBaseObject    - The base object for the RuntimeType class
  *  |
- *  +-- BaseObjectWithCachedData - Object Plus one object field for caching.
- *  |       |
- *  |            +-  ReflectClassBaseObject    - The base object for the RuntimeType class
- *  |            +-  ReflectMethodObject       - The base object for the RuntimeMethodInfo class
- *  |            +-  ReflectFieldObject        - The base object for the RtFieldInfo class
+ *  +-- ReflectMethodObject       - The base object for the RuntimeMethodInfo class
  *  |
- *  +-- code:ArrayBase          - Base portion of all arrays
+ *  +-- ReflectFieldObject        - The base object for the RtFieldInfo class
+ *  |
+ *  +-- ArrayBase          - Base portion of all arrays
  *  |       |
- *  |       +-  I1Array    - Base type arrays
+ *  |       +-  I1Array    - Base type SZ arrays
  *  |       |   I2Array
  *  |       |   ...
  *  |       |
- *  |       +-  PtrArray   - Array of OBJECTREFs, different than base arrays because of pObjectClass
+ *  |       +-  PtrArray   - SZ Array of OBJECTREFs, different than base arrays because of pObjectClass
  *  |
- *  +-- code:AssemblyBaseObject - The base object for the class Assembly
+ *  +-- AssemblyBaseObject - The base object for the class Assembly
+ *  |
+ *  |   ...
  *
  *
  * PLEASE NOTE THE FOLLOWING WHEN ADDING A NEW OBJECT TYPE:
