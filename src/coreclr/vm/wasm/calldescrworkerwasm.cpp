@@ -31,7 +31,8 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
     size_t argsSize = pCallDescrData->nArgsSize;
     void* retBuff;
     int8_t* args;
-    if (pCallDescrData->hasRetBuff) {
+    if (pCallDescrData->hasRetBuff)
+    {
         argsSize -= INTERP_STACK_SLOT_SIZE;
         if (pCallDescrData->hasThis)
         {
