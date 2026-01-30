@@ -3888,7 +3888,7 @@ public:
                                          var_types            simdBaseType);
 
 #ifdef TARGET_ARM64
-    GenTreeFieldList* gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount);
+    GenTreeFieldList* gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount, var_types fieldType = TYP_UNDEF);
     GenTreeFieldList* gtConvertParamOpToFieldList(GenTree* op, unsigned fieldCount, CORINFO_CLASS_HANDLE clsHnd);
 #endif
 #endif // FEATURE_HW_INTRINSICS
