@@ -249,6 +249,7 @@ DEFINE_METASIG(SM(Obj_Int_RetVoid, j i,v))
 DEFINE_METASIG(SM(PtrVoid_Obj_RetObj, P(v) j, j))
 DEFINE_METASIG(SM(PtrVoid_Obj_RetRefByte, P(v) j, r(b)))
 DEFINE_METASIG_T(SM(ICustomMarshaler_RefObj_PtrIntPtr_RetVoid, C(ICUSTOM_MARSHALER) r(j) P(I), v))
+DEFINE_METASIG(SM(IntPtr_IntPtr_PtrIntPtr_IntPtr_RetVoid, I I P(I) I, v))
 
 DEFINE_METASIG(SM(RefDbl_Dbl_RetDbl, r(d) d, d))
 DEFINE_METASIG(SM(RefDbl_Dbl_Dbl_RetDbl, r(d) d d, d))

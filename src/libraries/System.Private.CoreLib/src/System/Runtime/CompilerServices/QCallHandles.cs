@@ -21,17 +21,19 @@ namespace System.Runtime.CompilerServices
     // Wrapper for address of a object variable on stack
     internal unsafe ref struct ObjectHandleOnStack
     {
-        private void* _ptr;
+        private object* _ptr;
 
-        private ObjectHandleOnStack(void* pObject)
+        private ObjectHandleOnStack(object* pObject)
         {
             _ptr = pObject;
         }
 
         internal static ObjectHandleOnStack Create<T>(ref T o) where T : class?
         {
-            return new ObjectHandleOnStack(Unsafe.AsPointer(ref o));
+            return new ObjectHandleOnStack((object*)Unsafe.AsPointer(ref o));
         }
+
+        internal object Value { get => *_ptr; set => *_ptr = value; }
     }
 
     internal ref struct ByteRef
@@ -43,10 +45,7 @@ namespace System.Runtime.CompilerServices
             _ref = ref byteReference;
         }
 
-        internal ref byte Get()
-        {
-            return ref _ref;
-        }
+        internal ref byte Value { get => ref _ref; }
     }
 
     // Wrapper for address of a byref to byte variable on stack

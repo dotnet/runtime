@@ -1187,6 +1187,10 @@ DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,  ConvertCon
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED, ConvertContentsToManaged,   SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_NATIVE,                ClearNative,                SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED,               ClearManaged,               SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE_UCO,  ConvertContentsToNative,    SM_IntPtr_IntPtr_PtrIntPtr_IntPtr_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED_UCO, ConvertContentsToManaged,   SM_IntPtr_IntPtr_PtrIntPtr_IntPtr_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_NATIVE_UCO,                ClearNative,                SM_IntPtr_IntPtr_PtrIntPtr_IntPtr_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED_UCO,               ClearManaged,               SM_IntPtr_IntPtr_PtrIntPtr_IntPtr_RetVoid)
 
 DEFINE_CLASS(ASANY_MARSHALER,            StubHelpers,                 AsAnyMarshaler)
 DEFINE_METHOD(ASANY_MARSHALER,           CTOR,                        .ctor,                      IM_IntPtr_RetVoid)
