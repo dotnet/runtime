@@ -607,7 +607,7 @@ namespace System
             ParseFailureKind failureKind = TryParseInternal(s, provider, style, out result);
             if (failureKind != ParseFailureKind.None)
             {
-                if (failureKind == ParseFailureKind.Argument_InvalidDateStyles || failureKind == ParseFailureKind.Argument_BadFormatSpecifier)
+                if (failureKind == ParseFailureKind.Argument_InvalidDateStyles)
                 {
                     ThrowOnError(failureKind, s);
                 }
