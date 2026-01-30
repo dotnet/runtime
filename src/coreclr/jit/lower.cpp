@@ -3102,7 +3102,6 @@ GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
         }
     } while (numMarkedNodes > 0);
 
-    // WASM-FIXME: !HAS_FIXED_REGISTER_SET ||
     assert(node->OperIsPutArg());
     return node;
 }
@@ -9249,7 +9248,6 @@ void Lowering::CheckCallArg(GenTree* arg)
 
             for (GenTreeFieldList::Use& use : list->Uses())
             {
-                // WASM-FIXME
                 assert(!HAS_FIXED_REGISTER_SET || use.GetNode()->OperIsPutArg());
             }
         }
