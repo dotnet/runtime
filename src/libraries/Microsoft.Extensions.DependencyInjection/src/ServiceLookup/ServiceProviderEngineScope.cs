@@ -147,7 +147,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
             }
 
-            PropagateExceptionsFromCache(exceptionsCache);
+            if (exceptionsCache is not null)
+            {
+                if (exceptionsCache is ExceptionDispatchInfo exceptionInfo)
+                {
+                    exceptionInfo.Throw();
+                }
+
+                throw new AggregateException((List<Exception>)exceptionsCache);
+            }
         }
 
         public async ValueTask DisposeAsync()
@@ -179,14 +187,22 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
             }
 
-            PropagateExceptionsFromCache(exceptionsCache);
+            if (exceptionsCache is not null)
+            {
+                if (exceptionsCache is ExceptionDispatchInfo exceptionInfo)
+                {
+                    exceptionInfo.Throw();
+                }
+
+                throw new AggregateException((List<Exception>)exceptionsCache);
+            }
         }
 
         private static void AddExceptionToCache(ref object? exceptionsCache, Exception exception)
         {
             if (exceptionsCache is null)
             {
-                exceptionsCache = exception;
+                exceptionsCache = ExceptionDispatchInfo.Capture(exception);
             }
             else if (exceptionsCache is ExceptionDispatchInfo exceptionInfo)
             {
@@ -196,21 +212,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 ((List<Exception>)exceptionsCache).Add(exception);
             }
-        }
-
-        private static void PropagateExceptionsFromCache(object? exceptionsCache)
-        {
-            if (exceptionsCache is null)
-            {
-                return;
-            }
-
-            if (exceptionsCache is ExceptionDispatchInfo exceptionInfo)
-            {
-                exceptionInfo.Throw();
-            }
-
-            throw new AggregateException((List<Exception>)exceptionsCache);
         }
 
         private List<object>? BeginDispose()
