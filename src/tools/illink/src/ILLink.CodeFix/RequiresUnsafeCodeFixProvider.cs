@@ -397,6 +397,10 @@ namespace ILLink.CodeFix
             {
                 isVoid = localFunc.ReturnType is PredefinedTypeSyntax pts && pts.Keyword.IsKind(SyntaxKind.VoidKeyword);
             }
+            else if (parent is DestructorDeclarationSyntax)
+            {
+                isVoid = true;
+            }
             else if (parent is AccessorDeclarationSyntax or PropertyDeclarationSyntax or IndexerDeclarationSyntax)
             {
                 isVoid = false;
@@ -432,6 +436,14 @@ namespace ILLink.CodeFix
                         .WithSemicolonToken(default)
                         .WithBody(blockBody);
                     editor.ReplaceNode(localFunc, newLocalFunc);
+                    break;
+
+                case DestructorDeclarationSyntax destructorDecl:
+                    var newDestructor = destructorDecl
+                        .WithExpressionBody(null)
+                        .WithSemicolonToken(default)
+                        .WithBody(blockBody);
+                    editor.ReplaceNode(destructorDecl, newDestructor);
                     break;
 
                 case PropertyDeclarationSyntax propDecl:

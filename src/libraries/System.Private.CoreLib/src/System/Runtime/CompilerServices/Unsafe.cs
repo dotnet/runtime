@@ -83,9 +83,6 @@ namespace System.Runtime.CompilerServices
         // Mono:As
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if DEBUG
-        [RequiresUnsafe]
-#endif
         public static ref TTo As<TFrom, TTo>(ref TFrom source)
             where TFrom : allows ref struct
             where TTo : allows ref struct

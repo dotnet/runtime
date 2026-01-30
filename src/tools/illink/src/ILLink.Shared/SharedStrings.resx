@@ -1183,13 +1183,13 @@
     <value>'RequiresDynamicCodeAttribute' cannot be placed directly on static constructor '{0}'.</value>
   </data>
   <data name="RequiresDynamicCodeOnStaticConstructorTitle" xml:space="preserve">
-    <value>The use of 'RequiresDynamicCodeAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
+    <value>'RequiresDynamicCodeAttribute' cannot be used on static constructors because they are not directly callable. Consider placing the attribute on the type instead.</value>
   </data>
   <data name="RequiresAssemblyFilesOnStaticConstructorMessage" xml:space="preserve">
     <value>'RequiresAssemblyFilesAttribute' cannot be placed directly on static constructor '{0}'.</value>
   </data>
   <data name="RequiresAssemblyFilesOnStaticConstructorTitle" xml:space="preserve">
-    <value>The use of 'RequiresAssemblyFilesAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
+    <value>'RequiresAssemblyFilesAttribute' cannot be used on static constructors because they are not directly callable. Consider placing the attribute on the type instead.</value>
   </data>
   <data name="RequiresUnreferencedCodeOnEntryPointMessage" xml:space="preserve">
     <value>'RequiresUnreferencedCodeAttribute' cannot be placed directly on application entry point '{0}'.</value>
@@ -1279,7 +1279,7 @@
     <value>'RequiresUnsafeAttribute' cannot be placed directly on static constructor '{0}'.</value>
   </data>
   <data name="RequiresUnsafeOnStaticConstructorTitle" xml:space="preserve">
-    <value>The use of 'RequiresUnsafeAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime.</value>
+    <value>'RequiresUnsafeAttribute' cannot be used on static constructors because they are not directly callable. Consider placing the attribute on the type instead.</value>
   </data>
   <data name="RequiresUnsafeOnEntryPointMessage" xml:space="preserve">
     <value>'RequiresUnsafeAttribute' cannot be placed directly on application entry point '{0}'.</value>

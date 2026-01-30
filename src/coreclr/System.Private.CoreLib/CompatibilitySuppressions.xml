@@ -35,16 +35,4 @@
     <DiagnosticId>CP0008</DiagnosticId>
     <Target>T:System.Collections.BitArray</Target>
   </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0016</DiagnosticId>
-    <Target>M:System.Runtime.CompilerServices.Unsafe.As``1(System.Object):[T:System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]</Target>
-    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0016</DiagnosticId>
-    <Target>M:System.Runtime.CompilerServices.Unsafe.As``2(``0@):[T:System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]</Target>
-    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
 </Suppressions>

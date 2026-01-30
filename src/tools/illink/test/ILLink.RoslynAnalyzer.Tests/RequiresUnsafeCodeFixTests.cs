@@ -579,6 +579,63 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
         }
 
         [Fact]
+        public async Task CodeFix_WrapInUnsafeBlock_ExpressionBodiedDestructor()
+        {
+            var test = """
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C
+                {
+                    [RequiresUnsafe]
+                    public static void M1() { }
+
+                    ~C() => M1();
+                }
+
+                namespace System.Diagnostics.CodeAnalysis
+                {
+                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
+                    public sealed class RequiresUnsafeAttribute : Attribute { }
+                }
+                """;
+
+            var fixedSource = """
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C
+                {
+                    [RequiresUnsafe]
+                    public static void M1() { }
+
+                    ~C()
+                    {
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            M1();
+                        }
+                    }
+                }
+
+                namespace System.Diagnostics.CodeAnalysis
+                {
+                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
+                    public sealed class RequiresUnsafeAttribute : Attribute { }
+                }
+                """;
+
+            await VerifyRequiresUnsafeCodeFix(
+                source: test,
+                fixedSource: fixedSource,
+                baselineExpected: new[] {
+                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
+                        .WithSpan(8, 13, 8, 15)
+                        .WithArguments("C.M1()", "", "")
+                },
+                fixedExpected: Array.Empty<DiagnosticResult>());
+        }
+
+        [Fact]
         public async Task CodeFix_WrapInUnsafeBlock_ExpressionBodiedProperty()
         {
             var test = """
