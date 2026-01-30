@@ -2137,6 +2137,32 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod,
     END_QCALL;
 }
 
+extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetParallelMethodWithUserIL(MethodDesc* pMethod)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(pMethod != NULL);
+
+    MethodDesc* pResult = NULL;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    if (pMethod->IsAsyncThunkMethod())
+    {
+        pResult = pMethod->GetAsyncVariant();
+    }
+    else
+    {
+        pResult = pMethod;
+    }
+
+    END_QCALL;
+
+    return pResult;
+}
+
 FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsConstructor, MethodDesc *pMethod)
 {
     CONTRACTL {

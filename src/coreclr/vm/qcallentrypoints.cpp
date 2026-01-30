@@ -176,6 +176,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeMethodHandle_Destroy)
     DllImportEntry(RuntimeMethodHandle_GetStubIfNeededSlow)
     DllImportEntry(RuntimeMethodHandle_GetMethodBody)
+    DllImportEntry(RuntimeMethodHandle_GetParallelMethodWithUserIL)
     DllImportEntry(RuntimeModule_GetScopeName)
     DllImportEntry(RuntimeModule_GetFullyQualifiedName)
     DllImportEntry(RuntimeModule_GetTypes)

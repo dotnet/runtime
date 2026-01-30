@@ -1334,6 +1334,9 @@ namespace System
             return result;
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetParallelMethodWithUserIL")]
+        private static partial RuntimeMethodHandleInternal GetParallelMethodWithUserIL(RuntimeMethodHandleInternal method);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsConstructor(RuntimeMethodHandleInternal method);
 
