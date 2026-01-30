@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -296,6 +297,45 @@ namespace System.Reflection.Tests
             Assert.Equal(5, et.GenericParameterPosition);
 
             TestSignatureTypeInvariants(t);
+        }
+
+        [Fact]
+        public static void MakeManagedSignatureFunctionPointerType()
+        {
+            Type[] paramTypes = [typeof(string), typeof(bool)];
+            Type t = Type.MakeFunctionPointerSignatureType(typeof(int), paramTypes);
+
+            Assert.True(t.IsFunctionPointer);
+            Assert.False(t.IsUnmanagedFunctionPointer);
+            Assert.Equal(typeof(int).ToString(), t.GetFunctionPointerReturnType().ToString());
+            Assert.Equal(paramTypes.Select(t => t.ToString()), t.GetFunctionPointerParameterTypes().Select(t => t.ToString()));
+            Assert.Equal(0, t.GetFunctionPointerCallingConventions().Length);
+        }
+
+        [Fact]
+        public static void MakeUnmanagedSignatureFunctionPointerType()
+        {
+            Type[] paramTypes = [typeof(short)];
+            Type[] callConvs = [typeof(CallConvCdecl), typeof(CallConvFastcall)];
+            Type t = Type.MakeFunctionPointerSignatureType(null, paramTypes, true, callConvs);
+
+            Assert.True(t.IsFunctionPointer);
+            Assert.True(t.IsUnmanagedFunctionPointer);
+            Assert.Equal(typeof(void).ToString(), t.GetFunctionPointerReturnType().ToString());
+            Assert.Equal(paramTypes.Select(t => t.ToString()), t.GetFunctionPointerParameterTypes().Select(t => t.ToString()));
+            Assert.Equal(callConvs.Select(t => t.ToString()), t.GetFunctionPointerCallingConventions().Select(t => t.ToString()));
+        }
+
+        [Fact]
+        public static void MakeSignatureModifiedType()
+        {
+            Type t = Type.MakeModifiedSignatureType(typeof(List<int>), [], [typeof(IsVolatile)]);
+
+            Assert.True(t.IsGenericType);
+            Assert.Equal(typeof(int).ToString(), t.GetGenericArguments()[0].ToString());
+            Assert.Equal(0, t.GetRequiredCustomModifiers().Length);
+            Assert.Equal(1, t.GetOptionalCustomModifiers().Length);
+            Assert.Equal(typeof(IsVolatile).ToString(), t.GetOptionalCustomModifiers()[0].ToString());
         }
 
         [Theory]

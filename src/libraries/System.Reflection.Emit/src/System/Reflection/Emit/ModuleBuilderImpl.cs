@@ -1359,6 +1359,16 @@ namespace System.Reflection.Emit
             MetadataTokens.GetToken(_metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(
                 MetadataSignatureHelper.GetMethodSignature(this, parameterTypes, returnType, GetSignatureConvention(callingConvention)))));
 
+        internal int GetFunctionPointerSignatureToken(Type functionPointerType)
+        {
+            BlobBuilder blobBuilder = new();
+            SignatureTypeEncoder encoder = new(blobBuilder);
+            MetadataSignatureHelper.WriteSignatureForFunctionPointerType(encoder, functionPointerType, this);
+
+            byte[] blob = blobBuilder.ToArray()[1..]; // Strip away ELEMENT_TYPE_FNPTR
+            return MetadataTokens.GetToken(_metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(blob)));
+        }
+
         private static SignatureCallingConvention GetSignatureConvention(CallingConvention callingConvention) =>
             callingConvention switch
             {

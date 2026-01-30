@@ -214,4 +214,12 @@ namespace System.Reflection.Emit.Tests
             public override Type[] GetOptionalCustomModifiers() => optionalModifiers;
         }
     }
+
+    public unsafe class ClassWithFunctionPointer
+    {
+        public static delegate*<int, int, int> Method;
+
+        public static int Add(int a, int b) => a + b;
+        public static void Init() => Method = &Add;
+    }
 }

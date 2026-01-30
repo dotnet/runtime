@@ -720,6 +720,24 @@ namespace System.Reflection.Emit
             _il.Token(_moduleBuilder.GetSignatureToken(unmanagedCallConv, returnType, parameterTypes));
         }
 
+        /// <inheritdoc/>
+        public override void EmitCalli(Type functionPointerType)
+        {
+            ArgumentNullException.ThrowIfNull(functionPointerType);
+
+            if (!functionPointerType.IsFunctionPointer)
+                throw new ArgumentException(SR.Argument_MustBeFunctionPointer, nameof(functionPointerType));
+
+            int stackChange = GetStackChange(
+                functionPointerType.GetFunctionPointerReturnType(),
+                _moduleBuilder.GetTypeFromCoreAssembly(CoreTypeId.Void),
+                functionPointerType.GetFunctionPointerParameterTypes());
+
+            UpdateStackSize(stackChange);
+            Emit(OpCodes.Calli);
+            _il.Token(_moduleBuilder.GetFunctionPointerSignatureToken(functionPointerType));
+        }
+
         private static int GetStackChange(Type? returnType, Type voidType, Type[]? parameterTypes)
         {
             int stackChange = 0;

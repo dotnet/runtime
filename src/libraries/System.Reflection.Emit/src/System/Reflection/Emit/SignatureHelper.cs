@@ -252,7 +252,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private static void WriteSignatureForFunctionPointerType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
+        internal static void WriteSignatureForFunctionPointerType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
         {
             SignatureCallingConvention callConv = SignatureCallingConvention.Default;
             FunctionPointerAttributes attribs = FunctionPointerAttributes.None;
