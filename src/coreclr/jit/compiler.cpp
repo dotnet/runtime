@@ -438,6 +438,15 @@ Compiler::Compiler(ArenaAllocator*       arena,
 
     compMaxUncheckedOffsetForNullObject = eeInfo->maxUncheckedOffsetForNullObject;
 
+#if defined(DEBUG) && defined(TARGET_WASM)
+    // TODO-WASM: remove once we no longer need to use x86/arm collections for wasm replay
+    // if we are cross-replaying wasm, override compMaxUncheckedOffsetForNullObject
+    if (!info.compMatchedVM)
+    {
+        compMaxUncheckedOffsetForNullObject = 1024 - 1;
+    }
+#endif
+
     info.compProfilerCallback = false; // Assume false until we are told to hook this method.
 
     info.compCode         = methodInfo->ILCode;
@@ -7706,7 +7715,8 @@ START:
     result = param.result;
 
 if (!inlineInfo &&
-    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION ||
+     result == CORJIT_R2R_UNSUPPORTED) &&
     !jitFallbackCompile)
 {
     // If we failed the JIT, reattempt with debuggable code.
