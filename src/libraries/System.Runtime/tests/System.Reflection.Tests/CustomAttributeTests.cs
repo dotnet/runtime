@@ -299,8 +299,7 @@ namespace System.Reflection.Tests
         [GenericEnumAttributeWithFunctionPointer(default)]
         private unsafe class ClassWithGenericEnumAttribute { }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/97833", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void CustomAttributeCtor_WithGenericEnumArgument_DecodesCorrectly()
         {
             var attr = typeof(ClassWithGenericEnumAttribute).CustomAttributes.Single(d => d.AttributeType == typeof(GenericEnumAttributeWithFunctionPointer));
