@@ -707,7 +707,9 @@ namespace System
             if (!DateTimeParse.TryParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style, ref dtResult))
             {
                 result = default;
-                return ParseFailureKind.Format_BadTimeOnly;
+                return dtResult.failure == ParseFailureKind.Argument_BadFormatSpecifier
+                    ? ParseFailureKind.Argument_BadFormatSpecifier
+                    : ParseFailureKind.Format_BadTimeOnly;
             }
 
             if ((dtResult.flags & ParseFlagsTimeMask) != 0)
@@ -761,6 +763,7 @@ namespace System
             }
 
             DateTimeFormatInfo dtfi = DateTimeFormatInfo.GetInstance(provider);
+            ParseFailureKind lastFailure = ParseFailureKind.Format_BadTimeOnly;
 
             for (int i = 0; i < formats.Length; i++)
             {
@@ -797,10 +800,16 @@ namespace System
                     result = FromDateTime(dtResult.parsedDate);
                     return ParseFailureKind.None;
                 }
+
+                // Preserve Argument_BadFormatSpecifier if encountered
+                if (dtResult.failure == ParseFailureKind.Argument_BadFormatSpecifier)
+                {
+                    lastFailure = ParseFailureKind.Argument_BadFormatSpecifier;
+                }
             }
 
             result = default;
-            return ParseFailureKind.Format_BadTimeOnly;
+            return lastFailure;
         }
 
         /// <summary>

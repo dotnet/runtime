@@ -588,5 +588,23 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("style", () => DateOnly.TryParseExact(validInput, formats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out result));
             AssertExtensions.Throws<ArgumentException>("style", () => DateOnly.TryParseExact(validInput, formats, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, out result));
         }
+
+        [Fact]
+        public static void TryParseExact_InvalidFormatSpecifier_ThrowsFormatException()
+        {
+            // Test that TryParseExact throws FormatException for null/empty format specifiers
+            string validInput = "2064-07-01";
+            DateOnly result;
+
+            // Test with array containing null format as first element
+            string?[] formatsWithNull = new string?[] { null, "yyyy-MM-dd", "MM/dd/yyyy" };
+            Assert.Throws<FormatException>(() => DateOnly.TryParseExact(validInput.AsSpan(), formatsWithNull, CultureInfo.InvariantCulture, DateTimeStyles.None, out result));
+            Assert.Throws<FormatException>(() => DateOnly.TryParseExact(validInput, formatsWithNull, CultureInfo.InvariantCulture, DateTimeStyles.None, out result));
+
+            // Test with array containing empty format as first element
+            string[] formatsWithEmpty = new[] { "", "yyyy-MM-dd", "MM/dd/yyyy" };
+            Assert.Throws<FormatException>(() => DateOnly.TryParseExact(validInput.AsSpan(), formatsWithEmpty, CultureInfo.InvariantCulture, DateTimeStyles.None, out result));
+            Assert.Throws<FormatException>(() => DateOnly.TryParseExact(validInput, formatsWithEmpty, CultureInfo.InvariantCulture, DateTimeStyles.None, out result));
+        }
     }
 }
