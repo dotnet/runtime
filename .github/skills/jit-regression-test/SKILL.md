@@ -11,7 +11,7 @@ When you need to extract a JIT regression test case from a GitHub issue, follow 
 
 From the GitHub issue, extract:
 1. **Issue number** - Used to name the test folder and files (e.g., issue #99391 → `Runtime_99391`)
-2. **Reproduction code** - The C# code that demonstrates the bug
+2. **Reproduction code** - The C# code that demonstrates the bug. If no code provided, try to compose it yourself.
 3. **Environment variables** - Any DOTNET_* environment variables required to reproduce the bug
 4. **Expected behavior** - What the correct output/behavior should be
 
@@ -27,14 +27,11 @@ src/tests/JIT/Regression/JitBlue/Runtime_<issue_number>/
 
 Create a `Runtime_<issue_number>.cs` file following these conventions:
 
-### Basic Structure
+Example:
 
 ```csharp
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
-
-namespace Runtime_<issue_number>;
 
 using System;
 using System.Runtime.CompilerServices;
@@ -54,14 +51,9 @@ public class Runtime_<issue_number>
 ### Key Conventions
 
 - **License header**: Always include the standard .NET Foundation license header
-- **Namespace**: Use `Runtime_<issue_number>;` with file-scoped namespace
-- **Using directives**: Place `using` statements after the namespace declaration
 - **Class name**: Match the file name exactly (`Runtime_<issue_number>`)
 - **Test method**: Use `[Fact]` attribute and name the method `TestEntryPoint()` or `Test()`
-- **Return type**: Two options:
-  - `void` with Assert methods (preferred for most cases)
-  - `int` returning 100 for success, any other value for failure (legacy pattern)
-- **Assertions**: Prefer `Assert.Equal`, `Assert.True`, `Assert.False` from Xunit
+- **Assertions**: Use Xunit's helpers or just throw plain exceptions.
 
 ### Example: Simple Test (from Runtime_99391)
 
@@ -94,45 +86,11 @@ public class Runtime_99391
 }
 ```
 
-### Example: Test with Return Code (from Runtime_97625)
-
-```csharp
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
-
-namespace Runtime_97625;
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Xunit;
-
-public static class Runtime_97625
-{
-    public class CustomModel
-    {
-        public decimal Cost { get; set; }
-    }
-
-    [Fact]
-    public static int Test()
-    {
-        List<CustomModel> models = new List<CustomModel>();
-        models.Add(new CustomModel { Cost = 1 });
-        return models.Average(x => x.Cost) == 1 ? 100 : -1;
-    }
-}
-```
-
-## Step 4: Create a .csproj File (Only When Needed)
+## [Optional] Step 4: Create a .csproj File (Only When Needed)
 
 A custom `.csproj` file is **only required** when:
 - Environment variables are needed to reproduce the bug
-- Unsafe code is used (`AllowUnsafeBlocks`)
 - Special compilation settings are required
-
-### When Environment Variables Are Required
 
 If the issue mentions environment variables like `DOTNET_TieredCompilation=0`, `DOTNET_JitStressModeNames`, etc., create a `Runtime_<issue_number>.csproj` file:
 
@@ -152,77 +110,9 @@ If the issue mentions environment variables like `DOTNET_TieredCompilation=0`, `
 </Project>
 ```
 
-### Common Environment Variable Patterns
-
-| Scenario | Environment Variables |
-|----------|----------------------|
-| Disable tiered compilation | `DOTNET_TieredCompilation=0` |
-| Enable tiered PGO | `DOTNET_TieredCompilation=1`, `DOTNET_TieredPGO=1` |
-| Disable hardware intrinsics | `DOTNET_EnableHWIntrinsic=0` |
-| JIT stress mode | `DOTNET_JitStressModeNames=STRESS_*` |
-
-### When Unsafe Code Is Used
-
-If the test uses `unsafe` blocks or pointers:
-
-```xml
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Optimize>True</Optimize>
-    <DebugType>None</DebugType>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="$(MSBuildProjectName).cs" />
-  </ItemGroup>
-</Project>
-```
-
-### Example: Full .csproj with Environment Variables (from Runtime_95315)
-
-```xml
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Optimize>True</Optimize>
-    <DebugType>None</DebugType>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Needed for CLRTestEnvironmentVariable -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="$(MSBuildProjectName).cs" />
-
-    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
-    <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
-  </ItemGroup>
-</Project>
-```
-
-## Step 5: Verify the Test
-
-After creating the test files, verify they compile and run:
-
-1. Navigate to the test directory
-2. Build the test: `dotnet build`
-3. Run the test: `dotnet build /t:test`
-
 ## Important Notes
 
 - **No .csproj needed for simple tests**: Most tests only need the `.cs` file. The test infrastructure uses default settings that work for most cases.
 - **Look at recent tests**: When in doubt, examine recent tests under `src/tests/JIT/Regression/JitBlue/Runtime_*` for the latest conventions.
 - **Use `[MethodImpl(MethodImplOptions.NoInlining)]`**: When you need to prevent inlining to reproduce a JIT bug.
 - **Minimize the reproduction**: Strip down the test code to the minimal case that reproduces the issue.
-
-## Test Location
-
-All tests should be placed in:
-```
-src/tests/JIT/Regression/JitBlue/Runtime_<issue_number>/
-```
-
-The final structure should be:
-```
-Runtime_<issue_number>/
-├── Runtime_<issue_number>.cs
-└── Runtime_<issue_number>.csproj  (optional, only if needed)
-```
