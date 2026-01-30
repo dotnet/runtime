@@ -14,6 +14,7 @@
 
 // Include shared arena allocator infrastructure
 #include "../jitshared/arenaallocator.h"
+#include "../jitshared/compallocator.h"
 #include "interpallocconfig.h"
 
 // InterpMemKind values are used to tag memory allocations performed via
@@ -26,6 +27,10 @@ enum InterpMemKind
 #include "interpmemkind.h"
     IMK_Count
 };
+
+// InterpAllocator is the allocator type used for interpreter compilations.
+// It wraps ArenaAllocator and tracks allocations by InterpMemKind.
+using InterpAllocator = CompAllocator<InterpMemKind>;
 
 struct InterpException
 {
@@ -42,14 +47,18 @@ class InterpreterStackMap;
 class InterpCompiler;
 
 // MemPoolAllocator provides an allocator interface for use with TArray and other
-// data structures. It wraps the InterpCompiler's arena allocator.
+// data structures. It wraps the InterpCompiler's arena allocator with a specific
+// memory kind for statistics tracking.
 class MemPoolAllocator
 {
     InterpCompiler* const m_compiler;
+    InterpMemKind m_memKind;
 public:
-    MemPoolAllocator(InterpCompiler* compiler) : m_compiler(compiler) {}
+    MemPoolAllocator(InterpCompiler* compiler, InterpMemKind memKind = IMK_Generic)
+        : m_compiler(compiler), m_memKind(memKind) {}
     void* Alloc(size_t sz) const;
     void Free(void* ptr) const;
+    InterpMemKind getMemKind() const { return m_memKind; }
 };
 
 class InterpDataItemIndexMap
@@ -787,11 +796,22 @@ private:
 
     void* AllocMethodData(size_t numBytes);
 public:
-    // Allocates memory from the arena allocator. All memory is automatically freed
-    // when the InterpCompiler is destroyed.
+    // Returns an allocator for the specified memory kind. Use this for categorized
+    // allocations to enable memory profiling when MEASURE_INTERP_MEM_ALLOC is defined.
+    InterpAllocator getAllocator(InterpMemKind imk = IMK_Generic)
+    {
+        return InterpAllocator(&m_arenaAllocator, imk);
+    }
+
+    // Convenience methods for common allocation kinds
+    InterpAllocator getAllocatorGC() { return getAllocator(IMK_GC); }
+    InterpAllocator getAllocatorBasicBlock() { return getAllocator(IMK_BasicBlock); }
+    InterpAllocator getAllocatorInstruction() { return getAllocator(IMK_Instruction); }
+
+    // Legacy allocation methods - use getAllocator() for new code
     void* AllocMemPool(size_t numBytes);
     void* AllocMemPool0(size_t numBytes);
-    MemPoolAllocator GetMemPoolAllocator() { return MemPoolAllocator(this); }
+    MemPoolAllocator GetMemPoolAllocator(InterpMemKind imk = IMK_Generic) { return MemPoolAllocator(this, imk); }
 
 private:
     void* AllocTemporary(size_t numBytes);
@@ -1097,6 +1117,27 @@ inline void operator delete(void* ptr, InterpCompiler* compiler)
 inline void operator delete[](void* ptr, InterpCompiler* compiler)
 {
     // Nothing to do, memory will be freed when the compiler is destroyed
+}
+
+// Operator new overloads that work with InterpAllocator for categorized allocations
+inline void* operator new(size_t sz, InterpAllocator alloc)
+{
+    return alloc.allocate<char>(sz);
+}
+
+inline void* operator new[](size_t sz, InterpAllocator alloc)
+{
+    return alloc.allocate<char>(sz);
+}
+
+inline void operator delete(void* ptr, InterpAllocator alloc)
+{
+    // Nothing to do, memory will be freed when the arena is destroyed
+}
+
+inline void operator delete[](void* ptr, InterpAllocator alloc)
+{
+    // Nothing to do, memory will be freed when the arena is destroyed
 }
 
 template<typename T>
