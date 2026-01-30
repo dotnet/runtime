@@ -313,9 +313,10 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             Assert.Single(generatedSources);
 
             var generatedSource = generatedSources[0];
-            var generatedSourceDiagnostics = generatedSource.SyntaxTree.GetDiagnostics();
             var src = generatedSource.SourceText.ToString();
             Assert.Contains($"\"{message}\"", src);
+
+            var generatedSourceDiagnostics = generatedSource.SyntaxTree.GetDiagnostics();
             Assert.Empty(generatedSourceDiagnostics);
         }
 
