@@ -352,7 +352,7 @@ namespace System
                         uint cp = (p < pEnd) ? TChar.CastToUInt32(*p) : '\0';
                         uint val = TChar.CastToUInt32(*str);
 
-                        if ((cp != val) && !(IsSpaceReplacingChar(val) && (cp == '\u0020')))
+                        if ((cp != val) && !((IsSpaceReplacingChar(val) && (cp == '\u0020')) || (IsSpaceReplacingChar(cp) && (val == '\u0020'))))
                         {
                             break;
                         }
