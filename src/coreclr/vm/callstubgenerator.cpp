@@ -2309,9 +2309,6 @@ extern "C" void InterpreterStubRetVector128();
 extern "C" void InterpreterStubRet2Vector128();
 extern "C" void InterpreterStubRet3Vector128();
 extern "C" void InterpreterStubRet4Vector128();
-#if defined(TARGET_APPLE)
-extern "C" void InterpreterStubRetSwiftLowered();
-#endif // TARGET_APPLE
 #endif // TARGET_ARM64
 
 #if defined(TARGET_RISCV64)
@@ -2553,10 +2550,6 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
             RETURN_TYPE_HANDLER(InterpreterStubRet3Vector128);
         case ReturnType4Vector128:
             RETURN_TYPE_HANDLER(InterpreterStubRet4Vector128);
-#if defined(TARGET_APPLE)
-        case ReturnTypeSwiftLowered:
-            RETURN_TYPE_HANDLER(InterpreterStubRetSwiftLowered);
-#endif // TARGET_APPLE
 #endif // TARGET_ARM64
 #if defined(TARGET_RISCV64)
         case ReturnType2I8:

@@ -37,14 +37,12 @@ NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -224
     SAVE_ARGUMENT_REGISTERS sp, 16
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96
-    str x8, [sp, #208]          // Save x8 (indirect result register for Swift)
 
     mov x0, x12
     bl C_FUNC(PInvokeImportWorker)
     mov x12, x0
 
     // pop the stack and restore original register state
-    ldr x8, [sp, #208]          // Restore x8 (indirect result register for Swift)
     RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 96
     RESTORE_ARGUMENT_REGISTERS sp, 16
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 224
@@ -1014,23 +1012,6 @@ NESTED_ENTRY InterpreterStubRet4Vector128, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
     EPILOG_RETURN
 NESTED_END InterpreterStubRet4Vector128, _TEXT
-
-// When interpreted method is called with Swift calling convention and returns a lowered struct,
-// this stub writes return values to a buffer.
-NESTED_ENTRY InterpreterStubRetSwiftLowered, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
-    add x0, sp, #__PWTB_TransitionBlock + 16
-    mov x1, x19 // the IR bytecode pointer
-    mov x2, xzr
-    bl C_FUNC(ExecuteInterpretedMethod)
-    mov x9, x0                // Save return buffer address
-    ldp x0, x1, [x9]
-    ldp x2, x3, [x9, #16]
-    ldp d0, d1, [x9, #32]
-    ldp d2, d3, [x9, #48]
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
-    EPILOG_RETURN
-NESTED_END InterpreterStubRetSwiftLowered, _TEXT
 
 // Copy arguments from the processor stack to the interpreter stack
 // The CPU stack slots are aligned to pointer size.
