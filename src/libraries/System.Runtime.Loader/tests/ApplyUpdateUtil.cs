@@ -11,6 +11,7 @@ namespace System.Reflection.Metadata
     public class ApplyUpdateUtil {
         internal const string DotNetModifiableAssembliesSwitch = "DOTNET_MODIFIABLE_ASSEMBLIES";
         internal const string DotNetModifiableAssembliesValue = "debug";
+        internal const string DotNetModifiableAssembliesDisabledValue = "none";
 
         /// Whether ApplyUpdate is supported by the environment, test configuration, and runtime.
         ///

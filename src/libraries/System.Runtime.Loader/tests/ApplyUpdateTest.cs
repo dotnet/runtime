@@ -1160,17 +1160,18 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsRemoteExecutorSupported))]
-        void TestHotReloadDisabledEnvironmentVariable()
+        void TestDisableMetadataUpdate()
         {
-            // Check that DOTNET_HOTRELOAD_DISABLED=1 disables MetadataUpdater.IsSupported.
             var options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables.Add(
-                ApplyUpdateUtil.DotNetModifiableAssembliesSwitch, ApplyUpdateUtil.DotNetModifiableAssembliesValue);
-            options.StartInfo.EnvironmentVariables.Add("DOTNET_HOTRELOAD_DISABLED", "1");
+                ApplyUpdateUtil.DotNetModifiableAssembliesSwitch, ApplyUpdateUtil.DotNetModifiableAssembliesDisabledValue);
 
             RemoteExecutor.Invoke(static () =>
             {
                 Assert.False(MetadataUpdater.IsSupported);
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeUpdates).Assembly;
+                Assert.Throws<InvalidOperationException>(() =>
+                    MetadataUpdater.ApplyUpdate(assm, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty));
             }, options).Dispose();
         }
     }
