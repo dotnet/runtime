@@ -3104,6 +3104,14 @@ CALL_INTERP_METHOD:
                     stack = pFrame->pStack;
                     ip = pFrame->startIp->GetByteCodes();
 
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
+                    // Notify debugger of method entry for step-in support
+                    if (g_pDebugInterface != NULL && g_pDebugInterface->IsMethodEnterEnabled())
+                    {
+                        g_pDebugInterface->OnMethodEnter((void*)ip);
+                    }
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
+
                     if (stack + pMethod->allocaSize > pThreadContext->pStackEnd)
                     {
                         pFrame->ip = ip;
