@@ -2683,6 +2683,7 @@ public:
 #ifndef DACCESS_COMPILE
     virtual void OnMethodEnter(void * pIP);
     virtual DWORD* GetJMCFlagAddr(Module * pModule);
+    virtual bool IsMethodEnterEnabled();
 #endif
 
     // GetJMCFlagAddr provides a unique flag for each module. UpdateModuleJMCFlag
