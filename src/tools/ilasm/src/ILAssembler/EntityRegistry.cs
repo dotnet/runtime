@@ -317,6 +317,21 @@ namespace ILAssembler
                     builder.GetOrAddBlob(declSecurity.PermissionSet));
             }
 
+            foreach (CustomAttributeEntity customAttr in GetSeenEntities(TableIndex.CustomAttribute))
+            {
+                EntityHandle parent = customAttr.Owner switch
+                {
+                    AssemblyEntity => EntityHandle.AssemblyDefinition,
+                    ModuleEntity => EntityHandle.ModuleDefinition,
+                    { Handle: var h } => h,
+                    _ => default
+                };
+                builder.AddCustomAttribute(
+                    parent,
+                    customAttr.Constructor.Handle,
+                    builder.GetOrAddBlob(customAttr.Value));
+            }
+
             foreach (StandaloneSignatureEntity standaloneSig in GetSeenEntities(TableIndex.StandAloneSig))
             {
                 builder.AddStandaloneSignature(
@@ -547,12 +562,17 @@ namespace ILAssembler
         {
             // Match native ilasm behavior: check for assembly refs in order of preference,
             // then fall back to creating mscorlib if none found
-            AssemblyReferenceEntity coreAsmRef = FindAssemblyReference("System.Private.CoreLib")
+            AssemblyReferenceEntity coreAsmRef = GetCoreLibAssemblyReference();
+            return GetOrCreateTypeReference(coreAsmRef, new TypeName(null, typeName));
+        }
+
+        public AssemblyReferenceEntity GetCoreLibAssemblyReference()
+        {
+            return FindAssemblyReference("System.Private.CoreLib")
                 ?? FindAssemblyReference("System.Runtime")
                 ?? FindAssemblyReference("mscorlib")
                 ?? FindAssemblyReference("netstandard")
                 ?? GetOrCreateAssemblyReference("mscorlib", new Version(4, 0), culture: null, publicKeyOrToken: null, 0, ProcessorArchitecture.None);
-            return GetOrCreateTypeReference(coreAsmRef, new TypeName(null, typeName));
         }
 
         public interface IHasHandle

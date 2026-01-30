@@ -42,7 +42,7 @@ public sealed class DocumentCompiler
             diagnostics.Add(new Diagnostic("Preprocessor", DiagnosticSeverity.Error, msg, new Location(new(start, length), loadedDocuments[source])));
         };
 
-        CILParser parser = new(new CommonTokenStream(lexer));
+        CILParser parser = new(new CommonTokenStream(preprocessor));
         var result = parser.decls();
         GrammarVisitor visitor = new GrammarVisitor(loadedDocuments, options, resourceLocator);
         _ = result.Accept(visitor);
