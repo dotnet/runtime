@@ -309,12 +309,12 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
                     includeBaseReferences: true)
                 .ConfigureAwait(false);
 
+            Assert.Empty(diagnostics);
+            Assert.Single(generatedSources);
+
             var generatedSource = generatedSources[0];
             var generatedSourceDiagnostics = generatedSource.SyntaxTree.GetDiagnostics();
             var src = generatedSource.SourceText.ToString();
-
-            Assert.Empty(diagnostics);
-            Assert.Single(generatedSources);
             Assert.Contains($"\"{message}\"", src);
             Assert.Empty(generatedSourceDiagnostics);
         }
