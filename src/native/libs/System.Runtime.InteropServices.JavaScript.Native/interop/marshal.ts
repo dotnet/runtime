@@ -275,10 +275,13 @@ export function setArgI64Big(arg: JSMarshalerArgument, value: bigint): void {
     dotnetApi.setHeapI64Big(<any>arg, value);
 }
 
+const minDateUnixTime = -0x3883122CD800;
+const maxDateUnixTime = 0xE677D21FDBFF;
 export function setArgDate(arg: JSMarshalerArgument, value: Date): void {
     dotnetAssert.check(arg, "Null arg");
     // getTime() is always UTC
     const unixTime = value.getTime();
+    dotnetAssert.check(unixTime >= minDateUnixTime && unixTime <= maxDateUnixTime, `Overflow: value ${value.toISOString()} is out of ${new Date(minDateUnixTime).toISOString()} ${new Date(maxDateUnixTime).toISOString()} range`);
     dotnetApi.setHeapF64(<any>arg, unixTime);
 }
 

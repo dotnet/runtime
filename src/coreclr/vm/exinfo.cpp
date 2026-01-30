@@ -30,7 +30,8 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     m_propagateExceptionContext(NULL),
 #endif // HOST_UNIX
     m_CurrentClause({}),
-    m_pMDToReportFunctionLeave(NULL)
+    m_pMDToReportFunctionLeave(NULL),
+    m_reportedFunctionEnterWasForFunclet(false)
 #ifdef HOST_WINDOWS
     , m_pLongJmpBuf(NULL),
     m_longJmpReturnValue(0)

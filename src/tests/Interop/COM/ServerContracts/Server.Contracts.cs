@@ -184,17 +184,16 @@ namespace Server.Contract
         void Pass_Through_LCID(out int lcid);
     }
 
-    [ComVisible(true)]
-    [Guid("4242A2F9-995D-4302-A722-02058CF58158")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface IInterface1
+    // This interface must not be an explicit COM interface to trigger
+    // the dynamic interface map codepath in ComObject.
+    public interface Interface0
     {
     }
 
     [ComVisible(true)]
-    [Guid("7AC820FE-E227-4C4D-A8B0-FCA68C459B43")]
+    [Guid("4242A2F9-995D-4302-A722-02058CF58158")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface IInterface2 : IInterface1
+    public interface IInterface1 : Interface0
     {
     }
 
@@ -211,7 +210,7 @@ namespace Server.Contract
         void Marshal_ByRefVariant(ref object result, object value);
 
         [return: MarshalAs(UnmanagedType.Interface)]
-        IInterface2 Marshal_Interface([MarshalAs(UnmanagedType.Interface)] object inst);
+        IInterface1 Marshal_Interface([MarshalAs(UnmanagedType.Interface)] object inst);
     }
 
     public struct HResult

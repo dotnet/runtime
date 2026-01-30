@@ -140,3 +140,85 @@ public static class CUnionTests
         Assert.Throws<TypeLoadException>(() => typeof(CUnionByRefLike));
     }
 }
+
+// CUnion type definitions
+
+[ExtendedLayout(ExtendedLayoutKind.CUnion)]
+public struct CUnionBlittablePrimitiveFields
+{
+    public int a;
+    public float b;
+    public byte c;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CUnion)]
+public struct CUnionNonBlittablePrimitiveFields
+{
+    public bool b;
+    public char c;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CUnion)]
+public struct CUnionWithReferenceFields
+{
+    public string a;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CUnion)]
+public struct CUnionWithMixedFields
+{
+    public int a;
+    public string b;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CUnion)]
+public struct NestedCUnionType
+{
+    public int x;
+    public long y;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CUnion)]
+public struct CUnionCustomCUnionField
+{
+    public NestedCUnionType x;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CUnion)]
+public struct CUnionCustomSeqStructField
+{
+    public NestedSequentialType y;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CUnion)]
+public struct CUnionCustomAutoStructField
+{
+    public NestedAutoLayoutType y;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CUnion)]
+public struct EmptyCUnion
+{
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CUnion)]
+public struct CUnionMixedSizes
+{
+    public byte byteField;
+    public short shortField;
+    public int intField;
+    public long longField;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CUnion)]
+public struct CUnionTwoInts
+{
+    public int first;
+    public int second;
+}
+
+[ExtendedLayout(ExtendedLayoutKind.CUnion)]
+public ref struct CUnionByRefLike
+{
+    public int a;
+}

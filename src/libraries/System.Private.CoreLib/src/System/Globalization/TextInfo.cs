@@ -390,7 +390,7 @@ namespace System.Globalization
             }
         }
 
-        internal static string ToLowerAsciiInvariant(string s)
+        internal static unsafe string ToLowerAsciiInvariant(string s)
         {
             if (s.Length == 0)
             {
@@ -403,19 +403,25 @@ namespace System.Globalization
                 return s;
             }
 
-            // Duplicate the source into the destination, then update the destination in-place,
-            // starting with the index where we know a change is required. This technically does
-            // more work than strictly necessary, but we don't anticipate this method being
-            // called in a perf-critical scenario.
-
-            return string.Create(s.Length, (IdxOfFirstCharRequiringConversion: i, OriginalString: s), static (span, state) =>
+            fixed (char* pSource = s)
             {
-                state.OriginalString.CopyTo(span);
-                foreach (ref char c in span.Slice(state.IdxOfFirstCharRequiringConversion))
+                string result = string.FastAllocateString(s.Length);
+                fixed (char* pResult = result)
                 {
-                    c = ToLowerAsciiInvariant(c);
+                    s.AsSpan(0, i).CopyTo(new Span<char>(pResult, result.Length));
+
+                    pResult[i] = (char)(pSource[i] | 0x20);
+                    i++;
+
+                    while (i < s.Length)
+                    {
+                        pResult[i] = ToLowerAsciiInvariant(pSource[i]);
+                        i++;
+                    }
                 }
-            });
+
+                return result;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1594,8 +1594,8 @@ void MyICJI::allocMem(AllocMemArgs* pArgs)
         {
             hotCodeSize = chunk.size;
             unsigned codeAlignment = std::max((uint32_t)sizeof(void*), chunk.alignment);
-            size_t hotCodeSizeAligned = ALIGN_UP_SPMI(chunk.size, codeAlignment);
-            hotCodeBlock = (uint8_t*)jitInstance->mc->cr->allocateMemory(hotCodeSizeAligned);
+            size_t hotCodeSizePadded = chunk.size + codeAlignment - 1;
+            hotCodeBlock = (uint8_t*)jitInstance->mc->cr->allocateMemory(hotCodeSizePadded);
             hotCodeBlock = (uint8_t*)ALIGN_UP_SPMI(hotCodeBlock, codeAlignment);
             chunk.block = hotCodeBlock;
             chunk.blockRW = chunk.block;
@@ -1617,8 +1617,8 @@ void MyICJI::allocMem(AllocMemArgs* pArgs)
 
     if (roDataSize > 0)
     {
-        size_t roDataSizeAligned = ALIGN_UP_SPMI(roDataSize, roDataAlignment);
-        roDataBlock = (uint8_t*)jitInstance->mc->cr->allocateMemory(roDataSizeAligned);
+        size_t roDataSizePadded = roDataSize + roDataAlignment - 1;
+        roDataBlock = (uint8_t*)jitInstance->mc->cr->allocateMemory(roDataSizePadded);
         roDataBlock = (uint8_t*)ALIGN_UP_SPMI(roDataBlock, roDataAlignment);
         size_t offset = 0;
         // Zero the block to ensure all the padding we allocated is zeroed for the later comparisons

@@ -34,6 +34,11 @@ extends:
           fetchTags: false
           lfs: false
 
+        # The SharpFuzz CLI currently targets .NET 9.0
+        - powershell: |
+            winget install -e --id Microsoft.DotNet.SDK.9 --accept-package-agreements --accept-source-agreements
+          displayName: Install .NET 9.0
+
         - powershell: |
             cd $(Build.SourcesDirectory)
             ./build.cmd clr+libs -rc Checked -c Debug

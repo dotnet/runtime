@@ -4330,19 +4330,18 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         return optAssertionProp_Update(newTree, tree, stmt);
     }
 
-    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
-    ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
-
-    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT))
+    // See if we can fold the relop based on range information.
+    // We don't need the op1->TypeIs(TYP_INT) check, but it seems to improve the TP quite a bit.
+    if (op1->TypeIs(TYP_INT))
     {
-        Range rng1 = RangeCheck::GetRangeFromAssertions(this, op1VN, assertions);
-        Range rng2 = RangeCheck::GetRangeFromAssertions(this, op2VN, assertions);
+        ValueNum relopVN    = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+        Range    relopRange = RangeCheck::GetRangeFromAssertions(this, relopVN, assertions);
 
-        RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
-        if ((kind != RangeOps::RelationKind::Unknown))
+        int relopResult;
+        if (relopRange.IsSingleValueConstant(&relopResult))
         {
-            newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
-            newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+            assert((relopResult == 0) || (relopResult == 1));
+            newTree = gtWrapWithSideEffects(relopResult == 1 ? gtNewTrue() : gtNewFalse(), tree, GTF_ALL_EFFECT);
             return optAssertionProp_Update(newTree, tree, stmt);
         }
     }

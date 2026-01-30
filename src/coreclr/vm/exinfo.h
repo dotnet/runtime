@@ -191,6 +191,7 @@ struct ExInfo
     EE_ILEXCEPTION_CLAUSE m_CurrentClause;
     // Method to report to the debugger / profiler when stack frame iterator leaves a frame
     MethodDesc    *m_pMDToReportFunctionLeave;
+    bool           m_reportedFunctionEnterWasForFunclet;
     // CONTEXT and REGDISPLAY used by the StackFrameIterator for stack walking
     CONTEXT        m_exContext;
     REGDISPLAY     m_regDisplay;

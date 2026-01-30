@@ -1467,6 +1467,7 @@ namespace Internal.JitInterface
         CORJIT_SKIPPED = unchecked((int)0x80000004),
         CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005),
         CORJIT_IMPLLIMITATION = unchecked((int)0x80000006),
+        CORJIT_R2R_UNSUPPORTED = unchecked((int)0x80000007),
     };
 
     public enum TypeCompareState

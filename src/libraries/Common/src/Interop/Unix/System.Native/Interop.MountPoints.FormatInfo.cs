@@ -25,7 +25,7 @@ internal static partial class Interop
 
         internal static unsafe Error GetFileSystemTypeNameForMountPoint(string name, out string format)
         {
-            if (OperatingSystem.IsLinux())
+            if (OperatingSystem.IsLinux()  || OperatingSystem.IsAndroid())
             {
                 // Canonicalize and resolve symbolic links.
                 string? path = Sys.RealPath(name);

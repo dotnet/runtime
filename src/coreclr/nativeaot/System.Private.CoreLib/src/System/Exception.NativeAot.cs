@@ -58,21 +58,12 @@ namespace System
 
         internal static IntPtr EdiSeparator => (IntPtr)1;  // Marks a boundary where an ExceptionDispatchInfo rethrew an exception.
 
-        private void AppendStackIP(IntPtr IP, bool isFirstRethrowFrame)
+        private void AppendStackIP(IntPtr IP)
         {
             if (_idxFirstFreeStackTraceEntry == 0)
             {
                 _corDbgStackTrace = new IntPtr[16];
             }
-            else if (isFirstRethrowFrame)
-            {
-                // For the first frame after rethrow, we replace the last entry in the stack trace with the IP
-                // of the rethrow.  This is overwriting the IP of where control left the corresponding try
-                // region for the catch that is rethrowing.
-                _corDbgStackTrace[_idxFirstFreeStackTraceEntry - 1] = IP;
-                return;
-            }
-
             if (_idxFirstFreeStackTraceEntry >= _corDbgStackTrace.Length)
                 GrowStackTrace();
 
@@ -133,8 +124,8 @@ namespace System
                 // with another OutOfMemoryException, which may lead to infinite recursion.
                 bool fatalOutOfMemory = ex == PreallocatedOutOfMemoryException.Instance;
 
-                if (!fatalOutOfMemory)
-                    ex.AppendStackIP(IP, isFirstRethrowFrame);
+                if (!isFirstRethrowFrame && !fatalOutOfMemory)
+                    ex.AppendStackIP(IP);
 
 #if FEATURE_PERFTRACING
                 if (isFirstFrame && NativeRuntimeEventSource.Log.IsEnabled())

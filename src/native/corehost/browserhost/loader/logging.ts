@@ -5,7 +5,7 @@ import { loaderConfig } from "./config";
 
 export function check(condition: unknown, message: string): asserts condition {
     if (!condition) {
-        throw new Error(`dotnetAssert failed: ${message}`);
+        throw new Error(`Assert failed: ${message}`);
     }
 }
 
@@ -15,7 +15,7 @@ export function check(condition: unknown, message: string): asserts condition {
 export function fastCheck(condition: unknown, messageFactory: (() => string)): asserts condition {
     if (!condition) {
         const message = messageFactory();
-        throw new Error(`dotnetAssert failed: ${message}`);
+        throw new Error(`Assert failed: ${message}`);
     }
 }
 
