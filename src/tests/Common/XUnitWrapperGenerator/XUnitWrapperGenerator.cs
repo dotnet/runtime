@@ -956,8 +956,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             conditions.Add($"!{ConditionClass}.IsGCStressC");
         }
+        
+        options.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
+        Xunit.TestPlatforms targetPlatform = GetPlatformForTargetOS(targetOS);
 
-        return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(t => new ConditionalTest(t, string.Join(" && ", conditions), ~skippedTestPlatforms)));
+        return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(t => new ConditionalTest(t, string.Join(" && ", conditions), targetPlatform & ~skippedTestPlatforms)));
     }
 
     private static ImmutableArray<ITestInfo> FilterForSkippedTargetFrameworkMonikers(ImmutableArray<ITestInfo> testInfos, int v)
@@ -1075,28 +1078,28 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             // The target platform is not mentioned in the attribute, just run it as-is.
             return testInfos;
         }
+    }
 
-        static Xunit.TestPlatforms GetPlatformForTargetOS(string? targetOS)
+    private static Xunit.TestPlatforms GetPlatformForTargetOS(string? targetOS)
+    {
+        return targetOS?.ToLowerInvariant() switch
         {
-            return targetOS?.ToLowerInvariant() switch
-            {
-                "windows" => Xunit.TestPlatforms.Windows,
-                "linux" => Xunit.TestPlatforms.Linux,
-                "osx" => Xunit.TestPlatforms.OSX,
-                "illumos" => Xunit.TestPlatforms.illumos,
-                "solaris" => Xunit.TestPlatforms.Solaris,
-                "android" => Xunit.TestPlatforms.Android,
-                "ios" => Xunit.TestPlatforms.iOS,
-                "tvos" => Xunit.TestPlatforms.tvOS,
-                "maccatalyst" => Xunit.TestPlatforms.MacCatalyst,
-                "browser" => Xunit.TestPlatforms.Browser,
-                "wasi" => Xunit.TestPlatforms.Wasi,
-                "freebsd" => Xunit.TestPlatforms.FreeBSD,
-                "netbsd" => Xunit.TestPlatforms.NetBSD,
-                null or "" or "anyos" => Xunit.TestPlatforms.Any,
-                _ => 0
-            };
-        }
+            "windows" => Xunit.TestPlatforms.Windows,
+            "linux" => Xunit.TestPlatforms.Linux,
+            "osx" => Xunit.TestPlatforms.OSX,
+            "illumos" => Xunit.TestPlatforms.illumos,
+            "solaris" => Xunit.TestPlatforms.Solaris,
+            "android" => Xunit.TestPlatforms.Android,
+            "ios" => Xunit.TestPlatforms.iOS,
+            "tvos" => Xunit.TestPlatforms.tvOS,
+            "maccatalyst" => Xunit.TestPlatforms.MacCatalyst,
+            "browser" => Xunit.TestPlatforms.Browser,
+            "wasi" => Xunit.TestPlatforms.Wasi,
+            "freebsd" => Xunit.TestPlatforms.FreeBSD,
+            "netbsd" => Xunit.TestPlatforms.NetBSD,
+            null or "" or "anyos" => Xunit.TestPlatforms.Any,
+            _ => 0
+        };
     }
 
     private static ImmutableArray<ITestInfo> DecorateWithUserDefinedCondition(
