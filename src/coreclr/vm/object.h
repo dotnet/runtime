@@ -2437,43 +2437,7 @@ struct cdac_data<ExceptionObject>
     static constexpr size_t _xcode = offsetof(ExceptionObject, _xcode);
 };
 
-// Defined in Contracts.cs
-enum ContractFailureKind
-{
-    CONTRACT_FAILURE_PRECONDITION = 0,
-    CONTRACT_FAILURE_POSTCONDITION,
-    CONTRACT_FAILURE_POSTCONDITION_ON_EXCEPTION,
-    CONTRACT_FAILURE_INVARIANT,
-    CONTRACT_FAILURE_ASSERT,
-    CONTRACT_FAILURE_ASSUME,
-};
-
-typedef DPTR(class ContractExceptionObject) PTR_ContractExceptionObject;
-class ContractExceptionObject : public ExceptionObject
-{
-    friend class CoreLibBinder;
-
-public:
-    ContractFailureKind GetContractFailureKind()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return static_cast<ContractFailureKind>(_Kind);
-    }
-
-private:
-    // keep these in sync with ndp/clr/src/bcl/system/diagnostics/contracts/contractsbcl.cs
-    STRINGREF _UserMessage;
-    STRINGREF _Condition;
-    INT32 _Kind;
-};
 #include "poppack.h"
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<ContractExceptionObject> CONTRACTEXCEPTIONREF;
-#else // USE_CHECKED_OBJECTREFS
-typedef PTR_ContractExceptionObject CONTRACTEXCEPTIONREF;
-#endif // USE_CHECKED_OBJECTREFS
 
 //===============================================================================
 // #NullableFeature

@@ -1235,13 +1235,6 @@ DEFINE_CLASS_U(Reflection,             LoaderAllocatorScout,     LoaderAllocator
 DEFINE_FIELD_U(m_nativeLoaderAllocator,  LoaderAllocatorScoutObject,      m_nativeLoaderAllocator)
 DEFINE_CLASS(LOADERALLOCATORSCOUT,      Reflection,             LoaderAllocatorScout)
 
-DEFINE_CLASS(CONTRACTEXCEPTION,     CodeContracts,  ContractException)
-
-DEFINE_CLASS_U(CodeContracts,       ContractException,          ContractExceptionObject)
-DEFINE_FIELD_U(_kind,               ContractExceptionObject,    _Kind)
-DEFINE_FIELD_U(_userMessage,        ContractExceptionObject,    _UserMessage)
-DEFINE_FIELD_U(_condition,          ContractExceptionObject,    _Condition)
-
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
 
 DEFINE_CLASS(UTF8STRINGMARSHALLER, Marshalling, Utf8StringMarshaller)
