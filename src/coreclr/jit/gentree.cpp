@@ -19062,6 +19062,8 @@ bool Compiler::gtStoreDefinesField(LclVarDsc* fieldVarDsc,
 
             return true;
         }
+
+        return false;
     }
     else
     {
