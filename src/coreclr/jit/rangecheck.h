@@ -378,11 +378,11 @@ struct RangeOps
         Range result = Limit(Limit::keUnknown);
         if (r1.LowerLimit().IsConstant() && (r1.LowerLimit().GetConstant() >= 0))
         {
-            result.lLimit = Limit(Limit::keConstant, r1.LowerLimit().GetConstant() << r2.UpperLimit().GetConstant());
+            result.lLimit = Limit(Limit::keConstant, r1.LowerLimit().GetConstant() >> r2.UpperLimit().GetConstant());
         }
         if (r1.UpperLimit().IsConstant() && (r1.UpperLimit().GetConstant() >= 0))
         {
-            result.uLimit = Limit(Limit::keConstant, r1.UpperLimit().GetConstant() << r2.LowerLimit().GetConstant());
+            result.uLimit = Limit(Limit::keConstant, r1.UpperLimit().GetConstant() >> r2.LowerLimit().GetConstant());
         }
         return result;
     }
