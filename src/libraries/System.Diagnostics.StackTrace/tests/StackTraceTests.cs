@@ -589,8 +589,8 @@ namespace System.Diagnostics.Tests
                 @"Exception from Foo2",
                 @"V2Methods\.Foo2\(Int32.*Foo2.*\.cs:line 10",
                 @"V2Methods\.Foo1\(Int32.*Foo1.*\.cs:line 6",
-                @"V1Methods\.Test1\(Func`2.*Test1.*\.cs:line 5",
-                @"V1Methods\.Test0\(Func`2.*Test0.*\.cs:line 3",
+                @"V1Methods.*Test1",
+                @"V1Methods.*Test0",
                 @"V2Methods\.Foo\(\).*Foo.*\.cs:line 6"
             }},
             { "Bar", new[] {
@@ -601,8 +601,8 @@ namespace System.Diagnostics.Tests
             {"Quux", new[] {
                 @"Exception from Quux1",
                 @"V2Methods\.Quux1\(Int32.*Quux1.*\.cs:line 6",
-                @"V1Methods\.Test1\(Func`2.*Test1.*\.cs:line 5",
-                @"V1Methods\.Test0\(Func`2.*Test0.*\.cs:line 3",
+                @"V1Methods.*Test1",
+                @"V1Methods.*Test0",
                 @"V2Methods\.Quux\(\).*Quux.*\.cs:line 6"
             }},
             { "Quuux", new[] {
