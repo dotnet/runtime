@@ -594,7 +594,6 @@ namespace System
             }
 
             DateTimeFormatInfo dtfi = DateTimeFormatInfo.GetInstance(provider);
-            ParseFailureKind lastFailure = ParseFailureKind.Format_BadDateOnly;
 
             for (int i = 0; i < formats.Length; i++)
             {
@@ -632,15 +631,15 @@ namespace System
                     return ParseFailureKind.None;
                 }
 
-                // Preserve Argument_BadFormatSpecifier if encountered
                 if (dtResult.failure == ParseFailureKind.Argument_BadFormatSpecifier)
                 {
-                    lastFailure = ParseFailureKind.Argument_BadFormatSpecifier;
+                    result = default;
+                    return ParseFailureKind.Argument_BadFormatSpecifier;
                 }
             }
 
             result = default;
-            return lastFailure;
+            return ParseFailureKind.Format_BadDateOnly;
         }
 
         /// <summary>
