@@ -193,7 +193,7 @@ namespace System.IO
         /// <exception cref="IOException">An I/O error occurred while opening the null device.</exception>
         public static SafeFileHandle OpenNullHandle()
         {
-            return OpenNullHandleCore();
+            return SafeFileHandle.Open(NullDevicePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.None, preallocationSize: 0);
         }
 
         // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas

@@ -7,11 +7,7 @@ namespace System.IO
 {
     public static partial class File
     {
-        private static SafeFileHandle OpenNullHandleCore()
-        {
-            // Open the NUL device on Windows with read/write access and no inheritance
-            return SafeFileHandle.Open("NUL", FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.None, preallocationSize: 0);
-        }
+        private const string NullDevicePath = "NUL";
 
         private static UnixFileMode GetUnixFileModeCore(string path)
             => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
