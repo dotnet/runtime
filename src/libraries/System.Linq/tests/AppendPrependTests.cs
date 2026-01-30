@@ -263,5 +263,59 @@ namespace System.Linq.Tests
             Assert.Equal(84, NumberRangeGuaranteedNotCollectionType(42, 1).Append(84).ElementAt(1));
             Assert.Equal(84, NumberRangeGuaranteedNotCollectionType(84, 1).Prepend(42).ElementAt(1));
         }
+
+        [Fact]
+        public void AppendOverflowCount()
+        {
+            // AppendPrepend1Iterator overflow when source has GetCount optimization
+            var source = Enumerable.Repeat(0, int.MaxValue);
+            var appended = source.Append(1);
+            Assert.Throws<OverflowException>(() => appended.Count());
+        }
+
+        [Fact]
+        public void PrependOverflowCount()
+        {
+            // AppendPrepend1Iterator overflow when source has GetCount optimization
+            var source = Enumerable.Repeat(0, int.MaxValue);
+            var prepended = source.Prepend(1);
+            Assert.Throws<OverflowException>(() => prepended.Count());
+        }
+
+        [Fact]
+        public void AppendPrependNOverflowCount()
+        {
+            // AppendPrependN overflow when source has GetCount optimization
+            var source = Enumerable.Repeat(0, int.MaxValue);
+            var result = source.Append(1).Prepend(2);
+            Assert.Throws<OverflowException>(() => result.Count());
+        }
+
+        [Fact]
+        public void AppendOverflowCountWithICollection()
+        {
+            // AppendPrepend1Iterator overflow when source is ICollection
+            var source = new int[int.MaxValue];
+            var appended = source.Append(1);
+            Assert.Throws<OverflowException>(() => appended.Count());
+        }
+
+        [Fact]
+        public void PrependOverflowCountWithICollection()
+        {
+            // AppendPrepend1Iterator overflow when source is ICollection
+            var source = new int[int.MaxValue];
+            var prepended = source.Prepend(1);
+            Assert.Throws<OverflowException>(() => prepended.Count());
+        }
+
+        [Fact]
+        public void AppendPrependNOverflowCountWithICollection()
+        {
+            // AppendPrependN overflow when source is ICollection
+            var source = new int[int.MaxValue];
+            var result = source.Append(1).Prepend(2);
+            Assert.Throws<OverflowException>(() => result.Count());
+        }
     }
 }
