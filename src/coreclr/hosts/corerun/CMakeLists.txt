@@ -105,6 +105,7 @@ else()
                 # If not running in the browser, add
                 # Node.js file system support.
                 target_link_options(corerun PRIVATE
+                    -sEXPORTED_RUNTIME_METHODS=ENV,NODERAWFS,NODEFS,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
                     -sNODERAWFS=1
                     -lnodefs.js)
             endif()

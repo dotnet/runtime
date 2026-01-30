@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { dotnetAssert } from "./cross-module";
 import { ENVIRONMENT_IS_NODE } from "./per-module";
 
 let hasFetch = false;
@@ -144,12 +145,17 @@ export function responseLike(url: string, body: ArrayBuffer | string | null, opt
             get: (name: string) => (options.headers as any)[name] || null
         },
         url,
-        arrayBuffer: () => Promise.resolve(body),
+        arrayBuffer: () => {
+            dotnetAssert.check(body !== null && body instanceof ArrayBuffer, "Response body is not a ArrayBuffer.");
+            return Promise.resolve(body);
+        },
         json: () => {
-            return Promise.resolve(typeof body === "string" ? JSON.parse(body) : null);
+            dotnetAssert.check(body !== null && typeof body === "string", "Response body is not a string.");
+            return Promise.resolve(JSON.parse(body));
         },
         text: () => {
-            return Promise.resolve(typeof body === "string" ? body : null);
+            dotnetAssert.check(body !== null && typeof body === "string", "Response body is not a string.");
+            return Promise.resolve(body);
         }
     };
 }

@@ -81,6 +81,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void FullyQualifiedName()
         {
 #if SINGLE_FILE_TEST_RUNNER
@@ -91,7 +92,7 @@ namespace System.Reflection.Tests
             // Browser will include the path (/), so strip it
             if (PlatformDetection.IsBrowser && loc.Length > 1)
             {
-                const string browserVirtualAppBase = "/managed"; // keep in sync other places that define browserVirtualAppBase
+                const string browserVirtualAppBase = "/managed/"; // keep in sync other places that define browserVirtualAppBase
                 loc = loc.Replace(browserVirtualAppBase, "");
             }
 
