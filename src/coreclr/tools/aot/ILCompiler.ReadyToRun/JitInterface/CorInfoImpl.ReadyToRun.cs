@@ -907,6 +907,13 @@ namespace Internal.JitInterface
                         pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, type));
                     }
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADLOCALBASE:
+                    {
+                        // This helper returns the address of the thread local data structure directly
+                        // It doesn't take a type parameter like the other thread static helpers
+                        pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("JIT_GetThreadLocalBase"));
+                    }
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                     {
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
@@ -1267,6 +1274,11 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
                     id = ReadyToRunHelper.GetCurrentManagedThreadId;
                     break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADLOCALBASE:
+                    // This helper returns the address of the thread local data structure directly
+                    // It doesn't use the ReadyToRunHelper mechanism, but directly calls JIT_GetThreadLocalBase
+                    return _compilation.NodeFactory.ExternSymbol("JIT_GetThreadLocalBase");
 
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
                     id = ReadyToRunHelper.ReversePInvokeEnter;
