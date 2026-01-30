@@ -2853,47 +2853,6 @@ bool isNativePrimitiveStructType(MethodTable* pMT)
     return strcmp(typeName, "CLong") == 0 || strcmp(typeName, "CULong") == 0 || strcmp(typeName, "NFloat") == 0;
 }
 
-#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
-//---------------------------------------------------------------------------
-// isIntrinsicSIMDType:
-//    Check if the given type is a SIMD type (Vector<T>, Vector64<T>, Vector128<T>, etc.).
-//
-// Arguments:
-//    pMT - the handle for the type.
-//
-// Return Value:
-//    true if the given type is a SIMD type,
-//    false otherwise.
-//
-bool isIntrinsicSIMDType(MethodTable* pMT)
-{
-    if (!pMT->IsIntrinsicType())
-    {
-        return false;
-    }
-
-    const char* namespaceName = nullptr;
-    const char* typeName      = pMT->GetFullyQualifiedNameInfo(&namespaceName);
-
-    if ((namespaceName == NULL) || (typeName == NULL))
-    {
-        return false;
-    }
-
-    if (strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
-    {
-        return true;
-    }
-
-    if (strcmp(namespaceName, "System.Numerics") == 0)
-    {
-        return true;
-    }
-
-    return false;
-}
-#endif // TARGET_APPLE && TARGET_ARM64
-
 void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD)
 {
     bool hasUnmanagedCallConv = false;
@@ -3875,7 +3834,12 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
     if (retCorType == ELEMENT_TYPE_VALUETYPE && !thReturnType.IsNull() && !thReturnType.IsTypeDesc())
     {
         MethodTable* pRetMT = thReturnType.AsMethodTable();
-        if (pRetMT->IsValueType() && !pRetMT->IsHFA() && !isIntrinsicSIMDType(pRetMT))
+        if (pRetMT->IsValueType() && !pRetMT->IsHFA() &&
+            !pRetMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) &&
+            !pRetMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) &&
+            !pRetMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)) &&
+            !pRetMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR512T)) &&
+            !pRetMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)))
         {
             CORINFO_SWIFT_LOWERING lowering = {};
             pRetMT->GetNativeSwiftPhysicalLowering(&lowering, false);
@@ -3924,7 +3888,11 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
                 COMPlusThrow(kInvalidProgramException);
             }
 
-            if (isIntrinsicSIMDType(pArgMT))
+            if (pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) ||
+                pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) ||
+                pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)) ||
+                pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR512T)) ||
+                pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)))
             {
                 COMPlusThrow(kInvalidProgramException);
             }
@@ -3938,6 +3906,17 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
                 }
                 newArgCount++;
                 continue;
+            }
+
+            if (pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SWIFT_SELF_T)))
+            {
+                swiftSelfCount++;
+                if (swiftSelfCount > 1)
+                {
+                    COMPlusThrow(kInvalidProgramException);
+                }
+
+                // Fall through for struct lowering
             }
 
             if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_ERROR))

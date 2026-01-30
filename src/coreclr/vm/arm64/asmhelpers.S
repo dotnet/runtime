@@ -737,6 +737,7 @@ LOCAL_LABEL(HaveInterpThreadContext):
     ldr x9, [x19] // InterpMethod*
     ldr x9, [x9, #OFFSETOF__InterpMethod__pCallStub]
     cbz x9, LOCAL_LABEL(NoManagedThreadOrCallStub)
+    mov x23, x9 // Save CallStubHeader* for later use
     add x10, x9, #OFFSETOF__CallStubHeader__Routines
     ldr x9, [x11, #OFFSETOF__InterpThreadContext__pStackPointer]
     // x19 contains IR bytecode address
@@ -747,9 +748,7 @@ LOCAL_LABEL(HaveInterpThreadContext):
     ldr x2, [sp, #(__PWTB_ArgumentRegister_FirstArg + 16)]
 
     // Check if this stub has Swift error handling
-    ldr x11, [x19]                                      // InterpMethod*
-    ldr x11, [x11, #OFFSETOF__InterpMethod__pCallStub]  // CallStubHeader*
-    ldrb w11, [x11, #OFFSETOF__CallStubHeader__HasSwiftError]
+    ldrb w11, [x23, #OFFSETOF__CallStubHeader__HasSwiftError]
     cbz x11, LOCAL_LABEL(InterpreterStub_NoSwiftError)
     EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
 LOCAL_LABEL(InterpreterStub_NoSwiftError):
@@ -3136,7 +3135,6 @@ NESTED_ENTRY CallJittedMethodRetSwiftLowered, _TEXT, NoHandler
     // Store the return address for the terminator to use
     adr x11, LOCAL_LABEL(CallJittedMethodRetSwiftLowered_Epilog)
     str x11, [fp, #32]
-    str x19, [fp, #48]
     ldrsw x11, [x0, #-20]    // Load TargetSlotIndex
     add x11, x11, #1         // TargetSlotIndex + 1
     add x11, x0, x11, lsl #3 // x0 + (TargetSlotIndex + 1) * 8
@@ -3157,7 +3155,6 @@ LOCAL_LABEL(CallJittedMethodRetSwiftLowered_NoSwiftError):
     ldr x11, [x10], #8       // Load first store routine
     br x11
 LOCAL_LABEL(CallJittedMethodRetSwiftLowered_Epilog):
-    ldr x19, [fp, #48]       // Restore x19
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 64
     EPILOG_RETURN
