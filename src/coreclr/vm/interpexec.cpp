@@ -1049,7 +1049,7 @@ SWITCH_OPCODE:
                     Thread* pThread = GetThread();
                     bpInfo = execControl->GetBreakpointInfo(ip);
 #ifdef DEBUG
-                    printf("Breakpoint at IP %p, original opcode %u, isStepOut=%d\n", ip, bpInfo.originalOpcode, bpInfo.isStepOut);
+                    printf("Interpreter breakpoint at IP %p, original opcode %u, isStepOut=%d\n", ip, bpInfo.originalOpcode, bpInfo.isStepOut);
                     fflush(stdout);
 #endif // DEBUG
 
@@ -1057,8 +1057,8 @@ SWITCH_OPCODE:
                     {
 #ifdef DEBUG                        
                         // This thread is single-stepping - trigger the event
-                        printf("We hit a breakpoint while single-stepping for thread %d\n", pThread->GetThreadId());
-                        fflush(stdout);
+                        // printf("We hit a breakpoint while single-stepping for thread %d\n", pThread->GetThreadId());
+                        // fflush(stdout);
 #endif // DEBUG
                         bpInfo.isStepOut = false;
                     }
@@ -1067,12 +1067,14 @@ SWITCH_OPCODE:
                     if (!bpInfo.isStepOut)
                     {
 #ifdef DEBUG                        
-                        printf("Executing original opcode %u at IP %p\n", bpInfo.originalOpcode, ip);
-                        fflush(stdout);
+                        // printf("Executing original opcode %u at IP %p\n", bpInfo.originalOpcode, ip);
+                        // fflush(stdout);
 #endif // DEBUG
                         opcode = bpInfo.originalOpcode;
                         goto SWITCH_OPCODE;
-                    } else {
+                    }
+                    else 
+                    {
                         break;
                     }
                 }
@@ -1083,14 +1085,14 @@ SWITCH_OPCODE:
                     Thread* pThread = GetThread();
                     bpInfo = execControl->GetBreakpointInfo(ip);
 #ifdef DEBUG
-                    printf("Single-step at IP %p\n", ip);
-                    fflush(stdout);
+                    // printf("Single-step at IP %p\n", ip);
+                    // fflush(stdout);
 #endif // DEBUG        
                     if (pThread != NULL && pThread->IsInterpreterSingleStepEnabled())
                     {
 #ifdef DEBUG
                         // This thread is single-stepping - trigger the event
-                        printf("Single-step triggered for thread %d\n", pThread->GetThreadId());
+                        printf("Interpreter single-step triggered for thread %d\n", pThread->GetThreadId());
                         fflush(stdout);
 #endif // DEBUG
                         InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_SINGLE_STEP, false /* not step-out */);
@@ -1101,6 +1103,9 @@ SWITCH_OPCODE:
                     goto SWITCH_OPCODE;
                 }
 #endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
+                case INTOP_NOP:
+                    ip++;
+                    break;
                 case INTOP_INITLOCALS:
                     memset(LOCAL_VAR_ADDR(ip[1], void), 0, ip[2]);
                     ip += 3;
