@@ -50,25 +50,15 @@ namespace Microsoft.Interop
                 .Where(
                     static modelData => modelData is not null);
 
-            // Validate if attributed methods can have source generated
-            var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
-            {
-                DiagnosticInfo? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(data.Syntax, data.Symbol);
-                return diagnostic is not null
-                    ? DiagnosticOr<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol)>.From(diagnostic)
-                    : DiagnosticOr<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol)>.From((data.Syntax, data.Symbol));
-            });
-
-            // Filter methods - diagnostics are reported by the analyzer, not the generator
-            var (methodsToGenerate, _) = methodsWithDiagnostics.Split();
+            // Filter out methods that are invalid for generation (diagnostics are reported by the analyzer)
+            var methodsToGenerate = attributedMethods
+                .Where(static data => IsValidMethodForGeneration(data.Syntax, data.Symbol));
 
             // Compute generator options
             IncrementalValueProvider<LibraryImportGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
                 .Select(static (options, ct) => new LibraryImportGeneratorOptions(options.GlobalOptions));
 
             IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
-
-            // Note: RequiresAllowUnsafeBlocks diagnostic is now reported by the analyzer
 
             IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
@@ -90,8 +80,6 @@ namespace Microsoft.Interop
                 )
                 .WithComparer(Comparers.GeneratedSyntax)
                 .WithTrackingName(StepNames.GenerateSingleStub);
-
-            // Note: Diagnostics are now reported by the analyzer, so we don't register them here
 
             context.RegisterConcatenatedSyntaxOutputs(generateSingleStub.Select((data, ct) => data.Item1), "LibraryImports.g.cs");
         }
@@ -535,6 +523,33 @@ namespace Microsoft.Interop
                     AliasQualifiedName("global", IdentifierName(typeof(T).FullName)),
                     IdentifierName(value.ToString()));
             }
+        }
+
+        private static bool IsValidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
+        {
+            // Verify the method has no generic types or defined implementation
+            // and is marked static and partial.
+            if (methodSyntax.TypeParameterList is not null
+                || methodSyntax.Body is not null
+                || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
+                || !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
+            {
+                return false;
+            }
+
+            // Verify that the types the method is declared in are marked partial.
+            if (methodSyntax.Parent is TypeDeclarationSyntax typeDecl && !typeDecl.IsInPartialContext(out _))
+            {
+                return false;
+            }
+
+            // Verify the method does not have a ref return
+            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private static DiagnosticInfo? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
