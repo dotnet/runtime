@@ -602,8 +602,19 @@ namespace System
         /// <param name="result">When this method returns, contains the TimeOnly value equivalent to the time contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s parameter is empty string, or does not contain a valid string representation of a date. This parameter is passed uninitialized.</param>
         /// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
-        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result) =>
-                            TryParseInternal(s, provider, style, out result) == ParseFailureKind.None;
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
+        {
+            ParseFailureKind failureKind = TryParseInternal(s, provider, style, out result);
+            if (failureKind != ParseFailureKind.None)
+            {
+                if (failureKind == ParseFailureKind.Argument_InvalidDateStyles || failureKind == ParseFailureKind.Argument_BadFormatSpecifier)
+                {
+                    ThrowOnError(failureKind, s);
+                }
+                return false;
+            }
+            return true;
+        }
         private static ParseFailureKind TryParseInternal(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
         {
             if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
@@ -652,8 +663,19 @@ namespace System
         /// <param name="style">A bitwise combination of one or more enumeration values that indicate the permitted format of s.</param>
         /// <param name="result">When this method returns, contains the TimeOnly value equivalent to the time contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s is empty string, or does not contain a time that correspond to the pattern specified in format. This parameter is passed uninitialized.</param>
         /// <returns>true if s was converted successfully; otherwise, false.</returns>
-        public static bool TryParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result) =>
-                            TryParseExactInternal(s, format, provider, style, out result) == ParseFailureKind.None;
+        public static bool TryParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
+        {
+            ParseFailureKind failureKind = TryParseExactInternal(s, format, provider, style, out result);
+            if (failureKind != ParseFailureKind.None)
+            {
+                if (failureKind == ParseFailureKind.Argument_InvalidDateStyles || failureKind == ParseFailureKind.Argument_BadFormatSpecifier)
+                {
+                    ThrowOnError(failureKind, s);
+                }
+                return false;
+            }
+            return true;
+        }
 
         private static ParseFailureKind TryParseExactInternal(ReadOnlySpan<char> s, ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
         {
@@ -716,8 +738,19 @@ namespace System
         /// <param name="style">A bitwise combination of enumeration values that defines how to interpret the parsed time. A typical value to specify is None.</param>
         /// <param name="result">When this method returns, contains the TimeOnly value equivalent to the time contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s parameter is Empty, or does not contain a valid string representation of a time. This parameter is passed uninitialized.</param>
         /// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
-        public static bool TryParseExact(ReadOnlySpan<char> s, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result) =>
-            TryParseExactInternal(s, formats, provider, style, out result) == ParseFailureKind.None;
+        public static bool TryParseExact(ReadOnlySpan<char> s, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
+        {
+            ParseFailureKind failureKind = TryParseExactInternal(s, formats, provider, style, out result);
+            if (failureKind != ParseFailureKind.None)
+            {
+                if (failureKind == ParseFailureKind.Argument_InvalidDateStyles || failureKind == ParseFailureKind.Argument_BadFormatSpecifier)
+                {
+                    ThrowOnError(failureKind, s);
+                }
+                return false;
+            }
+            return true;
+        }
 
         private static ParseFailureKind TryParseExactInternal(ReadOnlySpan<char> s, string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
         {

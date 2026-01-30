@@ -388,13 +388,13 @@ namespace System.Tests
             Assert.True(TimeOnly.TryParse(s.AsSpan(), CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedTimeOnly1));
             Assert.Equal(parsedTimeOnly, parsedTimeOnly1);
 
-            Assert.False(TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out parsedTimeOnly1));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out parsedTimeOnly1));
             AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal));
-            Assert.False(TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out parsedTimeOnly1));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out parsedTimeOnly1));
             AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal));
-            Assert.False(TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsedTimeOnly1));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out parsedTimeOnly1));
             AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal));
-            Assert.False(TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, out parsedTimeOnly1));
+            AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, out parsedTimeOnly1));
             AssertExtensions.Throws<ArgumentException>("style", () => TimeOnly.Parse(s, CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault));
 
             s = "     " + s + "     ";
