@@ -93,7 +93,7 @@
 
     <ItemGroup>
       <_BundleAssembliesToCopy Include="$(ArtifactsNetCoreAppBundlePath)*.dll" />
-      <ResolvedFileToPublish Remove="@(_BundleAssembliesToCopy)" MatchOnMetadata="Filename" />
+      <ResolvedFileToPublish Remove="@(_BundleAssembliesToCopy->'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)%(Filename)%(Extension)')" />
     </ItemGroup>
   </Target>
 
