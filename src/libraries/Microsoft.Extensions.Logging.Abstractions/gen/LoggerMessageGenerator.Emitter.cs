@@ -581,7 +581,7 @@ internal static class __LoggerMessageGenerator
             int index = 0;
             while (index < s.Length)
             {
-                if (s[index] is '\n' or '\r' or '"')
+                if (s[index] is < (char)0x20 or '"' or '\\')
                 {
                     break;
                 }
@@ -613,6 +613,15 @@ internal static class __LoggerMessageGenerator
                     case '"':
                         sb.Append('\\');
                         sb.Append('"');
+                        break;
+
+                    case < (char)0x20:
+                        sb.AppendFormat("\\x{0:x2}", (byte)s[index]);
+                        break;
+
+                    case '\\':
+                        sb.Append('\\');
+                        sb.Append('\\');
                         break;
 
                     default:

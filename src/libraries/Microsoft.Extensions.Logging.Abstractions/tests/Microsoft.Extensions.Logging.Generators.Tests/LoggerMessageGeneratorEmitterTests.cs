@@ -277,6 +277,48 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             Assert.NotNull(type.GenericTypeParameters[1].GetCustomAttribute<TestClasses.BarAttribute>());
         }
 
+        [Theory]
+        [InlineData(@"Foo \\ bar: {foo}")]
+        [InlineData(@"Foo \\\\ bar: {foo}")]
+        [InlineData(@"Foo \"" bar: {foo}")]
+        [InlineData(@"Foo \r bar: {foo}")]
+        [InlineData(@"Foo \n bar: {foo}")]
+        [InlineData(@"Foo \x00 bar: {foo}")]
+        [InlineData(@"Foo \x1f bar: {foo}")]
+        public async Task EmittedMessageIsWellFormed(string message)
+        {
+            var code =
+                $$"""
+                namespace Test
+                {
+                    using Microsoft.Extensions.Logging;
+
+                    partial class C
+                    {
+                        [LoggerMessage(EventId = 5230, Level = LogLevel.Information, Message = "{{message}}")]
+                        static partial void Test(ILogger logger, string foo);
+                    }
+                }
+                """;
+
+            var (diagnostics, generatedSources) = await RoslynTestUtils
+                .RunGenerator(
+                    new LoggerMessageGenerator(),
+                    new[] { typeof(ILogger).Assembly, typeof(LoggerMessageAttribute).Assembly },
+                    new[] { code },
+                    includeBaseReferences: true)
+                .ConfigureAwait(false);
+
+            var generatedSource = generatedSources[0];
+            var generatedSourceDiagnostics = generatedSource.SyntaxTree.GetDiagnostics();
+            var src = generatedSource.SourceText.ToString();
+
+            Assert.Empty(diagnostics);
+            Assert.Single(generatedSources);
+            Assert.Contains($"\"{message}\"", src);
+            Assert.Empty(generatedSourceDiagnostics);
+        }
+
         private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
         {
             string baseline = LineEndingsHelper.Normalize(File.ReadAllText(Path.Combine("Baselines", filename)));
