@@ -58,11 +58,6 @@ void Compiler::fgPrintEdgeWeights()
 
 void Compiler::fgDebugCheckUpdate()
 {
-    if (!compStressCompile(STRESS_CHK_FLOW_UPDATE, 30))
-    {
-        return;
-    }
-
     /* We check for these conditions:
      * no unreachable blocks  -> no blocks have countOfInEdges() = 0
      * no empty blocks        -> !block->isEmpty(), unless non-removable or multiple in-edges

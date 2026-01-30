@@ -3326,6 +3326,8 @@ unsigned Compiler::acdHelper(SpecialCodeKind codeKind)
             return CORINFO_HELP_OVERFLOW;
         case SCK_FAIL_FAST:
             return CORINFO_HELP_FAIL_FAST;
+        case SCK_NULL_CHECK:
+            return CORINFO_HELP_THROWNULLREF;
         default:
             assert(!"Bad codeKind");
             return 0;
@@ -3358,6 +3360,8 @@ const char* sckName(SpecialCodeKind codeKind)
             return "SCK_ARITH_EXCPN";
         case SCK_FAIL_FAST:
             return "SCK_FAIL_FAST";
+        case SCK_NULL_CHECK:
+            return "SCK_NULL_CHECK";
         default:
             return "SCK_UNKNOWN";
     }
@@ -3490,6 +3494,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
         BBJ_THROW,  // SCK_ARG_EXCPN
         BBJ_THROW,  // SCK_ARG_RNG_EXCPN
         BBJ_THROW,  // SCK_FAIL_FAST
+        BBJ_THROW,  // SCK_NULL_CHECK
     };
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
@@ -3554,6 +3559,9 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
                     break;
                 case SCK_FAIL_FAST:
                     msg = " for FAIL_FAST";
+                    break;
+                case SCK_NULL_CHECK:
+                    msg = " for NULL_CHECK";
                     break;
                 default:
                     msg = " for ??";
@@ -3676,7 +3684,13 @@ Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, BasicBl
         {
             JITDUMP(FMT_BB ": unexpected request for new throw helper: kind %d (%s), data 0x%08x\n", fromBlock->bbNum,
                     kind, sckName(kind), key.Data());
+
+            if (kind == SCK_NULL_CHECK)
+            {
+                NYI_WASM("Missing null check demand");
+            }
         }
+
         assert(!fgRngChkThrowAdded);
     }
 
@@ -3708,6 +3722,20 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
 
     assert(inTry || inHnd);
 
+#if defined(TARGET_WASM)
+    // The current plan for Wasm: method regions or funclets with
+    // trys will have a single Wasm try handle all
+    // resumption from catches via virtual IPs.
+    //
+    // So we do not need to consider the nesting of the throw
+    // in try regions, just in handlers.
+    //
+    if (!inHnd)
+    {
+        *dsg = AcdKeyDesignator::KD_NONE;
+        return 0;
+    }
+#else
     if (inTry && (!inHnd || (tryIndex < hndIndex)))
     {
         // The most enclosing region is a try body, use it
@@ -3715,6 +3743,7 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
         *dsg = AcdKeyDesignator::KD_TRY;
         return tryIndex;
     }
+#endif // !defined(TARGET_WASM)
 
     // The most enclosing region is a handler which will be a funclet
     // Now we have to figure out if blk is in the filter or handler
@@ -3731,7 +3760,7 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
 }
 
 //------------------------------------------------------------------------
-// AddCodedDscKey: construct from kind and block
+// AddCodeDscKey: construct from kind and block
 //
 // Arguments:
 //    kind - exception kind
@@ -3755,7 +3784,7 @@ Compiler::AddCodeDscKey::AddCodeDscKey(SpecialCodeKind kind, BasicBlock* block, 
 }
 
 //------------------------------------------------------------------------
-// AddCodedDscKey: construct from AddCodeDsc
+// AddCodeDscKey: construct from AddCodeDsc
 //
 // Arguments:
 //    add - add code dsc in querstion

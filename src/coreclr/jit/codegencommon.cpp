@@ -1730,7 +1730,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
     else
 #endif
     {
-        bool isUnsignedOverflow = ((tree->gtFlags & GTF_UNSIGNED) != 0);
+        bool isUnsignedOverflow = tree->IsUnsigned();
 
 #if defined(TARGET_XARCH)
 
@@ -2131,7 +2131,7 @@ void CodeGen::genEmitMachineCode()
     codeSize =
         GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(), IsFullPtrRegMapRequired(),
                                      compiler->compHndBBtabCount, &prologSize, &epilogSize, codePtr, &codePtrRW,
-                                     &coldCodePtr, &coldCodePtrRW, &consPtr, &consPtrRW DEBUGARG(&instrCount));
+                                     &coldCodePtr, &coldCodePtrRW DEBUGARG(&instrCount));
 
 #ifdef DEBUG
     assert(compiler->compCodeGenDone == false);
