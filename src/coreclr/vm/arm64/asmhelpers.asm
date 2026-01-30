@@ -3136,6 +3136,35 @@ CopyLoop
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet4Vector128
 
+;; ------------------------------------------------------------------
+;; Create a real TransitionBlock and call CallInterpreterFuncletWorker
+;; to execute an interpreter funclet (catch/finally/filter handler).
+;;
+;; extern "C" DWORD_PTR CallInterpreterFunclet(
+;;     OBJECTREF throwable,        ; x0
+;;     void* pHandler,             ; x1
+;;     REGDISPLAY *pRD,            ; x2
+;;     ExInfo *pExInfo,            ; x3
+;;     bool isFilter               ; x4
+;; );
+;; ------------------------------------------------------------------
+    NESTED_ENTRY CallInterpreterFunclet
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        ; Pass TransitionBlock* as last (6th) argument
+        ; Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
+        ; Original args: x0=throwable, x1=pHandler, x2=pRD, x3=pExInfo, x4=isFilter
+        ; x0-x4 remain unchanged
+
+        add     x5, sp, #__PWTB_TransitionBlock     ; TransitionBlock* as 6th param (x5)
+
+        bl      CallInterpreterFuncletWorker
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+    NESTED_END CallInterpreterFunclet
+
 
 #endif // FEATURE_INTERPRETER
 

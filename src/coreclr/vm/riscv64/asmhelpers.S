@@ -2578,4 +2578,33 @@ LEAF_ENTRY Store_FA7
     EPILOG_BRANCH_REG t4
 LEAF_END Store_FA7
 
+// ------------------------------------------------------------------
+// Create a real TransitionBlock and call CallInterpreterFuncletWorker
+// to execute an interpreter funclet (catch/finally/filter handler).
+//
+// extern "C" DWORD_PTR CallInterpreterFunclet(
+//     OBJECTREF throwable,        // a0
+//     void* pHandler,             // a1
+//     REGDISPLAY *pRD,            // a2
+//     ExInfo *pExInfo,            // a3
+//     bool isFilter               // a4
+// );
+// ------------------------------------------------------------------
+NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    // Pass TransitionBlock* as last (6th) argument
+    // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
+    // Original args: a0=throwable, a1=pHandler, a2=pRD, a3=pExInfo, a4=isFilter
+    // a0-a4 remain unchanged
+
+    addi    a5, sp, __PWTB_TransitionBlock     // TransitionBlock* as 6th param (a5)
+
+    call    C_FUNC(CallInterpreterFuncletWorker)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END CallInterpreterFunclet, _TEXT
+
 #endif // FEATURE_INTERPRETER

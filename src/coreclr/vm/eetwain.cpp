@@ -1826,12 +1826,14 @@ void EECodeManager::UpdateSSP(PREGDISPLAY pRD)
 
 #ifdef FEATURE_INTERPRETER
 
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-
-// ASM helper that creates a TransitionBlock and calls this worker
+#if !defined(TARGET_WASM)
+// ASM helper that creates a TransitionBlock and calls CallInterpreterFuncletWorker
 extern "C" DWORD_PTR STDCALL CallInterpreterFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
+#endif // !TARGET_WASM
 
-// Worker function called from the ASM helper with a real TransitionBlock
+// Worker function that executes an interpreter funclet with a TransitionBlock
+// On non-WASM platforms, this is called from the ASM helper CallInterpreterFunclet
+// On WASM, this is called directly from InterpreterCodeManager::CallFunclet
 extern "C" DWORD_PTR STDCALL CallInterpreterFuncletWorker(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter, TransitionBlock *pTransitionBlock)
 {
     Thread *pThread = GetThread();
@@ -1891,70 +1893,16 @@ extern "C" DWORD_PTR STDCALL CallInterpreterFuncletWorker(OBJECTREF throwable, v
 
 DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
 {
+#if !defined(TARGET_WASM)
     // Call the ASM helper which creates a real TransitionBlock
     return CallInterpreterFunclet(throwable, pHandler, pRD, pExInfo, isFilter);
+#else
+    // For WASM, create the TransitionBlock in C++ and call the worker directly
+    TransitionBlock transitionBlock{};
+    transitionBlock.m_ReturnAddress = (TADDR)&CallInterpreterFuncletWorker;
+    return CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, &transitionBlock);
+#endif
 }
-
-#else // HOST_AMD64 && HOST_WINDOWS
-
-DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
-{
-    Thread *pThread = GetThread();
-    InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
-    int8_t *sp = threadContext->pStackPointer;
-
-    // This construct ensures that the InterpreterFrame is always stored at a higher address than the
-    // InterpMethodContextFrame. This is important for the stack walking code.
-    struct Frames
-    {
-        InterpMethodContextFrame interpMethodContextFrame = {0};
-        InterpreterFrame interpreterFrame;
-
-        Frames(TransitionBlock* pTransitionBlock)
-        : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
-        {
-        }
-    }
-    frames(NULL);
-
-    // Use the InterpreterFrame address as a representation of the caller SP of the funclet
-    // Note: this needs to match what the VirtualUnwindInterpreterCallFrame sets as the SP
-    // when it unwinds out of a block of interpreter frames belonging to that InterpreterFrame.
-    pExInfo->m_csfEHClause.SP = (TADDR)&frames.interpreterFrame;
-
-    InterpMethodContextFrame *pOriginalFrame = (InterpMethodContextFrame*)GetRegdisplaySP(pRD);
-
-    StackVal retVal;
-
-    frames.interpMethodContextFrame.startIp = pOriginalFrame->startIp;
-    frames.interpMethodContextFrame.pStack = isFilter ? sp : pOriginalFrame->pStack;
-    frames.interpMethodContextFrame.pRetVal = (int8_t*)&retVal;
-
-    ExceptionClauseArgs exceptionClauseArgs;
-    exceptionClauseArgs.ip = (const int32_t *)pHandler;
-    exceptionClauseArgs.pFrame = pOriginalFrame;
-    exceptionClauseArgs.isFilter = isFilter;
-    exceptionClauseArgs.throwable = throwable;
-
-    GCPROTECT_BEGIN(exceptionClauseArgs.throwable);
-    InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext, &exceptionClauseArgs);
-    GCPROTECT_END();
-
-    frames.interpreterFrame.Pop();
-
-    if (isFilter)
-    {
-        // The filter funclet returns the result of the filter funclet (EXCEPTION_CONTINUE_SEARCH (0) or EXCEPTION_EXECUTE_HANDLER (1))
-        return retVal.data.i;
-    }
-    else
-    {
-        // The catch funclet returns the address to resume at after the catch returns.
-        return (DWORD_PTR)retVal.data.s;
-    }
-}
-
-#endif // HOST_AMD64 && HOST_WINDOWS
 
 void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted)
 {
