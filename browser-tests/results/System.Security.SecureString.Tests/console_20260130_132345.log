@@ -1,0 +1,62 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:43779/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Security.SecureString.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Security.SecureString.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Security.SecureString.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Security.SecureString.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Security.SecureString.Tests.dll (found 22 of 23 test cases)
+Starting:    System.Security.SecureString.Tests.dll
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 0, allocHGlobal: False)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 0, allocHGlobal: True)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 1, allocHGlobal: False)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 1, allocHGlobal: True)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 2, allocHGlobal: False)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 2, allocHGlobal: True)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 1000, allocHGlobal: False)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 1000, allocHGlobal: True)
+[STRT] System.Security.Tests.SecureStringTests.Copy(length: 0)
+[STRT] System.Security.Tests.SecureStringTests.Copy(length: 1)
+[STRT] System.Security.Tests.SecureStringTests.Copy(length: 4000)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 0, allocHGlobal: False)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 0, allocHGlobal: True)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 1, allocHGlobal: False)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 1, allocHGlobal: True)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 2, allocHGlobal: False)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 2, allocHGlobal: True)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 1000, allocHGlobal: False)
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 1000, allocHGlobal: True)
+[STRT] System.Security.Tests.SecureStringTests.MakeReadOnly_ReadingSucceeds_AllOtherModificationsThrow
+[STRT] System.Security.Tests.SecureStringTests.InsertAt_LongString
+[STRT] System.Security.Tests.SecureStringTests.SecureStringMarshal_NullArgsAllowed_IntPtrZero
+[STRT] System.Security.Tests.SecureStringTests.SetAt_Invalid_Throws
+[STRT] System.Security.Tests.SecureStringTests.AppendChar
+[STRT] System.Security.Tests.SecureStringTests.Dispose_AllOtherOperationsThrow
+[STRT] System.Security.Tests.SecureStringTests.Grow_Large
+[STRT] System.Security.Tests.SecureStringTests.RepeatedCtorDispose
+[STRT] System.Security.Tests.SecureStringTests.GrowAndContract_Small
+[STRT] System.Security.Tests.SecureStringTests.SetAt
+[STRT] System.Security.Tests.SecureStringTests.InsertAt_Invalid_Throws
+[STRT] System.Security.Tests.SecureStringTests.InsertAt
+[STRT] System.Security.Tests.SecureStringTests.Ctor(length: 0)
+[STRT] System.Security.Tests.SecureStringTests.Ctor(length: 1)
+[STRT] System.Security.Tests.SecureStringTests.Ctor(length: 2)
+[STRT] System.Security.Tests.SecureStringTests.Ctor(length: 65536)
+[STRT] System.Security.Tests.SecureStringTests.RemoveAt_Largest
+[STRT] System.Security.Tests.SecureStringTests.Clear(initialValue: "")
+[STRT] System.Security.Tests.SecureStringTests.Clear(initialValue: "test")
+[STRT] System.Security.Tests.SecureStringTests.RemoveAt
+[STRT] System.Security.Tests.SecureStringTests.Ctor_CharInt_Invalid
+[STRT] System.Security.Tests.SecureStringTests.AppendChar_TooLong_Throws
+[STRT] System.Security.Tests.SecureStringTests.RemoveAt_Invalid_Throws
+Finished:    System.Security.SecureString.Tests.dll
+Finished uploading 9357 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 42 Passed: 42 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Security.SecureString.Tests.dll after 0.011133333333333334 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

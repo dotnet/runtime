@@ -1,0 +1,9 @@
+Test Comparison: System.Runtime.Serialization.Primitives.Tests
+Generated: 2026-01-30T13:23:05+01:00
+
+Mono tests:    67
+CoreCLR tests: 67
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

@@ -1,0 +1,9 @@
+Test Comparison: System.Security.Claims.Tests
+Generated: 2026-01-30T13:23:28+01:00
+
+Mono tests:    115
+CoreCLR tests: 115
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

@@ -1,0 +1,14 @@
+Test Comparison: System.Runtime.ReflectionInvokeEmit.Tests
+Generated: 2026-01-30T13:22:12+01:00
+
+Mono tests:    207
+CoreCLR tests: 212
+
+=== Extra in CoreCLR (5) ===
+System.Reflection.Tests.PointerTests.PointerPropertyGetValue(value: -1)
+System.Reflection.Tests.PointerTests.PointerPropertyGetValue(value: -2147483648)
+System.Reflection.Tests.PointerTests.PointerPropertyGetValue(value: 0)
+System.Reflection.Tests.PointerTests.PointerPropertyGetValue(value: 1)
+System.Reflection.Tests.PointerTests.PointerPropertyGetValue(value: 2147483647)
+
+=== Missing in CoreCLR (0) ===

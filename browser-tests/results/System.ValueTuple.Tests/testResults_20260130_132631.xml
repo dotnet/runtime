@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.ValueTuple.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="12:26:36" total="97" passed="97" failed="0" skipped="0" time="0.274" errors="0">
+    <errors />
+    <collection total="25" passed="25" failed="0" skipped="0" name="Test collection for System.Tests.ValueTupleTests" time="0.098">
+      <test name="System.Tests.ValueTupleTests.LongTuplesWithNull" type="System.Tests.ValueTupleTests" method="LongTuplesWithNull" time="0.0081999" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.TestCompareTo" type="System.Tests.ValueTupleTests" method="TestCompareTo" time="0.0156" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.OneTuples" type="System.Tests.ValueTupleTests" method="OneTuples" time="0.0028999" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.TestToString" type="System.Tests.ValueTupleTests" method="TestToString" time="0.0295999" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.SixTuples" type="System.Tests.ValueTupleTests" method="SixTuples" time="0.002" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.SevenTuples" type="System.Tests.ValueTupleTests" method="SevenTuples" time="0.0021" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.ZeroTuples" type="System.Tests.ValueTupleTests" method="ZeroTuples" time="0.0011999" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.TwoTuples" type="System.Tests.ValueTupleTests" method="TwoTuples" time="0.0016999" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.TestCustomTypeParameter2" type="System.Tests.ValueTupleTests" method="TestCustomTypeParameter2" time="0.0006999" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.NestedValueTuples1" type="System.Tests.ValueTupleTests" method="NestedValueTuples1" time="0.0022" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.FiveTuples" type="System.Tests.ValueTupleTests" method="FiveTuples" time="0.0018" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.TestConstructor" type="System.Tests.ValueTupleTests" method="TestConstructor" time="0.0007" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.IncomparableTypesSpecialCase" type="System.Tests.ValueTupleTests" method="IncomparableTypesSpecialCase" time="0.0006999" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.FloatingPointNaNCases" type="System.Tests.ValueTupleTests" method="FloatingPointNaNCases" time="0.0009" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.IncomparableTypes" type="System.Tests.ValueTupleTests" method="IncomparableTypes" time="0.0019" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.TestNotEqual" type="System.Tests.ValueTupleTests" method="TestNotEqual" time="0.0031" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.TestCustomTypeParameter3" type="System.Tests.ValueTupleTests" method="TestCustomTypeParameter3" time="0.0005" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.ThreeTuples" type="System.Tests.ValueTupleTests" method="ThreeTuples" time="0.002" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.TestCustomTypeParameter1" type="System.Tests.ValueTupleTests" method="TestCustomTypeParameter1" time="0.0001" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.FourTuples" type="System.Tests.ValueTupleTests" method="FourTuples" time="0.0017" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.EightTuplesWithBadRest" type="System.Tests.ValueTupleTests" method="EightTuplesWithBadRest" time="0.0017999" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.EightTuples" type="System.Tests.ValueTupleTests" method="EightTuples" time="0.0033" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.TestCustomTypeParameter4" type="System.Tests.ValueTupleTests" method="TestCustomTypeParameter4" time="0.0002999" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.TestEquals_GetHashCode" type="System.Tests.ValueTupleTests" method="TestEquals_GetHashCode" time="0.0117" result="Pass" />
+      <test name="System.Tests.ValueTupleTests.NestedValueTuples2" type="System.Tests.ValueTupleTests" method="NestedValueTuples2" time="0.0016" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Tests.TupleElementNamesAttributeTests" time="0.002">
+      <test name="System.Tests.TupleElementNamesAttributeTests.Constructor" type="System.Tests.TupleElementNamesAttributeTests" method="Constructor" time="0.0022999" result="Pass" />
+    </collection>
+    <collection total="8" passed="8" failed="0" skipped="0" name="Test collection for System.Tests.TupleTests" time="0.004">
+      <test name="System.Tests.TupleTests.EightTuples" type="System.Tests.TupleTests" method="EightTuples" time="0.0007" result="Pass" />
+      <test name="System.Tests.TupleTests.OneTuples" type="System.Tests.TupleTests" method="OneTuples" time="0.0001999" result="Pass" />
+      <test name="System.Tests.TupleTests.FiveTuples" type="System.Tests.TupleTests" method="FiveTuples" time="0.0004" result="Pass" />
+      <test name="System.Tests.TupleTests.TwoTuples" type="System.Tests.TupleTests" method="TwoTuples" time="0.0002999" result="Pass" />
+      <test name="System.Tests.TupleTests.SevenTuples" type="System.Tests.TupleTests" method="SevenTuples" time="0.0005999" result="Pass" />
+      <test name="System.Tests.TupleTests.SixTuples" type="System.Tests.TupleTests" method="SixTuples" time="0.0005" result="Pass" />
+      <test name="System.Tests.TupleTests.FourTuples" type="System.Tests.TupleTests" method="FourTuples" time="0.0004" result="Pass" />
+      <test name="System.Tests.TupleTests.ThreeTuples" type="System.Tests.TupleTests" method="ThreeTuples" time="0.0005" result="Pass" />
+    </collection>
+    <collection total="63" passed="63" failed="0" skipped="0" name="Test collection for System.Tests.ExtensionsTests" time="0.022">
+      <test name="System.Tests.ExtensionsTests.ConvertToValue18" type="System.Tests.ExtensionsTests" method="ConvertToValue18" time="0.0011" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct8" type="System.Tests.ExtensionsTests" method="Deconstruct8" time="0.0009" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef19" type="System.Tests.ExtensionsTests" method="ConvertToRef19" time="0.0005" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct6" type="System.Tests.ExtensionsTests" method="Deconstruct6" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue12" type="System.Tests.ExtensionsTests" method="ConvertToValue12" time="0.0002999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue14" type="System.Tests.ExtensionsTests" method="ConvertToValue14" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef18" type="System.Tests.ExtensionsTests" method="ConvertToRef18" time="0.0005" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef21" type="System.Tests.ExtensionsTests" method="ConvertToRef21" time="0.0006" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef3" type="System.Tests.ExtensionsTests" method="ConvertToRef3" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef10" type="System.Tests.ExtensionsTests" method="ConvertToRef10" time="0.0002999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue9" type="System.Tests.ExtensionsTests" method="ConvertToValue9" time="0.0003" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct2" type="System.Tests.ExtensionsTests" method="Deconstruct2" time="0.0001999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef20" type="System.Tests.ExtensionsTests" method="ConvertToRef20" time="0.0005" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct19" type="System.Tests.ExtensionsTests" method="Deconstruct19" time="0.0008" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct15" type="System.Tests.ExtensionsTests" method="Deconstruct15" time="0.0002999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct12" type="System.Tests.ExtensionsTests" method="Deconstruct12" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct21" type="System.Tests.ExtensionsTests" method="Deconstruct21" time="0.0004" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef16" type="System.Tests.ExtensionsTests" method="ConvertToRef16" time="0.0005" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct13" type="System.Tests.ExtensionsTests" method="Deconstruct13" time="0.0003" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef17" type="System.Tests.ExtensionsTests" method="ConvertToRef17" time="0.0004" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue16" type="System.Tests.ExtensionsTests" method="ConvertToValue16" time="0.0007" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue19" type="System.Tests.ExtensionsTests" method="ConvertToValue19" time="0.0007" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue2" type="System.Tests.ExtensionsTests" method="ConvertToValue2" time="0.0001999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct14" type="System.Tests.ExtensionsTests" method="Deconstruct14" time="0.0003" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef6" type="System.Tests.ExtensionsTests" method="ConvertToRef6" time="0.0001999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue1" type="System.Tests.ExtensionsTests" method="ConvertToValue1" time="0.0003" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct17" type="System.Tests.ExtensionsTests" method="Deconstruct17" time="0.0005" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct1" type="System.Tests.ExtensionsTests" method="Deconstruct1" time="0.0003" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct7" type="System.Tests.ExtensionsTests" method="Deconstruct7" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue15" type="System.Tests.ExtensionsTests" method="ConvertToValue15" time="0.0005" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue13" type="System.Tests.ExtensionsTests" method="ConvertToValue13" time="0.0003" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef13" type="System.Tests.ExtensionsTests" method="ConvertToRef13" time="0.0001999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef14" type="System.Tests.ExtensionsTests" method="ConvertToRef14" time="0.0003" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef12" type="System.Tests.ExtensionsTests" method="ConvertToRef12" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct3" type="System.Tests.ExtensionsTests" method="Deconstruct3" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct16" type="System.Tests.ExtensionsTests" method="Deconstruct16" time="0.0003" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef4" type="System.Tests.ExtensionsTests" method="ConvertToRef4" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue8" type="System.Tests.ExtensionsTests" method="ConvertToValue8" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct11" type="System.Tests.ExtensionsTests" method="Deconstruct11" time="0.0004" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct9" type="System.Tests.ExtensionsTests" method="Deconstruct9" time="0.0003" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue7" type="System.Tests.ExtensionsTests" method="ConvertToValue7" time="0.0001999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef7" type="System.Tests.ExtensionsTests" method="ConvertToRef7" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct5" type="System.Tests.ExtensionsTests" method="Deconstruct5" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue10" type="System.Tests.ExtensionsTests" method="ConvertToValue10" time="0.0003" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef11" type="System.Tests.ExtensionsTests" method="ConvertToRef11" time="0.0002999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef2" type="System.Tests.ExtensionsTests" method="ConvertToRef2" time="0.0001999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct18" type="System.Tests.ExtensionsTests" method="Deconstruct18" time="0.0004" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue17" type="System.Tests.ExtensionsTests" method="ConvertToValue17" time="0.0006999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue3" type="System.Tests.ExtensionsTests" method="ConvertToValue3" time="0.0001999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue5" type="System.Tests.ExtensionsTests" method="ConvertToValue5" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef15" type="System.Tests.ExtensionsTests" method="ConvertToRef15" time="0.0004" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue21" type="System.Tests.ExtensionsTests" method="ConvertToValue21" time="0.0007" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct4" type="System.Tests.ExtensionsTests" method="Deconstruct4" time="0.0001999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef8" type="System.Tests.ExtensionsTests" method="ConvertToRef8" time="0.0001999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue11" type="System.Tests.ExtensionsTests" method="ConvertToValue11" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct10" type="System.Tests.ExtensionsTests" method="Deconstruct10" time="0.0002" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef9" type="System.Tests.ExtensionsTests" method="ConvertToRef9" time="0.0002999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef5" type="System.Tests.ExtensionsTests" method="ConvertToRef5" time="0.0001" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue6" type="System.Tests.ExtensionsTests" method="ConvertToValue6" time="0.0001999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.Deconstruct20" type="System.Tests.ExtensionsTests" method="Deconstruct20" time="0.0005999" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue4" type="System.Tests.ExtensionsTests" method="ConvertToValue4" time="0.0003" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToValue20" type="System.Tests.ExtensionsTests" method="ConvertToValue20" time="0.0006" result="Pass" />
+      <test name="System.Tests.ExtensionsTests.ConvertToRef1" type="System.Tests.ExtensionsTests" method="ConvertToRef1" time="0.0002999" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

@@ -1,0 +1,9 @@
+Test Comparison: System.Threading.Timer.Tests
+Generated: 2026-01-30T13:26:14+01:00
+
+Mono tests:    39
+CoreCLR tests: 39
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Threading.Thread.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="12:25:48" total="45" passed="12" failed="0" skipped="33" time="0.627" errors="0">
+    <errors />
+    <collection total="39" passed="6" failed="0" skipped="33" name="Test collection for System.Threading.Threads.Tests.ThreadTests" time="0.516">
+      <test name="System.Threading.Threads.Tests.ThreadTests.InterruptInFinallyBlockTest_SkipOnDesktopFramework" type="System.Threading.Threads.Tests.ThreadTests" method="InterruptInFinallyBlockTest_SkipOnDesktopFramework" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.SleepTest" type="System.Threading.Threads.Tests.ThreadTests" method="SleepTest" time="0.5102" result="Pass" />
+      <test name="System.Threading.Threads.Tests.ThreadTests.ThreadNameDoesNotAffectProcessName" type="System.Threading.Threads.Tests.ThreadTests" method="ThreadNameDoesNotAffectProcessName" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.UnauthenticatedPrincipalTest" type="System.Threading.Threads.Tests.ThreadTests" method="UnauthenticatedPrincipalTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.ExecutionContextTest" type="System.Threading.Threads.Tests.ThreadTests" method="ExecutionContextTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.NameTest" type="System.Threading.Threads.Tests.ThreadTests" method="NameTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.ApartmentState_NoAttributePresent_DefaultState_Nano" type="System.Threading.Threads.Tests.ThreadTests" method="ApartmentState_NoAttributePresent_DefaultState_Nano" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsWindowsNanoServerAndRemoteExecutorSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.ApartmentState_AttributePresent" type="System.Threading.Threads.Tests.ThreadTests" method="ApartmentState_AttributePresent" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotMobile\", \"HasHostExecutable\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.CurrentThreadTest" type="System.Threading.Threads.Tests.ThreadTests" method="CurrentThreadTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.InterruptTest" type="System.Threading.Threads.Tests.ThreadTests" method="InterruptTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.ApartmentState_NoAttributePresent_STA_Unix" type="System.Threading.Threads.Tests.ThreadTests" method="ApartmentState_NoAttributePresent_STA_Unix" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.CurrentPrincipalContextFlowTest_NotFlow" type="System.Threading.Threads.Tests.ThreadTests" method="CurrentPrincipalContextFlowTest_NotFlow" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.MiscellaneousTest" type="System.Threading.Threads.Tests.ThreadTests" method="MiscellaneousTest" time="0.0023" result="Pass" />
+      <test name="System.Threading.Threads.Tests.ThreadTests.PriorityTest" type="System.Threading.Threads.Tests.ThreadTests" method="PriorityTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.IsBackgroundTest" type="System.Threading.Threads.Tests.ThreadTests" method="IsBackgroundTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.JoinTest" type="System.Threading.Threads.Tests.ThreadTests" method="JoinTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.IsAliveTest" type="System.Threading.Threads.Tests.ThreadTests" method="IsAliveTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.GetCurrentProcessorId" type="System.Threading.Threads.Tests.ThreadTests" method="GetCurrentProcessorId" time="0.0005999" result="Pass" />
+      <test name="System.Threading.Threads.Tests.ThreadTests.ApartmentStateTest_ChangeBeforeThreadStarted_Windows_Nano_Server" type="System.Threading.Threads.Tests.ThreadTests" method="ApartmentStateTest_ChangeBeforeThreadStarted_Windows_Nano_Server" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsWindowsNanoServer\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.CurrentPrincipal_SetNull" type="System.Threading.Threads.Tests.ThreadTests" method="CurrentPrincipal_SetNull" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.WindowsPrincipalPolicyTest_Unix" type="System.Threading.Threads.Tests.ThreadTests" method="WindowsPrincipalPolicyTest_Unix" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.LocalDataSlotTest" type="System.Threading.Threads.Tests.ThreadTests" method="LocalDataSlotTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.CurrentPrincipalContextFlowTest" type="System.Threading.Threads.Tests.ThreadTests" method="CurrentPrincipalContextFlowTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.ThreadStateTest" type="System.Threading.Threads.Tests.ThreadTests" method="ThreadStateTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.CurrentPrincipalTest" type="System.Threading.Threads.Tests.ThreadTests" method="CurrentPrincipalTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.AbortSuspendTest" type="System.Threading.Threads.Tests.ThreadTests" method="AbortSuspendTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.ManagedThreadIdTest" type="System.Threading.Threads.Tests.ThreadTests" method="ManagedThreadIdTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.CurrentCultureTest_DifferentThread" type="System.Threading.Threads.Tests.ThreadTests" method="CurrentCultureTest_DifferentThread" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.CurrentPrincipalTest_SkipOnDesktopFramework" type="System.Threading.Threads.Tests.ThreadTests" method="CurrentPrincipalTest_SkipOnDesktopFramework" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.IsThreadPoolThreadTest" type="System.Threading.Threads.Tests.ThreadTests" method="IsThreadPoolThreadTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.DefaultPrincipalPolicyTest" type="System.Threading.Threads.Tests.ThreadTests" method="DefaultPrincipalPolicyTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.ApartmentState_NoAttributePresent_DefaultState_Unix" type="System.Threading.Threads.Tests.ThreadTests" method="ApartmentState_NoAttributePresent_DefaultState_Unix" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.ConstructorTest" type="System.Threading.Threads.Tests.ThreadTests" method="ConstructorTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.CurrentCultureTest" type="System.Threading.Threads.Tests.ThreadTests" method="CurrentCultureTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.ApartmentStateTest_Unix(getApartmentState: Func`2 { Method = System.Threading.ApartmentState &lt;ApartmentStateTest_MemberData&gt;b__3_0(System.Threading.Thread), Target = &lt;&gt;c { } }, setApartmentState: Func`3 { Method = Int32 &lt;ApartmentStateTest_MemberData&gt;b__3_1(System.Threading.Thread, System.Threading.ApartmentState), Target = &lt;&gt;c { } }, setType: 0)" type="System.Threading.Threads.Tests.ThreadTests" method="ApartmentStateTest_Unix" time="0.0016" result="Pass" />
+      <test name="System.Threading.Threads.Tests.ThreadTests.ApartmentStateTest_Unix(getApartmentState: Func`2 { Method = System.Threading.ApartmentState &lt;ApartmentStateTest_MemberData&gt;b__3_2(System.Threading.Thread), Target = &lt;&gt;c { } }, setApartmentState: Func`3 { Method = Int32 &lt;ApartmentStateTest_MemberData&gt;b__3_3(System.Threading.Thread, System.Threading.ApartmentState), Target = &lt;&gt;c { } }, setType: 1)" type="System.Threading.Threads.Tests.ThreadTests" method="ApartmentStateTest_Unix" time="0.0007" result="Pass" />
+      <test name="System.Threading.Threads.Tests.ThreadTests.ApartmentStateTest_Unix(getApartmentState: Func`2 { Method = System.Threading.ApartmentState &lt;ApartmentStateTest_MemberData&gt;b__3_4(System.Threading.Thread), Target = &lt;&gt;c { } }, setApartmentState: Func`3 { Method = Int32 &lt;ApartmentStateTest_MemberData&gt;b__3_5(System.Threading.Thread, System.Threading.ApartmentState), Target = &lt;&gt;c { } }, setType: 2)" type="System.Threading.Threads.Tests.ThreadTests" method="ApartmentStateTest_Unix" time="0.0002" result="Pass" />
+      <test name="System.Threading.Threads.Tests.ThreadTests.StartTest" type="System.Threading.Threads.Tests.ThreadTests" method="StartTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Threads.Tests.ThreadTests.NoPrincipalPolicyTest_NewThreads" type="System.Threading.Threads.Tests.ThreadTests" method="NoPrincipalPolicyTest_NewThreads" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.Threading.Tests.CompressedStackTests" time="0.001">
+      <test name="System.Threading.Tests.CompressedStackTests.RunTest" type="System.Threading.Tests.CompressedStackTests" method="RunTest" time="0.001" result="Pass" />
+      <test name="System.Threading.Tests.CompressedStackTests.RunTest_SkipOnDesktopFramework" type="System.Threading.Tests.CompressedStackTests" method="RunTest_SkipOnDesktopFramework" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.CompressedStackTests.Capture_GetCompressedStack_CreateCopy_Test" type="System.Threading.Tests.CompressedStackTests" method="Capture_GetCompressedStack_CreateCopy_Test" time="0.0000999" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Threading.Threads.Tests.ThreadExceptionEventArgsTests" time="0.000">
+      <test name="System.Threading.Threads.Tests.ThreadExceptionEventArgsTests.ConstructorTest" type="System.Threading.Threads.Tests.ThreadExceptionEventArgsTests" method="ConstructorTest" time="0.0001999" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for System.Threading.Threads.Tests.ExceptionTests" time="0.001">
+      <test name="System.Threading.Threads.Tests.ExceptionTests.ThreadStateException_ConstructorTest" type="System.Threading.Threads.Tests.ExceptionTests" method="ThreadStateException_ConstructorTest" time="0.0009" result="Pass" />
+      <test name="System.Threading.Threads.Tests.ExceptionTests.ThreadInterruptedException_ConstructorTest" type="System.Threading.Threads.Tests.ExceptionTests" method="ThreadInterruptedException_ConstructorTest" time="0.0005" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

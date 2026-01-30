@@ -13,7 +13,7 @@ Now we want to run `browser-tests/test-suite.md` process for `System.Collections
 
 let's run remaining tests from the plan.
 - process them in order as they are listed in the Test Suites to Run
-- process only one test suite at the time, while following browser-tests/test-suite.md
+- process only one test suite at the time, while following `browser-tests/test-suite.md`, re-read it
 - it's fine to use browser-tests/run-test-suite.sh to do that, when it works
 - create Summary.md after each suite
 - update plan.md after each suite

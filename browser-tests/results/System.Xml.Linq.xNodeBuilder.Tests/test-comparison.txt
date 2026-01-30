@@ -1,0 +1,9 @@
+Test Comparison: System.Xml.Linq.xNodeBuilder.Tests
+Generated: 2026-01-30T13:27:54+01:00
+
+Mono tests:    24
+CoreCLR tests: 24
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

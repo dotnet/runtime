@@ -1,0 +1,78 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:43557/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Runtime.Serialization.Primitives.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Runtime.Serialization.Primitives.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Runtime.Serialization.Primitives.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Runtime.Serialization.Primitives.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Runtime.Serialization.Primitives.Tests.dll (found 28 of 28 test cases)
+Starting:    System.Runtime.Serialization.Primitives.Tests.dll
+[STRT] System.Runtime.Serialization.Tests.ContractNamespaceAttributeTests.Ctor_String(contractNamespace: null)
+[STRT] System.Runtime.Serialization.Tests.ContractNamespaceAttributeTests.Ctor_String(contractNamespace: "")
+[STRT] System.Runtime.Serialization.Tests.ContractNamespaceAttributeTests.Ctor_String(contractNamespace: "contractNamespace")
+[STRT] System.Runtime.Serialization.Tests.ContractNamespaceAttributeTests.ClrNamespace_Set_GetReturnsExpected(value: null)
+[STRT] System.Runtime.Serialization.Tests.ContractNamespaceAttributeTests.ClrNamespace_Set_GetReturnsExpected(value: "")
+[STRT] System.Runtime.Serialization.Tests.ContractNamespaceAttributeTests.ClrNamespace_Set_GetReturnsExpected(value: "value")
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.IsReference_Set_GetReturnsExpected(value: True)
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.IsReference_Set_GetReturnsExpected(value: False)
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.Ctor_Default
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.ValueName_Set_GetReturnsExpected(value: null)
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.ValueName_Set_GetReturnsExpected(value: "")
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.ValueName_Set_GetReturnsExpected(value: "value")
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.KeyName_Set_GetReturnsExpected(value: null)
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.KeyName_Set_GetReturnsExpected(value: "")
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.KeyName_Set_GetReturnsExpected(value: "value")
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.ItemName_Set_GetReturnsExpected(value: null)
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.ItemName_Set_GetReturnsExpected(value: "")
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.ItemName_Set_GetReturnsExpected(value: "value")
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.Name_Set_GetReturnsExpected(value: null)
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.Name_Set_GetReturnsExpected(value: "")
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.Name_Set_GetReturnsExpected(value: "value")
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.Namespace_Set_GetReturnsExpected(value: null)
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.Namespace_Set_GetReturnsExpected(value: "")
+[STRT] System.Runtime.Serialization.Tests.CollectionDataContractAttributeTests.Namespace_Set_GetReturnsExpected(value: "value")
+[STRT] System.Runtime.Serialization.Tests.KnownTypeAttributeTests.Ctor_String(methodName: null)
+[STRT] System.Runtime.Serialization.Tests.KnownTypeAttributeTests.Ctor_String(methodName: "")
+[STRT] System.Runtime.Serialization.Tests.KnownTypeAttributeTests.Ctor_String(methodName: "value")
+[STRT] System.Runtime.Serialization.Tests.KnownTypeAttributeTests.Ctor_Type(type: null)
+[STRT] System.Runtime.Serialization.Tests.KnownTypeAttributeTests.Ctor_Type(type: typeof(int))
+[STRT] System.Runtime.Serialization.Tests.InvalidDataContractExceptionTests.Ctor_Default
+[STRT] System.Runtime.Serialization.Tests.InvalidDataContractExceptionTests.Ctor_String(message: "message")
+[STRT] System.Runtime.Serialization.Tests.InvalidDataContractExceptionTests.Ctor_SerializationInfo_StreamingContext
+[STRT] System.Runtime.Serialization.Tests.InvalidDataContractExceptionTests.Ctor_String_Exception(message: "message")
+[STRT] System.Runtime.Serialization.Tests.DataContractAttributeTests.Ctor_Default
+[STRT] System.Runtime.Serialization.Tests.DataContractAttributeTests.IsReference_Set_GetReturnsExpected(value: True)
+[STRT] System.Runtime.Serialization.Tests.DataContractAttributeTests.IsReference_Set_GetReturnsExpected(value: False)
+[STRT] System.Runtime.Serialization.Tests.DataContractAttributeTests.Namespace_Set_GetReturnsExpected(value: null)
+[STRT] System.Runtime.Serialization.Tests.DataContractAttributeTests.Namespace_Set_GetReturnsExpected(value: "")
+[STRT] System.Runtime.Serialization.Tests.DataContractAttributeTests.Namespace_Set_GetReturnsExpected(value: "value")
+[STRT] System.Runtime.Serialization.Tests.DataContractAttributeTests.Name_Set_GetReturnsExpected(value: null)
+[STRT] System.Runtime.Serialization.Tests.DataContractAttributeTests.Name_Set_GetReturnsExpected(value: "")
+[STRT] System.Runtime.Serialization.Tests.DataContractAttributeTests.Name_Set_GetReturnsExpected(value: "value")
+[STRT] System.Runtime.Serialization.Tests.DataMemberAttributeTests.EmitDefaultValue_Set_GetReturnsExpected(value: True)
+[STRT] System.Runtime.Serialization.Tests.DataMemberAttributeTests.EmitDefaultValue_Set_GetReturnsExpected(value: False)
+[STRT] System.Runtime.Serialization.Tests.DataMemberAttributeTests.Ctor_Default
+[STRT] System.Runtime.Serialization.Tests.DataMemberAttributeTests.Order_SetInvalid_ThrowsInvalidDataContractException
+[STRT] System.Runtime.Serialization.Tests.DataMemberAttributeTests.Order_Set_GetReturnsExpected(value: 0)
+[STRT] System.Runtime.Serialization.Tests.DataMemberAttributeTests.Order_Set_GetReturnsExpected(value: 1)
+[STRT] System.Runtime.Serialization.Tests.DataMemberAttributeTests.IsRequired_Set_GetReturnsExpected(value: True)
+[STRT] System.Runtime.Serialization.Tests.DataMemberAttributeTests.IsRequired_Set_GetReturnsExpected(value: False)
+[STRT] System.Runtime.Serialization.Tests.DataMemberAttributeTests.Name_Set_GetReturnsExpected(value: null)
+[STRT] System.Runtime.Serialization.Tests.DataMemberAttributeTests.Name_Set_GetReturnsExpected(value: "")
+[STRT] System.Runtime.Serialization.Tests.DataMemberAttributeTests.Name_Set_GetReturnsExpected(value: "value")
+[STRT] System.Runtime.Serialization.Tests.EnumMemberAttributeTests.Ctor_Default
+[STRT] System.Runtime.Serialization.Tests.EnumMemberAttributeTests.Value_Set_GetReturnsExpected(value: null)
+[STRT] System.Runtime.Serialization.Tests.EnumMemberAttributeTests.Value_Set_GetReturnsExpected(value: "")
+[STRT] System.Runtime.Serialization.Tests.EnumMemberAttributeTests.Value_Set_GetReturnsExpected(value: "value")
+[STRT] System.Runtime.Serialization.Tests.IgnoreDataMemberAttributeTests.Ctor_Default
+Finished:    System.Runtime.Serialization.Primitives.Tests.dll
+Finished uploading 17555 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 58 Passed: 57 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 1
+
+test-main.js exiting WasmTestRunner.dll System.Runtime.Serialization.Primitives.Tests.dll after 0.009 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

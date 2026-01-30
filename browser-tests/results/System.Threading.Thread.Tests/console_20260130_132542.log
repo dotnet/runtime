@@ -1,0 +1,65 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:35575/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Threading.Thread.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Threading.Thread.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Threading.Thread.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Threading.Thread.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Threading.Thread.Tests.dll (found 43 of 49 test cases)
+Starting:    System.Threading.Thread.Tests.dll
+[STRT] System.Threading.Threads.Tests.ThreadTests.InterruptInFinallyBlockTest_SkipOnDesktopFramework
+[STRT] System.Threading.Threads.Tests.ThreadTests.SleepTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.ThreadNameDoesNotAffectProcessName
+[STRT] System.Threading.Threads.Tests.ThreadTests.UnauthenticatedPrincipalTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.ExecutionContextTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.NameTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentState_NoAttributePresent_DefaultState_Nano
+[STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentState_AttributePresent
+[STRT] System.Threading.Threads.Tests.ThreadTests.CurrentThreadTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.InterruptTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentState_NoAttributePresent_STA_Unix
+[STRT] System.Threading.Threads.Tests.ThreadTests.CurrentPrincipalContextFlowTest_NotFlow
+[STRT] System.Threading.Threads.Tests.ThreadTests.MiscellaneousTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.PriorityTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.IsBackgroundTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.JoinTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.IsAliveTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.GetCurrentProcessorId
+[STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentStateTest_ChangeBeforeThreadStarted_Windows_Nano_Server
+[STRT] System.Threading.Threads.Tests.ThreadTests.CurrentPrincipal_SetNull
+[STRT] System.Threading.Threads.Tests.ThreadTests.WindowsPrincipalPolicyTest_Unix
+[STRT] System.Threading.Threads.Tests.ThreadTests.LocalDataSlotTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.CurrentPrincipalContextFlowTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.ThreadStateTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.CurrentPrincipalTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.AbortSuspendTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.ManagedThreadIdTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.CurrentCultureTest_DifferentThread
+[STRT] System.Threading.Threads.Tests.ThreadTests.CurrentPrincipalTest_SkipOnDesktopFramework
+[STRT] System.Threading.Threads.Tests.ThreadTests.IsThreadPoolThreadTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.DefaultPrincipalPolicyTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentState_NoAttributePresent_DefaultState_Unix
+[STRT] System.Threading.Threads.Tests.ThreadTests.ConstructorTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.CurrentCultureTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentStateTest_Unix(getApartmentState: Func`2 { Method = System.Threading.ApartmentState <ApartmentStateTest_MemberData>b__3_0(System.Threading.Thread), Target = <>c { } }, setApartmentState: Func`3 { Method = Int32 <ApartmentStateTest_MemberData>b__3_1(System.Threading.Thread, System.Threading.ApartmentState), Target = <>c { } }, setType: 0)
+[STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentStateTest_Unix(getApartmentState: Func`2 { Method = System.Threading.ApartmentState <ApartmentStateTest_MemberData>b__3_2(System.Threading.Thread), Target = <>c { } }, setApartmentState: Func`3 { Method = Int32 <ApartmentStateTest_MemberData>b__3_3(System.Threading.Thread, System.Threading.ApartmentState), Target = <>c { } }, setType: 1)
+[STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentStateTest_Unix(getApartmentState: Func`2 { Method = System.Threading.ApartmentState <ApartmentStateTest_MemberData>b__3_4(System.Threading.Thread), Target = <>c { } }, setApartmentState: Func`3 { Method = Int32 <ApartmentStateTest_MemberData>b__3_5(System.Threading.Thread, System.Threading.ApartmentState), Target = <>c { } }, setType: 2)
+[STRT] System.Threading.Threads.Tests.ThreadTests.StartTest
+[STRT] System.Threading.Threads.Tests.ThreadTests.NoPrincipalPolicyTest_NewThreads
+[STRT] System.Threading.Tests.CompressedStackTests.RunTest
+[STRT] System.Threading.Tests.CompressedStackTests.RunTest_SkipOnDesktopFramework
+[STRT] System.Threading.Tests.CompressedStackTests.Capture_GetCompressedStack_CreateCopy_Test
+[STRT] System.Threading.Threads.Tests.ThreadExceptionEventArgsTests.ConstructorTest
+[STRT] System.Threading.Threads.Tests.ExceptionTests.ThreadStateException_ConstructorTest
+[STRT] System.Threading.Threads.Tests.ExceptionTests.ThreadInterruptedException_ConstructorTest
+Finished:    System.Threading.Thread.Tests.dll
+Finished uploading 14362 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 45 Passed: 12 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 33
+
+test-main.js exiting WasmTestRunner.dll System.Threading.Thread.Tests.dll after 0.018616666666666667 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

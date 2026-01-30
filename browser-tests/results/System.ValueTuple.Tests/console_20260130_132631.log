@@ -1,0 +1,117 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:39891/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.ValueTuple.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.ValueTuple.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.ValueTuple.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.ValueTuple.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.ValueTuple.Tests.dll (found 97 of 97 test cases)
+Starting:    System.ValueTuple.Tests.dll
+[STRT] System.Tests.ValueTupleTests.LongTuplesWithNull
+[STRT] System.Tests.ValueTupleTests.TestCompareTo
+[STRT] System.Tests.ValueTupleTests.OneTuples
+[STRT] System.Tests.ValueTupleTests.TestToString
+[STRT] System.Tests.ValueTupleTests.SixTuples
+[STRT] System.Tests.ValueTupleTests.SevenTuples
+[STRT] System.Tests.ValueTupleTests.ZeroTuples
+[STRT] System.Tests.ValueTupleTests.TwoTuples
+[STRT] System.Tests.ValueTupleTests.TestCustomTypeParameter2
+[STRT] System.Tests.ValueTupleTests.NestedValueTuples1
+[STRT] System.Tests.ValueTupleTests.FiveTuples
+[STRT] System.Tests.ValueTupleTests.TestConstructor
+[STRT] System.Tests.ValueTupleTests.IncomparableTypesSpecialCase
+[STRT] System.Tests.ValueTupleTests.FloatingPointNaNCases
+[STRT] System.Tests.ValueTupleTests.IncomparableTypes
+[STRT] System.Tests.ValueTupleTests.TestNotEqual
+[STRT] System.Tests.ValueTupleTests.TestCustomTypeParameter3
+[STRT] System.Tests.ValueTupleTests.ThreeTuples
+[STRT] System.Tests.ValueTupleTests.TestCustomTypeParameter1
+[STRT] System.Tests.ValueTupleTests.FourTuples
+[STRT] System.Tests.ValueTupleTests.EightTuplesWithBadRest
+[STRT] System.Tests.ValueTupleTests.EightTuples
+[STRT] System.Tests.ValueTupleTests.TestCustomTypeParameter4
+[STRT] System.Tests.ValueTupleTests.TestEquals_GetHashCode
+[STRT] System.Tests.ValueTupleTests.NestedValueTuples2
+[STRT] System.Tests.TupleElementNamesAttributeTests.Constructor
+[STRT] System.Tests.TupleTests.EightTuples
+[STRT] System.Tests.TupleTests.OneTuples
+[STRT] System.Tests.TupleTests.FiveTuples
+[STRT] System.Tests.TupleTests.TwoTuples
+[STRT] System.Tests.TupleTests.SevenTuples
+[STRT] System.Tests.TupleTests.SixTuples
+[STRT] System.Tests.TupleTests.FourTuples
+[STRT] System.Tests.TupleTests.ThreeTuples
+[STRT] System.Tests.ExtensionsTests.ConvertToValue18
+[STRT] System.Tests.ExtensionsTests.Deconstruct8
+[STRT] System.Tests.ExtensionsTests.ConvertToRef19
+[STRT] System.Tests.ExtensionsTests.Deconstruct6
+[STRT] System.Tests.ExtensionsTests.ConvertToValue12
+[STRT] System.Tests.ExtensionsTests.ConvertToValue14
+[STRT] System.Tests.ExtensionsTests.ConvertToRef18
+[STRT] System.Tests.ExtensionsTests.ConvertToRef21
+[STRT] System.Tests.ExtensionsTests.ConvertToRef3
+[STRT] System.Tests.ExtensionsTests.ConvertToRef10
+[STRT] System.Tests.ExtensionsTests.ConvertToValue9
+[STRT] System.Tests.ExtensionsTests.Deconstruct2
+[STRT] System.Tests.ExtensionsTests.ConvertToRef20
+[STRT] System.Tests.ExtensionsTests.Deconstruct19
+[STRT] System.Tests.ExtensionsTests.Deconstruct15
+[STRT] System.Tests.ExtensionsTests.Deconstruct12
+[STRT] System.Tests.ExtensionsTests.Deconstruct21
+[STRT] System.Tests.ExtensionsTests.ConvertToRef16
+[STRT] System.Tests.ExtensionsTests.Deconstruct13
+[STRT] System.Tests.ExtensionsTests.ConvertToRef17
+[STRT] System.Tests.ExtensionsTests.ConvertToValue16
+[STRT] System.Tests.ExtensionsTests.ConvertToValue19
+[STRT] System.Tests.ExtensionsTests.ConvertToValue2
+[STRT] System.Tests.ExtensionsTests.Deconstruct14
+[STRT] System.Tests.ExtensionsTests.ConvertToRef6
+[STRT] System.Tests.ExtensionsTests.ConvertToValue1
+[STRT] System.Tests.ExtensionsTests.Deconstruct17
+[STRT] System.Tests.ExtensionsTests.Deconstruct1
+[STRT] System.Tests.ExtensionsTests.Deconstruct7
+[STRT] System.Tests.ExtensionsTests.ConvertToValue15
+[STRT] System.Tests.ExtensionsTests.ConvertToValue13
+[STRT] System.Tests.ExtensionsTests.ConvertToRef13
+[STRT] System.Tests.ExtensionsTests.ConvertToRef14
+[STRT] System.Tests.ExtensionsTests.ConvertToRef12
+[STRT] System.Tests.ExtensionsTests.Deconstruct3
+[STRT] System.Tests.ExtensionsTests.Deconstruct16
+[STRT] System.Tests.ExtensionsTests.ConvertToRef4
+[STRT] System.Tests.ExtensionsTests.ConvertToValue8
+[STRT] System.Tests.ExtensionsTests.Deconstruct11
+[STRT] System.Tests.ExtensionsTests.Deconstruct9
+[STRT] System.Tests.ExtensionsTests.ConvertToValue7
+[STRT] System.Tests.ExtensionsTests.ConvertToRef7
+[STRT] System.Tests.ExtensionsTests.Deconstruct5
+[STRT] System.Tests.ExtensionsTests.ConvertToValue10
+[STRT] System.Tests.ExtensionsTests.ConvertToRef11
+[STRT] System.Tests.ExtensionsTests.ConvertToRef2
+[STRT] System.Tests.ExtensionsTests.Deconstruct18
+[STRT] System.Tests.ExtensionsTests.ConvertToValue17
+[STRT] System.Tests.ExtensionsTests.ConvertToValue3
+[STRT] System.Tests.ExtensionsTests.ConvertToValue5
+[STRT] System.Tests.ExtensionsTests.ConvertToRef15
+[STRT] System.Tests.ExtensionsTests.ConvertToValue21
+[STRT] System.Tests.ExtensionsTests.Deconstruct4
+[STRT] System.Tests.ExtensionsTests.ConvertToRef8
+[STRT] System.Tests.ExtensionsTests.ConvertToValue11
+[STRT] System.Tests.ExtensionsTests.Deconstruct10
+[STRT] System.Tests.ExtensionsTests.ConvertToRef9
+[STRT] System.Tests.ExtensionsTests.ConvertToRef5
+[STRT] System.Tests.ExtensionsTests.ConvertToValue6
+[STRT] System.Tests.ExtensionsTests.Deconstruct20
+[STRT] System.Tests.ExtensionsTests.ConvertToValue4
+[STRT] System.Tests.ExtensionsTests.ConvertToValue20
+[STRT] System.Tests.ExtensionsTests.ConvertToRef1
+Finished:    System.ValueTuple.Tests.dll
+Finished uploading 15975 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 97 Passed: 97 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.ValueTuple.Tests.dll after 0.011783333333333333 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Threading.Timer.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="12:26:12" total="33" passed="16" failed="0" skipped="17" time="0.376" errors="0">
+    <errors />
+    <collection total="4" passed="3" failed="0" skipped="1" name="Test collection for System.Threading.Tests.TimerChangeTests" time="0.012">
+      <test name="System.Threading.Tests.TimerChangeTests.Timer_Change_DueTime_OutOfRange_Throws" type="System.Threading.Tests.TimerChangeTests" method="Timer_Change_DueTime_OutOfRange_Throws" time="0.0108" result="Pass" />
+      <test name="System.Threading.Tests.TimerChangeTests.Timer_Change_AfterDispose_Test" type="System.Threading.Tests.TimerChangeTests" method="Timer_Change_AfterDispose_Test" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.TimerChangeTests.Timer_Change_Period_OutOfRange_Throws" type="System.Threading.Tests.TimerChangeTests" method="Timer_Change_Period_OutOfRange_Throws" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tests.TimerChangeTests.Timer_Change_BeforeDueTime_ChangesWhenTimerWillFire" type="System.Threading.Tests.TimerChangeTests" method="Timer_Change_BeforeDueTime_ChangesWhenTimerWillFire" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="13" passed="3" failed="0" skipped="10" name="Test collection for System.Threading.Tests.TimerFiringTests" time="0.253">
+      <test name="System.Threading.Tests.TimerFiringTests.Timer_Fires_AndPassesNullStateThroughCallback" type="System.Threading.Tests.TimerFiringTests" method="Timer_Fires_AndPassesNullStateThroughCallback" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.TimerFiringTests.Timer_CanBeDisposedMultipleTimes" type="System.Threading.Tests.TimerFiringTests" method="Timer_CanBeDisposedMultipleTimes" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.TimerFiringTests.Timer_CanDisposeSelfInCallback" type="System.Threading.Tests.TimerFiringTests" method="Timer_CanDisposeSelfInCallback" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.TimerFiringTests.Timer_Dispose_WaitHandle" type="System.Threading.Tests.TimerFiringTests" method="Timer_Dispose_WaitHandle" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.TimerFiringTests.Timer_Constructor_CallbackOnly_Change" type="System.Threading.Tests.TimerFiringTests" method="Timer_Constructor_CallbackOnly_Change" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.TimerFiringTests.ManyTimers_EachTimerDoesFire" type="System.Threading.Tests.TimerFiringTests" method="ManyTimers_EachTimerDoesFire" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.TimerFiringTests.NonRepeatingTimer_ThatHasAlreadyFired_CanChangeAndFireAgain" type="System.Threading.Tests.TimerFiringTests" method="NonRepeatingTimer_ThatHasAlreadyFired_CanChangeAndFireAgain" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.TimerFiringTests.Timer_FiresOnlyOnce_OnDueTime_With_InfinitePeriod" type="System.Threading.Tests.TimerFiringTests" method="Timer_FiresOnlyOnce_OnDueTime_With_InfinitePeriod" time="0.2516" result="Pass" />
+      <test name="System.Threading.Tests.TimerFiringTests.Timer_Fires_AndPassesStateThroughCallback" type="System.Threading.Tests.TimerFiringTests" method="Timer_Fires_AndPassesStateThroughCallback" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.TimerFiringTests.TimersCreatedConcurrentlyOnDifferentThreadsAllFire" type="System.Threading.Tests.TimerFiringTests" method="TimersCreatedConcurrentlyOnDifferentThreadsAllFire" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.TimerFiringTests.Timer_Dispose_WaitHandle_Negative" type="System.Threading.Tests.TimerFiringTests" method="Timer_Dispose_WaitHandle_Negative" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.TimerFiringTests.MultpleTimers_PeriodicTimerIsntBlockedByBlockedCallback" type="System.Threading.Tests.TimerFiringTests" method="MultpleTimers_PeriodicTimerIsntBlockedByBlockedCallback" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.TimerFiringTests.Timer_Fires_After_DueTime_Ellapses" type="System.Threading.Tests.TimerFiringTests" method="Timer_Fires_After_DueTime_Ellapses" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for System.Threading.Tests.TimerConstructorTests" time="0.003">
+      <test name="System.Threading.Tests.TimerConstructorTests.Timer_Constructor_DueTimeOutOfRange_Throws(callback: null)" type="System.Threading.Tests.TimerConstructorTests" method="Timer_Constructor_DueTimeOutOfRange_Throws" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.TimerConstructorTests.Timer_Constructor_DueTimeOutOfRange_Throws(callback: TimerCallback { Method = Void &lt;CallbacksForPeriodDueTimeOutOfRange&gt;b__0_0(System.Object), Target = &lt;&gt;c { } })" type="System.Threading.Tests.TimerConstructorTests" method="Timer_Constructor_DueTimeOutOfRange_Throws" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.TimerConstructorTests.Timer_Constructor_NullCallback_Throws" type="System.Threading.Tests.TimerConstructorTests" method="Timer_Constructor_NullCallback_Throws" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.TimerConstructorTests.Timer_Constructor_PeriodOutOfRange_Throws(callback: null)" type="System.Threading.Tests.TimerConstructorTests" method="Timer_Constructor_PeriodOutOfRange_Throws" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.TimerConstructorTests.Timer_Constructor_PeriodOutOfRange_Throws(callback: TimerCallback { Method = Void &lt;CallbacksForPeriodDueTimeOutOfRange&gt;b__0_0(System.Object), Target = &lt;&gt;c { } })" type="System.Threading.Tests.TimerConstructorTests" method="Timer_Constructor_PeriodOutOfRange_Throws" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.TimerConstructorTests.Timer_AllConstructorsCanBeUsedSuccessfully" type="System.Threading.Tests.TimerConstructorTests" method="Timer_AllConstructorsCanBeUsedSuccessfully" time="0.0004" result="Pass" />
+    </collection>
+    <collection total="1" passed="0" failed="0" skipped="1" name="Test collection for System.Threading.Tests.TimerMetricsTests" time="0.000">
+      <test name="System.Threading.Tests.TimerMetricsTests.CountTest" type="System.Threading.Tests.TimerMetricsTests" method="CountTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="9" passed="4" failed="0" skipped="5" name="Test collection for System.Threading.Tests.TimerDisposeTests" time="0.002">
+      <test name="System.Threading.Tests.TimerDisposeTests.DisposeAsync_CanBeCalledMultipleTimes" type="System.Threading.Tests.TimerDisposeTests" method="DisposeAsync_CanBeCalledMultipleTimes" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.TimerDisposeTests.DisposeAsync_SignalsImmediatelyWhenTaskNotRunning" type="System.Threading.Tests.TimerDisposeTests" method="DisposeAsync_SignalsImmediatelyWhenTaskNotRunning" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.TimerDisposeTests.DisposeAsync_DisposeDelayedUntilCallbacksComplete" type="System.Threading.Tests.TimerDisposeTests" method="DisposeAsync_DisposeDelayedUntilCallbacksComplete" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.TimerDisposeTests.DisposeAsync_ThenDisposeWaitHandleReturnsFalse" type="System.Threading.Tests.TimerDisposeTests" method="DisposeAsync_ThenDisposeWaitHandleReturnsFalse" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.TimerDisposeTests.DisposeAsync_AfterDisposeWorks" type="System.Threading.Tests.TimerDisposeTests" method="DisposeAsync_AfterDisposeWorks" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.TimerDisposeTests.DisposeAsync_MultipleDisposesBeforeCompletionReturnSameTask" type="System.Threading.Tests.TimerDisposeTests" method="DisposeAsync_MultipleDisposesBeforeCompletionReturnSameTask" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.TimerDisposeTests.DisposeAsync_DisposesTimer" type="System.Threading.Tests.TimerDisposeTests" method="DisposeAsync_DisposesTimer" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.TimerDisposeTests.Dispose_NotFired_WaitHandleSignaledImmediately" type="System.Threading.Tests.TimerDisposeTests" method="Dispose_NotFired_WaitHandleSignaledImmediately" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tests.TimerDisposeTests.DisposeAsync_AfterDisposeWaitHandleThrows" type="System.Threading.Tests.TimerDisposeTests" method="DisposeAsync_AfterDisposeWaitHandleThrows" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+  </assembly>
+</assemblies>

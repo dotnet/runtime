@@ -1,0 +1,129 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:35073/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Security.Claims.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Security.Claims.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Security.Claims.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Security.Claims.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Security.Claims.Tests.dll (found 65 of 65 test cases)
+Starting:    System.Security.Claims.Tests.dll
+[STRT] System.Security.Claims.GenericPrincipalTest.IsInRole
+[STRT] System.Security.Claims.GenericPrincipalTest.NullRoles
+[STRT] System.Security.Claims.GenericPrincipalTest.IsInRole_CaseInsensitive
+[STRT] System.Security.Claims.GenericPrincipalTest.Ctor_ArgumentValidation
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_IdentityEnumerableClaimAuthNameRoleType_ClaimsIdentityRestFilled
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_EnumerableClaimAuthNameRoleType
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_EnumerableClaim_WithoutName
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_BinaryReader_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: InvariantCulture)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_BinaryReader_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: Ordinal)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_BinaryReader_WithStringComparison_NoMatch(claimType: "Type", findType: "typ\0e", stringComparison: Ordinal)
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_AuthenticationType_Blank
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_AuthenticationType
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_IdentityEnumerableClaimAuthNameRoleType_IdentityNullRestEmpty
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_BinaryReader_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: InvariantCultureIgnoreCase)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_BinaryReader_WithStringComparison_Match(claimType: "Type", findType: "typ\0e", stringComparison: InvariantCultureIgnoreCase)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_BinaryReader_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: OrdinalIgnoreCase)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: InvariantCultureIgnoreCase, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: InvariantCultureIgnoreCase, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_WithStringComparison_Match(claimType: "Type", findType: "typ\0e", stringComparison: InvariantCultureIgnoreCase, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_WithStringComparison_Match(claimType: "Type", findType: "typ\0e", stringComparison: InvariantCultureIgnoreCase, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: OrdinalIgnoreCase, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: OrdinalIgnoreCase, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_IdentityEnumerableClaimAuthNameRoleType
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: InvariantCultureIgnoreCase, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: InvariantCultureIgnoreCase, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_WithStringComparison_Match(claimType: "Type", findType: "typ\0e", stringComparison: InvariantCultureIgnoreCase, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_WithStringComparison_Match(claimType: "Type", findType: "typ\0e", stringComparison: InvariantCultureIgnoreCase, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: OrdinalIgnoreCase, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: OrdinalIgnoreCase, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_ValidateStringComparison(stringComparison: CurrentCulture)
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_ValidateStringComparison(stringComparison: CurrentCultureIgnoreCase)
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_ValidateStringComparison(stringComparison: 703710)
+[STRT] System.Security.Claims.ClaimsIdentityTests.Find_CaseInsensivity
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_NullClaimsIdentity
+[STRT] System.Security.Claims.ClaimsIdentityTests.Clone_PreservesStringComparison
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: InvariantCulture, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: InvariantCulture, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: Ordinal, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: Ordinal, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_WithStringComparison_NoMatch(claimType: "Type", findType: "typ\0e", stringComparison: Ordinal, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_WithStringComparison_NoMatch(claimType: "Type", findType: "typ\0e", stringComparison: Ordinal, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: InvariantCulture, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: InvariantCulture, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: Ordinal, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: Ordinal, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_WithStringComparison_NoMatch(claimType: "Type", findType: "typ\0e", stringComparison: Ordinal, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_WithStringComparison_NoMatch(claimType: "Type", findType: "typ\0e", stringComparison: Ordinal, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_IdentityEnumerableClaimAuthNameRoleType_ClaimsArrayEmptyTypes
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_EnumerableClaimAuthNameRoleType_AllEmpty
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_IdentityEnumerableClaimAuthNameRoleType_NonClaimsIdentityRestEmptyWorks
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_AuthenticationType_Null
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_IdentityEnumerableClaimAuthNameRoleType_NullClaimsArrayNulls
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_EnumerableClaimAuthNameRoleType_TwoClaimsAndTypesNull
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_BinaryReader_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: InvariantCulture)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_BinaryReader_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: Ordinal)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_BinaryReader_WithStringComparison_NoMatch(claimType: "Type", findType: "typ\0e", stringComparison: Ordinal)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: InvariantCultureIgnoreCase, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: InvariantCultureIgnoreCase, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_WithStringComparison_Match(claimType: "Type", findType: "typ\0e", stringComparison: InvariantCultureIgnoreCase, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_WithStringComparison_Match(claimType: "Type", findType: "typ\0e", stringComparison: InvariantCultureIgnoreCase, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: OrdinalIgnoreCase, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: OrdinalIgnoreCase, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_IdentityEnumerableClaimAuthNameRoleType_ClaimsIdentityClaim
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_TypeValue
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_EnumerableClaim_WithName
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_EnumerableClaim_Empty
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_IdentityEnumerableClaimAuthNameRoleType_NonClaimsIdentityClaims
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_BinaryReader_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: InvariantCultureIgnoreCase)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_BinaryReader_WithStringComparison_Match(claimType: "Type", findType: "typ\0e", stringComparison: InvariantCultureIgnoreCase)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_BinaryReader_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: OrdinalIgnoreCase)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_BinaryReader_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: InvariantCultureIgnoreCase)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_BinaryReader_WithStringComparison_Match(claimType: "Type", findType: "typ\0e", stringComparison: InvariantCultureIgnoreCase)
+[STRT] System.Security.Claims.ClaimsIdentityTests.HasClaim_BinaryReader_WithStringComparison_Match(claimType: "Type", findType: "type", stringComparison: OrdinalIgnoreCase)
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_EnumerableClaimAuthNameRoleType_TwoClaimsAndTypesEmpty
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_EnumerableClaim_Null
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: InvariantCulture, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: InvariantCulture, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: Ordinal, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: Ordinal, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_WithStringComparison_NoMatch(claimType: "Type", findType: "typ\0e", stringComparison: Ordinal, copy: False)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindAll_WithStringComparison_NoMatch(claimType: "Type", findType: "typ\0e", stringComparison: Ordinal, copy: True)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_BinaryReader_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: InvariantCulture)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_BinaryReader_WithStringComparison_NoMatch(claimType: "Type", findType: "type", stringComparison: Ordinal)
+[STRT] System.Security.Claims.ClaimsIdentityTests.FindFirst_BinaryReader_WithStringComparison_NoMatch(claimType: "Type", findType: "typ\0e", stringComparison: Ordinal)
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_NullBinaryReader
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_EnumerableClaimAuthNameRoleType_AllNull
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_Default
+[STRT] System.Security.Claims.ClaimsIdentityTests.Ctor_IdentityEnumerableClaimAuthNameRoleType_NullIdentityRestFilled
+[STRT] System.Security.Claims.GenericIdentityTest.NameAuthenticationType
+[STRT] System.Security.Claims.GenericIdentityTest.Name
+[STRT] System.Security.Claims.GenericIdentityTest.EmptyName
+[STRT] System.Security.Claims.GenericIdentityTest.Ctor_ArgumentValidation
+[STRT] System.Security.Claims.ClaimTests.Ctor_ArgumentValidation
+[STRT] System.Security.Claims.ClaimTests.BinaryWriteReadTest_Success
+[STRT] System.Security.Claims.ClaimsPrincipalTests.Ctor_IPrincipal_NoIdentity
+[STRT] System.Security.Claims.ClaimsPrincipalTests.Ctor_IPrincipal
+[STRT] System.Security.Claims.ClaimsPrincipalTests.Ctor_IIdentity_NonClaims
+[STRT] System.Security.Claims.ClaimsPrincipalTests.ClaimsPrincipalSelector_Roundtrip
+[STRT] System.Security.Claims.ClaimsPrincipalTests.Ctor_Default
+[STRT] System.Security.Claims.ClaimsPrincipalTests.Ctor_IIdentity
+[STRT] System.Security.Claims.ClaimsPrincipalTests.Ctor_IPrincipal_MultipleIdentities
+[STRT] System.Security.Claims.ClaimsPrincipalTests.Current_FallsBackToThread_UnauthenticatedPrincipalPolicy
+[STRT] System.Security.Claims.ClaimsPrincipalTests.Ctor_ArgumentValidation
+[STRT] System.Security.Claims.ClaimsPrincipalTests.Ctor_NonClaimsIPrincipal_NoIdentity
+[STRT] System.Security.Claims.ClaimsPrincipalTests.Current_FallsBackToThread_NoPrincipalPolicy
+[STRT] System.Security.Claims.ClaimsPrincipalTests.Ctor_IEnumerableClaimsIdentity_Multiple
+[STRT] System.Security.Claims.ClaimsPrincipalTests.Ctor_IEnumerableClaimsIdentity_Empty
+[STRT] System.Security.Claims.ClaimsPrincipalTests.ClaimsPrincipalSelector_DefaultNull
+[STRT] System.Security.Claims.ClaimsPrincipalTests.Ctor_NonClaimsIPrincipal_NonClaimsIdentity
+Finished:    System.Security.Claims.Tests.dll
+Finished uploading 32268 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 109 Passed: 105 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 4
+
+test-main.js exiting WasmTestRunner.dll System.Security.Claims.Tests.dll after 0.010966666666666666 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

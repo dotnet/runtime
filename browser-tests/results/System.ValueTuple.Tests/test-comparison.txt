@@ -1,0 +1,9 @@
+Test Comparison: System.ValueTuple.Tests
+Generated: 2026-01-30T13:26:37+01:00
+
+Mono tests:    102
+CoreCLR tests: 102
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

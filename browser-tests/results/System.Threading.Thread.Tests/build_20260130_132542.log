@@ -1,0 +1,121 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Threading.Thread/tests/STAMain/STAMain.csproj (in 173 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Threading.Thread/tests/DefaultApartmentStateMain/DefaultApartmentStateMain.csproj (in 173 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Threading.Thread/tests/MTAMain/MTAMain.csproj (in 173 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Threading.Thread/tests/System.Threading.Thread.Tests.csproj (in 173 ms).
+  3 of 7 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  STAMain -> /home/pavelsavara/dev/runtime/artifacts/bin/STAMain/Release/net11.0/STAMain.dll
+  DefaultApartmentStateMain -> /home/pavelsavara/dev/runtime/artifacts/bin/DefaultApartmentStateMain/Release/net11.0/DefaultApartmentStateMain.dll
+  MTAMain -> /home/pavelsavara/dev/runtime/artifacts/bin/MTAMain/Release/net11.0/MTAMain.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Threading.Thread.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread.Tests/Release/net11.0/browser-wasm/System.Threading.Thread.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.Threading.Thread.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Threading.Thread/tests
+  ----- start Fri Jan 30 13:25:46 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Threading.Thread.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.Threading.Thread.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.Threading.Thread.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Threading.Thread/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Threading.Thread.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 44043
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 44043.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:35575/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Threading.Thread.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Threading.Thread.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Threading.Thread.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Threading.Thread.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Threading.Thread.Tests.dll (found 43 of 49 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Threading.Thread.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.InterruptInFinallyBlockTest_SkipOnDesktopFramework
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.SleepTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.ThreadNameDoesNotAffectProcessName
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.UnauthenticatedPrincipalTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.ExecutionContextTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.NameTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentState_NoAttributePresent_DefaultState_Nano
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentState_AttributePresent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.CurrentThreadTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.InterruptTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentState_NoAttributePresent_STA_Unix
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.CurrentPrincipalContextFlowTest_NotFlow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.MiscellaneousTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.PriorityTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.IsBackgroundTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.JoinTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.IsAliveTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.GetCurrentProcessorId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentStateTest_ChangeBeforeThreadStarted_Windows_Nano_Server
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.CurrentPrincipal_SetNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.WindowsPrincipalPolicyTest_Unix
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.LocalDataSlotTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.CurrentPrincipalContextFlowTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.ThreadStateTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.CurrentPrincipalTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.AbortSuspendTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.ManagedThreadIdTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.CurrentCultureTest_DifferentThread
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.CurrentPrincipalTest_SkipOnDesktopFramework
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.IsThreadPoolThreadTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.DefaultPrincipalPolicyTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentState_NoAttributePresent_DefaultState_Unix
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.ConstructorTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.CurrentCultureTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentStateTest_Unix(getApartmentState: Func`2 { Method = System.Threading.ApartmentState <ApartmentStateTest_MemberData>b__3_0(System.Threading.Thread), Target = <>c { } }, setApartmentState: Func`3 { Method = Int32 <ApartmentStateTest_MemberData>b__3_1(System.Threading.Thread, System.Threading.ApartmentState), Target = <>c { } }, setType: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentStateTest_Unix(getApartmentState: Func`2 { Method = System.Threading.ApartmentState <ApartmentStateTest_MemberData>b__3_2(System.Threading.Thread), Target = <>c { } }, setApartmentState: Func`3 { Method = Int32 <ApartmentStateTest_MemberData>b__3_3(System.Threading.Thread, System.Threading.ApartmentState), Target = <>c { } }, setType: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.ApartmentStateTest_Unix(getApartmentState: Func`2 { Method = System.Threading.ApartmentState <ApartmentStateTest_MemberData>b__3_4(System.Threading.Thread), Target = <>c { } }, setApartmentState: Func`3 { Method = Int32 <ApartmentStateTest_MemberData>b__3_5(System.Threading.Thread, System.Threading.ApartmentState), Target = <>c { } }, setType: 2)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.StartTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadTests.NoPrincipalPolicyTest_NewThreads
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Tests.CompressedStackTests.RunTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Tests.CompressedStackTests.RunTest_SkipOnDesktopFramework
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Tests.CompressedStackTests.Capture_GetCompressedStack_CreateCopy_Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ThreadExceptionEventArgsTests.ConstructorTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ExceptionTests.ThreadStateException_ConstructorTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Threading.Threads.Tests.ExceptionTests.ThreadInterruptedException_ConstructorTest
+  [40m[32minfo[39m[22m[49m: Finished:    System.Threading.Thread.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 14362 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 14362 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 45 Passed: 12 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 33
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Threading.Thread.Tests.dll after 0.018616666666666667 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/System.Threading.Thread.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Threading.Thread/tests
+  ----- end Fri Jan 30 13:25:50 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:07.18

@@ -1,0 +1,130 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:44323/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Xml.Linq.SDMSample.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Xml.Linq.SDMSample.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Xml.Linq.SDMSample.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Xml.Linq.SDMSample.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Xml.Linq.SDMSample.Tests.dll (found 110 of 110 test cases)
+Starting:    System.Xml.Linq.SDMSample.Tests.dll
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeConstructor
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeIsNamespaceDeclaration
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToInt32
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToUInt32
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToString
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToGuid
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeEmptySequence
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToNullables
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToUInt64
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeParent
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToFloat_NotNetFramework
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToDateTime
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeRemove
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToBoolean
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToInt64
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToTimeSpan
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToDouble_NotNetFramework
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToFloat
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToDouble
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToDecimal
+[STRT] XDocumentTests.SDMSample.SDM_Attribute.AttributeValue
+[STRT] XDocumentTests.SDMSample.SDM_CDATA.CreateTextSimple
+[STRT] XDocumentTests.SDMSample.SDM_CDATA.CreateTextFromReader
+[STRT] XDocumentTests.SDMSample.SDM_CDATA.DeepEquals
+[STRT] XDocumentTests.SDMSample.SDM_CDATA.TextValue
+[STRT] XDocumentTests.SDMSample.SDM_CDATA.TextEquals
+[STRT] XDocumentTests.SDMSample.SDM_CDATA.TextWriteTo
+[STRT] XDocumentTests.SDMSample.SDM_Element.CreateElementSimple
+[STRT] XDocumentTests.SDMSample.SDM_Element.CreateElementCopy
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToUInt64
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToFloat
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToInt32
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementWithXmlnsAttribute
+[STRT] XDocumentTests.SDMSample.SDM_Element.CreateElementWithContent
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementAppendedChildIsIterated
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToDouble
+[STRT] XDocumentTests.SDMSample.SDM_Element.CreateElementFromReader
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToDateTime
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementGetDefaultNamespace
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToString
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementValue
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToUInt32
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementGetPrefixOfNamespace
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementDescendents
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToDouble_NotNetFramework
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToFloat_NotNetFramework
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementGetNamespaceOfPrefix
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToGuid
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToTimeSpan
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementHasAttributesAndElements
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementIsEmpty
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementRemove
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToDecimal
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementAncestors
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementEquality
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToNullables
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToBoolean
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementExplicitToInt64
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementAttributes
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementEmptyElementSequence
+[STRT] XDocumentTests.SDMSample.SDM_Element.ElementSetElementValue
+[STRT] XDocumentTests.SDMSample.SDM_Document.CreateEmptyDocument
+[STRT] XDocumentTests.SDMSample.SDM_Document.CreateDocumentWithContent
+[STRT] XDocumentTests.SDMSample.SDM_Document.DocumentXmlDeclaration
+[STRT] XDocumentTests.SDMSample.SDM_Document.DocumentRoot
+[STRT] XDocumentTests.SDMSample.SDM_Document.CreateDocumentCopy
+[STRT] XDocumentTests.SDMSample.SDM_Document.DocumentAddString
+[STRT] XDocumentTests.SDMSample.SDM_Container.ContainerAdd
+[STRT] XDocumentTests.SDMSample.SDM_Container.ContainerAddAttributes
+[STRT] XDocumentTests.SDMSample.SDM_Container.ContainerDescendents
+[STRT] XDocumentTests.SDMSample.SDM_Container.ContainerElements
+[STRT] XDocumentTests.SDMSample.SDM_Container.ContainerContent
+[STRT] XDocumentTests.SDMSample.SDM_Container.ContainerRemoveTextual
+[STRT] XDocumentTests.SDMSample.SDM_Container.ContainerAddFirst
+[STRT] XDocumentTests.SDMSample.SDM_Container.ContainerAnnotations
+[STRT] XDocumentTests.SDMSample.SDM_Container.ContainerReplaceNodes
+[STRT] XDocumentTests.SDMSample.SDM_XName.NameGetInvalid
+[STRT] XDocumentTests.SDMSample.SDM_XName.NameOperators
+[STRT] XDocumentTests.SDMSample.SDM_XName.NamespaceGetNull
+[STRT] XDocumentTests.SDMSample.SDM_XName.NamespaceOperators
+[STRT] XDocumentTests.SDMSample.SDM_Comment.CreateCommentSimple
+[STRT] XDocumentTests.SDMSample.SDM_Comment.CreateCommentFromReader
+[STRT] XDocumentTests.SDMSample.SDM_Comment.CommentDeepEquals
+[STRT] XDocumentTests.SDMSample.SDM_Comment.CommentValue
+[STRT] XDocumentTests.SDMSample.SDM_Comment.CommentEquals
+[STRT] XDocumentTests.SDMSample.SDM_Comment.CommentWriteTo
+[STRT] XDocumentTests.SDMSample.SDM__PI.CreateProcessingInstructionSimple
+[STRT] XDocumentTests.SDMSample.SDM__PI.CreateProcessingInstructionFromReader
+[STRT] XDocumentTests.SDMSample.SDM__PI.ProcessingInstructionValues
+[STRT] XDocumentTests.SDMSample.SDM__PI.ProcessingInstructionEquals
+[STRT] XDocumentTests.SDMSample.SDM__PI.ProcessingInstructionWriteTo
+[STRT] XDocumentTests.SDMSample.SDM_Misc.NodeTypes
+[STRT] XDocumentTests.SDMSample.SDM_LoadSave.DocumentLoadFromXmlReader
+[STRT] XDocumentTests.SDMSample.SDM_LoadSave.DocumentSaveToXmlWriter
+[STRT] XDocumentTests.SDMSample.SDM_LoadSave.ElementLoadFromXmlReader
+[STRT] XDocumentTests.SDMSample.SDM_LoadSave.DocumentWriteTo
+[STRT] XDocumentTests.SDMSample.SDM_LoadSave.ElementSaveToXmlWriter
+[STRT] XDocumentTests.SDMSample.SDM_Node.NodeParent
+[STRT] XDocumentTests.SDMSample.SDM_Node.NodeReadFrom
+[STRT] XDocumentTests.SDMSample.SDM_Node.NodeRemove
+[STRT] XDocumentTests.SDMSample.SDM_Node.NodeAllContentBeforeSelf
+[STRT] XDocumentTests.SDMSample.SDM_Node.NodeAddBeforeSelf
+[STRT] XDocumentTests.SDMSample.SDM_Node.NodeDocument
+[STRT] XDocumentTests.SDMSample.SDM_Node.NodeNoParentAddRemove
+[STRT] XDocumentTests.SDMSample.SDM_Node.NodeElementsAfterSelf
+[STRT] XDocumentTests.SDMSample.SDM_Node.NodeAllContentAfterSelf
+[STRT] XDocumentTests.SDMSample.SDM_Node.NodeAddAfterSelf
+[STRT] XDocumentTests.SDMSample.SDM_Node.NodeContentAfterSelf
+[STRT] XDocumentTests.SDMSample.SDM_Node.NodeElementsBeforeSelf
+[STRT] XDocumentTests.SDMSample.SDM_Node.NodeContentBeforeSelf
+Finished:    System.Xml.Linq.SDMSample.Tests.dll
+Finished uploading 22396 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 110 Passed: 110 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Xml.Linq.SDMSample.Tests.dll after 0.011516666666666666 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

@@ -1,0 +1,229 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:35533/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Runtime.ReflectionInvokeEmit.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Runtime.ReflectionInvokeEmit.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Runtime.ReflectionInvokeEmit.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Runtime.ReflectionInvokeEmit.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Runtime.ReflectionInvokeEmit.Tests.dll (found 61 of 63 test cases)
+Starting:    System.Runtime.ReflectionInvokeEmit.Tests.dll
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnNullableNoValue
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnOfPointer
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestByRefLikeRefReturn
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnOfPointer
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnNullable
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<Boolean>(value: True)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<Char>(value: 'a')
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<Byte>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<SByte>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<UInt16>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<Int16>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<UInt32>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<Int32>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<UInt64>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<Int64>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<Single>(value: 43.6699982)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<Double>(value: 43.670000000000002)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<IntPtr>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<UIntPtr>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<Decimal>(value: 232953453454)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<BindingFlags>(value: IgnoreCase)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<String>(value: "Hello")
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<Object>(value: Object { })
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<UriBuilder>(value: http://localhost/)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<Int32[]>(value: [0, 0, 0, 0, 0])
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnMethodInvoke<Int32[,]>(value: [0, 0, 0, 0, 0, ···])
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<Boolean>(value: True)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<Char>(value: 'a')
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<Byte>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<SByte>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<UInt16>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<Int16>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<UInt32>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<Int32>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<UInt64>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<Int64>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<Single>(value: 43.6699982)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<Double>(value: 43.670000000000002)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<IntPtr>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<UIntPtr>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<Decimal>(value: 232953453454)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<BindingFlags>(value: IgnoreCase)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<String>(value: "Hello")
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<Object>(value: Object { })
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<UriBuilder>(value: http://localhost/)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<Int32[]>(value: [0, 0, 0, 0, 0])
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke<Int32[,]>(value: [0, 0, 0, 0, 0, ···])
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<Boolean>(value: True)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<Char>(value: 'a')
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<Byte>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<SByte>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<UInt16>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<Int16>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<UInt32>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<Int32>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<UInt64>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<Int64>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<Single>(value: 43.6699982)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<Double>(value: 43.670000000000002)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<IntPtr>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<UIntPtr>(value: 42)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<Decimal>(value: 232953453454)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<BindingFlags>(value: IgnoreCase)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<String>(value: "Hello")
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<Object>(value: Object { })
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<UriBuilder>(value: http://localhost/)
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<Int32[]>(value: [0, 0, 0, 0, 0])
+[STRT] System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnPropertyGetValue<Int32[,]>(value: [0, 0, 0, 0, 0, ···])
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertySetValue_InvalidType(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertySetValue_InvalidType(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertySetValue_InvalidType(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertySetValue_InvalidType(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertySetValue_InvalidType(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodDelegateParameter_InvalidType_SystemPointer(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodDelegateParameter_InvalidType_SystemPointer(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodDelegateParameter_InvalidType_SystemPointer(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodDelegateParameter_InvalidType_SystemPointer(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodDelegateParameter_InvalidType_SystemPointer(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateReturn_SystemPointer(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateReturn_SystemPointer(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateReturn_SystemPointer(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateReturn_SystemPointer(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateReturn_SystemPointer(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodReturn(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodReturn(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodReturn(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodReturn(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodReturn(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrPropertySetValue(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrPropertySetValue(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrPropertySetValue(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrPropertySetValue(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrPropertySetValue(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.UIntPtrMethodParameter(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.UIntPtrMethodParameter(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.UIntPtrMethodParameter(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.UIntPtrMethodParameter(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.UIntPtrMethodParameter(value: 4294967295)
+[STRT] System.Reflection.Tests.PointerTests.Box_NonPointerType
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertySetValue(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertySetValue(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertySetValue(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertySetValue(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertySetValue(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrFieldSetValue(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrFieldSetValue(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrFieldSetValue(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrFieldSetValue(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrFieldSetValue(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.PointerNullMethodDelegateParameter
+[STRT] System.Reflection.Tests.PointerTests.PointerValueRoundtrips(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerValueRoundtrips(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerValueRoundtrips(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerValueRoundtrips(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerValueRoundtrips(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodParameter_InvalidType(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodParameter_InvalidType(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodParameter_InvalidType(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodParameter_InvalidType(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodParameter_InvalidType(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.Box_TypeNull
+[STRT] System.Reflection.Tests.PointerTests.PointerNullMethodParameter
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter_InvalidType_SystemPointer(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter_InvalidType_SystemPointer(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter_InvalidType_SystemPointer(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter_InvalidType_SystemPointer(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter_InvalidType_SystemPointer(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldSetNullValue
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodDelegateParameter(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodDelegateParameter(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodDelegateParameter(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodDelegateParameter(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodDelegateParameter(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldGetValue(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldGetValue(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldGetValue(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldGetValue(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldGetValue(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.Unbox_NotPointer
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodParameter(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodParameter(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodParameter(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodParameter(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.IntPtrMethodParameter(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter_InvalidType(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter_InvalidType(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter_InvalidType(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter_InvalidType(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter_InvalidType(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateReturn(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateReturn(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateReturn(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateReturn(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodDelegateReturn(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.PointerNullMethodDelegateParameter_InvalidType_SystemPointer
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldSetValue_InvalidType(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldSetValue_InvalidType(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldSetValue_InvalidType(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldSetValue_InvalidType(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldSetValue_InvalidType(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertyGetValue(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertyGetValue(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertyGetValue(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertyGetValue(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerPropertyGetValue(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.Unbox_Null
+[STRT] System.Reflection.Tests.PointerTests.MethodDelegateParameter_SystemPointer(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.MethodDelegateParameter_SystemPointer(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.MethodDelegateParameter_SystemPointer(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.MethodDelegateParameter_SystemPointer(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.MethodDelegateParameter_SystemPointer(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodParameter(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodParameter(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodParameter(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodParameter(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerMethodParameter(value: -2147483648)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldSetValue(value: 0)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldSetValue(value: 1)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldSetValue(value: -1)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldSetValue(value: 2147483647)
+[STRT] System.Reflection.Tests.PointerTests.PointerFieldSetValue(value: -2147483648)
+[STRT] System.Reflection.Tests.InvokeWithRefLikeArgs.MethodTakesRefStructAsArgWithDefaultValue_ThrowsNSE
+[STRT] System.Reflection.Tests.InvokeWithRefLikeArgs.PropertyTypedAsRefToRefStruct_AsPropInfo_ThrowsNSE
+[STRT] System.Reflection.Tests.InvokeWithRefLikeArgs.PropertyIndexerWithRefStructArg_ThrowsNSE
+[STRT] System.Reflection.Tests.InvokeWithRefLikeArgs.PropertyTypedAsRefToRefStruct_AsMethodInfo_ThrowsNSE
+[STRT] System.Reflection.Tests.InvokeWithRefLikeArgs.MethodTakesRefStructAsArg_ThrowsNSE
+[STRT] System.Reflection.Tests.InvokeWithRefLikeArgs.MethodReturnsRefToRefStruct_ThrowsNSE
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.PropertySet
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.ActivatorCreateInstance
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.ActivatorCreateInstance_BadCCtor
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.AssemblyCreateInstance_BadCCtor
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.InvokeMember_PropertySet
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.ConstructorInvokeUsingMethodInfoInvoke
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.InvokeMember_PropertyGet
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.MethodInvoke
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.ConstructorInvokeStringCtorTwoArgs
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.ConstructorInvokeStringCtor
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.ActivatorCreateInstanceCaching
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.ConstructorInvokeTwoArgs
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.ActivatorCreateInstanceOneArgument
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.ConstructorInvoke
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.InvokeMember_Method
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.AssemblyCreateInstance
+[STRT] System.Reflection.Tests.BindingFlagsDoNotWrapTests.PropertyGet
+Finished:    System.Runtime.ReflectionInvokeEmit.Tests.dll
+Finished uploading 48471 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 209 Passed: 209 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Runtime.ReflectionInvokeEmit.Tests.dll after 0.013333333333333334 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

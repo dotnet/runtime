@@ -1,0 +1,167 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime/tests/System.ValueTuple.Tests/System.ValueTuple.Tests.csproj (in 131 ms).
+  3 of 4 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.ValueTuple.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ValueTuple.Tests/Release/net11.0/browser-wasm/System.ValueTuple.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.ValueTuple.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.ValueTuple.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.ValueTuple.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Runtime/tests/System.ValueTuple.Tests
+  ----- start Fri Jan 30 13:26:34 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.ValueTuple.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.ValueTuple.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.ValueTuple.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.ValueTuple.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.ValueTuple.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Runtime/tests/System.ValueTuple.Tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.ValueTuple.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.ValueTuple.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 39547
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 39547.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:39891/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.ValueTuple.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.ValueTuple.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.ValueTuple.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.ValueTuple.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.ValueTuple.Tests.dll (found 97 of 97 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.ValueTuple.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.LongTuplesWithNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.TestCompareTo
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.OneTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.TestToString
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.SixTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.SevenTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.ZeroTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.TwoTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.TestCustomTypeParameter2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.NestedValueTuples1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.FiveTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.TestConstructor
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.IncomparableTypesSpecialCase
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.FloatingPointNaNCases
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.IncomparableTypes
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.TestNotEqual
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.TestCustomTypeParameter3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.ThreeTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.TestCustomTypeParameter1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.FourTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.EightTuplesWithBadRest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.EightTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.TestCustomTypeParameter4
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.TestEquals_GetHashCode
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ValueTupleTests.NestedValueTuples2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.TupleElementNamesAttributeTests.Constructor
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.TupleTests.EightTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.TupleTests.OneTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.TupleTests.FiveTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.TupleTests.TwoTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.TupleTests.SevenTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.TupleTests.SixTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.TupleTests.FourTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.TupleTests.ThreeTuples
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue18
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct8
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef19
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct6
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue12
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue14
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef18
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef21
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef10
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue9
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef20
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct19
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct15
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct12
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct21
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef16
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct13
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef17
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue16
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue19
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct14
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef6
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct17
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct7
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue15
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue13
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef13
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef14
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef12
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct16
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef4
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue8
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct11
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct9
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue7
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef7
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct5
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue10
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef11
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct18
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue17
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue5
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef15
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue21
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct4
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef8
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue11
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct10
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef9
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef5
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue6
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.Deconstruct20
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue4
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToValue20
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.ExtensionsTests.ConvertToRef1
+  [40m[32minfo[39m[22m[49m: Finished:    System.ValueTuple.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.ValueTuple.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 15975 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 15975 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 97 Passed: 97 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.ValueTuple.Tests.dll after 0.011783333333333333 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/System.ValueTuple.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Runtime/tests/System.ValueTuple.Tests
+  ----- end Fri Jan 30 13:26:37 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.ValueTuple.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:05.63

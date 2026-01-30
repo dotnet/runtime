@@ -1,0 +1,9 @@
+Test Comparison: System.Xml.Linq.TreeManipulation.Tests
+Generated: 2026-01-30T13:27:28+01:00
+
+Mono tests:    18
+CoreCLR tests: 18
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

@@ -1,0 +1,53 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:36859/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Threading.Timer.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Threading.Timer.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Threading.Timer.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Threading.Timer.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Threading.Timer.Tests.dll (found 31 of 37 test cases)
+Starting:    System.Threading.Timer.Tests.dll
+[STRT] System.Threading.Tests.TimerChangeTests.Timer_Change_DueTime_OutOfRange_Throws
+[STRT] System.Threading.Tests.TimerChangeTests.Timer_Change_AfterDispose_Test
+[STRT] System.Threading.Tests.TimerChangeTests.Timer_Change_Period_OutOfRange_Throws
+[STRT] System.Threading.Tests.TimerChangeTests.Timer_Change_BeforeDueTime_ChangesWhenTimerWillFire
+[STRT] System.Threading.Tests.TimerFiringTests.Timer_Fires_AndPassesNullStateThroughCallback
+[STRT] System.Threading.Tests.TimerFiringTests.Timer_CanBeDisposedMultipleTimes
+[STRT] System.Threading.Tests.TimerFiringTests.Timer_CanDisposeSelfInCallback
+[STRT] System.Threading.Tests.TimerFiringTests.Timer_Dispose_WaitHandle
+[STRT] System.Threading.Tests.TimerFiringTests.Timer_Constructor_CallbackOnly_Change
+[STRT] System.Threading.Tests.TimerFiringTests.ManyTimers_EachTimerDoesFire
+[STRT] System.Threading.Tests.TimerFiringTests.NonRepeatingTimer_ThatHasAlreadyFired_CanChangeAndFireAgain
+[STRT] System.Threading.Tests.TimerFiringTests.Timer_FiresOnlyOnce_OnDueTime_With_InfinitePeriod
+[STRT] System.Threading.Tests.TimerFiringTests.Timer_Fires_AndPassesStateThroughCallback
+[STRT] System.Threading.Tests.TimerFiringTests.TimersCreatedConcurrentlyOnDifferentThreadsAllFire
+[STRT] System.Threading.Tests.TimerFiringTests.Timer_Dispose_WaitHandle_Negative
+[STRT] System.Threading.Tests.TimerFiringTests.MultpleTimers_PeriodicTimerIsntBlockedByBlockedCallback
+[STRT] System.Threading.Tests.TimerFiringTests.Timer_Fires_After_DueTime_Ellapses
+[STRT] System.Threading.Tests.TimerConstructorTests.Timer_Constructor_DueTimeOutOfRange_Throws(callback: null)
+[STRT] System.Threading.Tests.TimerConstructorTests.Timer_Constructor_DueTimeOutOfRange_Throws(callback: TimerCallback { Method = Void <CallbacksForPeriodDueTimeOutOfRange>b__0_0(System.Object), Target = <>c { } })
+[STRT] System.Threading.Tests.TimerConstructorTests.Timer_Constructor_NullCallback_Throws
+[STRT] System.Threading.Tests.TimerConstructorTests.Timer_Constructor_PeriodOutOfRange_Throws(callback: null)
+[STRT] System.Threading.Tests.TimerConstructorTests.Timer_Constructor_PeriodOutOfRange_Throws(callback: TimerCallback { Method = Void <CallbacksForPeriodDueTimeOutOfRange>b__0_0(System.Object), Target = <>c { } })
+[STRT] System.Threading.Tests.TimerConstructorTests.Timer_AllConstructorsCanBeUsedSuccessfully
+[STRT] System.Threading.Tests.TimerMetricsTests.CountTest
+[STRT] System.Threading.Tests.TimerDisposeTests.DisposeAsync_CanBeCalledMultipleTimes
+[STRT] System.Threading.Tests.TimerDisposeTests.DisposeAsync_SignalsImmediatelyWhenTaskNotRunning
+[STRT] System.Threading.Tests.TimerDisposeTests.DisposeAsync_DisposeDelayedUntilCallbacksComplete
+[STRT] System.Threading.Tests.TimerDisposeTests.DisposeAsync_ThenDisposeWaitHandleReturnsFalse
+[STRT] System.Threading.Tests.TimerDisposeTests.DisposeAsync_AfterDisposeWorks
+[STRT] System.Threading.Tests.TimerDisposeTests.DisposeAsync_MultipleDisposesBeforeCompletionReturnSameTask
+[STRT] System.Threading.Tests.TimerDisposeTests.DisposeAsync_DisposesTimer
+[STRT] System.Threading.Tests.TimerDisposeTests.Dispose_NotFired_WaitHandleSignaledImmediately
+[STRT] System.Threading.Tests.TimerDisposeTests.DisposeAsync_AfterDisposeWaitHandleThrows
+Finished:    System.Threading.Timer.Tests.dll
+Finished uploading 10593 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 33 Passed: 16 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 17
+
+test-main.js exiting WasmTestRunner.dll System.Threading.Timer.Tests.dll after 0.012633333333333333 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

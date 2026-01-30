@@ -1,0 +1,39 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:42159/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Xml.Linq.xNodeBuilder.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Xml.Linq.xNodeBuilder.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Xml.Linq.xNodeBuilder.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Xml.Linq.xNodeBuilder.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Xml.Linq.xNodeBuilder.Tests.dll (found 7 of 8 test cases)
+Starting:    System.Xml.Linq.xNodeBuilder.Tests.dll
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+TCPI.IncludePIEndTagAsPartOfTextValue
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+TCComment.WriteCommentWithDoubleHyphensInValue
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+TCCData.WriteCDataWithTwoClosingBrackets_5
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XElementConflictsNSRedefinitionSaveToStringWriterAndGetContent(xml1: "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xm"···, xml2: "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xm"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XElementConflictsNSRedefinitionSaveToStringWriterAndGetContent(xml1: "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'>"···, xml2: "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'>"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XElementConflictsNSRedefinitionSaveToStringWriterAndGetContent(xml1: "<A xmlns=''><B xmlns='ns-other'><C xmlns=''><D xml"···, xml2: "<A><B xmlns='ns-other'><C xmlns=''><D/></C></B></A"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XElementConflictsNSRedefinitionSaveToStringWriterAndGetContent(xml1: "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D xmlns"···, xml2: "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D/></C>"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XDocumentConflictsNSRedefinitionToString(xml1: "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xm"···, xml2: "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xm"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XDocumentConflictsNSRedefinitionToString(xml1: "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'>"···, xml2: "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'>"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XDocumentConflictsNSRedefinitionToString(xml1: "<A xmlns=''><B xmlns='ns-other'><C xmlns=''><D xml"···, xml2: "<A><B xmlns='ns-other'><C xmlns=''><D/></C></B></A"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XDocumentConflictsNSRedefinitionToString(xml1: "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D xmlns"···, xml2: "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D/></C>"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XDocumentConflictsNSRedefinitionSaveToStringWriterAndGetContent(xml1: "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xm"···, xml2: "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xm"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XDocumentConflictsNSRedefinitionSaveToStringWriterAndGetContent(xml1: "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'>"···, xml2: "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'>"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XDocumentConflictsNSRedefinitionSaveToStringWriterAndGetContent(xml1: "<A xmlns=''><B xmlns='ns-other'><C xmlns=''><D xml"···, xml2: "<A><B xmlns='ns-other'><C xmlns=''><D/></C></B></A"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XDocumentConflictsNSRedefinitionSaveToStringWriterAndGetContent(xml1: "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D xmlns"···, xml2: "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D/></C>"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XElementConflictsNSRedefinitionToString(xml1: "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xm"···, xml2: "<p:A xmlns:p='nsp'><p:B xmlns:p='ns-other'><p:C xm"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XElementConflictsNSRedefinitionToString(xml1: "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'>"···, xml2: "<A xmlns='nsp'><B xmlns='ns-other'><C xmlns='nsp'>"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XElementConflictsNSRedefinitionToString(xml1: "<A xmlns=''><B xmlns='ns-other'><C xmlns=''><D xml"···, xml2: "<A><B xmlns='ns-other'><C xmlns=''><D/></C></B></A"···)
+[STRT] CoreXml.Test.XLinq.XNodeBuilderFunctionalTests+XNodeBuilderTests+NamespacehandlingSaveOptions.XElementConflictsNSRedefinitionToString(xml1: "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D xmlns"···, xml2: "<A xmlns='nsp'><B xmlns=''><C xmlns='nsp'><D/></C>"···)
+Finished:    System.Xml.Linq.xNodeBuilder.Tests.dll
+Finished uploading 10952 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 19 Passed: 19 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Xml.Linq.xNodeBuilder.Tests.dll after 0.013166666666666667 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

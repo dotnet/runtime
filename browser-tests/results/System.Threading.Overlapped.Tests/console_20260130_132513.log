@@ -1,0 +1,38 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:34209/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Threading.Overlapped.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Threading.Overlapped.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Threading.Overlapped.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Threading.Overlapped.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Threading.Overlapped.Tests.dll (found 18 of 64 test cases)
+Starting:    System.Threading.Overlapped.Tests.dll
+[STRT] OverlappedTests.PackNegTest1
+[STRT] OverlappedTests.PropertyTest3
+[STRT] OverlappedTests.PackNegTest
+[STRT] OverlappedTests.PropertyTest1
+[STRT] OverlappedTests.UnPackTest
+[STRT] OverlappedTests.PropertyTest2
+[STRT] ThreadPoolBoundHandleTests.BindHandle_ZeroAsHandle_ThrowsArgumentException
+[STRT] ThreadPoolBoundHandleTests.PreAllocatedOverlapped_ReturnedNativeOverlapped_InternalLowAndInternalHighSetToZero
+[STRT] ThreadPoolBoundHandleTests.PreAllocatedOverlapped_ReturnedNativeOverlapped_OffsetLowAndOffsetHighSetToZero
+[STRT] ThreadPoolBoundHandleTests.PreAllocatedOverlapped_NullAsPinData_DoesNotThrow
+[STRT] ThreadPoolBoundHandleTests.BindHandle_NullAsHandle_ThrowsArgumentNullException
+[STRT] ThreadPoolBoundHandleTests.BindHandle_MinusOneAsHandle_ThrowsArgumentException
+[STRT] ThreadPoolBoundHandleTests.PreAllocatedOverlapped_NullAsContext_DoesNotThrow
+[STRT] ThreadPoolBoundHandleTests.GetNativeOverlappedState_NullAsNativeOverlapped_ThrowsArgumentNullException
+[STRT] ThreadPoolBoundHandleTests.PreAllocatedOverlapped_ObjectArrayAsPinData_DoesNotThrow
+[STRT] ThreadPoolBoundHandleTests.PreAllocatedOverlapped_BlittableTypeAsPinData_DoesNotThrow
+[STRT] ThreadPoolBoundHandleTests.PreAllocatedOverlapped_EmptyArrayAsPinData_DoesNotThrow
+[STRT] ThreadPoolBoundHandleTests.BindHandle_ValidHandle_ThrowsPlatformNotSupportedException
+Finished:    System.Threading.Overlapped.Tests.dll
+Finished uploading 4324 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 18 Passed: 18 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Threading.Overlapped.Tests.dll after 0.008933333333333333 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0
