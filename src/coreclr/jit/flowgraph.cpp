@@ -3628,8 +3628,11 @@ void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
     else
     {
         LIR::Range range = LIR::SeqTree(this, tree);
+        GenTree* const firstNode = range.FirstNode();
+        GenTree* const lastNode  = range.LastNode();
         LIR::AsRange(block).InsertAtEnd(std::move(range));
-        m_pLowering->LowerRange(block, range);
+        LIR::ReadOnlyRange blockRange(block, firstNode, lastNode);
+        m_pLowering->LowerRange(block, blockRange);
     }
 }
 
