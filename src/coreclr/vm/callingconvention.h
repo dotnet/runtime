@@ -1904,15 +1904,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     return argOfs;
 #elif defined(TARGET_WASM)
 
-    size_t align;
-    if (argType == ELEMENT_TYPE_VALUETYPE && argSize > INTERP_STACK_SLOT_SIZE)
+    unsigned align;
+    if (argType == ELEMENT_TYPE_VALUETYPE)
     {
-        align = CEEInfo::getClassAlignmentRequirementStatic(thValueType.GetMethodTable());
-        if (align < INTERP_STACK_SLOT_SIZE)
-            align = INTERP_STACK_SLOT_SIZE;
-
-        if (align > INTERP_STACK_ALIGNMENT)
-            align = INTERP_STACK_ALIGNMENT;
+        align = std::clamp(CEEInfo::getClassAlignmentRequirementStatic(thValueType.GetMethodTable()), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
     } else {
         align = INTERP_STACK_SLOT_SIZE;
     }
