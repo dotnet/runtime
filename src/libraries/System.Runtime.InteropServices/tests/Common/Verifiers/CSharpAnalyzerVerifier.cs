@@ -41,10 +41,10 @@ namespace Microsoft.Interop.UnitTests.Verifiers
         // to avoid the need to maintain duplicate copies of the customization work.
         internal class Test : CSharpCodeFixVerifier<TAnalyzer, EmptyCodeFixProvider>.Test
         {
-            public Test()
+            public Test() : base()
             {
-                // Ignore compiler diagnostics since we're only testing the analyzer
-                // Without the generator, partial methods won't have implementations which causes CS8795
+                // Ignore compiler diagnostics since we're only testing the analyzer.
+                // Without the generator, partial methods won't have implementations which causes CS8795.
                 CompilerDiagnostics = CompilerDiagnostics.None;
             }
         }

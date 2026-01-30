@@ -39,8 +39,9 @@ namespace Microsoft.Interop
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // Collect all methods adorned with LibraryImportAttribute
-            var attributedMethods = context.SyntaxProvider
+            // Collect all methods adorned with LibraryImportAttribute and filter out invalid ones
+            // (diagnostics for invalid methods are reported by the analyzer)
+            var methodsToGenerate = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     TypeNames.LibraryImportAttribute,
                     static (node, ct) => node is MethodDeclarationSyntax,
@@ -48,11 +49,8 @@ namespace Microsoft.Interop
                         ? new { Syntax = (MethodDeclarationSyntax)context.TargetNode, Symbol = methodSymbol }
                         : null)
                 .Where(
-                    static modelData => modelData is not null);
-
-            // Filter out methods that are invalid for generation (diagnostics are reported by the analyzer)
-            var methodsToGenerate = attributedMethods
-                .Where(static data => IsValidMethodForGeneration(data.Syntax, data.Symbol));
+                    static modelData => modelData is not null
+                        && Analyzers.LibraryImportDiagnosticsAnalyzer.GetDiagnosticIfInvalidMethodForGeneration(modelData.Syntax, modelData.Symbol) is null);
 
             // Compute generator options
             IncrementalValueProvider<LibraryImportGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
@@ -523,60 +521,6 @@ namespace Microsoft.Interop
                     AliasQualifiedName("global", IdentifierName(typeof(T).FullName)),
                     IdentifierName(value.ToString()));
             }
-        }
-
-        private static bool IsValidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
-        {
-            // Verify the method has no generic types or defined implementation
-            // and is marked static and partial.
-            if (methodSyntax.TypeParameterList is not null
-                || methodSyntax.Body is not null
-                || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
-                || !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
-            {
-                return false;
-            }
-
-            // Verify that the types the method is declared in are marked partial.
-            if (methodSyntax.Parent is TypeDeclarationSyntax typeDecl && !typeDecl.IsInPartialContext(out _))
-            {
-                return false;
-            }
-
-            // Verify the method does not have a ref return
-            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        private static DiagnosticInfo? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
-        {
-            // Verify the method has no generic types or defined implementation
-            // and is marked static and partial.
-            if (methodSyntax.TypeParameterList is not null
-                || methodSyntax.Body is not null
-                || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
-                || !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
-            {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, methodSyntax.Identifier.GetLocation(), method.Name);
-            }
-
-            // Verify that the types the method is declared in are marked partial.
-            if (methodSyntax.Parent is TypeDeclarationSyntax typeDecl && !typeDecl.IsInPartialContext(out var nonPartialIdentifier))
-            {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers, methodSyntax.Identifier.GetLocation(), method.Name, nonPartialIdentifier);
-            }
-
-            // Verify the method does not have a ref return
-            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
-            {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, methodSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
-            }
-
-            return null;
         }
     }
 }

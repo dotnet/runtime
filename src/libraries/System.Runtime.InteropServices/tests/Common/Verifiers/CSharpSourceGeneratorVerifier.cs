@@ -110,13 +110,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
             }
 
             protected override IEnumerable<DiagnosticAnalyzer> GetDiagnosticAnalyzers()
-            {
-                foreach (var analyzer in base.GetDiagnosticAnalyzers())
-                {
-                    yield return analyzer;
-                }
-                yield return new TAnalyzer();
-            }
+                => [..base.GetDiagnosticAnalyzers(), new TAnalyzer()];
 
             protected override CompilationWithAnalyzers CreateCompilationWithAnalyzers(Compilation compilation, ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerOptions options, CancellationToken cancellationToken)
             {

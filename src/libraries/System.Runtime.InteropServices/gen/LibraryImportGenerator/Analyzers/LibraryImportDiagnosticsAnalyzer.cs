@@ -60,13 +60,16 @@ namespace Microsoft.Interop.Analyzers
                     context.Compilation,
                     context.Compilation.GetEnvironmentFlags());
 
+                // Get generator options once per compilation
+                LibraryImportGeneratorOptions options = new(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions);
+
                 // Track if we found any LibraryImport methods to report RequiresAllowUnsafeBlocks once
                 bool foundLibraryImportMethod = false;
                 bool unsafeEnabled = context.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true };
 
                 context.RegisterSymbolAction(symbolContext =>
                 {
-                    if (AnalyzeMethod(symbolContext, env, libraryImportAttrType))
+                    if (AnalyzeMethod(symbolContext, env, libraryImportAttrType, options))
                     {
                         foundLibraryImportMethod = true;
                     }
@@ -87,7 +90,7 @@ namespace Microsoft.Interop.Analyzers
         /// Analyzes a method for LibraryImport diagnostics.
         /// </summary>
         /// <returns>True if the method has LibraryImportAttribute, false otherwise.</returns>
-        private static bool AnalyzeMethod(SymbolAnalysisContext context, StubEnvironment env, INamedTypeSymbol libraryImportAttrType)
+        private static bool AnalyzeMethod(SymbolAnalysisContext context, StubEnvironment env, INamedTypeSymbol libraryImportAttrType, LibraryImportGeneratorOptions options)
         {
             IMethodSymbol method = (IMethodSymbol)context.Symbol;
 
@@ -110,7 +113,7 @@ namespace Microsoft.Interop.Analyzers
             {
                 if (syntaxRef.GetSyntax(context.CancellationToken) is MethodDeclarationSyntax methodSyntax)
                 {
-                    AnalyzeMethodSyntax(context, methodSyntax, method, libraryImportAttr, env);
+                    AnalyzeMethodSyntax(context, methodSyntax, method, libraryImportAttr, env, options);
                     break;
                 }
             }
@@ -123,7 +126,8 @@ namespace Microsoft.Interop.Analyzers
             MethodDeclarationSyntax methodSyntax,
             IMethodSymbol method,
             AttributeData libraryImportAttr,
-            StubEnvironment env)
+            StubEnvironment env,
+            LibraryImportGeneratorOptions options)
         {
             // Check for invalid method signature
             DiagnosticInfo? invalidMethodDiagnostic = GetDiagnosticIfInvalidMethodForGeneration(methodSyntax, method);
@@ -134,9 +138,6 @@ namespace Microsoft.Interop.Analyzers
             }
 
             // Note: RequiresAllowUnsafeBlocks is reported once per compilation in Initialize method
-
-            // Get generator options
-            LibraryImportGeneratorOptions options = new(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions);
 
             // Calculate stub information and collect diagnostics
             var diagnostics = CalculateDiagnostics(methodSyntax, method, libraryImportAttr, env, options, context.CancellationToken);
@@ -265,7 +266,11 @@ namespace Microsoft.Interop.Analyzers
             }.WithValuesFromNamedArguments(namedArguments);
         }
 
-        private static DiagnosticInfo? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
+        /// <summary>
+        /// Checks if a method is invalid for generation and returns a diagnostic if so.
+        /// </summary>
+        /// <returns>A diagnostic if the method is invalid, null otherwise.</returns>
+        internal static DiagnosticInfo? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
         {
             // Verify the method has no generic types or defined implementation
             // and is marked static and partial.
