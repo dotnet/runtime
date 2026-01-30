@@ -1157,50 +1157,12 @@ typedef DPTR(class CultureInfoBaseObject) PTR_CultureInfoBaseObject;
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<ExecutionContextObject> EXECUTIONCONTEXTREF;
-typedef REF<CultureInfoBaseObject> CULTUREINFOBASEREF;
 typedef REF<ArrayBase> ARRAYBASEREF;
 
 #else
-typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
 typedef ExecutionContextObject* EXECUTIONCONTEXTREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
 #endif
-
-
-class CultureInfoBaseObject : public Object
-{
-    friend class CoreLibBinder;
-
-private:
-    OBJECTREF _compareInfo;
-    OBJECTREF _textInfo;
-    OBJECTREF _numInfo;
-    OBJECTREF _dateTimeInfo;
-    OBJECTREF _calendar;
-    OBJECTREF _cultureData;
-    OBJECTREF _consoleFallbackCulture;
-    STRINGREF _name;                       // "real" name - en-US, de-DE_phoneb or fj-FJ
-    STRINGREF _nonSortName;                // name w/o sort info (de-DE for de-DE_phoneb)
-    STRINGREF _sortName;                   // Sort only name (de-DE_phoneb, en-us for fj-fj (w/us sort)
-    CULTUREINFOBASEREF _parent;
-    CLR_BOOL _isReadOnly;
-    CLR_BOOL _isInherited;
-
-public:
-    CULTUREINFOBASEREF GetParent()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _parent;
-    }// GetParent
-
-
-    STRINGREF GetName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _name;
-    }// GetName
-
-}; // class CultureInfoBaseObject
 
 typedef DPTR(class ThreadBaseObject) PTR_ThreadBaseObject;
 class ThreadBaseObject : public Object
