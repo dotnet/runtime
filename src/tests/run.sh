@@ -42,6 +42,7 @@ function print_usage {
     echo '  --tieringtest                    : Run each test to encourage tier1 rejitting'
     echo '  --runnativeaottests              : Run NativeAOT compiled tests'
     echo '  --interpreter                    : Runs the tests with the interpreter enabled'
+    echo '  --node.                          : Runs the tests with the NodeJS (wasm only)'
     echo '  --limitedDumpGeneration          : '
 }
 
@@ -191,6 +192,9 @@ do
         --interpreter)
             export RunInterpreter=1
             ;;
+        --node)
+            export RunWithNode=1
+            ;;
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -300,6 +304,11 @@ fi
 if [[ -n "$RunInterpreter" ]]; then
     echo "Running tests with the interpreter"
     runtestPyArguments+=("--interpreter")
+fi
+
+if [[ -n "$RunWithNode" ]]; then
+    echo "Running tests with NodeJS"
+    runtestPyArguments+=("--node")
 fi
 
 # Default to python3 if it is installed
