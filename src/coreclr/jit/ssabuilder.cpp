@@ -455,8 +455,8 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
                     {
                         ssaNum = RenamePushDef(defNode, block, fieldLclNum, /* defIsFull */ true);
                     }
-                    else if (m_pCompiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
-                                                              &fieldStoreSize))
+                    else if (m_pCompiler->gtStoreMayDefineField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
+                                                                &fieldStoreSize))
                     {
                         ssaNum = RenamePushDef(defNode, block, fieldLclNum,
                                                ValueNumStore::LoadStoreIsEntire(fieldVarDsc->lvValueSize(),

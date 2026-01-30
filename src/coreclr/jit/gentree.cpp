@@ -19020,7 +19020,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSe
 }
 
 //------------------------------------------------------------------------
-// gtStoreDefinesField: Does the given parent store modify the given field?
+// gtStoreMayDefineField: Does the given parent store modify the given field?
 //
 // Arguments:
 //    fieldVarDsc          - The field local
@@ -19032,14 +19032,16 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSe
 //                           local's bytes affected by the store
 //
 // Return Value:
-//    If the given store affects the given field local, "true, "false"
+//    If the given store may affect the given field local, "true", "false"
 //    otherwise.
+//    If it is uncertain whether the store affects the field, the return value is
+//    "true" and "pFieldAffectedBytes" contains a ValueSize of type "Unknown".
 //
-bool Compiler::gtStoreDefinesField(LclVarDsc* fieldVarDsc,
-                                   ssize_t    offset,
-                                   ValueSize  storeSize,
-                                   ssize_t*   pFieldRelativeOffset,
-                                   ValueSize* pFieldAffectedBytes)
+bool Compiler::gtStoreMayDefineField(LclVarDsc* fieldVarDsc,
+                                     ssize_t    offset,
+                                     ValueSize  storeSize,
+                                     ssize_t*   pFieldRelativeOffset,
+                                     ValueSize* pFieldAffectedBytes)
 {
     ssize_t   fieldOffset = fieldVarDsc->lvFldOffset;
     ValueSize fieldSize   = fieldVarDsc->lvValueSize();

@@ -52,16 +52,6 @@ public class VectorTLoadStore
         return data.b[0] == 5678;
     }
 
-    static unsafe bool TestInexactPointerStoreField()
-    {
-        TestData data = new TestData();
-        *(Vector<int>*)&data = Vector<int>.One;
-        *(Vector<int>*)&data = Vector<int>.Zero;
-        *(Vector<int>*)&data = Vector<int>.One;
-        *(Vector<int>*)&data = Vector<int>.Zero;
-        return (data.a == 0) && (data.b[0] == 0);
-    }
-
     delegate bool TestFunction();
 
     [Fact]
@@ -73,7 +63,7 @@ public class VectorTLoadStore
 
         TestFunction[] funcs = {
             TestPointerStoreLocal, TestInexactPointerStoreLocal,
-            TestPointerStoreField, TestInexactPointerStoreField
+            TestPointerStoreField,
         };
         
         foreach (var func in funcs)

@@ -6187,6 +6187,12 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
             {
                 newLclValue = defValue;
             }
+            else if (defSize.IsUnknown())
+            {
+                JITDUMP("Tree [%06u] performs store to variable-sized local\n", dspTreeID(storeNode), defLclNum);
+                // We don't know the bounds of this store at compile time, so it's given a unique number.
+                newLclValue = vnStore->VNPairForExpr(compCurBB, storeNode->TypeGet());
+            }
             else
             {
                 assert((lclDefNode->gtFlags & GTF_VAR_USEASG) != 0);
@@ -6199,7 +6205,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
             // Any out-of-bounds stores should have made the local address-exposed.
             assert(newLclValue.BothDefined());
 
-            if (normalize)
+            if (normalize && lclSize.IsExact())
             {
                 // We normalize types stored in local locations because things outside VN itself look at them.
                 newLclValue = vnStore->VNPairForLoadStoreBitCast(newLclValue, defVarDsc->TypeGet(), lclSize);
@@ -6236,7 +6242,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
 
             ssize_t   fieldStoreOffset;
             ValueSize fieldStoreSize;
-            if (gtStoreDefinesField(fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
+            if (gtStoreMayDefineField(fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
             {
                 // TYP_STRUCT can represent the general case where the value could be of any size.
                 var_types fieldStoreType = TYP_STRUCT;

@@ -4293,8 +4293,8 @@ public:
 
                     ssize_t   fieldStoreOffset;
                     ValueSize fieldStoreSize;
-                    if (m_compiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
-                                                        &fieldStoreSize))
+                    if (m_compiler->gtStoreMayDefineField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
+                                                          &fieldStoreSize))
                     {
                         ProcessDef(def.Def, fieldLclNum, fieldSsaNum);
 
