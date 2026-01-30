@@ -1417,32 +1417,7 @@ void CodeGen::genCall(GenTreeCall* call)
 //
 void CodeGen::genCallInstruction(GenTreeCall* call)
 {
-    // Determine return value size(s).
-    const ReturnTypeDesc* pRetTypeDesc = call->GetReturnTypeDesc();
     EmitCallParams        params;
-
-    // unused values are of no interest to GC.
-    if (!call->IsUnusedValue())
-    {
-        if (call->HasMultiRegRetVal())
-        {
-            NYI_WASM("multi-reg return values");
-        }
-        else
-        {
-            assert(!call->TypeIs(TYP_STRUCT));
-
-            if (call->TypeIs(TYP_REF))
-            {
-                params.retSize = EA_GCREF;
-            }
-            else if (call->TypeIs(TYP_BYREF))
-            {
-                params.retSize = EA_BYREF;
-            }
-        }
-    }
-
     params.isJump      = call->IsFastTailCall();
     params.hasAsyncRet = call->IsAsync();
 
@@ -1469,9 +1444,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     if (target != nullptr)
     {
-        // A call target can not be a contained indirection
-        assert(!target->isContainedIndir());
-
         // Codegen should have already evaluated our target node (last) and pushed it onto the stack,
         //  ready for call_indirect. Consume it.
         genConsumeReg(target);
@@ -1531,8 +1503,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             }
 
             params.callType = EC_FUNC_TOKEN;
-            // params.ireg     = params.isJump ? rsGetRsvdReg() : REG_RA;
-
             genEmitCallWithCurrentGC(params);
         }
     }
@@ -1555,8 +1525,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     }
     else
     {
-        // TODO-WASM: Just put helperFunction.addr in params.addr and do the indirect load
-        //  further down in the emitter for all IAT_PVALUE calls instead of doing it here
         params.addr = nullptr;
         assert(helperFunction.accessType == IAT_PVALUE);
         void* pAddr = helperFunction.addr;

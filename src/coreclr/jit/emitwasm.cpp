@@ -120,7 +120,6 @@ bool emitter::emitInsIsStore(instruction ins)
 /*****************************************************************************
  *
  *  Add a call instruction (direct or indirect).
- *      argSize<0 means that the caller will pop the arguments
  *
  * Unless callType is EC_FUNC_TOKEN, addr needs to be null.
  *

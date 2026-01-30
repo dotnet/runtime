@@ -5735,7 +5735,7 @@ CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
     return compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(CORINFO_AsyncResumeInfo));
 }
 
-#endif // TARGET_WASM
+#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // getCallTarget - Get the node that evaluates to the call target
