@@ -1,0 +1,107 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:34195/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Memory.Data.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Memory.Data.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Memory.Data.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Memory.Data.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Memory.Data.Tests.dll (found 57 of 57 test cases)
+Starting:    System.Memory.Data.Tests.dll
+[STRT] System.Tests.BinaryDataFromFileTests.CanCreateBinaryDataFromFile
+[STRT] System.Tests.BinaryDataFromFileTests.CanCreateBinaryDataFromFileWithMediaType(mediaType: null)
+[STRT] System.Tests.BinaryDataFromFileTests.CanCreateBinaryDataFromFileWithMediaType(mediaType: "")
+[STRT] System.Tests.BinaryDataFromFileTests.CanCreateBinaryDataFromFileWithMediaType(mediaType: "application/soap+xml")
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromEmptyStream
+[STRT] System.Tests.BinaryDataTests.GetHashCodeWorks
+[STRT] System.Tests.BinaryDataTests.EmptyIsSingleton
+[STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty(count: 1)
+[STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty(count: 4)
+[STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty(count: 7)
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStringWithMediaType(mediaType: null)
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStringWithMediaType(mediaType: "")
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStringWithMediaType(mediaType: "application/soap+xml")
+[STRT] System.Tests.BinaryDataTests.ValidatesPositionValue
+[STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespected(bufferOffset: 1, streamStart: 4)
+[STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespected(bufferOffset: 0, streamStart: 4)
+[STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespected(bufferOffset: 4, streamStart: 1)
+[STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespected(bufferOffset: 4, streamStart: 0)
+[STRT] System.Tests.BinaryDataTests.EmptyIsEmpty
+[STRT] System.Tests.BinaryDataTests.BinaryDataFromEmptyReadOnlyMemoryIsEmpty
+[STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory(count: 0)
+[STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory(count: 4)
+[STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory(count: 7)
+[STRT] System.Tests.BinaryDataTests.ToObjectThrowsExceptionOnIncompatibleType
+[STRT] System.Tests.BinaryDataTests.CloseStreamValidation
+[STRT] System.Tests.BinaryDataTests.ValidatesReadArguments
+[STRT] System.Tests.BinaryDataTests.IsBinaryDataMemberPropertyDeserialized
+[STRT] System.Tests.BinaryDataTests.ToStreamIsNotMutatedWhenBinaryDataOwnsBuffer
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStreamWithMediaType(mediaType: null)
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStreamWithMediaType(mediaType: "")
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStreamWithMediaType(mediaType: "application/soap+xml")
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromLongStream
+[STRT] System.Tests.BinaryDataTests.BinaryDataEmptyIsEmpty
+[STRT] System.Tests.BinaryDataTests.IsBinaryDataMemberPropertySerialized
+[STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromArray(count: 0)
+[STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromArray(count: 4)
+[STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromArray(count: 7)
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromBytesWithMediaType(mediaType: null)
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromBytesWithMediaType(mediaType: "")
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromBytesWithMediaType(mediaType: "application/soap+xml")
+[STRT] System.Tests.BinaryDataTests.ToStringReturnEmptyStringWhenBinaryDataEmpty
+[STRT] System.Tests.BinaryDataTests.ToStringRespectsArraySegmentBoundaries
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromReadOnlyMemoryWithMediaType(mediaType: null)
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromReadOnlyMemoryWithMediaType(mediaType: "")
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromReadOnlyMemoryWithMediaType(mediaType: "application/soap+xml")
+[STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromArrayIsNotEmpty(count: 1)
+[STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromArrayIsNotEmpty(count: 4)
+[STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromArrayIsNotEmpty(count: 7)
+[STRT] System.Tests.BinaryDataTests.ToObjectHandlesBOM
+[STRT] System.Tests.BinaryDataTests.CreateThrowsOnNullStream
+[STRT] System.Tests.BinaryDataTests.BinaryDataFromEmptyArrayIsEmpty
+[STRT] System.Tests.BinaryDataTests.CreateThrowsOnNullString
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromNonSeekableStream
+[STRT] System.Tests.BinaryDataTests.ReadAsyncRespectsCancellation
+[STRT] System.Tests.BinaryDataTests.CreateThrowsOnNullArray
+[STRT] System.Tests.BinaryDataTests.ValidatesSeekArguments
+[STRT] System.Tests.BinaryDataTests.ToStreamIsMutatedWhenCustomerOwnsBuffer
+[STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromStringIsNotEmpty(count: 1)
+[STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromStringIsNotEmpty(count: 4)
+[STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromStringIsNotEmpty(count: 7)
+[STRT] System.Tests.BinaryDataTests.BinaryDataFromEmptyStringIsEmpty
+[STRT] System.Tests.BinaryDataTests.CanReadPartial
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromCustomType
+[STRT] System.Tests.BinaryDataTests.CanRead
+[STRT] System.Tests.BinaryDataTests.IsBinaryDataMemberPropertySerialized_SourceGen
+[STRT] System.Tests.BinaryDataTests.IsBinaryDataMemberPropertyDeserialized_SourceGen
+[STRT] System.Tests.BinaryDataTests.CannotWriteToReadOnlyMemoryStream
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromBytes
+[STRT] System.Tests.BinaryDataTests.ToStreamRespectsArraySegmentBoundaries
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromString
+[STRT] System.Tests.BinaryDataTests.MaxStreamLengthRespected
+[STRT] System.Tests.BinaryDataTests.CanConstructNewInstanceWithMediaType(mediaType: null)
+[STRT] System.Tests.BinaryDataTests.CanConstructNewInstanceWithMediaType(mediaType: "")
+[STRT] System.Tests.BinaryDataTests.CanConstructNewInstanceWithMediaType(mediaType: "application/soap+xml")
+[STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespectedBackingBuffer(bufferOffset: 1, streamStart: 4)
+[STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespectedBackingBuffer(bufferOffset: 0, streamStart: 4)
+[STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespectedBackingBuffer(bufferOffset: 4, streamStart: 1)
+[STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespectedBackingBuffer(bufferOffset: 4, streamStart: 0)
+[STRT] System.Tests.BinaryDataTests.EqualsRespectsReferenceEquality
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStream
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromFileStream
+[STRT] System.Tests.BinaryDataTests.CanSeek
+[STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromString(count: 0)
+[STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromString(count: 4)
+[STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromString(count: 7)
+[STRT] System.Tests.BinaryDataTests.CanSerializeNullData
+[STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStreamUsingBackingBuffer
+Finished:    System.Memory.Data.Tests.dll
+Finished uploading 18890 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 87 Passed: 87 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Memory.Data.Tests.dll after 0.011633333333333334 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

@@ -1,0 +1,9 @@
+Test Comparison: System.Private.Uri.ExtendedFunctional.Tests
+Generated: 2026-01-30T12:49:37+01:00
+
+Mono tests:    52
+CoreCLR tests: 52
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

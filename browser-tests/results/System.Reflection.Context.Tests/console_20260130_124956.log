@@ -1,0 +1,130 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:46539/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Reflection.Context.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Reflection.Context.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Reflection.Context.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Reflection.Context.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Reflection.Context.Tests.dll (found 110 of 110 test cases)
+Starting:    System.Reflection.Context.Tests.dll
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.ReturnTypeCustomAttributes
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.ModuleTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.MethodHandleTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.Invoke_WrongObject_Throws
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.GetCustomAttributes_WithType_Test
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.Invoke_NullParameter_Throws
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.GetGenericArgumentsTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.ProjectionTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.Invoke_NullObject_Throws
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.GetCustomAttributes_NoType_Test
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.GetGenericMethodDefinitionTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.GetBaseDefinition
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.MakeGenericMethodTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.IsDefinedTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.GetMethodImplementationFlagsTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.Invoke_ValidArguments_Success
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.ReturnParameterTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.IsGenericMethodDefinitionTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.CallingConventionTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.ContainsGenericParametersTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.IsGenericMethodTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.GetCustomAttributesDataTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.GetParametersTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.GetCustomAttributesTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertySetter_Tests.Invoke_NotSingleParameter_Throws
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.GetTypeTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.GetModuleTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.GetModulesTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.GetExportedTypesTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.ProjectAssemblyTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.GetCustomAttributesDataTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.EqualsTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.ManifestModuleTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.GetLoadedModulesTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.GetCustomAttributesTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.GetTypesTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.GetHashCodeTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.GetSatelliteAssemblyTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.IsDefinedTest
+[STRT] System.Reflection.Context.Tests.CustomAssemblyTests.GetManifestResourceInfoTest
+[STRT] System.Reflection.Context.Tests.ProjectingModuleTests.IsDefined_TestModuleAttribute_ReturnsTrue
+[STRT] System.Reflection.Context.Tests.ProjectingModuleTests.GetCustomAttributesData_ReturnsTestModuleAttribute
+[STRT] System.Reflection.Context.Tests.ProjectingModuleTests.IsDefined_NonModuleAttribute_ReturnsFalse
+[STRT] System.Reflection.Context.Tests.ProjectingModuleTests.GetAssembly_ReturnsCorrectAssemblyName
+[STRT] System.Reflection.Context.Tests.ProjectingModuleTests.GetCustomAttribute_WithType_ReturnsTestModuleAttribute
+[STRT] System.Reflection.Context.Tests.InheritedPropertyInfoTests.Equals_DifferentObjectDifferentType_ReturnsFalse
+[STRT] System.Reflection.Context.Tests.InheritedPropertyInfoTests.GetHashCode_DifferentObjectSameType_AreEqual
+[STRT] System.Reflection.Context.Tests.InheritedPropertyInfoTests.Equals_DifferentObjectSameType_ReturnsTrue
+[STRT] System.Reflection.Context.Tests.InheritedPropertyInfoTests.GetProperty_NonNullGetter_ReturnsInheritedMethodInfo
+[STRT] System.Reflection.Context.Tests.InheritedPropertyInfoTests.GetCustomAttributes_WithType_ReturnsVirtualAttribute
+[STRT] System.Reflection.Context.Tests.InheritedPropertyInfoTests.GetProperty_NullGetter_ReturnsNull
+[STRT] System.Reflection.Context.Tests.InheritedPropertyInfoTests.Equals_Null_ReturnsFalse
+[STRT] System.Reflection.Context.Tests.InheritedPropertyInfoTests.GetProperty_NullSetter_ReturnsNull
+[STRT] System.Reflection.Context.Tests.CustomPropertyInfoTests.GetCustomAttributesDataTest
+[STRT] System.Reflection.Context.Tests.InteritedMethodInfoTests.GetHashCode_DifferentObjectSameType_AreEqual
+[STRT] System.Reflection.Context.Tests.InteritedMethodInfoTests.GetCustomAttributes_WithType_ReturnsVirtualAttribute
+[STRT] System.Reflection.Context.Tests.InteritedMethodInfoTests.Equals_Null_ReturnsFalse
+[STRT] System.Reflection.Context.Tests.InteritedMethodInfoTests.Equals_DifferentObjectDifferentType_ReturnsFalse
+[STRT] System.Reflection.Context.Tests.InteritedMethodInfoTests.Equals_DifferentObjectSameType_ReturnsTrue
+[STRT] System.Reflection.Context.Tests.InteritedMethodInfoTests.ReflectedType_ReturnsCustomType
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.SetValue_NoSetter_Throws
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.GetValue_NoGetter_Throws
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.GetIndexParametersTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.ToStringTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.Ctor_NullPropertyType_Throws
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.GetCustomAttributes_NoType_Test
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.GetConstantValueTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.Ctor_NullPropertyName_Throws
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.IsDefinedTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.Ctor_EmptyPropertyName_Throws
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.SetValue_HasSetter_Success
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.SetValue_HasSetterWithIndex_Success
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.GetOptionalCustomModifiersTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.ProjectionTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.GetRawConstantValueTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.AttributesTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.GetRequiredCustomModifiersTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.GetAccessorsTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.CanWriteTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.MetadataTokenTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.ReflectedTypeTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.Ctor_WrongPropertyType_Throws
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.GetCustomAttributesDataTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.GetHashCodeTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.GetValue_HasGetter_Success
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.GetCustomAttributes_WithType_Test
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.Ctor_GetterAndSetterNull_Throws
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.CanReadTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfoTests.ModuleTest
+[STRT] System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_ParameterAttributes_Success
+[STRT] System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_MemberAttributes_Success
+[STRT] System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_Null_Throws
+[STRT] System.Reflection.Context.Tests.CustomReflectionContextTests.MapAssembly_Null_Throws
+[STRT] System.Reflection.Context.Tests.CustomReflectionContextTests.Ctor_Null_Throws
+[STRT] System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_Interface_Throws
+[STRT] System.Reflection.Context.Tests.ProjectingFieldInfoTests.ReflectedType
+[STRT] System.Reflection.Context.Tests.ProjectingFieldInfoTests.Module
+[STRT] System.Reflection.Context.Tests.ProjectingFieldInfoTests.GetCustomAttributesData
+[STRT] System.Reflection.Context.Tests.ProjectingFieldInfoTests.DeclaringType_ReturnsCustomType
+[STRT] System.Reflection.Context.Tests.ProjectingFieldInfoTests.FieldType_ReturnsIntType
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertyGetter_Tests.Invoke_WrongObject_Throws
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertyGetter_Tests.Invoke_NullObject_Throws
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertyGetter_Tests.Invoke_NotEmptyParameter_Throws
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertyGetter_Tests.GetCustomAttributes_NoType_Test
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertyGetter_Tests.ProjectionTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertyGetter_Tests.GetCustomAttributesDataTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertyGetter_Tests.Invoke_NullParameters_Success
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertyGetter_Tests.GetCustomAttributes_WithType_Test
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertyGetter_Tests.IsDefinedTest
+[STRT] System.Reflection.Context.Tests.VirtualPropertyInfo_PropertyGetter_Tests.Invoke_EmptyParameters_Success
+Finished:    System.Reflection.Context.Tests.dll
+Finished uploading 29067 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 110 Passed: 109 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 1
+
+test-main.js exiting WasmTestRunner.dll System.Reflection.Context.Tests.dll after 0.011333333333333334 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

@@ -1,0 +1,12 @@
+Test Comparison: System.Reflection.DispatchProxy.Tests
+Generated: 2026-01-30T12:51:00+01:00
+
+Mono tests:    89
+CoreCLR tests: 90
+
+=== Extra in CoreCLR (2) ===
+DispatchProxyTests.DispatchProxyTests.Test_Unloadability(useGenericCreate: False)
+DispatchProxyTests.DispatchProxyTests.Test_Unloadability(useGenericCreate: True)
+
+=== Missing in CoreCLR (1) ===
+DispatchProxyTests.DispatchProxyTests.Create_Using_PrivateProxyAndInternalServiceWithExternalGenericArgument

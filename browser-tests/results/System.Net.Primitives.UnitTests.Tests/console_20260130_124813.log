@@ -1,0 +1,206 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:40409/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Net.Primitives.UnitTests.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.Primitives.UnitTests.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Net.Primitives.UnitTests.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Net.Primitives.UnitTests.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Net.Primitives.UnitTests.Tests.dll (found 44 of 44 test cases)
+Starting:    System.Net.Primitives.UnitTests.Tests.dll
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_Cookie_Invalid
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_ExpiresMaxValue_Success
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_Success(uri: http://url1.com/, expected: [name1=value, $Version=1; name3=value; $Domain=.url1.com; $Port="80, 90, 100, 443"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_Success(uri: https://url1.com/, expected: [name1=value, name2=value, $Version=1; name3=value; $Domain=.url1.com; $Port="80, 90, 100, 443"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_Success(uri: http://127.0.0.1/, expected: [name4=value])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_Success(uri: http://127.0.0.1/path, expected: [name5=value, name4=value])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_Success(uri: http://url3.com/, expected: [name6=value, name7=value])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_Success(uri: http://url4.com/, expected: [name8=value, name9=value])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_Success(uri: http://url5.com/path, expected: [name10=value, $Version=1; name11=value; $Port="80, 90, 100"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_Success(uri: http://url6.com/, expected: [])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookieHeader_Success(uri: http://url1.com/, expected: "name1=value; $Version=1; name3=value; $Domain=.url"···)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookieHeader_Success(uri: https://url1.com/, expected: "name1=value; name2=value; $Version=1; name3=value;"···)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookieHeader_Success(uri: http://127.0.0.1/, expected: "name4=value")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookieHeader_Success(uri: http://127.0.0.1/path, expected: "name5=value; name4=value")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookieHeader_Success(uri: http://url3.com/, expected: "name6=value; name7=value")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookieHeader_Success(uri: http://url4.com/, expected: "name8=value; name9=value")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookieHeader_Success(uri: http://url5.com/path, expected: "name10=value; $Version=1; name11=value; $Port=\"80"···)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookieHeader_Success(uri: http://url6.com/, expected: "")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Capacity_ShrinkNoneExpired_RemovesAll
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckFailure_IgnoresAbsenceOfLeadingDot(domain: ".other.example.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckFailure_IgnoresAbsenceOfLeadingDot(domain: "other.example.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckFailure_IgnoresAbsenceOfLeadingDot(domain: ".xample.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckFailure_IgnoresAbsenceOfLeadingDot(domain: "xample.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_CookieVersion1AndRootDomainWithNoLeadingDot_Success
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_DefaultPathCalculationFollowsRfc6265(uriString: "http://url1.com", expectedPath: "/")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_DefaultPathCalculationFollowsRfc6265(uriString: "http://url1.com/abc", expectedPath: "/")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_DefaultPathCalculationFollowsRfc6265(uriString: "http://url1.com/abc/xy", expectedPath: "/abc")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_DefaultPathCalculationFollowsRfc6265(uriString: "http://url1.com/abc/xy/foo", expectedPath: "/abc/xy")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_DefaultPathCalculationFollowsRfc6265(uriString: "http://127.0.0.1", expectedPath: "/")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_DefaultPathCalculationFollowsRfc6265(uriString: "http://127.0.0.1/a/s/d/f", expectedPath: "/a/s/d")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Ctor_Capacity_Invalid
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_VerificationFailedCookie_Throws(c: name=)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_VerificationFailedCookie_Throws(c: name=;)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_VerificationFailedCookie_Throws(c: name=value)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_VerificationFailedCookie_Throws(c: name=value)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_VerificationFailedCookie_Throws(c: name=value)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_VerificationFailedCookie_Throws(c: name=value)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_VerificationFailedCookie_Throws(c: name=value)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_VerificationFailedCookie_Throws(c: $Version=100; name=value; $Path=path; $Domain=domain)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_VerificationFailedCookie_Throws(c: name=value)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckFailure_IgnoresLeadingDot(domains: ["test.example.com", "example.com"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckFailure_IgnoresLeadingDot(domains: ["test.example.com", ".example.com"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckFailure_IgnoresLeadingDot(domains: ["example.com", "test.example.com"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckFailure_IgnoresLeadingDot(domains: [".example.com", "test.example.com"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Ctor_CapacityPerDomainCapacityMaxCookieSize_Success
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: http://url5.com/path, cookieHeader: "name98=value98, name99=value99", expected: [name10=value, $Version=1; name11=value; $Port="80, 90, 100", name98=value98, name99=value99])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: http://uri.com/, cookieHeader: "name98=value98; path=/; domain=.uri.com; expires=W"···, expected: [name99=value99, name98=value98])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: https://uri.com/, cookieHeader: "name98=value98; comment=comment; domain=.uri.com; "···, expected: [name99=value99, $Version=100; name98=value98; $Path=/; $Domain=.uri.com])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: https://uri.com/, cookieHeader: "name98=value98; comment=comment; commentURL=http:/"···, expected: [name99=value99, $Version=100; name98=value98; $Path=/; $Domain=.uri.com; $Port="80, 90, 443"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: http://uri.com/, cookieHeader: "name98=value98; port=\"80, 90\", name99=value99", expected: [name99=value99, $Version=1; name98=value98; $Path=/; $Domain=.uri.com; $Port="80, 90"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: https://uri.com/, cookieHeader: "name98=value98; name98=value98; comment=comment; c"···, expected: [name99=value99, $Version=100; name98=value98; $Path=/; $Domain=.uri.com; $Port="80, 90, 443"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: http://uri.com/, cookieHeader: "name98=value98; commentURL=invalidurl", expected: [name98=value98])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: http://url6.com/, cookieHeader: "name98=value98; unknown1; unknown2=unknown", expected: [name98=value98])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: http://url6.com/, cookieHeader: "name98=value98; =; token=", expected: [name98=value98])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: http://url6.com/, cookieHeader: "name98=\"value; domain=\".domain\"; max-age=\"400\"···, expected: [name98="value; domain="])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: http://url6.com/, cookieHeader: "name98=\"\"", expected: [name98=""])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: http://uri.com/, cookieHeader: "locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae"···, expected: [locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: https://uri.com/, cookieHeader: "locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae"···, expected: [locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: http://uri.com/, cookieHeader: ",locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fa"···, expected: [locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: https://uri.com/, cookieHeader: "          ,locale=en, uuid=4b8b2dd7-d91a-49ee-80c6"···, expected: [locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: http://uri.com/, cookieHeader: "locale=en,, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fa"···, expected: [locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: https://uri.com/, cookieHeader: "locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae"···, expected: [locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: http://uri.com/, cookieHeader: "locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae"···, expected: [locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: http://uri.com/, cookieHeader: "locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae"···, expected: [locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: https://uri.com/, cookieHeader: "locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae"···, expected: [locale=en, uuid=4b8b2dd7-d91a-49ee-80c6-8cb7df1fae46, country=US, _m_ask_fm_session=session1])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_Success(uri: https://uri.com/, cookieHeader: "hello world=value", expected: [hello world=value])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_ImplicitDomainOfIPv6Hostname_Success
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_SameCookieDifferentVairants_OverridesOlderVariant
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_AddCookiesWithImplicitDomain_CookiesReturnedOnlyForExactDomainMatch
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_ExpiredCookie_NotAdded
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenDoesNotMatch_ThrowsCookieException(uriString: "https://test.com", domain: "test.co")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenDoesNotMatch_ThrowsCookieException(uriString: "https://test.com", domain: "x.test.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenDoesNotMatch_ThrowsCookieException(uriString: "https://test.com", domain: "ttest.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenDoesNotMatch_ThrowsCookieException(uriString: "https://test.com", domain: "test.com.")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenDoesNotMatch_ThrowsCookieException(uriString: "https://test.com", domain: "..test.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenDoesNotMatch_ThrowsCookieException(uriString: "https://foo.test.com", domain: "yay.test.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenDoesNotMatch_ThrowsCookieException(uriString: "https://42.42.100.100", domain: "41.42.100.100")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenDoesNotMatch_ThrowsCookieException(uriString: "https://test.com", domain: ".com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenDoesNotMatch_ThrowsCookieException(uriString: "https://test.com", domain: "com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenDoesNotMatch_ThrowsCookieException(uriString: "https://1.2.3.4", domain: ".2.3.4")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_PathMatchingFollowsRfc6265(useDefaultPath: False, cookiePaths: ["/"], requestPath: "/", expectedMatches: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_PathMatchingFollowsRfc6265(useDefaultPath: False, cookiePaths: ["/asd/fg/hjk/l", "/x"], requestPath: "/asd/fg/hjk/l", expectedMatches: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_PathMatchingFollowsRfc6265(useDefaultPath: False, cookiePaths: ["/a", "/x"], requestPath: "/a/hello", expectedMatches: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_PathMatchingFollowsRfc6265(useDefaultPath: False, cookiePaths: ["/a/foo", "/a/lol"], requestPath: "/a/foo/1/2/3", expectedMatches: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_PathMatchingFollowsRfc6265(useDefaultPath: False, cookiePaths: ["/a/", "/x"], requestPath: "/a/hello", expectedMatches: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_PathMatchingFollowsRfc6265(useDefaultPath: False, cookiePaths: ["", "/x"], requestPath: "/y", expectedMatches: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_PathMatchingFollowsRfc6265(useDefaultPath: False, cookiePaths: ["//"], requestPath: "/", expectedMatches: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_PathMatchingFollowsRfc6265(useDefaultPath: False, cookiePaths: ["//"], requestPath: "//", expectedMatches: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_PathMatchingFollowsRfc6265(useDefaultPath: False, cookiePaths: ["", "/", "//", "///"], requestPath: "///", expectedMatches: 4)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_PathMatchingFollowsRfc6265(useDefaultPath: False, cookiePaths: ["/a/foo", "/x"], requestPath: "/a/foo123", expectedMatches: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_PathMatchingFollowsRfc6265(useDefaultPath: True, cookiePaths: ["/"], requestPath: "/", expectedMatches: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_PathMatchingFollowsRfc6265(useDefaultPath: True, cookiePaths: ["/a/b", "/a/c", "/x/y"], requestPath: "/a/hello", expectedMatches: 2)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_PathMatchingFollowsRfc6265(useDefaultPath: True, cookiePaths: ["/a/foo/b", "/a/foo/c", "/a/foo/42", "/a/lol/42"], requestPath: "/a/foo/hello", expectedMatches: 3)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Ctor_CapacityPerDomainCapacityMaxCookieSize_Invalid
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_ReachedMaxCount_NotAdded
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_SetCookies_SameCookieDifferentVairants_OverridesOlderVariant
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_DifferentPaths_ReturnsConsistentResults
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresAbsenceOfLeadingDot(domain: ".example.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresAbsenceOfLeadingDot(domain: "example.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresAbsenceOfLeadingDot(domain: ".test.example.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresAbsenceOfLeadingDot(domain: "test.example.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_ExplicitDomain_MatchesMultiple
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Ctor_Capacity_Success
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_RemovesExpired_Cookies
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_DifferentPaths_GetsMatchedPathsIncludingEmptyPath
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_NullCookieCollection_Throws
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenMatches_Success(uriString: "https://q", domain: "q")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenMatches_Success(uriString: "https://localhost/", domain: "localhost")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenMatches_Success(uriString: "https://test.com", domain: "test.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenMatches_Success(uriString: "https://test.COM", domain: "tEsT.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenMatches_Success(uriString: "https://test.com", domain: ".test.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenMatches_Success(uriString: "https://yay.test.com", domain: "yay.test.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenMatches_Success(uriString: "https://yay.test.com", domain: ".yay.test.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenMatches_Success(uriString: "https://yay.test.com", domain: ".test.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenMatches_Success(uriString: "https://42.aaaa.bbb.cc.d.test.com", domain: "d.test.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenMatches_Success(uriString: "https://yay.test.com/foo/bar", domain: "test.com")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenMatches_Success(uriString: "https://127.0.1.1", domain: "127.0.1.1")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.DomainMatching_WhenMatches_Success(uriString: "https://42.42.100.100", domain: "42.42.100.100")
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_AddCookieVersion0WithExplicitDomain_CookieReturnedForDomainAndSubdomains
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_Cookies_Success
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.GetCookies_NonExistent_NoResults
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_ReachedMaxDomainCapacity_NotAdded
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresLeadingDot(domains: ["example.com", "example.com"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresLeadingDot(domains: ["example.com", ".example.com"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresLeadingDot(domains: [".example.com", "example.com"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresLeadingDot(domains: [".example.com", ".example.com"])
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost", domain: ".localhost", version: null)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost", domain: "localhost", version: null)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost", domain: ".localhost", version: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost", domain: "localhost", version: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost", domain: ".localhost", version: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost", domain: "localhost", version: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost", domain: ".localhost", version: 100)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost", domain: "localhost", version: 100)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost:5000", domain: ".localhost", version: null)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost:5000", domain: "localhost", version: null)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost:5000", domain: ".localhost", version: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost:5000", domain: "localhost", version: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost:5000", domain: ".localhost", version: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost:5000", domain: "localhost", version: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost:5000", domain: ".localhost", version: 100)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://localhost:5000", domain: "localhost", version: 100)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com", domain: ".example.com", version: null)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com", domain: "example.com", version: null)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com", domain: ".example.com", version: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com", domain: "example.com", version: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com", domain: ".example.com", version: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com", domain: "example.com", version: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com", domain: ".example.com", version: 100)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com", domain: "example.com", version: 100)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com:5000", domain: ".example.com", version: null)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com:5000", domain: "example.com", version: null)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com:5000", domain: ".example.com", version: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com:5000", domain: "example.com", version: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com:5000", domain: ".example.com", version: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com:5000", domain: "example.com", version: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com:5000", domain: ".example.com", version: 100)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://example.com:5000", domain: "example.com", version: 100)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com", domain: ".test.example.com", version: null)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com", domain: "test.example.com", version: null)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com", domain: ".test.example.com", version: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com", domain: "test.example.com", version: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com", domain: ".test.example.com", version: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com", domain: "test.example.com", version: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com", domain: ".test.example.com", version: 100)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com", domain: "test.example.com", version: 100)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com:5000", domain: ".test.example.com", version: null)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com:5000", domain: "test.example.com", version: null)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com:5000", domain: ".test.example.com", version: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com:5000", domain: "test.example.com", version: 0)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com:5000", domain: ".test.example.com", version: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com:5000", domain: "test.example.com", version: 1)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com:5000", domain: ".test.example.com", version: 100)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.SetCookies_DomainCheckSuccess_IgnoresVersion(url: "http://test.example.com:5000", domain: "test.example.com", version: 100)
+[STRT] System.Net.Primitives.Unit.Tests.CookieContainerTest.Add_ReachedMaxCountWithExpiredCookies_Added
+[STRT] NetPrimitivesUnitTests.CookieInternalTest.DomainImplicit_AddCookieWithExplicitDomain_DomainImplicitFalse
+[STRT] NetPrimitivesUnitTests.CookieInternalTest.DomainImplicit_AddCookieWithImplicitDomain_DomainImplicitTrue
+[STRT] NetPrimitivesUnitTests.CookieInternalTest.CookieParserGetServer_SetCookieHeaderValue_Success(cookieString: "cookie_name=cookie_value", expectedStrings: ["cookie_name", "cookie_value"])
+[STRT] NetPrimitivesUnitTests.CookieInternalTest.CookieParserGetServer_SetCookieHeaderValue_Success(cookieString: "cookie_name=cookie_value;", expectedStrings: ["cookie_name", "cookie_value"])
+[STRT] NetPrimitivesUnitTests.CookieInternalTest.CookieParserGetServer_SetCookieHeaderValue_Success(cookieString: "cookie_name1=cookie_value1;cookie_name2=cookie_val"···, expectedStrings: ["cookie_name1", "cookie_value1", "cookie_name2", "cookie_value2"])
+[STRT] NetPrimitivesUnitTests.CookieInternalTest.CookieParserGetServer_SetCookieHeaderValue_Success(cookieString: "cookie_name1=cookie_value1;cookie_name2=cookie_val"···, expectedStrings: ["cookie_name1", "cookie_value1", "cookie_name2", "cookie_value2"])
+[STRT] System.Net.Primitives.UnitTests.Tests.CookieExceptionTest.Constructor_Message
+[STRT] System.Net.Primitives.UnitTests.Tests.CookieExceptionTest.Constructor_Message_InnerException(innerException: True)
+[STRT] System.Net.Primitives.UnitTests.Tests.CookieExceptionTest.Constructor_Message_InnerException(innerException: False)
+[STRT] System.Net.Primitives.Unit.Tests.CookieCollectionTest.IndexSubscript_Get_Success
+[STRT] System.Net.Primitives.Unit.Tests.CookieCollectionTest.IndexSubscript_Get_Invalid
+Finished:    System.Net.Primitives.UnitTests.Tests.dll
+Finished uploading 63122 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 186 Passed: 184 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 2
+
+test-main.js exiting WasmTestRunner.dll System.Net.Primitives.UnitTests.Tests.dll after 0.013666666666666667 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

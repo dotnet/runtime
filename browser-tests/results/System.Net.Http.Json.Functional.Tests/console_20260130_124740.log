@@ -1,0 +1,83 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:42967/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Net.Http.Json.Functional.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.Http.Json.Functional.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Net.Http.Json.Functional.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Net.Http.Json.Functional.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Net.Http.Json.Functional.Tests.dll (found 54 of 54 test cases)
+Starting:    System.Net.Http.Json.Functional.Tests.dll
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.TestGetFromJsonAsync(json: "{\"Age\":19230,\"Name\":\"R. Daneel Olivaw\",\"Par"···, containsQuotedNumbers: False)
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.TestGetFromJsonAsync(json: "{\"Age\":\"19230\",\"Name\":\"R. Daneel Olivaw\",\"···, containsQuotedNumbers: True)
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.TestPostAsJsonAsync
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.GetFromJsonAsAsyncEnumerable_EnforcesTimeoutOnInitialRequest
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.TestPatchAsJsonAsync
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.GetFromJsonAsync_EnforcesMaxResponseContentBufferSize
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.GetFromJsonAsync_EnforcesTimeout
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.AllowNullRequestUrlAsAsyncEnumerable
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.GetFromJsonAsAsyncEnumerable_CustomSerializerOptions
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.GetFromJsonAsAsyncEnumerable_EnforcesTimeout
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.AllowNullRequesturlAsync
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.TestGetFromJsonAsyncUnsuccessfulResponseAsync
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.TestDeleteFromJsonAsync
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.GetFromJsonAsAsyncEnumerable_SerializerUsesCamelCase
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.TestPutAsJsonAsync
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.TestHttpClientIsNullAsync
+[STRT] System.Net.Http.Json.Functional.Tests.HttpClientJsonExtensionsTests.TestTypeMetadataIsNull
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.ThrowOnNull
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.HttpContentGetThenReadFromJsonAsync(json: "{\"Age\":19230,\"Name\":\"R. Daneel Olivaw\",\"Par"···)
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.HttpContentGetThenReadFromJsonAsync(json: "{\"Age\":\"19230\",\"Name\":\"R. Daneel Olivaw\",\"···)
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.TestGetFromJsonAsyncTextPlainUtf16Async
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.HttpContentReturnValueIsNull
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.TestGetFromJsonQuotedCharSetAsync
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.TestGetFromJsonThrowOnInvalidCharSetAsync
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.TestReadFromJsonNoMessageBodyAsync
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.TestVariousMediaTypes(mediaType: "application/json")
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.TestVariousMediaTypes(mediaType: "Application/Json")
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.TestVariousMediaTypes(mediaType: "application/foo+json")
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.TestVariousMediaTypes(mediaType: "application/foo+Json")
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.TestVariousMediaTypes(mediaType: "appLiCaTiOn/a+JsOn")
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.TestVariousMediaTypes(mediaType: "application/json-custom")
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.TestVariousMediaTypes(mediaType: "asdf/ghjk")
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.TestReadFromJsonAsAsyncEnumerableNoMessageBodyAsync
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.EnsureDefaultJsonSerializerOptionsAsync
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.HttpContentGetFromJsonAsyncOverloadsWithoutJsonSerializerOptionsBehaveTheSameAsWithDefaultValue(json: "{\"Age\":19230,\"Name\":\"R. Daneel Olivaw\",\"Par"···)
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.HttpContentGetFromJsonAsyncOverloadsWithoutJsonSerializerOptionsBehaveTheSameAsWithDefaultValue(json: "{\"Age\":\"19230\",\"Name\":\"R. Daneel Olivaw\",\"···)
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.HttpContentReturnValueIsNullWithAsAsyncEnumerable
+[STRT] System.Net.Http.Json.Functional.Tests.HttpContentJsonExtensionsTests.HttpContentAsAsyncEnumerableHonorsWebDefaults
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Sync.JsonContent_CopyTo_Succeeds
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Sync.JsonContentObjectType
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Sync.ValidateUtf16IsTranscodedAsync
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Sync.SendQuotedCharsetAsync
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Sync.JsonContentThrowsOnIncompatibleTypeAsync
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Sync.JsonContentTypeInfoIsNull
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Sync.JsonContentInputTypeIsNull
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Sync.TestJsonContentNullContentTypeAsync
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Sync.JsonContentMediaTypeDefaultIfNull
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Sync.EnsureDefaultJsonSerializerOptionsAsync
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Sync.TestJsonContentMediaType
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Sync.TestJsonContentContentTypeIsNotTheSameOnMultipleInstances
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Sync.JsonContentMediaTypeValidateOnServerAsync
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Async.JsonContentObjectType
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Async.TestJsonContentMediaType
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Async.EnsureDefaultJsonSerializerOptionsAsync
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Async.TestJsonContentContentTypeIsNotTheSameOnMultipleInstances
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Async.JsonContentTypeInfoIsNull
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Async.JsonContentThrowsOnIncompatibleTypeAsync
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Async.ValidateUtf16IsTranscodedAsync
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Async.TestJsonContentNullContentTypeAsync
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Async.JsonContentInputTypeIsNull
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Async.JsonContentMediaTypeDefaultIfNull
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Async.SendQuotedCharsetAsync
+[STRT] System.Net.Http.Json.Functional.Tests.JsonContentTests_Async.JsonContentMediaTypeValidateOnServerAsync
+Finished:    System.Net.Http.Json.Functional.Tests.dll
+Finished uploading 19408 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 63 Passed: 60 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 3
+
+test-main.js exiting WasmTestRunner.dll System.Net.Http.Json.Functional.Tests.dll after 0.014633333333333333 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

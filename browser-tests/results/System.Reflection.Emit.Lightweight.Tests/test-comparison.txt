@@ -1,0 +1,26 @@
+Test Comparison: System.Reflection.Emit.Lightweight.Tests
+Generated: 2026-01-30T12:51:29+01:00
+
+Mono tests:    70
+CoreCLR tests: 87
+
+=== Extra in CoreCLR (17) ===
+System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_CtorMethodAndField_Success
+System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_DynamicMethod_Success
+System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_Exception_Success
+System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_IntGenerics_Success
+System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_StringGenerics_Success
+System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_String_Success
+System.Reflection.Emit.Tests.DynamicILInfoTests.InstanceBasedFunctionPointer(useExplicitThis: False)
+System.Reflection.Emit.Tests.DynamicILInfoTests.InstanceBasedFunctionPointer(useExplicitThis: True)
+System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NegativeInputSize_ThrowsArgumentOutOfRangeException(skipVisibility: False)
+System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NegativeInputSize_ThrowsArgumentOutOfRangeException(skipVisibility: True)
+System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NullInput_ThrowsArgumentNullException(skipVisibility: False)
+System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NullInput_ThrowsArgumentNullException(skipVisibility: True)
+System.Reflection.Emit.Tests.DynamicILInfoTests.Test_CallGM
+System.Reflection.Emit.Tests.DynamicILInfoTests.Test_GenericMethod
+System.Reflection.Emit.Tests.DynamicILInfoTests.Test_TwoDimTest
+System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Int_Module_CoreclrIgnoresSkipVisibility
+System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Module_CoreclrIgnoresSkipVisibility
+
+=== Missing in CoreCLR (0) ===

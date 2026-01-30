@@ -1,0 +1,158 @@
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  System.Reflection.DispatchProxy.TestDependency -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.DispatchProxy.TestDependency/Release/net11.0/System.Reflection.DispatchProxy.TestDependency.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Reflection.DispatchProxy.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.DispatchProxy.Tests/Release/net11.0/browser-wasm/System.Reflection.DispatchProxy.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.DispatchProxy.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.DispatchProxy.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.Reflection.DispatchProxy.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Reflection.DispatchProxy/tests
+  ----- start Fri Jan 30 12:50:56 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.DispatchProxy.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.DispatchProxy.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Reflection.DispatchProxy.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.Reflection.DispatchProxy.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.Reflection.DispatchProxy.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Reflection.DispatchProxy/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.DispatchProxy.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Reflection.DispatchProxy.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 36443
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 36443.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:38573/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Reflection.DispatchProxy.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Reflection.DispatchProxy.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Reflection.DispatchProxy.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Reflection.DispatchProxy.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Reflection.DispatchProxy.Tests.dll (found 48 of 49 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Reflection.DispatchProxy.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Receives_Correct_MethodInfo_And_Arguments(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Receives_Correct_MethodInfo_And_Arguments(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Property_Setter_And_Getter_Invokes_Correct_Methods(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Property_Setter_And_Getter_Invokes_Correct_Methods(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Same_Method_Multiple_Interfaces_Calls_Correct_Method(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Same_Method_Multiple_Interfaces_Calls_Correct_Method(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Test_Multiple_AssemblyLoadContextsWithBadName
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Proxy_Derives_From_DispatchProxy_BaseType(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Proxy_Derives_From_DispatchProxy_BaseType(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Proxy_Implements_All_Interfaces(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Proxy_Implements_All_Interfaces(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_Concrete_Proxy_Type_Throws_ArgumentException(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_Concrete_Proxy_Type_Throws_ArgumentException(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Returns_Correct_Value(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Returns_Correct_Value(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Receives_Correct_Arguments(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Receives_Correct_Arguments(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Non_Generic_Create_With_ProxyType_That_Is_Not_Assignable_To_DispatchProxy_Throws_ArgumentException
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Test_Multiple_AssemblyLoadContexts(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Test_Multiple_AssemblyLoadContexts(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Indexer_Setter_And_Getter_Invokes_Correct_Methods(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Indexer_Setter_And_Getter_Invokes_Correct_Methods(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_InternalProxy(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_InternalProxy(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Proxy_Declares_Interface_Events(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Proxy_Declares_Interface_Events(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Non_Generic_Create_With_Null_ProxyType_Throws_ArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_Abstract_BaseType_Throws_ArgumentException(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_Abstract_BaseType_Throws_ArgumentException(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_PrivateProxy
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Proxy_Internal_Interface(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Proxy_Internal_Interface(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_PrivateProxyAndInternalService
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Static_Virtual_Method_Throws_NotSupportedException(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Static_Virtual_Method_Throws_NotSupportedException(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Proxy_Declares_Interface_Properties(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Proxy_Declares_Interface_Properties(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_Abstract_Generic_BaseType_Throws_ArgumentException(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_Abstract_Generic_BaseType_Throws_ArgumentException(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_ExternalNonPublicService(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_ExternalNonPublicService(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Ref_Out_In_Method(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Ref_Out_In_Method(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Proxy_Instances_Of_Same_Proxy_And_Base_Type_Are_Unique(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Proxy_Instances_Of_Same_Proxy_And_Base_Type_Are_Unique(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Proxy_Declares_Interface_Static_Virtual_Properties(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Proxy_Declares_Interface_Static_Virtual_Properties(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_InternalProxyWithExternalNonPublicBaseType(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_InternalProxyWithExternalNonPublicBaseType(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Thrown_Exception_Rethrown_To_Caller(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Thrown_Exception_Rethrown_To_Caller(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_Sealed_BaseType_Throws_ArgumentException(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_Sealed_BaseType_Throws_ArgumentException(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Created_Proxy_With_Different_Proxy_Type_Use_Different_Generated_Type(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Created_Proxy_With_Different_Proxy_Type_Use_Different_Generated_Type(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_BaseType_Without_Default_Ctor_Throws_ArgumentException(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_BaseType_Without_Default_Ctor_Throws_ArgumentException(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_InternalServiceImplementingNonPublicExternalService(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_InternalServiceImplementingNonPublicExternalService(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Same_Proxy_Type_With_Different_BaseType_Uses_Different_Generated_Type(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Same_Proxy_Type_With_Different_BaseType_Uses_Different_Generated_Type(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Non_Generic_Create_With_Null_InterfaceType_Throws_ArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Void_Returning_Method_Accepts_Null_Return(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Void_Returning_Method_Accepts_Null_Return(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Multiple_Parameters_Via_Params_Receives_Correct_Arguments(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Multiple_Parameters_Via_Params_Receives_Correct_Arguments(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Proxy_Implements_Internal_Interfaces(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Proxy_Implements_Internal_Interfaces(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_InternalServiceWithGenericArgumentBeingNonPublicExternalService(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_InternalServiceWithGenericArgumentBeingNonPublicExternalService(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Proxy_Declares_Interface_Static_Virtual_Methods(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Proxy_Declares_Interface_Static_Virtual_Methods(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Test_Unloadability(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Test_Unloadability(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Multiple_Parameters_Receives_Correct_Arguments(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Multiple_Parameters_Receives_Correct_Arguments(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Generic_Method(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Generic_Method(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Proxy_Declares_Interface_Indexers(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Proxy_Declares_Interface_Indexers(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Receives_Correct_MethodInfo(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Receives_Correct_MethodInfo(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using__Generic_BaseType_Throws_ArgumentException
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Invoke_Event_Add_And_Remove_And_Raise_Invokes_Correct_Methods_Generic_And_Non_Generic_Tests
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Same_Proxy_Type_And_Base_Type_Reuses_Same_Generated_Type(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Same_Proxy_Type_And_Base_Type_Reuses_Same_Generated_Type(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_InternalProxyWithBaseTypeImplementingServiceWithgenericArgumentBeingNonPublicExternalService(useGenericCreate: False)
+  [40m[32minfo[39m[22m[49m: [STRT] DispatchProxyTests.DispatchProxyTests.Create_Using_InternalProxyWithBaseTypeImplementingServiceWithgenericArgumentBeingNonPublicExternalService(useGenericCreate: True)
+  [40m[32minfo[39m[22m[49m: Finished:    System.Reflection.DispatchProxy.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.DispatchProxy.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 24024 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 24024 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 88 Passed: 88 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Reflection.DispatchProxy.Tests.dll after 0.011666666666666667 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/System.Reflection.DispatchProxy.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Reflection.DispatchProxy/tests
+  ----- end Fri Jan 30 12:50:59 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.DispatchProxy.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:05.44

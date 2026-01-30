@@ -36,7 +36,7 @@ System.InvalidOperationException : Failed to compare two elements in the array.
 
 ### 2. Tests Previously Marked as ActiveIssue
 
-The following tests were marked with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]` due to earlier crashes:
+The following tests were marked with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]` due to earlier crashes:
 - `ImmutableArrayTest.DebuggerAttributesValid_AdditionalCases`
 - `ImmutableArrayTest.Add` (line 1127)
 - `ImmutableDictionaryTestBase.DebuggerAttributesValid` (line 104)

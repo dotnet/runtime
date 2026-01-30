@@ -37,7 +37,7 @@ namespace System.Reflection.Tests
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/40738")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)] // Moq/Reflection.Emit crashes on Browser+CoreCLR
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Moq/Reflection.Emit crashes on Browser+CoreCLR
         public static void MethodTakesRefToRefStructAsArg_ThrowsNSE()
         {
             // Use a Binder to trick the reflection stack into treating the returned null

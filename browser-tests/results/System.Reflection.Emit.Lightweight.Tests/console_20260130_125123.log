@@ -1,0 +1,98 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:40321/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Reflection.Emit.Lightweight.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Reflection.Emit.Lightweight.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Reflection.Emit.Lightweight.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Reflection.Emit.Lightweight.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Reflection.Emit.Lightweight.Tests.dll (found 41 of 41 test cases)
+Starting:    System.Reflection.Emit.Lightweight.Tests.dll
+[STRT] System.Reflection.Emit.Tests.DynamicMethodDefineParameter.DefineParameter_SetsParameterCorrectly
+[STRT] System.Reflection.Emit.Tests.DynamicMethodInitLocals.InitLocals_Set_ReturnsNewValue(newInitLocals: True)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodInitLocals.InitLocals_Set_ReturnsNewValue(newInitLocals: False)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodGetBaseDefinition.CreateDynMethod_TypeOwner(skipVisibility: True)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodGetBaseDefinition.CreateDynMethod_TypeOwner(skipVisibility: False)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodGetBaseDefinition.CreateDynMethod_Module(skipVisibility: True)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodGetBaseDefinition.CreateDynMethod_Module(skipVisibility: False)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.NullName_ThrowsArgumentNullException
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.NullOwner_ThrowsArgumentNullException
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.ByRefReturnType_DoesNotThrow
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.NullModule_ThrowsArgumentNullException
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.InvalidOwner_ThrowsArgumentException(owner: typeof(int[]))
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.InvalidOwner_ThrowsArgumentException(owner: typeof(System.Reflection.Emit.Tests.TestInterface))
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.InvalidOwner_ThrowsArgumentException(owner: typeof(System.Reflection.Emit.Tests.GenericClass<>))
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.InvalidOwner_ThrowsArgumentException(owner: typeof(System.Int32*))
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.NullObjectInParameterTypes_ThrowsArgumentException
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "Method", returnType: typeof(System.Void), parameterTypes: null)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "Method", returnType: typeof(System.Void), parameterTypes: [typeof(int), typeof(string)])
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "Method", returnType: typeof(string), parameterTypes: null)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "Method", returnType: typeof(string), parameterTypes: [typeof(int), typeof(string)])
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "", returnType: typeof(string), parameterTypes: [typeof(int), typeof(string)])
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "Method", returnType: typeof(char?), parameterTypes: null)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "Method", returnType: typeof(System.Reflection.Emit.Tests.TestClass), parameterTypes: null)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "Method", returnType: typeof(System.Reflection.Emit.Tests.GenericClass<>), parameterTypes: null)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "Method", returnType: typeof(System.Reflection.Emit.Tests.TestInterface), parameterTypes: null)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "Method", returnType: null, parameterTypes: null)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "Method", returnType: typeof(int), parameterTypes: [typeof(int)])
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "method", returnType: typeof(string), parameterTypes: [typeof(char?)])
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "Method", returnType: typeof(string), parameterTypes: [typeof(System.Reflection.Emit.Tests.GenericClass2<,>), typeof(System.Reflection.Emit.Tests.GenericClass2<,>)])
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module(name: "Method", returnType: typeof(string), parameterTypes: [typeof(System.Reflection.Emit.Tests.TestInterface)])
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.ThrowsWhenDynamicCodeNotSupported
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Type(name: "Method", returnType: typeof(System.Void), parameterTypes: null, owner: typeof(System.Reflection.Emit.Tests.TestClass))
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Type(name: "Method", returnType: typeof(System.Void), parameterTypes: [typeof(int), typeof(string)], owner: typeof(System.Reflection.Emit.Tests.TestClass))
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Type(name: "Method", returnType: typeof(string), parameterTypes: null, owner: typeof(System.Reflection.Emit.Tests.TestClass))
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Type(name: "Method", returnType: typeof(string), parameterTypes: [typeof(int), typeof(string)], owner: typeof(System.Reflection.Emit.Tests.TestClass))
+[STRT] System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Type(name: "", returnType: typeof(string), parameterTypes: [typeof(int), typeof(string)], owner: typeof(System.Reflection.Emit.Tests.TestClass))
+[STRT] System.Reflection.Emit.Tests.DynamicMethodToString.ToStringTest(returnType: typeof(string), parameterTypes: [typeof(string), typeof(int), typeof(System.Reflection.Emit.Tests.TestClass)], expected: "System.String MethodName(System.String, Int32, Sys"···)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodToString.ToStringTest(returnType: typeof(string), parameterTypes: [typeof(System.Reflection.Emit.Tests.GenericClass<>)], expected: "System.String MethodName(System.Reflection.Emit.Te"···)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodToString.ToStringTest(returnType: null, parameterTypes: null, expected: "Void MethodName()")
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_Module(target: IDClass { ID = 0 })
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_Module(target: IDSubClass { ID = 0 })
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_DelegateTypeInvalid_ThrowsArgumentException(delegateType: typeof(System.Reflection.Emit.Tests.InvalidRetType))
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_DelegateTypeInvalid_ThrowsArgumentException(delegateType: typeof(System.Reflection.Emit.Tests.WrongParamNumber))
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_DelegateTypeInvalid_ThrowsArgumentException(delegateType: typeof(System.Reflection.Emit.Tests.InvalidParamType))
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_NoMethodBody_ThrowsInvalidOperationException
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_Type(target: IDClass { ID = 0 })
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_Type(target: IDSubClass { ID = 0 })
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_CanBeConvertedToAnotherDelegateType
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_Target_Module(target: IDClass { ID = 0 })
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_Target_Module(target: IDSubClass { ID = 0 })
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_Target_Type(target: IDClass { ID = 0 })
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_Target_Type(target: IDSubClass { ID = 0 })
+[STRT] System.Reflection.Emit.Tests.DynamicMethodCreateDelegateTests.CreateDelegate_InvalidTarget_ThrowsArgumentException
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_Exception_Success
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NullInput_ThrowsArgumentNullException(skipVisibility: True)
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NullInput_ThrowsArgumentNullException(skipVisibility: False)
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.Test_GenericMethod
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.Test_TwoDimTest
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.GetDynamicILInfo_NotSameNotNull(skipVisibility: True)
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.GetDynamicILInfo_NotSameNotNull(skipVisibility: False)
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_StringGenerics_Success
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_CtorMethodAndField_Success
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.Test_CallGM
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_String_Success
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_DynamicMethod_Success
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.InstanceBasedFunctionPointer(useExplicitThis: True)
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.InstanceBasedFunctionPointer(useExplicitThis: False)
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_IntGenerics_Success
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NegativeInputSize_ThrowsArgumentOutOfRangeException(skipVisibility: True)
+[STRT] System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NegativeInputSize_ThrowsArgumentOutOfRangeException(skipVisibility: False)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Int_Module(skipVisibility: True)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Module_CoreclrIgnoresSkipVisibility
+[STRT] System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Owner(skipVisibility: True)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Owner(skipVisibility: False)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Int_Module_CoreclrIgnoresSkipVisibility
+[STRT] System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Module(skipVisibility: True)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Int_Owner(skipVisibility: True)
+[STRT] System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Int_Owner(skipVisibility: False)
+Finished:    System.Reflection.Emit.Lightweight.Tests.dll
+Finished uploading 24053 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 78 Passed: 77 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 1
+
+test-main.js exiting WasmTestRunner.dll System.Reflection.Emit.Lightweight.Tests.dll after 0.011483333333333333 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

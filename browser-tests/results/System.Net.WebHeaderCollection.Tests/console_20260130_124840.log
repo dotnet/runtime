@@ -1,0 +1,131 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:40159/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Net.WebHeaderCollection.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.WebHeaderCollection.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Net.WebHeaderCollection.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Net.WebHeaderCollection.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Net.WebHeaderCollection.Tests.dll (found 61 of 61 test cases)
+Starting:    System.Net.WebHeaderCollection.Tests.dll
+[STRT] System.Net.Tests.WebHeaderCollectionTest.ToString_SingleHeaderWithEmptyValue_Success(value: null)
+[STRT] System.Net.Tests.WebHeaderCollectionTest.ToString_SingleHeaderWithEmptyValue_Success(value: "")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_ValidValue_Success(value: null)
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_ValidValue_Success(value: "")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_ValidValue_Success(value: "value1\r\n")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_ValidValue_Success(value: "value1\tvalue2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_ValidValue_Success(value: "value1\r\n\tvalue2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_ValidValue_Success(value: "value1\r\n value2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_NullOrEmptyHeader_ThrowsArgumentNullException(name: null)
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_NullOrEmptyHeader_ThrowsArgumentNullException(name: "")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_Set_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_Get_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.DefaultPropertyValues_ReturnEmptyAfterConstruction_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_AddHeader_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_AddInvalid_Throws(header: -2147483648)
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_AddInvalid_Throws(header: -1)
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_AddInvalid_Throws(header: 2147483647)
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_InvalidName_Throws(name: "(")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_InvalidName_Throws(name: "ሴ")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_InvalidName_Throws(name: "\x19")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_ToByteArray_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_ValidValue_Success(value: null, expectedValue: "")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_ValidValue_Success(value: "", expectedValue: "")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_ValidValue_Success(value: "VaLue", expectedValue: "VaLue")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_ValidValue_Success(value: "  value  ", expectedValue: "value")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_ValidValue_Success(value: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···, expectedValue: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···)
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Getter_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_ValidName_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequest_AddQuery_CommonHeader_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_SetThenRemove_Success(setName: "name", removeName: "name")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_SetThenRemove_Success(setName: "name", removeName: "NaMe")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidHeader_ThrowsArgumentException(header: " \r \t \n", paramName: "header")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidHeader_ThrowsArgumentException(header: "nocolon", paramName: "header")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidHeader_ThrowsArgumentException(header: "  :value", paramName: "name")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidHeader_ThrowsArgumentException(header: "name  :value", paramName: "name")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidHeader_ThrowsArgumentException(header: "name:va\rlue", paramName: "value")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_Clear_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.GetValues_InvalidSetCookieHeader_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_NullOrEmptyName_Throws(name: null)
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_NullOrEmptyName_Throws(name: "")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_IsRestricted_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.NameValue_Set_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.CustomHeader_AddQuery_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.ToString_NotEmpty_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_Add_Rmemove_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_SameHeaderTwice_Success(firstName: "name", secondName: "name")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_SameHeaderTwice_Success(firstName: "name", secondName: "NaMe")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_SameHeaderTwice_Success(firstName: "nAmE", secondName: "name")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.GetValues_MultipleValuesHeader_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.RequestHeader_QueryResponse_Throws
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_GetValues_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.GetValues_SingleSetCookieHeaderWithMultipleCookiesWithNoAttribute_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Getter_EmptyCollection_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpResponseHeader_AddInvalid_Throws(header: -2147483648)
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpResponseHeader_AddInvalid_Throws(header: -1)
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpResponseHeader_AddInvalid_Throws(header: 2147483647)
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_NullName_ThrowsArgumentNullException
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_GetKey_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_EmptyCollection_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_HeaderExists_RemovesFromCollection(name: "name")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_HeaderExists_RemovesFromCollection(name: "nAMe")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.ResponseThenRequestHeaders_Add_Throws
+[STRT] System.Net.Tests.WebHeaderCollectionTest.GetValues_SingleSetCookieHeaderWithMultipleCookiesWithExpiresAttribute_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.ToString_Empty_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.ResponseHeader_QueryRequest_Throws
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_NullHeader_ThrowsArgumentNullException(header: null)
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_NullHeader_ThrowsArgumentNullException(header: "")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_HeaderAlreadyExists_AppendsValue
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpResponseHeader_AddQuery_CommonHeader_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_AddHeader_Failure
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidValue_ThrowsArgumentException(value: "value1\rvalue2\r")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidValue_ThrowsArgumentException(value: "value1\nvalue2\r")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidValue_ThrowsArgumentException(value: "value1value2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidValue_ThrowsArgumentException(value: "value1\r\nvalue2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidValue_ThrowsArgumentException(value: "value1\x19value2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidName_ThrowsArgumentException(name: "")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidName_ThrowsArgumentException(name: "(")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidName_ThrowsArgumentException(name: "\r \t \n")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidName_ThrowsArgumentException(name: "  name  ")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidName_ThrowsArgumentException(name: "value1\rvalue2\r")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidName_ThrowsArgumentException(name: "value1\nvalue2\r")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidName_ThrowsArgumentException(name: "value1value2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidName_ThrowsArgumentException(name: "value1\r\nvalue2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_InvalidName_ThrowsArgumentException(name: "value1\x19value2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.RequestThenResponseHeaders_Add_Throws
+[STRT] System.Net.Tests.WebHeaderCollectionTest.AddLongString_DoesNotThrow
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpResponseHeader_Set_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Enumerator_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.WebHeaderCollection_Keys_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_IllegalCharacter_Throws
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_InvalidHeader_ThrowsArgumentException(name: " \r \t \n")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_InvalidHeader_ThrowsArgumentException(name: "  name  ")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_InvalidHeader_ThrowsArgumentException(name: "value1\rvalue2\r")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_InvalidHeader_ThrowsArgumentException(name: "value1\nvalue2\r")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_InvalidHeader_ThrowsArgumentException(name: "value1value2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_InvalidHeader_ThrowsArgumentException(name: "value1\r\nvalue2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_InvalidHeader_ThrowsArgumentException(name: "value1\x19value2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.HttpRequestHeader_Add_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Getter_NonEmptyCollectionNonExistentHeader_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Ctor_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.IterateCollection_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.GetValues_MultipleSetCookieHeadersWithNoAttribute_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_SetTwoThenRemoveOne_Success(setName: "name", removeName: "name")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Remove_SetTwoThenRemoveOne_Success(setName: "name", removeName: "NaMe")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.GetValues_MultipleSetCookieHeadersWithExpiresAttribute_Success
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Add_ValidHeader_AddsToHeaders
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_InvalidValue_Throws(value: "value1\rvalue2\r")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_InvalidValue_Throws(value: "value1\nvalue2\r")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_InvalidValue_Throws(value: "value1value2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_InvalidValue_Throws(value: "value1\r\nvalue2")
+[STRT] System.Net.Tests.WebHeaderCollectionTest.Setter_InvalidValue_Throws(value: "value1\x19value2")
+Finished:    System.Net.WebHeaderCollection.Tests.dll
+Finished uploading 27751 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 111 Passed: 111 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Net.WebHeaderCollection.Tests.dll after 0.01215 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

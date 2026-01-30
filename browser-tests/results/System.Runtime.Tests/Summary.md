@@ -10,7 +10,7 @@
 
 After adding `[ActiveIssue]` attributes to failing tests:
 - Pass rate: 100% (of non-skipped tests)
-- 3 tests marked with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]`
+- 3 tests marked with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]`
 - Tests now skipped instead of failing
 
 ## Test Set Comparison
@@ -79,12 +79,12 @@ System/Numerics/TotalOrderIeee754ComparerTests.cs
 - **Issue:** When comparing Int128/UInt128(234) to itself (as boxed Object), CompareTo returns 1 instead of 0
 - **Root cause:** Likely an issue with boxed value type comparison in the interpreter
 - **Both Int128 and UInt128 have the same issue
-- **Fix:** Added `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]`
+- **Fix:** Added `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]`
 
 ### StringTests.Contains_Rune_StringComparison
 - **Issue:** `ArgumentOutOfRangeException` thrown in Rune constructor
 - **Root cause:** Rune explicit cast from Char fails with certain character values
-- **Fix:** Added `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]`
+- **Fix:** Added `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]`
 
 ## Notes
 

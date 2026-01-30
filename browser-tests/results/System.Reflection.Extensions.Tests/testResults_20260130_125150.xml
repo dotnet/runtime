@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Reflection.Extensions.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="11:51:55" total="45" passed="45" failed="0" skipped="0" time="0.145" errors="0">
+    <errors />
+    <collection total="11" passed="11" failed="0" skipped="0" name="Test collection for System.Reflection.Tests.RuntimeReflectionExtensionsTests" time="0.024">
+      <test name="System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetMethodInfo" type="System.Reflection.Tests.RuntimeReflectionExtensionsTests" method="GetMethodInfo" time="0.0113" result="Pass" />
+      <test name="System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeMethods" type="System.Reflection.Tests.RuntimeReflectionExtensionsTests" method="GetRuntimeMethods" time="0.0018" result="Pass" />
+      <test name="System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeField" type="System.Reflection.Tests.RuntimeReflectionExtensionsTests" method="GetRuntimeField" time="0.0008999" result="Pass" />
+      <test name="System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeProperties" type="System.Reflection.Tests.RuntimeReflectionExtensionsTests" method="GetRuntimeProperties" time="0.0031" result="Pass" />
+      <test name="System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeEvents" type="System.Reflection.Tests.RuntimeReflectionExtensionsTests" method="GetRuntimeEvents" time="0.0011" result="Pass" />
+      <test name="System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeBaseDefinition" type="System.Reflection.Tests.RuntimeReflectionExtensionsTests" method="GetRuntimeBaseDefinition" time="0.0005" result="Pass" />
+      <test name="System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeEvent" type="System.Reflection.Tests.RuntimeReflectionExtensionsTests" method="GetRuntimeEvent" time="0.0011" result="Pass" />
+      <test name="System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeMethod" type="System.Reflection.Tests.RuntimeReflectionExtensionsTests" method="GetRuntimeMethod" time="0.0009" result="Pass" />
+      <test name="System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeProperty" type="System.Reflection.Tests.RuntimeReflectionExtensionsTests" method="GetRuntimeProperty" time="0.0009" result="Pass" />
+      <test name="System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeFields" type="System.Reflection.Tests.RuntimeReflectionExtensionsTests" method="GetRuntimeFields" time="0.0003" result="Pass" />
+      <test name="System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeInterfaceMap" type="System.Reflection.Tests.RuntimeReflectionExtensionsTests" method="GetRuntimeInterfaceMap" time="0.0025" result="Pass" />
+    </collection>
+    <collection total="7" passed="7" failed="0" skipped="0" name="Test collection for System.Reflection.Tests.GetCustomAttributes_Assembly" time="0.007">
+      <test name="System.Reflection.Tests.GetCustomAttributes_Assembly.GetCustomAttributesOfT" type="System.Reflection.Tests.GetCustomAttributes_Assembly" method="GetCustomAttributesOfT" time="0.0012" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_Assembly.CustomAttributes_Get" type="System.Reflection.Tests.GetCustomAttributes_Assembly" method="CustomAttributes_Get" time="0.0023999" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_Assembly.GetCustomAttributeOfT" type="System.Reflection.Tests.GetCustomAttributes_Assembly" method="GetCustomAttributeOfT" time="0.0017" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_Assembly.GetCustomAttributeExtension" type="System.Reflection.Tests.GetCustomAttributes_Assembly" method="GetCustomAttributeExtension" time="0.0004" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_Assembly.GetCustomAttributes_thisAsm" type="System.Reflection.Tests.GetCustomAttributes_Assembly" method="GetCustomAttributes_thisAsm" time="0.0008999" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_Assembly.IsDefined" type="System.Reflection.Tests.GetCustomAttributes_Assembly" method="IsDefined" time="0.0006" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_Assembly.GetCustomAttributesExtension" type="System.Reflection.Tests.GetCustomAttributes_Assembly" method="GetCustomAttributesExtension" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for System.Reflection.Tests.RuntimeReflectionExtensionsTestsWithQuirks" time="0.001">
+      <test name="System.Reflection.Tests.RuntimeReflectionExtensionsTestsWithQuirks.GetRuntimeEvents" type="System.Reflection.Tests.RuntimeReflectionExtensionsTestsWithQuirks" method="GetRuntimeEvents" time="0.0005" result="Pass" />
+      <test name="System.Reflection.Tests.RuntimeReflectionExtensionsTestsWithQuirks.GetRuntimeProperties" type="System.Reflection.Tests.RuntimeReflectionExtensionsTestsWithQuirks" method="GetRuntimeProperties" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="11" passed="11" failed="0" skipped="0" name="Test collection for System.Reflection.Tests.GetCustomAttributes_MemberInfo" time="0.005">
+      <test name="System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttribute4" type="System.Reflection.Tests.GetCustomAttributes_MemberInfo" method="GetCustomAttribute4" time="0.0005" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_MemberInfo.IsDefined" type="System.Reflection.Tests.GetCustomAttributes_MemberInfo" method="IsDefined" time="0.0004" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttributeSingle" type="System.Reflection.Tests.GetCustomAttributes_MemberInfo" method="GetCustomAttributeSingle" time="0.0007" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttributeOfT_Single" type="System.Reflection.Tests.GetCustomAttributes_MemberInfo" method="GetCustomAttributeOfT_Single" time="0.0002999" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_MemberInfo.IsDefined_Inherit" type="System.Reflection.Tests.GetCustomAttributes_MemberInfo" method="IsDefined_Inherit" time="0.0001" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttribute5" type="System.Reflection.Tests.GetCustomAttributes_MemberInfo" method="GetCustomAttribute5" time="0.0005" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttributeOfT_Multiple" type="System.Reflection.Tests.GetCustomAttributes_MemberInfo" method="GetCustomAttributeOfT_Multiple" time="0.0003" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttribute_Multiple_NotInherited" type="System.Reflection.Tests.GetCustomAttributes_MemberInfo" method="GetCustomAttribute_Multiple_NotInherited" time="0.0002" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttributeT_Multiple_NoInheirit" type="System.Reflection.Tests.GetCustomAttributes_MemberInfo" method="GetCustomAttributeT_Multiple_NoInheirit" time="0.0003" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttributeOfT_Single_NotInherited" type="System.Reflection.Tests.GetCustomAttributes_MemberInfo" method="GetCustomAttributeOfT_Single_NotInherited" time="0.0002" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttributeAll" type="System.Reflection.Tests.GetCustomAttributes_MemberInfo" method="GetCustomAttributeAll" time="0.0012" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Reflection.Tests.GetCustomAttributes_Compat" time="0.002">
+      <test name="System.Reflection.Tests.GetCustomAttributes_Compat.GetCustomAttributes_thisAsm" type="System.Reflection.Tests.GetCustomAttributes_Compat" method="GetCustomAttributes_thisAsm" time="0.0015" result="Pass" />
+    </collection>
+    <collection total="13" passed="13" failed="0" skipped="0" name="Test collection for System.Reflection.Tests.GetCustomAttributes_ParameterInfo" time="0.010">
+      <test name="System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCusomAttribute_Multiple" type="System.Reflection.Tests.GetCustomAttributes_ParameterInfo" method="GetCusomAttribute_Multiple" time="0.0013999" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttributeOfT_Single_NoInherit" type="System.Reflection.Tests.GetCustomAttributes_ParameterInfo" method="GetCustomAttributeOfT_Single_NoInherit" time="0.0003" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttribute_General_NoInherit" type="System.Reflection.Tests.GetCustomAttributes_ParameterInfo" method="GetCustomAttribute_General_NoInherit" time="0.0016" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttributeOfT_Multiple_NoInherit" type="System.Reflection.Tests.GetCustomAttributes_ParameterInfo" method="GetCustomAttributeOfT_Multiple_NoInherit" time="0.0002999" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_ParameterInfo.IsDefined_Inherit" type="System.Reflection.Tests.GetCustomAttributes_ParameterInfo" method="IsDefined_Inherit" time="0.0005" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustom_Attribute_General" type="System.Reflection.Tests.GetCustomAttributes_ParameterInfo" method="GetCustom_Attribute_General" time="0.0019" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttribute_Single_NoInherit" type="System.Reflection.Tests.GetCustomAttributes_ParameterInfo" method="GetCustomAttribute_Single_NoInherit" time="0.0001" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttribute_Single" type="System.Reflection.Tests.GetCustomAttributes_ParameterInfo" method="GetCustomAttribute_Single" time="0.0011999" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttributeOfT_Single" type="System.Reflection.Tests.GetCustomAttributes_ParameterInfo" method="GetCustomAttributeOfT_Single" time="0.0008" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_ParameterInfo.IsDefined" type="System.Reflection.Tests.GetCustomAttributes_ParameterInfo" method="IsDefined" time="0.0005" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttribute_Multiple_NoInherit" type="System.Reflection.Tests.GetCustomAttributes_ParameterInfo" method="GetCustomAttribute_Multiple_NoInherit" time="0.0003" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustom_Attribute_On_Return_Parameter_On_Parent_Method" type="System.Reflection.Tests.GetCustomAttributes_ParameterInfo" method="GetCustom_Attribute_On_Return_Parameter_On_Parent_Method" time="0.0004999" result="Pass" />
+      <test name="System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttributeOfT" type="System.Reflection.Tests.GetCustomAttributes_ParameterInfo" method="GetCustomAttributeOfT" time="0.0005" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

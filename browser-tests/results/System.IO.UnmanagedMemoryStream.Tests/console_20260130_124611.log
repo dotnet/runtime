@@ -1,0 +1,52 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:34463/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.IO.UnmanagedMemoryStream.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.IO.UnmanagedMemoryStream.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.IO.UnmanagedMemoryStream.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.IO.UnmanagedMemoryStream.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.IO.UnmanagedMemoryStream.Tests.dll (found 32 of 95 test cases)
+Starting:    System.IO.UnmanagedMemoryStream.Tests.dll
+[STRT] UmsSecurityTests.ChangePositionViaPointer
+[STRT] UmsSecurityTests.OverflowPositionPointer
+[STRT] System.IO.Tests.UmsCtorTests.CtorsThatFail
+[STRT] System.IO.Tests.UmsCtorTests.BufferCtor
+[STRT] System.IO.Tests.UmsCtorTests.PointerCtor
+[STRT] System.IO.Tests.UmsSafeBufferTests.WriteSafeBuffer
+[STRT] System.IO.Tests.UmsSafeBufferTests.ReadWriteByteSafeBuffer
+[STRT] System.IO.Tests.UmaTests.UmaInvalidReadWrite
+[STRT] System.IO.Tests.UmaTests.UmaReadWrite
+[STRT] System.IO.Tests.UmaTests.UmaInvalidReadDecimal
+[STRT] System.IO.Tests.UmaCtorTests.UmaCtors
+[STRT] System.IO.Tests.UmaCtorTests.UmaCtorsThatFail
+[STRT] System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteStruct_Closed
+[STRT] System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteStructWithReferenceType_ThrowsArgumentException
+[STRT] System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteGenericIntStruct_Valid
+[STRT] System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteStruct_InsufficientSpace
+[STRT] System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteStruct_Valid
+[STRT] System.IO.Tests.Uma_ReadWriteStruct.UmaWriteStruct_ReadMode
+[STRT] System.IO.Tests.Uma_ReadWriteStruct.UmaReadStruct_WriteMode
+[STRT] System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteGenericStringStruct_ThrowsArgumentException
+[STRT] System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteStruct_NegativePosition
+[STRT] System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteStruct_PositionGreaterThanCapacity
+[STRT] System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArray_Closed
+[STRT] System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArrayGenericIntStruct_Valid
+[STRT] System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArray_OneItem
+[STRT] System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArrayWithReferenceType_ThrowsArgumentException
+[STRT] System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArray_TryToReadMoreThanAvailable
+[STRT] System.IO.Tests.Uma_ReadWriteStructArray.UmaWriteStructArray_ReadMode
+[STRT] System.IO.Tests.Uma_ReadWriteStructArray.UmaReadStructArray_WriteMode
+[STRT] System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArray_Multiples
+[STRT] System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArray_InvalidParameters
+[STRT] System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArray_InsufficientSpace
+Finished:    System.IO.UnmanagedMemoryStream.Tests.dll
+Finished uploading 7696 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 32 Passed: 32 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.IO.UnmanagedMemoryStream.Tests.dll after 0.0098 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

@@ -1,0 +1,9 @@
+Test Comparison: System.Net.Http.Json.Functional.Tests
+Generated: 2026-01-30T12:47:54+01:00
+
+Mono tests:    68
+CoreCLR tests: 68
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

@@ -1,0 +1,163 @@
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  System.Memory.Data -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Memory.Data/ref/Release/net11.0/System.Memory.Data.dll
+  System.Memory.Data -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Memory.Data/Release/net11.0/System.Memory.Data.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Memory.Data.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Memory.Data.Tests/Release/net11.0/browser-wasm/System.Memory.Data.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.Memory.Data.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.Memory.Data.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.Memory.Data.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Memory.Data/tests
+  ----- start Fri Jan 30 12:47:17 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.Memory.Data.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Memory.Data.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Memory.Data.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.Memory.Data.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.Memory.Data.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Memory.Data/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Memory.Data.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Memory.Data.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 39643
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 39643.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:34195/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Memory.Data.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Memory.Data.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Memory.Data.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Memory.Data.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Memory.Data.Tests.dll (found 57 of 57 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Memory.Data.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataFromFileTests.CanCreateBinaryDataFromFile
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataFromFileTests.CanCreateBinaryDataFromFileWithMediaType(mediaType: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataFromFileTests.CanCreateBinaryDataFromFileWithMediaType(mediaType: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataFromFileTests.CanCreateBinaryDataFromFileWithMediaType(mediaType: "application/soap+xml")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromEmptyStream
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.GetHashCodeWorks
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.EmptyIsSingleton
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty(count: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty(count: 4)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty(count: 7)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStringWithMediaType(mediaType: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStringWithMediaType(mediaType: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStringWithMediaType(mediaType: "application/soap+xml")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.ValidatesPositionValue
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespected(bufferOffset: 1, streamStart: 4)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespected(bufferOffset: 0, streamStart: 4)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespected(bufferOffset: 4, streamStart: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespected(bufferOffset: 4, streamStart: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.EmptyIsEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.BinaryDataFromEmptyReadOnlyMemoryIsEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory(count: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory(count: 4)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory(count: 7)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.ToObjectThrowsExceptionOnIncompatibleType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CloseStreamValidation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.ValidatesReadArguments
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.IsBinaryDataMemberPropertyDeserialized
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.ToStreamIsNotMutatedWhenBinaryDataOwnsBuffer
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStreamWithMediaType(mediaType: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStreamWithMediaType(mediaType: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStreamWithMediaType(mediaType: "application/soap+xml")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromLongStream
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.BinaryDataEmptyIsEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.IsBinaryDataMemberPropertySerialized
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromArray(count: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromArray(count: 4)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromArray(count: 7)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromBytesWithMediaType(mediaType: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromBytesWithMediaType(mediaType: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromBytesWithMediaType(mediaType: "application/soap+xml")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.ToStringReturnEmptyStringWhenBinaryDataEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.ToStringRespectsArraySegmentBoundaries
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromReadOnlyMemoryWithMediaType(mediaType: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromReadOnlyMemoryWithMediaType(mediaType: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromReadOnlyMemoryWithMediaType(mediaType: "application/soap+xml")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromArrayIsNotEmpty(count: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromArrayIsNotEmpty(count: 4)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromArrayIsNotEmpty(count: 7)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.ToObjectHandlesBOM
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CreateThrowsOnNullStream
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.BinaryDataFromEmptyArrayIsEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CreateThrowsOnNullString
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromNonSeekableStream
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.ReadAsyncRespectsCancellation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CreateThrowsOnNullArray
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.ValidatesSeekArguments
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.ToStreamIsMutatedWhenCustomerOwnsBuffer
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromStringIsNotEmpty(count: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromStringIsNotEmpty(count: 4)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.NonEmptyBinaryDataFromStringIsNotEmpty(count: 7)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.BinaryDataFromEmptyStringIsEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanReadPartial
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromCustomType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanRead
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.IsBinaryDataMemberPropertySerialized_SourceGen
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.IsBinaryDataMemberPropertyDeserialized_SourceGen
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CannotWriteToReadOnlyMemoryStream
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromBytes
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.ToStreamRespectsArraySegmentBoundaries
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromString
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.MaxStreamLengthRespected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanConstructNewInstanceWithMediaType(mediaType: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanConstructNewInstanceWithMediaType(mediaType: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanConstructNewInstanceWithMediaType(mediaType: "application/soap+xml")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespectedBackingBuffer(bufferOffset: 1, streamStart: 4)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespectedBackingBuffer(bufferOffset: 0, streamStart: 4)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespectedBackingBuffer(bufferOffset: 4, streamStart: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.StartPositionOfStreamRespectedBackingBuffer(bufferOffset: 4, streamStart: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.EqualsRespectsReferenceEquality
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStream
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromFileStream
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanSeek
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromString(count: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromString(count: 4)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromString(count: 7)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanSerializeNullData
+  [40m[32minfo[39m[22m[49m: [STRT] System.Tests.BinaryDataTests.CanCreateBinaryDataFromStreamUsingBackingBuffer
+  [40m[32minfo[39m[22m[49m: Finished:    System.Memory.Data.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.Memory.Data.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 18890 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 18890 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 87 Passed: 87 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Memory.Data.Tests.dll after 0.011633333333333334 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/System.Memory.Data.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Memory.Data/tests
+  ----- end Fri Jan 30 12:47:21 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.Memory.Data.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:09.52

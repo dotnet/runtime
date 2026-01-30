@@ -1,0 +1,47 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:46525/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Net.WebProxy.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.WebProxy.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Net.WebProxy.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Net.WebProxy.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Net.WebProxy.Tests.dll (found 13 of 14 test cases)
+Starting:    System.Net.WebProxy.Tests.dll
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_BypassProxyOnLocal_Roundtrip
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = null, BypassArrayList = [], BypassList = [], BypassProxyOnLocal = False, Credentials = null, ··· }, address: null, useDefaultCredentials: False, bypassLocal: False, bypassedAddresses: [], creds: null)
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = http://anything/, BypassArrayList = [], BypassList = [], BypassProxyOnLocal = False, Credentials = null, ··· }, address: http://anything/, useDefaultCredentials: False, bypassLocal: False, bypassedAddresses: [], creds: null)
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = http://anything:42/, BypassArrayList = [], BypassList = [], BypassProxyOnLocal = False, Credentials = null, ··· }, address: http://anything:42/, useDefaultCredentials: False, bypassLocal: False, bypassedAddresses: [], creds: null)
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = http://anything:42/, BypassArrayList = [], BypassList = [], BypassProxyOnLocal = False, Credentials = null, ··· }, address: http://anything:42/, useDefaultCredentials: False, bypassLocal: False, bypassedAddresses: [], creds: null)
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = http://anything:42/, BypassArrayList = [], BypassList = [], BypassProxyOnLocal = False, Credentials = null, ··· }, address: http://anything:42/, useDefaultCredentials: False, bypassLocal: False, bypassedAddresses: [], creds: null)
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = http://anything:42/, BypassArrayList = [], BypassList = [], BypassProxyOnLocal = False, Credentials = null, ··· }, address: http://anything:42/, useDefaultCredentials: False, bypassLocal: False, bypassedAddresses: [], creds: null)
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = http://anything:42/, BypassArrayList = [], BypassList = [], BypassProxyOnLocal = False, Credentials = null, ··· }, address: http://anything:42/, useDefaultCredentials: False, bypassLocal: False, bypassedAddresses: [], creds: null)
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = socks5://anything:42/, BypassArrayList = [], BypassList = [], BypassProxyOnLocal = False, Credentials = null, ··· }, address: socks5://anything:42/, useDefaultCredentials: False, bypassLocal: False, bypassedAddresses: [], creds: null)
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = http://anything/, BypassArrayList = [], BypassList = [], BypassProxyOnLocal = False, Credentials = null, ··· }, address: http://anything/, useDefaultCredentials: False, bypassLocal: False, bypassedAddresses: [], creds: null)
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = http://anything/, BypassArrayList = [], BypassList = [], BypassProxyOnLocal = True, Credentials = null, ··· }, address: http://anything/, useDefaultCredentials: False, bypassLocal: True, bypassedAddresses: [], creds: null)
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = http://anything/, BypassArrayList = [], BypassList = [], BypassProxyOnLocal = True, Credentials = null, ··· }, address: http://anything/, useDefaultCredentials: False, bypassLocal: True, bypassedAddresses: [], creds: null)
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = http://anything.com/, BypassArrayList = [".*.com"], BypassList = [".*.com"], BypassProxyOnLocal = True, Credentials = null, ··· }, address: http://anything.com/, useDefaultCredentials: False, bypassLocal: True, bypassedAddresses: [".*.com"], creds: null)
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = http://anything.com/, BypassArrayList = [".*.com"], BypassList = [".*.com"], BypassProxyOnLocal = True, Credentials = null, ··· }, address: http://anything.com/, useDefaultCredentials: False, bypassLocal: True, bypassedAddresses: [".*.com"], creds: null)
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = http://anything.com/, BypassArrayList = [".*.com"], BypassList = [".*.com"], BypassProxyOnLocal = True, Credentials = DummyCredentials { }, ··· }, address: http://anything.com/, useDefaultCredentials: False, bypassLocal: True, bypassedAddresses: [".*.com"], creds: DummyCredentials { })
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Ctor_ExpectedPropertyValues(p: WebProxy { Address = http://anything.com/, BypassArrayList = [".*.com"], BypassList = [".*.com"], BypassProxyOnLocal = True, Credentials = DummyCredentials { }, ··· }, address: http://anything.com/, useDefaultCredentials: False, bypassLocal: True, bypassedAddresses: [".*.com"], creds: DummyCredentials { })
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_BypassOnLocal_SpecialCases
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_BypassUrl_BypassArrayListChangedDirectly_IsBypassedAsExpected
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_BypassList_DoesntContainUrl_NotBypassed
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_BypassList_ContainsUrl_IsBypassed
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_Address_Roundtrip
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_InvalidArgs_Throws
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_UseDefaultCredentials_Roundtrip
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_GetDefaultProxy_NotSupported
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_BypassList_Roundtrip
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_InvalidBypassUrl_AddedDirectlyToList_SilentlyEaten
+[STRT] System.Net.Tests.WebProxyTest.WebProxy_BypassOnLocal_ConfiguredToNotBypassLocal
+Finished:    System.Net.WebProxy.Tests.dll
+Finished uploading 10170 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 27 Passed: 27 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Net.WebProxy.Tests.dll after 0.00895 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

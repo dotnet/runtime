@@ -1,0 +1,12 @@
+Test Comparison: System.Reflection.Context.Tests
+Generated: 2026-01-30T12:50:05+01:00
+
+Mono tests:    118
+CoreCLR tests: 121
+
+=== Extra in CoreCLR (3) ===
+System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_Interface_Throws
+System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_MemberAttributes_Success
+System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_ParameterAttributes_Success
+
+=== Missing in CoreCLR (0) ===

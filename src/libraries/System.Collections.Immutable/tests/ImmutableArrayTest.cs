@@ -1124,7 +1124,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(underlyingArray?.GetHashCode() ?? 0, array.GetHashCode());
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(AddData))]
         public void Add(IEnumerable<int> source, IEnumerable<int> items)
@@ -2531,7 +2531,7 @@ namespace System.Collections.Immutable.Tests
             Task.WaitAll(Task.Run(mutator), Task.Run(mutator));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         [MemberData(nameof(Int32EnumerableData))]
         public void DebuggerAttributesValid_AdditionalCases(IEnumerable<int> source)

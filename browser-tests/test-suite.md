@@ -64,16 +64,18 @@ This downloads to `browser-tests/results/<TestProject>/mono-console.log` and dis
    - Full test name (namespace.class.method)
    - Full stack trace
    - Failure reason/exception type
-3. **Create failure record** for each individual test/method/Fact/Theory in `/browser-tests/failures/<TestSuiteName>/<ClassName.MethodName>.md` (e.g., `JSImportTest.JsImportSleep.md`) with the [template](#Method-Failure-Documentation-Template)
+3. **⚠️ IMPORTANT: Create failure record FIRST** for each individual test/method/Fact/Theory in `/browser-tests/failures/<TestSuiteName>/<ClassName.MethodName>.md` (e.g., `JSImportTest.JsImportSleep.md`) with the [template](#Method-Failure-Documentation-Template). **Do this before applying any fix!**
 4. **Fix the known problems** fix only things described in [fixing-problems.md](fixing-problems.md).
-5. **Mark test** with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011")]`
+5. **Mark test** with `[ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]`
 6. **Failing Asserts** if there are failing asserts during the run create record in `/browser-tests/failures/<TestSuiteName>/<ClassName.MethodName>.md` with the [template](#Method-Failure-Documentation-Template)
 7. **Compare test counts**: `Tests run: X Passed: Y Failed: Z Skipped: N` with the Mono baseline at: `browser-tests/results/<TestProject>/mono-console.log`
 8. **Compare test sets** with the Mono baseline at: `browser-tests/results/<TestProject>/mono-testResults.xml`. Which tests are missing and which are extra ?
-9. **Create or update** `browser-tests/results/<TestProject>/Summary.md` with the outcome
+9. **Create or update** `browser-tests/results/<TestProject>/Summary.md` with the outcome. **Include link to failure record in the Failures section!**
 10. **Update the overall status** in "Completed Test Suites" of [plan.md](./plan.md)
 11. **Stop and ask for feedback before proceeding.**
 12. **Rebuild and re-run** the test suite to continue until all enabled tests pass or until you tried to run the suite more then 3 times already.
+
+> **Reminder:** Always create the failure record in `/browser-tests/failures/` before moving on. This documentation is critical for tracking issues and understanding patterns across test suites.
 
 ### Handling Timeouts/Crashes/Aborts
 

@@ -1,0 +1,69 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:43643/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Private.Uri.ExtendedFunctional.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Private.Uri.ExtendedFunctional.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Private.Uri.ExtendedFunctional.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Private.Uri.ExtendedFunctional.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Private.Uri.ExtendedFunctional.Tests.dll (found 47 of 47 test cases)
+Starting:    System.Private.Uri.ExtendedFunctional.Tests.dll
+[STRT] System.PrivateUri.Tests.UriTests.TestHexMethods_Invalid
+[STRT] System.PrivateUri.Tests.UriTests.TestMakeRelative
+[STRT] System.PrivateUri.Tests.UriTests.TestMakeRelative_Invalid
+[STRT] System.PrivateUri.Tests.UriTests.TestCtor_String_Boolean(dontEscape: True)
+[STRT] System.PrivateUri.Tests.UriTests.TestCtor_String_Boolean(dontEscape: False)
+[STRT] System.PrivateUri.Tests.UriTests.TestCtor_Uri_String_Boolean(dontEscape: True)
+[STRT] System.PrivateUri.Tests.UriTests.TestCtor_Uri_String_Boolean(dontEscape: False)
+[STRT] System.PrivateUri.Tests.UriTests.TestHexMethods
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseMadeRelativeToLastSlashWithExtra_ReturnsDotSlashPlusQueryAndFragment
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsSlashDoubleDotCharSlash_ReturnsSlashDoubleDotCharSlash
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsDotChar_ReturnsBasePathPlusDotChar
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsSimplePartialPathWithScheme_ReturnsPartialPathWithScheme
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsDoubleDoubleDotSlashStartingCompressPath_ReturnsBasePathBacksteppedTwicePlusRelativePath
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsDoubleDotChar_ReturnsBasePathPlusDoubleDotChar
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsQueryAndFragment_ReturnsBaseAuthorityAndPathPlusQueryAndFragment
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsQuery_ReturnsBaseAuthorityAndPathPlusQuery
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsCharDoubleDotSlash_ReturnsCharDoubleDotSlash
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsAuthority_ReturnsBaseSchemePlusAuthority
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsSimplePartialPathTrailingSlash_ReturnsMergedPaths
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsPartialPath_ReturnsMergedPaths
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsFullPath_ReturnsBaseAuthorityPlusFullPath
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsCharDoubleDot_ReturnsBasePathPlusCharDoubleDot
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsSingleDotEndingCompressPath_ReturnsMergedPathsWithoutSingleDot
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseMadeRelativeToThirdToLastSlash_ReturnsDoubleDoubleDotSlashPlusQueryAndFragment
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseMadeRelativeToLastSlash_ReturnsDotSlashPlusQueryAndFragment
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsSlashDot_ReturnsBaseMinusPath
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsSlashDotSlashFile_ReturnsBasePlusRelativeFile
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseMadeRelativeToSecondToLastSlash_ReturnsDoubleDotSlashPlusQueryAndFragment
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.UriRelative_AbsoluteToAbsolute_CustomPortCarriedOver
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsSimplePartialPath_ReturnsMergedPaths
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseMadeRelativeToLastSlash_ReturnsDotSlash
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsSingleDotSlashStartingCompressPath_ReturnsMergedPathsWithoutSingleDot
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsTooManyDoubleDotSlashStartingCompressPath_ReturnsBaseWithoutPathPlusRelativePath
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsSingleDotSlashEndingCompressPath_ReturnsMergedPathsWithoutSingleDot
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsCharDot_ReturnsBasePathPlusCharDot
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseMadeRelativeToSamePath_ReturnsQueryAndFragment
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsSlashDotCharSlash_ReturnsSlashDotCharSlash
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsDoubleDotSlashStartingCompressPath_ReturnsBasePathBacksteppedOncePlusRelativePath
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsCharDotSlash_ReturnsCharDotSlash
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsFileLikeUri_MissingRootSlash_ThrowsUriFormatException
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsSlashTripleDotSlash_ReturnsSlashTripleDotSlash
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsTripleDoubleDotSlashStartingCompressPath_ReturnsBaseWithoutPathPlusRelativePath
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsAbsolute_ReturnsFullAbsolute
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsSlashDoubleDotSlashFile_ReturnsBasePlusRelativeFile
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsDoubleCharColinChar_ReturnsCharColinChar
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseMadeRelativeToEmptyPath_ReturnsTripleDoubleDotSlashPlusQueryAndFragment
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsTripleDot_ReturnsBasePathPlusTripleDot
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsFragment_ReturnsBasePlusFragment
+[STRT] System.PrivateUri.Tests.UriRelativeResolutionTest.Uri_Relative_BaseVsSingleDot_ReturnsBasePathMinusFileWithoutSingleDot
+Finished:    System.Private.Uri.ExtendedFunctional.Tests.dll
+Finished uploading 14849 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 49 Passed: 49 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Private.Uri.ExtendedFunctional.Tests.dll after 0.008266666666666667 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Memory.Data.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="11:47:19" total="87" passed="87" failed="0" skipped="0" time="0.314" errors="0">
+    <errors />
+    <collection total="4" passed="4" failed="0" skipped="0" name="Test collection for System.Tests.BinaryDataFromFileTests" time="0.030">
+      <test name="System.Tests.BinaryDataFromFileTests.CanCreateBinaryDataFromFile" type="System.Tests.BinaryDataFromFileTests" method="CanCreateBinaryDataFromFile" time="0.0238998" result="Pass" />
+      <test name="System.Tests.BinaryDataFromFileTests.CanCreateBinaryDataFromFileWithMediaType(mediaType: null)" type="System.Tests.BinaryDataFromFileTests" method="CanCreateBinaryDataFromFileWithMediaType" time="0.0031" result="Pass" />
+      <test name="System.Tests.BinaryDataFromFileTests.CanCreateBinaryDataFromFileWithMediaType(mediaType: \&quot;\&quot;)" type="System.Tests.BinaryDataFromFileTests" method="CanCreateBinaryDataFromFileWithMediaType" time="0.002" result="Pass" />
+      <test name="System.Tests.BinaryDataFromFileTests.CanCreateBinaryDataFromFileWithMediaType(mediaType: \&quot;application/soap+xml\&quot;)" type="System.Tests.BinaryDataFromFileTests" method="CanCreateBinaryDataFromFileWithMediaType" time="0.0009999" result="Pass" />
+    </collection>
+    <collection total="83" passed="83" failed="0" skipped="0" name="Test collection for System.Tests.BinaryDataTests" time="0.105">
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromEmptyStream" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromEmptyStream" time="0.0016" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.GetHashCodeWorks" type="System.Tests.BinaryDataTests" method="GetHashCodeWorks" time="0.0007" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.EmptyIsSingleton" type="System.Tests.BinaryDataTests" method="EmptyIsSingleton" time="0.0003" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty(count: 1)" type="System.Tests.BinaryDataTests" method="NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty" time="0.0002" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty(count: 4)" type="System.Tests.BinaryDataTests" method="NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty" time="0.0001" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty(count: 7)" type="System.Tests.BinaryDataTests" method="NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromStringWithMediaType(mediaType: null)" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromStringWithMediaType" time="0.0003" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromStringWithMediaType(mediaType: \&quot;\&quot;)" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromStringWithMediaType" time="0.0002" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromStringWithMediaType(mediaType: \&quot;application/soap+xml\&quot;)" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromStringWithMediaType" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.ValidatesPositionValue" type="System.Tests.BinaryDataTests" method="ValidatesPositionValue" time="0.0011" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.StartPositionOfStreamRespected(bufferOffset: 1, streamStart: 4)" type="System.Tests.BinaryDataTests" method="StartPositionOfStreamRespected" time="0.0013999" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.StartPositionOfStreamRespected(bufferOffset: 0, streamStart: 4)" type="System.Tests.BinaryDataTests" method="StartPositionOfStreamRespected" time="0.0003" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.StartPositionOfStreamRespected(bufferOffset: 4, streamStart: 1)" type="System.Tests.BinaryDataTests" method="StartPositionOfStreamRespected" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.StartPositionOfStreamRespected(bufferOffset: 4, streamStart: 0)" type="System.Tests.BinaryDataTests" method="StartPositionOfStreamRespected" time="0.0001" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.EmptyIsEmpty" type="System.Tests.BinaryDataTests" method="EmptyIsEmpty" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.BinaryDataFromEmptyReadOnlyMemoryIsEmpty" type="System.Tests.BinaryDataTests" method="BinaryDataFromEmptyReadOnlyMemoryIsEmpty" time="0.0003" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory(count: 0)" type="System.Tests.BinaryDataTests" method="LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory" time="0.0009" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory(count: 4)" type="System.Tests.BinaryDataTests" method="LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory" time="0.0003" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory(count: 7)" type="System.Tests.BinaryDataTests" method="LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.ToObjectThrowsExceptionOnIncompatibleType" type="System.Tests.BinaryDataTests" method="ToObjectThrowsExceptionOnIncompatibleType" time="0.0473" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CloseStreamValidation" type="System.Tests.BinaryDataTests" method="CloseStreamValidation" time="0.0031" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.ValidatesReadArguments" type="System.Tests.BinaryDataTests" method="ValidatesReadArguments" time="0.0018" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.IsBinaryDataMemberPropertyDeserialized" type="System.Tests.BinaryDataTests" method="IsBinaryDataMemberPropertyDeserialized" time="0.0046" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.ToStreamIsNotMutatedWhenBinaryDataOwnsBuffer" type="System.Tests.BinaryDataTests" method="ToStreamIsNotMutatedWhenBinaryDataOwnsBuffer" time="0.0014" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromStreamWithMediaType(mediaType: null)" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromStreamWithMediaType" time="0.0004" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromStreamWithMediaType(mediaType: \&quot;\&quot;)" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromStreamWithMediaType" time="0.0002999" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromStreamWithMediaType(mediaType: \&quot;application/soap+xml\&quot;)" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromStreamWithMediaType" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromLongStream" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromLongStream" time="0.0014" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.BinaryDataEmptyIsEmpty" type="System.Tests.BinaryDataTests" method="BinaryDataEmptyIsEmpty" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.IsBinaryDataMemberPropertySerialized" type="System.Tests.BinaryDataTests" method="IsBinaryDataMemberPropertySerialized" time="0.0006" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromArray(count: 0)" type="System.Tests.BinaryDataTests" method="LengthReturnsNumberOfBytesForBinaryDataFromArray" time="0.0000999" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromArray(count: 4)" type="System.Tests.BinaryDataTests" method="LengthReturnsNumberOfBytesForBinaryDataFromArray" time="0.0002" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromArray(count: 7)" type="System.Tests.BinaryDataTests" method="LengthReturnsNumberOfBytesForBinaryDataFromArray" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromBytesWithMediaType(mediaType: null)" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromBytesWithMediaType" time="0.0002" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromBytesWithMediaType(mediaType: \&quot;\&quot;)" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromBytesWithMediaType" time="0.0001999" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromBytesWithMediaType(mediaType: \&quot;application/soap+xml\&quot;)" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromBytesWithMediaType" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.ToStringReturnEmptyStringWhenBinaryDataEmpty" type="System.Tests.BinaryDataTests" method="ToStringReturnEmptyStringWhenBinaryDataEmpty" time="0.0001" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.ToStringRespectsArraySegmentBoundaries" type="System.Tests.BinaryDataTests" method="ToStringRespectsArraySegmentBoundaries" time="0.0006" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromReadOnlyMemoryWithMediaType(mediaType: null)" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromReadOnlyMemoryWithMediaType" time="0.0002999" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromReadOnlyMemoryWithMediaType(mediaType: \&quot;\&quot;)" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromReadOnlyMemoryWithMediaType" time="0.0003" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromReadOnlyMemoryWithMediaType(mediaType: \&quot;application/soap+xml\&quot;)" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromReadOnlyMemoryWithMediaType" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.NonEmptyBinaryDataFromArrayIsNotEmpty(count: 1)" type="System.Tests.BinaryDataTests" method="NonEmptyBinaryDataFromArrayIsNotEmpty" time="0.0001" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.NonEmptyBinaryDataFromArrayIsNotEmpty(count: 4)" type="System.Tests.BinaryDataTests" method="NonEmptyBinaryDataFromArrayIsNotEmpty" time="0.0001" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.NonEmptyBinaryDataFromArrayIsNotEmpty(count: 7)" type="System.Tests.BinaryDataTests" method="NonEmptyBinaryDataFromArrayIsNotEmpty" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.ToObjectHandlesBOM" type="System.Tests.BinaryDataTests" method="ToObjectHandlesBOM" time="0.0031" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CreateThrowsOnNullStream" type="System.Tests.BinaryDataTests" method="CreateThrowsOnNullStream" time="0.0013" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.BinaryDataFromEmptyArrayIsEmpty" type="System.Tests.BinaryDataTests" method="BinaryDataFromEmptyArrayIsEmpty" time="0.0000999" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CreateThrowsOnNullString" type="System.Tests.BinaryDataTests" method="CreateThrowsOnNullString" time="0.0004" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromNonSeekableStream" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromNonSeekableStream" time="0.0005" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.ReadAsyncRespectsCancellation" type="System.Tests.BinaryDataTests" method="ReadAsyncRespectsCancellation" time="0.0006" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CreateThrowsOnNullArray" type="System.Tests.BinaryDataTests" method="CreateThrowsOnNullArray" time="0.0004" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.ValidatesSeekArguments" type="System.Tests.BinaryDataTests" method="ValidatesSeekArguments" time="0.0005" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.ToStreamIsMutatedWhenCustomerOwnsBuffer" type="System.Tests.BinaryDataTests" method="ToStreamIsMutatedWhenCustomerOwnsBuffer" time="0.0002999" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.NonEmptyBinaryDataFromStringIsNotEmpty(count: 1)" type="System.Tests.BinaryDataTests" method="NonEmptyBinaryDataFromStringIsNotEmpty" time="0.0001" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.NonEmptyBinaryDataFromStringIsNotEmpty(count: 4)" type="System.Tests.BinaryDataTests" method="NonEmptyBinaryDataFromStringIsNotEmpty" time="0.0003" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.NonEmptyBinaryDataFromStringIsNotEmpty(count: 7)" type="System.Tests.BinaryDataTests" method="NonEmptyBinaryDataFromStringIsNotEmpty" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.BinaryDataFromEmptyStringIsEmpty" type="System.Tests.BinaryDataTests" method="BinaryDataFromEmptyStringIsEmpty" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanReadPartial" type="System.Tests.BinaryDataTests" method="CanReadPartial" time="0.0006" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromCustomType" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromCustomType" time="0.0074" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanRead" type="System.Tests.BinaryDataTests" method="CanRead" time="0.0003" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.IsBinaryDataMemberPropertySerialized_SourceGen" type="System.Tests.BinaryDataTests" method="IsBinaryDataMemberPropertySerialized_SourceGen" time="0.0016" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.IsBinaryDataMemberPropertyDeserialized_SourceGen" type="System.Tests.BinaryDataTests" method="IsBinaryDataMemberPropertyDeserialized_SourceGen" time="0.0002" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CannotWriteToReadOnlyMemoryStream" type="System.Tests.BinaryDataTests" method="CannotWriteToReadOnlyMemoryStream" time="0.0017" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromBytes" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromBytes" time="0.0002" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.ToStreamRespectsArraySegmentBoundaries" type="System.Tests.BinaryDataTests" method="ToStreamRespectsArraySegmentBoundaries" time="0.0002" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromString" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromString" time="0.0001" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.MaxStreamLengthRespected" type="System.Tests.BinaryDataTests" method="MaxStreamLengthRespected" time="0.0008999" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanConstructNewInstanceWithMediaType(mediaType: null)" type="System.Tests.BinaryDataTests" method="CanConstructNewInstanceWithMediaType" time="0.0002999" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanConstructNewInstanceWithMediaType(mediaType: \&quot;\&quot;)" type="System.Tests.BinaryDataTests" method="CanConstructNewInstanceWithMediaType" time="0.0002" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanConstructNewInstanceWithMediaType(mediaType: \&quot;application/soap+xml\&quot;)" type="System.Tests.BinaryDataTests" method="CanConstructNewInstanceWithMediaType" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.StartPositionOfStreamRespectedBackingBuffer(bufferOffset: 1, streamStart: 4)" type="System.Tests.BinaryDataTests" method="StartPositionOfStreamRespectedBackingBuffer" time="0.0007" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.StartPositionOfStreamRespectedBackingBuffer(bufferOffset: 0, streamStart: 4)" type="System.Tests.BinaryDataTests" method="StartPositionOfStreamRespectedBackingBuffer" time="0.0002" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.StartPositionOfStreamRespectedBackingBuffer(bufferOffset: 4, streamStart: 1)" type="System.Tests.BinaryDataTests" method="StartPositionOfStreamRespectedBackingBuffer" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.StartPositionOfStreamRespectedBackingBuffer(bufferOffset: 4, streamStart: 0)" type="System.Tests.BinaryDataTests" method="StartPositionOfStreamRespectedBackingBuffer" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.EqualsRespectsReferenceEquality" type="System.Tests.BinaryDataTests" method="EqualsRespectsReferenceEquality" time="0.0008999" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromStream" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromStream" time="0.0004" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromFileStream" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromFileStream" time="0.008" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanSeek" type="System.Tests.BinaryDataTests" method="CanSeek" time="0.0005" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromString(count: 0)" type="System.Tests.BinaryDataTests" method="LengthReturnsNumberOfBytesForBinaryDataFromString" time="0.0001" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromString(count: 4)" type="System.Tests.BinaryDataTests" method="LengthReturnsNumberOfBytesForBinaryDataFromString" time="0.0002999" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.LengthReturnsNumberOfBytesForBinaryDataFromString(count: 7)" type="System.Tests.BinaryDataTests" method="LengthReturnsNumberOfBytesForBinaryDataFromString" time="0" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanSerializeNullData" type="System.Tests.BinaryDataTests" method="CanSerializeNullData" time="0.0011" result="Pass" />
+      <test name="System.Tests.BinaryDataTests.CanCreateBinaryDataFromStreamUsingBackingBuffer" type="System.Tests.BinaryDataTests" method="CanCreateBinaryDataFromStreamUsingBackingBuffer" time="0.0003" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

@@ -1,0 +1,65 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:44455/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Reflection.Extensions.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Reflection.Extensions.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Reflection.Extensions.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Reflection.Extensions.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Reflection.Extensions.Tests.dll (found 45 of 45 test cases)
+Starting:    System.Reflection.Extensions.Tests.dll
+[STRT] System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetMethodInfo
+[STRT] System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeMethods
+[STRT] System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeField
+[STRT] System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeProperties
+[STRT] System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeEvents
+[STRT] System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeBaseDefinition
+[STRT] System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeEvent
+[STRT] System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeMethod
+[STRT] System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeProperty
+[STRT] System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeFields
+[STRT] System.Reflection.Tests.RuntimeReflectionExtensionsTests.GetRuntimeInterfaceMap
+[STRT] System.Reflection.Tests.GetCustomAttributes_Assembly.GetCustomAttributesOfT
+[STRT] System.Reflection.Tests.GetCustomAttributes_Assembly.CustomAttributes_Get
+[STRT] System.Reflection.Tests.GetCustomAttributes_Assembly.GetCustomAttributeOfT
+[STRT] System.Reflection.Tests.GetCustomAttributes_Assembly.GetCustomAttributeExtension
+[STRT] System.Reflection.Tests.GetCustomAttributes_Assembly.GetCustomAttributes_thisAsm
+[STRT] System.Reflection.Tests.GetCustomAttributes_Assembly.IsDefined
+[STRT] System.Reflection.Tests.GetCustomAttributes_Assembly.GetCustomAttributesExtension
+[STRT] System.Reflection.Tests.RuntimeReflectionExtensionsTestsWithQuirks.GetRuntimeEvents
+[STRT] System.Reflection.Tests.RuntimeReflectionExtensionsTestsWithQuirks.GetRuntimeProperties
+[STRT] System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttribute4
+[STRT] System.Reflection.Tests.GetCustomAttributes_MemberInfo.IsDefined
+[STRT] System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttributeSingle
+[STRT] System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttributeOfT_Single
+[STRT] System.Reflection.Tests.GetCustomAttributes_MemberInfo.IsDefined_Inherit
+[STRT] System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttribute5
+[STRT] System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttributeOfT_Multiple
+[STRT] System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttribute_Multiple_NotInherited
+[STRT] System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttributeT_Multiple_NoInheirit
+[STRT] System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttributeOfT_Single_NotInherited
+[STRT] System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttributeAll
+[STRT] System.Reflection.Tests.GetCustomAttributes_Compat.GetCustomAttributes_thisAsm
+[STRT] System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCusomAttribute_Multiple
+[STRT] System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttributeOfT_Single_NoInherit
+[STRT] System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttribute_General_NoInherit
+[STRT] System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttributeOfT_Multiple_NoInherit
+[STRT] System.Reflection.Tests.GetCustomAttributes_ParameterInfo.IsDefined_Inherit
+[STRT] System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustom_Attribute_General
+[STRT] System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttribute_Single_NoInherit
+[STRT] System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttribute_Single
+[STRT] System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttributeOfT_Single
+[STRT] System.Reflection.Tests.GetCustomAttributes_ParameterInfo.IsDefined
+[STRT] System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttribute_Multiple_NoInherit
+[STRT] System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustom_Attribute_On_Return_Parameter_On_Parent_Method
+[STRT] System.Reflection.Tests.GetCustomAttributes_ParameterInfo.GetCustomAttributeOfT
+Finished:    System.Reflection.Extensions.Tests.dll
+Finished uploading 11787 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 45 Passed: 45 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Reflection.Extensions.Tests.dll after 0.00945 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0
