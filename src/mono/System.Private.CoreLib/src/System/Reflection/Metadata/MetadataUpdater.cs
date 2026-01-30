@@ -51,7 +51,7 @@ namespace System.Reflection.Metadata
         internal static string GetCapabilities() => s_ApplyUpdateCapabilities.Value;
 
         [FeatureSwitchDefinition("System.Reflection.Metadata.MetadataUpdater.IsSupported")]
-        public static bool IsSupported { get; } =  ApplyUpdateEnabled(justComponentCheck: 0) != 0;
+        public static bool IsSupported { get; } = ApplyUpdateEnabled(justComponentCheck: 0) != 0;
 
         private static readonly Lazy<string> s_ApplyUpdateCapabilities = new Lazy<string>(InitializeApplyUpdateCapabilities);
 

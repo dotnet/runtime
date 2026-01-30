@@ -362,7 +362,7 @@ hot_reload_update_enabled (int *modifiable_assemblies_out)
 
 /**
  * checks the DOTNET_MODIFIABLE_ASSEMBLIES environment value.  if it is recognized returns the
- * aporporiate MONO_MODIFIABLE_ASSM_ enum value.  if it is unset or uncrecognized returns
+ * appropriate MONO_MODIFIABLE_ASSM_ enum value.  if it is unset or unrecognized returns
  * MONO_MODIFIABLE_ASSM_UNSET and writes the value to \c env_invalid_val_out, if it is non-NULL;
  */
 static int
