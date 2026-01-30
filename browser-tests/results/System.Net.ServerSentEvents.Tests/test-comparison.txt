@@ -1,0 +1,9 @@
+Test Comparison: System.Net.ServerSentEvents.Tests
+Generated: 2026-01-30T14:03:18+01:00
+
+Mono tests:    344
+CoreCLR tests: 344
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

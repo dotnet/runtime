@@ -1,0 +1,275 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ReferencedClassLibNeutralIsSatellite/ReferencedClassLibNeutralIsSatellite.csproj (in 234 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Test.AssemblyVersion1/System.Runtime.Loader.Test.AssemblyVersion1.csproj (in 234 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ReferencedClassLib/ReferencedClassLib.csproj (in 234 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ContextualReflectionDependency/System.Runtime.Loader.Test.ContextualReflectionDependency.csproj (in 235 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Test.Assembly2/System.Runtime.Loader.Test.Assembly2.csproj (in 234 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Test.Assembly/System.Runtime.Loader.Test.Assembly.csproj (in 234 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/LoaderLinkTest.Shared/LoaderLinkTest.Shared.csproj (in 234 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/LoaderLinkTest.Dynamic/LoaderLinkTest.Dynamic.csproj (in 234 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AddFieldRVA/System.Reflection.Metadata.ApplyUpdate.Test.AddFieldRVA.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate/System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows/System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember.csproj (in 4.01 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression/System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis/System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange/System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.IncreaseMetadataRowSize/System.Reflection.Metadata.ApplyUpdate.Test.IncreaseMetadataRowSize.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis/System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange/System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField/System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField.csproj (in 4.01 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1/System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes/System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass/System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass.csproj (in 4.13 sec).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj (in 4.15 sec).
+  3 of 34 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  System.Runtime.Loader.Test.Assembly -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Loader.Test.Assembly/Release/net11.0/System.Runtime.Loader.Test.Assembly.dll
+  System.Runtime.Loader.Test.Assembly2 -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Loader.Test.Assembly2/Release/net11.0/System.Runtime.Loader.Test.Assembly2.dll
+  System.Runtime.Loader.Test.AssemblyVersion1 -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Loader.Test.AssemblyVersion1/Release/net11.0/System.Runtime.Loader.Test.VersionDowngrade.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField.dll
+  System.Runtime.Loader.Test.ContextualReflectionDependency -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Loader.Test.ContextualReflectionDependency/Release/net11.0/System.Runtime.Loader.Test.ContextualReflectionDependency.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1 -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.IncreaseMetadataRowSize -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.IncreaseMetadataRowSize/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.IncreaseMetadataRowSize.dll
+  ReferencedClassLib -> /home/pavelsavara/dev/runtime/artifacts/bin/ReferencedClassLib/Release/net11.0/ReferencedClassLib.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.AddFieldRVA -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AddFieldRVA/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AddFieldRVA.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis.dll
+  LoaderLinkTest.Shared -> /home/pavelsavara/dev/runtime/artifacts/bin/LoaderLinkTest.Shared/Release/net11.0/LoaderLinkTest.Shared.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis.dll
+  System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.dll
+  ReferencedClassLibNeutralIsSatellite -> /home/pavelsavara/dev/runtime/artifacts/bin/ReferencedClassLibNeutralIsSatellite/Release/net11.0/ReferencedClassLibNeutralIsSatellite.dll
+  LoaderLinkTest.Dynamic -> /home/pavelsavara/dev/runtime/artifacts/bin/LoaderLinkTest.Dynamic/Release/net11.0/LoaderLinkTest.Dynamic.dll
+  baseline ready
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod/ReflectionAddNewMethod_v1.cs and creating delta
+  baseline ready
+  baseline ready
+  baseline ready
+  got a change
+  baseline ready
+  got a change
+  baseline ready
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember/ReflectionDeleteMember_v1.cs and creating delta
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange/LambdaBodyChange_v1.cs and creating delta
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField/GenericAddInstanceField_v1.cs and creating delta
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda/AddStaticLambda_v1.cs and creating delta
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField/AddInstanceField_v1.cs and creating delta
+  baseline ready
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.IncreaseMetadataRowSize/IncreaseMetadataRowSize_v1.cs and creating delta
+  baseline ready
+  baseline ready
+  got a change
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField/GenericAddStaticField_v1.cs and creating delta
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AddFieldRVA/AddFieldRVA_v1.cs and creating delta
+  baseline ready
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes/ClassWithCustomAttributes_v1.cs and creating delta
+  baseline ready
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType/ReflectionAddNewType_v1.cs and creating delta
+  baseline ready
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate/CustomAttributeUpdate_v1.cs and creating delta
+  baseline ready
+  got a change
+  baseline ready
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1/MethodBody1_v1.cs and creating delta
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete/CustomAttributeDelete_v1.cs and creating delta
+  Found changes in GenericAddInstanceField.cs
+  Found changes in ReflectionAddNewMethod.cs
+  baseline ready
+  Found changes in AddStaticLambda.cs
+  got a change
+  Found changes in ReflectionDeleteMember.cs
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate/FirstCallAfterUpdate_v1.cs and creating delta
+  Found changes in LambdaBodyChange.cs
+  Found changes in AddInstanceField.cs
+  Found changes in GenericAddStaticField.cs
+  Found changes in AddFieldRVA.cs
+  Found changes in IncreaseMetadataRowSize.cs
+  Found changes in ClassWithCustomAttributes.cs
+  Found changes in MethodBody1.cs
+  Found changes in CustomAttributeUpdate.cs
+  baseline ready
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField/AddStaticField_v1.cs and creating delta
+  Found changes in CustomAttributeDelete.cs
+  Found changes in ReflectionAddNewType.cs
+  Found changes in FirstCallAfterUpdate.cs
+  baseline ready
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange/AsyncMethodChange_v1.cs and creating delta
+  baseline ready
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression/StaticLambdaRegression_v1.cs and creating delta
+  baseline ready
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis/LambdaCapturesThis_v1.cs and creating delta
+  Found changes in AddStaticField.cs
+  Found changes in AsyncMethodChange.cs
+  baseline ready
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass/AddNestedClass_v1.cs and creating delta
+  Found changes in StaticLambdaRegression.cs
+  Found changes in LambdaCapturesThis.cs
+  baseline ready
+  got a change
+  baseline ready
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows/NewMethodThrows_v1.cs and creating delta
+  got a change
+  parsing patch #1 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis/AddLambdaCapturingThis_v1.cs and creating delta
+  Found changes in AddNestedClass.cs
+  Found changes in NewMethodThrows.cs
+  Found changes in AddLambdaCapturingThis.cs
+  change service made ff194643-940a-443b-aac5-fe94859eac66
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField.dll.1.dmeta
+  got a change
+  parsing patch #2 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField/GenericAddInstanceField_v2.cs and creating delta
+  Found changes in GenericAddInstanceField.cs
+  change service made 49c68737-ae2c-427f-966a-6a7b558551fb
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember.dll.1.dmeta
+  done
+  change service made 095701cc-f0cc-423e-b726-953d4f284b45
+  change service made 4c83fc4b-5f73-4e95-a81a-59fecbe17eb1
+  change service made e0934923-56b4-4fdd-98c4-c5894cf17346
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField.dll.1.dmeta
+  got a change
+  parsing patch #2 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField/GenericAddStaticField_v2.cs and creating delta
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.dll.1.dmeta
+  got a change
+  parsing patch #2 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1/MethodBody1_v2.cs and creating delta
+  change service made 7deb3752-f8c6-436a-9b4e-f53491967366
+  Found changes in MethodBody1.cs
+  Found changes in GenericAddStaticField.cs
+  change service made 7923597b-35f7-4eed-bde2-c0984aad8dbd
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod.dll.1.dmeta
+  done
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes.dll.1.dmeta
+  done
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate.dll.1.dmeta
+  got a change
+  parsing patch #2 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate/FirstCallAfterUpdate_v2.cs and creating delta
+  Found changes in FirstCallAfterUpdate.cs
+  change service made d324870d-3151-4906-82d4-6aa78ce6e477
+  change service made ff194643-940a-443b-aac5-fe94859eac66
+  change service made fc1a211f-87ea-47e0-9d7e-68cbaa40e8cc
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField.dll.2.dmeta
+  done
+  change service made 095701cc-f0cc-423e-b726-953d4f284b45
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.dll.2.dmeta
+  done
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda.dll.1.dmeta
+  done
+  change service made 4c83fc4b-5f73-4e95-a81a-59fecbe17eb1
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField.dll.2.dmeta
+  done
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate.dll.1.dmeta
+  done
+  change service made 81eb35c9-842e-4669-86f8-dc47ee7c861c
+  change service made 7923597b-35f7-4eed-bde2-c0984aad8dbd
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate.dll.2.dmeta
+  done
+  change service made a629c14c-e0bc-42d0-965e-ad6bc3da9591
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete.dll.1.dmeta
+  done
+  change service made 012d5cc2-839c-4b6b-91a5-d4d2e8f569e3
+  change service made ac867e0a-dd40-4de0-bc20-3583600a67d3
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AddFieldRVA/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AddFieldRVA.dll.1.dmeta
+  done
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.dll.1.dmeta
+  done
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange.dll.1.dmeta
+  got a change
+  parsing patch #2 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange/LambdaBodyChange_v2.cs and creating delta
+  Found changes in LambdaBodyChange.cs
+  change service made 938de06d-be03-4ec8-ab77-d482ba5e5721
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField.dll.1.dmeta
+  done
+  change service made 6f4bedf4-8ff1-49c9-8e83-775d1b136460
+  change service made ac867e0a-dd40-4de0-bc20-3583600a67d3
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange.dll.2.dmeta
+  done
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.dll.1.dmeta
+  done
+  change service made 52ce1aab-4d1f-43b0-a7a9-46dc194e9b30
+  change service made 0f8da726-b80c-486a-80e3-d74151abc90a
+  change service made d129b4a2-9917-4057-85eb-e570eacfe081
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField.dll.1.dmeta
+  got a change
+  parsing patch #2 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField/AddInstanceField_v2.cs and creating delta
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows.dll.1.dmeta
+  Found changes in AddInstanceField.cs
+  done
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis.dll.1.dmeta
+  got a change
+  parsing patch #2 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis/LambdaCapturesThis_v2.cs and creating delta
+  Found changes in LambdaCapturesThis.cs
+  change service made 2e2cc81a-a406-4ebe-a006-37191cea33d5
+  change service made d2f3b3b5-7cab-4918-afcb-97f0340931cc
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression.dll.1.dmeta
+  got a change
+  parsing patch #2 from /home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression/StaticLambdaRegression_v2.cs and creating delta
+  Found changes in StaticLambdaRegression.cs
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.IncreaseMetadataRowSize/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.IncreaseMetadataRowSize.dll.1.dmeta
+  done
+  change service made 52ce1aab-4d1f-43b0-a7a9-46dc194e9b30
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField.dll.2.dmeta
+  done
+  change service made 8f6685bf-7121-4075-ae60-b296cd69f82a
+  change service made d129b4a2-9917-4057-85eb-e570eacfe081
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis.dll.2.dmeta
+  done
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass.dll.1.dmeta
+  done
+  change service made f043505a-d5ae-4883-aa78-17df10091038
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis.dll.1.dmeta
+  done
+  change service made 2e2cc81a-a406-4ebe-a006-37191cea33d5
+  wrote /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression/Release/net11.0/System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression.dll.2.dmeta
+  done
+  WasmTriggerPublishApp for CoreCLR not implemented
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error : System.InvalidOperationException: No file exists for the asset at either location '/home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Loader.Tests/Release/net11.0/browser-wasm/publish/System.Runtime.Loader.Tests.dll' or '/home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Loader.Tests/Release/net11.0/browser-wasm/publish/System.Runtime.Loader.Tests.dll'. [/home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj]
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error :    at Microsoft.AspNetCore.StaticWebAssets.Tasks.StaticWebAsset.ResolveFile(String identity, String originalItemSpec) [/home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj]
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error :    at Microsoft.AspNetCore.StaticWebAssets.Tasks.DefineStaticWebAssets.ResolveFileDetails(String originalItemSpec, String identity) [/home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj]
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error :    at Microsoft.AspNetCore.StaticWebAssets.Tasks.DefineStaticWebAssets.Execute() [/home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj]
+
+Build FAILED.
+
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error : System.InvalidOperationException: No file exists for the asset at either location '/home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Loader.Tests/Release/net11.0/browser-wasm/publish/System.Runtime.Loader.Tests.dll' or '/home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Loader.Tests/Release/net11.0/browser-wasm/publish/System.Runtime.Loader.Tests.dll'. [/home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj]
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error :    at Microsoft.AspNetCore.StaticWebAssets.Tasks.StaticWebAsset.ResolveFile(String identity, String originalItemSpec) [/home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj]
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error :    at Microsoft.AspNetCore.StaticWebAssets.Tasks.DefineStaticWebAssets.ResolveFileDetails(String originalItemSpec, String identity) [/home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj]
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error :    at Microsoft.AspNetCore.StaticWebAssets.Tasks.DefineStaticWebAssets.Execute() [/home/pavelsavara/dev/runtime/src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:16.73

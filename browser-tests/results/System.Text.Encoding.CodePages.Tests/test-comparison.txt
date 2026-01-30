@@ -1,0 +1,9 @@
+Test Comparison: System.Text.Encoding.CodePages.Tests
+Generated: 2026-01-30T14:04:22+01:00
+
+Mono tests:    1253
+CoreCLR tests: 1253
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

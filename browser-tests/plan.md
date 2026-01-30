@@ -204,9 +204,9 @@ Total: **203 test suites** (sorted by Mono baseline duration, longest first)
 | 0.04 | Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests | src/libraries/Microsoft.Extensions.Configuration.Binder/tests/SourceGenerationTests/Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests.csproj | ✅ |
 | 0.04 | Microsoft.Extensions.Configuration.Binder.Tests | src/libraries/Microsoft.Extensions.Configuration.Binder/tests/UnitTests/Microsoft.Extensions.Configuration.Binder.Tests.csproj | ⚠️ |
 | 0.04 | System.Diagnostics.DiagnosticSource.Tests | src/libraries/System.Diagnostics.DiagnosticSource/tests/System.Diagnostics.DiagnosticSource.Tests.csproj | ✅ |
-| 0.04 | System.Net.ServerSentEvents.Tests | src/libraries/System.Net.ServerSentEvents/tests/System.Net.ServerSentEvents.Tests.csproj | ⬜ |
-| 0.04 | System.Runtime.Loader.Tests | src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj | ⬜ |
-| 0.04 | System.Text.Encoding.CodePages.Tests | src/libraries/System.Text.Encoding.CodePages/tests/System.Text.Encoding.CodePages.Tests.csproj | ⬜ |
+| 0.04 | System.Net.ServerSentEvents.Tests | src/libraries/System.Net.ServerSentEvents/tests/System.Net.ServerSentEvents.Tests.csproj | ✅ |
+| 0.04 | System.Runtime.Loader.Tests | src/libraries/System.Runtime.Loader/tests/System.Runtime.Loader.Tests.csproj | ❌ |
+| 0.04 | System.Text.Encoding.CodePages.Tests | src/libraries/System.Text.Encoding.CodePages/tests/System.Text.Encoding.CodePages.Tests.csproj | ✅ |
 | 0.04 | System.Web.HttpUtility.Tests | src/libraries/System.Web.HttpUtility/tests/System.Web.HttpUtility.Tests.csproj | ⬜ |
 | 0.05 | System.ComponentModel.Annotations.Tests | src/libraries/System.ComponentModel.Annotations/tests/System.ComponentModel.Annotations.Tests.csproj | ⬜ |
 | 0.05 | System.Composition.Tests | src/libraries/System.Composition/tests/System.Composition.Tests.csproj | ⬜ |
