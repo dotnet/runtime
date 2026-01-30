@@ -748,10 +748,11 @@ LOCAL_LABEL(HaveInterpThreadContext):
     // Fill in the ContinuationContext register
     ldr x2, [sp, #(__PWTB_ArgumentRegister_FirstArg + 16)]
 
-    // Check if caller has SwiftError
-    ldr x11, [fp]
-    ldr x11, [x11, #40]
-    cbz x11, LOCAL_LABEL(InterpreterStub_NoSwiftError)
+    // Check if caller has Swift error
+    ldr x11, [fp, #48]
+    mov x12, #0x5E5E
+    cmp x11, x12
+    bne LOCAL_LABEL(InterpreterStub_NoSwiftError)
     EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
 LOCAL_LABEL(InterpreterStub_NoSwiftError):
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
@@ -1209,6 +1210,7 @@ LEAF_END Load_SwiftSelf_ByRef
 LEAF_ENTRY Load_SwiftError
     ldr x11, [x9], #8
     str x11, [fp, #40]
+    mov x23, #0x5E5E         // Signal to InterpreterStub that Swift error is used
     mov x21, xzr
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
@@ -3150,7 +3152,7 @@ NESTED_END CallJittedMethodRet4Vector128, _TEXT
 NESTED_ENTRY CallJittedMethodRetSwiftLowered, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -64
     stp x2, x4, [fp, #16]
-    str xzr, [fp, #56]
+    str xzr, [fp, #40]
     // Store the return address for the terminator to use
     adr x11, LOCAL_LABEL(CallJittedMethodRetSwiftLowered_Epilog)
     str x11, [fp, #32]
@@ -3158,20 +3160,20 @@ NESTED_ENTRY CallJittedMethodRetSwiftLowered, _TEXT, NoHandler
     ldrsw x11, [x0, #-20]    // Load TargetSlotIndex
     add x11, x11, #1         // TargetSlotIndex + 1
     add x11, x0, x11, lsl #3 // x0 + (TargetSlotIndex + 1) * 8
-    str x11, [fp, #40]       // Save store routines start pointer
+    str x11, [fp, #56]       // Save store routines start pointer
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x11, [fp, #56]
+    ldr x11, [fp, #40]
     cbz x11, LOCAL_LABEL(CallJittedMethodRetSwiftLowered_NoSwiftError)
     str x21, [x11]
 LOCAL_LABEL(CallJittedMethodRetSwiftLowered_NoSwiftError):
     ldr x12, [fp, #24]
     str x2, [x12]            // Store continuation return value
     ldr x9, [fp, #16]        // Load return buffer address into x9
-    ldr x10, [fp, #40]       // Load store routines start pointer
+    ldr x10, [fp, #56]       // Load store routines start pointer
     ldr x11, [x10], #8       // Load first store routine
     br x11
 LOCAL_LABEL(CallJittedMethodRetSwiftLowered_Epilog):
