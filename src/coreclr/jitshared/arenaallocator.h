@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cassert>
 
+#include "jitshared.h"
 #include "allocconfig.h"
 
 // ArenaAllocator is a page-based arena allocator that provides fast allocation

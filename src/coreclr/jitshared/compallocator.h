@@ -8,7 +8,9 @@
 #include <cstdint>
 #include <cassert>
 
+#include "jitshared.h"
 #include "arenaallocator.h"
+#include "memstats.h"
 
 // Forward declaration for IAllocator interface (from coreclr/inc/iallocator.h)
 #ifndef _IALLOCATOR_DEFINED_
@@ -26,37 +28,33 @@ public:
 //
 // Template parameters:
 //   TMemKind - The enum type for memory kinds (e.g., CompMemKind, InterpMemKind)
+//   MemKindCount - The number of values in the TMemKind enum
 //
-// When MEASURE_MEM_ALLOC (or equivalent) is enabled, CompAllocator tracks
-// allocation statistics per memory kind. When disabled, it's a thin wrapper
-// with no overhead.
+// When MEASURE_MEM_ALLOC is enabled, CompAllocator tracks allocation statistics
+// per memory kind. When disabled, it's a thin wrapper with no overhead.
 
-template <typename TMemKind>
+template <typename TMemKind, int MemKindCount = 1>
 class CompAllocator
 {
     ArenaAllocator* m_arena;
-#if defined(MEASURE_MEM_ALLOC) || defined(MEASURE_INTERP_MEM_ALLOC)
+#if MEASURE_MEM_ALLOC
     TMemKind m_kind;
-    void* m_statsAllocator; // Pointer to MemStatsAllocator, type-erased
+    MemStats<TMemKind, MemKindCount>* m_stats;
 #endif
 
 public:
+#if MEASURE_MEM_ALLOC
+    CompAllocator(ArenaAllocator* arena, TMemKind kind, MemStats<TMemKind, MemKindCount>* stats = nullptr)
+        : m_arena(arena)
+        , m_kind(kind)
+        , m_stats(stats)
+    {
+    }
+#else
     CompAllocator(ArenaAllocator* arena, TMemKind kind)
         : m_arena(arena)
-#if defined(MEASURE_MEM_ALLOC) || defined(MEASURE_INTERP_MEM_ALLOC)
-        , m_kind(kind)
-        , m_statsAllocator(nullptr)
-#endif
     {
-#if !defined(MEASURE_MEM_ALLOC) && !defined(MEASURE_INTERP_MEM_ALLOC)
         (void)kind; // Suppress unused parameter warning
-#endif
-    }
-
-#if defined(MEASURE_MEM_ALLOC) || defined(MEASURE_INTERP_MEM_ALLOC)
-    void setStatsAllocator(void* statsAllocator)
-    {
-        m_statsAllocator = statsAllocator;
     }
 #endif
 
@@ -72,7 +70,16 @@ public:
             return nullptr;
         }
 
-        void* p = m_arena->allocateMemory(count * sizeof(T));
+        size_t sz = count * sizeof(T);
+
+#if MEASURE_MEM_ALLOC
+        if (m_stats != nullptr)
+        {
+            m_stats->AddAlloc(sz, m_kind);
+        }
+#endif
+
+        void* p = m_arena->allocateMemory(sz);
 
         // Ensure that the allocator returned sizeof(size_t) aligned memory.
         assert((reinterpret_cast<size_t>(p) & (sizeof(size_t) - 1)) == 0);
@@ -90,14 +97,14 @@ public:
 
 // Global operator new overloads that work with CompAllocator
 
-template <typename TMemKind>
-inline void* __cdecl operator new(size_t n, CompAllocator<TMemKind> alloc)
+template <typename TMemKind, int MemKindCount>
+inline void* __cdecl operator new(size_t n, CompAllocator<TMemKind, MemKindCount> alloc)
 {
     return alloc.template allocate<char>(n);
 }
 
-template <typename TMemKind>
-inline void* __cdecl operator new[](size_t n, CompAllocator<TMemKind> alloc)
+template <typename TMemKind, int MemKindCount>
+inline void* __cdecl operator new[](size_t n, CompAllocator<TMemKind, MemKindCount> alloc)
 {
     return alloc.template allocate<char>(n);
 }
@@ -107,14 +114,14 @@ inline void* __cdecl operator new[](size_t n, CompAllocator<TMemKind> alloc)
 //
 // This is primarily used for GCInfoEncoder integration.
 
-template <typename TMemKind>
+template <typename TMemKind, int MemKindCount = 1>
 class CompIAllocator : public IAllocator
 {
-    CompAllocator<TMemKind> m_alloc;
+    CompAllocator<TMemKind, MemKindCount> m_alloc;
     char m_zeroLenAllocTarg;
 
 public:
-    CompIAllocator(CompAllocator<TMemKind> alloc)
+    CompIAllocator(CompAllocator<TMemKind, MemKindCount> alloc)
         : m_alloc(alloc)
     {
     }

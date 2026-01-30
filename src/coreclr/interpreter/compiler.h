@@ -15,11 +15,12 @@
 // Include shared arena allocator infrastructure
 #include "../jitshared/arenaallocator.h"
 #include "../jitshared/compallocator.h"
+#include "../jitshared/memstats.h"
 #include "interpallocconfig.h"
 
 // InterpMemKind values are used to tag memory allocations performed via
 // the compiler's allocator so that the memory usage of various compiler
-// components can be tracked separately (when MEASURE_INTERP_MEM_ALLOC is defined).
+// components can be tracked separately (when MEASURE_MEM_ALLOC is defined).
 
 enum InterpMemKind
 {
@@ -30,7 +31,7 @@ enum InterpMemKind
 
 // InterpAllocator is the allocator type used for interpreter compilations.
 // It wraps ArenaAllocator and tracks allocations by InterpMemKind.
-using InterpAllocator = CompAllocator<InterpMemKind>;
+using InterpAllocator = CompAllocator<InterpMemKind, IMK_Count>;
 
 struct InterpException
 {
@@ -797,11 +798,18 @@ private:
     void* AllocMethodData(size_t numBytes);
 public:
     // Returns an allocator for the specified memory kind. Use this for categorized
-    // allocations to enable memory profiling when MEASURE_INTERP_MEM_ALLOC is defined.
+    // allocations to enable memory profiling when MEASURE_MEM_ALLOC is defined.
+#if MEASURE_MEM_ALLOC
+    InterpAllocator getAllocator(InterpMemKind imk = IMK_Generic)
+    {
+        return InterpAllocator(&m_arenaAllocator, imk, &m_stats);
+    }
+#else
     InterpAllocator getAllocator(InterpMemKind imk = IMK_Generic)
     {
         return InterpAllocator(&m_arenaAllocator, imk);
     }
+#endif
 
     // Convenience methods for common allocation kinds
     InterpAllocator getAllocatorGC() { return getAllocator(IMK_GC); }
@@ -1090,6 +1098,24 @@ public:
     void UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *pByteCodeStart);
 
     int32_t* GetCode(int32_t *pCodeSize);
+
+#if MEASURE_MEM_ALLOC
+    // Memory statistics for profiling.
+    using InterpMemStats = MemStats<InterpMemKind, IMK_Count>;
+    using InterpAggregateMemStats = AggregateMemStats<InterpMemKind, IMK_Count>;
+
+    static InterpAggregateMemStats s_aggStats;
+    static InterpMemStats s_maxStats;
+    static bool s_dspMemStats;
+    static const char* s_memKindNames[];
+
+    InterpMemStats m_stats;
+
+    void finishMemStats();
+    static void dumpAggregateMemStats(FILE* file);
+    static void dumpMaxMemStats(FILE* file);
+    static void initMemStats();
+#endif // MEASURE_MEM_ALLOC
 };
 
 /*****************************************************************************
