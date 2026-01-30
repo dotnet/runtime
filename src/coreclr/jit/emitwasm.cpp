@@ -132,19 +132,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     assert(params.callType < EC_COUNT);
     assert((params.callType == EC_FUNC_TOKEN) || (params.addr == nullptr));
 
-    // Our stack level should be always greater than the bytes of arguments we push. Just
-    // a sanity test.
-    assert((unsigned)std::abs(params.argSize) <= codeGen->genStackLevel);
-
-#ifdef DEBUG
-    if (EMIT_GC_VERBOSE)
-    {
-        printf("Call: GCvars=%s ", VarSetOps::ToString(emitComp, params.ptrVars));
-        dumpConvertedVarSet(emitComp, params.ptrVars);
-        printf("\n");
-    }
-#endif
-
     /* Managed RetVal: emit sequence point for the call */
     if (emitComp->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
     {
@@ -157,8 +144,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         record an updated set of live GC variables.
      */
     instrDesc* id = nullptr;
-
-    assert(params.argSize % REGSIZE_BYTES == 0);
 
     instruction ins;
 
@@ -175,6 +160,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             break;
         case EC_INDIR_R:
             // Indirect load of actual ftn ptr from indirection cell (on the stack)
+            // TODO-WASM: temporary, move this into higher layers (lowering).
             emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
             ins = params.isJump ? INS_return_call_indirect : INS_call_indirect;
             id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: type index reloc */);
@@ -184,20 +170,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         default:
             unreached();
     }
-
-    // for the purpose of GC safepointing tail-calls are not real calls
-    id->idSetIsNoGC(params.isJump || params.noSafePoint || emitNoGChelper(params.methHnd));
-
-#ifdef DEBUG
-    if (EMIT_GC_VERBOSE)
-    {
-        if (id->idIsLargeCall())
-        {
-            printf("[%02u] Rec call GC vars = %s\n", id->idDebugOnlyInfo()->idNum,
-                   VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
-        }
-    }
-#endif
 
     if (m_debugInfoSize > 0)
     {
@@ -400,8 +372,8 @@ unsigned emitter::instrDesc::idCodeSize() const
             break;
         case IF_CALL_INDIRECT:
         {
-            size += SizeOfULEB128(0);
             size += SizeOfULEB128(emitGetInsSC(this));
+            size += SizeOfULEB128(0);
             break;
         }
         case IF_F32:
