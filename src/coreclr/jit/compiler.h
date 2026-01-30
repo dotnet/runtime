@@ -8487,7 +8487,7 @@ public:
         {
             if (mustExpand)
             {
-                implLimitation();
+                implReadyToRunUnsupported();
             }
             return true;
         }
