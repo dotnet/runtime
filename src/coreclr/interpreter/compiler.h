@@ -12,6 +12,21 @@
 #include "simdhash.h"
 #include "intrinsics.h"
 
+// Include shared arena allocator infrastructure
+#include "../jitshared/arenaallocator.h"
+#include "interpallocconfig.h"
+
+// InterpMemKind values are used to tag memory allocations performed via
+// the compiler's allocator so that the memory usage of various compiler
+// components can be tracked separately (when MEASURE_INTERP_MEM_ALLOC is defined).
+
+enum InterpMemKind
+{
+#define InterpMemKindMacro(kind) IMK_##kind,
+#include "interpmemkind.h"
+    IMK_Count
+};
+
 struct InterpException
 {
     InterpException(const char* message, CorJitResult result)
@@ -26,10 +41,12 @@ struct InterpException
 class InterpreterStackMap;
 class InterpCompiler;
 
+// MemPoolAllocator provides an allocator interface for use with TArray and other
+// data structures. It wraps the InterpCompiler's arena allocator.
 class MemPoolAllocator
 {
     InterpCompiler* const m_compiler;
-    public:
+public:
     MemPoolAllocator(InterpCompiler* compiler) : m_compiler(compiler) {}
     void* Alloc(size_t sz) const;
     void Free(void* ptr) const;
@@ -601,6 +618,11 @@ class InterpCompiler
     friend class InterpAsyncCallPeeps;
 
 private:
+    // Arena allocator for compilation-phase memory.
+    // All memory allocated via AllocMemPool is freed when the compiler is destroyed.
+    InterpAllocatorConfig m_allocConfig;
+    ArenaAllocator m_arenaAllocator;
+
     CORINFO_METHOD_HANDLE m_methodHnd;
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
@@ -765,8 +787,8 @@ private:
 
     void* AllocMethodData(size_t numBytes);
 public:
-    // FIXME MemPool allocation currently leaks. We need to add an allocator and then
-    // free all memory when method is finished compilling.
+    // Allocates memory from the arena allocator. All memory is automatically freed
+    // when the InterpCompiler is destroyed.
     void* AllocMemPool(size_t numBytes);
     void* AllocMemPool0(size_t numBytes);
     MemPoolAllocator GetMemPoolAllocator() { return MemPoolAllocator(this); }
@@ -1040,6 +1062,7 @@ private:
 public:
 
     InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData *pretryData);
+    ~InterpCompiler();
 
     InterpMethod* CompileMethod();
     void BuildGCInfo(InterpMethod *pInterpMethod);
@@ -1052,7 +1075,8 @@ public:
 /*****************************************************************************
  *  operator new
  *
- *  Uses the compiler's AllocMemPool0, which will eventually free automatically at the end of compilation (doesn't yet).
+ *  Uses the compiler's AllocMemPool0, which allocates from the arena allocator.
+ *  Memory is automatically freed when the InterpCompiler is destroyed.
  */
 
 inline void* operator new(size_t sz, InterpCompiler* compiler)

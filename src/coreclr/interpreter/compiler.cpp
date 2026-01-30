@@ -198,10 +198,14 @@ void* InterpCompiler::AllocMethodData(size_t numBytes)
 }
 
 // Fast allocator for small chunks of memory that can be freed together when the
-// method compilation is finished.
+// method compilation is finished. Uses the arena allocator for efficient allocation.
 void* InterpCompiler::AllocMemPool(size_t numBytes)
 {
-    return malloc(numBytes);
+    if (numBytes == 0)
+    {
+        numBytes = 1; // Arena allocator doesn't support zero-length allocations
+    }
+    return m_arenaAllocator.allocateMemory(numBytes);
 }
 
 void* InterpCompiler::AllocMemPool0(size_t numBytes)
@@ -1822,7 +1826,9 @@ static void InterpreterCompilerBreak()
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData* pRetryData)
-    : m_stackmapsByClass(FreeInterpreterStackMap)
+    : m_allocConfig()
+    , m_arenaAllocator(&m_allocConfig)
+    , m_stackmapsByClass(FreeInterpreterStackMap)
     , m_pRetryData(pRetryData)
     , m_pInitLocalsIns(nullptr)
     , m_hiddenArgumentVar(-1)
@@ -1861,6 +1867,12 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                             /* includeReturnType */ false,
                             /* includeThis */ false);
 #endif
+}
+
+InterpCompiler::~InterpCompiler()
+{
+    // Free all memory allocated via the arena allocator
+    m_arenaAllocator.destroy();
 }
 
 InterpMethod* InterpCompiler::CompileMethod()
