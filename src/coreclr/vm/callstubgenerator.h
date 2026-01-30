@@ -243,8 +243,12 @@ private:
 
         // The size of the temporary storage is the size of the CallStubHeader plus the size of the routines array.
         // The size of the routines array is three times the number of arguments plus one slot for the target method pointer.
+        size_t baseSize = sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 1) * sizeof(PCODE);
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         // Add extra space for Swift return lowering (up to 4 elements * 2 slots + terminator = 9 slots).
-        return sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 1 + 9) * sizeof(PCODE);
+        baseSize += 9 * sizeof(PCODE);
+#endif
+        return baseSize;
     }
     void ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD);
     template<typename ArgIteratorType>
