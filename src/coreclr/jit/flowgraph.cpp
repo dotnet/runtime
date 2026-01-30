@@ -3646,8 +3646,9 @@ void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
 //    createIfNeeded -- create the block if it does not already exist
 //
 // Return Value:
-//    Code descriptor for the appropriate throw helper block, or nullptr if no such
-//    descriptor exists (only when createIfNeeded is false).
+//    Code descriptor for the appropriate throw helper block.
+//    When createIfNeeded is false, this can return an AddCodeDsc where acdBlk is nullptr.
+//    If createIfNeeded is true, acdBlk will be non-null.
 //
 Compiler::AddCodeDsc* Compiler::fgGetExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock, bool createIfNeeded)
 {
