@@ -734,10 +734,7 @@ PTR_VOID TransitionFrame::GetParamTypeArg()
 TADDR TransitionFrame::GetAddrOfThis()
 {
     WRAPPER_NO_CONTRACT;
-    MethodDesc *pFunction = GetFunction();
-    MetaSig msig(pFunction);
-    ArgIterator argit (&msig);
-    return GetTransitionBlock() + argit.GetThisOffset();
+    return GetTransitionBlock() + ArgIterator::GetThisOffset();
 }
 
 VASigCookie * TransitionFrame::GetVASigCookie()

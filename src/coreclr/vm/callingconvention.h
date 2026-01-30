@@ -653,7 +653,7 @@ public:
     // Return the offsets of the special arguments
     //------------------------------------------------------------
 
-    int GetThisOffset();
+    static int GetThisOffset();
 
     int GetRetBuffArgOffset();
     int GetVASigCookieOffset();
@@ -1073,10 +1073,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetThisOffset()
 #ifdef TARGET_X86
     // x86 is special as always
     ret += offsetof(ArgumentRegisters, ECX);
-#elif defined(TARGET_WASM)
-    if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
-        ret += TARGET_REGISTER_SIZE;
-#endif // TARGET_WASM
+#endif
 
     return ret;
 }
@@ -1104,10 +1101,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetRetBuffArgOffset()
     {
         ret = TransitionBlock::GetOffsetOfRetBuffArgReg();
     }
-#elif !defined(TARGET_WASM)
+#else
     if (this->HasThis())
         ret += TARGET_REGISTER_SIZE;
-#endif // !TARGET_WASM
+#endif
 
     return ret;
 }
