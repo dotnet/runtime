@@ -2841,7 +2841,15 @@ public:
 #endif // DEBUG
 
     bool     ehAnyFunclets();  // Are there any funclets in this function?
-    unsigned ehFuncletCount(); // Return the count of funclets in the function
+    unsigned ehFuncletCount(); // Return the count of funclets in the function.
+
+#ifdef TARGET_WASM
+    // Once we have run wasm layout, try regions may no longer be contiguous.
+    //
+    bool fgTrysNotContiguous() { return fgIndexToBlockMap != nullptr; }
+#else
+    bool fgTrysNotContiguous() { return false; }
+#endif
 
     FlowEdge* BlockPredsWithEH(BasicBlock* blk);
     FlowEdge* BlockDominancePreds(BasicBlock* blk);
@@ -8480,7 +8488,7 @@ public:
         {
             if (mustExpand)
             {
-                implLimitation();
+                implReadyToRunUnsupported();
             }
             return true;
         }
@@ -10457,7 +10465,6 @@ public:
         /*  don't care about performance at all */                                              \
                                                                                                 \
         STRESS_MODE(FORCE_INLINE) /* Treat every method as AggressiveInlining */                \
-        STRESS_MODE(CHK_FLOW_UPDATE)                                                            \
         STRESS_MODE(EMITTER)                                                                    \
         STRESS_MODE(CHK_REIMPORT)                                                               \
         STRESS_MODE(GENERIC_CHECK)                                                              \
