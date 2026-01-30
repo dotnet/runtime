@@ -1,0 +1,71 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:40255/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Composition.TypedParts.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Composition.TypedParts.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Composition.TypedParts.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Composition.TypedParts.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Composition.TypedParts.Tests.dll (found 44 of 44 test cases)
+Starting:    System.Composition.TypedParts.Tests.dll
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_MetadataProperty_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithDefaultConventions_PartWithNoMatchingConvention_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_UnassignableType_ThrowsCompositionFailedException
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.DebuggerAttributes_GetViaReflection_Success(configuration: ContainerConfiguration { })
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.DebuggerAttributes_GetViaReflection_Success(configuration: ContainerConfiguration { })
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.DebuggerAttributes_GetViaReflection_Success(configuration: ContainerConfiguration { })
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.DebuggerAttributes_GetViaReflection_Success(configuration: ContainerConfiguration { })
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.DebuggerAttributes_GetViaReflection_Success(configuration: ContainerConfiguration { })
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_GenericExportWithDependencyConstructorHasConvention_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_ExportConventionsWithInheritedProperties_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssemblies_Assemblies_ThrowsCompositionFailedExceptionOnCreation
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssembly_Assembly_ThrowsCompositionFailedExceptionOnCreation
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_MetadataClass_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithExport_ContractName_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithDefaultConventions_AlreadyHasDefaultConventions_ThrowsInvalidOperationException
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithDefaultConventions_NullConventions_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithPart_Convention_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_ExportIncompatibleGenericProperty_ThrowsCompositionFailedException
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssembly_Null_ThrowsNullReferenceExceptionOnCreation
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithParts_NullItemInPartTypes_ThrowsArgumentNullExceptionOnCreation
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_HasConventions_PropertyExportsAreNotInherited
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithPart_NullPartType_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithDefaultConventions_PartTNoMatchingConvention_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_GenericTypeExport_ThrowsCompositionFailedException(partType: typeof(System.Composition.Hosting.Tests.ContainerConfigurationTests+IncompatibleGenericExportedType<>))
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_GenericTypeExport_ThrowsCompositionFailedException(partType: typeof(System.Composition.Hosting.Tests.ContainerConfigurationTests+IncompatibleGenericExportedType<int>))
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_GenericTypeExport_ThrowsCompositionFailedException(partType: typeof(System.Composition.Hosting.Tests.ContainerConfigurationTests+IncompatibleGenericExportedTypeDerived<>))
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_HasConventions_ClassExportsAreNotInherited
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssemblies_AssembliesAndConvention_ThrowsCompositionFailedExceptionOnCreation
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_ExportsToInheritedProperties_DontInterfereWithBase
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_AbstractOrStructType_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithExport_Base_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssembly_AssemblyConventions_ThrowsCompositionFailedExceptionOnCreation
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithProvider_NullProvider_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_NonGenericTypeExportWithGenericPart_ThrowsCompositionFailedException(partType: typeof(System.Composition.Hosting.Tests.ContainerConfigurationTests+NonGenericExportedType<>))
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_NonGenericTypeExportWithGenericPart_ThrowsCompositionFailedException(partType: typeof(System.Composition.Hosting.Tests.ContainerConfigurationTests+NonGenericExportedType<int>))
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssemblies_NullAssemblies_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithDefaultConventions_IEnumerablePartsWithNoMatchingConvention_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithExport_Derived_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithDefaultConventions_PartsArrayWithNoMatchingConvention_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_ExportIncompatibleNonGenericProperty_ThrowsCompositionFailedException
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithParts_NullPartTypes_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithPartT_Convention_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_OpenGenericTypes_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithParts_Convention_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_ExportedSubClass_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_ExportGenericProperty_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_ImportConventionsWithInheritedProperties_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_OpenGenericTypePart_Success
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.CreateContainer_HasConventions_CustomAttributesAreNotInherited
+[STRT] System.Composition.Hosting.Tests.ContainerConfigurationTests.WithProvider_ValidProvider_RegistersProvider
+[STRT] System.Composition.TypedParts.Tests.ReflectionTests.MultiThreadedGetExportsWorkWithImportingConstructor
+Finished:    System.Composition.TypedParts.Tests.dll
+Finished uploading 16966 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 51 Passed: 50 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 1
+
+test-main.js exiting WasmTestRunner.dll System.Composition.TypedParts.Tests.dll after 0.010683333333333333 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

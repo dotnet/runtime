@@ -1,0 +1,242 @@
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  Microsoft.Extensions.Options.SourceGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration/Release/netstandard2.0/Microsoft.Extensions.Options.SourceGeneration.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  Microsoft.Extensions.Configuration.Binder.SourceGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.SourceGeneration/Release/netstandard2.0/Microsoft.Extensions.Configuration.Binder.SourceGeneration.dll
+  Microsoft.Extensions.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives/ref/Release/net11.0/Microsoft.Extensions.Primitives.dll
+  Microsoft.Extensions.FileSystemGlobbing -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileSystemGlobbing/ref/Release/net11.0/Microsoft.Extensions.FileSystemGlobbing.dll
+  Microsoft.Extensions.DependencyInjection.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.DependencyInjection.Abstractions/ref/Release/net11.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+  System.Diagnostics.EventLog -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.EventLog/ref/Release/net11.0/System.Diagnostics.EventLog.dll
+  Microsoft.Extensions.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives/Release/net11.0/Microsoft.Extensions.Primitives.dll
+  Microsoft.Extensions.FileSystemGlobbing -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileSystemGlobbing/Release/net11.0/Microsoft.Extensions.FileSystemGlobbing.dll
+  Microsoft.Extensions.DependencyInjection.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.DependencyInjection.Abstractions/Release/net11.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+  System.Diagnostics.EventLog -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.EventLog/Release/net11.0/System.Diagnostics.EventLog.dll
+  Microsoft.Extensions.Logging.Generators.Roslyn4.4 -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Generators.Roslyn4.4/Release/netstandard2.0/Microsoft.Extensions.Logging.Generators.dll
+  Microsoft.Extensions.Logging.Generators.Roslyn3.11 -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Generators.Roslyn3.11/Release/netstandard2.0/Microsoft.Extensions.Logging.Generators.dll
+  Microsoft.Extensions.Configuration.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Abstractions/ref/Release/net11.0/Microsoft.Extensions.Configuration.Abstractions.dll
+  Microsoft.Extensions.Logging.Generators.Roslyn4.0 -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Generators.Roslyn4.0/Release/netstandard2.0/Microsoft.Extensions.Logging.Generators.dll
+  Microsoft.Extensions.DependencyInjection -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.DependencyInjection/ref/Release/net11.0/Microsoft.Extensions.DependencyInjection.dll
+  Microsoft.Extensions.FileProviders.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileProviders.Abstractions/ref/Release/net11.0/Microsoft.Extensions.FileProviders.Abstractions.dll
+  Microsoft.Extensions.Options -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options/ref/Release/net11.0/Microsoft.Extensions.Options.dll
+  Microsoft.Extensions.Configuration.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Abstractions/Release/net11.0/Microsoft.Extensions.Configuration.Abstractions.dll
+  Microsoft.Extensions.FileProviders.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileProviders.Abstractions/Release/net11.0/Microsoft.Extensions.FileProviders.Abstractions.dll
+  Microsoft.Extensions.Options -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options/Release/net11.0/Microsoft.Extensions.Options.dll
+  Microsoft.Extensions.DependencyInjection -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.DependencyInjection/Release/net11.0/Microsoft.Extensions.DependencyInjection.dll
+  Microsoft.Extensions.Configuration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration/ref/Release/net11.0/Microsoft.Extensions.Configuration.dll
+  Microsoft.Extensions.Logging.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Abstractions/ref/Release/net11.0/Microsoft.Extensions.Logging.Abstractions.dll
+  Microsoft.Extensions.Diagnostics.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Diagnostics.Abstractions/ref/Release/net11.0/Microsoft.Extensions.Diagnostics.Abstractions.dll
+  Microsoft.Extensions.FileProviders.Physical -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileProviders.Physical/ref/Release/net11.0/Microsoft.Extensions.FileProviders.Physical.dll
+  Microsoft.Extensions.Options.DataAnnotations -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.DataAnnotations/ref/Release/net11.0/Microsoft.Extensions.Options.DataAnnotations.dll
+  Microsoft.Extensions.Diagnostics.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Diagnostics.Abstractions/Release/net11.0/Microsoft.Extensions.Diagnostics.Abstractions.dll
+  Microsoft.Extensions.Options.DataAnnotations -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.DataAnnotations/Release/net11.0/Microsoft.Extensions.Options.DataAnnotations.dll
+  Microsoft.Extensions.Configuration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration/Release/net11.0/Microsoft.Extensions.Configuration.dll
+  Microsoft.Extensions.FileProviders.Physical -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileProviders.Physical/Release/net11.0/Microsoft.Extensions.FileProviders.Physical.dll
+  Microsoft.Extensions.Logging.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Abstractions/Release/net11.0/Microsoft.Extensions.Logging.Abstractions.dll
+  Microsoft.Extensions.Configuration.CommandLine -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.CommandLine/ref/Release/net11.0/Microsoft.Extensions.Configuration.CommandLine.dll
+  Microsoft.Extensions.Configuration.EnvironmentVariables -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.EnvironmentVariables/ref/Release/net11.0/Microsoft.Extensions.Configuration.EnvironmentVariables.dll
+  Microsoft.Extensions.Hosting.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Hosting.Abstractions/ref/Release/net11.0/Microsoft.Extensions.Hosting.Abstractions.dll
+  Microsoft.Extensions.Configuration.Binder -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder/ref/Release/net11.0/Microsoft.Extensions.Configuration.Binder.dll
+  Microsoft.Extensions.Configuration.FileExtensions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.FileExtensions/ref/Release/net11.0/Microsoft.Extensions.Configuration.FileExtensions.dll
+  Microsoft.Extensions.Logging -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging/ref/Release/net11.0/Microsoft.Extensions.Logging.dll
+  Microsoft.Extensions.Logging -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging/Release/net11.0/Microsoft.Extensions.Logging.dll
+  Microsoft.Extensions.Configuration.FileExtensions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.FileExtensions/Release/net11.0/Microsoft.Extensions.Configuration.FileExtensions.dll
+  Microsoft.Extensions.Configuration.CommandLine -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.CommandLine/Release/net11.0/Microsoft.Extensions.Configuration.CommandLine.dll
+  Microsoft.Extensions.Configuration.Binder -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder/Release/net11.0/Microsoft.Extensions.Configuration.Binder.dll
+  Microsoft.Extensions.Configuration.EnvironmentVariables -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.EnvironmentVariables/Release/net11.0/Microsoft.Extensions.Configuration.EnvironmentVariables.dll
+  Microsoft.Extensions.Hosting.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Hosting.Abstractions/Release/net11.0/Microsoft.Extensions.Hosting.Abstractions.dll
+  Microsoft.Extensions.Logging.Debug -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Debug/ref/Release/net11.0/Microsoft.Extensions.Logging.Debug.dll
+  Microsoft.Extensions.Logging.EventSource -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.EventSource/ref/Release/net11.0/Microsoft.Extensions.Logging.EventSource.dll
+  Microsoft.Extensions.Configuration.Json -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json/ref/Release/net11.0/Microsoft.Extensions.Configuration.Json.dll
+  Microsoft.Extensions.Options.ConfigurationExtensions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.ConfigurationExtensions/ref/Release/net11.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll
+  Microsoft.Extensions.Logging.EventLog -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.EventLog/ref/Release/net11.0/Microsoft.Extensions.Logging.EventLog.dll
+  Microsoft.Extensions.Logging.Debug -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Debug/Release/net11.0/Microsoft.Extensions.Logging.Debug.dll
+  Microsoft.Extensions.Logging.EventSource -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.EventSource/Release/net11.0/Microsoft.Extensions.Logging.EventSource.dll
+  Microsoft.Extensions.Configuration.Json -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json/Release/net11.0/Microsoft.Extensions.Configuration.Json.dll
+  Microsoft.Extensions.Options.ConfigurationExtensions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.ConfigurationExtensions/Release/net11.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll
+  Microsoft.Extensions.Logging.EventLog -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.EventLog/Release/net11.0/Microsoft.Extensions.Logging.EventLog.dll
+  Microsoft.Extensions.Configuration.UserSecrets -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.UserSecrets/ref/Release/net11.0/Microsoft.Extensions.Configuration.UserSecrets.dll
+  Microsoft.Extensions.Diagnostics -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Diagnostics/ref/Release/net11.0/Microsoft.Extensions.Diagnostics.dll
+  Microsoft.Extensions.Logging.Configuration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Configuration/ref/Release/net11.0/Microsoft.Extensions.Logging.Configuration.dll
+  Microsoft.Extensions.Configuration.UserSecrets -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.UserSecrets/Release/net11.0/Microsoft.Extensions.Configuration.UserSecrets.dll
+  Microsoft.Extensions.Diagnostics -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Diagnostics/Release/net11.0/Microsoft.Extensions.Diagnostics.dll
+  Microsoft.Extensions.Logging.Configuration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Configuration/Release/net11.0/Microsoft.Extensions.Logging.Configuration.dll
+  Microsoft.Extensions.Logging.Console -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console/ref/Release/net11.0/Microsoft.Extensions.Logging.Console.dll
+  Microsoft.Extensions.Logging.Console -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console/Release/net11.0/Microsoft.Extensions.Logging.Console.dll
+  Microsoft.Extensions.Hosting -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Hosting/ref/Release/net11.0/Microsoft.Extensions.Hosting.dll
+  Microsoft.Extensions.Hosting -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Hosting/Release/net11.0/Microsoft.Extensions.Hosting.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  Microsoft.Extensions.Options.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.Tests/Release/net11.0/browser-wasm/Microsoft.Extensions.Options.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Options/tests/Microsoft.Extensions.Options.Tests
+  ----- start Fri Jan 30 10:51:09 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll Microsoft.Extensions.Options.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Options/tests/Microsoft.Extensions.Options.Tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Options.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 33051
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 33051.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:43411/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Options.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Options.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Options.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: Microsoft.Extensions.Options.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  Microsoft.Extensions.Options.Tests.dll (found 92 of 94 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    Microsoft.Extensions.Options.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidationCannotBeNull
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidateOnStart_NotCalled
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidationResultFailedOrSkipped
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidateOnStart_Called
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidationResultSkippedIfNameNotMatched
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidationResultSuccessIfNameMatched
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidateOnStart_CalledMultiple
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.ConfigureOptionsThrowsIfNothingFound
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.NamedSnapshotsConfiguresInRegistrationOrder
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.ConfigureOptionsThrowsWithAction
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanPostConfigureAllOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanConfigureTwoOptionsWithConfigureOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.PostConfiguresInOrderAfterConfigures
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanValidateOptionsWithConfigureOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CreateSupportsNames
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanCreateOptionsFactory
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanPostConfigureAllDefaultAndNamedOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanConfigureOptionsOnlyDefault
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.ValidateOptionsChecksNullWithConfigureOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanConfigureAllDefaultAndNamedOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanMixConfigureEverything
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanConfigureAndPostConfigureAllDefaultAndNamedOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanConfigureAndPostConfigureAllOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanConfigureAllOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.NamesAreCaseSensitive
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateAddingMixedErrors
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateBuilderThrows
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateClear
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateAddErrors
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateAddValidateOptionResult
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateEmptyBuilder
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateAddValidationResult
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.TestCurrentValueDoesNotAllocateOnceValueIsCached
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanWatchOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CallsPublicGetOrAddForCustomOptionsCache
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanWatchOptionsWithMultipleSources
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.ControllerCanWatchOptionsThatTrackConfigChanges
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanClearNamedOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanMonitorConfigBoundNamedOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.MonitorUsesFactory
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanMonitorConfigBoundOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanWatchOptionsWithMultipleSourcesAndCallbacks
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.DisposingOptionsMonitorDisposesChangeTokenRegistrations
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanWatchNamedOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Options_WithoutDefaultCtor_ThrowDuringResolution
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.ShouldBeIgnoredTests(property: "ReadOnly")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.ShouldBeIgnoredTests(property: "PrivateSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.ShouldBeIgnoredTests(property: "ProtectedSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.ShouldBeIgnoredTests(property: "InternalSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Options_CanCreateInstancesWithoutDefaultCtor
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.SetupCallsInOrder
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.OptionsWrapper_MakesOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanReadInheritedProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Options_StaticCreateCreateMakesOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.UsesFactory
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.SingleValidateOnStartRegistrationTest
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.PostConfiguresInRegistrationOrderAfterConfigures
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsEnumOptionsFromConfiguration(configValues: [["UriKind"] = "Absolute"], expectedValues: [["UriKind"] = Absolute])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsEnumOptionsFromConfiguration(configValues: [["UriKind"] = "1"], expectedValues: [["UriKind"] = Absolute])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsEnumOptionsFromConfiguration(configValues: [["UriKind"] = null], expectedValues: [["UriKind"] = RelativeOrAbsolute])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Options_CanOverrideForSpecificTOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanBindToNonPublicProperties(property: "PrivateSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanBindToNonPublicProperties(property: "ProtectedSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanBindToNonPublicProperties(property: "InternalSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanNamedBindToNonPublicProperties(property: "PrivateSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanNamedBindToNonPublicProperties(property: "ProtectedSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanNamedBindToNonPublicProperties(property: "InternalSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanReadStaticProperty
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanReadComplexProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ValidateOnStart_ConfigureBasedOnDataAnnotationRestrictions_ValidationSuccessful
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanBindToNonPublicProperties(property: "PrivateSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanBindToNonPublicProperties(property: "ProtectedSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanBindToNonPublicProperties(property: "InternalSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ValidateOnStart_CallValidateOnStartFirst_ValidatesFailuresCorrectly
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsWithMixedOverloads
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateMixDataAnnotations
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.PostConfigureOptionsWithTransientDep
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsEagerly_AddOptionsWithValidateOnStart_IValidateOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanSupportNamedOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ValidateWithDependencies
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsThatDependOnOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsEagerly
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateDataAnnotations
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.BadValidatorFailsGracefully
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ValidateOnStart_CallValidateAndValidateDataAnnotations_FailuresCaughtFromBothValidateAndValidateDataAnnotations
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateMultipleOptionsWithOneValidator
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsWithDefaultError
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsEagerly_AddOptionsWithValidateOnStart
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsWithCustomError
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsWithMultipleDefaultErrors
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanConfigureWithServiceProvider
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ValidateOnStart_CallValidateDataAnnotations_ValidationSuccessful
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanNamedBindToNonPublicProperties(property: "PrivateSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanNamedBindToNonPublicProperties(property: "ProtectedSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanNamedBindToNonPublicProperties(property: "InternalSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanSupportDefaultName
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanMixConfigureCallsOutsideBuilderInOrder
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ConfigureOptionsWithSingletonDepWillUpdate
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ConfigureOptionsWithTransientDep
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsSnapshotTest.RecreateAspNetCore_AddOidc_CustomStateAndAccount_SetsUpConfiguration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsSnapshotTest.SnapshotDoesNotChangeUntilNextRequestOnConfigChanges
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsSnapshotTest.EnsureAddOptionsLifetimes
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsSnapshotTest.SnapshotOptionsAreCachedPerScope
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsSnapshotTest.CustomIConfigureOptionsShouldOnlyAffectDefaultInstance
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Options.Tests.OptionsSnapshotTest.SnapshotUsesFactory
+  [40m[32minfo[39m[22m[49m: Finished:    Microsoft.Extensions.Options.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 28113 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 28113 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 105 Passed: 105 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Options.Tests.dll after 0.013066666666666667 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Options/tests/Microsoft.Extensions.Options.Tests
+  ----- end Fri Jan 30 10:51:12 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:16.97

@@ -1,0 +1,9 @@
+Test Comparison: System.ComponentModel.Primitives.Tests
+Generated: 2026-01-30T10:51:51+01:00
+
+Mono tests:    354
+CoreCLR tests: 354
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

@@ -1,0 +1,93 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:33411/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Formats.Nrbf.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Formats.Nrbf.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Formats.Nrbf.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Formats.Nrbf.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Formats.Nrbf.Tests.dll (found 3 of 153 test cases)
+Starting:    System.Formats.Nrbf.Tests.dll
+[STRT] System.Formats.Nrbf.Tests.StartsWithPayloadHeaderTests.StartsWithPayloadHeader_ReturnsExpectedResult(bytes: [0, 11], expected: False)
+[STRT] System.Formats.Nrbf.Tests.StartsWithPayloadHeaderTests.StartsWithPayloadHeader_ReturnsExpectedResult(bytes: [0, 1, 0, 0, 0, ···], expected: True)
+[STRT] System.Formats.Nrbf.Tests.StartsWithPayloadHeaderTests.StartsWithPayloadHeader_ReturnsExpectedResult(bytes: [1, 0, 0, 0, 2, ···], expected: False)
+[STRT] System.Formats.Nrbf.Tests.StartsWithPayloadHeaderTests.StartsWithPayloadHeader_ReturnsExpectedResult(bytes: [0, 1, 0, 0, 0, ···], expected: False)
+[STRT] System.Formats.Nrbf.Tests.EdgeCaseTests.FormatterTypeStyleOtherThanTypesAlwaysAreNotSupportedByDesign
+[FAIL] System.Formats.Nrbf.Tests.EdgeCaseTests.FormatterTypeStyleOtherThanTypesAlwaysAreNotSupportedByDesign
+System.InvalidOperationException : Exception during discovery:
+System.Reflection.CustomAttributeFormatException: Could not load file or assembly 'System.Runtime.Serialization.Formatters, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'. The system cannot find the file specified.
+
+ ---> System.IO.FileNotFoundException: Could not load file or assembly 'System.Runtime.Serialization.Formatters, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'. The system cannot find the file specified.
+
+File name: 'System.Runtime.Serialization.Formatters, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
+   at System.Reflection.RuntimeAssembly.<InternalLoad>g____PInvoke|48_0(NativeAssemblyNameParts* __pAssemblyNameParts_native, ObjectHandleOnStack __requestingAssembly_native, StackCrawlMarkHandle __stackMark_native, Int32 __throwOnFileNotFound_native, ObjectHandleOnStack __assemblyLoadContext_native, ObjectHandleOnStack __retAssembly_native)
+   at System.Reflection.RuntimeAssembly.InternalLoad(NativeAssemblyNameParts* pAssemblyNameParts, ObjectHandleOnStack requestingAssembly, StackCrawlMarkHandle stackMark, Boolean throwOnFileNotFound, ObjectHandleOnStack assemblyLoadContext, ObjectHandleOnStack retAssembly)
+   at System.Reflection.RuntimeAssembly.InternalLoad(AssemblyName assemblyName, StackCrawlMark& stackMark, AssemblyLoadContext assemblyLoadContext, RuntimeAssembly requestingAssembly, Boolean throwOnFileNotFound)
+   at System.Reflection.TypeNameResolver.ResolveAssembly(AssemblyName assemblyName)
+   at System.Reflection.TypeNameResolver.GetType(String escapedTypeName, ReadOnlySpan`1 nestedTypeNames, TypeName parsedName)
+   at System.Reflection.TypeNameResolver.GetSimpleType(TypeName typeName)
+   at System.Reflection.TypeNameResolver.Resolve(TypeName typeName)
+   at System.Reflection.TypeNameResolver.GetTypeReferencedByCustomAttribute(String typeName, RuntimeModule scope)
+   at System.Reflection.CustomAttributeEncodedArgument.ParseCustomAttributeType(CustomAttributeDataParser& parser, RuntimeModule module)
+   at System.Reflection.CustomAttributeEncodedArgument.ParseCustomAttributeValue(CustomAttributeDataParser& parser, CustomAttributeType type, RuntimeModule module)
+   at System.Reflection.CustomAttributeEncodedArgument.ParseCustomAttributeValue(CustomAttributeDataParser& parser, CustomAttributeType type, RuntimeModule module)
+   at System.Reflection.CustomAttributeEncodedArgument.ParseCtorArgs(CustomAttributeDataParser& parser, CustomAttributeCtorParameter[] customAttributeCtorParameters, RuntimeModule module)
+   at System.Reflection.CustomAttributeEncodedArgument.ParseAttributeArguments(ConstArray attributeBlob, CustomAttributeCtorParameter[] customAttributeCtorParameters, CustomAttributeNamedParameter[] customAttributeNamedParameters, RuntimeModule customAttributeModule)
+   --- End of inner exception stack trace ---
+   at System.Reflection.CustomAttributeEncodedArgument.ParseAttributeArguments(ConstArray attributeBlob, CustomAttributeCtorParameter[] customAttributeCtorParameters, CustomAttributeNamedParameter[] customAttributeNamedParameters, RuntimeModule customAttributeModule)
+   at System.Reflection.RuntimeCustomAttributeData..ctor(RuntimeModule scope, MetadataToken caCtorToken, ConstArray& blob)
+   at System.Reflection.RuntimeCustomAttributeData.GetCustomAttributes(RuntimeModule module, Int32 tkTarget)
+   at System.Reflection.RuntimeCustomAttributeData.GetCustomAttributesInternal(RuntimeMethodInfo target)
+   at System.Reflection.RuntimeMethodInfo.GetCustomAttributesData()
+   at System.Reflection.MemberInfo.get_CustomAttributes()
+   at Xunit.Sdk.ReflectionMethodInfo.GetCustomAttributes(MethodInfo method, Type attributeType, AttributeUsageAttribute attributeUsage)
+   at Xunit.Sdk.ReflectionMethodInfo.GetCustomAttributes(MethodInfo method, String assemblyQualifiedAttributeTypeName)
+   at Xunit.Sdk.ReflectionMethodInfo.GetCustomAttributes(String assemblyQualifiedAttributeTypeName)
+   at ReflectionAbstractionExtensions.GetCustomAttributes(IMethodInfo methodInfo, Type attributeType)
+   at Xunit.Sdk.XunitTestFrameworkDiscoverer.FindTestsForMethod(ITestMethod testMethod, Boolean includeSourceInformation, IMessageBus messageBus, ITestFrameworkDiscoveryOptions discoveryOptions)
+   at Xunit.Sdk.XunitTestFrameworkDiscoverer.FindTestsForType(ITestClass testClass, Boolean includeSourceInformation, IMessageBus messageBus, ITestFrameworkDiscoveryOptions discoveryOptions)
+
+[STRT] System.Formats.Nrbf.Tests.EdgeCaseTests.ArraysOfStringsCanContainMemberReferences
+[FAIL] System.Formats.Nrbf.Tests.EdgeCaseTests.ArraysOfStringsCanContainMemberReferences
+System.InvalidOperationException : Exception during discovery:
+System.Reflection.CustomAttributeFormatException: Could not load file or assembly 'System.Runtime.Serialization.Formatters, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'. The system cannot find the file specified.
+
+ ---> System.IO.FileNotFoundException: Could not load file or assembly 'System.Runtime.Serialization.Formatters, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'. The system cannot find the file specified.
+
+File name: 'System.Runtime.Serialization.Formatters, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'
+   at System.Reflection.RuntimeAssembly.<InternalLoad>g____PInvoke|48_0(NativeAssemblyNameParts* __pAssemblyNameParts_native, ObjectHandleOnStack __requestingAssembly_native, StackCrawlMarkHandle __stackMark_native, Int32 __throwOnFileNotFound_native, ObjectHandleOnStack __assemblyLoadContext_native, ObjectHandleOnStack __retAssembly_native)
+   at System.Reflection.RuntimeAssembly.InternalLoad(NativeAssemblyNameParts* pAssemblyNameParts, ObjectHandleOnStack requestingAssembly, StackCrawlMarkHandle stackMark, Boolean throwOnFileNotFound, ObjectHandleOnStack assemblyLoadContext, ObjectHandleOnStack retAssembly)
+   at System.Reflection.RuntimeAssembly.InternalLoad(AssemblyName assemblyName, StackCrawlMark& stackMark, AssemblyLoadContext assemblyLoadContext, RuntimeAssembly requestingAssembly, Boolean throwOnFileNotFound)
+   at System.Reflection.TypeNameResolver.ResolveAssembly(AssemblyName assemblyName)
+   at System.Reflection.TypeNameResolver.GetType(String escapedTypeName, ReadOnlySpan`1 nestedTypeNames, TypeName parsedName)
+   at System.Reflection.TypeNameResolver.GetSimpleType(TypeName typeName)
+   at System.Reflection.TypeNameResolver.Resolve(TypeName typeName)
+   at System.Reflection.TypeNameResolver.GetTypeReferencedByCustomAttribute(String typeName, RuntimeModule scope)
+   at System.Reflection.CustomAttributeEncodedArgument.ParseCustomAttributeType(CustomAttributeDataParser& parser, RuntimeModule module)
+   at System.Reflection.CustomAttributeEncodedArgument.ParseCustomAttributeValue(CustomAttributeDataParser& parser, CustomAttributeType type, RuntimeModule module)
+   at System.Reflection.CustomAttributeEncodedArgument.ParseCustomAttributeValue(CustomAttributeDataParser& parser, CustomAttributeType type, RuntimeModule module)
+   at System.Reflection.CustomAttributeEncodedArgument.ParseCtorArgs(CustomAttributeDataParser& parser, CustomAttributeCtorParameter[] customAttributeCtorParameters, RuntimeModule module)
+   at System.Reflection.CustomAttributeEncodedArgument.ParseAttributeArguments(ConstArray attributeBlob, CustomAttributeCtorParameter[] customAttributeCtorParameters, CustomAttributeNamedParameter[] customAttributeNamedParameters, RuntimeModule customAttributeModule)
+   --- End of inner exception stack trace ---
+   at System.Reflection.CustomAttributeEncodedArgument.ParseAttributeArguments(ConstArray attributeBlob, CustomAttributeCtorParameter[] customAttributeCtorParameters, CustomAttributeNamedParameter[] customAttributeNamedParameters, RuntimeModule customAttributeModule)
+   at System.Reflection.RuntimeCustomAttributeData..ctor(RuntimeModule scope, MetadataToken caCtorToken, ConstArray& blob)
+   at System.Reflection.RuntimeCustomAttributeData.GetCustomAttributes(RuntimeModule module, Int32 tkTarget)
+   at System.Reflection.RuntimeCustomAttributeData.GetCustomAttributesInternal(RuntimeMethodInfo target)
+   at System.Reflection.RuntimeMethodInfo.GetCustomAttributesData()
+   at System.Reflection.MemberInfo.get_CustomAttributes()
+   at Xunit.Sdk.ReflectionMethodInfo.GetCustomAttributes(MethodInfo method, Type attributeType, AttributeUsageAttribute attributeUsage)
+   at Xunit.Sdk.ReflectionMethodInfo.GetCustomAttributes(MethodInfo method, String assemblyQualifiedAttributeTypeName)
+   at Xunit.Sdk.ReflectionMethodInfo.GetCustomAttributes(String assemblyQualifiedAttributeTypeName)
+   at ReflectionAbstractionExtensions.GetCustomAttributes(IMethodInfo methodInfo, Type attributeType)
+   at Xunit.Sdk.XunitTestFrameworkDiscoverer.FindTestsForMethod(ITestMethod testMethod, Boolean includeSourceInformation, IMessageBus messageBus, ITestFrameworkDiscoveryOptions discoveryOptions)
+   at Xunit.Sdk.XunitTestFrameworkDiscoverer.FindTestsForType(ITestClass testClass, Boolean includeSourceInformation, IMessageBus messageBus, ITestFrameworkDiscoveryOptions discoveryOptions)
+
+Finished:    System.Formats.Nrbf.Tests.dll
+Finished uploading 11839 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 6 Passed: 4 Inconclusive: 0 Failed: 2 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Formats.Nrbf.Tests.dll after 0.0102 minutes with result 1 and linear memory 161087488 bytes
+WASM EXIT 1

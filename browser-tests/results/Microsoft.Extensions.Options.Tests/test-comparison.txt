@@ -1,0 +1,13 @@
+Test Comparison: Microsoft.Extensions.Options.Tests
+Generated: 2026-01-30T10:51:12+01:00
+
+Mono tests:    115
+CoreCLR tests: 113
+
+=== Extra in CoreCLR (1) ===
+Microsoft.Extensions.Options.Tests.OptionsMonitorTest.TestCurrentValueDoesNotAllocateOnceValueIsCached
+
+=== Missing in CoreCLR (3) ===
+Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsNullableOptionsFromConfiguration(configValues: [[\&quot;MyNullableBool\&quot;] = \&quot;false\&quot;, [\&quot;MyNullableInt\&quot;] = \&quot;-1\&quot;, [\&quot;MyNullableDateTime\&quot;] = \&quot;12/31/1995\&quot;], expectedValues: [[\&quot;MyNullableBool\&quot;] = False, [\&quot;MyNullableInt\&quot;] = -1, [\&quot;MyNullableDateTime\&quot;] = 1995-12-31T00:00:00.0000000])
+Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsNullableOptionsFromConfiguration(configValues: [[\&quot;MyNullableBool\&quot;] = \&quot;true\&quot;, [\&quot;MyNullableInt\&quot;] = \&quot;1\&quot;, [\&quot;MyNullableDateTime\&quot;] = \&quot;01/01/2015\&quot;], expectedValues: [[\&quot;MyNullableBool\&quot;] = True, [\&quot;MyNullableInt\&quot;] = 1, [\&quot;MyNullableDateTime\&quot;] = 2015-01-01T00:00:00.0000000])
+Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsNullableOptionsFromConfiguration(configValues: [[\&quot;MyNullableBool\&quot;] = null, [\&quot;MyNullableInt\&quot;] = null, [\&quot;MyNullableDateTime\&quot;] = null], expectedValues: [[\&quot;MyNullableBool\&quot;] = null, [\&quot;MyNullableInt\&quot;] = null, [\&quot;MyNullableDateTime\&quot;] = null])

@@ -1,0 +1,153 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:35499/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Options.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Options.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Options.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Extensions.Options.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Extensions.Options.Tests.dll (found 93 of 94 test cases)
+Starting:    Microsoft.Extensions.Options.Tests.dll
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanConfigureAndPostConfigureAllOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanCreateOptionsFactory
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanConfigureAllDefaultAndNamedOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.ConfigureOptionsThrowsIfNothingFound
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.NamesAreCaseSensitive
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.PostConfiguresInOrderAfterConfigures
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanPostConfigureAllOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.ConfigureOptionsThrowsWithAction
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanPostConfigureAllDefaultAndNamedOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanConfigureAndPostConfigureAllDefaultAndNamedOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanMixConfigureEverything
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.ValidateOptionsChecksNullWithConfigureOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanConfigureTwoOptionsWithConfigureOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanValidateOptionsWithConfigureOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanConfigureAllOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.NamedSnapshotsConfiguresInRegistrationOrder
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CanConfigureOptionsOnlyDefault
+[STRT] Microsoft.Extensions.Options.Tests.OptionsFactoryTest.CreateSupportsNames
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.ShouldBeIgnoredTests(property: "ReadOnly")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.ShouldBeIgnoredTests(property: "PrivateSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.ShouldBeIgnoredTests(property: "ProtectedSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.ShouldBeIgnoredTests(property: "InternalSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.SingleValidateOnStartRegistrationTest
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanNamedBindToNonPublicProperties(property: "PrivateSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanNamedBindToNonPublicProperties(property: "ProtectedSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanNamedBindToNonPublicProperties(property: "InternalSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Options_WithoutDefaultCtor_ThrowDuringResolution
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanReadComplexProperties
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanReadStaticProperty
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.PostConfiguresInRegistrationOrderAfterConfigures
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Options_CanCreateInstancesWithoutDefaultCtor
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.SetupCallsInOrder
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanBindToNonPublicProperties(property: "PrivateSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanBindToNonPublicProperties(property: "ProtectedSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanBindToNonPublicProperties(property: "InternalSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Options_CanOverrideForSpecificTOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Options_StaticCreateCreateMakesOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.OptionsWrapper_MakesOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsEnumOptionsFromConfiguration(configValues: [["UriKind"] = "Absolute"], expectedValues: [["UriKind"] = Absolute])
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsEnumOptionsFromConfiguration(configValues: [["UriKind"] = "1"], expectedValues: [["UriKind"] = Absolute])
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsEnumOptionsFromConfiguration(configValues: [["UriKind"] = null], expectedValues: [["UriKind"] = RelativeOrAbsolute])
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.CanReadInheritedProperties
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.UsesFactory
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsNullableOptionsFromConfiguration(configValues: [["MyNullableBool"] = "true", ["MyNullableInt"] = "1", ["MyNullableDateTime"] = "01/01/2015"], expectedValues: [["MyNullableBool"] = True, ["MyNullableInt"] = 1, ["MyNullableDateTime"] = 2015-01-01T00:00:00.0000000])
+[FAIL] Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsNullableOptionsFromConfiguration(configValues: [["MyNullableBool"] = "true", ["MyNullableInt"] = "1", ["MyNullableDateTime"] = "01/01/2015"], expectedValues: [["MyNullableBool"] = True, ["MyNullableInt"] = 1, ["MyNullableDateTime"] = 2015-01-01T00:00:00.0000000])
+Assert.Collection() Failure: Item comparison failure
+             ↓ (pos 0)
+Collection: [["MyNullableBool"] = True, ["MyNullableInt"] = 1, ["MyNullableDateTime"] = 2015-01-01T00:00:00.0000000]
+Error:      Assert.Equal() Failure: Values differ
+            Expected: True
+            Actual:   null
+            Stack Trace:
+               at Microsoft.Extensions.Options.Tests.OptionsTest.<>c__DisplayClass12_0.<Configure_GetsNullableOptionsFromConfiguration>b__2(KeyValuePair`2 kvp)
+   at Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsNullableOptionsFromConfiguration(IDictionary`2 configValues, IDictionary`2 expectedValues)
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsNullableOptionsFromConfiguration(configValues: [["MyNullableBool"] = "false", ["MyNullableInt"] = "-1", ["MyNullableDateTime"] = "12/31/1995"], expectedValues: [["MyNullableBool"] = False, ["MyNullableInt"] = -1, ["MyNullableDateTime"] = 1995-12-31T00:00:00.0000000])
+[FAIL] Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsNullableOptionsFromConfiguration(configValues: [["MyNullableBool"] = "false", ["MyNullableInt"] = "-1", ["MyNullableDateTime"] = "12/31/1995"], expectedValues: [["MyNullableBool"] = False, ["MyNullableInt"] = -1, ["MyNullableDateTime"] = 1995-12-31T00:00:00.0000000])
+Assert.Collection() Failure: Item comparison failure
+                                         ↓ (pos 1)
+Collection: [["MyNullableBool"] = False, ["MyNullableInt"] = -1, ["MyNullableDateTime"] = 1995-12-31T00:00:00.0000000]
+Error:      Assert.Equal() Failure: Values differ
+            Expected: -1
+            Actual:   null
+            Stack Trace:
+               at Microsoft.Extensions.Options.Tests.OptionsTest.<>c__DisplayClass12_0.<Configure_GetsNullableOptionsFromConfiguration>b__2(KeyValuePair`2 kvp)
+   at Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsNullableOptionsFromConfiguration(IDictionary`2 configValues, IDictionary`2 expectedValues)
+   at InvokeStub_OptionsTest.Configure_GetsNullableOptionsFromConfiguration(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[STRT] Microsoft.Extensions.Options.Tests.OptionsTest.Configure_GetsNullableOptionsFromConfiguration(configValues: [["MyNullableBool"] = null, ["MyNullableInt"] = null, ["MyNullableDateTime"] = null], expectedValues: [["MyNullableBool"] = null, ["MyNullableInt"] = null, ["MyNullableDateTime"] = null])
+[STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanWatchNamedOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanMonitorConfigBoundNamedOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanWatchOptionsWithMultipleSourcesAndCallbacks
+[STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.TestCurrentValueDoesNotAllocateOnceValueIsCached
+[STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.MonitorUsesFactory
+[STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanWatchOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanMonitorConfigBoundOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CallsPublicGetOrAddForCustomOptionsCache
+[STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanWatchOptionsWithMultipleSources
+[STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.ControllerCanWatchOptionsThatTrackConfigChanges
+[STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.DisposingOptionsMonitorDisposesChangeTokenRegistrations
+[STRT] Microsoft.Extensions.Options.Tests.OptionsMonitorTest.CanClearNamedOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidateOnStart_NotCalled
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidationResultSkippedIfNameNotMatched
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidateOnStart_Called
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidationCannotBeNull
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidationResultSuccessIfNameMatched
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidateOnStart_CalledMultiple
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationTest.ValidationResultFailedOrSkipped
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanConfigureWithServiceProvider
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateMultipleOptionsWithOneValidator
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsWithCustomError
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ValidateOnStart_ConfigureBasedOnDataAnnotationRestrictions_ValidationSuccessful
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanMixConfigureCallsOutsideBuilderInOrder
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.PostConfigureOptionsWithTransientDep
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsWithMixedOverloads
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ValidateOnStart_CallValidateAndValidateDataAnnotations_FailuresCaughtFromBothValidateAndValidateDataAnnotations
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsWithMultipleDefaultErrors
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsWithDefaultError
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ValidateOnStart_CallValidateOnStartFirst_ValidatesFailuresCorrectly
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateDataAnnotations
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateMixDataAnnotations
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsEagerly_AddOptionsWithValidateOnStart
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanBindToNonPublicProperties(property: "PrivateSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanBindToNonPublicProperties(property: "ProtectedSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanBindToNonPublicProperties(property: "InternalSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanNamedBindToNonPublicProperties(property: "PrivateSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanNamedBindToNonPublicProperties(property: "ProtectedSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanNamedBindToNonPublicProperties(property: "InternalSetter")
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsEagerly
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ValidateOnStart_CallValidateDataAnnotations_ValidationSuccessful
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanSupportNamedOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ValidateWithDependencies
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ConfigureOptionsWithSingletonDepWillUpdate
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsEagerly_AddOptionsWithValidateOnStart_IValidateOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.ConfigureOptionsWithTransientDep
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanValidateOptionsThatDependOnOptions
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.BadValidatorFailsGracefully
+[STRT] Microsoft.Extensions.Options.Tests.OptionsBuilderTest.CanSupportDefaultName
+[STRT] Microsoft.Extensions.Options.Tests.OptionsSnapshotTest.SnapshotDoesNotChangeUntilNextRequestOnConfigChanges
+[STRT] Microsoft.Extensions.Options.Tests.OptionsSnapshotTest.CustomIConfigureOptionsShouldOnlyAffectDefaultInstance
+[STRT] Microsoft.Extensions.Options.Tests.OptionsSnapshotTest.SnapshotOptionsAreCachedPerScope
+[STRT] Microsoft.Extensions.Options.Tests.OptionsSnapshotTest.RecreateAspNetCore_AddOidc_CustomStateAndAccount_SetsUpConfiguration
+[STRT] Microsoft.Extensions.Options.Tests.OptionsSnapshotTest.SnapshotUsesFactory
+[STRT] Microsoft.Extensions.Options.Tests.OptionsSnapshotTest.EnsureAddOptionsLifetimes
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateBuilderThrows
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateAddValidateOptionResult
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateAddErrors
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateAddingMixedErrors
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateEmptyBuilder
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateAddValidationResult
+[STRT] Microsoft.Extensions.Options.Tests.OptionsValidationBuilderTests.ValidateClear
+Finished:    Microsoft.Extensions.Options.Tests.dll
+Finished uploading 32285 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 108 Passed: 106 Inconclusive: 0 Failed: 2 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Options.Tests.dll after 0.015366666666666667 minutes with result 1 and linear memory 193331200 bytes
+WASM EXIT 1

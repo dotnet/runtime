@@ -71,6 +71,7 @@ Each work item has a `DetailsUrl` that links to Helix logs with `ConsoleOutputUr
 | System.Security.AccessControl.Tests | Windows-only (612 failures) |
 | System.Security.Principal.Windows.Tests | Windows-only (26 failures) |
 | System.ServiceProcess.ServiceController.Tests | Windows-only |
+| System.Formats.Nrbf.Tests | BinaryFormatter tests use FormatterTypeStyle in attribute metadata - assembly missing on Browser |
 
 ### In Progress
 
@@ -144,15 +145,15 @@ Total: **203 test suites** (sorted by Mono baseline duration, longest first)
 | 0.02 | Microsoft.Extensions.Diagnostics.Tests | src/libraries/Microsoft.Extensions.Diagnostics/tests/Microsoft.Extensions.Diagnostics.Tests.csproj | ✅ |
 | 0.02 | Microsoft.Extensions.Logging.Console.Tests | src/libraries/Microsoft.Extensions.Logging.Console/tests/Microsoft.Extensions.Logging.Console.Tests/Microsoft.Extensions.Logging.Console.Tests.csproj | ✅ |
 | 0.02 | Microsoft.Extensions.Logging.EventSource.Tests | src/libraries/Microsoft.Extensions.Logging.EventSource/tests/Microsoft.Extensions.Logging.EventSource.Tests.csproj | ✅ |
-| 0.02 | Microsoft.Extensions.Options.SourceGeneration.Tests | src/libraries/Microsoft.Extensions.Options/tests/SourceGenerationTests/Microsoft.Extensions.Options.SourceGeneration.Tests.csproj | ⬜ |
-| 0.02 | Microsoft.Extensions.Options.Tests | src/libraries/Microsoft.Extensions.Options/tests/Microsoft.Extensions.Options.Tests/Microsoft.Extensions.Options.Tests.csproj | ⬜ |
-| 0.02 | System.ComponentModel.Primitives.Tests | src/libraries/System.ComponentModel.Primitives/tests/System.ComponentModel.Primitives.Tests.csproj | ⬜ |
-| 0.02 | System.Composition.Convention.Tests | src/libraries/System.Composition.Convention/tests/System.Composition.Convention.Tests.csproj | ⬜ |
-| 0.02 | System.Composition.Hosting.Tests | src/libraries/System.Composition.Hosting/tests/System.Composition.Hosting.Tests.csproj | ⬜ |
-| 0.02 | System.Composition.Runtime.Tests | src/libraries/System.Composition.Runtime/tests/System.Composition.Runtime.Tests.csproj | ⬜ |
-| 0.02 | System.Composition.TypedParts.Tests | src/libraries/System.Composition.TypedParts/tests/System.Composition.TypedParts.Tests.csproj | ⬜ |
-| 0.02 | System.Data.DataSetExtensions.Tests | src/libraries/System.Data.Common/tests/System.Data.DataSetExtensions.Tests/System.Data.DataSetExtensions.Tests.csproj | ⬜ |
-| 0.02 | System.Formats.Nrbf.Tests | src/libraries/System.Formats.Nrbf/tests/System.Formats.Nrbf.Tests.csproj | ⬜ |
+| 0.02 | Microsoft.Extensions.Options.SourceGeneration.Tests | src/libraries/Microsoft.Extensions.Options/tests/SourceGenerationTests/Microsoft.Extensions.Options.SourceGeneration.Tests.csproj | ✅ |
+| 0.02 | Microsoft.Extensions.Options.Tests | src/libraries/Microsoft.Extensions.Options/tests/Microsoft.Extensions.Options.Tests/Microsoft.Extensions.Options.Tests.csproj | ⚠️ |
+| 0.02 | System.ComponentModel.Primitives.Tests | src/libraries/System.ComponentModel.Primitives/tests/System.ComponentModel.Primitives.Tests.csproj | ✅ |
+| 0.02 | System.Composition.Convention.Tests | src/libraries/System.Composition.Convention/tests/System.Composition.Convention.Tests.csproj | ✅ |
+| 0.02 | System.Composition.Hosting.Tests | src/libraries/System.Composition.Hosting/tests/System.Composition.Hosting.Tests.csproj | ✅ |
+| 0.02 | System.Composition.Runtime.Tests | src/libraries/System.Composition.Runtime/tests/System.Composition.Runtime.Tests.csproj | ✅ |
+| 0.02 | System.Composition.TypedParts.Tests | src/libraries/System.Composition.TypedParts/tests/System.Composition.TypedParts.Tests.csproj | ✅ |
+| 0.02 | System.Data.DataSetExtensions.Tests | src/libraries/System.Data.Common/tests/System.Data.DataSetExtensions.Tests/System.Data.DataSetExtensions.Tests.csproj | ✅ |
+| 0.02 | System.Formats.Nrbf.Tests | src/libraries/System.Formats.Nrbf/tests/System.Formats.Nrbf.Tests.csproj | ❌ |
 | 0.02 | System.IO.UnmanagedMemoryStream.Tests | src/libraries/System.Runtime/tests/System.IO.UnmanagedMemoryStream.Tests/System.IO.UnmanagedMemoryStream.Tests.csproj | ⬜ |
 | 0.02 | System.Memory.Data.Tests | src/libraries/System.Memory.Data/tests/System.Memory.Data.Tests.csproj | ⬜ |
 | 0.02 | System.Net.Http.Json.Functional.Tests | src/libraries/System.Net.Http.Json/tests/FunctionalTests/System.Net.Http.Json.Functional.Tests.csproj | ⬜ |

@@ -1,0 +1,87 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:39739/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Composition.Runtime.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Composition.Runtime.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Composition.Runtime.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Composition.Runtime.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Composition.Runtime.Tests.dll (found 30 of 30 test cases)
+Starting:    System.Composition.Runtime.Tests.dll
+[STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExports_Invoke_ReturnsExpected(success: True, contractName: null)
+[STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExports_Invoke_ReturnsExpected(success: False, contractName: null)
+[STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExports_Invoke_ReturnsExpected(success: True, contractName: "contractName")
+[STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExports_Invoke_ReturnsExpected(success: False, contractName: "contractName")
+[STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExport_Invoke_ReturnsExpected(success: True, contractName: null)
+[STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExport_Invoke_ReturnsExpected(success: False, contractName: null)
+[STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExport_Invoke_ReturnsExpected(success: True, contractName: "contractName")
+[STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExport_Invoke_ReturnsExpected(success: False, contractName: "contractName")
+[STRT] System.Compostition.Runtime.Tests.ExportTests.Dispose_MultipleTimes_InvokesDisposeAction
+[STRT] System.Compostition.Runtime.Tests.ExportTests.Ctor_Value_Action
+[STRT] System.Compostition.Runtime.Tests.ExportTests.Dispose_NullAction_Nop
+[STRT] System.Composition.Runtime.Tests.ExportFactoryTests.CreateExport_MultipleTimes_ReturnsDifferentExports
+[STRT] System.Composition.Runtime.Tests.ExportFactoryTests.CreateExport_ValidCreator_ReturnsExpected
+[STRT] System.Composition.Runtime.Tests.ExportFactoryTests.Ctor_NullExport_ThrowsArgumentNullException
+[STRT] System.Composition.Runtime.Tests.CompositionFailedExceptionTests.Ctor_Message(message: "")
+[STRT] System.Composition.Runtime.Tests.CompositionFailedExceptionTests.Ctor_Message(message: "message")
+[STRT] System.Composition.Runtime.Tests.CompositionFailedExceptionTests.Ctor_Default
+[STRT] System.Composition.Runtime.Tests.CompositionFailedExceptionTests.Ctor_Message_InnerException(message: "")
+[STRT] System.Composition.Runtime.Tests.CompositionFailedExceptionTests.Ctor_Message_InnerException(message: "message")
+[STRT] System.Composition.Runtime.Tests.ExportFactoryTMetadataTests.CreateExport_MultipleTimes_ReturnsDifferentExports
+[STRT] System.Composition.Runtime.Tests.ExportFactoryTMetadataTests.CreateExport_ValidCreator_ReturnsExpected
+[STRT] System.Composition.Runtime.Tests.ExportFactoryTMetadataTests.Ctor_NullExport_ThrowsArgumentNullException
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.TryUnwrapMetadataConstraint_NoSuchConstraintName_ReturnsFalse
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_ContractType(contractType: typeof(int))
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.ToString_NullTypeInGenericTypeArguments_ThrowsArgumentNullException
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: Int32, expected: True)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: String, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: Int32 "contractName", expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: Int32 { key = "value" }, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName", other: Int32 "contractName", expected: True)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName", other: Int32 "ContractName", expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName", other: Int32, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: Int32 "contractName" { key = "value" }, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = "value" }, other: Int32 "contractName" { key = "value" }, expected: True)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = 1 }, other: Int32 "contractName" { key = 1 }, expected: True)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = System.String[] }, other: Int32 "contractName" { key = System.Object[] }, expected: True)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = System.String[] }, other: Int32 "contractName" { key = System.Object[] }, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = "value" }, other: Int32 "contractName" { key = "value", key2 = "value2" }, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = "value", key2 = "value2" }, other: Int32 "contractName" { key = "value" }, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = "value" }, other: Int32 "contractName" { key2 = "value" }, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = "value" }, other: Int32 "contractName" { key = "value2" }, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = System.String[] }, other: Int32 "contractName" { key = System.String[] }, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = System.String[] }, other: Int32 "contractName" { key = "value" }, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = System.String[] }, other: Int32 "contractName" { key = System.Object }, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: TargetInvocationException was thrown formatting an object of type "System.Composition.Hosting.Core.CompositionContract", other: Int32 "contractName" { key = "value" }, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = "value" }, other: TargetInvocationException was thrown formatting an object of type "System.Composition.Hosting.Core.CompositionContract", expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = System.Object[] }, other: TargetInvocationException was thrown formatting an object of type "System.Composition.Hosting.Core.CompositionContract", expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: TargetInvocationException was thrown formatting an object of type "System.Composition.Hosting.Core.CompositionContract", other: TargetInvocationException was thrown formatting an object of type "System.Composition.Hosting.Core.CompositionContract", expected: True)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: Object { }, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: null, expected: False)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.TryUnwrapMetadataConstraint_IncorrectConstraintNameType_ReturnsFalse
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_NullContractType_ThrowsArgumentNullException
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.TryUnwrapMetadataConstraint_UnwrapAllConstraints_ReturnsTrue
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.ChangeType_ValidType_Success
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.ToString_Get_ReturnsExpected(contract: Int32, expected: "Int32")
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.ToString_Get_ReturnsExpected(contract: Int32 "contractName", expected: "Int32 \"contractName\"")
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.ToString_Get_ReturnsExpected(contract: List`1 "contractName" { key1 = "value", key2 = 2 }, expected: "List`1 \"contractName\" { key1 = \"value\", key2 ="···)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.ToString_Get_ReturnsExpected(contract: List<String> "contractName" { key1 = "value", key2 = 2 }, expected: "List<String> \"contractName\" { key1 = \"value\", "···)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.ChangeType_NullNewContractType_ThrowsArgumentNullException
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.ToString_NullValueInDictionary_ThrowsArgumentNullException
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.TryUnwrapMetadataConstraint_NullContractName_ThrowsArgumentNullException
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_EmptyMetadataConstraints_ThrowsArgumentOutOfRangeException
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_ContractType_ContractName(contractType: typeof(int), contractName: null)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_ContractType_ContractName(contractType: typeof(object), contractName: "contractName")
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_ContractType_MetadataConstraints(contractType: typeof(int), contractName: null, metadataConstraints: null)
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_ContractType_MetadataConstraints(contractType: typeof(object), contractName: "contractName", metadataConstraints: [["key"] = "value"])
+[STRT] System.Composition.Runtime.Tests.CompositionContractTests.TryUnwrapMetadataConstraint_NullConstraints_ReturnsFalse
+Finished:    System.Composition.Runtime.Tests.dll
+Finished uploading 23218 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 67 Passed: 67 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Composition.Runtime.Tests.dll after 0.009666666666666667 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

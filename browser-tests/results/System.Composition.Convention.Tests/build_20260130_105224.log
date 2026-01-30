@@ -1,0 +1,163 @@
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  System.Composition.AttributedModel -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.AttributedModel/Release/net11.0/System.Composition.AttributedModel.dll
+  System.Composition.Runtime -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Runtime/Release/net11.0/System.Composition.Runtime.dll
+  System.Composition.Hosting -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Hosting/Release/net11.0/System.Composition.Hosting.dll
+  System.Composition.Convention -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Convention/Release/net11.0/System.Composition.Convention.dll
+  System.Composition.TypedParts -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.TypedParts/Release/net11.0/System.Composition.TypedParts.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Composition.Convention.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Convention.Tests/Release/net11.0/browser-wasm/System.Composition.Convention.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Convention.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Convention.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.Composition.Convention.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Composition.Convention/tests
+  ----- start Fri Jan 30 10:52:29 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Convention.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Convention.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Composition.Convention.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.Composition.Convention.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.Composition.Convention.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Composition.Convention/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Convention.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Composition.Convention.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 35315
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 35315.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:38409/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Composition.Convention.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Composition.Convention.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Composition.Convention.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Composition.Convention.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Composition.Convention.Tests.dll (found 84 of 84 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Composition.Convention.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.NotifyImportsSatisfiedAttributeAppliedToBaseClass_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ExportOfT_ShouldGenerateSingleExportAttributeWithContractType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ExportInterfaceSelectorNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ConventionSelectsConstructor_SelectsTheOneWithMostParameters
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.AddMetadataWithFunc_ShouldGeneratePartMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.NotifyImportsSatisfied_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ExportPropertyWithConfiguration_ShouldGenerateExportForAllProperties
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.NotifyImportsSatisfiedAttributeAlreadyApplied_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.NotifyImportsSatisfiedTwice_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ImportProperty_ShouldGenerateImportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ExportPropertyWithConfiguration_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ManuallySelectingConstructor_SelectsTheExplicitOne
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ExportSelf_ShouldGenerateSingleExportAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.AddMetadata_ShouldGeneratePartMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ExportSelectorNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ManuallySelectingConstructor_SelectsTheExplicitOne_IEnumerableParameterBecomesImportMany
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.NotifyImportsSatisfiedAttributeAppliedToDerivedClassExportBase_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.NoOperations_ShouldGenerateNoAttributesOnAnyMember
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ImportSelectorNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ExportProperty_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ConstructorSelectorNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTTests.ImportProperty_ShouldGenerateImportForPropertySelected_And_ApplyImportMany
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportBuilderTests.AddMetadataFuncVal_AddsExportMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportBuilderTests.ExportInterfaceWithTypeOf1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportBuilderTests.AsContractName_AndContractType_SetsContractNameAndType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportBuilderTests.AsContractName_SetsContractName
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportBuilderTests.AsContractTypeOfT_SetsContractType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportBuilderTests.AddMetadata_AddsExportMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportBuilderTests.AsContractType_SetsContractType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportBuilderTests.AsContractName_AndContractType_ComputeContractNameFromType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportBuilderTests.ExportInterfaceWithTypeOf2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderInterfaceTests.StandardExportInterfacesInterfaceFilterConfiguredContractShouldWork
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderInterfaceTests.StandardExportInterfacesShouldWork
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderInterfaceTests.StandardExportInterfacesInterfaceFilterDefaultContractShouldWork
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ImportBuilderTests.AddImportConstraintFuncVal_AddsImportConstraintMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ImportBuilderTests.AsContractName_SetsContractName
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ImportBuilderTests.AsMany_ChangesGeneratedAttributeToImportMany
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ImportBuilderTests.AsContractName_AndContractType_SetsContractNameAndType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ImportBuilderTests.AsContractName_AndContractType_ComputeContractNameFromType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ImportBuilderTests.AddImportConstraint_AddsImportConstraintMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ImportBuilderTests.AllowDefault_SetsAllowDefaultProperty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ImportBuilderTests.AsMany_And_ContractName_ChangesGeneratedAttributeToImportMany
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportBuilderUnitTests.ExportBuilderApiTestsNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportBuilderUnitTests.ExportInterfaceWithTypeOf1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportBuilderUnitTests.ExportInterfaceWithTypeOf2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTInheritanceTests.ExportPropertyTargetingBaseClass_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTInheritanceTests.ImportPropertyTargetingBaseClass_ShouldGenerateImportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTInheritanceTests.ImportPropertyTargetingDerivedClass_ShouldGenerateImportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTInheritanceTests.ExportPropertyTargetingDerivedClass_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderOfTInheritanceTests.ImportPropertyTargetingBaseClass_ShouldGenerateImportManyForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportInterfacesContractExclusionTests.WhenExportingInterfaces_PredicateSpecified_OnlyContractInterfacesAreSeenByThePredicate
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ExportInterfacesContractExclusionTests.WhenExportingInterfaces_NoPredicate_OnlyContractInterfacesAreExported
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.NotifyImportsSatisfiedTwice_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.ExportOfT_ShouldGenerateSingleExportAttributeWithContractType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.ImportSelectorNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.ManuallySelectingConstructor_SelectsTheExplicitOne
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.AddMetadataWithFunc_ShouldGeneratePartMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.NotifyImportsSatisfiedAttributeAppliedToBaseClass_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.ConventionSelectsConstructor_SelectsTheOneWithMostParameters
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.NotifyImportsSatisfiedMultipleNotifications_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.NotifyImportsSatisfiedPropertiesAndFields_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.ImportProperties_ShouldGenerateImportForPropertySelected_And_ApplyImportMany
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.ExportPropertyWithConfiguration_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.ExportPropertyOfT_ShouldGenerateExportForPropertySelectedWithTAsContractType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.ExportSelf_ShouldGenerateSingleExportAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.ExportProperty_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.NotifyImportsSatisfiedAttributeAlreadyApplied_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.ExportInterfaceSelectorNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.InsideTheLambdaCallGetCustomAttributesShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.NoOperations_ShouldGenerateNoAttributes
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.ExportSelectorNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.AddMetadata_ShouldGeneratePartMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.ManuallySelectingConstructor_SelectsTheExplicitOne_IEnumerableParameterBecomesImportMany
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.NotifyImportsSatisfiedInvalidMethod_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderTests.ImportProperty_ShouldGenerateImportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderInheritanceTests.ExportPropertyTargetingBaseClass_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderInheritanceTests.ImportPropertyTargetingBaseClass_ShouldGenerateImportAttributeForP1Selected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderInheritanceTests.ImportPropertyTargetingDerivedClass_ShouldGenerateImportAttributeForP4Selected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderInheritanceTests.ExportPropertyTargetingDerivedClass_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.PartBuilderInheritanceTests.ImportPropertyTargetingBaseClass_ShouldGenerateImportManyForP3Selected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ConventionBuilderTests.MapType_OverridingSelectionOfConventionSelectedConstructor_WithPartBuilderOfT
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ConventionBuilderTests.MapType_ShouldReturnProjectedAttributesForType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ConventionBuilderTests.MapType_OverridingSelectionOfConventionSelectedConstructor
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Convention.Tests.ConventionBuilderTests.MapType_ConventionSelectedConstructor
+  [40m[32minfo[39m[22m[49m: Finished:    System.Composition.Convention.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Convention.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 26769 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 26769 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 84 Passed: 84 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Composition.Convention.Tests.dll after 0.013866666666666666 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/System.Composition.Convention.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Composition.Convention/tests
+  ----- end Fri Jan 30 10:52:32 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Convention.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:07.84

@@ -1,0 +1,12 @@
+Test Comparison: System.Formats.Nrbf.Tests
+Generated: 2026-01-30T10:56:02+01:00
+
+Mono tests:    6
+CoreCLR tests: 9
+
+=== Extra in CoreCLR (3) ===
+System.Formats.Nrbf.Tests.EdgeCaseTests.ArraysOfStringsCanContainMemberReferences
+System.Formats.Nrbf.Tests.EdgeCaseTests.FormatterTypeStyleOtherThanTypesAlwaysAreNotSupportedByDesign
+Test collection for System.Formats.Nrbf.Tests.EdgeCaseTests
+
+=== Missing in CoreCLR (0) ===

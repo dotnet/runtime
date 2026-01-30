@@ -233,6 +233,7 @@ namespace Microsoft.Extensions.Options.Tests
 
         [Theory]
         [MemberData(nameof(Configure_GetsNullableOptionsFromConfiguration_Data))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
         public void Configure_GetsNullableOptionsFromConfiguration(
             IDictionary<string, string> configValues,
             IDictionary<string, object> expectedValues)

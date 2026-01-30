@@ -1,0 +1,116 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:40399/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Composition.Hosting.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Composition.Hosting.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Composition.Hosting.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Composition.Hosting.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Composition.Hosting.Tests.dll (found 66 of 66 test cases)
+Starting:    System.Composition.Hosting.Tests.dll
+[STRT] System.Composition.Hosting.Core.Tests.DependencyAccessorTests.ResolveDependencies_PromisesReturnsNull_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.DependencyAccessorTests.ResolveDependencies_PromisesReturnsEmpty_ReturnsEmpty
+[STRT] System.Composition.Hosting.Core.Tests.DependencyAccessorTests.ResolveDependencies_PromisesReturnsNullObjectInArray_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.DependencyAccessorTests.ResolveRequiredDependency_PromisesReturnsOneTarget_ReturnsStatisfied
+[STRT] System.Composition.Hosting.Core.Tests.DependencyAccessorTests.ResolveDependencies_PromisesReturnsNonEmpty_ReturnsExpected
+[STRT] System.Composition.Hosting.Core.Tests.DependencyAccessorTests.ResolveRequiredDependency_PromisesReturnsEmpty_ReturnsMissing
+[STRT] System.Composition.Hosting.Core.Tests.DependencyAccessorTests.ResolveRequiredDependency_PromisesReturnsNull_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.DependencyAccessorTests.ResolveRequiredDependency_PromisesReturnsMultipleTargets_ReturnsStatisfied
+[STRT] System.Composition.Hosting.Core.Tests.DependencyAccessorTests.ResolveRequiredDependency_PromisesReturnsNullObjectInArray_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionDependencyTests.Missing_NullSite_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionDependencyTests.Missing_Invoke_ReturnsExpected
+[STRT] System.Composition.Hosting.Core.Tests.CompositionDependencyTests.Satisfied_Invoke_ReturnsExpected
+[STRT] System.Composition.Hosting.Core.Tests.CompositionDependencyTests.Satisfied_NullSite_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionDependencyTests.Missing_NullContract_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionDependencyTests.Satisfied_NullContract_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionDependencyTests.Oversupplied_Invoke_ReturnsExpected(targets: [])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionDependencyTests.Oversupplied_Invoke_ReturnsExpected(targets: [null])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionDependencyTests.Oversupplied_Invoke_ReturnsExpected(targets: [Int32 supplied by Origin])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionDependencyTests.Oversupplied_NullContract_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionDependencyTests.Oversupplied_NullTargets_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionDependencyTests.Satisfied_NullTarget_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionDependencyTests.Oversupplied_NullSite_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_ImoportManyWithMetadataConstraints_ReturnsExpected(contractType: typeof(string[]), expectedTypes: [typeof(string[]), typeof(string)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_ImoportManyWithMetadataConstraints_ReturnsExpected(contractType: typeof(System.Collections.Generic.IList<string>), expectedTypes: [typeof(System.Collections.Generic.IList<string>), typeof(string)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_ImoportManyWithMetadataConstraints_ReturnsExpected(contractType: typeof(System.Collections.Generic.ICollection<string>), expectedTypes: [typeof(System.Collections.Generic.ICollection<string>), typeof(string)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_ImoportManyWithMetadataConstraints_ReturnsExpected(contractType: typeof(System.Collections.Generic.IEnumerable<string>), expectedTypes: [typeof(System.Collections.Generic.IEnumerable<string>), typeof(string)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_CompositionContextContract_ReturnsExpected
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(int), expectedContractTypes: [typeof(int)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Composition.ExportFactory<int>), expectedContractTypes: [typeof(int), typeof(System.Composition.ExportFactory<int>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Composition.ExportFactory<>), expectedContractTypes: [typeof(System.Composition.ExportFactory<>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Lazy<int, ParameterlessConstructor>), expectedContractTypes: [typeof(int), typeof(System.Lazy<int, ParameterlessConstructor>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Lazy<int, Dictionary<string, object>>), expectedContractTypes: [typeof(int), typeof(System.Lazy<int, Dictionary<string, object>>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Lazy<int, IDictionary<string, object>>), expectedContractTypes: [typeof(int), typeof(System.Lazy<int, IDictionary<string, object>>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Lazy<,>), expectedContractTypes: [typeof(System.Lazy<,>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Lazy<int>), expectedContractTypes: [typeof(int), typeof(System.Lazy<int>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Lazy<>), expectedContractTypes: [typeof(System.Lazy<>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(string[]), expectedContractTypes: [typeof(string[])])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Collections.Generic.IEnumerable<string>), expectedContractTypes: [typeof(System.Collections.Generic.IEnumerable<string>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Collections.Generic.ICollection<string>), expectedContractTypes: [typeof(System.Collections.Generic.ICollection<string>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Collections.Generic.IList<string>), expectedContractTypes: [typeof(System.Collections.Generic.IList<string>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Collections.Generic.IEnumerable<>), expectedContractTypes: [typeof(System.Collections.Generic.IEnumerable<>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Collections.Generic.ICollection<>), expectedContractTypes: [typeof(System.Collections.Generic.ICollection<>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Collections.Generic.IList<>), expectedContractTypes: [typeof(System.Collections.Generic.IList<>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Composition.ExportFactory<,>), expectedContractTypes: [typeof(System.Composition.ExportFactory<,>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_LazyOrExportFactoryContractType_ReturnsExpected(type: typeof(System.Composition.ExportFactory<int, IDictionary<string, object>>), expectedContractTypes: [typeof(int), typeof(System.Composition.ExportFactory<int, IDictionary<string, object>>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_AbstractMetadata_ThrowsInvalidOperationException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_MultipleDependencies_ReturnsExpected
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_ExportFactoryContractWithMetadataConstraints_ReturnsExpected(contractType: typeof(System.Composition.ExportFactory<int>), sharingBoundaryNames: null, expectedTypes: [typeof(int), typeof(System.Composition.ExportFactory<int>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_ExportFactoryContractWithMetadataConstraints_ReturnsExpected(contractType: typeof(System.Composition.ExportFactory<int>), sharingBoundaryNames: ["1", "2", "3"], expectedTypes: [typeof(int), typeof(System.Composition.ExportFactory<int>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_ExportFactoryContractWithMetadataConstraints_ReturnsExpected(contractType: typeof(System.Composition.ExportFactory<int, ParameterlessConstructor>), sharingBoundaryNames: null, expectedTypes: [typeof(int), typeof(System.Composition.ExportFactory<int, ParameterlessConstructor>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_ExportFactoryContractWithMetadataConstraints_ReturnsExpected(contractType: typeof(System.Composition.ExportFactory<int, ParameterlessConstructor>), sharingBoundaryNames: ["1", "2", "3"], expectedTypes: [typeof(int), typeof(System.Composition.ExportFactory<int, ParameterlessConstructor>)])
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.TryGetExport_NullContract_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_MultipleReturns_ThrowsCompositionFailedException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_NullProviderInProviders_ThrowsNullReferenceException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_FailedDependency_ThrowsCompositionFailedException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.CreateCompositionHost_NullProvider_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.Dispose_MultipleTimes_Success
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_InvalidMetadata_ThrowsComposititionFailedException(type: typeof(System.Lazy<int, int>))
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_InvalidMetadata_ThrowsComposititionFailedException(type: typeof(System.Lazy<int, IDictionary<string, string>>))
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_InvalidMetadata_ThrowsComposititionFailedException(type: typeof(System.Lazy<int, PrivateConstructor>))
+[STRT] System.Composition.Hosting.Core.Tests.CompositionHostTests.GetExport_InvalidMetadata_ThrowsComposititionFailedException(type: typeof(System.Lazy<int, NoParameterlessConstructor>))
+[STRT] System.Composition.Hosting.Core.Tests.CompositionOperationTests.Run_NullOutmostContext_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionOperationTests.Run_ValidContextAndAction_ReturnsExpected
+[STRT] System.Composition.Hosting.Core.Tests.CompositionOperationTests.Run_NullActivator_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionOperationTests.AddNonPrequisiteAction_NullAction_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.CompositionOperationTests.AddPostCompositionAction_NullAction_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorPromiseTests.Dependencies_GetWhenReturnsNull_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorPromiseTests.Ctor_Dependencies(contract: null, origin: null, isShared: False, dependencies: [])
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorPromiseTests.Ctor_Dependencies(contract: Int32, origin: "Origin", isShared: True, dependencies: [])
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorPromiseTests.GetDescriptor_GetWhenNull_ThrowsNullReferenceException
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorPromiseTests.GetDescriptor_CycleMetadataCompleted_MethodsReturnExpected
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorPromiseTests.Dependencies_GetWhenNull_ThrowsNullReferenceException
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorPromiseTests.GetDescriptor_GetWhenReturnsNull_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorPromiseTests.GetDescriptor_CycleActivatorNotCompleted_ThrowsNotImplementedException
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorPromiseTests.GetDescriptor_CycleActivatorCompleted_Success
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorPromiseTests.GetDescriptor_CycleMetadataBroken_HasExpectedProperties
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorPromiseTests.GetDescriptor_CycleMetadataNotCompleted_MethodsThrowNotImplementedException
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorPromiseTests.ToString_Invoke_ReturnsExpected
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorProviderTests.NoExportDescriptor_Get_ReturnsExpected
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorProviderTests.NoMetadata_Get_ReturnsExpected
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorProviderTests.NoDependencies_Get_ReturnsExpected
+[STRT] System.Composition.Hosting.Core.Tests.LifetimeContextTests.AddBoundInstance_NullInstance_ThrowsNullReferenceExceptionOnDisposal
+[STRT] System.Composition.Hosting.Core.Tests.LifetimeContextTests.AllocateSharingId_InvokeMultipleTimes_ReturnsDifferentValue
+[STRT] System.Composition.Hosting.Core.Tests.LifetimeContextTests.AddBoundInstance_Disposed_ThrowsObjectDisposedException
+[STRT] System.Composition.Hosting.Core.Tests.LifetimeContextTests.GetOrCreate_NullActivator_ThrowsNullReferenceException
+[STRT] System.Composition.Hosting.Core.Tests.LifetimeContextTests.AddBoundInstance_NonNullInstance_DisposesInstanceOnDisposal
+[STRT] System.Composition.Hosting.Core.Tests.LifetimeContextTests.GetOrCreate_ValidActivatorDuringInitialization_Success
+[STRT] System.Composition.Hosting.Core.Tests.LifetimeContextTests.GetOrCreate_NullOperation_ThrowsNullReferenceException
+[STRT] System.Composition.Hosting.Core.Tests.LifetimeContextTests.FindContextWithin_NullSharingBoundary_ReturnsRoot
+[STRT] System.Composition.Hosting.Core.Tests.LifetimeContextTests.FindContextWithin_UnknownSharingBoundary_ThrowsCompositionFailedException
+[STRT] System.Composition.Hosting.Core.Tests.LifetimeContextTests.GetOrCreate_ValidActivatorAfterInitialization_Success
+[STRT] System.Composition.Hosting.Core.Tests.LifetimeContextTests.ToString_NoParent_ReturnsExpected
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorTests.Create_Valid_ReturnsExpected(activator: CompositeActivator { Method = System.Object Activator(System.Composition.Hosting.Core.LifetimeContext, System.Composition.Hosting.Core.CompositionOperation), Target = null }, metadata: [])
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorTests.Create_Valid_ReturnsExpected(activator: CompositeActivator { Method = System.Object Activator(System.Composition.Hosting.Core.LifetimeContext, System.Composition.Hosting.Core.CompositionOperation), Target = null }, metadata: [["key"] = "value"])
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorTests.Create_NullActivator_ThrowsArgumentNullException
+[STRT] System.Composition.Hosting.Core.Tests.ExportDescriptorTests.Create_NullMetadata_ThrowsArgumentNullException
+Finished:    System.Composition.Hosting.Tests.dll
+Finished uploading 35333 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 96 Passed: 96 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Composition.Hosting.Tests.dll after 0.011116666666666667 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

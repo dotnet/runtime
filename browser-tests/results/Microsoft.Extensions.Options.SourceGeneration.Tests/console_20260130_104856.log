@@ -1,0 +1,80 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:44767/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Options.SourceGeneration.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Options.SourceGeneration.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Options.SourceGeneration.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Extensions.Options.SourceGeneration.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Extensions.Options.SourceGeneration.Tests.dll (found 54 of 54 test cases)
+Starting:    Microsoft.Extensions.Options.SourceGeneration.Tests.dll
+[STRT] Microsoft.Gen.OptionsValidation.Test.MultiModelValidatorTests.Invalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.MultiModelValidatorTests.Valid
+[STRT] Microsoft.Gen.OptionsValidation.Test.EmitterTests.TestEmitter
+[STRT] Microsoft.Gen.OptionsValidation.Test.SelfValidationTests.Valid
+[STRT] Microsoft.Gen.OptionsValidation.Test.SelfValidationTests.Invalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.SelfValidationTests.SelfValidateOptionsTest
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RangeAttributeModelIntInvalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RequiredAttributeInvalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.ComplexModelInvalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.MultipleAttributeModelValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.CustomValidationAttributeValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.DataTypeAttributeValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RangeAttributeModelIntValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.DerivedModelIsValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.EmailAttributeValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.EmailAttributeInvalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RegularExpressionAttributeInvalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RangeAttributeModelDoubleInvalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.DerivedModelIsInvalid(val: 0, derivedVal: "", virtValAttr: 1, virtVal: null, hiddenValBaseClass: "Valid hidden member from base class")
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.DerivedModelIsInvalid(val: null, derivedVal: "Valid", virtValAttr: 1, virtVal: null, hiddenValBaseClass: "Valid hidden member from base class")
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.DerivedModelIsInvalid(val: 1, derivedVal: "Valid", virtValAttr: null, virtVal: null, hiddenValBaseClass: "Valid hidden member from base class")
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.OptionsUsingRangeWithTimeSpanValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RangeAttributeModelDoubleValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RegularExpressionAttributeValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RequiredAttributeValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.CustomTypeCustomValidationAttributeModelValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.CustomValidationAttributeInvalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.AttributePropertyModelTestOnErrorMessage
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.AttributePropertyModelTestOnErrorMessageResource
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.LeafModelIsValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.MultipleAttributeModelInvalid(val1: "", val2: 2, val3: 4, val4: 7)
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.MultipleAttributeModelInvalid(val1: null, val2: 2, val3: 4, val4: 7)
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.MultipleAttributeModelInvalid(val1: "abc", val2: 0, val3: 4, val4: 9)
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.MultipleAttributeModelInvalid(val1: "abc", val2: 2, val3: 8, val4: 8)
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.MultipleAttributeModelInvalid(val1: "abc", val2: 2, val3: 4, val4: 10)
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.CustomTypeCustomValidationAttributeModelInvalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RangeAttributeModelDateInvalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RangeAttributeModelDateValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.ComplexModelValid
+[STRT] Microsoft.Gen.OptionsValidation.Test.FunnyStringsTests.Invalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.FunnyStringsTests.Valid
+[STRT] Microsoft.Gen.OptionsValidation.Test.GenericsTests.Invalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.GenericsTests.Valid
+[STRT] Microsoft.Gen.OptionsValidation.Test.NestedTests.Invalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.NestedTests.Valid
+[STRT] Microsoft.Gen.OptionsValidation.Test.RecordTypesTests.Invalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.RecordTypesTests.Valid
+[STRT] Microsoft.Gen.OptionsValidation.Test.EnumerationTests.NullElement
+[STRT] Microsoft.Gen.OptionsValidation.Test.EnumerationTests.Invalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.EnumerationTests.Valid
+[STRT] Microsoft.Gen.OptionsValidation.Test.CustomAttrTests.Invalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.CustomAttrTests.Valid
+[STRT] Microsoft.Gen.OptionsValidation.Test.NoNamespaceTests.Invalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.NoNamespaceTests.Valid
+[STRT] Microsoft.Gen.OptionsValidation.Test.RandomMembersTests.Invalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.RandomMembersTests.Valid
+[STRT] Microsoft.Gen.OptionsValidation.Test.ValueTypesTests.Invalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.ValueTypesTests.Valid
+[STRT] Microsoft.Gen.OptionsValidation.Test.RepeatedTypesTests.Invalid
+[STRT] Microsoft.Gen.OptionsValidation.Test.RepeatedTypesTests.Valid
+Finished:    Microsoft.Extensions.Options.SourceGeneration.Tests.dll
+Finished uploading 16852 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 60 Passed: 59 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 1
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Options.SourceGeneration.Tests.dll after 0.0124 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0
