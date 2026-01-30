@@ -67,11 +67,13 @@ PhaseStatus Compiler::SaveAsyncContexts()
     }
 
     // Create locals for ExecutionContext and SynchronizationContext
-    lvaAsyncExecutionContextVar                     = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
-    lvaGetDesc(lvaAsyncExecutionContextVar)->lvType = TYP_REF;
+    lvaAsyncExecutionContextVar                                = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
+    lvaGetDesc(lvaAsyncExecutionContextVar)->lvType            = TYP_REF;
+    lvaGetDesc(lvaAsyncExecutionContextVar)->lvLiveAcrossAsync = true;
 
     lvaAsyncSynchronizationContextVar                     = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
     lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
+    lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvLiveAcrossAsync = true;
 
     if (opts.IsOSR())
     {
@@ -541,7 +543,7 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
 
     if (!m_hasLiveness)
     {
-        return true;
+        return (lclNum < m_comp->info.compLocalsCount) || dsc->lvLiveAcrossAsync;
     }
 
     if (dsc->lvRefCnt(RCS_NORMAL) == 0)
