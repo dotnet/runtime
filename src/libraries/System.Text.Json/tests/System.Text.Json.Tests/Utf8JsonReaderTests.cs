@@ -1649,7 +1649,7 @@ namespace System.Text.Json.Tests
         [InlineData(512)]
         public static void TestDepth(int depth)
         {
-            if (PlatformDetection.IsMonoInterpreter && depth >= 256)
+            if (PlatformDetection.IsInterpreter && depth >= 256)
             {
                 throw new SkipTestException("Takes very long to run on interpreter.");
             }

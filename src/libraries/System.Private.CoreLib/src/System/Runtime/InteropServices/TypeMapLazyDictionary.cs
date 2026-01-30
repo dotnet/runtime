@@ -317,14 +317,11 @@ namespace System.Runtime.InteropServices
         [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
         private sealed class LazyExternalTypeDictionary : LazyTypeLoadDictionary<string>
         {
-            private static int ComputeHashCode(string key) => key.GetHashCode();
-
-            private readonly Dictionary<int, DelayedType> _lazyData = new();
+            private readonly Dictionary<string, DelayedType> _lazyData = new();
 
             protected override bool TryGetOrLoadType(string key, [NotNullWhen(true)] out Type? type)
             {
-                int hash = ComputeHashCode(key);
-                if (!_lazyData.TryGetValue(hash, out DelayedType? value))
+                if (!_lazyData.TryGetValue(key, out DelayedType? value))
                 {
                     type = null;
                     return false;
@@ -336,13 +333,12 @@ namespace System.Runtime.InteropServices
 
             public void Add(string key, TypeNameUtf8 targetType, RuntimeAssembly fallbackAssembly)
             {
-                int hash = ComputeHashCode(key);
-                if (_lazyData.ContainsKey(hash))
+                if (_lazyData.ContainsKey(key))
                 {
                     ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
                 }
 
-                _lazyData.Add(hash, new DelayedType(targetType, fallbackAssembly));
+                _lazyData.Add(key, new DelayedType(targetType, fallbackAssembly));
             }
         }
 

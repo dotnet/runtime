@@ -145,6 +145,8 @@ namespace System.Threading
         /// </summary>
         public static void SpinWait(int iterations)
         {
+            if (Thread.IsSingleThreaded) return;
+
             if (iterations < SpinWaitCoopThreshold)
             {
                 SpinWaitInternal(iterations);

@@ -9626,6 +9626,8 @@ namespace System.Globalization
         public string GetUnicode(string ascii) { throw null; }
         public string GetUnicode(string ascii, int index) { throw null; }
         public string GetUnicode(string ascii, int index, int count) { throw null; }
+        public bool TryGetAscii(System.ReadOnlySpan<char> unicode, System.Span<char> destination, out int charsWritten) { throw null; }
+        public bool TryGetUnicode(System.ReadOnlySpan<char> ascii, System.Span<char> destination, out int charsWritten) { throw null; }
     }
     public static partial class ISOWeek
     {
@@ -10357,6 +10359,7 @@ namespace System.IO
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
         public static System.IO.FileStream Open(string path, System.IO.FileStreamOptions options) { throw null; }
         public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenHandle(string path, System.IO.FileMode mode = System.IO.FileMode.Open, System.IO.FileAccess access = System.IO.FileAccess.Read, System.IO.FileShare share = System.IO.FileShare.Read, System.IO.FileOptions options = System.IO.FileOptions.None, long preallocationSize = (long)0) { throw null; }
+        public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenNullHandle() { throw null; }
         public static System.IO.FileStream OpenRead(string path) { throw null; }
         public static System.IO.StreamReader OpenText(string path) { throw null; }
         public static System.IO.FileStream OpenWrite(string path) { throw null; }
@@ -11554,6 +11557,14 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static int TrailingZeroCount(nuint value) { throw null; }
     }
+    public enum DivisionRounding
+    {
+        Truncate = 0,
+        Floor = 1,
+        Ceiling = 2,
+        AwayFromZero = 3,
+        Euclidean = 4,
+    }
     public partial interface IAdditionOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IAdditionOperators<TSelf, TOther, TResult>?
     {
         static abstract TResult operator +(TSelf left, TOther right);
@@ -11568,7 +11579,10 @@ namespace System.Numerics
     }
     public partial interface IBinaryInteger<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBinaryNumber<TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IShiftOperators<TSelf, int, TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryInteger<TSelf>?
     {
+        static virtual TSelf Divide(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
         static virtual (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right) { throw null; }
+        static virtual (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
+        static virtual TSelf Remainder(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
         int GetByteCount();
         int GetShortestBitLength();
         static virtual TSelf LeadingZeroCount(TSelf value) { throw null; }

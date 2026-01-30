@@ -2309,6 +2309,7 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
         gcInfo.gcMarkRegSetNpt(dstMask);
     }
 }
+#endif
 
 //------------------------------------------------------------------------
 // genCodeForCast: Generates the code for GT_CAST.
@@ -2337,12 +2338,12 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
         // Casts int32/uint32/int64/uint64 --> float/double
         genIntToFloatCast(tree);
     }
-#ifndef TARGET_64BIT
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
     else if (varTypeIsLong(tree->gtOp1))
     {
         genLongToIntCast(tree);
     }
-#endif // !TARGET_64BIT
+#endif // !TARGET_64BIT && !TARGET_WASM
     else
     {
         // Casts int <--> int
@@ -2366,8 +2367,13 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
     const bool      castIsLoad   = !src->isUsedFromReg();
 
     assert(castIsLoad == src->isUsedFromMemory());
+#ifndef TARGET_WASM
     assert((srcSize == 4) || (srcSize == genTypeSize(TYP_I_IMPL)));
     assert((dstSize == 4) || (dstSize == genTypeSize(TYP_I_IMPL)));
+#else
+    assert((srcSize == 4) || (srcSize == 8));
+    assert((dstSize == 4) || (dstSize == 8));
+#endif
 
     assert(dstSize == genTypeSize(genActualType(castType)));
 
@@ -2395,7 +2401,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
             m_extendSrcSize = castSize;
         }
     }
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
     // castType cannot be (U)LONG on 32 bit targets, such casts should have been decomposed.
     // srcType cannot be a small int type since it's the "actual type" of the cast operand.
     // This means that widening casts do not occur on 32 bit targets.
@@ -2523,6 +2529,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
     }
 }
 
+#ifndef TARGET_WASM
 #if !defined(TARGET_64BIT)
 //------------------------------------------------------------------------
 // genStoreLongLclVar: Generate code to store a non-enregistered long lclVar

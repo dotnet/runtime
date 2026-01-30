@@ -586,9 +586,8 @@ private:
 
         if (tree->OperIs(GT_CALL))
         {
-            GenTreeCall*          call          = tree->AsCall();
-            CORINFO_METHOD_HANDLE method        = NO_METHOD_HANDLE;
-            bool                  tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler, &method);
+            GenTreeCall* call          = tree->AsCall();
+            bool         tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler);
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
@@ -604,13 +603,12 @@ private:
                 }
 #endif // DEBUG
 
+                CORINFO_METHOD_HANDLE  method                 = call->gtLateDevirtualizationInfo->methodHnd;
                 CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
                 InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
-
-                assert(method != NO_METHOD_HANDLE);
 
                 CORINFO_CONTEXT_HANDLE contextInput = context;
                 context                             = nullptr;

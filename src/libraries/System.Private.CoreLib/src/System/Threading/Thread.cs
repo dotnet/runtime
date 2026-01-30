@@ -169,23 +169,6 @@ namespace System.Threading
             Initialize();
         }
 
-#if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool IsThreadStartSupported => true;
-#else
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool IsThreadStartSupported => false;
-#endif
-
-        internal static void ThrowIfNoThreadStart()
-        {
-            if (IsThreadStartSupported)
-                return;
-            throw new PlatformNotSupportedException();
-        }
-
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
         /// <param name="parameter">An object that contains data to be used by the method the thread executes.</param>
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
@@ -212,10 +195,7 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
-            ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
 
             StartHelper? startHelper = _startHelper;
 
@@ -258,7 +238,7 @@ namespace System.Threading
 
         private void Start(bool captureContext)
         {
-            ThrowIfNoThreadStart();
+            Thread.ThrowIfSingleThreaded();
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)
@@ -449,7 +429,7 @@ namespace System.Threading
         internal void ResetThreadPoolThread()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(IsSingleThreaded || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
 
             if (_mayNeedResetForThreadPool)
             {
@@ -461,7 +441,7 @@ namespace System.Threading
         private void ResetThreadPoolThreadSlow()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(IsSingleThreaded || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
             Debug.Assert(_mayNeedResetForThreadPool);
 
             _mayNeedResetForThreadPool = false;
@@ -757,6 +737,27 @@ namespace System.Threading
             return ProcessorIdCache.GetCurrentProcessorId();
         }
 
+        [SupportedOSPlatformGuard("browser")]
+        [SupportedOSPlatformGuard("wasi")]
+#if FEATURE_SINGLE_THREADED
+        internal static bool IsSingleThreaded => true;
+        [DoesNotReturn]
+        internal static void ThrowIfSingleThreaded()
+        {
+            throw new PlatformNotSupportedException();
+        }
+#else
+        internal static bool IsSingleThreaded => false;
+#if FEATURE_WASM_MANAGED_THREADS
+        internal static void ThrowIfSingleThreaded()
+        {
+            AssureBlockingPossible();
+        }
+#else
+        internal static void ThrowIfSingleThreaded() { }
+#endif
+#endif
+
 #if FEATURE_WASM_MANAGED_THREADS
         [ThreadStatic]
         public static bool ThrowOnBlockingWaitOnJSInteropThread;
@@ -799,6 +800,10 @@ namespace System.Threading
                 ThrowOnBlockingWaitOnJSInteropThread = flag;
                 WarnOnBlockingWaitOnJSInteropThread = wflag;
             }
+        }
+#else
+        internal static unsafe void AssureBlockingPossible()
+        {
         }
 #endif
 

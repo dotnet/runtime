@@ -18,7 +18,6 @@
     <ShouldILStrip>false</ShouldILStrip>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
-    <XunitShowProgress>true</XunitShowProgress>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
   </PropertyGroup>

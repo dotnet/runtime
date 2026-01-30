@@ -1042,7 +1042,11 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d
             if (pCurMethod->IsGenericMethodDefinition())
                 continue;
 
-            if ((pCurMethod != NULL) && (StrCompFunc(pszMethodName, pCurMethod->GetName()) == 0))
+            // We can't match async variants (since we have only name).
+            if (pCurMethod->IsAsyncVariantMethod())
+                continue;
+
+            if (StrCompFunc(pszMethodName, pCurMethod->GetName()) == 0)
             {
                 // found a matching string, get an associated method desc if needed
                 // Use unboxing stubs for instance and virtual methods on value types.

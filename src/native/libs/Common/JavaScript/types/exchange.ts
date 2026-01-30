@@ -10,11 +10,12 @@ import type { createPromiseCompletionSource, getPromiseCompletionSource, isContr
 
 import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
 import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
-import type { abortPosix, abortTimers, getExitStatus } from "../../../System.Native.Browser/utils/host";
+import type { abortPosix, abortBackgroundTimers, getExitStatus, runBackgroundTimers } from "../../../System.Native.Browser/utils/host";
 import type { bindJSImportST, invokeJSFunction, invokeJSImportST } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/invoke-js";
 import type { forceDisposeProxies, releaseCSOwnedObject } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/gc-handles";
 import type { resolveOrRejectPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/marshal-to-js";
 import type { cancelPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/cancelable-promise";
+import type { abortInteropTimers } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/scheduling";
 
 import type { symbolicateStackTrace } from "../../../System.Native.Browser/diagnostics/symbolicate";
 import type { EmsAmbientSymbolsType } from "../types";
@@ -27,6 +28,7 @@ export type RuntimeExports = {
     cancelPromise: typeof cancelPromise,
     invokeJSFunction: typeof invokeJSFunction,
     forceDisposeProxies: typeof forceDisposeProxies,
+    abortInteropTimers: typeof abortInteropTimers,
 }
 
 export type RuntimeExportsTable = [
@@ -37,6 +39,7 @@ export type RuntimeExportsTable = [
     typeof cancelPromise,
     typeof invokeJSFunction,
     typeof forceDisposeProxies,
+    typeof abortInteropTimers,
 ]
 
 export type LoggerType = {
@@ -133,9 +136,10 @@ export type BrowserUtilsExports = {
     stringToUTF8: typeof stringToUTF8,
     zeroRegion: typeof zeroRegion,
     isSharedArrayBuffer: typeof isSharedArrayBuffer
-    abortTimers: typeof abortTimers,
+    abortBackgroundTimers: typeof abortBackgroundTimers,
     abortPosix: typeof abortPosix,
     getExitStatus: typeof getExitStatus,
+    runBackgroundTimers: typeof runBackgroundTimers,
 }
 
 export type BrowserUtilsExportsTable = [
@@ -146,9 +150,10 @@ export type BrowserUtilsExportsTable = [
     typeof stringToUTF8,
     typeof zeroRegion,
     typeof isSharedArrayBuffer,
-    typeof abortTimers,
+    typeof abortBackgroundTimers,
     typeof abortPosix,
     typeof getExitStatus,
+    typeof runBackgroundTimers,
 ]
 
 export type DiagnosticsExportsTable = [

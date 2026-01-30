@@ -12,7 +12,12 @@ export function getExitStatus(): new (exitCode: number) => any {
     return _ems_.ExitStatus as any;
 }
 
-export function abortTimers(): void {
+export function runBackgroundTimers(): void {
+    _ems_._SystemJS_ExecuteTimerCallback();
+    _ems_._SystemJS_ExecuteBackgroundJobCallback();
+}
+
+export function abortBackgroundTimers(): void {
     if (_ems_.DOTNET.lastScheduledTimerId) {
         globalThis.clearTimeout(_ems_.DOTNET.lastScheduledTimerId);
         _ems_.runtimeKeepalivePop();

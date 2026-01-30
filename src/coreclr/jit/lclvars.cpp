@@ -166,6 +166,14 @@ void Compiler::lvaInitTypeRef()
         info.compArgsCount++;
     }
 
+#if defined(TARGET_WASM)
+    if (!opts.IsReversePInvoke())
+    {
+        // Managed Wasm ABI passes stack pointer as first arg, portable entry point as last arg
+        info.compArgsCount += 2;
+    }
+#endif
+
     lvaCount = info.compLocalsCount = info.compArgsCount + info.compMethodInfo->locals.numArgs;
 
     info.compILlocalsCount = info.compILargsCount + info.compMethodInfo->locals.numArgs;
@@ -338,6 +346,15 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     //----------------------------------------------------------------------
 
     unsigned varNum = 0;
+
+#if defined(TARGET_WASM)
+    if (!opts.IsReversePInvoke())
+    {
+        // Wasm stack pointer is first arg
+        lvaInitWasmStackPtr(&varNum);
+    }
+#endif
+
     // Is there a "this" pointer ?
     lvaInitThisPtr(&varNum);
 
@@ -397,6 +414,14 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     lvaInitVarArgsHandle(&varNum);
 #endif
 
+#if defined(TARGET_WASM)
+    if (!opts.IsReversePInvoke())
+    {
+        // Wasm portable entry point is the very last arg
+        lvaInitWasmPortableEntryPtr(&varNum);
+    }
+#endif
+
     //----------------------------------------------------------------------
 
     // We have set info.compArgsCount in compCompile()
@@ -431,7 +456,12 @@ void Compiler::lvaInitThisPtr(unsigned* curVarNum)
     varDsc->lvIsPtr   = 1;
 
     lvaArg0Var = info.compThisArg = *curVarNum;
+
+#if defined(TARGET_WASM)
+    noway_assert(info.compThisArg == 1);
+#else
     noway_assert(info.compThisArg == 0);
+#endif
 
     if (eeIsValueClass(info.compClassHnd))
     {
@@ -460,6 +490,48 @@ void Compiler::lvaInitRetBuffArg(unsigned* curVarNum, bool useFixedRetBufReg)
 
     (*curVarNum)++;
 }
+
+#if defined(TARGET_WASM)
+
+//-----------------------------------------------------------------------------
+// lvaInitWasmStackPtr: set up the wasm stack pointer argument
+//
+// Arguments:
+//   curVarNum - [in, out] the last used local var num
+//
+// Notes:
+//   The managed calling convention for Wasm passes the stack pointer as the first arg.
+//
+void Compiler::lvaInitWasmStackPtr(unsigned* curVarNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
+    varDsc->lvType    = TYP_I_IMPL;
+    varDsc->lvIsParam = 1;
+    varDsc->lvOnFrame = true;
+    lvaWasmSpArg      = *curVarNum;
+    (*curVarNum)++;
+}
+
+//-----------------------------------------------------------------------------
+// lvaInitWasmPortableEntryPtr: set up the wasm portable entry pointer argument
+//
+// Arguments:
+//   curVarNum - [in, out] the last used local var num
+//
+// Notes:
+//   The managed calling convention for Wasm passes a pointer to the portable entry point as the last arg.
+//   This arg is currently unused in the JIT, and we may not need to model it.
+//
+void Compiler::lvaInitWasmPortableEntryPtr(unsigned* curVarNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
+    varDsc->lvType    = TYP_I_IMPL;
+    varDsc->lvIsParam = 1;
+    varDsc->lvOnFrame = true;
+    (*curVarNum)++;
+}
+
+#endif // defined(TARGET_WASM)
 
 //-----------------------------------------------------------------------------
 // lvaInitUserArgs:
@@ -1126,6 +1198,13 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
         return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM;
     }
 
+#if defined(TARGET_WASM)
+    if (varNum == lvaWasmSpArg)
+    {
+        return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM;
+    }
+#endif // defined(TARGET_WASM)
+
     unsigned originalVarNum = varNum;
 
     // Now mutate varNum to remove extra parameters from the count.
@@ -1152,6 +1231,13 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     {
         varNum--;
     }
+
+#if defined(TARGET_WASM)
+    if (lvaWasmSpArg != BAD_VAR_NUM && originalVarNum > lvaWasmSpArg)
+    {
+        varNum--;
+    }
+#endif
 
     if (varNum >= info.compLocalsCount)
     {
@@ -3716,7 +3802,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     // Update bookkeeping on the generic context.
     if (lvaKeepAliveAndReportThis())
     {
-        lvaGetDesc(0u)->lvImplicitlyReferenced = reportParamTypeArg;
+        lvaGetDesc(info.compThisArg)->lvImplicitlyReferenced = reportParamTypeArg;
     }
     else if (lvaReportParamTypeArg())
     {

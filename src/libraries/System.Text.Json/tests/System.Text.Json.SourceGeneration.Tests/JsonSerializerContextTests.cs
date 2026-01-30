@@ -991,5 +991,38 @@ namespace System.Text.Json.SourceGeneration.Tests
         internal partial class ContextWithAllowDuplicateProperties : JsonSerializerContext
         {
         }
+
+        // Test for https://github.com/dotnet/runtime/issues/99669
+        // Verifies that partial contexts with [JsonSerializable] attributes on multiple declarations
+        // work correctly at runtime - all types from all partial declarations should be available.
+        [Fact]
+        public static void PartialContextWithAttributesOnMultipleDeclarations_RuntimeBehavior()
+        {
+            // Verify both types from both partial declarations are available
+            Assert.NotNull(MultiplePartialDeclarationsContext.Default.TypeFromPartial1);
+            Assert.NotNull(MultiplePartialDeclarationsContext.Default.TypeFromPartial2);
+
+            // Test serialization of type from first partial
+            var obj1 = new TypeFromPartial1 { Id = 42, Name = "Test" };
+            string json1 = JsonSerializer.Serialize(obj1, MultiplePartialDeclarationsContext.Default.TypeFromPartial1);
+            Assert.Contains("42", json1);
+            Assert.Contains("Test", json1);
+
+            // Test deserialization of type from first partial
+            var deserialized1 = JsonSerializer.Deserialize<TypeFromPartial1>(json1, MultiplePartialDeclarationsContext.Default.TypeFromPartial1);
+            Assert.Equal(42, deserialized1.Id);
+            Assert.Equal("Test", deserialized1.Name);
+
+            // Test serialization of type from second partial
+            var obj2 = new TypeFromPartial2 { Value = 3.14, IsActive = true };
+            string json2 = JsonSerializer.Serialize(obj2, MultiplePartialDeclarationsContext.Default.TypeFromPartial2);
+            Assert.Contains("3.14", json2);
+            Assert.Contains("true", json2);
+
+            // Test deserialization of type from second partial
+            var deserialized2 = JsonSerializer.Deserialize<TypeFromPartial2>(json2, MultiplePartialDeclarationsContext.Default.TypeFromPartial2);
+            Assert.Equal(3.14, deserialized2.Value);
+            Assert.True(deserialized2.IsActive);
+        }
     }
 }

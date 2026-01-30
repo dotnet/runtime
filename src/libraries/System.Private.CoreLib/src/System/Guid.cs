@@ -830,14 +830,13 @@ namespace System
         {
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
             Debug.Assert(lookup.Length == 256);
-            int upper = (sbyte)lookup[byte.CreateTruncating(ch1)];
-            int lower = (sbyte)lookup[byte.CreateTruncating(ch2)];
-            int result = (upper << 4) | lower;
 
-            uint c1 = TChar.CastToUInt32(ch1);
-            uint c2 = TChar.CastToUInt32(ch2);
-            // Result will be negative if ch1 or/and ch2 are greater than 0xFF
-            result = (c1 | c2) >> 8 == 0 ? result : -1;
+            uint c1 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch1) : Math.Min(TChar.CastToUInt32(ch1), 0x7F);
+            uint c2 = typeof(TChar) == typeof(byte) ? TChar.CastToUInt32(ch2) : Math.Min(TChar.CastToUInt32(ch2), 0x7F);
+            int upper = (sbyte)lookup[(int)c1];
+            int lower = (sbyte)lookup[(int)c2];
+
+            int result = (upper << 4) | lower;
             invalidIfNegative |= result;
             return (byte)result;
         }

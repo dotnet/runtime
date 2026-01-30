@@ -381,7 +381,7 @@ namespace Internal.JitInterface
             {
                 ThrowHelper.ThrowInvalidProgramException();
             }
-            if (result == CorJitResult.CORJIT_IMPLLIMITATION)
+            if (result == CorJitResult.CORJIT_IMPLLIMITATION || result == CorJitResult.CORJIT_R2R_UNSUPPORTED)
             {
 #if READYTORUN
                 throw new RequiresRuntimeJitException("JIT implementation limitation");
@@ -3394,8 +3394,19 @@ namespace Internal.JitInterface
 
             pEEInfoOut.osPageSize = 0x1000;
 
-            pEEInfoOut.maxUncheckedOffsetForNullObject = (_compilation.NodeFactory.Target.IsWindows) ?
-                (32 * 1024 - 1) : (pEEInfoOut.osPageSize / 2 - 1);
+            if (_compilation.NodeFactory.Target.IsWasm)
+            {
+                // TODO: Set this value to 0 for Wasm
+                pEEInfoOut.maxUncheckedOffsetForNullObject = 1024 - 1;
+            }
+            else if (_compilation.NodeFactory.Target.IsWindows)
+            {
+                pEEInfoOut.maxUncheckedOffsetForNullObject = 32 * 1024 - 1;
+            }
+            else
+            {
+                pEEInfoOut.maxUncheckedOffsetForNullObject = pEEInfoOut.osPageSize / 2 - 1;
+            }
 
             pEEInfoOut.targetAbi = TargetABI;
             pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);
@@ -3816,56 +3827,59 @@ namespace Internal.JitInterface
 
         private void allocMem(ref AllocMemArgs args)
         {
-            args.hotCodeBlock = (void*)GetPin(_code = new byte[args.hotCodeSize]);
-            args.hotCodeBlockRW = args.hotCodeBlock;
+            Span<AllocMemChunk> chunks = new Span<AllocMemChunk>(args.chunks, checked((int)args.chunksCount));
 
-            if (args.coldCodeSize != 0)
-            {
-
-#if READYTORUN
-                this._methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
-#endif
-                args.coldCodeBlock = (void*)GetPin(_coldCode = new byte[args.coldCodeSize]);
-                args.coldCodeBlockRW = args.coldCodeBlock;
-            }
+            uint roDataSize = 0;
 
             _codeAlignment = -1;
-            if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+            _roDataAlignment = -1;
+
+            foreach (ref AllocMemChunk chunk in chunks)
             {
-                _codeAlignment = 32;
+                if ((chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE) != 0)
+                {
+                    chunk.block = (byte*)GetPin(_code = new byte[chunk.size]);
+                    chunk.blockRW = chunk.block;
+                    _codeAlignment = (int)chunk.alignment;
+                }
+                else if ((chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE) != 0)
+                {
+                    chunk.block = (byte*)GetPin(_coldCode = new byte[chunk.size]);
+                    chunk.blockRW = chunk.block;
+                    Debug.Assert(chunk.alignment == 1);
+#if READYTORUN
+                    _methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
+#endif
+                }
+                else
+                {
+                    roDataSize = (uint)((int)roDataSize).AlignUp((int)chunk.alignment);
+                    roDataSize += chunk.size;
+                    _roDataAlignment = Math.Max(_roDataAlignment, (int)chunk.alignment);
+                }
             }
-            else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+
+            if (roDataSize != 0)
             {
-                _codeAlignment = 16;
-            }
-
-            if (args.roDataSize != 0)
-            {
-                _roDataAlignment = 8;
-
-                if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
-                {
-                    _roDataAlignment = 64;
-                }
-                else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
-                {
-                    _roDataAlignment = 32;
-                }
-                else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
-                {
-                    _roDataAlignment = 16;
-                }
-                else if (args.roDataSize < 8)
-                {
-                    _roDataAlignment = PointerSize;
-                }
-
-                _roData = new byte[args.roDataSize];
-
+                _roData = new byte[roDataSize];
                 _roDataBlob = new MethodReadOnlyDataNode(MethodBeingCompiled);
+                byte* roDataBlock = (byte*)GetPin(_roData);
+                int offset = 0;
 
-                args.roDataBlock = (void*)GetPin(_roData);
-                args.roDataBlockRW = args.roDataBlock;
+                foreach (ref AllocMemChunk chunk in chunks)
+                {
+                    if ((chunk.flags & (CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE | CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE)) != 0)
+                    {
+                        continue;
+                    }
+
+                    offset = offset.AlignUp((int)chunk.alignment);
+                    chunk.block = roDataBlock + offset;
+                    chunk.blockRW = chunk.block;
+                    offset += (int)chunk.size;
+                }
+
+                Debug.Assert(offset <= roDataSize);
             }
 
             if (_numFrameInfos > 0)

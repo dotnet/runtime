@@ -66,3 +66,4 @@ insFormat emitInsFormat(instruction ins);
 size_t emitOutputULEB128(uint8_t* destination, uint64_t value);
 size_t emitOutputSLEB128(uint8_t* destination, int64_t value);
 size_t emitRawBytes(uint8_t* destination, const void* source, size_t count);
+size_t emitOutputOpcode(BYTE* dst, instruction ins);

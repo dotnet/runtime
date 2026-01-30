@@ -97,7 +97,6 @@ namespace Tracing.UserEvents.Tests.MultiThread
             return UserEventsTestRunner.Run(
                 args,
                 "multithread",
-                typeof(MultiThread).Assembly.Location,
                 MultiThreadTracee,
                 s_traceValidator);
         }

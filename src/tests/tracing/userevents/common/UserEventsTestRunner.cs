@@ -26,7 +26,6 @@ namespace Tracing.UserEvents.Tests.Common
         public static int Run(
             string[] args,
             string scenarioName,
-            string traceeAssemblyPath,
             Action traceeAction,
             Func<EventPipeEventSource, bool> traceValidator,
             int traceeExitTimeout = DefaultTraceeExitTimeoutMs,
@@ -46,7 +45,6 @@ namespace Tracing.UserEvents.Tests.Common
 
             return RunOrchestrator(
                 scenarioName,
-                traceeAssemblyPath,
                 traceValidator,
                 traceeExitTimeout,
                 recordTraceExitTimeout);
@@ -54,12 +52,28 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static int RunOrchestrator(
             string scenarioName,
-            string traceeAssemblyPath,
             Func<EventPipeEventSource, bool> traceValidator,
             int traceeExitTimeout,
             int recordTraceExitTimeout)
         {
-            string userEventsScenarioDir = Path.GetDirectoryName(traceeAssemblyPath);
+            // Start with AppContext.BaseDirectory and determine if we're running NativeAOT
+            string baseDir = AppContext.BaseDirectory;
+            bool isNativeAot = false;
+            string userEventsScenarioDir = baseDir;
+
+            if (Path.GetFileName(baseDir.TrimEnd(Path.DirectorySeparatorChar)) == "native")
+            {
+                // NativeAOT places its compiled test executables under a 'native' subdirectory.
+                isNativeAot = true;
+                userEventsScenarioDir = Path.GetFullPath(Path.Combine(baseDir, ".."));
+            }
+
+            if (Path.GetFileName(userEventsScenarioDir.TrimEnd(Path.DirectorySeparatorChar)) != scenarioName)
+            {
+                Console.Error.WriteLine($"Could not resolve the userevents test scenario directory. Expected directory to end with '{scenarioName}', but got: {userEventsScenarioDir}");
+                return -1;
+            }
+
             string recordTracePath = ResolveRecordTracePath(userEventsScenarioDir);
             string scriptFilePath = Path.Combine(userEventsScenarioDir, $"{scenarioName}.script");
 
@@ -88,13 +102,18 @@ namespace Tracing.UserEvents.Tests.Common
 
             ProcessStartInfo recordTraceStartInfo = new();
             recordTraceStartInfo.FileName = "sudo";
-            recordTraceStartInfo.Arguments = $"-n {recordTracePath} --script-file {scriptFilePath} --out {traceFilePath}";
+            recordTraceStartInfo.ArgumentList.Add("-n");
+            recordTraceStartInfo.ArgumentList.Add(recordTracePath);
+            recordTraceStartInfo.ArgumentList.Add("--script-file");
+            recordTraceStartInfo.ArgumentList.Add(scriptFilePath);
+            recordTraceStartInfo.ArgumentList.Add("--out");
+            recordTraceStartInfo.ArgumentList.Add(traceFilePath);
             recordTraceStartInfo.WorkingDirectory = userEventsScenarioDir;
             recordTraceStartInfo.UseShellExecute = false;
             recordTraceStartInfo.RedirectStandardOutput = true;
             recordTraceStartInfo.RedirectStandardError = true;
 
-            Console.WriteLine($"Starting record-trace: {recordTraceStartInfo.FileName} {recordTraceStartInfo.Arguments}");
+            Console.WriteLine($"Starting record-trace: {recordTraceStartInfo.FileName} {string.Join(" ", recordTraceStartInfo.ArgumentList)}");
             using Process recordTraceProcess = Process.Start(recordTraceStartInfo);
             recordTraceProcess.OutputDataReceived += (_, args) =>
             {
@@ -115,8 +134,23 @@ namespace Tracing.UserEvents.Tests.Common
             Console.WriteLine($"record-trace started with PID: {recordTraceProcess.Id}");
 
             ProcessStartInfo traceeStartInfo = new();
-            traceeStartInfo.FileName = Process.GetCurrentProcess().MainModule!.FileName;
-            traceeStartInfo.Arguments = $"{traceeAssemblyPath} tracee";
+            traceeStartInfo.FileName = Environment.ProcessPath
+                ?? throw new InvalidOperationException("Environment.ProcessPath is null");
+
+            // NativeAOT tests run the native executable directly.
+            // CoreCLR tests run through corerun which loads the managed assembly.
+            if (isNativeAot)
+            {
+                traceeStartInfo.ArgumentList.Add("tracee");
+            }
+            else
+            {
+                // For CoreCLR, construct the path to the assembly
+                string assemblyPath = Path.Combine(userEventsScenarioDir, $"{scenarioName}.dll");
+                traceeStartInfo.ArgumentList.Add(assemblyPath);
+                traceeStartInfo.ArgumentList.Add("tracee");
+            }
+
             traceeStartInfo.WorkingDirectory = userEventsScenarioDir;
             traceeStartInfo.RedirectStandardOutput = true;
             traceeStartInfo.RedirectStandardError = true;
@@ -131,7 +165,7 @@ namespace Tracing.UserEvents.Tests.Common
             // When https://github.com/microsoft/one-collect/issues/183 is fixed, this and the above TMPDIR should be removed.
             EnsureCleanDiagnosticPorts(diagnosticPortDir);
 
-            Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {traceeStartInfo.Arguments}");
+            Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {string.Join(" ", traceeStartInfo.ArgumentList)}");
             using Process traceeProcess = Process.Start(traceeStartInfo);
             int traceePid = traceeProcess.Id;
             Console.WriteLine($"Tracee process started with PID: {traceePid}");
@@ -198,9 +232,9 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static string ResolveRecordTracePath(string userEventsScenarioDir)
         {
-            // scenario dir: .../tracing/userevents/<scenario>/<scenario>
+            // userEventsScenarioDir is .../tracing/userevents/<scenario>/<scenario>/ for both CoreCLR and NativeAOT
+            // Navigate up two directories to reach userevents root, then into common/userevents_common
             string usereventsRoot = Path.GetFullPath(Path.Combine(userEventsScenarioDir, "..", ".."));
-            // common dir: .../tracing/userevents/common/userevents_common
             string commonDir = Path.Combine(usereventsRoot, "common", "userevents_common");
             string recordTracePath = Path.Combine(commonDir, "record-trace");
             return recordTracePath;

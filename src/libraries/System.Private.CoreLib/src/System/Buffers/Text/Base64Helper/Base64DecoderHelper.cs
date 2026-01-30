@@ -467,6 +467,14 @@ namespace System.Buffers.Text
 
             while (!source.IsEmpty)
             {
+                // Skip over any leading whitespace
+                if (IsWhiteSpace(source[0]))
+                {
+                    source = source.Slice(1);
+                    bytesConsumed++;
+                    continue;
+                }
+
                 int encodedIdx = 0;
                 int bufferIdx = 0;
                 int skipped = 0;
@@ -485,12 +493,7 @@ namespace System.Buffers.Text
                 }
 
                 source = source.Slice(encodedIdx);
-                bytesConsumed += skipped;
-
-                if (bufferIdx == 0)
-                {
-                    continue;
-                }
+                Debug.Assert(bufferIdx > 0);
 
                 bool hasAnotherBlock;
 
@@ -522,13 +525,16 @@ namespace System.Buffers.Text
                 }
 
                 status = DecodeFrom<TBase64Decoder, byte>(decoder, buffer.Slice(0, bufferIdx), bytes, out int localConsumed, out int localWritten, localIsFinalBlock, ignoreWhiteSpace: false);
-                bytesConsumed += localConsumed;
-                bytesWritten += localWritten;
 
                 if (status != OperationStatus.Done)
                 {
+                    Debug.Assert(localConsumed == 0 && localWritten == 0, "On failure, should not have consumed or written any bytes");
                     return status;
                 }
+
+                bytesConsumed += skipped;
+                bytesConsumed += localConsumed;
+                bytesWritten += localWritten;
 
                 // The remaining data must all be whitespace in order to be valid.
                 if (!hasAnotherBlock)
@@ -551,6 +557,7 @@ namespace System.Buffers.Text
                 }
 
                 bytes = bytes.Slice(localWritten);
+                Debug.Assert(!source.IsEmpty);
             }
 
             return status;
@@ -565,6 +572,14 @@ namespace System.Buffers.Text
 
             while (!source.IsEmpty)
             {
+                // Skip over any leading whitespace
+                if (IsWhiteSpace(source[0]))
+                {
+                    source = source.Slice(1);
+                    bytesConsumed++;
+                    continue;
+                }
+
                 int encodedIdx = 0;
                 int bufferIdx = 0;
                 int skipped = 0;
@@ -583,12 +598,7 @@ namespace System.Buffers.Text
                 }
 
                 source = source.Slice(encodedIdx);
-                bytesConsumed += skipped;
-
-                if (bufferIdx == 0)
-                {
-                    continue;
-                }
+                Debug.Assert(bufferIdx > 0);
 
                 bool hasAnotherBlock;
 
@@ -620,13 +630,16 @@ namespace System.Buffers.Text
                 }
 
                 status = DecodeFrom(decoder, buffer.Slice(0, bufferIdx), bytes, out int localConsumed, out int localWritten, localIsFinalBlock, ignoreWhiteSpace: false);
-                bytesConsumed += localConsumed;
-                bytesWritten += localWritten;
 
                 if (status != OperationStatus.Done)
                 {
+                    Debug.Assert(localConsumed == 0 && localWritten == 0, "On failure, should not have consumed or written any bytes");
                     return status;
                 }
+
+                bytesConsumed += skipped;
+                bytesConsumed += localConsumed;
+                bytesWritten += localWritten;
 
                 // The remaining data must all be whitespace in order to be valid.
                 if (!hasAnotherBlock)
@@ -648,6 +661,7 @@ namespace System.Buffers.Text
                 }
 
                 bytes = bytes.Slice(localWritten);
+                Debug.Assert(!source.IsEmpty);
             }
 
             return status;

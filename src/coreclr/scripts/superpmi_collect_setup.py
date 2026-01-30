@@ -403,19 +403,6 @@ def setup_benchmark(workitem_directory, arch):
     except Exception as ex:
         print("Warning: failed to remove directory \"%s\": %s", os.path.join(performance_directory, ".git"), ex)
 
-    with ChangeDir(performance_directory):
-        dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
-        dotnet_install_script = os.path.join(performance_directory, "scripts", "dotnet.py")
-
-        if not os.path.isfile(dotnet_install_script):
-            print("Missing " + dotnet_install_script)
-            return
-
-        run_command(
-            get_python_name() + [dotnet_install_script, "install", "--channels", "10.0", "--architecture", arch, "--install-dir",
-                                 dotnet_directory, "--verbose"])
-
-
 def get_python_name():
     """Gets the python name
 

@@ -280,6 +280,7 @@ export function marshalTaskToCs(arg: JSMarshalerArgument, value: Promise<any>, _
     const handleIsPreallocated = getArgType(arg) == MarshalerType.TaskPreCreated;
     if (value === null || value === undefined) {
         setArgType(arg, MarshalerType.None);
+        return;
     }
     dotnetAssert.check(isThenable(value), "Value is not a Promise");
 

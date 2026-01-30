@@ -1125,7 +1125,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
 
     instruction ins;
     emitAttr    size                  = emitTypeSize(treeNode);
-    bool        isUnsignedMultiply    = ((treeNode->gtFlags & GTF_UNSIGNED) != 0);
+    bool        isUnsignedMultiply    = treeNode->IsUnsigned();
     bool        requiresOverflowCheck = treeNode->gtOverflowEx();
 
     GenTree* op1 = treeNode->gtGetOp1();
@@ -6657,7 +6657,7 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
         // The common type cannot be smaller than any of the operand types, we're probably mixing int/long
         assert(genTypeSize(type) >= max(genTypeSize(op1Type), genTypeSize(op2Type)));
         // Small unsigned int types (TYP_BOOL can use anything) should use unsigned comparisons
-        assert(!(varTypeIsSmall(type) && varTypeIsUnsigned(type)) || ((tree->gtFlags & GTF_UNSIGNED) != 0));
+        assert(!(varTypeIsSmall(type) && varTypeIsUnsigned(type)) || tree->IsUnsigned());
         // If op1 is smaller then it cannot be in memory, we're probably missing a cast
         assert((genTypeSize(op1Type) >= genTypeSize(type)) || !op1->isUsedFromMemory());
         // If op2 is smaller then it cannot be in memory, we're probably missing a cast
@@ -6819,7 +6819,7 @@ void CodeGen::genLongToIntCast(GenTree* cast)
 
     genConsumeRegs(src);
 
-    var_types srcType  = ((cast->gtFlags & GTF_UNSIGNED) != 0) ? TYP_ULONG : TYP_LONG;
+    var_types srcType  = cast->IsUnsigned() ? TYP_ULONG : TYP_LONG;
     var_types dstType  = cast->CastToType();
     regNumber loSrcReg = src->gtGetOp1()->GetRegNum();
     regNumber hiSrcReg = src->gtGetOp2()->GetRegNum();

@@ -2539,6 +2539,22 @@ void Assembler::CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCL
                 match = true;
                 break;
             }
+            else if (isParamDirective && TypeFromToken(curTypeConstraint) == mdtTypeSpec && TypeFromToken(tkTypeConstraint) == mdtTypeSpec)
+            {
+                // When isParamDirective is true, typespecs created without the cache due to TyParFixups
+                // may not be unique, so we need to compare the signature bytes as well
+                PCCOR_SIGNATURE pSig1, pSig2;
+                ULONG cSig1, cSig2;
+                if (SUCCEEDED(m_pImporter->GetTypeSpecFromToken(curTypeConstraint, &pSig1, &cSig1)) &&
+                    SUCCEEDED(m_pImporter->GetTypeSpecFromToken(tkTypeConstraint, &pSig2, &cSig2)))
+                {
+                    if (cSig1 == cSig2 && memcmp(pSig1, pSig2, cSig1) == 0)
+                    {
+                        match = true;
+                        break;
+                    }
+                }
+            }
         }
     }
 

@@ -14,7 +14,7 @@
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
-    <XunitShowProgress Condition="'$(FeatureWasmManagedThreads)' == 'true'">true</XunitShowProgress>
+    <XunitShowProgress Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</XunitShowProgress>
     <NoWarn>$(NoWarn);IL2103;IL2025;IL2111;IL2122</NoWarn>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <!-- This test library intentionally references inbox P2Ps as it needs the implementation, instead of the contract.
@@ -58,8 +58,7 @@
 
   <ItemGroup Condition="'$(FeatureWasmManagedThreads)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
-    <!-- WASM-TODO: https://github.com/dotnet/runtime/issues/120216 -->
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs" Condition="'$(RuntimeFlavor)' == 'Mono'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
   </ItemGroup>
 

@@ -411,9 +411,102 @@ namespace ILAssembler.Tests
             Assert.All(diagnostics, d => Assert.Equal(DiagnosticSeverity.Error, d.Severity));
         }
 
-        // Note: Tests for ByteArrayTooShort (ILA0016), ArgumentNotFound (ILA0018), LocalNotFound (ILA0019),
-        // and LabelNotFound (ILA0017) require method body parsing which currently has a pre-existing
-        // bug in EntityRegistry.WriteContentTo. These tests are deferred until those bugs are fixed.
+        [Fact]
+        public void Diagnostic_ByteArrayTooShort()
+        {
+            // A bytearray that's too short for the data type being loaded
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+
+                .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+                {
+                    .method public static float64 TestMethod() cil managed
+                    {
+                        ldc.r8 bytearray (AA BB)
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.ByteArrayTooShort, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Fact]
+        public void Diagnostic_ArgumentNotFound()
+        {
+            // Reference an argument that doesn't exist
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+
+                .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+                {
+                    .method public void TestMethod(int32 x) cil managed
+                    {
+                        ldarg NonExistentArg
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.ArgumentNotFound, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Fact]
+        public void Diagnostic_LocalNotFound()
+        {
+            // Reference a local variable that doesn't exist
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+
+                .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .locals (int32 x)
+                        ldloc NonExistentLocal
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.LocalNotFound, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Fact]
+        public void Diagnostic_LabelNotFound()
+        {
+            // Reference an undefined label in a branch instruction
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+
+                .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        br UndefinedLabel
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.LabelNotFound, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
 
         [Fact]
         public void ClassLayout_PackAndSize()
@@ -608,6 +701,349 @@ namespace ILAssembler.Tests
             Assert.NotEqual(byteRva, floatRva);
         }
 
+        [Fact]
+        public void LanguageDecl_DoesNotThrow()
+        {
+            string source = """
+                .assembly test { }
+                .language "C#" "3.0"
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void LanguageDecl_MultipleParameters_DoesNotThrow()
+        {
+            string source = """
+                .assembly test { }
+                .language "C#" "3.0" "vendor"
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void ExtSourceSpec_LineDirective_DoesNotThrow()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .line 10 "test.cs"
+                        nop
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void ExtSourceSpec_LineWithColumn_DoesNotThrow()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .line 10 : 5 "test.cs"
+                        nop
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void ExtSourceSpec_LineDirectiveHashLine_DoesNotThrow()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        #line 42 "program.cs"
+                        nop
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void ExportHead_ObsoleteSyntax_DoesNotThrow()
+        {
+            string source = """
+                .assembly test { }
+                .export [System.Object]
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void FieldInit_ByteArray_DoesNotThrow()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .field static int32 field1 at 0
+                }
+                .data data1 = bytearray (00 01 02 03)
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void Diagnostic_AbstractMethodNotInAbstractType()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public abstract void AbstractMethod() cil managed
+                    {
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.AbstractMethodNotInAbstractType, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Fact]
+        public void Diagnostic_InvalidPInvokeSignature()
+        {
+            // P/Invoke with no module name triggers InvalidPInvokeSignature
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static pinvokeimpl() void TestMethod() cil managed
+                    {
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.InvalidPInvokeSignature, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Fact]
+        public void Diagnostic_DeprecatedNativeType_Variant()
+        {
+            // Using deprecated VARIANT native type triggers warning
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod(object marshal(variant) arg) cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var warning = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.DeprecatedNativeType, warning.Id);
+            Assert.Equal(DiagnosticSeverity.Warning, warning.Severity);
+        }
+
+        [Fact]
+        public void Diagnostic_DeprecatedCustomMarshaller()
+        {
+            // Using 4-string custom marshaller syntax triggers warning
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod(object marshal(custom("guid", "nativeType", "marshallerType", "cookie")) arg) cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var warning = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.DeprecatedCustomMarshaller, warning.Id);
+            Assert.Equal(DiagnosticSeverity.Warning, warning.Severity);
+        }
+
+        [Fact]
+        public void Diagnostic_UnsupportedSecurityDeclaration()
+        {
+            // Using .permission instead of .permissionset triggers error
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .permission demand [mscorlib]System.Security.Permissions.SecurityPermissionAttribute
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.UnsupportedSecurityDeclaration, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Fact]
+        public void Diagnostic_GenericParameterIndexOutOfRange()
+        {
+            // Referencing generic parameter index that doesn't exist
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod<T>() cil managed
+                    {
+                        .param type [99]
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.GenericParameterIndexOutOfRange, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Fact]
+        public void Diagnostic_ParameterIndexOutOfRange()
+        {
+            // Referencing parameter index that doesn't exist
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void TestMethod(int32 x) cil managed
+                    {
+                        .param [99]
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.ParameterIndexOutOfRange, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Fact]
+        public void Diagnostic_DuplicateMethod()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        ret
+                    }
+                    .method public static void TestMethod() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            var error = diagnostics.FirstOrDefault(d => d.Id == DiagnosticIds.DuplicateMethod);
+            Assert.NotNull(error);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Fact]
+        public void Typedef_ResolvedInTypeContext()
+        {
+            // .typedef className as alias syntax
+            string source = """
+                .assembly test { }
+                .assembly extern mscorlib { }
+                .typedef [mscorlib]System.Object as MyObject
+                .class public auto ansi Test
+                {
+                    .field public class MyObject obj
+                    .method public static void TestMethod() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            // Should compile without errors when typedef is resolved
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void Typedef_TypeBlob_Compiles()
+        {
+            // .typedef type as alias syntax
+            string source = """
+                .assembly test { }
+                .assembly extern mscorlib { }
+                .typedef int32 as MyInt
+                .class public auto ansi Test
+                {
+                    .field public MyInt val
+                    .method public static void TestMethod() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = CompileAndGetDiagnostics(source, new Options());
+            // Typedef type blob resolution should compile
+            Assert.Empty(diagnostics);
+        }
+
         private static PEReader CompileAndGetReader(string source, Options options)
         {
             var sourceText = new SourceText(source, "test.il");
@@ -634,6 +1070,77 @@ namespace ILAssembler.Tests
                 return default;
             }, _ => { Assert.Fail("Expected no resources"); return default; }, options);
             return diagnostics;
+        }
+
+        [Fact]
+        public void PdbGeneration_WithLineAndLanguageDirectives_CreatesValidEmbeddedPdb()
+        {
+            // Use C# language GUID
+            string csharpGuid = "{3F5162F8-07C6-11D3-9053-00C04FA302A1}";
+            string source = $$"""
+                .assembly test { }
+                .language '{{csharpGuid}}'
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .line 10 "test.cs"
+                        nop
+                        .line 15 "test.cs"
+                        nop
+                        .line 20 "test.cs"
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+
+            // Verify debug directory exists with embedded PDB
+            var debugDirectory = pe.ReadDebugDirectory();
+            Assert.NotEmpty(debugDirectory);
+
+            var embeddedPdbEntry = debugDirectory.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
+            Assert.NotEqual(default, embeddedPdbEntry);
+
+            // Read the embedded PDB and verify contents
+            var pdbProvider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry);
+            var pdbReader = pdbProvider.GetMetadataReader();
+
+            // Verify document exists with correct name and language
+            Assert.NotEmpty(pdbReader.Documents);
+            var document = pdbReader.GetDocument(pdbReader.Documents.First());
+            var docName = pdbReader.GetString(document.Name);
+            Assert.Contains("test.cs", docName);
+
+            var languageGuid = pdbReader.GetGuid(document.Language);
+            Assert.Equal(Guid.Parse(csharpGuid), languageGuid);
+
+            // Verify method debug info exists (sequence points were recorded)
+            Assert.NotEmpty(pdbReader.MethodDebugInformation);
+        }
+
+        [Fact]
+        public void PdbGeneration_WithoutLineDirectives_NoPdbGenerated()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        nop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = CompileAndGetReader(source, new Options());
+
+            // Verify no embedded PDB when no debug directives
+            var debugDirectory = pe.ReadDebugDirectory();
+            var embeddedPdbEntry = debugDirectory.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
+            Assert.Equal(default, embeddedPdbEntry);
         }
     }
 }

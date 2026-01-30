@@ -81,6 +81,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(WasmEnableThreads)' != 'true'">
     <TestConsoleAppSourceFiles Include="BrowserDoesNotIncludeConcurrentTypes.cs" />
+    <TestConsoleAppSourceFiles Include="BrowserDoesNotIncludeStackTraceSymbols.cs">
+      <DisabledProperties>DebugSymbols</DisabledProperties>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

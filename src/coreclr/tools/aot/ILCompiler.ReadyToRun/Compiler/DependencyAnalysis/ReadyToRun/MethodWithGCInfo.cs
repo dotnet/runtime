@@ -306,6 +306,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return factory.Format switch
             {
                 ReadyToRunContainerFormat.PE => ObjectNodeSection.ManagedCodeWindowsContentSection,
+                ReadyToRunContainerFormat.Wasm => ObjectNodeSection.WasmCodeSection,
                 _ => ObjectNodeSection.ManagedCodeUnixContentSection
             };
         }

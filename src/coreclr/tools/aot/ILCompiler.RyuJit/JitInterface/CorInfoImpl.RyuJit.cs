@@ -2282,7 +2282,7 @@ namespace Internal.JitInterface
         private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
         {
             MetadataType type = HandleToObject(baseType) as MetadataType;
-            if (type == null)
+            if (type == null || type.HasVariance)
             {
                 return -1;
             }

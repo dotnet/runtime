@@ -322,7 +322,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         {
             if (!tree->gtOverflow())
             {
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
                 return nullptr;
 #else
                 if (!varTypeIsLong(dstType))
@@ -339,7 +339,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     default:
                         unreached();
                 }
-#endif // TARGET_64BIT
+#endif // TARGET_64BIT || TARGET_WASM
             }
             else
             {
@@ -682,6 +682,10 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "AsyncExecutionContext";
         case WellKnownArg::AsyncSynchronizationContext:
             return "AsyncSynchronizationContext";
+        case WellKnownArg::WasmShadowStackPointer:
+            return "WasmShadowStackPointer";
+        case WellKnownArg::WasmPortableEntryPoint:
+            return "WasmPortableEntryPoint";
     }
 
     return "N/A";
@@ -1701,6 +1705,15 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     // in the implementation of fast tail call.
     // *********** END NOTE *********
 
+#if defined(TARGET_WASM)
+    // On WASM, we need to add an initial hidden argument for the stack pointer for managed calls.
+    if (!call->IsUnmanaged())
+    {
+        GenTree* const stackPointer = comp->gtNewLclVarNode(comp->lvaWasmSpArg, TYP_I_IMPL);
+        PushFront(comp, NewCallArg::Primitive(stackPointer).WellKnown(WellKnownArg::WasmShadowStackPointer));
+    }
+#endif // defined(TARGET_WASM)
+
 #if defined(TARGET_ARM)
     // A non-standard calling convention using wrapper delegate invoke is used on ARM, only, for wrapper
     // delegates. It is used for VSD delegate calls where the VSD custom calling convention ABI requires passing
@@ -1824,6 +1837,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell);
         InsertAfterThisOrFirst(comp, indirCellAddrArg);
     }
+#endif
+
+#if defined(TARGET_WASM)
+    // TODO-WASM: pass the portable entry point as the last argument for managed calls
 #endif
 
     ClassifierInfo info;
@@ -8381,7 +8398,7 @@ DONE_MORPHING_CHILDREN:
                 // So we change it into a GT_COMMA as well.
                 JITDUMP("Also bashing [%06d] (a relop) into a GT_COMMA.\n", dspTreeID(op1));
                 op1->ChangeOper(GT_COMMA);
-                op1->gtFlags &= ~GTF_UNSIGNED; // Clear the unsigned flag if it was set on the relop
+                op1->ClearUnsigned(); // Clear the unsigned flag if it was set on the relop
                 op1->gtType = op1->AsOp()->gtOp1->gtType;
 
                 return tree;
@@ -9229,7 +9246,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
                 // ("expr > 0") equivalent to ("expr != 0")
                 // ("expr <= 0") equivalent to ("expr == 0")
                 oper = (oper == GT_LE) ? GT_EQ : GT_NE;
-                cmp->gtFlags &= ~GTF_UNSIGNED;
+                cmp->ClearUnsigned();
             }
             // LE_UN/GT_UN(expr, int/long.MaxValue) => GE/LT(expr, 0).
             // LE/GT(non-negative expr, int/long.MaxValue) => GE/LT(expr, 0)
@@ -9237,7 +9254,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
                      ((genActualType(op1) == TYP_INT) && (op2Value == INT32_MAX)))
             {
                 oper = (oper == GT_LE) ? GT_GE : GT_LT;
-                cmp->gtFlags &= ~GTF_UNSIGNED;
+                cmp->ClearUnsigned();
             }
             // LE_UN/GT_UN(expr, uint.MaxValue) => EQ/NE(RSZ(expr, 32), 0).
             // LE/GT(non-negative expr, uint.MaxValue) => EQ/NE(RSZ(expr, 32), 0).

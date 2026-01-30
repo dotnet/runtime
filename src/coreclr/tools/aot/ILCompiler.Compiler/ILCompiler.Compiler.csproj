@@ -350,6 +350,7 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\SectionWriter.cs" Link="Compiler\ObjectWriter\SectionWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\StringTableBuilder.cs" Link="Compiler\ObjectWriter\StringTableBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\CodeDataLayoutMode.cs" Link="Compiler\ObjectWriter\CodeDataLayoutMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyTrackingLevel.cs" Link="Compiler\DependencyTrackingLevel.cs" />
     <Compile Include="..\..\Common\Compiler\DevirtualizationManager.cs" Link="Compiler\DevirtualizationManager.cs" />
     <Compile Include="..\..\Common\Compiler\FeatureSettings.cs" Link="Compiler\FeatureSettings.cs" />
