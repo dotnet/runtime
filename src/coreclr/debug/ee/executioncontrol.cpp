@@ -14,6 +14,40 @@
 
 #ifdef FEATURE_INTERPRETER
 #include "../../interpreter/intops.h"
+
+// TODO: Remove, this is just for pretty printing opcodes in logging.
+// Generate local copy of interpreter opcode length table for use in debugger.
+// This avoids linker dependency on the interpreter module.
+static const uint8_t s_interpOpLen[] = {
+#define OPDEF(a,b,c,d,e,f) c,
+#include "../../interpreter/inc/intops.def"
+#undef OPDEF
+};
+
+// Generate local opcode name table (same pattern as intops.cpp)
+struct InterpOpNameChars
+{
+#define OPDEF(a,b,c,d,e,f) char a[sizeof(b)];
+#include "../../interpreter/inc/intops.def"
+#undef OPDEF
+};
+
+static const InterpOpNameChars s_interpOpNameChars = {
+#define OPDEF(a,b,c,d,e,f) b,
+#include "../../interpreter/inc/intops.def"
+#undef OPDEF
+};
+
+static const uint32_t s_interpOpNameOffsets[] = {
+#define OPDEF(a,b,c,d,e,f) offsetof(InterpOpNameChars, a),
+#include "../../interpreter/inc/intops.def"
+#undef OPDEF
+};
+
+static const char* GetInterpOpName(int op)
+{
+    return ((const char*)&s_interpOpNameChars) + s_interpOpNameOffsets[op];
+}
 #endif
 
 #if !defined(DACCESS_COMPILE)
@@ -38,11 +72,31 @@ bool InterpreterExecutionControl::ApplyPatch(DebuggerControllerPatch* patch)
     LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::ApplyPatch %p at bytecode addr %p\n",
         patch, patch->address));
 
-    patch->opcode = *(int32_t*)patch->address;
-    *(uint32_t*)patch->address = INTOP_BREAKPOINT;
+    // Check if there is already a breakpoint patch at this address
+    uint32_t currentOpcode = *(uint32_t*)patch->address;
+    if (currentOpcode == INTOP_BREAKPOINT || currentOpcode == INTOP_SINGLESTEP)
+    {
+        LOG((LF_CORDB, LL_INFO1000, "InterpreterEC::ApplyPatch Patch already applied at %p\n",
+            patch->address));
+        return false;
+    }
 
-    LOG((LF_CORDB, LL_EVERYTHING, "InterpreterEC::ApplyPatch Breakpoint inserted at %p, saved opcode %x\n",
-        patch->address, patch->opcode));
+    patch->opcode = currentOpcode; // Save original opcode
+
+    // Check if this is a single-step patch by looking at the controller's thread's interpreter SS flag.
+    Thread* pThread = patch->controller->GetThread();
+    if (pThread != NULL && pThread->IsInterpreterSingleStepEnabled())
+    {
+        *(uint32_t*)patch->address = INTOP_SINGLESTEP;
+        LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::ApplyPatch SingleStep inserted at %p, saved opcode 0x%x (%s)\n",
+            patch->address, patch->opcode, GetInterpOpName(patch->opcode)));
+    }
+    else
+    {
+        *(uint32_t*)patch->address = INTOP_BREAKPOINT;
+        LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::ApplyPatch Breakpoint inserted at %p, saved opcode 0x%x (%s)\n",
+            patch->address, patch->opcode, GetInterpOpName(patch->opcode)));
+    }
 
     return true;
 }
@@ -53,8 +107,8 @@ bool InterpreterExecutionControl::UnapplyPatch(DebuggerControllerPatch* patch)
     _ASSERTE(patch->address != NULL);
     _ASSERTE(patch->IsActivated());
 
-    LOG((LF_CORDB, LL_INFO1000, "InterpreterEC::UnapplyPatch %p at bytecode addr %p, replacing with original opcode 0x%x\n",
-        patch, patch->address, patch->opcode));
+    LOG((LF_CORDB, LL_INFO1000, "InterpreterEC::UnapplyPatch %p at bytecode addr %p, replacing with original opcode 0x%x (%s)\n",
+        patch, patch->address, patch->opcode, GetInterpOpName(patch->opcode)));
 
     // Restore the original opcode
     *(uint32_t*)patch->address = (uint32_t)patch->opcode; // Opcodes are stored in uint32_t slots
@@ -95,8 +149,8 @@ BreakpointInfo InterpreterExecutionControl::GetBreakpointInfo(const void* addres
                 }
             }
 
-            LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::GetBreakpointInfo at %p: opcode=0x%x, isStepOut=%d\n",
-                address, info.originalOpcode, info.isStepOut));
+            LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::GetBreakpointInfo at %p: opcode=0x%x (%s), isStepOut=%d\n",
+                address, info.originalOpcode, GetInterpOpName(info.originalOpcode), info.isStepOut));
             return info;
         }
     }
@@ -104,8 +158,8 @@ BreakpointInfo InterpreterExecutionControl::GetBreakpointInfo(const void* addres
     // No patch at this address, read opcode from memory, not a step-out
     info.originalOpcode = (InterpOpcode)(*(const uint32_t*)address);
     info.isStepOut = false;
-    LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::GetBreakpointInfo at %p: no patch, opcode=0x%x\n",
-        address, info.originalOpcode));
+    LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::GetBreakpointInfo at %p: no patch, opcode=0x%x (%s)\n",
+        address, info.originalOpcode, GetInterpOpName(info.originalOpcode)));
     return info;
 }
 #endif // FEATURE_INTERPRETER

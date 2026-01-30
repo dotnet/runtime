@@ -18,6 +18,7 @@
 
 #include "frameinfo.h"
 #include "executioncontrol.h"
+#include "interpreterwalker.h"
 
 /* ------------------------------------------------------------------------- *
  * Forward declarations
