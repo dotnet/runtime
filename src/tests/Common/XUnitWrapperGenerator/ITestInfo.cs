@@ -214,12 +214,12 @@ public sealed class ConditionalTest : ITestInfo
 
         if (platform == Xunit.TestPlatforms.Any)
         {
-            return "false";
+            return "true";
         }
 
         if (platform == 0)
         {
-            return "true";
+            return "false";
         }
 
         if (platform.HasFlag(Xunit.TestPlatforms.Windows))
