@@ -1405,6 +1405,16 @@ void CodeGen::genCall(GenTreeCall* call)
 
     assert(!call->IsTailCall());
 
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
+    {
+        genConsumeReg(arg.GetEarlyNode());
+    }
+
+    for (CallArg& arg : call->gtArgs.LateArgs())
+    {
+        genConsumeReg(arg.GetLateNode());
+    }
+
     genCallInstruction(call);
     genProduceReg(call);
 }
