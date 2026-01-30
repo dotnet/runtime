@@ -7305,8 +7305,6 @@ void emitter::emitDispInsHelp(
                     offs += size;
                 }
 
-                assert(jdsc != NULL);
-
                 if (id->idIsDspReloc())
                 {
                     printf("reloc ");
@@ -7314,8 +7312,8 @@ void emitter::emitDispInsHelp(
                 printf("%s ADDRESS J_M%03u_DS%02u", (id->idIns() == INS_movw) ? "LOW" : "HIGH", emitComp->compMethodID,
                        imm);
 
-                // After the MOVT, dump the table
-                if (id->idIns() == INS_movt)
+                // After the MOVT, dump the table if jdsc is not null (i.e., this is a block address table)
+                if (jdsc != NULL && id->idIns() == INS_movt)
                 {
                     unsigned     cnt = jdsc->dsSize / TARGET_POINTER_SIZE;
                     BasicBlock** bbp = (BasicBlock**)jdsc->dsCont;
