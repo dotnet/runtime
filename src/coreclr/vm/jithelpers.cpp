@@ -373,11 +373,13 @@ HCIMPLEND
 
 // *** This helper corresponds CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE.
 // Returns the address of the pThread field in the ThreadLocalData structure for DirectOnThreadLocalData
+// adjusted by OFFSETOF__CORINFO_Array__data, since all thread static bases are returned as relative to
+// the start of an array object.
 HCIMPL0(void*, JIT_GetDirectOnThreadLocalDataNonGCThreadStaticBase)
 {
     FCALL_CONTRACT;
 
-    return (void*)&(((ThreadLocalData*)&t_ThreadStatics)->pThread);
+    return (void*)((uint8_t*)&(((ThreadLocalData*)&t_ThreadStatics)->pThread) - OFFSETOF__CORINFO_Array__data);
 }
 HCIMPLEND
 
