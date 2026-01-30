@@ -16,6 +16,7 @@ using Internal.TypeSystem;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 using System.Collections.Immutable;
+using ILCompiler.ObjectWriter.WasmInstructions;
 
 namespace ILCompiler.ObjectWriter
 {
