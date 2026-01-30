@@ -465,6 +465,9 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_StackProbe                = 0x111,
 
     READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
+
+    // Helper to get the address of the thread local data structure
+    READYTORUN_HELPER_GetThreadLocalBase        = 0x113,
 };
 
 #include "readytoruninstructionset.h"
