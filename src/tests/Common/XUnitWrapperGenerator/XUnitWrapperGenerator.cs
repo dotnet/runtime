@@ -876,7 +876,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     }
 
                     if (skippedTestModes == Xunit.RuntimeTestModes.Any
-                        && skippedConfigurations == Xunit.RuntimeConfigurations.Any
+                        && skippedConfigurations == Xunit.RuntimeConfiguration.Any
                         && skippedTestPlatforms == Xunit.TestPlatforms.Any)
                     {
                         testInfos = FilterForSkippedRuntime(testInfos, (int)Xunit.TestRuntimes.CoreCLR, options);
