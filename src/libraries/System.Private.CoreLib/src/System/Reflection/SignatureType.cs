@@ -68,7 +68,7 @@ namespace System.Reflection
         public sealed override bool Equals(Type? o) => base.Equals(o);
         public sealed override int GetHashCode() => base.GetHashCode();
 #endif
-        public sealed override Type UnderlyingSystemType => this;  // Equals(Type) depends on this.
+        public override Type UnderlyingSystemType => this;  // Equals(Type) depends on this.
 
         // Naming and diagnostics
         public abstract override string Name { get; }
