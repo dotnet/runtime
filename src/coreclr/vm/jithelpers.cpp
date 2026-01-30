@@ -371,13 +371,13 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex)
 }
 HCIMPLEND
 
-// *** This helper corresponds CORINFO_HELP_READYTORUN_THREADLOCALBASE.
-// Returns the address of the thread local data structure (t_ThreadStatics)
-HCIMPL0(void*, JIT_GetThreadLocalBase)
+// *** This helper corresponds CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE.
+// Returns the address of the pThread field in the ThreadLocalData structure for DirectOnThreadLocalData
+HCIMPL0(void*, JIT_GetDirectOnThreadLocalDataNonGCThreadStaticBase)
 {
     FCALL_CONTRACT;
 
-    return (void*)&t_ThreadStatics;
+    return (void*)&(((ThreadLocalData*)&t_ThreadStatics)->pThread);
 }
 HCIMPLEND
 

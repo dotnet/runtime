@@ -1268,11 +1268,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GetCurrentManagedThreadId;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADLOCALBASE:
-                    // This helper returns the address of the thread local data structure directly
-                    id = ReadyToRunHelper.GetThreadLocalBase;
-                    break;
-
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
                     id = ReadyToRunHelper.ReversePInvokeEnter;
                     break;
