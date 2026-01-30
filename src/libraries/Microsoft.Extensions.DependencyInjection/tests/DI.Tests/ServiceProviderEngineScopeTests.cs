@@ -84,12 +84,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Assert.All(disposables, disposable => Assert.True(disposable.IsDisposed));
         }
 
-        [Fact]
-        public async Task DisposeAsync_ServiceThrows_DisposesAllAndThrows()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DisposeAsync_ServiceThrows_DisposesAllAndThrows(bool synchronous)
         {
             var services = new ServiceCollection();
-            services.AddKeyedTransient("throws", (_, _) => new TestDisposable(true));
-            services.AddKeyedTransient("doesnotthrow", (_, _) => new TestDisposable(false));
+            services.AddKeyedTransient("throws", (_, _) => new TestDisposable(true, synchronous));
+            services.AddKeyedTransient("doesnotthrow", (_, _) => new TestDisposable(false, synchronous));
 
             var scope = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>().CreateScope().ServiceProvider;
 
@@ -104,12 +106,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Assert.All(disposables, disposable => Assert.True(disposable.IsDisposed));
         }
 
-        [Fact]
-        public async Task DisposeAsync_TwoServicesThrows_DisposesAllAndThrowsAggregateException()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DisposeAsync_TwoServicesThrows_DisposesAllAndThrowsAggregateException(bool synchronous)
         {
             var services = new ServiceCollection();
-            services.AddKeyedTransient("throws", (_, _) => new TestDisposable(true));
-            services.AddKeyedTransient("doesnotthrow", (_, _) => new TestDisposable(false));
+            services.AddKeyedTransient("throws", (_, _) => new TestDisposable(true, synchronous));
+            services.AddKeyedTransient("doesnotthrow", (_, _) => new TestDisposable(false, synchronous));
 
             var scope = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>().CreateScope().ServiceProvider;
 
@@ -132,12 +136,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             public const string ErrorMessage = "Dispose failed.";
 
             private readonly bool _throwsOnDispose;
+            private readonly bool _synchronous;
 
             public bool IsDisposed { get; private set; }
 
-            public TestDisposable(bool throwsOnDispose)
+            public TestDisposable(bool throwsOnDispose = false, bool synchronous = false)
             {
                 _throwsOnDispose = throwsOnDispose;
+                _synchronous = synchronous;
             }
 
             public void Dispose()
@@ -152,8 +158,19 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             public ValueTask DisposeAsync()
             {
-                Dispose();
-                return default;
+                if (_synchronous)
+                {
+                    Dispose();
+                    return default;
+                }
+
+                return new ValueTask(DisposeAsyncInternal());
+
+                async Task DisposeAsyncInternal()
+                {
+                    await Task.Delay(100);
+                    Dispose();
+                }
             }
         }
     }
