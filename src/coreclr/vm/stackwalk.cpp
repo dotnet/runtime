@@ -2657,6 +2657,47 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
     // if we have unwound to a native stack frame, stop and set the frame state accordingly
     if (!m_crawl.isFrameless)
     {
+#ifdef FEATURE_INTERPRETER
+        // DummyCallerIP is a synthetic marker indicating we've finished walking all
+        // InterpMethodContextFrames belonging to an InterpreterFrame. This is NOT necessarily
+        // a real native transition - the actual caller could be managed or native code.
+        // Check the InterpreterFrame to determine if the real caller is managed or native.
+        if (GetControlPC(m_crawl.pRD) == (PCODE)InterpreterFrame::DummyCallerIP)
+        {
+            _ASSERTE(m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
+            PTR_InterpreterFrame pInterpreterFrame = (PTR_InterpreterFrame)m_crawl.pFrame;
+            PCODE returnAddress = pInterpreterFrame->GetReturnAddress();
+
+            if (returnAddress != 0)
+            {
+                // If returnAddress is non-zero and points to managed code, the real caller is managed.
+                // Don't report NATIVE_MARKER - let ProcessCurrentFrame() handle the interpreter-to-managed
+                // transition by processing the InterpreterFrame and unwinding to its managed caller.
+                if (ExecutionManager::IsManagedCode(returnAddress))
+                {
+                    return;
+                }
+
+                // Interpreted code was called by a native caller, e.g. CallDescrWorker
+                _ASSERTE(dac_cast<TADDR>(m_crawl.pFrame) == GetFirstArgReg(m_crawl.pRD->pCurrentContext));
+                SetIP(m_crawl.pRD->pCurrentContext, m_interpExecMethodIP);
+                SetSP(m_crawl.pRD->pCurrentContext, m_interpExecMethodSP);
+                SetFP(m_crawl.pRD->pCurrentContext, m_interpExecMethodFP);
+                SetFirstArgReg(m_crawl.pRD->pCurrentContext, m_interpExecMethodFirstArgReg);
+    #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+                m_crawl.pRD->SSP = m_interpExecMethodSSP;
+    #endif
+                SyncRegDisplayToCurrentContext(m_crawl.pRD);
+
+                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
+                m_crawl.GotoNextFrame();
+            }
+            // Else: returnAddress == 0 (interpreted code was called by InterpreterCodeManager::CallFunclet)
+
+            // Fall through to set NATIVE_MARKER for real native transition
+        }
+#endif // FEATURE_INTERPRETER
+
         m_frameState = SFITER_NATIVE_MARKER_FRAME;
         m_crawl.isNativeMarker = true;
     }

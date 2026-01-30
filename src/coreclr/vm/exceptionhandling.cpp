@@ -3967,45 +3967,6 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
 
     isNativeTransition = (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME);
 
-#ifdef FEATURE_INTERPRETER
-    bool nativeTransitionFrameIsNextFrame;
-    nativeTransitionFrameIsNextFrame = false;
-
-    if (isNativeTransition &&
-        (GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext) == InterpreterFrame::DummyCallerIP))
-    {
-        _ASSERTE(pThis->m_crawl.GetFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
-        InterpreterFrame *pInterpreterFrame = (InterpreterFrame *)pThis->m_crawl.GetFrame();
-        // If the GetReturnAddress returns 0, it means the caller is InterpreterCodeManager::CallFunclet.
-        // We don't have any TransitionFrame to update the regdisplay from in that case.
-        PCODE returnAddress = pInterpreterFrame->GetReturnAddress();
-        if (returnAddress != 0)
-        {
-            // The callerIP is InterpreterFrame::DummyCallerIP when we are going to unwind from the first interpreted frame belonging to an InterpreterFrame.
-            // That means it is at a transition where non-interpreted code called interpreted one.
-            // Move the stack frame iterator to the InterpreterFrame and extract the IP of the real caller of the interpreted code.
-            retVal = pThis->Next();
-            _ASSERTE(retVal != SWA_FAILED);
-            _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION);
-            _ASSERTE(pThis->m_crawl.GetFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
-            if (ExecutionManager::IsManagedCode(returnAddress))
-            {
-                // The caller of the interpreted code is managed code. Advance the stack frame iterator to that frame.
-                retVal = pThis->Next();
-                _ASSERTE(retVal != SWA_FAILED);
-                _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD);
-                isNativeTransition = false;
-            }
-            else
-            {
-                // The caller is native code, so we can update the regdisplay to point to it.
-                pInterpreterFrame->UpdateRegDisplay(pThis->m_crawl.GetRegisterSet(), /* updateFloats */ true);
-                nativeTransitionFrameIsNextFrame = true;
-            }
-        }
-    }
-#endif // FEATURE_INTERPRETER
-
     // Check for reverse pinvoke or CallDescrWorkerInternal.
     if (isNativeTransition)
     {
@@ -4062,14 +4023,6 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
         if (isPropagatingToNativeCode)
         {
             pFrame = pThis->m_crawl.GetFrame();
-#ifdef FEATURE_INTERPRETER
-            if (nativeTransitionFrameIsNextFrame)
-            {
-                // Skip the InterpreterFrame that we determined earlier is NOT the frame we consider part of the native transition.
-                _ASSERTE(pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
-                pFrame = pFrame->PtrNextFrame();
-            }
-#endif
 
             // Check if there are any further managed frames on the stack or a catch for all exceptions in native code (marked by
             // DebuggerU2MCatchHandlerFrame with CatchesAllExceptions() returning true).
