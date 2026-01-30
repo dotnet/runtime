@@ -15,9 +15,9 @@ namespace System.Numerics.Tests
         {
             using (new ThreadCultureChange(new CultureInfo("uk-UA")))
             {
-                // Test UTF-8 parsing with trailing spaces and AllowThousands
+                // Test UTF-8 parsing with trailing spaces
                 // Ukrainian culture uses NBSP (0xA0) as NumberGroupSeparator
-                // The parser should accept regular space (0x20) as equivalent
+                // When AllowTrailingWhite is set, trailing spaces should be accepted
                 string testNumber = "123 ";
                 byte[] utf8Bytes = Encoding.UTF8.GetBytes(testNumber);
 
