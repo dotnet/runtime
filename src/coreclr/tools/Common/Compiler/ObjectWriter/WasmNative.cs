@@ -223,16 +223,16 @@ namespace ILCompiler.ObjectWriter
 
     class WasmInstructionGroup : IWasmEncodable
     {
-        readonly WasmExpr[] WasmExprs;
+        readonly WasmExpr[] _wasmExprs;
         public WasmInstructionGroup(WasmExpr[] wasmExprs)
         {
-            WasmExprs = wasmExprs;
+            _wasmExprs = wasmExprs;
         }
 
         public int Encode(Span<byte> buffer)
         {
             int pos = 0;
-            foreach (var expr in WasmExprs)
+            foreach (var expr in _wasmExprs)
             {
                 pos += expr.Encode(buffer.Slice(pos));
             }
@@ -243,7 +243,7 @@ namespace ILCompiler.ObjectWriter
         public int EncodeSize()
         {
             int size = 0;
-            foreach (var expr in WasmExprs)
+            foreach (var expr in _wasmExprs)
             {
                 size += expr.EncodeSize();
             }
@@ -350,12 +350,12 @@ namespace ILCompiler.ObjectWriter
 
         // base class defaults are sufficient as the base class encodes just the opcode
     }
+
     public abstract class WasmImportType : IWasmEncodable
     {
         public abstract int Encode(Span<byte> buffer);
         public abstract int EncodeSize();
     }
-
 
     public enum WasmExternalKind : byte
     {
@@ -363,7 +363,8 @@ namespace ILCompiler.ObjectWriter
         Table = 0x01,
         Memory = 0x02,
         Global = 0x03,
-        Tag = 0x04
+        Tag = 0x04,
+        Count = 0x05 // Not actually part of the spec; used for counting kinds
     }
 
     public class WasmGlobalType : WasmImportType
@@ -401,7 +402,7 @@ namespace ILCompiler.ObjectWriter
 
         public WasmMemoryType(WasmLimitType limitType, uint min, uint? max = null)
         {
-            if (LimitType == WasmLimitType.HasMinAndMax && !Max.HasValue)
+            if (limitType == WasmLimitType.HasMinAndMax && !max.HasValue)
             {
                 throw new ArgumentException("Max must be provided when LimitType is HasMinAndMax");
             }
@@ -423,7 +424,15 @@ namespace ILCompiler.ObjectWriter
             return pos;
         }
 
-        public override int EncodeSize() => 2;
+        public override int EncodeSize()
+        {
+            uint size = 1 + DwarfHelper.SizeOfULEB128(Min);
+            if (LimitType == WasmLimitType.HasMinAndMax)
+            {
+                size += DwarfHelper.SizeOfULEB128(Max!.Value);
+            }
+            return (int)size;
+        }
     }
 
     public class WasmImport : IWasmEncodable
@@ -431,14 +440,16 @@ namespace ILCompiler.ObjectWriter
         public string Module;
         public string Name;
         public WasmExternalKind Kind;
+        public int? Index;
         WasmImportType Import;
 
-        public WasmImport(string module, string name, WasmExternalKind kind, WasmImportType import)
+        public WasmImport(string module, string name, WasmExternalKind kind, WasmImportType import, int? index = null)
         {
             Module = module;
             Name = name;
             Kind = kind;
             Import = import;
+            Index = index;
         }
 
         public int Encode(Span<byte> buffer) => Import.Encode(buffer);

@@ -110,9 +110,10 @@ namespace ILCompiler.ObjectWriter
             writer.WriteUtf8WithLength(import.Name);
             writer.WriteByte((byte)import.Kind);
 
-            int size = import.EncodeSize();
-            import.Encode(writer.Buffer.GetSpan(size));
-            writer.Buffer.Advance((int)size);
+            int encodeSize = import.EncodeSize();
+            int bytesWritten = import.Encode(writer.Buffer.GetSpan(encodeSize));
+            Debug.Assert(bytesWritten == encodeSize);
+            writer.Buffer.Advance((int)bytesWritten);
 
             _numImports++;
             return writer;
@@ -184,10 +185,10 @@ namespace ILCompiler.ObjectWriter
 
         private WasmDataSection CreateCombinedDataSection()
         {
-            WasmInstructionGroup GetR2StartOffset(int offset)
+            WasmInstructionGroup GetR2RStartOffset(int offset)
             {
                 return new WasmInstructionGroup([
-                    Global.Get(1), // __r2r_start
+                    Global.Get(R2RStartGlobalIndex),
                     I32.Const(offset),
                     I32.Add,
                 ]);
@@ -200,7 +201,7 @@ namespace ILCompiler.ObjectWriter
             {
                 Debug.Assert(wasmSection.Type == WasmSectionType.Data);
                 WasmDataSegment segment = new WasmDataSegment(wasmSection.Stream, wasmSection.Name, WasmDataSectionType.Active,
-                    GetR2StartOffset(offset));
+                    GetR2RStartOffset(offset));
                 segments.Add(segment);
                 offset += segment.ContentSize;
             }
@@ -261,7 +262,7 @@ namespace ILCompiler.ObjectWriter
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.MemorySection);
             writer.WriteByte(0x01); // number of memories
             writer.WriteByte(0x00); // memory limits: flags (0 = only minimum)
-            writer.WriteULEB128(numPages); // memory limits: initial size in pages (64kb each)
+            writer.WriteULEB128(numPages); // memory limits: initial encodeSize in pages (64kb each)
         }
 
         private protected override void EmitSectionsAndLayout()
@@ -277,7 +278,7 @@ namespace ILCompiler.ObjectWriter
             writer.WriteByte(0x70); // element type: funcref
             writer.WriteByte(0x01); // table limits: flags (1 = has maximum)
             writer.WriteULEB128((ulong)0);
-            writer.WriteULEB128((ulong)_methodCount); // table limits: initial size
+            writer.WriteULEB128((ulong)_methodCount); // table limits: initial encodeSize
         }
 
         private void PrependCount(WasmSection section, int count)
@@ -318,24 +319,38 @@ namespace ILCompiler.ObjectWriter
             // This is a no-op for now under Wasm
         }
 
+        const int StackPointerGlobalIndex = 0;
+        const int R2RStartGlobalIndex = 1;
+
         private WasmImport[] _defaultImports = new[]
         {
             null, // placeholder for memory, which is set up dynamically in WriteImports()
-            new WasmImport("env", "__stack_pointer", WasmExternalKind.Global, new WasmGlobalType(WasmValueType.I32, WasmMutabilityType.Mut)),
-            new WasmImport("env", "__r2r_start", WasmExternalKind.Global, new WasmGlobalType(WasmValueType.I32, WasmMutabilityType.Const)),
+            new WasmImport("env", "__stack_pointer", WasmExternalKind.Global, new WasmGlobalType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
+            new WasmImport("env", "__r2r_start", WasmExternalKind.Global, new WasmGlobalType(WasmValueType.I32, WasmMutabilityType.Const), index: R2RStartGlobalIndex),
         };
 
         private void WriteImports()
         {
-            // Calculate the required memory size based on the combined data section size
+            // Calculate the required memory encodeSize based on the combined data section encodeSize
             ulong contentSize = (ulong)SectionByName(WasmObjectNodeSection.CombinedDataSection.Name).ContentSize;
-            ulong numPages = (contentSize + (1<<16) - 1) >> 16;
+            ulong dataPages = (contentSize + (1<<16) - 1) >> 16;
+            int numPages = int.Max((int)dataPages, 1); // Ensure at least one page is allocated for the minimum
 
             _defaultImports[0] = new WasmImport("env", "memory", WasmExternalKind.Memory,
-                new WasmMemoryType(0x00, (uint)numPages)); // memory limits: flags (0 = only minimum)
+                new WasmMemoryType(WasmLimitType.HasMin, (uint)numPages)); // memory limits: flags (0 = only minimum)
 
+            int[] assignedImportIndices = new int[(int)WasmExternalKind.Count];
             foreach (WasmImport import in _defaultImports)
             {
+                if (import.Index.HasValue)
+                {
+                    int assigned = assignedImportIndices[(int)import.Kind];
+                    if (assigned != import.Index.Value)
+                    {
+                        throw new InvalidOperationException($"Import {import.Module}.{import.Name} of kind {import.Kind} assigned index {assigned}, needs {import.Index.Value}");
+                    }
+                }
+                assignedImportIndices[(int)import.Kind]++;
                 WriteImport(import);
             }
         }
@@ -520,7 +535,7 @@ namespace ILCompiler.ObjectWriter
 
             // Section header consists of:
             // 1 byte: section type
-            // ULEB128: size of section
+            // ULEB128: encodeSize of section
             headerBuffer[0] = (byte)Type;
             DwarfHelper.WriteULEB128(headerBuffer.Slice(1), contentSize);
 
@@ -621,7 +636,7 @@ namespace ILCompiler.ObjectWriter
             _initExpr = initExpr;
         }
 
-        // The header size for a data segment consists of just a byte indicating the type of data segment.
+        // The header encodeSize for a data segment consists of just a byte indicating the type of data segment.
         public int HeaderSize
         {
             get
@@ -630,11 +645,11 @@ namespace ILCompiler.ObjectWriter
                 {
                     WasmDataSectionType.Active =>
                         (int)DwarfHelper.SizeOfULEB128((ulong)_type) + // type indicator
-                        _initExpr.EncodeSize() + // init expr size
-                        (int)DwarfHelper.SizeOfULEB128((ulong)_stream.Length), // size of data length
+                        _initExpr.EncodeSize() + // init expr encodeSize
+                        (int)DwarfHelper.SizeOfULEB128((ulong)_stream.Length), // encodeSize of data length
                     WasmDataSectionType.Passive => 
                         (int)DwarfHelper.SizeOfULEB128((ulong)_type) + // type indicator
-                        (int)DwarfHelper.SizeOfULEB128((ulong)_stream.Length), // size of data length
+                        (int)DwarfHelper.SizeOfULEB128((ulong)_stream.Length), // encodeSize of data length
                     _ =>
                         throw new NotImplementedException()
                 };
