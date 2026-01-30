@@ -1,0 +1,40 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:33729/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Xml.Linq.xNodeReader.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Xml.Linq.xNodeReader.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Xml.Linq.xNodeReader.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Xml.Linq.xNodeReader.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Xml.Linq.xNodeReader.Tests.dll (found 20 of 21 test cases)
+Starting:    System.Xml.Linq.xNodeReader.Tests.dll
+[STRT] CoreXml.Test.XLinq.XNodeReaderFunctionalTests+XNodeReaderTests+TCReadEndElement.TestReadEndElementOnEndElementWithNamespace
+[STRT] CoreXml.Test.XLinq.XNodeReaderFunctionalTests+XNodeReaderTests+TCReadEndElement.TestReadEndElementOnEndElementWithoutNamespace
+[STRT] CoreXml.Test.XLinq.FunctionalTests_XNodeReaderTests_TCRegressions1.EnsureReadToFollowingMovesToAttributeAndNotToDtd
+[STRT] CoreXml.Test.XLinq.FunctionalTests_XNodeReaderTests_TCRegressions1.IncorrentBehaviorOfReadAttributeValue
+[STRT] CoreXml.Test.XLinq.XNodeReaderFunctionalTests+XNodeReaderTests+TCReadOuterXml.ReadOuterXmlOnXmlDeclarationAttributes
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnNegativeIndicesOnXNodes
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeThrowsOnAttributeCountPlusOne
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeStringReturnsNullInNonInteractiveMode
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnAttributeCountPlusOne
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeThrowsOnIndexMinusOne
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnNonInteractiveMode
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnIndexMinusTwo
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnIndexMinusOne
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeThrowsOnIndexMinusTwo
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeThrowsOnAttributeCount
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeThrowsOnOutOfRangeUpperBound
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnOutOfRangeUpperBound
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeThrowsOnNegativeIndicesOnXNodes
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeIntThrowsInNonInteractiveMode
+[STRT] System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnAttributeCount
+Finished:    System.Xml.Linq.xNodeReader.Tests.dll
+Finished uploading 6563 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 20 Passed: 20 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Xml.Linq.xNodeReader.Tests.dll after 0.017233333333333333 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

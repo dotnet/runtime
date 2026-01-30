@@ -2394,6 +2394,7 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void TestOptionsWithStructs()
         {
             var dic = new Dictionary<string, string>
@@ -2422,6 +2423,7 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void TestOptionsWithUnsupportedStructs()
         {
             var dic = new Dictionary<string, string>

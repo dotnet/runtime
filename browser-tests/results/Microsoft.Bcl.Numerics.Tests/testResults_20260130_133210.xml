@@ -1,0 +1,890 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="Microsoft.Bcl.Numerics.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="12:32:15" total="882" passed="882" failed="0" skipped="0" time="1.263" errors="0">
+    <errors />
+    <collection total="882" passed="882" failed="0" skipped="0" name="Test collection for System.Tests.MathFTests" time="0.036">
+      <test name="System.Tests.MathFTests.Max(x: -∞, y: ∞, expectedResult: ∞)" type="System.Tests.MathFTests" method="Max" time="0.0033" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: -3, y: 2, expectedResult: 2)" type="System.Tests.MathFTests" method="Max" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: 2, y: -3, expectedResult: 2)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: 0, y: -0, expectedResult: 0)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: -0, y: 0, expectedResult: 0)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: NaN, y: -∞, expectedResult: NaN)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: NaN, y: ∞, expectedResult: NaN)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: 3, y: -2, expectedResult: 3)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: -∞, y: NaN, expectedResult: NaN)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: 1, y: NaN, expectedResult: NaN)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: NaN, y: 1, expectedResult: NaN)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: NaN, y: NaN, expectedResult: NaN)" type="System.Tests.MathFTests" method="Max" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: 3.40282347E+38, y: -3.40282347E+38, expectedResult: 3.40282347E+38)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: -3.40282347E+38, y: 3.40282347E+38, expectedResult: 3.40282347E+38)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: ∞, y: -∞, expectedResult: ∞)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: ∞, y: NaN, expectedResult: NaN)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Max(x: -2, y: 3, expectedResult: 3)" type="System.Tests.MathFTests" method="Max" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Asin" time="0.0002" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 0.312961787, expectedResult: 0.318309873, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0.0002999" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 0.410781294, expectedResult: 0.423310816, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 0.420770496, expectedResult: 0.434294492, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 0.594480753, expectedResult: 0.636619747, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 0.638961256, expectedResult: 0.693147182, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 0.649636924, expectedResult: 0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 0.707106769, expectedResult: 0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 0.743980348, expectedResult: 0.839007556, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 0.841470957, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Asin" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 0.903719485, expectedResult: 1.12837923, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 0.987765968, expectedResult: 1.41421354, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 0.991806269, expectedResult: 1.44269502, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 1, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 1.41421354, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 2.71828175, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 0, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: 3.14159274, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -0.312961787, expectedResult: -0.318309873, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -3.14159274, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -2.71828175, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -1.41421354, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -1, expectedResult: -1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -0.991806269, expectedResult: -1.44269502, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -0.987765968, expectedResult: -1.41421354, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -0.903719485, expectedResult: -1.12837923, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -0.841470957, expectedResult: -1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -0.743980348, expectedResult: -0.839007556, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -0.707106769, expectedResult: -0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -0.649636924, expectedResult: -0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -0.638961256, expectedResult: -0.693147182, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -0.594480753, expectedResult: -0.636619747, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -0.420770496, expectedResult: -0.434294492, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -0.410781294, expectedResult: -0.423310816, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: -0, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Asin(value: ∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Asin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -∞, expectedResult: -∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0.0002999" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 2.71828175, expectedResult: 3, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0.0004" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 2.30258512, expectedResult: 3, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 1.57079637, expectedResult: 2, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 1.44269502, expectedResult: 2, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 1.41421354, expectedResult: 2, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 1.12837923, expectedResult: 2, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 1, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 0.785398185, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 0.707106769, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 0.693147182, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 0.636619747, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 0.434294492, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 0.318309873, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 0, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: 3.14159274, expectedResult: 4, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -0.318309873, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -0.434294492, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -0.636619747, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -0.693147182, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -0.707106769, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -0.785398185, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -1, expectedResult: -1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -1.12837923, expectedResult: -1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -1.41421354, expectedResult: -1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -1.44269502, expectedResult: -1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -1.57079637, expectedResult: -1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -2.30258512, expectedResult: -2, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -2.71828175, expectedResult: -2, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -3.14159274, expectedResult: -3, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: -0, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Ceiling(value: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Ceiling" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sin" time="0.0002999" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 2.71828175, expectedResult: 0.410781294, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0.0002999" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 2.30258512, expectedResult: 0.743980348, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 1.57079637, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sin" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 1.44269502, expectedResult: 0.991806269, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 1.41421354, expectedResult: 0.987765968, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 1.12837923, expectedResult: 0.903719485, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 1, expectedResult: 0.841470957, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 0.785398185, expectedResult: 0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 0.707106769, expectedResult: 0.649636924, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 0.693147182, expectedResult: 0.638961256, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 0.636619747, expectedResult: 0.594480753, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 0.434294492, expectedResult: 0.420770496, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 0.318309873, expectedResult: 0.312961787, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 0, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: 3.14159274, expectedResult: 0, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sin" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -0.318309873, expectedResult: -0.312961787, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -0.434294492, expectedResult: -0.420770496, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -0.636619747, expectedResult: -0.594480753, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -0.693147182, expectedResult: -0.638961256, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -0.707106769, expectedResult: -0.649636924, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -0.785398185, expectedResult: -0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -1, expectedResult: -0.841470957, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -1.12837923, expectedResult: -0.903719485, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -1.41421354, expectedResult: -0.987765968, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -1.44269502, expectedResult: -0.991806269, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -1.57079637, expectedResult: -1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -2.30258512, expectedResult: -0.743980348, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -2.71828175, expectedResult: -0.410781294, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -3.14159274, expectedResult: -0, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: -0, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sin(value: ∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sin" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -∞, expectedResult: -1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: 6.33411932, expectedResult: 1.41421354, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan" time="0.0002999" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: 2.1108768, expectedResult: 1.12837923, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: 1.55740774, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: 1.11340714, expectedResult: 0.839007556, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: 1, expectedResult: 0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: 0.854510427, expectedResult: 0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: 0.830640852, expectedResult: 0.693147182, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: 0.739302933, expectedResult: 0.636619747, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: 0.46382907, expectedResult: 0.434294492, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: 0.450549543, expectedResult: 0.423310816, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: 0.329514742, expectedResult: 0.318309873, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: 0, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: 7.76357555, expectedResult: 1.44269502, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -0.329514742, expectedResult: -0.318309873, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -0.450549543, expectedResult: -0.423310816, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -0.46382907, expectedResult: -0.434294492, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -0.739302933, expectedResult: -0.636619747, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -0.830640852, expectedResult: -0.693147182, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -0.854510427, expectedResult: -0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -1, expectedResult: -0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -1.11340714, expectedResult: -0.839007556, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -1.55740774, expectedResult: -1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -2.1108768, expectedResult: -1.12837923, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -6.33411932, expectedResult: -1.41421354, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -7.76357555, expectedResult: -1.44269502, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: -0, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan(value: ∞, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Cos" time="0.0002999" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 2.71828175, expectedResult: -0.911733925, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0.0003999" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 2.30258512, expectedResult: -0.668201506, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 1.57079637, expectedResult: 0, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 1.44269502, expectedResult: 0.127751216, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 1.41421354, expectedResult: 0.155943692, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 1.12837923, expectedResult: 0.428125143, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 1, expectedResult: 0.540302277, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 0.785398185, expectedResult: 0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 0.707106769, expectedResult: 0.760244608, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 0.693147182, expectedResult: 0.769238889, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 0.636619747, expectedResult: 0.804109812, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 0.434294492, expectedResult: 0.907167137, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 0.318309873, expectedResult: 0.949765742, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: 3.14159274, expectedResult: -1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -0.318309873, expectedResult: 0.949765742, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -0.434294492, expectedResult: 0.907167137, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -0.636619747, expectedResult: 0.804109812, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -0.693147182, expectedResult: 0.769238889, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -0.707106769, expectedResult: 0.760244608, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -0.785398185, expectedResult: 0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -1, expectedResult: 0.540302277, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -1.12837923, expectedResult: 0.428125143, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -1.41421354, expectedResult: 0.155943692, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -1.44269502, expectedResult: 0.127751216, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -1.57079637, expectedResult: 0, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -2.30258512, expectedResult: -0.668201506, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -2.71828175, expectedResult: -0.911733925, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -3.14159274, expectedResult: -1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cos" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: -0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cos(value: ∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Cos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits_ByMidpointRounding(mode: ToEven)" type="System.Tests.MathFTests" method="Round_Digits_ByMidpointRounding" time="0.0021" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits_ByMidpointRounding(mode: AwayFromZero)" type="System.Tests.MathFTests" method="Round_Digits_ByMidpointRounding" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Truncate" type="System.Tests.MathFTests" method="Truncate" time="0.0001999" result="Pass" />
+      <test name="System.Tests.MathFTests.IEEERemainder" type="System.Tests.MathFTests" method="IEEERemainder" time="0.0007" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits(x: NaN, expected: NaN, digits: 3, mode: ToEven)" type="System.Tests.MathFTests" method="Round_Digits" time="0.0002" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits(x: ∞, expected: ∞, digits: 3, mode: ToEven)" type="System.Tests.MathFTests" method="Round_Digits" time="0.0005" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits(x: -∞, expected: -∞, digits: 3, mode: ToEven)" type="System.Tests.MathFTests" method="Round_Digits" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits(x: 0, expected: 0, digits: 3, mode: ToEven)" type="System.Tests.MathFTests" method="Round_Digits" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits(x: 3.42156005, expected: 3.42199993, digits: 3, mode: ToEven)" type="System.Tests.MathFTests" method="Round_Digits" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits(x: -3.42156005, expected: -3.42199993, digits: 3, mode: ToEven)" type="System.Tests.MathFTests" method="Round_Digits" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits(x: NaN, expected: NaN, digits: 3, mode: AwayFromZero)" type="System.Tests.MathFTests" method="Round_Digits" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits(x: ∞, expected: ∞, digits: 3, mode: AwayFromZero)" type="System.Tests.MathFTests" method="Round_Digits" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits(x: -∞, expected: -∞, digits: 3, mode: AwayFromZero)" type="System.Tests.MathFTests" method="Round_Digits" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits(x: 0, expected: 0, digits: 3, mode: AwayFromZero)" type="System.Tests.MathFTests" method="Round_Digits" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits(x: 3.42156005, expected: 3.42199993, digits: 3, mode: AwayFromZero)" type="System.Tests.MathFTests" method="Round_Digits" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_Digits(x: -3.42156005, expected: -3.42199993, digits: 3, mode: AwayFromZero)" type="System.Tests.MathFTests" method="Round_Digits" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pi" type="System.Tests.MathFTests" method="Pi" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 2.71828175, expectedResult: 1.64872122, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sqrt" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 2.30258512, expectedResult: 1.51742709, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 1.57079637, expectedResult: 1.25331414, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 1.44269502, expectedResult: 1.2011224, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 1.41421354, expectedResult: 1.18920708, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 1.12837923, expectedResult: 1.06225193, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sqrt" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 1, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sqrt" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 0.785398185, expectedResult: 0.886226952, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sqrt" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 0.707106769, expectedResult: 0.840896428, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 0.693147182, expectedResult: 0.832554638, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 0.636619747, expectedResult: 0.797884583, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 0.434294492, expectedResult: 0.659010231, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 0.318309873, expectedResult: 0.564189613, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 0, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: 3.14159274, expectedResult: 1.7724539, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -0.318309873, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -0.434294492, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -0.636619747, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -0.693147182, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -0.707106769, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -0.785398185, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -1, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -1.12837923, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -1.41421354, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -1.44269502, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -1.57079637, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -2.30258512, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -2.71828175, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -3.14159274, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: -0, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sqrt(value: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sqrt" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Cosh" time="0.0001999" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 2.71828175, expectedResult: 7.61012506, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 2.30258512, expectedResult: 5.05000019, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 1.57079637, expectedResult: 2.5091784, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 1.44269502, expectedResult: 2.23418808, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 1.41421354, expectedResult: 2.17818356, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 1.12837923, expectedResult: 1.70710015, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 1, expectedResult: 1.54308069, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 0.785398185, expectedResult: 1.32460904, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 0.707106769, expectedResult: 1.26059186, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 0.693147182, expectedResult: 1.25, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 0.636619747, expectedResult: 1.20957947, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 0.434294492, expectedResult: 1.09579742, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 0.318309873, expectedResult: 1.05108976, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: 3.14159274, expectedResult: 11.5919533, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Cosh" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Cosh" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -0.318309873, expectedResult: 1.05108976, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -0.434294492, expectedResult: 1.09579742, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -0.636619747, expectedResult: 1.20957947, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -0.693147182, expectedResult: 1.25, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -0.707106769, expectedResult: 1.26059186, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -0.785398185, expectedResult: 1.32460904, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -1, expectedResult: 1.54308069, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -1.12837923, expectedResult: 1.70710015, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -1.41421354, expectedResult: 2.17818356, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -1.44269502, expectedResult: 2.23418808, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -1.57079637, expectedResult: 2.5091784, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -2.30258512, expectedResult: 5.05000019, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -2.71828175, expectedResult: 7.61012506, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -3.14159274, expectedResult: 11.5919533, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: -0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Cosh(value: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Cosh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Abs" time="0.0001999" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 2.71828175, expectedResult: 2.71828175, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0.0002999" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 2.30258512, expectedResult: 2.30258512, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 1.57079637, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 1.44269502, expectedResult: 1.44269502, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 1.41421354, expectedResult: 1.41421354, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 1.12837923, expectedResult: 1.12837923, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 1, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 0.785398185, expectedResult: 0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 0.707106769, expectedResult: 0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Abs" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 0.693147182, expectedResult: 0.693147182, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 0.636619747, expectedResult: 0.636619747, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 0.434294492, expectedResult: 0.434294492, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 0.318309873, expectedResult: 0.318309873, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 0, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Abs" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: 3.14159274, expectedResult: 3.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -0.318309873, expectedResult: 0.318309873, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -0.434294492, expectedResult: 0.434294492, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -0.636619747, expectedResult: 0.636619747, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -0.693147182, expectedResult: 0.693147182, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -0.707106769, expectedResult: 0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -0.785398185, expectedResult: 0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -1, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -1.12837923, expectedResult: 1.12837923, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -1.41421354, expectedResult: 1.41421354, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -1.44269502, expectedResult: 1.44269502, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -1.57079637, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -2.30258512, expectedResult: 2.30258512, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -2.71828175, expectedResult: 2.71828175, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -3.14159274, expectedResult: 3.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: -0, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Abs(value: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Abs" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: -∞, y: ∞, expectedResult: -∞)" type="System.Tests.MathFTests" method="Min" time="0.0001999" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: -3, y: 2, expectedResult: -3)" type="System.Tests.MathFTests" method="Min" time="0.0004" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: 2, y: -3, expectedResult: -3)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: 0, y: -0, expectedResult: -0)" type="System.Tests.MathFTests" method="Min" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: -0, y: 0, expectedResult: -0)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: NaN, y: -∞, expectedResult: NaN)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: NaN, y: ∞, expectedResult: NaN)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: 3, y: -2, expectedResult: -2)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: -∞, y: NaN, expectedResult: NaN)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: 1, y: NaN, expectedResult: NaN)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: NaN, y: 1, expectedResult: NaN)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: NaN, y: NaN, expectedResult: NaN)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: 3.40282347E+38, y: -3.40282347E+38, expectedResult: -3.40282347E+38)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: -3.40282347E+38, y: 3.40282347E+38, expectedResult: -3.40282347E+38)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: ∞, y: -∞, expectedResult: -∞)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: ∞, y: NaN, expectedResult: NaN)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Min(x: -2, y: 3, expectedResult: -2)" type="System.Tests.MathFTests" method="Min" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: -∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.647721469, expectedResult: -0.434294492, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log" time="0.0002999" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.727377355, expectedResult: -0.318309873, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 1, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 1.37480223, expectedResult: 0.318309873, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 1.54387343, expectedResult: 0.434294492, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 1.89008117, expectedResult: 0.636619747, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 2, expectedResult: 0.693147182, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.529077828, expectedResult: -0.636619747, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 2.02811503, expectedResult: 0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 2.71828175, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 3.09064293, expectedResult: 1.12837923, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 4.11325026, expectedResult: 1.41421354, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 4.23208618, expectedResult: 1.44269502, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 4.81047726, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 10, expectedResult: 2.30258512, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 15.1542625, expectedResult: 2.71828175, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 2.19327998, expectedResult: 0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.5, expectedResult: -0.693147182, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.493068695, expectedResult: -0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.455938131, expectedResult: -0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: -3.14159274, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: -2.71828175, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: -1.41421354, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: -1, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: -0.693147182, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: -0.434294492, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: -0, expectedResult: -∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0, expectedResult: -∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.0432139188, expectedResult: -3.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.065988034, expectedResult: -2.71828175, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.100000001, expectedResult: -2.30258512, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.207879573, expectedResult: -1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.236290082, expectedResult: -1.44269502, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.243116736, expectedResult: -1.41421354, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.323557258, expectedResult: -1.12837923, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 0.36787945, expectedResult: -1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: 23.1406918, expectedResult: 3.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log(value: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 1, expected: 1)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0.0001999" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 0.5, expected: 1)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0.0004" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 1.5, expected: 2)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 2.5, expected: 3)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 3.5, expected: 4)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 0.49999997, expected: 0)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 1.5, expected: 2)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 2.5, expected: 3)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 3.5, expected: 4)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 4.5, expected: 5)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 3.14159274, expected: 3)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 2.71828175, expected: 3)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 1385.45569, expected: 1385)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 3423.43433, expected: 3423)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 535345.5, expected: 535346)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 535345.5, expected: 535346)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 535345.5, expected: 535346)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 535345.375, expected: 535345)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 535345.625, expected: 535346)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: -2.71828175, expected: -3)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 10, expected: 10)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: -10, expected: -10)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: -0, expected: -0)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 0, expected: 0)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: NaN, expected: NaN)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: ∞, expected: ∞)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: -∞, expected: -∞)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: 3.40282347E+38, expected: 3.40282347E+38)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_AwayFromZero_0(value: -3.40282347E+38, expected: -3.40282347E+38)" type="System.Tests.MathFTests" method="Round_AwayFromZero_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: -∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log10" time="0.0002" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.36787945, expectedResult: -0.434294492, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log10" time="0.0002" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.480496377, expectedResult: -0.318309873, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 1, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 2.08118105, expectedResult: 0.318309873, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 2.71828175, expectedResult: 0.434294492, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 4.33131504, expectedResult: 0.636619747, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 4.93340969, expectedResult: 0.693147182, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.230876759, expectedResult: -0.636619747, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 5.0945611, expectedResult: 0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 10, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 13.4393778, expectedResult: 1.12837923, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 25.9545536, expectedResult: 1.41421354, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 27.7137337, expectedResult: 1.44269502, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 37.2217102, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 200.717438, expectedResult: 2.30258512, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 522.735291, expectedResult: 2.71828175, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 6.10095978, expectedResult: 0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.202699572, expectedResult: -0.693147182, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.196287766, expectedResult: -0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log10" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.163908631, expectedResult: -0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: -3.14159274, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: -2.71828175, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log10" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: -1.41421354, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: -1, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: -0.693147182, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: -0.434294492, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: -0, expectedResult: -∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0, expectedResult: -∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.000721784134, expectedResult: -3.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.0019130141, expectedResult: -2.71828175, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.00498212827, expectedResult: -2.30258512, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.0268660411, expectedResult: -1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.0360831916, expectedResult: -1.44269502, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.0385288857, expectedResult: -1.41421354, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.0744082034, expectedResult: -1.12837923, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 0.100000001, expectedResult: -1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: 1385.45569, expectedResult: 3.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Log10(value: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Log10" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -∞, y: -∞, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0004" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 0.693147182, expectedResult: 2, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0.0002999" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 0.707106769, expectedResult: 2.02811503, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 0.785398185, expectedResult: 2.19327998, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 1, expectedResult: 2.71828175, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 1.12837923, expectedResult: 3.09064293, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 1.41421354, expectedResult: 4.11325026, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 0.636619747, expectedResult: 1.89008117, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 1.44269502, expectedResult: 4.23208618, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 2.30258512, expectedResult: 10, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 2.71828175, expectedResult: 15.1542625, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 3.14159274, expectedResult: 23.1406918, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -∞, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -3.14159274, expectedResult: 0.000721784134, allowedVariance: 4.76837181E-10)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 1.57079637, expectedResult: 4.81047726, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -2.71828175, expectedResult: 0.0019130141, allowedVariance: 4.76837148E-09)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 0.434294492, expectedResult: 1.54387343, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -2.30258512, expectedResult: 0.100000001, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -1.57079637, expectedResult: 0.207879573, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -1.44269502, expectedResult: 0.236290082, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -1.41421354, expectedResult: 0.243116736, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -1.12837923, expectedResult: 0.323557258, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -1, expectedResult: 0.36787945, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: 0.318309873, expectedResult: 1.37480223, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -0.785398185, expectedResult: 0.455938131, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -0.693147182, expectedResult: 0.5, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -0.636619747, expectedResult: 0.529077828, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -0.434294492, expectedResult: 0.647721469, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -0.318309873, expectedResult: 0.727377355, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -0.707106769, expectedResult: 0.493068695, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -2.71828175, expectedResult: 0.065988034, allowedVariance: 4.76837165E-08)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -2.30258512, expectedResult: 0.00498212827, allowedVariance: 4.76837148E-09)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -1.44269502, expectedResult: 0.0360831916, allowedVariance: 4.76837165E-08)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 1, expectedResult: 10, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 1.12837923, expectedResult: 13.4393778, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 1.41421354, expectedResult: 25.9545536, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 1.44269502, expectedResult: 27.7137337, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 1.57079637, expectedResult: 37.2217102, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 2.30258512, expectedResult: 200.717438, allowedVariance: 0.000476837158)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 0.785398185, expectedResult: 6.10095978, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 2.71828175, expectedResult: 522.735291, allowedVariance: 0.000476837158)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: ∞, y: -∞, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: ∞, y: -1, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: ∞, y: -0, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: ∞, y: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: ∞, y: 0, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 3.14159274, expectedResult: 1385.45569, allowedVariance: 0.00476837158)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -1.57079637, expectedResult: 0.0268660411, allowedVariance: 4.76837165E-08)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 0.707106769, expectedResult: 5.0945611, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 0.636619747, expectedResult: 4.33131504, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -1.41421354, expectedResult: 0.0385288857, allowedVariance: 4.76837165E-08)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -1.12837923, expectedResult: 0.0744082034, allowedVariance: 4.76837165E-08)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -1, expectedResult: 0.100000001, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -0.785398185, expectedResult: 0.163908631, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -0.707106769, expectedResult: 0.196287766, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -0.693147182, expectedResult: 0.202699572, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 0.693147182, expectedResult: 4.93340969, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -0.636619747, expectedResult: 0.230876759, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -0.318309873, expectedResult: 0.480496377, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 0.318309873, expectedResult: 2.08118105, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: 0.434294492, expectedResult: 2.71828175, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 10, y: -0.434294492, expectedResult: 0.36787945, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -3.14159274, expectedResult: 0.0432139188, allowedVariance: 4.76837165E-08)" type="System.Tests.MathFTests" method="Pow" time="0.0001999" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 2.71828175, y: -∞, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 1, y: ∞, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -2.71828175, y: -1.57079637, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -2.71828175, y: -1, expectedResult: -0.36787945, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -2.71828175, y: -0.785398185, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -2.71828175, y: -0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -2.71828175, y: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -2.71828175, y: 0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -2.71828175, y: -∞, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -2.71828175, y: 0.785398185, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -2.71828175, y: 1.57079637, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -2.71828175, y: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -1, y: -1, expectedResult: -1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -1, y: -0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -1, y: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -1, y: 0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -2.71828175, y: 1, expectedResult: -2.71828175, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -1, y: 1, expectedResult: -1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -10, y: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -10, y: 1, expectedResult: -10, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -∞, y: -1, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -∞, y: -0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -∞, y: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -∞, y: 0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -∞, y: 1, expectedResult: -∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -∞, y: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -10, y: 1.57079637, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -10, y: -∞, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -10, y: -1, expectedResult: -0.100000001, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -10, y: -0.785398185, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -10, y: -0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -10, y: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -10, y: 0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -10, y: 0.785398185, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -10, y: -1.57079637, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -0, y: -∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -0, y: -3, expectedResult: -∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -0, y: -2, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 0, y: -1, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 0, y: -0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 0, y: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 0, y: 0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 0, y: 1, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 0, y: 1.57079637, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 0, y: -1.57079637, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 0, y: 2, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 0, y: ∞, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 1, y: -∞, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 1, y: -1, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 1, y: -0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 1, y: 0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 1, y: 1, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 0, y: 3, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 0, y: -2, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 0, y: -3, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: 0, y: -∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -0, y: -1.57079637, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -0, y: -1, expectedResult: -∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -0, y: -0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -0, y: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -0, y: 0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -0, y: 1, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -0, y: 1.57079637, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -0, y: 2, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -0, y: 3, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: -0, y: ∞, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: NaN, y: -∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: NaN, y: -1, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: NaN, y: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: NaN, y: 1, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: NaN, y: ∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: ∞, y: 1, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Pow(x: ∞, y: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Pow" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.E" type="System.Tests.MathFTests" method="E" time="0.0001999" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -∞, expectedResult: -∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0.0002" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 2.71828175, expectedResult: 2, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0.0004" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 2.30258512, expectedResult: 2, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 1.57079637, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 1.44269502, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 1.41421354, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 1.12837923, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 1, expectedResult: 1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 0.785398185, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 0.707106769, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 0.693147182, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 0.636619747, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 0.434294492, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 0.318309873, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 0, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: 3.14159274, expectedResult: 3, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -0.318309873, expectedResult: -1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -0.434294492, expectedResult: -1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -0.636619747, expectedResult: -1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -0.693147182, expectedResult: -1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -0.707106769, expectedResult: -1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -0.785398185, expectedResult: -1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -1, expectedResult: -1, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -1.12837923, expectedResult: -2, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -1.41421354, expectedResult: -2, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -1.44269502, expectedResult: -2, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -1.57079637, expectedResult: -2, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -2.30258512, expectedResult: -3, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -2.71828175, expectedResult: -3, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -3.14159274, expectedResult: -4, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: -0, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Floor(value: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Floor" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Tan" time="0.0002" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 2.71828175, expectedResult: -0.450549543, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 2.30258512, expectedResult: -1.11340714, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 1.57079637, expectedResult: -22877332, allowedVariance: 10)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 1.44269502, expectedResult: 7.76357555, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 1.41421354, expectedResult: 6.33411932, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tan" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 1.12837923, expectedResult: 2.1108768, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 1, expectedResult: 1.55740774, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 0.785398185, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 0.707106769, expectedResult: 0.854510427, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 0.693147182, expectedResult: 0.830640852, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 0.636619747, expectedResult: 0.739302933, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 0.434294492, expectedResult: 0.46382907, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 0.318309873, expectedResult: 0.329514742, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 0, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: 3.14159274, expectedResult: 0, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -0.318309873, expectedResult: -0.329514742, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -0.434294492, expectedResult: -0.46382907, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -0.636619747, expectedResult: -0.739302933, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -0.693147182, expectedResult: -0.830640852, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -0.707106769, expectedResult: -0.854510427, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -0.785398185, expectedResult: -1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tan" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -1, expectedResult: -1.55740774, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -1.12837923, expectedResult: -2.1108768, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -1.41421354, expectedResult: -6.33411932, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -1.44269502, expectedResult: -7.76357555, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -1.57079637, expectedResult: 22877332, allowedVariance: 10)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -2.30258512, expectedResult: 1.11340714, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -2.71828175, expectedResult: 0.450549543, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -3.14159274, expectedResult: -0, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: -0, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tan(value: ∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Tan" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sign" type="System.Tests.MathFTests" method="Sign" time="0.0015" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -∞, expectedResult: -1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tanh" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 2.71828175, expectedResult: 0.991328895, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 2.30258512, expectedResult: 0.980198026, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 1.57079637, expectedResult: 0.917152345, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 1.44269502, expectedResult: 0.894238949, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 1.41421354, expectedResult: 0.888385534, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 1.12837923, expectedResult: 0.810463786, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 1, expectedResult: 0.761594176, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 0.785398185, expectedResult: 0.655794203, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 0.707106769, expectedResult: 0.60885936, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 0.693147182, expectedResult: 0.600000024, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 0.636619747, expectedResult: 0.562593579, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 0.434294492, expectedResult: 0.408904016, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 0.318309873, expectedResult: 0.307977915, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 0, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Tanh" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: 3.14159274, expectedResult: 0.996272087, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -0.318309873, expectedResult: -0.307977915, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -0.434294492, expectedResult: -0.408904016, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -0.636619747, expectedResult: -0.562593579, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -0.693147182, expectedResult: -0.600000024, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -0.707106769, expectedResult: -0.60885936, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -0.785398185, expectedResult: -0.655794203, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -1, expectedResult: -0.761594176, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -1.12837923, expectedResult: -0.810463786, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -1.41421354, expectedResult: -0.888385534, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -1.44269502, expectedResult: -0.894238949, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -1.57079637, expectedResult: -0.917152345, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -2.30258512, expectedResult: -0.980198026, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -2.71828175, expectedResult: -0.991328895, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -3.14159274, expectedResult: -0.996272087, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: -0, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Tanh(value: ∞, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Tanh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round" type="System.Tests.MathFTests" method="Round" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -∞, x: -1, expectedResult: -1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.638961256, x: 0.769238889, expectedResult: 0.693147182, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0.0002" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.638961256, x: -0.769238889, expectedResult: 2.44844556, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.594480753, x: 0.804109812, expectedResult: 0.636619747, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.594480753, x: -0.804109812, expectedResult: 2.50497293, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.420770496, x: 0.907167137, expectedResult: 0.434294492, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.420770496, x: -0.907167137, expectedResult: 2.70729828, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.410781294, x: 0.911733925, expectedResult: 0.423310816, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.410781294, x: -0.911733925, expectedResult: 2.71828175, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.312961787, x: 0.949765742, expectedResult: 0.318309873, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.312961787, x: -0.949765742, expectedResult: 2.82328272, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0, x: ∞, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0, x: 1, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0, x: 0, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0, x: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0, x: -0, expectedResult: 3.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0, x: -1, expectedResult: 3.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0, x: -∞, expectedResult: 3.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: NaN, x: ∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: NaN, x: 1, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.649636924, x: -0.760244608, expectedResult: 2.43448591, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: NaN, x: 0, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.649636924, x: 0.760244608, expectedResult: 0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.707106769, x: 0.707106769, expectedResult: 0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: ∞, x: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: ∞, x: -0, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: ∞, x: -1, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 1, x: ∞, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 1, x: 1, expectedResult: 0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 1, x: 0, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 1, x: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 1, x: -0, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 1, x: -1, expectedResult: 2.3561945, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.991806269, x: 0.127751216, expectedResult: 1.44269502, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.991806269, x: -0.127751216, expectedResult: 1.6988976, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.987765968, x: 0.155943692, expectedResult: 1.41421354, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.987765968, x: -0.155943692, expectedResult: 1.72737908, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.903719485, x: 0.428125143, expectedResult: 1.12837923, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.903719485, x: -0.428125143, expectedResult: 2.0132134, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.841470957, x: 0.540302277, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.841470957, x: -0.540302277, expectedResult: 2.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.743980348, x: 0.668201506, expectedResult: 0.839007556, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.743980348, x: -0.668201506, expectedResult: 2.30258512, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: 0.707106769, x: -0.707106769, expectedResult: 2.3561945, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: ∞, x: 0, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: NaN, x: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: NaN, x: -1, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.743980348, x: -0.668201506, expectedResult: -2.30258512, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.841470957, x: 0.540302277, expectedResult: -1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.841470957, x: -0.540302277, expectedResult: -2.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.903719485, x: 0.428125143, expectedResult: -1.12837923, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.903719485, x: -0.428125143, expectedResult: -2.0132134, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.987765968, x: 0.155943692, expectedResult: -1.41421354, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.987765968, x: -0.155943692, expectedResult: -1.72737908, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.991806269, x: 0.127751216, expectedResult: -1.44269502, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.991806269, x: -0.127751216, expectedResult: -1.6988976, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -1, x: ∞, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -1, x: 1, expectedResult: -0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -1, x: 0, expectedResult: -1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -1, x: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -1, x: -0, expectedResult: -1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -1, x: -1, expectedResult: -2.3561945, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -∞, x: 1, expectedResult: -1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -∞, x: 0, expectedResult: -1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -∞, x: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -∞, x: -0, expectedResult: -1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.743980348, x: 0.668201506, expectedResult: -0.839007556, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: NaN, x: -0, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.707106769, x: -0.707106769, expectedResult: -2.3561945, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.649636924, x: -0.760244608, expectedResult: -2.43448591, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: NaN, x: -∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0, x: ∞, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0, x: 1, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0, x: 0, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0, x: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Atan2" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0, x: -0, expectedResult: -3.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0, x: -1, expectedResult: -3.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0, x: -∞, expectedResult: -3.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.312961787, x: 0.949765742, expectedResult: -0.318309873, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.312961787, x: -0.949765742, expectedResult: -2.82328272, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.410781294, x: 0.911733925, expectedResult: -0.423310816, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.410781294, x: -0.911733925, expectedResult: -2.71828175, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.420770496, x: 0.907167137, expectedResult: -0.434294492, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.420770496, x: -0.907167137, expectedResult: -2.70729828, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.594480753, x: 0.804109812, expectedResult: -0.636619747, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.594480753, x: -0.804109812, expectedResult: -2.50497293, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.638961256, x: 0.769238889, expectedResult: -0.693147182, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.638961256, x: -0.769238889, expectedResult: -2.44844556, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.649636924, x: 0.760244608, expectedResult: -0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: -0.707106769, x: 0.707106769, expectedResult: -0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Atan2(y: ∞, x: 1, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Atan2" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -∞, expectedResult: -∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sinh" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 2.71828175, expectedResult: 7.544137, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0.0002999" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 2.30258512, expectedResult: 4.94999981, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 1.57079637, expectedResult: 2.30129886, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 1.44269502, expectedResult: 1.99789798, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 1.41421354, expectedResult: 1.93506682, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 1.12837923, expectedResult: 1.3835429, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 1, expectedResult: 1.17520118, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 0.785398185, expectedResult: 0.86867094, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 0.707106769, expectedResult: 0.76752317, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 0.693147182, expectedResult: 0.75, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 0.636619747, expectedResult: 0.680501699, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 0.434294492, expectedResult: 0.44807598, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 0.318309873, expectedResult: 0.323712438, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 0, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: 3.14159274, expectedResult: 11.5487394, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -0.318309873, expectedResult: -0.323712438, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -0.434294492, expectedResult: -0.44807598, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -0.636619747, expectedResult: -0.680501699, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -0.693147182, expectedResult: -0.75, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sinh" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -0.707106769, expectedResult: -0.76752317, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -0.785398185, expectedResult: -0.86867094, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -1, expectedResult: -1.17520118, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -1.12837923, expectedResult: -1.3835429, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -1.41421354, expectedResult: -1.93506682, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -1.44269502, expectedResult: -1.99789798, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -1.57079637, expectedResult: -2.30129886, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -2.30258512, expectedResult: -4.94999981, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -2.71828175, expectedResult: -7.544137, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -3.14159274, expectedResult: -11.5487394, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: -0, expectedResult: -0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Sinh(value: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Sinh" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.LogWithBase" type="System.Tests.MathFTests" method="LogWithBase" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -∞, expectedResult: 0, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Exp" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 2.71828175, expectedResult: 15.1542625, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Exp" time="0.0001999" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 2.30258512, expectedResult: 10, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 1.57079637, expectedResult: 4.81047726, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 1.44269502, expectedResult: 4.23208618, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 1.41421354, expectedResult: 4.11325026, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 1.12837923, expectedResult: 3.09064293, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 1, expectedResult: 2.71828175, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Exp" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 0.785398185, expectedResult: 2.19327998, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 0.707106769, expectedResult: 2.02811503, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 0.693147182, expectedResult: 2, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 0.636619747, expectedResult: 1.89008117, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 0.434294492, expectedResult: 1.54387343, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 0.318309873, expectedResult: 1.37480223, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: 3.14159274, expectedResult: 23.1406918, allowedVariance: 4.76837158E-05)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -0.318309873, expectedResult: 0.727377355, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -0.434294492, expectedResult: 0.647721469, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -0.636619747, expectedResult: 0.529077828, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -0.693147182, expectedResult: 0.5, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -0.707106769, expectedResult: 0.493068695, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -0.785398185, expectedResult: 0.455938131, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Exp" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -1, expectedResult: 0.36787945, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Exp" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -1.12837923, expectedResult: 0.323557258, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -1.41421354, expectedResult: 0.243116736, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -1.44269502, expectedResult: 0.236290082, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -1.57079637, expectedResult: 0.207879573, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -2.30258512, expectedResult: 0.100000001, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -2.71828175, expectedResult: 0.065988034, allowedVariance: 4.76837165E-08)" type="System.Tests.MathFTests" method="Exp" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -3.14159274, expectedResult: 0.0432139188, allowedVariance: 4.76837165E-08)" type="System.Tests.MathFTests" method="Exp" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: -0, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Exp" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Exp(value: ∞, expectedResult: ∞, allowedVariance: 0)" type="System.Tests.MathFTests" method="Exp" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: -∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Acos" time="0.0002999" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 2.71828175, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Acos" time="0.0002" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 1.41421354, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 1, expectedResult: 0, allowedVariance: 0)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 0.949765742, expectedResult: 0.318309873, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 0.907167137, expectedResult: 0.434294492, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 0.804109812, expectedResult: 0.636619747, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 0.769238889, expectedResult: 0.693147182, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Acos" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 0.760244608, expectedResult: 0.707106769, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 0.707106769, expectedResult: 0.785398185, allowedVariance: 4.76837158E-07)" type="System.Tests.MathFTests" method="Acos" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 0.540302277, expectedResult: 1, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 3.14159274, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 0.428125143, expectedResult: 1.12837923, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 0.127751216, expectedResult: 1.44269502, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 0, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: NaN, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: -0, expectedResult: 1.57079637, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: -0.668201506, expectedResult: 2.30258512, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: -0.911733925, expectedResult: 2.71828175, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: -1, expectedResult: 3.14159274, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: -1.41421354, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: -2.71828175, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: -3.14159274, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: 0.155943692, expectedResult: 1.41421354, allowedVariance: 4.76837158E-06)" type="System.Tests.MathFTests" method="Acos" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Acos(value: ∞, expectedResult: NaN, allowedVariance: 0)" type="System.Tests.MathFTests" method="Acos" time="0.0000999" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 1, expected: 1)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0003" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 0.5, expected: 0)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0004" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 1.5, expected: 2)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 2.5, expected: 2)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 3.5, expected: 4)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 0.49999997, expected: 0)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0002" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 1.5, expected: 2)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 2.5, expected: 2)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 3.5, expected: 4)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 4.5, expected: 4)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 3.14159274, expected: 3)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0002" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 2.71828175, expected: 3)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 1385.45569, expected: 1385)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 3423.43433, expected: 3423)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 535345.5, expected: 535346)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 535345.5, expected: 535346)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 535345.5, expected: 535346)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 535345.375, expected: 535345)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 535345.625, expected: 535346)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: -2.71828175, expected: -3)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 10, expected: 10)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: -10, expected: -10)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: -0, expected: -0)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 0, expected: 0)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: NaN, expected: NaN)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: ∞, expected: ∞)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: -∞, expected: -∞)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0001" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: 3.40282347E+38, expected: 3.40282347E+38)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0" result="Pass" />
+      <test name="System.Tests.MathFTests.Round_ToEven_0(value: -3.40282347E+38, expected: -3.40282347E+38)" type="System.Tests.MathFTests" method="Round_ToEven_0" time="0.0001" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

@@ -1,0 +1,346 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="Microsoft.Extensions.Http.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="12:34:00" total="160" passed="83" failed="0" skipped="77" time="0.761" errors="0">
+    <errors />
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for Microsoft.Extensions.Http.Logging.RedactedLogValueIntegrationTest" time="0.072">
+      <test name="Microsoft.Extensions.Http.Logging.RedactedLogValueIntegrationTest.RedactHeaderValueWithPredicate_ValueIsRedactedBeforeLogging" type="Microsoft.Extensions.Http.Logging.RedactedLogValueIntegrationTest" method="RedactHeaderValueWithPredicate_ValueIsRedactedBeforeLogging" time="0.0649" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.RedactedLogValueIntegrationTest.RedactLoggedHeadersNotCalled_AllValuesAreRedactedBeforeLogging" type="Microsoft.Extensions.Http.Logging.RedactedLogValueIntegrationTest" method="RedactLoggedHeadersNotCalled_AllValuesAreRedactedBeforeLogging" time="0.0042" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.RedactedLogValueIntegrationTest.RedactHeaderValueWithHeaderList_ValueIsRedactedBeforeLogging" type="Microsoft.Extensions.Http.Logging.RedactedLogValueIntegrationTest" method="RedactHeaderValueWithHeaderList_ValueIsRedactedBeforeLogging" time="0.003" result="Pass" />
+    </collection>
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilderTest" time="0.123">
+      <test name="Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilderTest.Build_AdditionalHandlerIsNull_ThrowsException" type="Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilderTest" method="Build_AdditionalHandlerIsNull_ThrowsException" time="0.0024" result="Pass" />
+      <test name="Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilderTest.Build_NoAdditionalHandlers_ReturnsPrimaryHandler" type="Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilderTest" method="Build_NoAdditionalHandlers_ReturnsPrimaryHandler" time="0.078" result="Pass" />
+      <test name="Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilderTest.Build_PrimaryHandlerIsNull_UsesDefault" type="Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilderTest" method="Build_PrimaryHandlerIsNull_UsesDefault" time="0.0003" result="Pass" />
+      <test name="Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilderTest.Build_AdditionalHandlerHasNonNullInnerHandler_ThrowsException" type="Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilderTest" method="Build_AdditionalHandlerHasNonNullInnerHandler_ThrowsException" time="0.0404" result="Pass" />
+      <test name="Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilderTest.Build_SomeAdditionalHandlers_PutsTogetherDelegatingHandlers" type="Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilderTest" method="Build_SomeAdditionalHandlers_PutsTogetherDelegatingHandlers" time="0.0011" result="Pass" />
+      <test name="Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilderTest.Ctor_SetsPrimaryHandler" type="Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilderTest" method="Ctor_SetsPrimaryHandler" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="17" passed="16" failed="0" skipped="1" name="Test collection for Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" time="0.078">
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.WrapHandlerPipeline_LogCorrectNumberOfEvents" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="WrapHandlerPipeline_LogCorrectNumberOfEvents" time="0.0132" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.CustomLogger_LogsCorrectEvents_Sync(requestSuccessful: False, asyncSecondCall: False)" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="CustomLogger_LogsCorrectEvents_Sync" time="0.0058" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.CustomLogger_LogsCorrectEvents_Sync(requestSuccessful: False, asyncSecondCall: True)" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="CustomLogger_LogsCorrectEvents_Sync" time="0.005" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.CustomLogger_LogsCorrectEvents_Sync(requestSuccessful: True, asyncSecondCall: False)" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="CustomLogger_LogsCorrectEvents_Sync" time="0.0029" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.CustomLogger_LogsCorrectEvents_Sync(requestSuccessful: True, asyncSecondCall: True)" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="CustomLogger_LogsCorrectEvents_Sync" time="0.0028" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.CustomLogger_ResolveFromDI_Success(removeDefaultLoggers: False)" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="CustomLogger_ResolveFromDI_Success" time="0.0078" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.CustomLogger_ResolveFromDI_Success(removeDefaultLoggers: True)" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="CustomLogger_ResolveFromDI_Success" time="0.0033" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.LoggerFactoryWithHttpClientFactory_NoCircularDependency_PublicLogging" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="LoggerFactoryWithHttpClientFactory_NoCircularDependency_PublicLogging" time="0.0069" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.CustomLogger_WithContext_LogsCorrectEvents(requestSuccessful: False)" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="CustomLogger_WithContext_LogsCorrectEvents" time="0.0057" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.CustomLogger_WithContext_LogsCorrectEvents(requestSuccessful: True)" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="CustomLogger_WithContext_LogsCorrectEvents" time="0.0027" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.RemoveAllLoggers_OnlyForSpecifiedNames" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="RemoveAllLoggers_OnlyForSpecifiedNames" time="0.003" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.LoggerFactoryWithHttpClientFactory_NoCircularDependency_DebugLogging" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="LoggerFactoryWithHttpClientFactory_NoCircularDependency_DebugLogging" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\", \"IsPreciseGcSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.CustomLogger_LogsCorrectEvents(requestSuccessful: False, async: False)" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="CustomLogger_LogsCorrectEvents" time="0.0044" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.CustomLogger_LogsCorrectEvents(requestSuccessful: False, async: True)" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="CustomLogger_LogsCorrectEvents" time="0.0035" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.CustomLogger_LogsCorrectEvents(requestSuccessful: True, async: False)" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="CustomLogger_LogsCorrectEvents" time="0.0025" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.CustomLogger_LogsCorrectEvents(requestSuccessful: True, async: True)" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="CustomLogger_LogsCorrectEvents" time="0.0067" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest.RemoveAllLoggers_Success" type="Microsoft.Extensions.Http.Logging.HttpClientLoggerTest" method="RemoveAllLoggers_Success" time="0.0022" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for Microsoft.Extensions.Http.Tests.Logging.FailedHttpRequestLoggingTests" time="0.004">
+      <test name="Microsoft.Extensions.Http.Tests.Logging.FailedHttpRequestLoggingTests.FailedHttpRequestLogged" type="Microsoft.Extensions.Http.Tests.Logging.FailedHttpRequestLoggingTests" method="FailedHttpRequestLogged" time="0.0035" result="Pass" />
+    </collection>
+    <collection total="14" passed="0" failed="0" skipped="14" name="Test collection for Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" time="0.000">
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.UseSocketsHttpHandler_ConfiguredByIConfiguration_AutomaticDecompression" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="UseSocketsHttpHandler_ConfiguredByIConfiguration_AutomaticDecompression" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.UseSocketsHttpHandler_ConfiguredByIConfiguration_Success" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="UseSocketsHttpHandler_ConfiguredByIConfiguration_Success" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.UseSocketsHttpHandler_ConfiguredByIConfiguration_AllTimeSpanProperties" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="UseSocketsHttpHandler_ConfiguredByIConfiguration_AllTimeSpanProperties" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.UseSocketsHttpHandler_ChainingActionAfterIConfiguration_Updates" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="UseSocketsHttpHandler_ChainingActionAfterIConfiguration_Updates" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.UseSocketsHttpHandler_ConfiguredByIConfiguration_AllBoolProperties" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="UseSocketsHttpHandler_ConfiguredByIConfiguration_AllBoolProperties" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.UseSocketsHttpHandler_ConfiguredByAction_Success" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="UseSocketsHttpHandler_ConfiguredByAction_Success" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.UseSocketsHttpHandler_ChainingIConfigurationAfterAction_Updates" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="UseSocketsHttpHandler_ChainingIConfigurationAfterAction_Updates" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.UseSocketsHttpHandler_ConfiguredByIConfiguration_AllIntProperties" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="UseSocketsHttpHandler_ConfiguredByIConfiguration_AllIntProperties" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.UseSocketsHttpHandler_Parameterless_Success" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="UseSocketsHttpHandler_Parameterless_Success" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.UseSocketsHttpHandler_ConfiguredByIConfiguration_KeepAlivePingPolicy" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="UseSocketsHttpHandler_ConfiguredByIConfiguration_KeepAlivePingPolicy" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.UseSocketsHttpHandler_PresetSocketsHttpHandler_Updates" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="UseSocketsHttpHandler_PresetSocketsHttpHandler_Updates" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.UseSocketsHttpHandler_ConfiguredByBuilder_Success" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="UseSocketsHttpHandler_ConfiguredByBuilder_Success" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.DefaultPrimaryHandler_NamedClient_RespectsHandlerLifetime" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="DefaultPrimaryHandler_NamedClient_RespectsHandlerLifetime" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest.DefaultPrimaryHandler_RespectsHandlerLifetime" type="Microsoft.Extensions.Http.SocketsHttpHandlerConfigurationTest" method="DefaultPrimaryHandler_RespectsHandlerLifetime" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+    </collection>
+    <collection total="31" passed="31" failed="0" skipped="0" name="Test collection for Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" time="0.145">
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.RemoveAsKeyed_PerName_AnyKeyDescriptorRemains" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="RemoveAsKeyed_PerName_AnyKeyDescriptorRemains" time="0.0028" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientDefaults_LastRegistrationWins(clientOrHandler: typeof(System.Net.Http.HttpClient), removeAsKeyedByDefault: True)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientDefaults_LastRegistrationWins" time="0.009" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientDefaults_LastRegistrationWins(clientOrHandler: typeof(System.Net.Http.HttpClient), removeAsKeyedByDefault: False)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientDefaults_LastRegistrationWins" time="0.0063" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientDefaults_LastRegistrationWins(clientOrHandler: typeof(System.Net.Http.HttpMessageHandler), removeAsKeyedByDefault: True)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientDefaults_LastRegistrationWins" time="0.006" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientDefaults_LastRegistrationWins(clientOrHandler: typeof(System.Net.Http.HttpMessageHandler), removeAsKeyedByDefault: False)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientDefaults_LastRegistrationWins" time="0.0065" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.RemoveAsKeyed_Defaults_AnyKeyDescriptorRemoved" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="RemoveAsKeyed_Defaults_AnyKeyDescriptorRemoved" time="0.0022" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientOrHandler_RespectsTransientLifetime(clientOrHandler: typeof(System.Net.Http.HttpClient))" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientOrHandler_RespectsTransientLifetime" time="0.0235" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientOrHandler_RespectsTransientLifetime(clientOrHandler: typeof(System.Net.Http.HttpMessageHandler))" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientOrHandler_RespectsTransientLifetime" time="0.0033" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.RemoveAsKeyed_DescriptorRemoved" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="RemoveAsKeyed_DescriptorRemoved" time="0.001" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientDefaults_KeyedByDefault(defaultsFirst: True)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientDefaults_KeyedByDefault" time="0.0046" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientDefaults_KeyedByDefault(defaultsFirst: False)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientDefaults_KeyedByDefault" time="0.0046" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientOrHandler_Injected_RespectsTransientLifetime" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientOrHandler_Injected_RespectsTransientLifetime" time="0.0038" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientOrHandler_RespectsSingletonLifetime(clientOrHandler: typeof(System.Net.Http.HttpClient))" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientOrHandler_RespectsSingletonLifetime" time="0.0038" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientOrHandler_RespectsSingletonLifetime(clientOrHandler: typeof(System.Net.Http.HttpMessageHandler))" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientOrHandler_RespectsSingletonLifetime" time="0.0025" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClient_RemoveAsKeyedOrDefault_NotResolved" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClient_RemoveAsKeyedOrDefault_NotResolved" time="0.0056" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.AddAsKeyed_Defaults_AnyKeyRegistration" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="AddAsKeyed_Defaults_AnyKeyRegistration" time="0.0014" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientOrHandler_Injected_RespectsSingletonLifetime" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientOrHandler_Injected_RespectsSingletonLifetime" time="0.0028" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientOrHandler_RespectsScopedLifetime(clientOrHandler: typeof(System.Net.Http.HttpClient), validateScopes: True)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientOrHandler_RespectsScopedLifetime" time="0.0056" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientOrHandler_RespectsScopedLifetime(clientOrHandler: typeof(System.Net.Http.HttpClient), validateScopes: False)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientOrHandler_RespectsScopedLifetime" time="0.0044" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientOrHandler_RespectsScopedLifetime(clientOrHandler: typeof(System.Net.Http.HttpMessageHandler), validateScopes: True)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientOrHandler_RespectsScopedLifetime" time="0.0052" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientOrHandler_RespectsScopedLifetime(clientOrHandler: typeof(System.Net.Http.HttpMessageHandler), validateScopes: False)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientOrHandler_RespectsScopedLifetime" time="0.0027" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.AddAsKeyed_ScopedLifetime" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="AddAsKeyed_ScopedLifetime" time="0.0014" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClient_LastRegistrationWins" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClient_LastRegistrationWins" time="0.0058" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientOrHandler_Injected_RespectsScopedLifetime(validateScopes: True)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientOrHandler_Injected_RespectsScopedLifetime" time="0.0043" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientOrHandler_Injected_RespectsScopedLifetime(validateScopes: False)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientOrHandler_Injected_RespectsScopedLifetime" time="0.0034" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpMessageHandler_AddAsKeyed_Resolved" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpMessageHandler_AddAsKeyed_Resolved" time="0.0039" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.AddAsKeyed_Twice_RewritesDescriptor" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="AddAsKeyed_Twice_RewritesDescriptor" time="0.0013" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpMessageHandler_RemoveAsKeyedOrDefault_NotResolved" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpMessageHandler_RemoveAsKeyedOrDefault_NotResolved" time="0.005" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientDefaults_RemoveAsKeyedByDefault(defaultsFirst: True)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientDefaults_RemoveAsKeyedByDefault" time="0.0046" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClientDefaults_RemoveAsKeyedByDefault(defaultsFirst: False)" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClientDefaults_RemoveAsKeyedByDefault" time="0.004" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest.HttpClient_AddAsKeyed_Resolved" type="Microsoft.Extensions.DependencyInjection.HttpClientKeyedRegistrationTest" method="HttpClient_AddAsKeyed_Resolved" time="0.0041" result="Pass" />
+    </collection>
+    <collection total="13" passed="10" failed="0" skipped="3" name="Test collection for Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" time="0.002">
+      <test name="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests.Handlers_LogExpectedUri" type="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" method="Handlers_LogExpectedUri" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests.GetRedactedUriString_DisableUriRedaction_DoesNotRedactUri" type="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" method="GetRedactedUriString_DisableUriRedaction_DoesNotRedactUri" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests.Integration_LogsExpectedAbsoluteUri" type="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" method="Integration_LogsExpectedAbsoluteUri" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests.GetRedactedUriString_RedactsUriByDefault(original: null, expected: null)" type="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" method="GetRedactedUriString_RedactsUriByDefault" time="0.0001" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests.GetRedactedUriString_RedactsUriByDefault(original: \&quot;http://q.app/foo\&quot;, expected: \&quot;http://q.app/foo\&quot;)" type="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" method="GetRedactedUriString_RedactsUriByDefault" time="0.0004" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests.GetRedactedUriString_RedactsUriByDefault(original: \&quot;http://q.app:123/foo\&quot;, expected: \&quot;http://q.app:123/foo\&quot;)" type="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" method="GetRedactedUriString_RedactsUriByDefault" time="0.0003" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests.GetRedactedUriString_RedactsUriByDefault(original: \&quot;http://user:xxx@q.app/foo\&quot;, expected: \&quot;http://q.app/foo\&quot;)" type="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" method="GetRedactedUriString_RedactsUriByDefault" time="0" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests.GetRedactedUriString_RedactsUriByDefault(original: \&quot;http://q.app/foo?\&quot;, expected: \&quot;http://q.app/foo?\&quot;)" type="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" method="GetRedactedUriString_RedactsUriByDefault" time="0.0002" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests.GetRedactedUriString_RedactsUriByDefault(original: \&quot;http://q.app/foo?XXX\&quot;, expected: \&quot;http://q.app/foo?*\&quot;)" type="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" method="GetRedactedUriString_RedactsUriByDefault" time="0.0003" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests.GetRedactedUriString_RedactsUriByDefault(original: \&quot;http://q.app/a/b/c?a=b%20c&amp;x=1\&quot;, expected: \&quot;http://q.app/a/b/c?*\&quot;)" type="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" method="GetRedactedUriString_RedactsUriByDefault" time="0.0004" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests.GetRedactedUriString_RedactsUriByDefault(original: \&quot;http://q.app:4242/a/b/c?a=b%20c&amp;x=1\&quot;, expected: \&quot;http://q.app:4242/a/b/c?*\&quot;)" type="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" method="GetRedactedUriString_RedactsUriByDefault" time="0.0002" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests.GetRedactedUriString_RedactsUriByDefault(original: \&quot;/cat/1/2\&quot;, expected: \&quot;*\&quot;)" type="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" method="GetRedactedUriString_RedactsUriByDefault" time="0" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests.GetRedactedUriString_RedactsUriByDefault(original: \&quot;/cat/1/2?a=b%20c&amp;x=1\&quot;, expected: \&quot;*\&quot;)" type="Microsoft.Extensions.Http.Tests.Logging.LoggingUriOutputTests" method="GetRedactedUriString_RedactsUriByDefault" time="0.0001" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for Microsoft.Extensions.Http.Logging.HttpHeadersLogValueTest" time="0.001">
+      <test name="Microsoft.Extensions.Http.Logging.HttpHeadersLogValueTest.HttpHeadersLogValue_ToString_HidesOnlyLogSensitiveHeadersValue" type="Microsoft.Extensions.Http.Logging.HttpHeadersLogValueTest" method="HttpHeadersLogValue_ToString_HidesOnlyLogSensitiveHeadersValue" time="0.0006" result="Pass" />
+    </collection>
+    <collection total="4" passed="0" failed="0" skipped="4" name="Test collection for Microsoft.Extensions.DependencyInjection.ConfigureHttpClientDefaultsTest" time="0.000">
+      <test name="Microsoft.Extensions.DependencyInjection.ConfigureHttpClientDefaultsTest.ConfigureHttpClientDefaults_MultipleConfigInOneDefault_LastWins" type="Microsoft.Extensions.DependencyInjection.ConfigureHttpClientDefaultsTest" method="ConfigureHttpClientDefaults_MultipleConfigInOneDefault_LastWins" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.ConfigureHttpClientDefaultsTest.ConfigureHttpClientDefaults_MultipleConfig_LastWins" type="Microsoft.Extensions.DependencyInjection.ConfigureHttpClientDefaultsTest" method="ConfigureHttpClientDefaults_MultipleConfig_LastWins" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.ConfigureHttpClientDefaultsTest.AddTypedClient_Error" type="Microsoft.Extensions.DependencyInjection.ConfigureHttpClientDefaultsTest" method="AddTypedClient_Error" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.ConfigureHttpClientDefaultsTest.ConfigureHttpClientDefaults_WithNameConfig_NameConfigUsed" type="Microsoft.Extensions.DependencyInjection.ConfigureHttpClientDefaultsTest" method="ConfigureHttpClientDefaults_WithNameConfig_NameConfigUsed" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="4" passed="2" failed="0" skipped="2" name="Test collection for Microsoft.Extensions.Http.MeterFactoryIntegrationTest" time="0.005">
+      <test name="Microsoft.Extensions.Http.MeterFactoryIntegrationTest.HttpClientHandler_Configured" type="Microsoft.Extensions.Http.MeterFactoryIntegrationTest" method="HttpClientHandler_Configured" time="0.0029" result="Pass" />
+      <test name="Microsoft.Extensions.Http.MeterFactoryIntegrationTest.SocketsHttpHandler_HasExisting_Unchanged" type="Microsoft.Extensions.Http.MeterFactoryIntegrationTest" method="SocketsHttpHandler_HasExisting_Unchanged" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.MeterFactoryIntegrationTest.HttpClientHandler_HasExisting_Unchanged" type="Microsoft.Extensions.Http.MeterFactoryIntegrationTest" method="HttpClientHandler_HasExisting_Unchanged" time="0.0023" result="Pass" />
+      <test name="Microsoft.Extensions.Http.MeterFactoryIntegrationTest.SocketsHttpHandler_Configured" type="Microsoft.Extensions.Http.MeterFactoryIntegrationTest" method="SocketsHttpHandler_Configured" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Extensions.Http.Test.HttpMessageHandlerBuilderTest" time="0.004">
+      <test name="Microsoft.Extensions.Http.Test.HttpMessageHandlerBuilderTest.Build_AdditionalHandlerHasNonNullInnerHandler_ThrowsException" type="Microsoft.Extensions.Http.Test.HttpMessageHandlerBuilderTest" method="Build_AdditionalHandlerHasNonNullInnerHandler_ThrowsException" time="0.0036" result="Pass" />
+      <test name="Microsoft.Extensions.Http.Test.HttpMessageHandlerBuilderTest.Build_AdditionalHandlerIsNull_ThrowsException" type="Microsoft.Extensions.Http.Test.HttpMessageHandlerBuilderTest" method="Build_AdditionalHandlerIsNull_ThrowsException" time="0.0005" result="Pass" />
+    </collection>
+    <collection total="12" passed="8" failed="0" skipped="4" name="Test collection for Microsoft.Extensions.Http.DefaultHttpClientFactoryTest" time="0.034">
+      <test name="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest.Factory_CreateClient_WithExpiry_HandlerCanBeReusedBeforeExpiry" type="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest" method="Factory_CreateClient_WithExpiry_HandlerCanBeReusedBeforeExpiry" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest.Factory_CreateClient_WithoutName_UsesDefaultOptions" type="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest" method="Factory_CreateClient_WithoutName_UsesDefaultOptions" time="0.0021" result="Pass" />
+      <test name="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest.Factory_CreateClient_WithExpiry_CanExpire" type="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest" method="Factory_CreateClient_WithExpiry_CanExpire" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest.Factory_CleanupCycle_DisposesEligibleHandler" type="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest" method="Factory_CleanupCycle_DisposesEligibleHandler" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\", \"IsPreciseGcSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest.Factory_CreateClient_WithName_UsesNamedOptions" type="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest" method="Factory_CreateClient_WithName_UsesNamedOptions" time="0.0012" result="Pass" />
+      <test name="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest.Factory_DisposeClient_DoesNotDisposeHandler" type="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest" method="Factory_DisposeClient_DoesNotDisposeHandler" time="0.0081" result="Pass" />
+      <test name="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest.Factory_CleanupCycle_DisposesLiveHandler" type="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest" method="Factory_CleanupCycle_DisposesLiveHandler" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsPreciseGcSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest.Factory_CreateClient_FiltersCanDecorateBuilder" type="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest" method="Factory_CreateClient_FiltersCanDecorateBuilder" time="0.0141" result="Pass" />
+      <test name="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest.Factory_MultipleCalls_DoesNotCacheHttpClient" type="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest" method="Factory_MultipleCalls_DoesNotCacheHttpClient" time="0.0015" result="Pass" />
+      <test name="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest.ServiceProviderDispose_DebugLoggingDoesNotThrow" type="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest" method="ServiceProviderDispose_DebugLoggingDoesNotThrow" time="0.0037" result="Pass" />
+      <test name="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest.Factory_DisposeHandler_DoesNotDisposeInnerHandler" type="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest" method="Factory_DisposeHandler_DoesNotDisposeInnerHandler" time="0.002" result="Pass" />
+      <test name="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest.Factory_MultipleCalls_CachesHandler" type="Microsoft.Extensions.Http.DefaultHttpClientFactoryTest" method="Factory_MultipleCalls_CachesHandler" time="0.001" result="Pass" />
+    </collection>
+    <collection total="52" passed="3" failed="0" skipped="49" name="Test collection for Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" time="0.006">
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClientAndImplementation_AndServiceDelegate_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClientAndImplementation_AndServiceDelegate_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClient_WithFactoryServicesAndName_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClient_WithFactoryServicesAndName_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpMessageHandler_WithName_NewHandlerIsSurroundedByLogging_ForHttpClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpMessageHandler_WithName_NewHandlerIsSurroundedByLogging_ForHttpClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_MessageHandler_Scope_SingletonDependency" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_MessageHandler_Scope_SingletonDependency" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_AddTypedClient_WithServiceDelegate_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_AddTypedClient_WithServiceDelegate_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_AddTypedClient_WithDelegate_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_AddTypedClient_WithDelegate_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_MessageHandler_Scope_TransientDependency" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_MessageHandler_Scope_TransientDependency" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClient_AndServiceDelegate_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClient_AndServiceDelegate_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClient_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClient_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpMessageHandler_WithName_NewHandlerIsSurroundedByLogging_ForHttpMessageHandler" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpMessageHandler_WithName_NewHandlerIsSurroundedByLogging_ForHttpMessageHandler" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_MessageHandler_Scope_ScopedDependency" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_MessageHandler_Scope_ScopedDependency" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.SuppressScope_False_CreatesNewScope" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="SuppressScope_False_CreatesNewScope" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClientAndImplementation_AndServiceDelegate_ConfiguresClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClientAndImplementation_AndServiceDelegate_ConfiguresClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_AddSameTypedClientTwice_WithDifferentNames_WithAddTypedClient_IsAllowed" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_AddSameTypedClientTwice_WithDifferentNames_WithAddTypedClient_IsAllowed" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_MessageHandler_TransientDependency" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_MessageHandler_TransientDependency" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClientAndImplementation_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClientAndImplementation_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClientDefaults_MultipleConfigInOneDefault_LastWins" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClientDefaults_MultipleConfigInOneDefault_LastWins" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClient_WithFactoryServices_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClient_WithFactoryServices_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_TypedClient_NoHttpClientCtor_ThrowsSpecificException" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_TypedClient_NoHttpClientCtor_ThrowsSpecificException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithDefaults_ConfiguresClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithDefaults_ConfiguresClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_AddSameTypedClientTwice_WithSameName_Works" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_AddSameTypedClientTwice_WithSameName_Works" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.SuppressScope_False_InScope_CreatesNewScope" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="SuppressScope_False_InScope_CreatesNewScope" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.SuppressScope_True_InScope_DoesNotCreateScope" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="SuppressScope_True_InScope_DoesNotCreateScope" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClient_AndName_AndDelegate_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClient_AndName_AndDelegate_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_IsSelfContained_CanCreateClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_IsSelfContained_CanCreateClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_AddSameNameWithTypedClientTwice_WithAddTypedClient_IsAllowed" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_AddSameNameWithTypedClientTwice_WithAddTypedClient_IsAllowed" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_RegisteringMultipleTypes_WithAddTypedClient_IsAllowed" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_RegisteringMultipleTypes_WithAddTypedClient_IsAllowed" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClient_WithFactory_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClient_WithFactory_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_AddSameNameWithTypedClientTwice_WithExplicitName_IsAllowed" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_AddSameNameWithTypedClientTwice_WithExplicitName_IsAllowed" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_ProvidesSameImplementationForClientsAndHandlers" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_ProvidesSameImplementationForClientsAndHandlers" time="0.0016" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithGenericTypedClient_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithGenericTypedClient_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithDefaultName_ConfiguresDefaultClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithDefaultName_ConfiguresDefaultClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_GetAwaiterAndResult_InSingleThreadedSynchronizationContext_ShouldNotHangs" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_GetAwaiterAndResult_InSingleThreadedSynchronizationContext_ShouldNotHangs" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClient_AndName_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClient_AndName_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClient_WithFactoryAndName_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClient_WithFactoryAndName_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClient_AndServiceDelegate_ConfiguresClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClient_AndServiceDelegate_ConfiguresClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.SuppressScope_True_DoesNotCreateScope" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="SuppressScope_True_DoesNotCreateScope" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_AddTypedClientAndImplementation_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_AddTypedClientAndImplementation_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_IsSelfContained_CanCreateHandler" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_IsSelfContained_CanCreateHandler" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_AddTypedClient_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_AddTypedClient_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_AddSameTypedClientTwice_WithSameName_WithAddTypedClient_Works" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_AddSameTypedClientTwice_WithSameName_WithAddTypedClient_Works" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClient_AndDelegate_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClient_AndDelegate_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClientAndImplementation_AndName_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClientAndImplementation_AndName_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithName_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithName_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_WithTypedClientAndImplementation_AndDelegate_ConfiguresNamedClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_WithTypedClientAndImplementation_AndDelegate_ConfiguresNamedClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_RegistersDefaultClientAsHttpClient" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_RegistersDefaultClientAsHttpClient" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_DoesNotRegisterDefaultClientIfAlreadyRegistered" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_DoesNotRegisterDefaultClientIfAlreadyRegistered" time="0.0022" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_AddSameNameWithTypedClientTwice_ThrowsError" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_AddSameNameWithTypedClientTwice_ThrowsError" time="0.0017" result="Pass" />
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_ConfigureAdditionalHttpMessageHandlers_ModifyAdditionalHandlers" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_ConfigureAdditionalHttpMessageHandlers_ModifyAdditionalHandlers" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_MessageHandler_SingletonDependency" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_MessageHandler_SingletonDependency" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_AddSameTypedClientTwice_WithDifferentNames_IsAllowed" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_AddSameTypedClientTwice_WithDifferentNames_IsAllowed" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest.AddHttpClient_MessageHandler_ScopedDependency" type="Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensionsTest" method="AddHttpClient_MessageHandler_ScopedDependency" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+  </assembly>
+</assemblies>

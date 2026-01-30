@@ -1982,6 +1982,7 @@ namespace System.Transactions.Tests
         /// PSPE Non-MSDTC Aborting Clone Not Completed.
         /// </summary>
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [InlineData(false)]
         [InlineData(true)]
         public void PSPENonMsdtcAbortingCloneNotCompleted(bool promote)
@@ -2020,6 +2021,7 @@ namespace System.Transactions.Tests
         /// PSPE Non-MSDTC Enlist During Phase 0.
         /// </summary>
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [InlineData(false, true, EnlistmentOptions.EnlistDuringPrepareRequired, EnlistmentOptions.EnlistDuringPrepareRequired, true)]
         [InlineData(false, true, EnlistmentOptions.EnlistDuringPrepareRequired, EnlistmentOptions.None, true)]
         [InlineData(true, true, EnlistmentOptions.EnlistDuringPrepareRequired, EnlistmentOptions.EnlistDuringPrepareRequired, true)]
@@ -2050,6 +2052,7 @@ namespace System.Transactions.Tests
         /// PSPE Non-MSDTC Dispose Committable Transaction.
         /// </summary>
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [InlineData(false)]
         [InlineData(true)]
         public void PSPENonMsdtcDisposeCommittable(bool promote)
@@ -2084,6 +2087,7 @@ namespace System.Transactions.Tests
         /// PSPE Non-MSDTC Fail PromotableSinglePhaseNotification Calls.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void PSPENonMsdtcFailPromotableSinglePhaseNotificationCalls()
         {
             // Fail calls to the non-MSDTC Promotable Enlistment
@@ -2104,6 +2108,7 @@ namespace System.Transactions.Tests
         /// Call SetDistributedTransactionIdentifier with incorrect notification object - negative test.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void PSPENonMsdtcSetDistributedTransactionIdentifierCallWithWrongNotificationObject()
         {
             // Call SetDistributedTransactionIdentifier at the wrong time.

@@ -1,0 +1,112 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:42589/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Net.Http.Json.Unit.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.Http.Json.Unit.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Net.Http.Json.Unit.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Net.Http.Json.Unit.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Net.Http.Json.Unit.Tests.dll (found 14 of 14 test cases)
+Starting:    System.Net.Http.Json.Unit.Tests.dll
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_ASCII(message: "Hello world")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_ASCII(message: "ABABABABABABABABABABABABABABABABABABABABABABABABAB"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_ASCII(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_ASCII(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_ASCII(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_ASCII(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "Hello world")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "ABABABABABABABABABABABABABABABABABABABABABABABABAB"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "ÆÆÆÆÆÆÆ")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "AbĀāĂăĄąĆŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "Abcஐஒஓஔகஙசஜஞடணதநனபமயரறலளழவஷஸஹ")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "☀☁☂☃☄★☆☇☈☉☊☋☌☍☎☏☐☑☒☓☚☛☜☝☞☟☠☡☢☣☤☥☦☧☨☩☪☫☬☭☮☯☰☱☲☳☴☵☶☷"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "ÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "ÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "pingüino")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_UTF32(message: "ऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "Hello world")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "ABABABABABABABABABABABABABABABABABABABABABABABABAB"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "ÆÆÆÆÆÆÆ")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "AbĀāĂăĄąĆŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "Abcஐஒஓஔகஙசஜஞடணதநனபமயரறலளழவஷஸஹ")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "☀☁☂☃☄★☆☇☈☉☊☋☌☍☎☏☐☑☒☓☚☛☜☝☞☟☠☡☢☣☤☥☦☧☨☩☪☫☬☭☮☯☰☱☲☳☴☵☶☷"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "ÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "ÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "pingüino")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_Unicode(message: "ऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_WesternEuropeanEncoding(message: "Hello world")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_WesternEuropeanEncoding(message: "ABABABABABABABABABABABABABABABABABABABABABABABABAB"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_WesternEuropeanEncoding(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_WesternEuropeanEncoding(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_WesternEuropeanEncoding(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingWriteStreamTest.WriteAsync_Works_WhenOutputIs_WesternEuropeanEncoding(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.TestOneToOneTranscodingAsync
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_CompletedInSecondIteration
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_FillsBuffer
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_WithOverflowBuffer_WithBufferSize1(input: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_WithOverflowBuffer_WithBufferSize1(input: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_WithOverflowBuffer_WithBufferSize1(input: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_ASCII(message: "Hello world")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_ASCII(message: "ABABABABABABABABABABABABABABABABABABABABABABABABAB"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_ASCII(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_ASCII(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_ASCII(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_ASCII(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_WithOverflowBuffer
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "Hello world")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "ABABABABABABABABABABABABABABABABABABABABABABABABAB"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "ÆÆÆÆÆÆÆ")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "AbĀāĂăĄąĆŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "Abcஐஒஓஔகஙசஜஞடணதநனபமயரறலளழவஷஸஹ")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "☀☁☂☃☄★☆☇☈☉☊☋☌☍☎☏☐☑☒☓☚☛☜☝☞☟☠☡☢☣☤☥☦☧☨☩☪☫☬☭☮☯☰☱☲☳☴☵☶☷"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "ÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "ÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "pingüino")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_UTF32(message: "ऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "Hello world")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "ABABABABABABABABABABABABABABABABABABABABABABABABAB"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "ÆÆÆÆÆÆÆ")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "AbĀāĂăĄąĆŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "Abcஐஒஓஔகஙசஜஞடணதநனபமயரறலளழவஷஸஹ")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "☀☁☂☃☄★☆☇☈☉☊☋☌☍☎☏☐☑☒☓☚☛☜☝☞☟☠☡☢☣☤☥☦☧☨☩☪☫☬☭☮☯☰☱☲☳☴☵☶☷"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "ÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "ÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆÆ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "pingüino")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_Unicode(message: "ऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄऄ"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_SingleByte
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_WesternEuropeanEncoding(message: "Hello world")
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_WesternEuropeanEncoding(message: "ABABABABABABABABABABABABABABABABABABABABABABABABAB"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_WesternEuropeanEncoding(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_WesternEuropeanEncoding(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_WesternEuropeanEncoding(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+[STRT] System.Net.Http.Json.Functional.Tests.TranscodingReadStreamTest.ReadAsync_Works_WhenInputIs_WesternEuropeanEncoding(message: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"···)
+Finished:    System.Net.Http.Json.Unit.Tests.dll
+Finished uploading 33535 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 92 Passed: 92 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Net.Http.Json.Unit.Tests.dll after 0.046983333333333335 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

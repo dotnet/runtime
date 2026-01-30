@@ -1,0 +1,9 @@
+Test Comparison: Microsoft.Bcl.AsyncInterfaces.Tests
+Generated: 2026-01-30T13:31:54+01:00
+
+Mono tests:    59
+CoreCLR tests: 59
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

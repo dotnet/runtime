@@ -1,0 +1,343 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Reflection.Emit.ILGeneration/tests/System.Reflection.Emit.ILGeneration.Tests.csproj (in 129 ms).
+  3 of 4 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Reflection.Emit.ILGeneration.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration.Tests/Release/net11.0/browser-wasm/System.Reflection.Emit.ILGeneration.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Reflection.Emit.ILGeneration/tests
+  ----- start Fri Jan 30 13:39:42 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Reflection.Emit.ILGeneration.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Reflection.Emit.ILGeneration/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Reflection.Emit.ILGeneration.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 44513
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 44513.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:36243/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Reflection.Emit.ILGeneration.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Reflection.Emit.ILGeneration.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Reflection.Emit.ILGeneration.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Reflection.Emit.ILGeneration.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Reflection.Emit.ILGeneration.Tests.dll (found 133 of 138 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Reflection.Emit.ILGeneration.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.TestSetConstant.NullableValueType_DoesNotThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit3.Emit_OpCodes_LocalBuilder_NullLocal_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit3.PosTest1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit3.PosTest2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit3.PosTest3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit3.Emit_OpCodes_LocalBuilder_TooManyLocals_ThrowsInvalidOperationException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit3.Emit_OpCodes_LocalBuilder_LocalFromDifferentMethod_ThrowsArgumentException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit3.PosTest4
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit5.MaxStackNonEmptyBackward
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit5.MaxStackOverflowTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit5.MaxStackNonEmptyForward
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit5.AmbiguousDepth
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit5.UnreachableDepth
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit2.PosTest6
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit2.PosTest2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit2.PosTest3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit2.PosTest1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit2.Emit_OpCodes_LocalBuilder_LocalFromDifferentMethod_ThrowsArgumentException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit2.Emit_OpCodes_LocalBuilder_TooManyLocals_ThrowsInvalidOperationException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit2.PosTest4
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit2.PosTest7
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit2.Emit_OpCodes_LocalBuilder_NullLocal_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit2.PosTest5
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetLocalVarSigHelper.GetLocalVarSigHelper_Module_Length_ReturnsTwo
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetLocalVarSigHelper.GetLocalVarSigHelper_Length_ReturnsTwo
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NullObjectInFieldValues_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NullConstructor_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.StaticConstructor_ThrowsArgumentException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ClassNotSupportedAsAttribute_DoesNotThrow_DoesNotSet(type: typeof(System.Reflection.Emit.Tests.PrivateAttribute))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ClassNotSupportedAsAttribute_DoesNotThrow_DoesNotSet(type: typeof(System.Reflection.Emit.Tests.NotAnAttribute))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.IndexerInNamedProperties_ThrowsCustomAttributeFormatExceptionOnCreation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ThrowsWhenDynamicCodeNotSupported
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_ContainsReadonlyOrStaticField_Works(name: "ReadonlyField")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_ContainsReadonlyOrStaticField_Works(name: "StaticField")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_ContainsReadonlyOrStaticField_Works(name: "StaticReadonlyField")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ZeroCountMultidimensionalArrayInFieldValues_ChangesToZeroCountJaggedArray
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NullPropertyValues_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorArgsContainsFloatEnumOrDoubleEnum_ThrowsArgumentException(value: Value0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorArgsContainsFloatEnumOrDoubleEnum_ThrowsArgumentException(value: Value0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedProperties_TypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(System.Guid), value: 00000000-0000-0000-0000-000000000000)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedProperties_TypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(int[,]), value: [0, 0, 0, 0, 0, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedProperties_TypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 'a')
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedProperties_TypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedProperties_TypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedProperties_TypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedProperties_TypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedProperties_TypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedProperties_TypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(nint), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedProperties_TypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(nuint), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedProperties_PropertyDoesntBelongToConstructorDeclaringType_ThrowsArgumentException(con: Void .ctor(), property: Int32 Property)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedProperties_PropertyDoesntBelongToConstructorDeclaringType_ThrowsArgumentException(con: Void .ctor(), property: Int32 SubProperty)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedPrimitiveInPropertyValues_ThrowsArgumentException(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedPrimitiveInPropertyValues_ThrowsArgumentException(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_FieldDoesntBelongToConstructorDeclaringType_ThrowsArgumentException(con: Void .ctor(), field: Int32 Field)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_FieldDoesntBelongToConstructorDeclaringType_ThrowsArgumentException(con: Void .ctor(), field: Int32 SubField)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_FieldTypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(System.Guid), value: 00000000-0000-0000-0000-000000000000)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_FieldTypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(int[,]), value: [0, 0, 0, 0, 0, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_FieldTypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 'a')
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_FieldTypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_FieldTypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_FieldTypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_FieldTypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_FieldTypeNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.DynamicTypeInConstructorArgs_ThrowsFileNotFoundExceptionOnCreation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NullObjectInPropertyValues_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFields_ContainsConstField_ThrowsArgumentException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor_AllPrimitives
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NullNamedFields_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorHasNonStandardCallingConvention_ThrowsArgumentException(callingConvention: Any)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorHasNonStandardCallingConvention_ThrowsArgumentException(callingConvention: VarArgs)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedPrimitiveInConstructorArgs_ThrowsArgumentException(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedPrimitiveInConstructorArgs_ThrowsArgumentException(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NullObjectInNamedProperties_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NullValueForPrimitiveTypeInConstructorArgs_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.PrivateConstructor_ThrowsArgumentException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedObjectInPropertyValues_ThrowsArgumentException(value: 00000000-0000-0000-0000-000000000000)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedObjectInPropertyValues_ThrowsArgumentException(value: [0, 0, 0, 0, 0, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NullObjectInNamedFields_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedPrimitiveInFieldValues_ThrowsArgumentException(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedPrimitiveInFieldValues_ThrowsArgumentException(value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.DynamicTypeInFieldValues_ThrowsFileNotFoundExceptionOnCreation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorParametersContainsIntPtrOrUIntPtrArgument_ThrowsArgumentException(type: typeof(nint), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorParametersContainsIntPtrOrUIntPtrArgument_ThrowsArgumentException(type: typeof(nuint), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NullFieldValues_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedObjectInFieldValues_ThrowsArgumentException(value: 00000000-0000-0000-0000-000000000000)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedObjectInFieldValues_ThrowsArgumentException(value: [0, 0, 0, 0, 0, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFieldAndFieldValuesDifferentLengths_ThrowsArgumentException(fieldNames: ["TestInt"], fieldValues: [], paramName: "namedFields, fieldValues")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFieldAndFieldValuesDifferentLengths_ThrowsArgumentException(fieldNames: ["TestInt"], fieldValues: ["TestString", 10], paramName: "namedFields, fieldValues")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFieldAndFieldValuesDifferentLengths_ThrowsArgumentException(fieldNames: ["TestInt", "TestStringField"], fieldValues: ["TestString", 10], paramName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedFieldAndFieldValuesDifferentLengths_ThrowsArgumentException(fieldNames: ["TestStringField"], fieldValues: [10], paramName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedObjectInConstructorArgs_ThrowsArgumentException(value: [])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedObjectInConstructorArgs_ThrowsArgumentException(value: Value0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedObjectInConstructorArgs_ThrowsArgumentException(value: 00000000-0000-0000-0000-000000000000)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NotSupportedObjectInConstructorArgs_ThrowsArgumentException(value: [0, 0, 0, 0, 0, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorAndConstructorArgsDontMatch_ThrowsArgumentException(constructorTypes: [typeof(int)], constructorArgs: [123, False])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorAndConstructorArgsDontMatch_ThrowsArgumentException(constructorTypes: [typeof(int), typeof(bool)], constructorArgs: [False, 123])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorAndConstructorArgsDontMatch_ThrowsArgumentException(constructorTypes: [typeof(string), typeof(int), typeof(string), typeof(int)], constructorArgs: ["TestString", 10])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(System.String, Int32), constructorArgs: ["TestString1", 10], propertyNames: [], propertyValues: [], expectedPropertyValues: [20, null, "TestString1", 10], fieldNames: ["TestInt"], fieldValues: [20], expectedFieldValues: [20, null, "TestString1", 10])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(System.String, Int32), constructorArgs: ["TestString1", 10], propertyNames: [], propertyValues: [], expectedPropertyValues: [0, null, "TestString1", 10], fieldNames: [], fieldValues: [], expectedFieldValues: [0, null, "TestString1", 10])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(), constructorArgs: [], propertyNames: [], propertyValues: [], expectedPropertyValues: [0, null, null, 0], fieldNames: [], fieldValues: [], expectedFieldValues: [0, null, null, 0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(), constructorArgs: [], propertyNames: [], propertyValues: [], expectedPropertyValues: [10, null, null, 0], fieldNames: ["TestInt"], fieldValues: [10], expectedFieldValues: [10, null, null, 0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(), constructorArgs: [], propertyNames: [], propertyValues: [], expectedPropertyValues: [10, "TestString1", null, 0], fieldNames: ["TestInt", "TestStringField"], fieldValues: [10, "TestString1"], expectedFieldValues: [10, "TestString1", null, 0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(System.String, Int32), constructorArgs: ["TestString1", 10], propertyNames: [], propertyValues: [], expectedPropertyValues: [20, "TestString2", "TestString1", 10], fieldNames: ["TestInt", "TestStringField"], fieldValues: [20, "TestString2"], expectedFieldValues: [20, "TestString2", "TestString1", 10])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(), constructorArgs: [], propertyNames: [], propertyValues: [], expectedPropertyValues: [0, "TestString1", null, 0], fieldNames: ["TestStringField"], fieldValues: ["TestString1"], expectedFieldValues: [0, "TestString1", null, 0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(System.String, Int32), constructorArgs: ["TestString1", 10], propertyNames: ["TestInt32", "TestString"], propertyValues: [20, "TestString2"], expectedPropertyValues: [20, "TestString2", "TestString1", 10], fieldNames: [], fieldValues: [], expectedFieldValues: [20, "TestString2", "TestString1", 10])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(System.String, Int32), constructorArgs: ["TestString1", 10], propertyNames: ["TestInt32"], propertyValues: [20], expectedPropertyValues: [20, null, "TestString1", 10], fieldNames: [], fieldValues: [], expectedFieldValues: [20, null, "TestString1", 10])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(), constructorArgs: [], propertyNames: ["TestInt32"], propertyValues: [20], expectedPropertyValues: [20, null, null, 0], fieldNames: [], fieldValues: [], expectedFieldValues: [20, null, null, 0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(), constructorArgs: [], propertyNames: ["TestInt32", "TestString"], propertyValues: [20, "TestString2"], expectedPropertyValues: [20, "TestString2", null, 0], fieldNames: [], fieldValues: [], expectedFieldValues: [20, "TestString2", null, 0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(System.String, Int32, System.String, Int32), constructorArgs: ["TestString1", 10, "TestString1", 10], propertyNames: ["TestInt32", "TestString"], propertyValues: [20, "TestString2"], expectedPropertyValues: [20, "TestString2", "TestString1", 10], fieldNames: [], fieldValues: [], expectedFieldValues: [20, "TestString2", "TestString1", 10])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(System.String, Int32), constructorArgs: ["TestString1", 10], propertyNames: ["TestInt32", "TestString"], propertyValues: [20, "TestString2"], expectedPropertyValues: [20, "TestString2", "TestString1", 10], fieldNames: ["TestInt", "TestStringField"], fieldValues: [20, "TestString2"], expectedFieldValues: [20, "TestString2", "TestString1", 10])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(System.String, Int32), constructorArgs: ["TestString1", 10], propertyNames: ["TestString"], propertyValues: ["TestString2"], expectedPropertyValues: [20, "TestString2", "TestString1", 10], fieldNames: ["TestInt"], fieldValues: [20], expectedFieldValues: [20, "TestString2", "TestString1", 10])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(), constructorArgs: [], propertyNames: ["TestInt32", "TestString"], propertyValues: [10, "TestString1"], expectedPropertyValues: [20, "TestString1", null, 0], fieldNames: ["TestInt"], fieldValues: [20], expectedFieldValues: [20, "TestString1", null, 0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(System.String, Int32), constructorArgs: ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···, 10], propertyNames: ["TestString"], propertyValues: ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···], expectedPropertyValues: [0, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···, 10], fieldNames: [], fieldValues: [], expectedFieldValues: [0, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···, 10])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor(con: Void .ctor(), constructorArgs: [], propertyNames: ["TestString"], propertyValues: ["TestString1"], expectedPropertyValues: [10, "TestString1", null, 0], fieldNames: ["TestInt"], fieldValues: [10], expectedFieldValues: [10, "TestString1", null, 0])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedProperties_StaticProperty_Works
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NullNamedProperties_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor_RefEmitParameters(con: Name: .ctor
+  [40m[32minfo[39m[22m[49m: Attributes: 2054
+  [40m[32minfo[39m[22m[49m: Method Signature: Length: 3
+  [40m[32minfo[39m[22m[49m: Arguments: 0
+  [40m[32minfo[39m[22m[49m: Signature:
+  [40m[32minfo[39m[22m[49m: 32  0  1  0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: , constructorArgs: [], namedProperties: [Int32 Property], propertyValues: [1], namedFields: [Int32 Field], fieldValues: [2])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor_RefEmitParameters(con: Void .ctor(), constructorArgs: [], namedProperties: [RuntimePropertyBuilder { Attributes = None, CanRead = False, CanWrite = True, CustomAttributes = (throws NotImplementedException), DeclaringType = typeof(DynamicType), ··· }], propertyValues: [1], namedFields: [RuntimeFieldBuilder { Attributes = Public, CustomAttributes = (throws NotImplementedException), DeclaringType = typeof(DynamicType), FieldHandle = (throws NotSupportedException), FieldType = typeof(int), ··· }], fieldValues: [2])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.Ctor_RefEmitParameters(con: Name: .ctor
+  [40m[32minfo[39m[22m[49m: Attributes: 2054
+  [40m[32minfo[39m[22m[49m: Method Signature: Length: 3
+  [40m[32minfo[39m[22m[49m: Arguments: 0
+  [40m[32minfo[39m[22m[49m: Signature:
+  [40m[32minfo[39m[22m[49m: 32  0  1  0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: , constructorArgs: [], namedProperties: [RuntimePropertyBuilder { Attributes = None, CanRead = False, CanWrite = True, CustomAttributes = (throws NotImplementedException), DeclaringType = typeof(DynamicType), ··· }], propertyValues: [1], namedFields: [RuntimeFieldBuilder { Attributes = Public, CustomAttributes = (throws NotImplementedException), DeclaringType = typeof(DynamicType), FieldHandle = (throws NotSupportedException), FieldType = typeof(int), ··· }], fieldValues: [2])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NullConstructorArgs_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ZeroCountMultidimensionalArrayInPropertyValues_ChangesToZeroCountJaggedArray
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedPropertyAndPropertyValuesDifferentLengths_ThrowsArgumentException(propertyNames: ["TestInt32"], propertyValues: [], paramName: "namedProperties, propertyValues")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedPropertyAndPropertyValuesDifferentLengths_ThrowsArgumentException(propertyNames: [], propertyValues: [10], paramName: "namedProperties, propertyValues")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedPropertyAndPropertyValuesDifferentLengths_ThrowsArgumentException(propertyNames: ["TestInt32", "TestString"], propertyValues: ["TestString", 10], paramName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedPropertyAndPropertyValuesDifferentLengths_ThrowsArgumentException(propertyNames: ["GetOnlyInt32"], propertyValues: ["TestString"], paramName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedPropertyAndPropertyValuesDifferentLengths_ThrowsArgumentException(propertyNames: ["GetOnlyString"], propertyValues: ["TestString"], paramName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.NamedPropertyAndPropertyValuesDifferentLengths_ThrowsArgumentException(propertyNames: ["TestInt32"], propertyValues: ["TestString"], paramName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.DynamicTypeInPropertyValues_ThrowsFileNotFoundExceptionOnCreation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorParametersNotSupportedInAttributes_ThrowsArgumentException(type: typeof(System.Guid), value: 00000000-0000-0000-0000-000000000000)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorParametersNotSupportedInAttributes_ThrowsArgumentException(type: typeof(int[,]), value: [0, 0, 0, 0, 0, ···])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorParametersNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 'a')
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorParametersNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorParametersNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorParametersNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorParametersNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.CustomAttributeBuilderTests.ConstructorParametersNotSupportedInAttributes_ThrowsArgumentException(type: typeof(Name), value: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit1.PosTest4
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit1.PosTest1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit1.PosTest2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit1.PosTest3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit1.Emit_OpCodes_MethodInfo_NullMethod_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmit1.PosTest5
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArgument.AddArgument_NullType_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArgument.AddArgument_Type
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArgument.AddArgument_Type_Bool(pinned: True, expectedLength: 3)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArgument.AddArgument_Type_Bool(pinned: False, expectedLength: 2)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArgument.AddArgument_Type_TypeArray_TypeArray(requiredCustomModifiers: null, optionalCustomModifiers: null, expectedLength: 2)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArgument.AddArgument_Type_TypeArray_TypeArray(requiredCustomModifiers: [typeof(int)], optionalCustomModifiers: null, expectedLength: 4)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArgument.AddArgument_Type_TypeArray_TypeArray(requiredCustomModifiers: null, optionalCustomModifiers: [typeof(System.Type)], expectedLength: 4)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArgument.AddArgument_Type_TypeArray_TypeArray(requiredCustomModifiers: [typeof(int)], optionalCustomModifiers: [typeof(System.Type)], expectedLength: 6)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArgument.AddArgument_DifferentCountsForCustomModifiers_ThrowsArgumentException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArgument.AddArgument_SignatureFinished_ThrowsArgumentException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetFieldSigHelper.GetFieldSigHelper_Length_ReturnsOne
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmitWriteLine.EmitWriteLineTests
+  [40m[32minfo[39m[22m[49m: 0
+  [40m[32minfo[39m[22m[49m: emitWriteLine
+  [40m[32minfo[39m[22m[49m: False
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_Module_Type_TypeArray
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_CallingConventions_Type_Length_ReturnsThree(callingConventions: Any, type: typeof(int))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_CallingConventions_Type_Length_ReturnsThree(callingConventions: ExplicitThis, type: typeof(string))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_CallingConventions_Type_Length_ReturnsThree(callingConventions: HasThis, type: typeof(string))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_CallingConventions_Type_Length_ReturnsThree(callingConventions: Standard, type: typeof(string))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_CallingConventions_Type_Length_ReturnsThree(callingConventions: VarArgs, type: typeof(string))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_Module_CallingConventions_Type_Length_ReturnsThree(callingConventions: Any, type: typeof(int))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_Module_CallingConventions_Type_Length_ReturnsThree(callingConventions: ExplicitThis, type: typeof(string))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_Module_CallingConventions_Type_Length_ReturnsThree(callingConventions: HasThis, type: typeof(string))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_Module_CallingConventions_Type_Length_ReturnsThree(callingConventions: Standard, type: typeof(string))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_Module_CallingConventions_Type_Length_ReturnsThree(callingConventions: VarArgs, type: typeof(string))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_Module_Type_TypeArray_NullObjectInParameterType_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetPropertySigHelper.GetPropertySigHelper_Module_Type_TypeArray_TypeArray_TypeArrayArray_TypeArrayArray(types: [typeof(int), typeof(char)], expectedLength: 29)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetPropertySigHelper.GetPropertySigHelper_Module_Type_TypeArray_TypeArray_TypeArrayArray_TypeArrayArray(types: [typeof(short), typeof(bool)], expectedLength: 29)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetPropertySigHelper.GetPropertySigHelper_Module_Type_TypeArray(returnType: typeof(string), parameterTypes: [typeof(System.Delegate), typeof(int)], expectedLength: 6)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetPropertySigHelper.GetPropertySigHelper_Module_Type_TypeArray(returnType: typeof(System.Type), parameterTypes: [typeof(char), typeof(object)], expectedLength: 6)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetPropertySigHelper.GetPropertySigHelper_Module_Type_TypeArray_NullModule_DoesNotThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetPropertySigHelper.GetPropertySigHelper_Module_Type_TypeArray_NullObjectInParameterTypes_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetPropertySigHelper.GetPropertySigHelper_NullTypeInParameterTypes_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetPropertySigHelper.GetPropertySigHelper_NullModule_ThrowsNullReferenceException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperDynamicCodeNotSupported.ThrowsWhenDynamicCodeNotSupported
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LocalBuilderLocalIndex.LocalIndex_MultipleLocals_ReturnsIndex
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LocalBuilderLocalIndex.LocalIndex_FirstLocal_ReturnsZero
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LocalBuilderIsPinned.IsPinned(pinned: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LocalBuilderIsPinned.IsPinned(pinned: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LabelGetHashCode.GetHashCode_CreatedByILGenerator_ReturnsIndex
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LabelGetHashCode.GetHashCode_NewInstance_ReturnsZero
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperEquals.EqualsTest(helper: Length: 1
+  [40m[32minfo[39m[22m[49m: Field Signature
+  [40m[32minfo[39m[22m[49m: Signature:
+  [40m[32minfo[39m[22m[49m: 6  0
+  [40m[32minfo[39m[22m[49m: , obj: Length: 1
+  [40m[32minfo[39m[22m[49m: Field Signature
+  [40m[32minfo[39m[22m[49m: Signature:
+  [40m[32minfo[39m[22m[49m: 6  0
+  [40m[32minfo[39m[22m[49m: , expected: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperEquals.EqualsTest(helper: Length: 2
+  [40m[32minfo[39m[22m[49m: Field Signature
+  [40m[32minfo[39m[22m[49m: Signature:
+  [40m[32minfo[39m[22m[49m: 6  14  0
+  [40m[32minfo[39m[22m[49m: , obj: Length: 1
+  [40m[32minfo[39m[22m[49m: Field Signature
+  [40m[32minfo[39m[22m[49m: Signature:
+  [40m[32minfo[39m[22m[49m: 6  0
+  [40m[32minfo[39m[22m[49m: , expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperEquals.EqualsTest(helper: Length: 2
+  [40m[32minfo[39m[22m[49m: Field Signature
+  [40m[32minfo[39m[22m[49m: Signature:
+  [40m[32minfo[39m[22m[49m: 6  14  0
+  [40m[32minfo[39m[22m[49m: , obj: Length: 2
+  [40m[32minfo[39m[22m[49m: Field Signature
+  [40m[32minfo[39m[22m[49m: Signature:
+  [40m[32minfo[39m[22m[49m: 6  14  0
+  [40m[32minfo[39m[22m[49m: , expected: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperEquals.EqualsTest(helper: Length: 1
+  [40m[32minfo[39m[22m[49m: Field Signature
+  [40m[32minfo[39m[22m[49m: Signature:
+  [40m[32minfo[39m[22m[49m: 6  0
+  [40m[32minfo[39m[22m[49m: , obj: null, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LabelEquals.Equals_ObjectNotLabel_ReturnsFalse(obj: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LabelEquals.Equals_ObjectNotLabel_ReturnsFalse(obj: "label")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LabelEquals.Equals_ObjectNotLabel_ReturnsFalse(obj: "  ")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LabelEquals.Equals_ObjectNotLabel_ReturnsFalse(obj: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LabelEquals.Equals_SameInstance_ReturnsTrue
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LabelEquals.Equals_DifferentLabel_ReturnsFalse
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LabelEquals.Equals_EqualityOperators
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.AbstractPublicMethod
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.BeginScope
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.BeginExceptionBlock
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.Basic
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.DeclareLocal_GlobalFunctionsCreated_ThrowsInvalidOperationException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.DeclareLocal_Pinned
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.BeginCatchBlock
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.DeclareLocal_NullLocalType_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.DeclareLocal_TypeCreated_ThrowsInvalidOperationException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.BeginFinallyBlock
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LocalBuilderLocalType.LocalType(localType: typeof(string))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LocalBuilderLocalType.LocalType(localType: typeof(int))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.LocalBuilderLocalType.LocalType(localType: typeof(System.Reflection.Emit.Tests.LocalTypeClass))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorEmitMethodInfo.EmitMethodInfo
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.PropertyTests.Properties
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperGetSignature.GetSignature_Length_ReturnsOne
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILOffsetTests.ILOffset_SomethingEmitted_ReturnsNonZero
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILOffsetTests.ILOffset_NothingEmitted_ReturnsZero
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.EmitWithMods.TestEmitCallFunctionWithInArgumentFromDynamicMethod
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperToString.ToString_EqualSignatureHelpers_ReturnsEqualStrings
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SetCustomAttributeTests.SetCustomAttribute_ConstructorInfo_ByteArray
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SetCustomAttributeTests.SetCustomAttribute_CustomAttributeBuilder
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SetCustomAttributeTests.SetCustomAttribute_NullArgument_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ExceptionEmitTests.TestExceptionEmitCalls
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArgument_NullObjectInRequiredCustomModifiers_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArguments(requiredCustomModifiers: null, optionalCustomModifiers: null, expectedLength: 3)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArguments(requiredCustomModifiers: null, optionalCustomModifiers: [[typeof(string), typeof(int)], [typeof(char), typeof(System.Reflection.Module)]], expectedLength: 11)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArguments(requiredCustomModifiers: [[typeof(string), typeof(int)], [typeof(char), typeof(System.Reflection.Module)]], optionalCustomModifiers: null, expectedLength: 11)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArguments(requiredCustomModifiers: [[typeof(string), typeof(int)], [typeof(char), typeof(System.Reflection.Module)]], optionalCustomModifiers: [[typeof(string), typeof(int)], [typeof(char), typeof(System.Reflection.Module)]], expectedLength: 19)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArguments_NullObjectInTypeArguments_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArguments_SignatureFinished_ThrowsArgumentException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArgument_NullObjectInOptionalCustomModifiers_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArgument_DifferentCountsForCustomModifiers_ThrowsArgumentException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Reflection.Emit.Tests.ILGeneratorDefineLabel.DefineLabel_DoesNotThrow
+  [40m[32minfo[39m[22m[49m: Finished:    System.Reflection.Emit.ILGeneration.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 79032 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 79032 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 226 Passed: 224 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 2
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Reflection.Emit.ILGeneration.Tests.dll after 0.02265 minutes with result 0 and linear memory 231997440 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Reflection.Emit.ILGeneration/tests
+  ----- end Fri Jan 30 13:39:45 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:06.26

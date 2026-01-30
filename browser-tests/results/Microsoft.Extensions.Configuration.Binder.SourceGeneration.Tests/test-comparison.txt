@@ -1,0 +1,14 @@
+Test Comparison: Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
+Generated: 2026-01-30T13:44:55+01:00
+
+Mono tests:    269
+CoreCLR tests: 270
+
+=== Extra in CoreCLR (3) ===
+Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests.ConfigurationBinderTests.BindToKnownParsableTypesWithNullValueTest(configuration: ConfigurationRoot { Item = (throws TargetParameterCountException), Providers = [JsonStreamConfigurationProvider] })
+Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests.ConfigurationBinderTests.BindToKnownParsableTypesWithNullValueTest(configuration: ConfigurationRoot { Item = (throws TargetParameterCountException), Providers = [[···]] })
+Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests.ConfigurationBinderTests.TestBindingNestedIEnumerable
+
+=== Missing in CoreCLR (2) ===
+Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests.ConfigurationBinderTests.BindToKnownParsableTypesWithNullValueTest(configuration: ConfigurationRoot { Item = (throws ArgumentException), Providers = [JsonStreamConfigurationProvider] })
+Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests.ConfigurationBinderTests.BindToKnownParsableTypesWithNullValueTest(configuration: ConfigurationRoot { Item = (throws ArgumentException), Providers = [[···]] })

@@ -1,0 +1,9 @@
+Test Comparison: Microsoft.Bcl.Numerics.Tests
+Generated: 2026-01-30T13:32:18+01:00
+
+Mono tests:    874
+CoreCLR tests: 874
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

@@ -1,0 +1,75 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:45179/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Bcl.AsyncInterfaces.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Bcl.AsyncInterfaces.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Bcl.AsyncInterfaces.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Bcl.AsyncInterfaces.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Bcl.AsyncInterfaces.Tests.dll (found 30 of 30 test cases)
+Starting:    Microsoft.Bcl.AsyncInterfaces.Tests.dll
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.OnCompleted_ContinuationAlwaysInvokedAsynchronously(runContinuationsAsynchronously: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.OnCompleted_ContinuationAlwaysInvokedAsynchronously(runContinuationsAsynchronously: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.OnCompleted_NullDelegate_Throws
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.GetResult_BeforeCompleted_Fails
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.ReuseInstanceWithResets_Success
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SetException_AfterOnCompleted_ResultAvailableAsynchronously
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SetResult_BeforeOnCompleted_ResultAvailableSynchronously
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SynchronizationContext_CaptureIfRequested(runContinuationsAsynchronously: False, captureSyncCtx: False, setBeforeOnCompleted: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SynchronizationContext_CaptureIfRequested(runContinuationsAsynchronously: False, captureSyncCtx: False, setBeforeOnCompleted: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SynchronizationContext_CaptureIfRequested(runContinuationsAsynchronously: False, captureSyncCtx: True, setBeforeOnCompleted: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SynchronizationContext_CaptureIfRequested(runContinuationsAsynchronously: False, captureSyncCtx: True, setBeforeOnCompleted: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SynchronizationContext_CaptureIfRequested(runContinuationsAsynchronously: True, captureSyncCtx: False, setBeforeOnCompleted: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SynchronizationContext_CaptureIfRequested(runContinuationsAsynchronously: True, captureSyncCtx: False, setBeforeOnCompleted: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SynchronizationContext_CaptureIfRequested(runContinuationsAsynchronously: True, captureSyncCtx: True, setBeforeOnCompleted: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SynchronizationContext_CaptureIfRequested(runContinuationsAsynchronously: True, captureSyncCtx: True, setBeforeOnCompleted: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.AccessWrongVersion_Fails
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.AsyncEnumerable_Success(awaitForeach: False, asyncIterator: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.AsyncEnumerable_Success(awaitForeach: False, asyncIterator: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.AsyncEnumerable_Success(awaitForeach: True, asyncIterator: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.AsyncEnumerable_Success(awaitForeach: True, asyncIterator: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SetResult_RunContinuationsAsynchronously_ContinuationInvokedAccordingly(runContinuationsAsynchronously: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SetResult_RunContinuationsAsynchronously_ContinuationInvokedAccordingly(runContinuationsAsynchronously: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.OnCompleted_UsedTwiceBeforeCompletion_Throws
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SetException_OperationCanceledException_StatusIsCanceled
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SetResult_AfterOnCompleted_ResultAvailableAsynchronously
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.FlowContext_SetBeforeOnCompleted_FlowsIfExpected(flowContext: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.FlowContext_SetBeforeOnCompleted_FlowsIfExpected(flowContext: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.TaskScheduler_CaptureIfRequested(runContinuationsAsynchronously: False, captureTaskScheduler: False, setBeforeOnCompleted: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.TaskScheduler_CaptureIfRequested(runContinuationsAsynchronously: False, captureTaskScheduler: False, setBeforeOnCompleted: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.TaskScheduler_CaptureIfRequested(runContinuationsAsynchronously: False, captureTaskScheduler: True, setBeforeOnCompleted: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.TaskScheduler_CaptureIfRequested(runContinuationsAsynchronously: False, captureTaskScheduler: True, setBeforeOnCompleted: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.TaskScheduler_CaptureIfRequested(runContinuationsAsynchronously: True, captureTaskScheduler: False, setBeforeOnCompleted: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.TaskScheduler_CaptureIfRequested(runContinuationsAsynchronously: True, captureTaskScheduler: False, setBeforeOnCompleted: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.TaskScheduler_CaptureIfRequested(runContinuationsAsynchronously: True, captureTaskScheduler: True, setBeforeOnCompleted: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.TaskScheduler_CaptureIfRequested(runContinuationsAsynchronously: True, captureTaskScheduler: True, setBeforeOnCompleted: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SetException_BeforeOnCompleted_ResultAvailableSynchronously
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.FlowContext_SetAfterOnCompleted_FlowsIfExpected(flowContext: False)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.FlowContext_SetAfterOnCompleted_FlowsIfExpected(flowContext: True)
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.SetTwice_Fails
+[STRT] System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.OnCompleted_UnknownFlagsIgnored
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests.DisposeAsync_ContinuesOnCapturedContextIfExpected(continueOnCapturedContext: False)
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests.DisposeAsync_ContinuesOnCapturedContextIfExpected(continueOnCapturedContext: True)
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests.DisposeAsync_InvokesUnderlyingDisposeAsync(continueOnCapturedContext: False)
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests.DisposeAsync_InvokesUnderlyingDisposeAsync(continueOnCapturedContext: True)
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests.Default_GetAsyncEnumerator_Throws
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.CanBeEnumeratedWithStandardPattern
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.ConfigureAwait_AwaitMoveNextAsync_FlagsSetAppropriately(continueOnCapturedContext: False)
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.ConfigureAwait_AwaitMoveNextAsync_FlagsSetAppropriately(continueOnCapturedContext: True)
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.Default_EnumeratorMembers_Throws
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.Default_GetAsyncEnumerator_Throws
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.Default_ConfigureAwait_WithCancellation_NoThrow
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.Default_WithCancellation_ConfigureAwait_NoThrow
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.WithCancellation_TokenPassedThrough
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.ConfigureAwait_AwaitDisposeAsync_FlagsSetAppropriately(continueOnCapturedContext: False)
+[STRT] System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.ConfigureAwait_AwaitDisposeAsync_FlagsSetAppropriately(continueOnCapturedContext: True)
+Finished:    Microsoft.Bcl.AsyncInterfaces.Tests.dll
+Finished uploading 19287 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 55 Passed: 54 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 1
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Bcl.AsyncInterfaces.Tests.dll after 0.0243 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

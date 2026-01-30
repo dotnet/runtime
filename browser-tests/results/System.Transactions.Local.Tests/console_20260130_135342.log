@@ -1,0 +1,238 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:37263/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Transactions.Local.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Transactions.Local.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Transactions.Local.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Transactions.Local.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Transactions.Local.Tests.dll (found 125 of 149 test cases)
+Starting:    System.Transactions.Local.Tests.dll
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransactionCommit
+[STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope1
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction3
+[STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope9
+[STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope10
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction6a
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction15
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction6c
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction10a
+[STRT] System.Transactions.Tests.TransactionScopeTest.RMFail1
+[STRT] System.Transactions.Tests.TransactionScopeTest.TransactionScopeCommit
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction4
+[STRT] System.Transactions.Tests.TransactionScopeTest.TransactionScopeCompleted2
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction13
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction5
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction14
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction6e
+[STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope6
+[STRT] System.Transactions.Tests.TransactionScopeTest.TransactionScopeCompleted3
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction1
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction16
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction10b
+[STRT] System.Transactions.Tests.TransactionScopeTest.TransactionScopeAbort
+[STRT] System.Transactions.Tests.TransactionScopeTest.TransactionScopeWithInvalidTimeSpanThrows
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction7
+[STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope4
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction6
+[STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope12
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction9
+[STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope13
+[STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope2
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction10
+[STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope5
+[STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope8a
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransactionRollback
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction6d
+[STRT] System.Transactions.Tests.TransactionScopeTest.TransactionScopeCompleted1
+[STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope7
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction8a
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction8
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction12
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction6b
+[STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope8
+[STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction2
+[STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope3
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Required, child1AsyncFlowOption: Suppress, child2ScopeOption: Required, child2AsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Required, child1AsyncFlowOption: Enabled, child2ScopeOption: Required, child2AsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Required, child1AsyncFlowOption: Suppress, child2ScopeOption: Required, child2AsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Required, child1AsyncFlowOption: Enabled, child2ScopeOption: Required, child2AsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Required, child1AsyncFlowOption: Suppress, child2ScopeOption: RequiresNew, child2AsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Required, child1AsyncFlowOption: Enabled, child2ScopeOption: RequiresNew, child2AsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Required, child1AsyncFlowOption: Suppress, child2ScopeOption: RequiresNew, child2AsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Required, child1AsyncFlowOption: Enabled, child2ScopeOption: RequiresNew, child2AsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Suppress, child1AsyncFlowOption: Suppress, child2ScopeOption: Required, child2AsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Suppress, child1AsyncFlowOption: Enabled, child2ScopeOption: Required, child2AsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Suppress, child1AsyncFlowOption: Suppress, child2ScopeOption: Required, child2AsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Suppress, child1AsyncFlowOption: Enabled, child2ScopeOption: Required, child2AsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Required, child1AsyncFlowOption: Suppress, child2ScopeOption: Suppress, child2AsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Required, child1AsyncFlowOption: Enabled, child2ScopeOption: Suppress, child2AsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Required, child1AsyncFlowOption: Suppress, child2ScopeOption: Suppress, child2AsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Required, child1AsyncFlowOption: Enabled, child2ScopeOption: Suppress, child2AsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.AsyncTSAndDependantClone
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyBYOT(asyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyBYOT(asyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Suppress, childScopeOption: Required, childAsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Enabled, childScopeOption: Required, childAsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Enabled, childScopeOption: Suppress, childAsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Enabled, childScopeOption: RequiresNew, childAsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Enabled, childScopeOption: Required, childAsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Enabled, childScopeOption: Suppress, childAsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Enabled, childScopeOption: RequiresNew, childAsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Enabled, childScopeOption: Required, childAsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Enabled, childScopeOption: Suppress, childAsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Enabled, childScopeOption: RequiresNew, childAsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Enabled, childScopeOption: Required, childAsyncFlowOption: Suppress)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Suppress, childScopeOption: Suppress, childAsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Suppress, childScopeOption: RequiresNew, childAsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Suppress, childScopeOption: Required, childAsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Suppress, childScopeOption: Suppress, childAsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Suppress, childScopeOption: RequiresNew, childAsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Enabled, childScopeOption: RequiresNew, childAsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Enabled, childScopeOption: Suppress, childAsyncFlowOption: Enabled)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Suppress, asyncFlowOption2: Enabled, asyncFlowOption3: Suppress, scopeOption: Required, nested: False)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Suppress, asyncFlowOption3: Enabled, scopeOption: Required, nested: False)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Suppress, asyncFlowOption2: Enabled, asyncFlowOption3: Suppress, scopeOption: Required, nested: True)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Suppress, asyncFlowOption3: Enabled, scopeOption: Required, nested: True)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Enabled, asyncFlowOption3: Enabled, scopeOption: Required, nested: False)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Enabled, asyncFlowOption3: Enabled, scopeOption: Required, nested: True)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Suppress, asyncFlowOption2: Enabled, asyncFlowOption3: Suppress, scopeOption: RequiresNew, nested: True)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Suppress, asyncFlowOption3: Enabled, scopeOption: RequiresNew, nested: True)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Enabled, asyncFlowOption3: Enabled, scopeOption: RequiresNew, nested: True)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Suppress, asyncFlowOption2: Enabled, asyncFlowOption3: Suppress, scopeOption: Suppress, nested: False)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Suppress, asyncFlowOption3: Enabled, scopeOption: Suppress, nested: False)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Suppress, asyncFlowOption2: Enabled, asyncFlowOption3: Suppress, scopeOption: Suppress, nested: True)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Suppress, asyncFlowOption3: Enabled, scopeOption: Suppress, nested: True)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Enabled, asyncFlowOption3: Enabled, scopeOption: Suppress, nested: False)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Enabled, asyncFlowOption3: Enabled, scopeOption: Suppress, nested: True)
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyBYOTSyncTSNestedAsync
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.DoTxNewThread
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyBYOTOpenConnSimulationTest
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.DoTxQueueWorkItem
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.NestedAsyncTSAndDependantClone
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.AsyncTSTest
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyBYOTAsyncTSNestedAsync
+[STRT] System.Transactions.Tests.AsyncTransactionScopeTests.LegacyNestedTxScope
+[STRT] System.Transactions.Tests.AsyncTest.Async1
+[STRT] System.Transactions.Tests.AsyncTest.AsyncFail2
+[STRT] System.Transactions.Tests.AsyncTest.Async3
+[STRT] System.Transactions.Tests.AsyncTest.AsyncFail3
+[STRT] System.Transactions.Tests.AsyncTest.Async2
+[STRT] System.Transactions.Tests.AsyncTest.Async4
+[STRT] System.Transactions.Tests.AsyncTest.Async5
+[STRT] System.Transactions.Tests.AsyncTest.AsyncFail1
+[STRT] System.Transactions.Tests.OleTxNonWindowsUnsupportedTests.TransmitterPropagationToken
+[STRT] System.Transactions.Tests.OleTxNonWindowsUnsupportedTests.Durable_enlistment
+[STRT] System.Transactions.Tests.OleTxNonWindowsUnsupportedTests.GetExportCookie
+[STRT] System.Transactions.Tests.OleTxNonWindowsUnsupportedTests.GetWhereabouts
+[STRT] System.Transactions.Tests.OleTxNonWindowsUnsupportedTests.Promotable_enlistments
+[STRT] System.Transactions.Tests.OleTxNonWindowsUnsupportedTests.GetDtcTransaction
+[STRT] System.Transactions.Tests.TransactionManagerTest.DefaultTimeout_MaxTimeout_Set_Get
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: Serializable, forcePromote: False, expectedStatus: Committed)
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: RepeatableRead, forcePromote: False, expectedStatus: Committed)
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: ReadCommitted, forcePromote: False, expectedStatus: Committed)
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: ReadUncommitted, forcePromote: False, expectedStatus: Committed)
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: Snapshot, forcePromote: False, expectedStatus: Committed)
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: Chaos, forcePromote: False, expectedStatus: Committed)
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: Unspecified, forcePromote: False, expectedStatus: Committed)
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: Serializable, forcePromote: False, expectedStatus: Aborted)
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: RepeatableRead, forcePromote: False, expectedStatus: Aborted)
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: ReadCommitted, forcePromote: False, expectedStatus: Aborted)
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: ReadUncommitted, forcePromote: False, expectedStatus: Aborted)
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: Snapshot, forcePromote: False, expectedStatus: Aborted)
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: Chaos, forcePromote: False, expectedStatus: Aborted)
+[STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: Unspecified, forcePromote: False, expectedStatus: Aborted)
+[STRT] System.Transactions.Tests.LTMEnlistmentTests.EnlistDuringPhase0(enlistmentOption: EnlistDuringPrepareRequired, phase1Vote: Prepared, expectPhase0EnlistSuccess: True, commit: True, expectedOutcome: Committed, expectedTxStatus: Committed)
+[STRT] System.Transactions.Tests.LTMEnlistmentTests.EnlistDuringPhase0(enlistmentOption: None, phase1Vote: Prepared, expectPhase0EnlistSuccess: False, commit: True, expectedOutcome: Committed, expectedTxStatus: Committed)
+[STRT] System.Transactions.Tests.LTMEnlistmentTests.SinglePhaseDurable(volatileCount: 1, volatileEnlistmentOption: None, volatilePhase1Vote: Prepared, singlePhaseVote: Committed, commit: True, expectedVolatileOutcome: Committed, expectedTxStatus: Committed)
+[STRT] System.Transactions.Tests.LTMEnlistmentTests.SinglePhaseDurable(volatileCount: 2, volatileEnlistmentOption: None, volatilePhase1Vote: Prepared, singlePhaseVote: Committed, commit: True, expectedVolatileOutcome: Committed, expectedTxStatus: Committed)
+[STRT] System.Transactions.Tests.LTMEnlistmentTests.SinglePhaseDurable(volatileCount: 1, volatileEnlistmentOption: None, volatilePhase1Vote: Prepared, singlePhaseVote: Aborted, commit: True, expectedVolatileOutcome: Aborted, expectedTxStatus: Aborted)
+[STRT] System.Transactions.Tests.LTMEnlistmentTests.SinglePhaseDurable(volatileCount: 2, volatileEnlistmentOption: None, volatilePhase1Vote: Prepared, singlePhaseVote: Aborted, commit: True, expectedVolatileOutcome: Aborted, expectedTxStatus: Aborted)
+[STRT] System.Transactions.Tests.LTMEnlistmentTests.SinglePhaseDurable(volatileCount: 1, volatileEnlistmentOption: EnlistDuringPrepareRequired, volatilePhase1Vote: Prepared, singlePhaseVote: Committed, commit: True, expectedVolatileOutcome: Committed, expectedTxStatus: Committed)
+[STRT] System.Transactions.Tests.LTMEnlistmentTests.SinglePhaseDurable(volatileCount: 2, volatileEnlistmentOption: EnlistDuringPrepareRequired, volatilePhase1Vote: Prepared, singlePhaseVote: Committed, commit: True, expectedVolatileOutcome: Committed, expectedTxStatus: Committed)
+[STRT] System.Transactions.Tests.LTMEnlistmentTests.EnlistVolatile
+[STRT] System.Transactions.Tests.EnlistTest.TransactionDispose
+[STRT] System.Transactions.Tests.EnlistTest.Vol0_Dur1
+[STRT] System.Transactions.Tests.EnlistTest.TransactionCompleted_Rollback
+[STRT] System.Transactions.Tests.EnlistTest.Vol0_Dur0_Pspe1
+[STRT] System.Transactions.Tests.EnlistTest.Vol1_Dur0_Pspe1
+[STRT] System.Transactions.Tests.EnlistTest.Vol1_Rollback
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Throwing_On_First_Prepare_And_Second_Rollback
+[STRT] System.Transactions.Tests.EnlistTest.Vol1_Throwing_On_Commit
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Throwing_On_Commit
+[STRT] System.Transactions.Tests.EnlistTest.Vol0_Dur0_Pspe2
+[STRT] System.Transactions.Tests.EnlistTest.Vol1_Dur0_2PC
+[STRT] System.Transactions.Tests.EnlistTest.Vol1SPC_Committed
+[STRT] System.Transactions.Tests.EnlistTest.Vol1_Dur0_Fail2
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Throwing_On_First_Prepare
+[STRT] System.Transactions.Tests.EnlistTest.Vol1_Committed
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Throwing_On_Second_Prepare
+[STRT] System.Transactions.Tests.EnlistTest.Vol1_Throwing_On_Prepare
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Dur1_Fail1
+[STRT] System.Transactions.Tests.EnlistTest.Vol1_Dur0_Fail3
+[STRT] System.Transactions.Tests.EnlistTest.TransactionDispose3
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Throwing_On_First_Rollback_And_Second_Prepare
+[STRT] System.Transactions.Tests.EnlistTest.Vol2SPC_Throwing_On_Commit
+[STRT] System.Transactions.Tests.EnlistTest.Vol1_Dur0
+[STRT] System.Transactions.Tests.EnlistTest.Vol1_Dur0_Fail1
+[STRT] System.Transactions.Tests.EnlistTest.Vol1_Throwing_On_Rollback
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Dur1
+[STRT] System.Transactions.Tests.EnlistTest.TransactionCompleted_Committed
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Dur1_Fail5
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Rollback
+[STRT] System.Transactions.Tests.EnlistTest.Vol0_Dur1_Pspe1
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Dur0_SPC
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Throwing_On_Rollback
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Dur1_Fail3
+[STRT] System.Transactions.Tests.EnlistTest.TransactionDispose2
+[STRT] System.Transactions.Tests.EnlistTest.Vol1SPC_Throwing_On_Commit
+[STRT] System.Transactions.Tests.EnlistTest.Vol2SPC_Committed
+[STRT] System.Transactions.Tests.EnlistTest.Vol0_Dur1_Fail
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Dur1_Fail4
+[STRT] System.Transactions.Tests.EnlistTest.Vol2_Committed
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortingCloneNotCompleted(promote: False)
+[FAIL] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortingCloneNotCompleted(promote: False)
+Assert.IsType() Failure: Value is not the exact type
+Expected: typeof(System.Transactions.TransactionAbortedException)
+Actual:   typeof(System.ApplicationException)
+   at System.Transactions.Tests.NonMsdtcPromoterTests.TestCase_AbortingCloneNotCompleted(Boolean promote)
+   at System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortingCloneNotCompleted(Boolean promote)
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortingCloneNotCompleted(promote: True)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: True, promote: False, spcResponse: Committed)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: True, promote: True, spcResponse: Committed)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: False, promote: False, spcResponse: Committed)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: False, promote: True, spcResponse: Committed)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: True, promote: False, spcResponse: Aborted)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: True, promote: True, spcResponse: Aborted)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: True, promote: False, spcResponse: InDoubt)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: True, promote: True, spcResponse: InDoubt)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcGetStatusAndDistributedId
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortFromVolatile(promote: False, options: EnlistDuringPrepareRequired)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortFromVolatile(promote: True, options: EnlistDuringPrepareRequired)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortFromVolatile(promote: False, options: None)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortFromVolatile(promote: True, options: None)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: True, promote: False, spcResponse: Committed)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: True, promote: True, spcResponse: Committed)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: False, promote: False, spcResponse: Committed)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: False, promote: True, spcResponse: Committed)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: True, promote: False, spcResponse: Aborted)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: True, promote: True, spcResponse: Aborted)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: True, promote: False, spcResponse: InDoubt)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: True, promote: True, spcResponse: InDoubt)
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcGetPromoterType
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcInCorrectSetDistributedTransactionIdentifierCalls
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcCompletedEvent
+[STRT] System.Transactions.Tests.NonMsdtcPromoterTests.VolatileEnlistments
+Finished:    System.Transactions.Local.Tests.dll
+Finished uploading 56329 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 209 Passed: 198 Inconclusive: 0 Failed: 1 Ignored: 0 Skipped: 10
+
+test-main.js exiting WasmTestRunner.dll System.Transactions.Local.Tests.dll after 0.023666666666666666 minutes with result 1 and linear memory 193331200 bytes
+WASM EXIT 1

@@ -1,0 +1,195 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:39629/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Threading.Tasks.Parallel.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Threading.Tasks.Parallel.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Threading.Tasks.Parallel.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Threading.Tasks.Parallel.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Threading.Tasks.Parallel.Tests.dll (found 119 of 198 test cases)
+Starting:    System.Threading.Tasks.Parallel.Tests.dll
+[STRT] System.Threading.Tasks.Tests.BreakTests.TestForEach_Break(loopsize: 500, breakpoint: 10)
+[STRT] System.Threading.Tasks.Tests.BreakTests.TestForEach_Break(loopsize: 500, breakpoint: 20)
+[STRT] System.Threading.Tasks.Tests.BreakTests.TestForEach_Break(loopsize: 1000, breakpoint: 100)
+[STRT] System.Threading.Tasks.Tests.BreakTests.TestForEach_Break(loopsize: 1000, breakpoint: 200)
+[STRT] System.Threading.Tasks.Tests.BreakTests.TestFor_Break_64Bits(loopsize: 100, breakpoint: 10)
+[STRT] System.Threading.Tasks.Tests.BreakTests.TestFor_Break_64Bits(loopsize: 100, breakpoint: 20)
+[STRT] System.Threading.Tasks.Tests.BreakTests.TestFor_Break_64Bits(loopsize: 1000, breakpoint: 100)
+[STRT] System.Threading.Tasks.Tests.BreakTests.TestFor_Break_64Bits(loopsize: 1000, breakpoint: 200)
+[STRT] System.Threading.Tasks.Tests.BreakTests.TestFor_Break_Basic(loopsize: 100, breakpoint: 10)
+[STRT] System.Threading.Tasks.Tests.BreakTests.TestFor_Break_Basic(loopsize: 100, breakpoint: 20)
+[STRT] System.Threading.Tasks.Tests.BreakTests.TestFor_Break_Basic(loopsize: 1000, breakpoint: 100)
+[STRT] System.Threading.Tasks.Tests.BreakTests.TestFor_Break_Basic(loopsize: 1000, breakpoint: 200)
+[STRT] System.Threading.Tasks.Tests.EtwTests.TestEtw
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 0, parallelOption: None, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 97, parallelOption: None, stateOption: Stop, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 97, parallelOption: WithDOP, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 0, parallelOption: None, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 10, parallelOption: None, stateOption: Stop, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 10, parallelOption: WithDOP, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 1, parallelOption: None, stateOption: None, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 1, parallelOption: WithDOP, stateOption: Stop, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 2, parallelOption: None, stateOption: None, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 2, parallelOption: WithDOP, stateOption: Stop, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 2, parallelOption: WithDOP, stateOption: None, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 97, parallelOption: None, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 0, parallelOption: None, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 10, parallelOption: None, stateOption: None, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 10, parallelOption: None, stateOption: Stop, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 10, parallelOption: WithDOP, stateOption: Stop, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 1, parallelOption: None, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 1, parallelOption: WithDOP, stateOption: Stop, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 2, parallelOption: None, stateOption: None, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 2, parallelOption: WithDOP, stateOption: None, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 2, parallelOption: WithDOP, stateOption: Stop, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 97, parallelOption: WithDOP, stateOption: Stop, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 2, parallelOption: None, stateOption: Stop, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 1, parallelOption: WithDOP, stateOption: Stop, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 1, parallelOption: None, stateOption: None, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 10, parallelOption: None, stateOption: Stop, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 10, parallelOption: WithDOP, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 1, parallelOption: None, stateOption: Stop, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 1, parallelOption: WithDOP, stateOption: None, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 2, parallelOption: None, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 2, parallelOption: WithDOP, stateOption: Stop, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 97, parallelOption: None, stateOption: None, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 97, parallelOption: WithDOP, stateOption: Stop, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 0, parallelOption: None, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 10, parallelOption: None, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 10, parallelOption: None, stateOption: Stop, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 10, parallelOption: WithDOP, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 1, parallelOption: None, stateOption: Stop, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 1, parallelOption: WithDOP, stateOption: None, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 2, parallelOption: None, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 2, parallelOption: WithDOP, stateOption: Stop, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 97, parallelOption: None, stateOption: Stop, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 97, parallelOption: WithDOP, stateOption: None, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 0, parallelOption: None, stateOption: None, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 10, parallelOption: None, stateOption: Stop, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 10, parallelOption: WithDOP, stateOption: None, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 97, parallelOption: None, stateOption: None, localOption: HasFinally)
+[STRT] System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 97, parallelOption: WithDOP, stateOption: Stop, localOption: None)
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromDispose_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromMoveNext_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_HasPriorityOverExceptions_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.RunsAsynchronously_EvenForEntirelySynchronousWork_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_LockWaitAsyncCancellationDoesntPropagate
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.AllItemsEnumeratedOnce_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.TaskScheduler_AllCodeExecutedOnCorrectScheduler_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_WorkersCreatedRespectingLimit_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_NullFromGetEnumerator_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_SameTokenPassedToEveryInvocation_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.InvalidArguments_ThrowsException
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.TaskScheduler_AllCodeExecutedOnCorrectScheduler_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromDisposeAndCancellationCallback_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.EmptyRange_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_SameTokenPassedToEveryInvocation_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.TaskScheduler_AllCodeExecutedOnCorrectScheduler_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.ExecutionContext_FlowsToWorkerBodies_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_InternalCancellationExceptionsArentFilteredOut_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.RunsAsynchronously_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_CancelsIterationAndReturnsCanceledTask_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_SameTokenPassedToEveryInvocation_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_ImplicitlyCancelsOtherWorkers_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_CancelsIterationAndReturnsCanceledTask_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_NegativeTaskSchedulerLimitTreatedAsDefault_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromGetEnumerator_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.PreCanceled_CancelsSynchronously
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_WorkersCreatedRespectingLimit_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromLoopBody_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_WorkersCreatedRespectingLimitAndTaskScheduler_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_WorkersCreatedRespectingLimitAndTaskScheduler_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.RunsAsynchronously_EvenForEntirelySynchronousWork_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.ExecutionContext_FlowsToWorkerBodies_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_HasPriorityOverExceptions_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromLoopBody_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_FaultsForOceForNonCancellation_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_CancelsIterationAndReturnsCanceledTask_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_FaultsForOceForNonCancellation
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromDispose_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.EmptySource_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_InternalCancellationExceptionsArentFilteredOut
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.ExecutionContext_FlowsToWorkerBodies_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_NegativeTaskSchedulerLimitTreatedAsDefault_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.EmptySource_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromMoveNext_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_NegativeTaskSchedulerLimitTreatedAsDefault_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_CorrectTokenPassedToAsyncEnumerator
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_WorkersCreatedRespectingLimit_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_NullFromGetEnumerator_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromDisposeAndCancellationCallback_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_ImplicitlyCancelsOtherWorkers_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.AllItemsEnumeratedOnce_For
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromLoopBody_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.GitHubIssue_114262_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromGetEnumerator_Async
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_HasPriorityOverExceptions_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_ImplicitlyCancelsOtherWorkers_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForEachAsyncTests.AllItemsEnumeratedOnce_Sync
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.RunParallelLoopCancellationTests
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.TestParallelScheduler
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelForAverageAggregation
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelFor64IncrementTest
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.CancelForLongTest
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.SequentialForParityTest
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.SequentialFor64ParityTest
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelForIncrementTest
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.TestParallelForPaths_Exceptions
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelForeachAddTest_Array
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.RunParallelExceptionTests
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelForeachAddTest_Enumerable
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.CancelForIntTest
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelForAddTest
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelFor64AverageAggregation
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelForeachAddTest_List
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.CancelForEachTest
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.TestParallelForPaths
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelDoTest
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.TestParallelForDOP
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelFor64AddTest
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.TaskIDFromExternalContextTest
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.TestParallelForEachConversions
+[STRT] System.Threading.Tasks.Tests.ParallelForTests.TestInvokeDOPAndCancel
+[STRT] System.Threading.Tasks.Tests.TestMethods.ParallelInvoke9
+[STRT] System.Threading.Tasks.Tests.TestMethods.ParallelInvoke8
+[STRT] System.Threading.Tasks.Tests.TestMethods.ParallelInvoke5
+[STRT] System.Threading.Tasks.Tests.TestMethods.ParallelInvoke1
+[STRT] System.Threading.Tasks.Tests.TestMethods.ParallelInvoke11
+[STRT] System.Threading.Tasks.Tests.TestMethods.ParallelInvoke3
+[STRT] System.Threading.Tasks.Tests.TestMethods.ParallelInvoke4
+[STRT] System.Threading.Tasks.Tests.TestMethods.ParallelInvoke2
+[STRT] System.Threading.Tasks.Tests.TestMethods.ParallelInvoke7
+[STRT] System.Threading.Tasks.Tests.TestMethods.ParallelInvoke6
+[STRT] System.Threading.Tasks.Tests.TestMethods.ParallelInvoke0
+[STRT] System.Threading.Tasks.Tests.TestMethods.ParallelInvoke10
+[STRT] System.Threading.Tasks.Tests.ParallelLoopResultTests.OrderablePartitionerForEachTests
+[STRT] System.Threading.Tasks.Tests.ParallelLoopResultTests.PartitionerForEachPLRTests
+[STRT] System.Threading.Tasks.Tests.ParallelLoopResultTests.ForEachPLRTests
+[STRT] System.Threading.Tasks.Tests.ParallelLoopResultTests.ForPLRTests
+[STRT] System.Threading.Tasks.Tests.ParallelLoopResultTests.SimultaneousStopBreakTests
+[STRT] System.Threading.Tasks.Tests.ParallelLoopResultTests.ForPLR64Tests
+[STRT] System.Threading.Tasks.Tests.Partitioner1Chunk.IncorrectBuffering
+[STRT] System.Threading.Tasks.Tests.Partitioner1Chunk.ExceptionOnMoveNext
+[STRT] System.Threading.Tasks.Tests.Partitioner1Chunk.PFEDisposeEnum
+[STRT] System.Threading.Tasks.Tests.Partitioner1Chunk.OneMoveNext
+[STRT] System.Threading.Tasks.Tests.Partitioner1Chunk.NullDataSource
+[STRT] System.Threading.Tasks.Tests.Partitioner1Chunk.IterationsWithDependency
+[STRT] System.Threading.Tasks.Tests.RangePartitionerTests.RangePartitionerChunkTest
+[STRT] System.Threading.Tasks.Tests.RangePartitionerTests.RangePartitionerCoverageTest
+[STRT] System.Threading.Tasks.Tests.RangePartitionerTests.RunPartitionerStaticTest_SingleChunking_Negative
+[STRT] System.Threading.Tasks.Tests.RangePartitionerTests.RunPartitionerStaticTest_SingleChunking
+[STRT] System.Threading.Tasks.Tests.RangePartitionerThreadSafetyTests.LongPartitionerThreadSafety
+[STRT] System.Threading.Tasks.Tests.RangePartitionerThreadSafetyTests.IntPartitionerThreadSafety
+[STRT] System.Threading.Tasks.Tests.RespectParentCancellationTest+TestMethods.RespectParentCancellation3
+[STRT] System.Threading.Tasks.Tests.RespectParentCancellationTest+TestMethods.RespectParentCancellation2
+[STRT] System.Threading.Tasks.Tests.RespectParentCancellationTest+TestMethods.RespectParentCancellation1
+Finished:    System.Threading.Tasks.Parallel.Tests.dll
+Finished uploading 53925 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 175 Passed: 74 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 101
+
+test-main.js exiting WasmTestRunner.dll System.Threading.Tasks.Parallel.Tests.dll after 0.0331 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

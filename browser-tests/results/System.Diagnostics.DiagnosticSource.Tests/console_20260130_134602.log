@@ -1,0 +1,352 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:41127/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Diagnostics.DiagnosticSource.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Diagnostics.DiagnosticSource.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Diagnostics.DiagnosticSource.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Diagnostics.DiagnosticSource.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Diagnostics.DiagnosticSource.Tests.dll (found 279 of 282 test cases)
+Starting:    System.Diagnostics.DiagnosticSource.Tests.dll
+[STRT] System.Diagnostics.Tests.PropagatorTests.TestAllPropagators
+[STRT] System.Diagnostics.Tests.PropagatorTests.TestBuiltInPropagatorsAreCached
+[STRT] System.Diagnostics.Tests.PropagatorTests.TestCustomPropagator
+[STRT] System.Diagnostics.Tests.TagListTests.TestSearchOperations
+[STRT] System.Diagnostics.Tests.TagListTests.TestCopyTo
+[STRT] System.Diagnostics.Tests.TagListTests.TestInlineInitialization
+[STRT] System.Diagnostics.Tests.TagListTests.TestEmptyTagListCopyTo
+[STRT] System.Diagnostics.Tests.TagListTests.TestInsert
+[STRT] System.Diagnostics.Tests.TagListTests.TestConstruction
+[STRT] System.Diagnostics.Tests.TagListTests.TestRemove
+[STRT] System.Diagnostics.Tests.TagListTests.TestNegativeCases
+[STRT] System.Diagnostics.Tests.TagListTests.TestClear
+[STRT] System.Diagnostics.Tests.TagListTests.TestIndex(count: 2)
+[STRT] System.Diagnostics.Tests.TagListTests.TestIndex(count: 7)
+[STRT] System.Diagnostics.Tests.TagListTests.TestIndex(count: 9)
+[STRT] System.Diagnostics.Tests.TagListTests.TestIndex(count: 20)
+[STRT] System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 1)
+[STRT] System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 2)
+[STRT] System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 8)
+[STRT] System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 10)
+[STRT] System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 100)
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.PropagationDataSamplingTest
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityCreationProperties
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestListeningToConstructedActivityEvents
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestHasRemoteParent
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestDefaultParentContext
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityWithListenerNoActivityCreate
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestExpectedListenersReturnValues
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestSamplerTagsWithMixedListenerModels
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityWithListenerActivityCreateAndAllDataRequested
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestIdFormats
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestCreatingActivityUsingDifferentParentIds
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.RestoreOriginalParentTest
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityContextIsRemote
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestNotAddedSamplerTags
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestAddingSamplerTagsUsingParentId
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestAddSamplerAndActivityCreationTags
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestTraceIdAutoGeneration
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestConstruction
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestStartActivityWithNoListener
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivitySourceAttachedObject
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestTraceIdAutoGenerationWithNullParentId
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityTriggeringCallerMemberNameAttribute
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityContextParsing
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.AllDataAndRecordedSamplingTest
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestAddingSamplerTagsFromMultipleListeners
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestEventNotificationOrder
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestAddingMorePropertiesWithActivityCreate
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestAddingSamplerTags
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.AllDataSamplingTest
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestDefaultTraceIdWithHierarchicalParentId
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityCreate
+[STRT] System.Diagnostics.Tests.ActivitySourceTests.TestTraceState
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.InstrumentMeasurementTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.ObservableInstrumentMeasurementTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.SupportedGenericParameterTypesTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.TestMeterCreationWithOptions
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.PassingVariableTagsParametersTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.MeterConstructionTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.MeterDisposalsTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.TestRecordingMeasurementsWithTagList
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.InstrumentCreationTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.TestRecordingWithEmptyTagList
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.ListenerWithoutMeasurementsCompletedDisposalsTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.TestInstrumentCreationWithTags
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.ListenerDisposalsTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.ParallelRunningTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.EnableListeningMultipleTimesWithDifferentState
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.SerializedEventsTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.ThrowingExceptionsFromObservableInstrumentCallbacks
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.MeasurementConstructionTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.CreateInstrumentParametersTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.ListeningToInstrumentsPublishingTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.NullMeasurementEventCallbackTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.MultipleListenersTest
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.TestCachedInstruments
+[STRT] System.Diagnostics.Metrics.Tests.MetricsTests.TestHistogramCreationWithAdvice
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestExtractingBaggageWithCorrelationContextHeader
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "state=1", expectedTraceState: "state=1", baggage: [["b1"] = "v1"], expectedBaggageString: "b1 = v1", expectedBaggage: [["b1"] = "v1"])
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "PassThroughW3CState=1", expectedTraceState: null, baggage: null, expectedBaggageString: null, expectedBaggage: null)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "1start=1", expectedTraceState: "1start=1", baggage: null, expectedBaggageString: null, expectedBaggage: null)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "123@456=1", expectedTraceState: "123@456=1", baggage: null, expectedBaggageString: null, expectedBaggage: null)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "start=1, end=\t1", expectedTraceState: "start=1", baggage: null, expectedBaggageString: null, expectedBaggage: null)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "start=1, end=1", expectedTraceState: "start=1, end=1", baggage: null, expectedBaggageString: null, expectedBaggage: null)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···, expectedTraceState: null, baggage: null, expectedBaggageString: null, expectedBaggage: null)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···, expectedTraceState: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···, baggage: null, expectedBaggageString: null, expectedBaggage: null)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [["b 1"] = "v1", ["b=2"] = "v2", ["b\t3"] = "v3", ["b(4"] = "v4", ["b:5"] = "v5", ···], expectedBaggageString: null, expectedBaggage: null)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [["b 1"] = "v1", ["b2"] = "v2"], expectedBaggageString: "b2 = v2", expectedBaggage: [["b2"] = "v2"])
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [["key"] = "!#$&'()*+-/059:<@>[~]^_amxBNW"], expectedBaggageString: "key = !#$&'()*+-/059:<@>[~]^_amxBNW", expectedBaggage: [["key"] = "!#$&'()*+-/059:<@>[~]^_amxBNW"])
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [["key"] = "% \""], expectedBaggageString: "key = %25%20%22", expectedBaggage: [["key"] = "% \""])
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [["key"] = "à€😀"], expectedBaggageString: "key = %C3%A0%E2%82%AC%F0%9F%98%80", expectedBaggage: [["key"] = "à€😀"])
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [["key"] = "\xd800\xd800"], expectedBaggageString: "key = %EF%BF%BD%EF%BF%BD", expectedBaggage: [["key"] = "��"])
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "key==value", expected: [["key"] = "=value"], encodedBack: "key = =value")
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "SomeKey=SomeValue,SomeKey2=SomeValue2", expected: [["SomeKey2"] = "SomeValue2", ["SomeKey"] = "SomeValue"], encodedBack: "SomeKey = SomeValue, SomeKey2 = SomeValue2")
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "SomeKey \t = \t SomeValue \t , \t SomeKey2 \t = \t"···, expected: [["SomeKey2"] = "SomeValue2", ["SomeKey"] = "SomeValue"], encodedBack: "SomeKey = SomeValue, SomeKey2 = SomeValue2")
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "SomeKey=SomeValue=equals", expected: [["SomeKey"] = "SomeValue=equals"], encodedBack: "SomeKey = SomeValue=equals")
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "SomeKey=%09%20%22%27%3B%3Dasdf%21%40%23%24%25%5E%2"···, expected: [["SomeKey"] = "\t \"';=asdf!@#$%^&*()"], encodedBack: "SomeKey = %22'%3B=asdf!@#$%25^&*()")
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "SomeKey \t = \t \t \"';=asdf!@#$%^&*()\t", expected: null, encodedBack: null)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "SomeKey \t = \t \t \"';=asdf!@#$%25^&*()\t", expected: [["SomeKey"] = "\"';=asdf!@#$%^&*()"], encodedBack: "SomeKey = %22'%3B=asdf!@#$%25^&*()")
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: True)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "0f-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: True)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "f0-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: True)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "ff-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "f-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "0g-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "0F-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-af7651916cd43dd8448eb211c80319c-b9c7c989f97918e"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-00000000000000000000000000000000-b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-00000000000000"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319C-b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-B9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448ek211c80319c-b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448ee211c80319c-b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00_0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c_b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "01-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "01-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: True)
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestInvalidBaggage(input: "invalid")
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestInvalidBaggage(input: "=value")
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestInvalidBaggage(input: "key=")
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestW3CPropagatorBasics
+[STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestBaggagePropagationLimits
+[STRT] System.Diagnostics.Tests.ActivityTests.TraceId_W3CNonHexCharsNotSupportedAndDoesNotThrow
+[STRT] System.Diagnostics.Tests.ActivityTests.Version_W3CNonHexCharsNotSupportedAndDoesNotThrow_ForceW3C
+[STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CInvalidVersionFF
+[STRT] System.Diagnostics.Tests.ActivityTests.TestInsertingFirstTag(key: "key1", value: null, add: True, resultCount: 1)
+[STRT] System.Diagnostics.Tests.ActivityTests.TestInsertingFirstTag(key: "key2", value: null, add: False, resultCount: 0)
+[STRT] System.Diagnostics.Tests.ActivityTests.TestInsertingFirstTag(key: "key3", value: "v1", add: True, resultCount: 1)
+[STRT] System.Diagnostics.Tests.ActivityTests.TestInsertingFirstTag(key: "key4", value: "v2", add: False, resultCount: 1)
+[STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CForcedOverridesParentActivityIdFormat
+[STRT] System.Diagnostics.Tests.ActivityTests.IsStoppedTest
+[STRT] System.Diagnostics.Tests.ActivityTests.TraceId_W3CUppercaseCharsNotSupportedAndDoesNotThrow
+[STRT] System.Diagnostics.Tests.ActivityTests.TestTagObjects
+[STRT] System.Diagnostics.Tests.ActivityTests.StartStop
+[STRT] System.Diagnostics.Tests.ActivityTests.TestActivityEventDebuggerDisplay
+[STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetHierarchicalAfterW3CParentIsSet
+[STRT] System.Diagnostics.Tests.ActivityTests.TraceIdCustomGenerationTest
+[STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_OverridesForcedHierarchical
+[STRT] System.Diagnostics.Tests.ActivityTests.TestDispose
+[STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentFlowsWithAsyncComplex
+[STRT] System.Diagnostics.Tests.ActivityTests.StructEnumerator_TagsLinkedList
+[STRT] System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_FromTraceparentHeader
+[STRT] System.Diagnostics.Tests.ActivityTests.TestSetBaggage
+[STRT] System.Diagnostics.Tests.ActivityTests.SetParentId
+[STRT] System.Diagnostics.Tests.ActivityTests.IdGenerationExternalParentId
+[STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_OverridesForcedW3C
+[STRT] System.Diagnostics.Tests.ActivityTests.ActivityIdOverflow
+[STRT] System.Diagnostics.Tests.ActivityTests.Version_W3CNonHexCharsNotSupportedAndDoesNotThrow
+[STRT] System.Diagnostics.Tests.ActivityTests.DefaultActivity
+[STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentSetToNull
+[STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_WithTheEnvironmentSwitch
+[STRT] System.Diagnostics.Tests.ActivityTests.TestStatus
+[STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetW3CAfterHierarchicalParentIsSet
+[STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CWhenDefaultIsW3C
+[STRT] System.Diagnostics.Tests.ActivityTests.RootId
+[STRT] System.Diagnostics.Tests.ActivityTests.ActivityTraceFlagsTests
+[STRT] System.Diagnostics.Tests.ActivityTests.EnumerateEventTagsTest
+[STRT] System.Diagnostics.Tests.ActivityTests.TestIsAllDataRequested
+[STRT] System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_FromExplicitTraceId
+[STRT] System.Diagnostics.Tests.ActivityTests.TestBaggageWithChainedActivities
+[STRT] System.Diagnostics.Tests.ActivityTests.StopWithoutTimestamp
+[STRT] System.Diagnostics.Tests.ActivityTests.TestKind
+[STRT] System.Diagnostics.Tests.ActivityTests.EnumerateEventsTest
+[STRT] System.Diagnostics.Tests.ActivityTests.IdGenerationNoParent
+[STRT] System.Diagnostics.Tests.ActivityTests.Options_W3CNonHexCharsNotSupportedAndDoesNotThrow
+[STRT] System.Diagnostics.Tests.ActivityTests.EnumerateLinkTagsTest
+[STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CValidVersions
+[STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CWhenParentIdIsW3C
+[STRT] System.Diagnostics.Tests.ActivityTests.AddLinkTest
+[STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CWhenForcedAndHierarchicalParentId
+[STRT] System.Diagnostics.Tests.ActivityTests.TestActivityLinkDebuggerDisplay
+[STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CIsDefaultForNet5
+[STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentSet
+[STRT] System.Diagnostics.Tests.ActivityTests.Tags
+[STRT] System.Diagnostics.Tests.ActivityTests.StartTwice
+[STRT] System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_NoParent
+[STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_HierarchicalWhenDefaultIsW3CButHierarchicalParentId
+[STRT] System.Diagnostics.Tests.ActivityTests.ActivityTraceIdTests
+[STRT] System.Diagnostics.Tests.ActivityTests.TraceStateString_InheritsFromParent
+[STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_OverridesParentW3CFormat
+[STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetW3CBeforeStart
+[STRT] System.Diagnostics.Tests.ActivityTests.TestBaggageOrderAndDuplicateKeys
+[STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetAndOverrideBeforeStart
+[STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetHierarchicalBeforeStart
+[STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_ZeroTraceIdAndSpanIdWithW3CFormat
+[STRT] System.Diagnostics.Tests.ActivityTests.StopParent
+[STRT] System.Diagnostics.Tests.ActivityTests.TestActivityDebuggerProxy
+[STRT] System.Diagnostics.Tests.ActivityTests.TestDisplayName
+[STRT] System.Diagnostics.Tests.ActivityTests.TestActivityContextDebuggerDisplay
+[STRT] System.Diagnostics.Tests.ActivityTests.TestCustomProperties
+[STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentFlowsWithAsyncSimple
+[STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CWhenTraceIdAndSpanIdProvided
+[STRT] System.Diagnostics.Tests.ActivityTests.Baggage
+[STRT] System.Diagnostics.Tests.ActivityTests.TestParentTraceFlags
+[STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_OverridesParentHierarchicalFormat
+[STRT] System.Diagnostics.Tests.ActivityTests.ParentSpanId_W3CNonHexCharsNotSupportedAndDoesNotThrow
+[STRT] System.Diagnostics.Tests.ActivityTests.StructEnumerator_GenericLinkedList
+[STRT] System.Diagnostics.Tests.ActivityTests.TestActivityDebuggerDisplay
+[STRT] System.Diagnostics.Tests.ActivityTests.EnumerateTagObjectsTest
+[STRT] System.Diagnostics.Tests.ActivityTests.RootIdBeforeStartTests
+[STRT] System.Diagnostics.Tests.ActivityTests.StartStopWithTimestamp
+[STRT] System.Diagnostics.Tests.ActivityTests.TestLinksToString
+[STRT] System.Diagnostics.Tests.ActivityTests.AddExceptionTest
+[STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentEventTest
+[STRT] System.Diagnostics.Tests.ActivityTests.TestEvent
+[STRT] System.Diagnostics.Tests.ActivityTests.IdGenerationInternalParent
+[STRT] System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_FromInvalidTraceparentHeader
+[STRT] System.Diagnostics.Tests.ActivityTests.StopNotStarted
+[STRT] System.Diagnostics.Tests.ActivityTests.RestoreOriginalParentTest
+[STRT] System.Diagnostics.Tests.ActivityTests.EnumerateLinksTest
+[STRT] System.Diagnostics.Tests.ActivityTests.ParentChild
+[STRT] System.Diagnostics.Tests.ActivityTests.CreateActivityWithNullOperationName
+[STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentNotSetToStopped
+[STRT] System.Diagnostics.Tests.ActivityTests.ActivitySpanIdTests
+[STRT] System.Diagnostics.Tests.ActivityTests.TestEventsToString
+[STRT] System.Diagnostics.Tests.ActivityTests.StopTwice
+[STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentNotSetToNotStarted
+[STRT] System.Diagnostics.Tests.ActivityTests.TestGetTagItem
+[STRT] System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_FromInProcParent
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestBaseClassProperties
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.LinuxNewLineConventions
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestTransformSpecs
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.NoExceptionThrownWhenProcessingStaticActivityProperties
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestWildCardSourceName
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestEnableAllActivitySourcesWithSpeciifcSamplingResult
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestBaseClassDuplicateProperties
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.ActivityObjectsAreInspectable
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestDefaultActivitySource
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestSamplingPrecedence
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestWithPropertyThrowing
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestMultipleRulesOnlyFirstTaken
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestNulls
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestActivities
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestVersion
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.IndexGetters_DontThrow
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestWildCardEventName
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestEnableAllActivitySourcesAllEvents
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestEnableAllActivitySourcesWithOneEvent
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestFilteringWithActivityName
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestBadProperties
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestMultipleSpecs
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestMessages
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestSpecificEvents
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestRateLimitingSampler
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestNoImplicitTransforms
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestParentRatioSampler
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestShortcutKeywords
+[STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestRuleWithWildcardSourceAndActivityNameIsIgnored
+[STRT] System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.CpuTime
+[STRT] System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.ExceptionsCount
+[STRT] System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.GcCollectionsCount
+[STRT] System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.HeapTags(metricName: "dotnet.gc.last_collection.heap.size")
+[STRT] System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.HeapTags(metricName: "dotnet.gc.last_collection.heap.fragmentation.size")
+[STRT] System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.ValidateMeasurements
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.BasicIsEnabled
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.IsEnabledMultipleArgs
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.StructPayload
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.DisposeAllListenerSubscriptionInSameOrderSubscribed
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.MultiSubscriber
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.ObjectPayload
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.MultiSubscriberStress
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.SubscribeWithNullPredicate
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.IntPayload
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.ActivityImportExport
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.AllListenersAddRemove
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.ListenerToString
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.AllListenersCheckCatchupList
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.DoubleDisposeOfListener
+[STRT] System.Diagnostics.Tests.DiagnosticSourceTest.Completed
+[STRT] System.Diagnostics.Metrics.Tests.MetricsNotSupportedTest.IsSupportedSwitch
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleMinusTen
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleMinusEleven
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleMinusOne
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.ScaleOneIndexesWithPowerOfTwoLowerBound
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleOne
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.ScalingFactorCalculation
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleTwenty
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.TestNoDeltasAggregation
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScale0
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.TestDeltasAggregation
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.InfinityHandling
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.ZeroHandling
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleMinusTwo
+[STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.NaNHandling
+[STRT] System.Diagnostics.Metrics.Tests.MetricsAdviceTests.HistogramAdviceConstructionTest
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetThreeLabel
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetThreeLabelUnordered
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetTwoLabel
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.AggregatorLimitReached_NoLabel
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetFourLabel
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetNoLabels
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetFourLabelUnordered
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.AggregatorLimitReached_WithLabels
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetOneLabel
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.AggregatorLimitReached_Multisize_TwoLabel
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank0Start
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank4Start
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank1Start
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank3Start
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank2Start
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.AggregatorLimitReached_Multisize_NoLabel
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetDefaultAggregator
+[STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetTwoLabelUnordered
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.DifferencesLessThanErrorBound
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.DifferencesGreaterThanErrorBound
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.OutOfBoundsQuantiles
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.ZeroValues
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.NoUpdates
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.MinMax
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.OneUpdate
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.MixedValues
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.HappyPath
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.FilterOnlyNaNAndInfinities
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.NoUpdatesInSomeIntervals
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.FilterNaNAndInfinities
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.UnorderedQuantiles
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.IterateCollect
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.UpdatesAfterNoUpdates
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.NegativeValues
+[STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.NoQuantiles
+[STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestAdd
+[STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestTryGetValue
+[STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestNonDefaultConstructor
+[STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestRemove
+[STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestIndexer
+[STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestDefaultConstructor
+[STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestContains
+[STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestEnumeration
+Finished:    System.Diagnostics.DiagnosticSource.Tests.dll
+Finished uploading 88892 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 332 Passed: 230 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 102
+
+test-main.js exiting WasmTestRunner.dll System.Diagnostics.DiagnosticSource.Tests.dll after 0.0333 minutes with result 0 and linear memory 231997440 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

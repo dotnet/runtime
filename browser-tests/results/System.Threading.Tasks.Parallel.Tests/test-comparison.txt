@@ -1,0 +1,9 @@
+Test Comparison: System.Threading.Tasks.Parallel.Tests
+Generated: 2026-01-30T13:42:47+01:00
+
+Mono tests:    177
+CoreCLR tests: 177
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

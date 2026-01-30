@@ -1,0 +1,9 @@
+Test Comparison: System.Net.Mail.Functional.Tests
+Generated: 2026-01-30T13:38:52+01:00
+
+Mono tests:    282
+CoreCLR tests: 282
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

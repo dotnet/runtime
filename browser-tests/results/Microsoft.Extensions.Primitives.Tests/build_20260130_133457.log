@@ -1,0 +1,591 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/Microsoft.Extensions.Primitives/tests/Microsoft.Extensions.Primitives.Tests.csproj (in 166 ms).
+  10 of 11 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  Microsoft.Extensions.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives/ref/Release/net11.0/Microsoft.Extensions.Primitives.dll
+  Microsoft.Extensions.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives/Release/net11.0/Microsoft.Extensions.Primitives.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  Microsoft.Extensions.Primitives.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives.Tests/Release/net11.0/browser-wasm/Microsoft.Extensions.Primitives.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Primitives/tests
+  ----- start Fri Jan 30 13:35:01 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll Microsoft.Extensions.Primitives.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Primitives/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Primitives.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 45051
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 45051.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:42047/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Primitives.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Primitives.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Primitives.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: Microsoft.Extensions.Primitives.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  Microsoft.Extensions.Primitives.Tests.dll (found 150 of 150 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    Microsoft.Extensions.Primitives.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.ChangeTokenTests.HasChangeFiresChange
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.ChangeTokenTests.DoubleDisposeDisposesOnce
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.ChangeTokenTests.AsyncLocalsNotCapturedAndRestored
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.ChangeTokenTests.HasChangeFiresChangeWithState
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.ChangeTokenTests.DisposingChangeTokenRegistrationDoesNotRaiseConsumerIfTokenProviderReturnsCancelledToken
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.ChangeTokenTests.DisposingChangeTokenRegistrationDoesNotRaiseConsumerCallbackStateOverload
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.ChangeTokenTests.DisposingChangeTokenRegistrationDuringCallbackWorks
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.ChangeTokenTests.NullTokenDisposeShouldNotThrow
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.ChangeTokenTests.ChangesFireAfterExceptionsWithState
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.ChangeTokenTests.ChangesFireAfterExceptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.ChangeTokenTests.DisposingChangeTokenRegistrationDoesNotRaiseConsumerCallback
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IsReadOnly_True(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_Instance
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: ["abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: ["abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: [null, "abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: ["abc", null, "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: ["abc", "bcd", "foo", null])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: ["", "abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: ["abc", "", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Enumerator(stringValues: [···], expected: ["abc", "bcd", "foo", ""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ImplicitStringConverter_Works
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: ["abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: ["abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: [null, "abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: ["abc", null, "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: ["abc", "bcd", "foo", null])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: ["", "abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: ["abc", "", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_CorrectSize(stringValues: [···], expected: ["abc", "bcd", "foo", ""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: ["abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: ["abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: [null, "abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: ["abc", null, "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: ["abc", "bcd", "foo", null])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: ["", "abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: ["abc", "", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Contains(stringValues: [···], expected: ["abc", "bcd", "foo", ""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_OperatorNotEqual
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_String(stringValues: [···], expected: null)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_String(stringValues: [···], expected: null)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_String(stringValues: [···], expected: null)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_String(stringValues: [···], expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_String(stringValues: [···], expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_String(stringValues: [···], expected: "abc")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Enumerator(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Enumerator(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Enumerator(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Enumerator(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Enumerator(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Enumerator(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Enumerator(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Enumerator(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.GetHashCode_NullCases_DifferentHashCodes
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectNotEquals(stringValues: [···], obj: null)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectNotEquals(stringValues: [···], obj: null)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectNotEquals(stringValues: [···], obj: null)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectNotEquals(stringValues: [···], obj: "abc")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectNotEquals(stringValues: [···], obj: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectNotEquals(stringValues: [···], obj: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectNotEquals(stringValues: [···], obj: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: ["abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: ["abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: [null, "abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: ["abc", null, "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: ["abc", "bcd", "foo", null])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: ["", "abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: ["abc", "", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_StringArray(stringValues: [···], expected: ["abc", "bcd", "foo", ""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc,bcd")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc,bcd,foo")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc,bcd")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc,bcd")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc,bcd")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc,bcd,foo")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc,bcd,foo")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc,bcd,foo")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc,bcd,foo")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc,bcd,foo")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc,bcd,foo")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc,bcd,foo")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ToString_ExpectedValues(stringValues: [···], expected: "abc,bcd,foo")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Concat(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Concat(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Concat(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Concat(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Concat(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Concat(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Concat(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_Concat(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: [])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: [])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: ["abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: ["abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: [null, "abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: ["abc", null, "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: ["abc", "bcd", "foo", null])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: ["", "abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: ["abc", "", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Concat(stringValues: [···], array: ["abc", "bcd", "foo", ""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.GetHashCode_SingleValueVsArrayWithOneItem_SameHashCode
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.GetHashCode_SingleValueVsArrayWithTwoItems_DifferentHashCodes
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultOrNull_ExpectedValues(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultOrNull_ExpectedValues(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultOrNull_ExpectedValues(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultOrNull_ExpectedValues(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultOrNull_ExpectedValues(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: [])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: ["abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: ["abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: [null, "abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: ["abc", null, "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: ["abc", "bcd", "foo", null])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: ["", "abc", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: ["abc", "", "bcd", "foo"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.IndexOf(stringValues: [···], expected: ["abc", "bcd", "foo", ""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectEquals(stringValues: [···], obj: null)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectEquals(stringValues: [···], obj: null)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectEquals(stringValues: [···], obj: null)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectEquals(stringValues: [···], obj: "abc")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectEquals(stringValues: [···], obj: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectEquals(stringValues: [···], obj: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_ObjectEquals(stringValues: [···], obj: ["abc", "bcd"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Indexer
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_ExpectedValues(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_ExpectedValues(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_ExpectedValues(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_ExpectedValues(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_ExpectedValues(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_ExpectedValues(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_ExpectedValues(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.DefaultNullOrEmpty_ExpectedValues(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.ImplicitStringArrayConverter_Works
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.CopyTo_TooSmall(stringValues: [···])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringValuesTests.Equals_OperatorEqual
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_ImplicitConvertFromString
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.IndexOf_SearchOnlyInsideTheRange_IfStartAndCountAreProvided
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StaticEquals_Invalid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_ImplicitConvertToMemory
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Substring_OffsetAndLengthOverflows
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_SubstringOffset_Valid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.IndexOf_ReturnsMinusOne_IfElementNotInSegment
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.LastIndexOf_ReturnsMinusOne_IfElementNotInSegment
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_IsNullOrEmpty_Invalid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Indexer_InRange(value: "a", offset: 0, length: 1, index: 0, expected: 'a')
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Indexer_InRange(value: "abc", offset: 1, length: 1, index: 0, expected: 'b')
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Indexer_InRange(value: "abcdef", offset: 1, length: 4, index: 0, expected: 'b')
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Indexer_InRange(value: "abcdef", offset: 1, length: 4, index: 1, expected: 'c')
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Indexer_InRange(value: "abcdef", offset: 1, length: 4, index: 2, expected: 'd')
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Indexer_InRange(value: "abcdef", offset: 1, length: 4, index: 3, expected: 'e')
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.LastIndexOf_ComputesIndex_RelativeToTheCurrentSegment
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: "   value", start: 0, length: 8, expected: "value")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: "value   ", start: 0, length: 8, expected: "value")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: "\t\tvalue", start: 0, length: 7, expected: "value")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: "value\t\t", start: 0, length: 7, expected: "value")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: "\t\tvalue \t a", start: 1, length: 8, expected: "value")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: "   a     ", start: 0, length: 9, expected: "a")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: "value\t value  value ", start: 2, length: 13, expected: "lue\t value  v")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: "\tvalue ", start: 0, length: 8, expected: "value")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: " \f\t\v Hello  \n\t ", start: 1, length: 13, expected: "Hello")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: "      ", start: 1, length: 2, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: "\t\t\t", start: 0, length: 3, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: "\n\n\t\t  \t", start: 2, length: 3, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: "      ", start: 1, length: 0, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Trim_RemovesLeadingAndTrailingWhitespaces(value: "", start: 0, length: 0, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentConstructor_NullBuffer_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Subsegment_InvalidOffsetAndLength
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.IndexOf_ComputesIndex_RelativeToTheCurrentSegment
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StringCtor_InitializesValuesCorrectly
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_String_InvalidComparisonType_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_AsSpan_InvalidLength
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_IsNullOrEmpty_Valid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_CompareEqual_Globalized(a: null, b: "", comparisonType: Ordinal, expectedCompareToSign: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_CompareEqual_Globalized(a: null, b: "", comparisonType: InvariantCultureIgnoreCase, expectedCompareToSign: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_CompareEqual_Globalized(a: null, b: null, comparisonType: Ordinal, expectedCompareToSign: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_CompareEqual_Globalized(a: null, b: null, comparisonType: InvariantCultureIgnoreCase, expectedCompareToSign: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_CompareEqual_Globalized(a: "", b: null, comparisonType: Ordinal, expectedCompareToSign: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_CompareEqual_Globalized(a: "", b: null, comparisonType: InvariantCultureIgnoreCase, expectedCompareToSign: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_CompareEqual_Globalized(a: "xéy", b: "xÉy", comparisonType: InvariantCulture, expectedCompareToSign: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_CompareEqual_Globalized(a: "xéy", b: "xÉy", comparisonType: InvariantCultureIgnoreCase, expectedCompareToSign: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_CompareEqual_Globalized(a: "Hello", b: "HELLO", comparisonType: InvariantCulture, expectedCompareToSign: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_CompareEqual_Globalized(a: "Hello", b: "HELLO", comparisonType: InvariantCultureIgnoreCase, expectedCompareToSign: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.DefaultStringSegment_DoesNotEqualStringSegment(candidate: ello)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.DefaultStringSegment_DoesNotEqualStringSegment(candidate: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.DefaultStringSegment_DoesNotEqualStringSegment(candidate: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_AsSpan_Valid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Invalid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.GetHashCode_ReturnsDifferentValuesForInequalSubstrings(segment1: T, segment2: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.GetHashCode_ReturnsDifferentValuesForInequalSubstrings(segment1: T, segment2: e)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.GetHashCode_ReturnsDifferentValuesForInequalSubstrings(segment1: es, segment2: est)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.GetHashCode_ReturnsDifferentValuesForInequalSubstrings(segment1: Test, segment2: TEST)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_NullString_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.IndexOfAny_ReturnsMinusOne_IfElementNotInSegment
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.IndexOfAny_ReturnsMinusOne_OnDefaultStringSegment
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Subsegment_Invalid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Globalized(a: null, b: "‍", comparisonType: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Globalized(a: null, b: "‍", comparisonType: InvariantCulture, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Globalized(a: null, b: "", comparisonType: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Globalized(a: "", b: "", comparisonType: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Globalized(a: "", b: "‍", comparisonType: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Globalized(a: "", b: "‍", comparisonType: InvariantCulture, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Globalized(a: "‍", b: "", comparisonType: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Globalized(a: "‍", b: "‍‍", comparisonType: InvariantCulture, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Globalized(a: "HELLO", b: "o", comparisonType: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Globalized(a: "HELLO", b: "o", comparisonType: OrdinalIgnoreCase, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Globalized(a: "HELLO", b: "illo", comparisonType: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Globalized(a: "HELLO", b: "illo", comparisonType: OrdinalIgnoreCase, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.IndexOfAny_ComputesIndex_RelativeToTheCurrentSegment
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_HasValue_Valid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentConstructor_NegativeLength_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Substring_Valid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Compare_Greater(candidate: BCDE, comparer: StringSegmentComparer { })
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Compare_Greater(candidate: ABCDEF, comparer: StringSegmentComparer { })
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Compare_Greater(candidate: abc, comparer: StringSegmentComparer { })
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.IndexOf_SkipsANumberOfCaracters_IfStartIsProvided
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StringCtor_AllowsNullBuffers
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_NullString_Valid(candidate: null, comparison: OrdinalIgnoreCase, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_NullString_Valid(candidate: null, comparison: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_NullString_Valid(candidate: "eLLo", comparison: OrdinalIgnoreCase, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_NullString_Valid(candidate: "eLLo", comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_NullString_Valid(candidate: "", comparison: OrdinalIgnoreCase, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_NullString_Valid(candidate: "", comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.IndexOfAny_SkipsANumberOfCaracters_IfStartIsProvided
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.DefaultStringSegment_EqualsStringSegment(candidate: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.DefaultStringSegment_EqualsStringSegment(candidate: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Substring_InvalidOffsetAndLength
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_HasValue_Invalid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_AsSpan_InvalidStart
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.DefaultStringSegment_DoesNotEqualString(candidate: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.DefaultStringSegment_DoesNotEqualString(candidate: "Hello, World!")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinalIgnoreCase_GetHashCode_ReturnsSameValueForDifferentlyCasedStrings
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Substring_InvalidOffset
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Empty
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.LastIndexOf_ReturnsMinusOne_OnDefaultStringSegment
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Valid(candidate: "Hello", comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Valid(candidate: "ello ", comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Valid(candidate: "ll", comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Valid(candidate: "ello", comparison: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Valid(candidate: "ell", comparison: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Valid(candidate: "el", comparison: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Valid(candidate: "e", comparison: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Valid(candidate: "", comparison: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Valid(candidate: "eLLo", comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Valid(candidate: "eLLo", comparison: OrdinalIgnoreCase, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_NullString_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Substring_Invalid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_AsSpan_OffsetAndLengthOverflows
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Subsegment_Valid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_String_Valid(candidate: "eLLo", comparison: OrdinalIgnoreCase, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_String_Valid(candidate: "eLLo", comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_String_Valid(candidate: null, comparison: OrdinalIgnoreCase, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_String_Valid(candidate: null, comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_AsSpan_InvalidOffsetAndLength
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EqualsNull_Invalid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: "   value", start: 0, length: 8, expected: "   value")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: "value   ", start: 0, length: 8, expected: "value")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: "\t\tvalue", start: 0, length: 7, expected: "\t\tvalue")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: "value\t\t", start: 0, length: 7, expected: "value")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: "\t\tvalue \t a", start: 1, length: 8, expected: "\tvalue")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: "   a     ", start: 0, length: 9, expected: "   a")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: "value\t value  value ", start: 2, length: 13, expected: "lue\t value  v")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: "\tvalue ", start: 0, length: 8, expected: "\tvalue")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: " \f\t\v Hello  \n\t ", start: 1, length: 13, expected: "\f\t\v Hello")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: "      ", start: 1, length: 2, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: "\t\t\t", start: 0, length: 3, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: "\n\n\t\t  \t", start: 2, length: 3, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: "      ", start: 1, length: 0, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimEnd_RemovesTrailingWhitespaces(value: "", start: 0, length: 0, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EqualsString_Invalid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: "   value", start: 0, length: 8, expected: "value")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: "value   ", start: 0, length: 8, expected: "value   ")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: "\t\tvalue", start: 0, length: 7, expected: "value")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: "value\t\t", start: 0, length: 7, expected: "value\t\t")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: "\t\tvalue \t a", start: 1, length: 8, expected: "value \t")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: "   a     ", start: 0, length: 9, expected: "a     ")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: "value\t value  value ", start: 2, length: 13, expected: "lue\t value  v")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: "\tvalue ", start: 0, length: 8, expected: "value ")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: " \f\t\v Hello  \n\t ", start: 1, length: 13, expected: "Hello  \n\t")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: "      ", start: 1, length: 2, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: "\t\t\t", start: 0, length: 3, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: "\n\n\t\t  \t", start: 2, length: 3, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: "      ", start: 1, length: 0, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.TrimStart_RemovesLeadingWhitespaces(value: "", start: 0, length: 0, expected: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.IndexOf_ReturnsMinusOne_OnDefaultStringSegment
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Compare_InvalidComparisonType_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Subsegment_InvalidOffset
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_AsSpanStartLength_NoValue
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.IndexOfAny_StartOverflowsWithOffset_OutOfRangeThrows
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Substring_NoValue
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_AsSpan
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Subsegment_OffsetAndLengthOverflows
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_String_InvalidComparisonType_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_StringSegment_InvalidComparisonType_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.IndexOf_NegativeStart_OutOfRangeThrows
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Substring_InvalidLength
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinal_GetHashCode_ReturnsDifferentValuesForInequalSubstrings(segment1: T, segment2: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinal_GetHashCode_ReturnsDifferentValuesForInequalSubstrings(segment1: T, segment2: e)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinal_GetHashCode_ReturnsDifferentValuesForInequalSubstrings(segment1: es, segment2: est)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinal_GetHashCode_ReturnsDifferentValuesForInequalSubstrings(segment1: Test, segment2: TEST)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_String_InvalidComparisonType_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EqualsStringSegment_Invalid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinalIgnoreCase_GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: , segment2: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinalIgnoreCase_GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: , segment2: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinalIgnoreCase_GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: , segment2: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinalIgnoreCase_GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: est, segment2: est)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinalIgnoreCase_GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: ello, segment2: ello)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinalIgnoreCase_GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: Hello, segment2: Hello)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Subsegment_InvalidLength
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Value_Invalid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StaticEquals_Valid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EqualsObject_Valid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.IndexOfAny_SearchOnlyInsideTheRange_IfStartAndCountAreProvided
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentConstructor_OffsetOrLengthOutOfBounds_Throws(offset: 0, length: 10)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentConstructor_OffsetOrLengthOutOfBounds_Throws(offset: 10, length: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentConstructor_OffsetOrLengthOutOfBounds_Throws(offset: 5, length: 5)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentConstructor_OffsetOrLengthOutOfBounds_Throws(offset: 2147483647, length: 2147483647)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_CreateEmptySegment
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Invalid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentConstructor_NegativeOffset_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Indexer_OutOfRangeThrows(value: "", offset: 0, length: 0, index: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Indexer_OutOfRangeThrows(value: "a", offset: 0, length: 1, index: -1)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Indexer_OutOfRangeThrows(value: "a", offset: 0, length: 1, index: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Compare_Lesser(candidate: bcde, comparer: StringSegmentComparer { })
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Compare_Lesser(candidate: bcdef, comparer: StringSegmentComparer { })
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Compare_Lesser(candidate: CD, comparer: StringSegmentComparer { })
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_SubsegmentOffset_Valid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.IndexOf_StartOverflowsWithOffset_OutOfRangeThrows
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentConstructor_AllowsEmptyBuffers(text: "", offset: 0, length: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentConstructor_AllowsEmptyBuffers(text: "abc", offset: 2, length: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_ImplicitConvertToSpan
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.Value_DoesNotAllocateANewString_IfTheSegmentContainsTheWholeBuffer
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Subsegment_NoValue
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_AsMemory
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_AsSpanStart_Valid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Compare_Equal(candidate: bcde, comparer: StringSegmentComparer { })
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Compare_Equal(candidate: BCDE, comparer: StringSegmentComparer { })
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Compare_Equal(candidate: bcde, comparer: StringSegmentComparer { })
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Compare_Equal(candidate: BcDe, comparer: StringSegmentComparer { })
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Globalized(a: null, b: "‍", comparisonType: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Globalized(a: null, b: "‍", comparisonType: InvariantCulture, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Globalized(a: null, b: "", comparisonType: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Globalized(a: "", b: "", comparisonType: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Globalized(a: "", b: "‍", comparisonType: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Globalized(a: "", b: "‍", comparisonType: InvariantCulture, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Globalized(a: "‍", b: "", comparisonType: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Globalized(a: "‍", b: "‍‍", comparisonType: InvariantCulture, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Globalized(a: "Hello", b: "h", comparisonType: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Globalized(a: "Hello", b: "h", comparisonType: OrdinalIgnoreCase, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Globalized(a: "Hello", b: "hi", comparisonType: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_StartsWith_Globalized(a: "Hello", b: "hi", comparisonType: OrdinalIgnoreCase, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_AsSpanStart_NoValue
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_AsSpan_StartBehindLength
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinal_GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: , segment2: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinal_GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: , segment2: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinal_GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: , segment2: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinal_GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: est, segment2: est)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinal_GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: ello, segment2: ello)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegmentComparerOrdinal_GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: Hello, segment2: Hello)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: , segment2: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: , segment2: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: , segment2: )
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: est, segment2: est)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: ello, segment2: ello)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.GetHashCode_ReturnsSameValueForEqualSubstrings(segment1: Hello, segment2: Hello)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_StringSegment_Valid(candidate: ello, comparison: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_StringSegment_Valid(candidate: ELlo, comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_StringSegment_Valid(candidate: ELlo, comparison: OrdinalIgnoreCase, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_StringSegment_Valid(candidate: ello, comparison: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_StringSegment_Valid(candidate: ell, comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Equals_StringSegment_Valid(candidate: llo, comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_Value_Valid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_AsSpan_Empty
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Valid(candidate: "Hello", comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Valid(candidate: "ello ", comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Valid(candidate: "ll", comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Valid(candidate: "ello", comparison: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Valid(candidate: "llo", comparison: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Valid(candidate: "lo", comparison: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Valid(candidate: "o", comparison: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Valid(candidate: "", comparison: Ordinal, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Valid(candidate: "eLLo", comparison: Ordinal, expectedResult: False)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringSegmentTest.StringSegment_EndsWith_Valid(candidate: "eLLo", comparison: OrdinalIgnoreCase, expectedResult: True)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.CompositeChangeTokenTest.RegisteredCallbacks_AreInvokedExactlyOnce
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.CompositeChangeTokenTest.ShouldNotCollectDisposablesIfChangedTokenEncountered
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.CompositeChangeTokenTest.ActiveChangeCallbacks_IsTrue_IfAnyTokenHasActiveChangeCallbacks
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.CompositeChangeTokenTest.HasChanged_IsTrue_IfAnyTokenHasChanged
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.CompositeChangeTokenTest.RegisteredCallbackGetsInvokedExactlyOnce_WhenMultipleConcurrentChangeEventsOccur
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.CompositeChangeTokenTest.ActiveChangeCallbacks_IsFalse_IfNoTokenHasActiveChangeCallbacks
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.CompositeChangeTokenTest.NoDeadlock_WhenMultipleConcurrentChangeEventsOccur
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.CompositeChangeTokenTest.HasChanged_IsFalse_IfNoTokenHasChanged
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.TokenizerReturnsEmptySequenceForNullValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: "", expected: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: "a,b.", expected: ["a", "b", ""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: "a.b,", expected: ["a", "b", ""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: ",.a,b", expected: ["", "", "a", "b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: ".,a.b", expected: ["", "", "a", "b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: ".a,b", expected: ["", "a", "b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: ",a.b", expected: ["", "a", "b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: "a.b,.", expected: ["a", "b", "", ""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: "ab,cd.ef", expected: ["ab", "cd", "ef"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: "a,b.c", expected: ["a", "b", "c"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: "a.b,c", expected: ["a", "b", "c"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: "a,b", expected: ["a", "b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: "a.b", expected: ["a", "b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: "abc", expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: "a", expected: ["a"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: "ab.cd,ef", expected: ["ab", "cd", "ef"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_SupportsMultipleSeparators(value: "a,b.,", expected: ["a", "b", "", ""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_ReturnsSequenceOfValues(value: "", expected: [""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_ReturnsSequenceOfValues(value: "a", expected: ["a"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_ReturnsSequenceOfValues(value: "abc", expected: ["abc"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_ReturnsSequenceOfValues(value: "a,b", expected: ["a", "b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_ReturnsSequenceOfValues(value: "a,,b", expected: ["a", "", "b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_ReturnsSequenceOfValues(value: ",a,b", expected: ["", "a", "b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_ReturnsSequenceOfValues(value: ",,a,b", expected: ["", "", "a", "b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_ReturnsSequenceOfValues(value: "a,b,", expected: ["a", "b", ""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_ReturnsSequenceOfValues(value: "a,b,,", expected: ["a", "b", "", ""])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Primitives.StringTokenizerTest.Tokenizer_ReturnsSequenceOfValues(value: "ab,cde,efgh", expected: ["ab", "cde", "efgh"])
+  [40m[32minfo[39m[22m[49m: Finished:    Microsoft.Extensions.Primitives.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 144390 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 144390 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 514 Passed: 512 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 2
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Primitives.Tests.dll after 0.025216666666666665 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Primitives/tests
+  ----- end Fri Jan 30 13:35:05 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:07.65

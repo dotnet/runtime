@@ -1,0 +1,24 @@
+Test Comparison: Microsoft.Extensions.Configuration.Binder.Tests
+Generated: 2026-01-30T13:55:14+01:00
+
+Mono tests:    294
+CoreCLR tests: 285
+
+=== Extra in CoreCLR (3) ===
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindToKnownParsableTypesWithNullValueTest(configuration: ConfigurationRoot { Item = (throws TargetParameterCountException), Providers = [JsonStreamConfigurationProvider] })
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindToKnownParsableTypesWithNullValueTest(configuration: ConfigurationRoot { Item = (throws TargetParameterCountException), Providers = [[···]] })
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestBindingNestedIEnumerable
+
+=== Missing in CoreCLR (12) ===
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.TestOptionsWithStructs
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.TestOptionsWithUnsupportedStructs
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindToKnownParsableTypesWithNullValueTest(configuration: ConfigurationRoot { Item = (throws ArgumentException), Providers = [JsonStreamConfigurationProvider] })
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindToKnownParsableTypesWithNullValueTest(configuration: ConfigurationRoot { Item = (throws ArgumentException), Providers = [[···]] })
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: \&quot;12/24/2015 13:44:55 +4\&quot;, type: typeof(System.DateTimeOffset))
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: \&quot;2015-12-24T07:34:42-5:00\&quot;, type: typeof(System.DateTime))
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: \&quot;79228162514264337593543950335\&quot;, type: typeof(decimal))
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: \&quot;99.22:22:22.1234567\&quot;, type: typeof(System.TimeSpan))
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: \&quot;CA761232-ED42-11CE-BACD-00AA0057B223\&quot;, type: typeof(System.Guid))
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ComplexObj_As_Dictionary_Element
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ComplexObj_As_Enumerable_Element
+Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ObjWith_TypeConverter

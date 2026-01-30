@@ -1,0 +1,9 @@
+Test Comparison: Invariant.Tests
+Generated: 2026-01-30T13:30:17+01:00
+
+Mono tests:    380
+CoreCLR tests: 380
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

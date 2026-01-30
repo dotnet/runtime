@@ -1,0 +1,442 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Diagnostics.DiagnosticSource/tests/System.Diagnostics.DiagnosticSource.Tests.csproj (in 209 ms).
+  42 of 43 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  System.Private.CoreLib.Generators -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.CoreLib.Generators/Release/netstandard2.0/System.Private.CoreLib.Generators.dll
+  System.Private.CoreLib -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.CoreLib/ref/Release/net11.0/System.Private.CoreLib.dll
+  EventSourceGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/EventSourceGenerator/Release/netstandard2.0/EventSourceGenerator.dll
+  Microsoft.Interop.SourceGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Interop.SourceGeneration/Release/netstandard2.0/Microsoft.Interop.SourceGeneration.dll
+  LibraryImportGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/LibraryImportGenerator/Release/netstandard2.0/Microsoft.Interop.LibraryImportGenerator.dll
+  System.Private.CoreLib -> /home/pavelsavara/dev/runtime/artifacts/bin/coreclr/browser.wasm.Release/IL/System.Private.CoreLib.dll
+  System.Private.Uri -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.Uri/Release/net11.0/System.Private.Uri.dll
+  System.Runtime -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime/ref/Release/net11.0/System.Runtime.dll
+  System.Memory -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Memory/ref/Release/net11.0/System.Memory.dll
+  System.Threading -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading/ref/Release/net11.0/System.Threading.dll
+  System.Diagnostics.Tracing -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.Tracing/ref/Release/net11.0/System.Diagnostics.Tracing.dll
+  System.Numerics.Vectors -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Numerics.Vectors/ref/Release/net11.0/System.Numerics.Vectors.dll
+  System.Collections -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections/ref/Release/net11.0/System.Collections.dll
+  System.Runtime.Intrinsics -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Intrinsics/ref/Release/net11.0/System.Runtime.Intrinsics.dll
+  System.Threading.Thread -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread/ref/Release/net11.0/System.Threading.Thread.dll
+  System.Threading.Overlapped -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Overlapped/ref/Release/net11.0/System.Threading.Overlapped.dll
+  System.Numerics.Vectors -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Numerics.Vectors/Release/net11.0/System.Numerics.Vectors.dll
+  System.Threading -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading/Release/net11.0/System.Threading.dll
+  System.Diagnostics.Tracing -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.Tracing/Release/net11.0/System.Diagnostics.Tracing.dll
+  System.Collections -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections/Release/net11.0/System.Collections.dll
+  System.Memory -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Memory/Release/net11.0/System.Memory.dll
+  System.Threading.ThreadPool -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.ThreadPool/ref/Release/net11.0/System.Threading.ThreadPool.dll
+  System.Threading.Thread -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread/Release/net11.0/System.Threading.Thread.dll
+  System.Runtime -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime/Release/net11.0/System.Runtime.dll
+  System.Collections.Concurrent -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections.Concurrent/ref/Release/net11.0/System.Collections.Concurrent.dll
+  System.Runtime.Intrinsics -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Intrinsics/Release/net11.0/System.Runtime.Intrinsics.dll
+  System.Threading.ThreadPool -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.ThreadPool/Release/net11.0/System.Threading.ThreadPool.dll
+  System.Collections.Concurrent -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections.Concurrent/Release/net11.0/System.Collections.Concurrent.dll
+  System.Runtime.InteropServices -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.InteropServices/ref/Release/net11.0/System.Runtime.InteropServices.dll
+  System.Runtime.InteropServices -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.InteropServices/Release/net11.0/System.Runtime.InteropServices.dll
+  System.Linq -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Linq/ref/Release/net11.0/System.Linq.dll
+  ComInterfaceGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/ComInterfaceGenerator/Release/netstandard2.0/Microsoft.Interop.ComInterfaceGenerator.dll
+  System.Linq -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Linq/Release/net11.0/System.Linq.dll
+  System.Diagnostics.DiagnosticSource -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource/ref/Release/net11.0/System.Diagnostics.DiagnosticSource.dll
+  System.Diagnostics.DiagnosticSource -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource/Release/net11.0/System.Diagnostics.DiagnosticSource.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Diagnostics.DiagnosticSource.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource.Tests/Release/net11.0-browser/browser-wasm/System.Diagnostics.DiagnosticSource.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource.Tests/Release/net11.0-browser/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Diagnostics.DiagnosticSource/tests
+  ----- start Fri Jan 30 13:46:10 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource.Tests/Release/net11.0-browser/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Diagnostics.DiagnosticSource.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Diagnostics.DiagnosticSource/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Diagnostics.DiagnosticSource.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 40305
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 40305.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:41127/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Diagnostics.DiagnosticSource.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Diagnostics.DiagnosticSource.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Diagnostics.DiagnosticSource.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Diagnostics.DiagnosticSource.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Diagnostics.DiagnosticSource.Tests.dll (found 279 of 282 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Diagnostics.DiagnosticSource.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.PropagatorTests.TestAllPropagators
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.PropagatorTests.TestBuiltInPropagatorsAreCached
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.PropagatorTests.TestCustomPropagator
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestSearchOperations
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestCopyTo
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestInlineInitialization
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestEmptyTagListCopyTo
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestInsert
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestConstruction
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestRemove
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestNegativeCases
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestClear
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestIndex(count: 2)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestIndex(count: 7)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestIndex(count: 9)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestIndex(count: 20)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 2)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 8)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 10)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 100)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.PropagationDataSamplingTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityCreationProperties
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestListeningToConstructedActivityEvents
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestHasRemoteParent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestDefaultParentContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityWithListenerNoActivityCreate
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestExpectedListenersReturnValues
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestSamplerTagsWithMixedListenerModels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityWithListenerActivityCreateAndAllDataRequested
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestIdFormats
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestCreatingActivityUsingDifferentParentIds
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.RestoreOriginalParentTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityContextIsRemote
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestNotAddedSamplerTags
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestAddingSamplerTagsUsingParentId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestAddSamplerAndActivityCreationTags
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestTraceIdAutoGeneration
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestConstruction
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestStartActivityWithNoListener
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivitySourceAttachedObject
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestTraceIdAutoGenerationWithNullParentId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityTriggeringCallerMemberNameAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityContextParsing
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.AllDataAndRecordedSamplingTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestAddingSamplerTagsFromMultipleListeners
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestEventNotificationOrder
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestAddingMorePropertiesWithActivityCreate
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestAddingSamplerTags
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.AllDataSamplingTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestDefaultTraceIdWithHierarchicalParentId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestActivityCreate
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivitySourceTests.TestTraceState
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.InstrumentMeasurementTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.ObservableInstrumentMeasurementTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.SupportedGenericParameterTypesTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.TestMeterCreationWithOptions
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.PassingVariableTagsParametersTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.MeterConstructionTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.MeterDisposalsTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.TestRecordingMeasurementsWithTagList
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.InstrumentCreationTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.TestRecordingWithEmptyTagList
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.ListenerWithoutMeasurementsCompletedDisposalsTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.TestInstrumentCreationWithTags
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.ListenerDisposalsTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.ParallelRunningTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.EnableListeningMultipleTimesWithDifferentState
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.SerializedEventsTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.ThrowingExceptionsFromObservableInstrumentCallbacks
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.MeasurementConstructionTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.CreateInstrumentParametersTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.ListeningToInstrumentsPublishingTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.NullMeasurementEventCallbackTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.MultipleListenersTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.TestCachedInstruments
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsTests.TestHistogramCreationWithAdvice
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestExtractingBaggageWithCorrelationContextHeader
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "state=1", expectedTraceState: "state=1", baggage: [["b1"] = "v1"], expectedBaggageString: "b1 = v1", expectedBaggage: [["b1"] = "v1"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "PassThroughW3CState=1", expectedTraceState: null, baggage: null, expectedBaggageString: null, expectedBaggage: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "1start=1", expectedTraceState: "1start=1", baggage: null, expectedBaggageString: null, expectedBaggage: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "123@456=1", expectedTraceState: "123@456=1", baggage: null, expectedBaggageString: null, expectedBaggage: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "start=1, end=\t1", expectedTraceState: "start=1", baggage: null, expectedBaggageString: null, expectedBaggage: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "start=1, end=1", expectedTraceState: "start=1, end=1", baggage: null, expectedBaggageString: null, expectedBaggage: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···, expectedTraceState: null, baggage: null, expectedBaggageString: null, expectedBaggage: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···, expectedTraceState: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"···, baggage: null, expectedBaggageString: null, expectedBaggage: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [["b 1"] = "v1", ["b=2"] = "v2", ["b\t3"] = "v3", ["b(4"] = "v4", ["b:5"] = "v5", ···], expectedBaggageString: null, expectedBaggage: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [["b 1"] = "v1", ["b2"] = "v2"], expectedBaggageString: "b2 = v2", expectedBaggage: [["b2"] = "v2"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [["key"] = "!#$&'()*+-/059:<@>[~]^_amxBNW"], expectedBaggageString: "key = !#$&'()*+-/059:<@>[~]^_amxBNW", expectedBaggage: [["key"] = "!#$&'()*+-/059:<@>[~]^_amxBNW"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [["key"] = "% \""], expectedBaggageString: "key = %25%20%22", expectedBaggage: [["key"] = "% \""])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [["key"] = "à€😀"], expectedBaggageString: "key = %C3%A0%E2%82%AC%F0%9F%98%80", expectedBaggage: [["key"] = "à€😀"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [["key"] = "\xd800\xd800"], expectedBaggageString: "key = %EF%BF%BD%EF%BF%BD", expectedBaggage: [["key"] = "��"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "key==value", expected: [["key"] = "=value"], encodedBack: "key = =value")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "SomeKey=SomeValue,SomeKey2=SomeValue2", expected: [["SomeKey2"] = "SomeValue2", ["SomeKey"] = "SomeValue"], encodedBack: "SomeKey = SomeValue, SomeKey2 = SomeValue2")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "SomeKey \t = \t SomeValue \t , \t SomeKey2 \t = \t"···, expected: [["SomeKey2"] = "SomeValue2", ["SomeKey"] = "SomeValue"], encodedBack: "SomeKey = SomeValue, SomeKey2 = SomeValue2")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "SomeKey=SomeValue=equals", expected: [["SomeKey"] = "SomeValue=equals"], encodedBack: "SomeKey = SomeValue=equals")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "SomeKey=%09%20%22%27%3B%3Dasdf%21%40%23%24%25%5E%2"···, expected: [["SomeKey"] = "\t \"';=asdf!@#$%^&*()"], encodedBack: "SomeKey = %22'%3B=asdf!@#$%25^&*()")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "SomeKey \t = \t \t \"';=asdf!@#$%^&*()\t", expected: null, encodedBack: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: "SomeKey \t = \t \t \"';=asdf!@#$%25^&*()\t", expected: [["SomeKey"] = "\"';=asdf!@#$%^&*()"], encodedBack: "SomeKey = %22'%3B=asdf!@#$%25^&*()")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "0f-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "f0-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "ff-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "f-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "0g-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "0F-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-af7651916cd43dd8448eb211c80319c-b9c7c989f97918e"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-00000000000000000000000000000000-b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-00000000000000"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319C-b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-B9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448ek211c80319c-b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448ee211c80319c-b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00_0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c_b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "01-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: "01-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918"···, isValid: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestInvalidBaggage(input: "invalid")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestInvalidBaggage(input: "=value")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestInvalidBaggage(input: "key=")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestW3CPropagatorBasics
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.W3CPropagatorTests.TestBaggagePropagationLimits
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TraceId_W3CNonHexCharsNotSupportedAndDoesNotThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.Version_W3CNonHexCharsNotSupportedAndDoesNotThrow_ForceW3C
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CInvalidVersionFF
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestInsertingFirstTag(key: "key1", value: null, add: True, resultCount: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestInsertingFirstTag(key: "key2", value: null, add: False, resultCount: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestInsertingFirstTag(key: "key3", value: "v1", add: True, resultCount: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestInsertingFirstTag(key: "key4", value: "v2", add: False, resultCount: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CForcedOverridesParentActivityIdFormat
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IsStoppedTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TraceId_W3CUppercaseCharsNotSupportedAndDoesNotThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestTagObjects
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.StartStop
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestActivityEventDebuggerDisplay
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetHierarchicalAfterW3CParentIsSet
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TraceIdCustomGenerationTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_OverridesForcedHierarchical
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestDispose
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentFlowsWithAsyncComplex
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.StructEnumerator_TagsLinkedList
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_FromTraceparentHeader
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestSetBaggage
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.SetParentId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdGenerationExternalParentId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_OverridesForcedW3C
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.ActivityIdOverflow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.Version_W3CNonHexCharsNotSupportedAndDoesNotThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.DefaultActivity
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentSetToNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_WithTheEnvironmentSwitch
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestStatus
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetW3CAfterHierarchicalParentIsSet
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CWhenDefaultIsW3C
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.RootId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.ActivityTraceFlagsTests
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.EnumerateEventTagsTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestIsAllDataRequested
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_FromExplicitTraceId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestBaggageWithChainedActivities
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.StopWithoutTimestamp
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestKind
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.EnumerateEventsTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdGenerationNoParent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.Options_W3CNonHexCharsNotSupportedAndDoesNotThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.EnumerateLinkTagsTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CValidVersions
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CWhenParentIdIsW3C
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.AddLinkTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CWhenForcedAndHierarchicalParentId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestActivityLinkDebuggerDisplay
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CIsDefaultForNet5
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentSet
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.Tags
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.StartTwice
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_NoParent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_HierarchicalWhenDefaultIsW3CButHierarchicalParentId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.ActivityTraceIdTests
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TraceStateString_InheritsFromParent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_OverridesParentW3CFormat
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetW3CBeforeStart
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestBaggageOrderAndDuplicateKeys
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetAndOverrideBeforeStart
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetHierarchicalBeforeStart
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_ZeroTraceIdAndSpanIdWithW3CFormat
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.StopParent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestActivityDebuggerProxy
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestDisplayName
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestActivityContextDebuggerDisplay
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestCustomProperties
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentFlowsWithAsyncSimple
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdFormat_W3CWhenTraceIdAndSpanIdProvided
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.Baggage
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestParentTraceFlags
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.SetIdFormat_OverridesParentHierarchicalFormat
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.ParentSpanId_W3CNonHexCharsNotSupportedAndDoesNotThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.StructEnumerator_GenericLinkedList
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestActivityDebuggerDisplay
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.EnumerateTagObjectsTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.RootIdBeforeStartTests
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.StartStopWithTimestamp
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestLinksToString
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.AddExceptionTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentEventTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestEvent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.IdGenerationInternalParent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_FromInvalidTraceparentHeader
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.StopNotStarted
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.RestoreOriginalParentTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.EnumerateLinksTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.ParentChild
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.CreateActivityWithNullOperationName
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentNotSetToStopped
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.ActivitySpanIdTests
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestEventsToString
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.StopTwice
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.ActivityCurrentNotSetToNotStarted
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TestGetTagItem
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_FromInProcParent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestBaseClassProperties
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.LinuxNewLineConventions
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestTransformSpecs
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.NoExceptionThrownWhenProcessingStaticActivityProperties
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestWildCardSourceName
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestEnableAllActivitySourcesWithSpeciifcSamplingResult
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestBaseClassDuplicateProperties
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.ActivityObjectsAreInspectable
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestDefaultActivitySource
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestSamplingPrecedence
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestWithPropertyThrowing
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestMultipleRulesOnlyFirstTaken
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestNulls
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestActivities
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestVersion
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.IndexGetters_DontThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestWildCardEventName
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestEnableAllActivitySourcesAllEvents
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestEnableAllActivitySourcesWithOneEvent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestFilteringWithActivityName
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestBadProperties
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestMultipleSpecs
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestMessages
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestSpecificEvents
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestRateLimitingSampler
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestNoImplicitTransforms
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestParentRatioSampler
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestShortcutKeywords
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestRuleWithWildcardSourceAndActivityNameIsIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.CpuTime
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.ExceptionsCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.GcCollectionsCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.HeapTags(metricName: "dotnet.gc.last_collection.heap.size")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.HeapTags(metricName: "dotnet.gc.last_collection.heap.fragmentation.size")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.ValidateMeasurements
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.BasicIsEnabled
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.IsEnabledMultipleArgs
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.StructPayload
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.DisposeAllListenerSubscriptionInSameOrderSubscribed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.MultiSubscriber
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.ObjectPayload
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.MultiSubscriberStress
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.SubscribeWithNullPredicate
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.IntPayload
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.ActivityImportExport
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.AllListenersAddRemove
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.ListenerToString
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.AllListenersCheckCatchupList
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.DoubleDisposeOfListener
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.DiagnosticSourceTest.Completed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsNotSupportedTest.IsSupportedSwitch
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleMinusTen
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleMinusEleven
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleMinusOne
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.ScaleOneIndexesWithPowerOfTwoLowerBound
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleOne
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.ScalingFactorCalculation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleTwenty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.TestNoDeltasAggregation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScale0
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.TestDeltasAggregation
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.InfinityHandling
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.ZeroHandling
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleMinusTwo
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.NaNHandling
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.MetricsAdviceTests.HistogramAdviceConstructionTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetThreeLabel
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetThreeLabelUnordered
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetTwoLabel
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.AggregatorLimitReached_NoLabel
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetFourLabel
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetNoLabels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetFourLabelUnordered
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.AggregatorLimitReached_WithLabels
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetOneLabel
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.AggregatorLimitReached_Multisize_TwoLabel
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank0Start
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank4Start
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank1Start
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank3Start
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank2Start
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.AggregatorLimitReached_Multisize_NoLabel
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetDefaultAggregator
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetTwoLabelUnordered
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.DifferencesLessThanErrorBound
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.DifferencesGreaterThanErrorBound
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.OutOfBoundsQuantiles
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.ZeroValues
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.NoUpdates
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.MinMax
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.OneUpdate
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.MixedValues
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.HappyPath
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.FilterOnlyNaNAndInfinities
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.NoUpdatesInSomeIntervals
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.FilterNaNAndInfinities
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.UnorderedQuantiles
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.IterateCollect
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.UpdatesAfterNoUpdates
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.NegativeValues
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.NoQuantiles
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestAdd
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestTryGetValue
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestNonDefaultConstructor
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestRemove
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestIndexer
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestDefaultConstructor
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestContains
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.Tests.ActivityTagsCollectionTests.TestEnumeration
+  [40m[32minfo[39m[22m[49m: Finished:    System.Diagnostics.DiagnosticSource.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output/testResults.xml results 88892 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 88892 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 332 Passed: 230 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 102
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Diagnostics.DiagnosticSource.Tests.dll after 0.0333 minutes with result 0 and linear memory 231997440 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Diagnostics.DiagnosticSource/tests
+  ----- end Fri Jan 30 13:46:15 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:12.72

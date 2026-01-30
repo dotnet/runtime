@@ -1,0 +1,143 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:37365/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Configuration.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Extensions.Configuration.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Extensions.Configuration.Tests.dll (found 115 of 115 test cases)
+Starting:    Microsoft.Extensions.Configuration.Tests.dll
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationSectionDebugViewTest.FromConfiguration_MultipleProviders
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationSectionDebugViewTest.FromConfiguration_Section
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationSectionDebugViewTest.FromConfiguration_Root
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.KeyWithDoubleColonHasSectionWithEmptyName
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.SectionWithChildrenExists
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.SettingValueUpdatesAllConfigurationProviders
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.ProviderWithNullReloadToken
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.SectionGetRequiredSectionMissingThrowException
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.NewConfigurationProviderOverridesOldOneWhenKeyIsDuplicated
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.NullSectionDoesNotExist
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.AsEnumerateStripsKeyFromChildren
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.SectionGetRequiredSectionNullThrowException
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.SectionGetRequiredSectionSuccess
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.SameReloadTokenIsReturnedRepeatedly
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.DifferentReloadTokenReturnedAfterReloading
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.ChainedAsEnumerateFlattensIntoDictionaryTest(removePath: True)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.ChainedAsEnumerateFlattensIntoDictionaryTest(removePath: False)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.KeyWithNullValueAndWithoutChildrenIsASectionButNotExists
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.NewTokenAfterReloadIsNotChanged
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.KeyStartingWithColonMeansFirstSectionHasEmptyName
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.CanGetConfigurationChildren
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.TokenTriggeredWhenReloadOccurs
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.SectionWithValueExists
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.CanGetConnectionStrings
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.SetValueThrowsExceptionNoSourceRegistered
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.GetChildKeys_CanChainKeyWithNoDelimiter
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.SourcesReturnsAddedConfigurationProviders
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.MultipleCallbacksCanBeRegisteredToReload
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.CanChainConfiguration
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.GetChildKeys_CanChainEmptyKeys
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.AsEnumerateFlattensIntoDictionaryTest(removePath: True)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.AsEnumerateFlattensIntoDictionaryTest(removePath: False)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.KeyEndingWithColonMeansLastSectionHasEmptyName
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.AsyncLocalsNotCapturedAndRestoredConfigurationReloadToken
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.SectionWithChildrenHasNullValue
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.CanGetConfigurationSection
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.LoadAndCombineKeyValuePairsFromDifferentConfigurationProviders
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.KeyWithValueAndWithoutChildrenExistsAsSection(value: "Value1")
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.KeyWithValueAndWithoutChildrenExistsAsSection(value: "")
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationTest.NewConfigurationRootMayBeBuiltFromExistingWithDuplicateKeys
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.MultipleCallbacksCanBeRegisteredToReload
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.SectionWithChildrenExists
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.ChainedConfigurationIsDisposedOnDispose(shouldDispose: False)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.ChainedConfigurationIsDisposedOnDispose(shouldDispose: True)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.BuildReturnsThis
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.SectionWithValueExists
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.DisposingConfigurationManagerCausesOnlySourceChangesToThrow
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.ClearConfigurationSources
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.ProviderDisposeDelayedWaitingOnConcurrentRead
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.SectionGetRequiredSectionSuccess
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.SectionGetRequiredSectionMissingThrowException
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.SettingValueUpdatesAllConfigurationProviders
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.CanGetConfigurationSection
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.DisposesProvidersOnRemoval
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.SectionWithChildrenHasNullValue
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.DifferentReloadTokenReturnedAfterReloading
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.NewTokenAfterReloadIsNotChanged
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.AsEnumerateStripsKeyFromChildren
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.CanGetConnectionStrings
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.KeyWithDoubleColonHasSectionWithEmptyName
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.AsEnumerateFlattensIntoDictionaryTest(removePath: True)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.AsEnumerateFlattensIntoDictionaryTest(removePath: False)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.CanGetConfigurationChildren
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.SettingIConfigurationBuilderPropertiesReloadsSources
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.NewConfigurationRootMayBeBuiltFromExistingWithDuplicateKeys
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.SetValueThrowsExceptionNoSourceRegistered
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.ProviderCanBlockLoadWaitingOnConcurrentRead
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.SettingValuesWorksWithoutManuallyAddingSource
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.SettingConfigValuesDoesNotTriggerReloadToken
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.SameReloadTokenIsReturnedRepeatedly
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.TokenTriggeredWhenReloadOccurs
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.KeyWithNullValueAndWithoutChildrenIsASectionButNotExists
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.SourcesReturnsAddedConfigurationProviders
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.DisposesChangeTokenRegistrationsOnDispose
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.KeyWithValueAndWithoutChildrenExistsAsSection(value: "Value1")
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.KeyWithValueAndWithoutChildrenExistsAsSection(value: "")
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.AutoUpdates
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.LoadAndCombineKeyValuePairsFromDifferentConfigurationProviders
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.DisposesProvidersOnDispose
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.ProviderWithNullReloadToken
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.KeyEndingWithColonMeansLastSectionHasEmptyName
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.ChainedAsEnumerateFlattensIntoDictionaryTest(removePath: True)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.ChainedAsEnumerateFlattensIntoDictionaryTest(removePath: False)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.KeyStartingWithColonMeansFirstSectionHasEmptyName
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.TriggersReloadTokenOnSourceAddition
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.NewConfigurationProviderOverridesOldOneWhenKeyIsDuplicated
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.DisposesChangeTokenRegistrationsOnRemoval
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationManagerTest.CanChainConfiguration
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationRootTest.SecretsAreConcealed
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationRootTest.NonSecretsAreNotConcealed
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationRootTest.RootDisposesProviders
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationRootTest.ChainedConfigurationIsDisposed(shouldDispose: False)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationRootTest.ChainedConfigurationIsDisposed(shouldDispose: True)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationRootTest.RootDisposesChangeTokenRegistrations
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationProviderMemoryTest.Combining_from_multiple_providers_is_case_insensitive
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationProviderMemoryTest.Load_from_single_provider_with_differing_case_duplicates_throws
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationProviderMemoryTest.Has_debug_view
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationProviderMemoryTest.Bind_to_object
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationProviderMemoryTest.Second_provider_overrides_values_from_first
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationProviderMemoryTest.Load_from_single_provider
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationProviderMemoryTest.Load_from_single_provider_with_duplicates_throws
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationProviderMemoryTest.Null_values_are_included_in_the_config
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationProviderMemoryTest.Combine_before_other_provider
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationProviderMemoryTest.Combine_after_other_provider
+[STRT] Microsoft.Extensions.Configuration.Test.ChainedConfigurationProvierTests.ChainedConfiguration_ExposesProvider
+[STRT] Microsoft.Extensions.Configuration.Test.ChainedConfigurationProvierTests.ChainedConfiguration_UsingMemoryConfigurationSource_ChainedCouldExposeProvider
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathTest.GetParentPathTests
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathTest.GetLastSegmenGetSectionKeyTests
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathTest.CombineWithEmptySegmentLeavesDelimiter
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.CompareDifferentPaths
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.ComparePathsWithCommonPartButShorter
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.CompareWithEmpty
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.ComparePathsWithIndicesInside
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.ComparePathsWithCommonPart
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.CompareWithDifferentLengths
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.ComparePathsWithIndicesAtTheEnd
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.CompareWithSameLength
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.CompareIdenticalPaths
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.CompareWithNonNumbers
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.CompareWithNumbers
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.CompareWithLetters
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.CompareWithNull
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationPathComparerTest.CompareWithNumbersAndLetters
+Finished:    Microsoft.Extensions.Configuration.Tests.dll
+Finished uploading 35291 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 123 Passed: 121 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 2
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Configuration.Tests.dll after 0.06288333333333333 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

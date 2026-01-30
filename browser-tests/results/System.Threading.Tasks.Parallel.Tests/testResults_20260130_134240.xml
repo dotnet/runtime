@@ -1,0 +1,385 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Threading.Tasks.Parallel.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-assembly, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="12:42:45" total="175" passed="74" failed="0" skipped="101" time="1.258" errors="0">
+    <errors />
+    <collection total="175" passed="74" failed="0" skipped="101" name="Test collection for System.Threading.Tasks.Parallel.Tests.dll" time="0.916">
+      <test name="System.Threading.Tasks.Tests.BreakTests.TestForEach_Break(loopsize: 500, breakpoint: 10)" type="System.Threading.Tasks.Tests.BreakTests" method="TestForEach_Break" time="0.0143" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.BreakTests.TestForEach_Break(loopsize: 500, breakpoint: 20)" type="System.Threading.Tasks.Tests.BreakTests" method="TestForEach_Break" time="0.0016999" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.BreakTests.TestForEach_Break(loopsize: 1000, breakpoint: 100)" type="System.Threading.Tasks.Tests.BreakTests" method="TestForEach_Break" time="0.0058999" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.BreakTests.TestForEach_Break(loopsize: 1000, breakpoint: 200)" type="System.Threading.Tasks.Tests.BreakTests" method="TestForEach_Break" time="0.0095" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.BreakTests.TestFor_Break_64Bits(loopsize: 100, breakpoint: 10)" type="System.Threading.Tasks.Tests.BreakTests" method="TestFor_Break_64Bits" time="0.0035" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.BreakTests.TestFor_Break_64Bits(loopsize: 100, breakpoint: 20)" type="System.Threading.Tasks.Tests.BreakTests" method="TestFor_Break_64Bits" time="0.0011" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.BreakTests.TestFor_Break_64Bits(loopsize: 1000, breakpoint: 100)" type="System.Threading.Tasks.Tests.BreakTests" method="TestFor_Break_64Bits" time="0.0038" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.BreakTests.TestFor_Break_64Bits(loopsize: 1000, breakpoint: 200)" type="System.Threading.Tasks.Tests.BreakTests" method="TestFor_Break_64Bits" time="0.0077" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.BreakTests.TestFor_Break_Basic(loopsize: 100, breakpoint: 10)" type="System.Threading.Tasks.Tests.BreakTests" method="TestFor_Break_Basic" time="0.0029" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.BreakTests.TestFor_Break_Basic(loopsize: 100, breakpoint: 20)" type="System.Threading.Tasks.Tests.BreakTests" method="TestFor_Break_Basic" time="0.001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.BreakTests.TestFor_Break_Basic(loopsize: 1000, breakpoint: 100)" type="System.Threading.Tasks.Tests.BreakTests" method="TestFor_Break_Basic" time="0.0035" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.BreakTests.TestFor_Break_Basic(loopsize: 1000, breakpoint: 200)" type="System.Threading.Tasks.Tests.BreakTests" method="TestFor_Break_Basic" time="0.0072" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.EtwTests.TestEtw" type="System.Threading.Tasks.Tests.EtwTests" method="TestEtw" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 0, parallelOption: None, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0026999" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 97, parallelOption: None, stateOption: Stop, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0313" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 97, parallelOption: WithDOP, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0238" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 0, parallelOption: None, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0010999" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 10, parallelOption: None, stateOption: Stop, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0027999" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 10, parallelOption: WithDOP, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0025" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 1, parallelOption: None, stateOption: None, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 1, parallelOption: WithDOP, stateOption: Stop, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 2, parallelOption: None, stateOption: None, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 2, parallelOption: WithDOP, stateOption: Stop, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 2, parallelOption: WithDOP, stateOption: None, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 97, parallelOption: None, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.023" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 0, parallelOption: None, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 10, parallelOption: None, stateOption: None, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0035" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 10, parallelOption: None, stateOption: Stop, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0112999" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 10, parallelOption: WithDOP, stateOption: Stop, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0027" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 1, parallelOption: None, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 1, parallelOption: WithDOP, stateOption: Stop, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 2, parallelOption: None, stateOption: None, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 2, parallelOption: WithDOP, stateOption: None, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 2, parallelOption: WithDOP, stateOption: Stop, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnList, startIndexBase: Zero, count: 97, parallelOption: WithDOP, stateOption: Stop, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0257" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 2, parallelOption: None, stateOption: Stop, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0012" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 1, parallelOption: WithDOP, stateOption: Stop, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 1, parallelOption: None, stateOption: None, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 10, parallelOption: None, stateOption: Stop, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0025" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 10, parallelOption: WithDOP, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0024" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 1, parallelOption: None, stateOption: Stop, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 1, parallelOption: WithDOP, stateOption: None, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 2, parallelOption: None, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 2, parallelOption: WithDOP, stateOption: Stop, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 97, parallelOption: None, stateOption: None, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0246999" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For64, startIndexBase: Int32, count: 97, parallelOption: WithDOP, stateOption: Stop, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.015" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 0, parallelOption: None, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 10, parallelOption: None, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0018" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 10, parallelOption: None, stateOption: Stop, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0017" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 10, parallelOption: WithDOP, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0015" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 1, parallelOption: None, stateOption: Stop, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 1, parallelOption: WithDOP, stateOption: None, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 2, parallelOption: None, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0010999" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 2, parallelOption: WithDOP, stateOption: Stop, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 97, parallelOption: None, stateOption: Stop, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0127999" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: For, startIndexBase: Zero, count: 97, parallelOption: WithDOP, stateOption: None, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0161999" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 0, parallelOption: None, stateOption: None, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 10, parallelOption: None, stateOption: Stop, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0015" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: ForeachOnArray, startIndexBase: Zero, count: 10, parallelOption: WithDOP, stateOption: None, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0016999" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 97, parallelOption: None, stateOption: None, localOption: HasFinally)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0162" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForUnitTests.ParrallelFor(api: Foreach, startIndexBase: Zero, count: 97, parallelOption: WithDOP, stateOption: Stop, localOption: None)" type="System.Threading.Tasks.Tests.ParallelForUnitTests" method="ParrallelFor" time="0.0127" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromDispose_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_FromDispose_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromMoveNext_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_FromMoveNext_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_HasPriorityOverExceptions_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_HasPriorityOverExceptions_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.RunsAsynchronously_EvenForEntirelySynchronousWork_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="RunsAsynchronously_EvenForEntirelySynchronousWork_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_LockWaitAsyncCancellationDoesntPropagate" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_LockWaitAsyncCancellationDoesntPropagate" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.AllItemsEnumeratedOnce_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="AllItemsEnumeratedOnce_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.TaskScheduler_AllCodeExecutedOnCorrectScheduler_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="TaskScheduler_AllCodeExecutedOnCorrectScheduler_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_WorkersCreatedRespectingLimit_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Dop_WorkersCreatedRespectingLimit_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_NullFromGetEnumerator_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_NullFromGetEnumerator_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_SameTokenPassedToEveryInvocation_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_SameTokenPassedToEveryInvocation_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.InvalidArguments_ThrowsException" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="InvalidArguments_ThrowsException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.TaskScheduler_AllCodeExecutedOnCorrectScheduler_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="TaskScheduler_AllCodeExecutedOnCorrectScheduler_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromDisposeAndCancellationCallback_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_FromDisposeAndCancellationCallback_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.EmptyRange_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="EmptyRange_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_SameTokenPassedToEveryInvocation_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_SameTokenPassedToEveryInvocation_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.TaskScheduler_AllCodeExecutedOnCorrectScheduler_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="TaskScheduler_AllCodeExecutedOnCorrectScheduler_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.ExecutionContext_FlowsToWorkerBodies_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="ExecutionContext_FlowsToWorkerBodies_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_InternalCancellationExceptionsArentFilteredOut_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_InternalCancellationExceptionsArentFilteredOut_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.RunsAsynchronously_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="RunsAsynchronously_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_CancelsIterationAndReturnsCanceledTask_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_CancelsIterationAndReturnsCanceledTask_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_SameTokenPassedToEveryInvocation_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_SameTokenPassedToEveryInvocation_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_ImplicitlyCancelsOtherWorkers_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_ImplicitlyCancelsOtherWorkers_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_CancelsIterationAndReturnsCanceledTask_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_CancelsIterationAndReturnsCanceledTask_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_NegativeTaskSchedulerLimitTreatedAsDefault_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Dop_NegativeTaskSchedulerLimitTreatedAsDefault_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromGetEnumerator_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_FromGetEnumerator_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.PreCanceled_CancelsSynchronously" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="PreCanceled_CancelsSynchronously" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_WorkersCreatedRespectingLimit_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Dop_WorkersCreatedRespectingLimit_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromLoopBody_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_FromLoopBody_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_WorkersCreatedRespectingLimitAndTaskScheduler_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Dop_WorkersCreatedRespectingLimitAndTaskScheduler_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_WorkersCreatedRespectingLimitAndTaskScheduler_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Dop_WorkersCreatedRespectingLimitAndTaskScheduler_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.RunsAsynchronously_EvenForEntirelySynchronousWork_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="RunsAsynchronously_EvenForEntirelySynchronousWork_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.ExecutionContext_FlowsToWorkerBodies_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="ExecutionContext_FlowsToWorkerBodies_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_HasPriorityOverExceptions_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_HasPriorityOverExceptions_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromLoopBody_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_FromLoopBody_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_FaultsForOceForNonCancellation_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_FaultsForOceForNonCancellation_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_CancelsIterationAndReturnsCanceledTask_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_CancelsIterationAndReturnsCanceledTask_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_FaultsForOceForNonCancellation" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_FaultsForOceForNonCancellation" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromDispose_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_FromDispose_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.EmptySource_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="EmptySource_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_InternalCancellationExceptionsArentFilteredOut" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_InternalCancellationExceptionsArentFilteredOut" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.ExecutionContext_FlowsToWorkerBodies_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="ExecutionContext_FlowsToWorkerBodies_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_NegativeTaskSchedulerLimitTreatedAsDefault_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Dop_NegativeTaskSchedulerLimitTreatedAsDefault_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.EmptySource_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="EmptySource_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromMoveNext_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_FromMoveNext_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_NegativeTaskSchedulerLimitTreatedAsDefault_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Dop_NegativeTaskSchedulerLimitTreatedAsDefault_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_CorrectTokenPassedToAsyncEnumerator" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_CorrectTokenPassedToAsyncEnumerator" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Dop_WorkersCreatedRespectingLimit_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Dop_WorkersCreatedRespectingLimit_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_NullFromGetEnumerator_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_NullFromGetEnumerator_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromDisposeAndCancellationCallback_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_FromDisposeAndCancellationCallback_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_ImplicitlyCancelsOtherWorkers_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_ImplicitlyCancelsOtherWorkers_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.AllItemsEnumeratedOnce_For" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="AllItemsEnumeratedOnce_For" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromLoopBody_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_FromLoopBody_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.GitHubIssue_114262_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="GitHubIssue_114262_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_FromGetEnumerator_Async" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_FromGetEnumerator_Async" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Cancellation_HasPriorityOverExceptions_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Cancellation_HasPriorityOverExceptions_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.Exception_ImplicitlyCancelsOtherWorkers_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="Exception_ImplicitlyCancelsOtherWorkers_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForEachAsyncTests.AllItemsEnumeratedOnce_Sync" type="System.Threading.Tasks.Tests.ParallelForEachAsyncTests" method="AllItemsEnumeratedOnce_Sync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.RunParallelLoopCancellationTests" type="System.Threading.Tasks.Tests.ParallelForTests" method="RunParallelLoopCancellationTests" time="0.0107" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.TestParallelScheduler" type="System.Threading.Tasks.Tests.ParallelForTests" method="TestParallelScheduler" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelForAverageAggregation" type="System.Threading.Tasks.Tests.ParallelForTests" method="RunSimpleParallelForAverageAggregation" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelFor64IncrementTest" type="System.Threading.Tasks.Tests.ParallelForTests" method="RunSimpleParallelFor64IncrementTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.CancelForLongTest" type="System.Threading.Tasks.Tests.ParallelForTests" method="CancelForLongTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.SequentialForParityTest" type="System.Threading.Tasks.Tests.ParallelForTests" method="SequentialForParityTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.SequentialFor64ParityTest" type="System.Threading.Tasks.Tests.ParallelForTests" method="SequentialFor64ParityTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelForIncrementTest" type="System.Threading.Tasks.Tests.ParallelForTests" method="RunSimpleParallelForIncrementTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.TestParallelForPaths_Exceptions" type="System.Threading.Tasks.Tests.ParallelForTests" method="TestParallelForPaths_Exceptions" time="0.0016" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelForeachAddTest_Array" type="System.Threading.Tasks.Tests.ParallelForTests" method="RunSimpleParallelForeachAddTest_Array" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.RunParallelExceptionTests" type="System.Threading.Tasks.Tests.ParallelForTests" method="RunParallelExceptionTests" time="0.0117" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelForeachAddTest_Enumerable" type="System.Threading.Tasks.Tests.ParallelForTests" method="RunSimpleParallelForeachAddTest_Enumerable" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.CancelForIntTest" type="System.Threading.Tasks.Tests.ParallelForTests" method="CancelForIntTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelForAddTest" type="System.Threading.Tasks.Tests.ParallelForTests" method="RunSimpleParallelForAddTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelFor64AverageAggregation" type="System.Threading.Tasks.Tests.ParallelForTests" method="RunSimpleParallelFor64AverageAggregation" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelForeachAddTest_List" type="System.Threading.Tasks.Tests.ParallelForTests" method="RunSimpleParallelForeachAddTest_List" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.CancelForEachTest" type="System.Threading.Tasks.Tests.ParallelForTests" method="CancelForEachTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.TestParallelForPaths" type="System.Threading.Tasks.Tests.ParallelForTests" method="TestParallelForPaths" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelDoTest" type="System.Threading.Tasks.Tests.ParallelForTests" method="RunSimpleParallelDoTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.TestParallelForDOP" type="System.Threading.Tasks.Tests.ParallelForTests" method="TestParallelForDOP" time="0.5501" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.RunSimpleParallelFor64AddTest" type="System.Threading.Tasks.Tests.ParallelForTests" method="RunSimpleParallelFor64AddTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.TaskIDFromExternalContextTest" type="System.Threading.Tasks.Tests.ParallelForTests" method="TaskIDFromExternalContextTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.TestParallelForEachConversions" type="System.Threading.Tasks.Tests.ParallelForTests" method="TestParallelForEachConversions" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelForTests.TestInvokeDOPAndCancel" type="System.Threading.Tasks.Tests.ParallelForTests" method="TestInvokeDOPAndCancel" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TestMethods.ParallelInvoke9" type="System.Threading.Tasks.Tests.TestMethods" method="ParallelInvoke9" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TestMethods.ParallelInvoke8" type="System.Threading.Tasks.Tests.TestMethods" method="ParallelInvoke8" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TestMethods.ParallelInvoke5" type="System.Threading.Tasks.Tests.TestMethods" method="ParallelInvoke5" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TestMethods.ParallelInvoke1" type="System.Threading.Tasks.Tests.TestMethods" method="ParallelInvoke1" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TestMethods.ParallelInvoke11" type="System.Threading.Tasks.Tests.TestMethods" method="ParallelInvoke11" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TestMethods.ParallelInvoke3" type="System.Threading.Tasks.Tests.TestMethods" method="ParallelInvoke3" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TestMethods.ParallelInvoke4" type="System.Threading.Tasks.Tests.TestMethods" method="ParallelInvoke4" time="0" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TestMethods.ParallelInvoke2" type="System.Threading.Tasks.Tests.TestMethods" method="ParallelInvoke2" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TestMethods.ParallelInvoke7" type="System.Threading.Tasks.Tests.TestMethods" method="ParallelInvoke7" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TestMethods.ParallelInvoke6" type="System.Threading.Tasks.Tests.TestMethods" method="ParallelInvoke6" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TestMethods.ParallelInvoke0" type="System.Threading.Tasks.Tests.TestMethods" method="ParallelInvoke0" time="0" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TestMethods.ParallelInvoke10" type="System.Threading.Tasks.Tests.TestMethods" method="ParallelInvoke10" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelLoopResultTests.OrderablePartitionerForEachTests" type="System.Threading.Tasks.Tests.ParallelLoopResultTests" method="OrderablePartitionerForEachTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelLoopResultTests.PartitionerForEachPLRTests" type="System.Threading.Tasks.Tests.ParallelLoopResultTests" method="PartitionerForEachPLRTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelLoopResultTests.ForEachPLRTests" type="System.Threading.Tasks.Tests.ParallelLoopResultTests" method="ForEachPLRTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelLoopResultTests.ForPLRTests" type="System.Threading.Tasks.Tests.ParallelLoopResultTests" method="ForPLRTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelLoopResultTests.SimultaneousStopBreakTests" type="System.Threading.Tasks.Tests.ParallelLoopResultTests" method="SimultaneousStopBreakTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ParallelLoopResultTests.ForPLR64Tests" type="System.Threading.Tasks.Tests.ParallelLoopResultTests" method="ForPLR64Tests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.Partitioner1Chunk.IncorrectBuffering" type="System.Threading.Tasks.Tests.Partitioner1Chunk" method="IncorrectBuffering" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Partitioner1Chunk.ExceptionOnMoveNext" type="System.Threading.Tasks.Tests.Partitioner1Chunk" method="ExceptionOnMoveNext" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.Partitioner1Chunk.PFEDisposeEnum" type="System.Threading.Tasks.Tests.Partitioner1Chunk" method="PFEDisposeEnum" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.Partitioner1Chunk.OneMoveNext" type="System.Threading.Tasks.Tests.Partitioner1Chunk" method="OneMoveNext" time="0.0240999" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Partitioner1Chunk.NullDataSource" type="System.Threading.Tasks.Tests.Partitioner1Chunk" method="NullDataSource" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Partitioner1Chunk.IterationsWithDependency" type="System.Threading.Tasks.Tests.Partitioner1Chunk" method="IterationsWithDependency" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.RangePartitionerTests.RangePartitionerChunkTest" type="System.Threading.Tasks.Tests.RangePartitionerTests" method="RangePartitionerChunkTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.RangePartitionerTests.RangePartitionerCoverageTest" type="System.Threading.Tasks.Tests.RangePartitionerTests" method="RangePartitionerCoverageTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.RangePartitionerTests.RunPartitionerStaticTest_SingleChunking_Negative" type="System.Threading.Tasks.Tests.RangePartitionerTests" method="RunPartitionerStaticTest_SingleChunking_Negative" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.RangePartitionerTests.RunPartitionerStaticTest_SingleChunking" type="System.Threading.Tasks.Tests.RangePartitionerTests" method="RunPartitionerStaticTest_SingleChunking" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.RangePartitionerThreadSafetyTests.LongPartitionerThreadSafety" type="System.Threading.Tasks.Tests.RangePartitionerThreadSafetyTests" method="LongPartitionerThreadSafety" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.RangePartitionerThreadSafetyTests.IntPartitionerThreadSafety" type="System.Threading.Tasks.Tests.RangePartitionerThreadSafetyTests" method="IntPartitionerThreadSafety" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.RespectParentCancellationTest+TestMethods.RespectParentCancellation3" type="System.Threading.Tasks.Tests.RespectParentCancellationTest+TestMethods" method="RespectParentCancellation3" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.RespectParentCancellationTest+TestMethods.RespectParentCancellation2" type="System.Threading.Tasks.Tests.RespectParentCancellationTest+TestMethods" method="RespectParentCancellation2" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.RespectParentCancellationTest+TestMethods.RespectParentCancellation1" type="System.Threading.Tasks.Tests.RespectParentCancellationTest+TestMethods" method="RespectParentCancellation1" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+  </assembly>
+</assemblies>

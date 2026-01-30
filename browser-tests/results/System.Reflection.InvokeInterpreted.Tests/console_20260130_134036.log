@@ -1,0 +1,288 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:46773/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Reflection.InvokeInterpreted.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Reflection.InvokeInterpreted.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Reflection.InvokeInterpreted.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Reflection.InvokeInterpreted.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Reflection.InvokeInterpreted.Tests.dll (found 209 of 209 test cases)
+Starting:    System.Reflection.InvokeInterpreted.Tests.dll
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestFunctionPointerAsUIntPtrArgType
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestFunctionPointerDirect
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestFunctionPointerAsReturnType
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_2_NotEnoughArgs_Throws
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_SystemPointer
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestIEnumerable2Method
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_ByRef
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_1
+[STRT] System.Reflection.Tests.MethodInvokerTests.InvokeNullableEnumParameterDefaultYes
+[FAIL] System.Reflection.Tests.MethodInvokerTests.InvokeNullableEnumParameterDefaultYes
+Assert.Equal() Failure: Values differ
+Expected: No
+Actual:   null
+   at System.Reflection.Tests.MethodCommonTests.InvokeNullableEnumParameterDefaultYes()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestIEnumerable1Method
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_3_Extra_Throws
+[STRT] System.Reflection.Tests.MethodInvokerTests.InvokeBoxedNullableRefs
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_Span_NotEnoughArgs_Throws
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Bool", value: True)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Byte", value: 255)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "ByteEnum", value: 255)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Char", value: 'S')
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "DateTimeOffset", value: 9999-12-31T23:59:59.9999999+00:00)
+[FAIL] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "DateTimeOffset", value: 9999-12-31T23:59:59.9999999+00:00)
+Assert.Equal() Failure: Values differ
+Expected: 9999-12-31T23:59:59.9999999+00:00
+Actual:   0001-01-01T00:00:00.0000000+00:00
+   at System.Reflection.Tests.MethodCommonTests.TestProperties(String typeName, Object value)
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "DateTime", value: 9999-12-31T23:59:59.9999999)
+[FAIL] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "DateTime", value: 9999-12-31T23:59:59.9999999)
+Assert.Equal() Failure: Values differ
+Expected: 9999-12-31T23:59:59.9999999
+Actual:   0001-01-01T00:00:00.0000000
+   at System.Reflection.Tests.MethodCommonTests.TestProperties(String typeName, Object value)
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Decimal", value: 42)
+[FAIL] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Decimal", value: 42)
+Assert.Equal() Failure: Values differ
+Expected: 42
+Actual:   0
+   at System.Reflection.Tests.MethodCommonTests.TestProperties(String typeName, Object value)
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Double", value: 42)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Guid", value: 18b2a161-48b6-4d6c-af0e-e618c73c5777)
+[FAIL] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Guid", value: 18b2a161-48b6-4d6c-af0e-e618c73c5777)
+Assert.Equal() Failure: Values differ
+Expected: 18b2a161-48b6-4d6c-af0e-e618c73c5777
+Actual:   00000000-0000-0000-0000-000000000000
+   at System.Reflection.Tests.MethodCommonTests.TestProperties(String typeName, Object value)
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Int16", value: 32767)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Int16Enum", value: 32767)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Int32", value: 2147483647)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Int32Enum", value: 2147483647)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Int64", value: 9223372036854775807)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Int64Enum", value: 9223372036854775807)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "NInt", value: 42)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "NUInt", value: 42)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Object", value: Object { })
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "SByte", value: 127)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "SByteEnum", value: 127)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "Single", value: 42)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "UInt16", value: 65535)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "UInt16Enum", value: 65535)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "UInt32", value: 4294967295)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "UInt32Enum", value: 4294967295)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "UInt64", value: 18446744073709551615)
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestProperties(typeName: "UInt64Enum", value: 18446744073709551615)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ThrowsNonWrappedException_0
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MI_BaseClass), methodName: "VirtualReturnIntMethod", obj: MI_BaseClass { }, parameters: null, result: 0)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MI_BaseClass), methodName: "VirtualReturnIntMethod", obj: MethodInfoDummySubClass { }, parameters: null, result: 1)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MI_SubClass), methodName: "ObjectMethodReturningString", obj: MI_SubClass { }, parameters: [42], result: "42")
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MI_SubClass), methodName: "VoidMethodReturningInt", obj: MI_SubClass { }, parameters: null, result: 3)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MI_SubClass), methodName: "VoidMethodReturningLong", obj: MI_SubClass { }, parameters: null, result: 9223372036854775807)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MI_SubClass), methodName: "IntLongMethodReturningLong", obj: MI_SubClass { }, parameters: [200, 10000], result: 10200)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MI_SubClass), methodName: "StaticIntIntMethodReturningInt", obj: null, parameters: [10, 100], result: 110)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MI_SubClass), methodName: "StaticIntIntMethodReturningInt", obj: MI_SubClass { }, parameters: [10, 100], result: 110)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MI_BaseClass), methodName: "StaticIntMethodReturningBool", obj: MI_SubClass { }, parameters: [10], result: True)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MI_SubClass), methodName: "EnumMethodReturningEnum", obj: MI_SubClass { }, parameters: [Case1], result: Case2)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MI_Interface), methodName: "IMethod", obj: MI_SubClass { }, parameters: [], result: 10)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MI_Interface), methodName: "IMethodNew", obj: MI_SubClass { }, parameters: [], result: 20)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "Integer", obj: MethodInfoDefaultParameters { }, parameters: [Missing { }], result: 1)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "Integer", obj: MethodInfoDefaultParameters { }, parameters: [2], result: 2)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "AllPrimitives", obj: MethodInfoDefaultParameters { }, parameters: [Missing { }, Missing { }, Missing { }, Missing { }, Missing { }, ···], result: "True, test, c, 2, -1, -3, 4, -5, 6, -7, 8, 9.1, 11"···)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "AllPrimitives", obj: MethodInfoDefaultParameters { }, parameters: [False, "value", 'd', 102, -101, ···], result: "False, value, d, 102, -101, -103, 104, -105, 106, "···)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "AllPrimitives", obj: MethodInfoDefaultParameters { }, parameters: [False, Missing { }, 'd', Missing { }, -101, ···], result: "False, test, d, 2, -101, -3, 104, -5, 106, -7, 108"···)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "String", obj: MethodInfoDefaultParameters { }, parameters: [Missing { }], result: "test")
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "String", obj: MethodInfoDefaultParameters { }, parameters: ["value"], result: "value")
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "Reference", obj: MethodInfoDefaultParameters { }, parameters: [Missing { }], result: null)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "Reference", obj: MethodInfoDefaultParameters { }, parameters: [CustomReferenceType { }], result: CustomReferenceType { })
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "ValueType", obj: MethodInfoDefaultParameters { }, parameters: [Missing { }], result: System.Reflection.Tests.MethodInfoDefaultParameters+CustomValueType)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "ValueType", obj: MethodInfoDefaultParameters { }, parameters: [System.Reflection.Tests.MethodInfoDefaultParameters+CustomValueType], result: System.Reflection.Tests.MethodInfoDefaultParameters+CustomValueType)
+[FAIL] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "ValueType", obj: MethodInfoDefaultParameters { }, parameters: [System.Reflection.Tests.MethodInfoDefaultParameters+CustomValueType], result: System.Reflection.Tests.MethodInfoDefaultParameters+CustomValueType)
+Assert.Equal() Failure: Values differ
+Expected: System.Reflection.Tests.MethodInfoDefaultParameters+CustomValueType
+Actual:   System.Reflection.Tests.MethodInfoDefaultParameters+CustomValueType
+   at System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(Type methodDeclaringType, String methodName, Object obj, Object[] parameters, Object result)
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithManyArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "DateTime", obj: MethodInfoDefaultParameters { }, parameters: [Missing { }], result: 0001-01-01T00:00:00.0000042)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "DateTime", obj: MethodInfoDefaultParameters { }, parameters: [0001-01-01T00:00:00.0000043], result: 0001-01-01T00:00:00.0000043)
+[FAIL] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "DateTime", obj: MethodInfoDefaultParameters { }, parameters: [0001-01-01T00:00:00.0000043], result: 0001-01-01T00:00:00.0000043)
+Assert.Equal() Failure: Values differ
+Expected: 0001-01-01T00:00:00.0000043
+Actual:   0001-01-01T00:00:00.0000000
+   at System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(Type methodDeclaringType, String methodName, Object obj, Object[] parameters, Object result)
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithManyArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "DecimalWithAttribute", obj: MethodInfoDefaultParameters { }, parameters: [Missing { }], result: -3689348816030400512.4)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "DecimalWithAttribute", obj: MethodInfoDefaultParameters { }, parameters: [-25825441708776829748.4], result: -25825441708776829748.4)
+[FAIL] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "DecimalWithAttribute", obj: MethodInfoDefaultParameters { }, parameters: [-25825441708776829748.4], result: -25825441708776829748.4)
+Assert.Equal() Failure: Values differ
+Expected: -25825441708776829748.4
+Actual:   0
+   at System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(Type methodDeclaringType, String methodName, Object obj, Object[] parameters, Object result)
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithManyArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "Decimal", obj: MethodInfoDefaultParameters { }, parameters: [Missing { }], result: 3.14)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "Decimal", obj: MethodInfoDefaultParameters { }, parameters: [103.14], result: 103.14)
+[FAIL] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "Decimal", obj: MethodInfoDefaultParameters { }, parameters: [103.14], result: 103.14)
+Assert.Equal() Failure: Values differ
+Expected: 103.14
+Actual:   0
+   at System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(Type methodDeclaringType, String methodName, Object obj, Object[] parameters, Object result)
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithManyArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "NullableInt", obj: MethodInfoDefaultParameters { }, parameters: [Missing { }], result: null)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "NullableInt", obj: MethodInfoDefaultParameters { }, parameters: [42], result: 42)
+[FAIL] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "NullableInt", obj: MethodInfoDefaultParameters { }, parameters: [42], result: 42)
+Assert.Equal() Failure: Values differ
+Expected: 42
+Actual:   null
+   at System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(Type methodDeclaringType, String methodName, Object obj, Object[] parameters, Object result)
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithManyArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "Enum", obj: MethodInfoDefaultParameters { }, parameters: [Missing { }], result: Case1)
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParametersInterface), methodName: "InterfaceMethod", obj: MethodInfoDefaultParameters { }, parameters: [Missing { }, Missing { }, Missing { }], result: "1, test, 3.14")
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParametersInterface), methodName: "InterfaceMethod", obj: MethodInfoDefaultParameters { }, parameters: [101, "value", 103.14], result: "101, value, 103.14")
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "StaticMethod", obj: null, parameters: [Missing { }, Missing { }, Missing { }], result: "1, test, 3.14")
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "StaticMethod", obj: null, parameters: [101, "value", 103.14], result: "101, value, 103.14")
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "OptionalObjectParameter", obj: MethodInfoDefaultParameters { }, parameters: ["value"], result: "value")
+[STRT] System.Reflection.Tests.MethodInvokerTests.ArgumentConversions(methodDeclaringType: typeof(System.Reflection.Tests.MethodInfoDefaultParameters), methodName: "String", obj: MethodInfoDefaultParameters { }, parameters: ["value"], result: "value")
+[STRT] System.Reflection.Tests.MethodInvokerTests.NullTypeValidation
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_2_Extra_Throws
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_5
+[STRT] System.Reflection.Tests.MethodInvokerTests.ThrowsNonWrappedException_1
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestObject4Method
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_Span_Extra_Throws
+[STRT] System.Reflection.Tests.MethodInvokerTests.InvokeNullableEnumParameterDefaultNo
+[FAIL] System.Reflection.Tests.MethodInvokerTests.InvokeNullableEnumParameterDefaultNo
+Assert.Equal() Failure: Values differ
+Expected: No
+Actual:   null
+   at System.Reflection.Tests.MethodCommonTests.InvokeNullableEnumParameterDefaultNo()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[STRT] System.Reflection.Tests.MethodInvokerTests.CopyBackWithByRefArgs
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestObject6Method
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestVoidMethod
+[STRT] System.Reflection.Tests.MethodInvokerTests.VerifyThisObj_Null
+[STRT] System.Reflection.Tests.MethodInvokerTests.VerifyThisObj_WrongType
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestObject2Method
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_1_NotEnoughArgs_Throws
+[STRT] System.Reflection.Tests.MethodInvokerTests.ValueTypeMembers_WithoutOverrides
+[STRT] System.Reflection.Tests.MethodInvokerTests.InvokeEnum
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_1_Extra_Throws
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_4
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestObject5Method
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_0_Extra_Throws
+[STRT] System.Reflection.Tests.MethodInvokerTests.InvokeNullableEnumParameterDefaultNull
+[FAIL] System.Reflection.Tests.MethodInvokerTests.InvokeNullableEnumParameterDefaultNull
+Assert.Equal() Failure: Values differ
+Expected: No
+Actual:   null
+   at System.Reflection.Tests.MethodCommonTests.InvokeNullableEnumParameterDefaultNull()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_0
+[STRT] System.Reflection.Tests.MethodInvokerTests.InvokeNonNullableEnumParameterDefaultYes
+[STRT] System.Reflection.Tests.MethodInvokerTests.ValueTypeMembers_WithOverrides
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestObject3Method
+[STRT] System.Reflection.Tests.MethodInvokerTests.ThrowsNonWrappedException_5
+[STRT] System.Reflection.Tests.MethodInvokerTests.NullableOfTMembers
+[STRT] System.Reflection.Tests.MethodInvokerTests.InvokeNullableRefs
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_Pointer
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_3
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_2
+[STRT] System.Reflection.Tests.MethodInvokerTests.Args_3_NotEnoughArgs_Throws
+[STRT] System.Reflection.Tests.MethodInvokerTests.VerifyInnerException
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestFunctionPointerAsArgType
+[STRT] System.Reflection.Tests.MethodInvokerTests.TestFunctionPointerAsIntPtrArgType
+[STRT] System.Reflection.Tests.MethodInfoTests.ValueTypeMembers_WithOverrides
+[STRT] System.Reflection.Tests.MethodInfoTests.InvokeNullableEnumParameterDefaultNo
+[FAIL] System.Reflection.Tests.MethodInfoTests.InvokeNullableEnumParameterDefaultNo
+Assert.Equal() Failure: Values differ
+Expected: No
+Actual:   null
+   at System.Reflection.Tests.MethodCommonTests.InvokeNullableEnumParameterDefaultNo()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[STRT] System.Reflection.Tests.MethodInfoTests.ValueTypeMembers_WithoutOverrides
+[STRT] System.Reflection.Tests.MethodInfoTests.GetHashCode_MultipleSubClasses_ShouldBeUnique
+[STRT] System.Reflection.Tests.MethodInfoTests.GetGenericMethodDefinition_MethodNotGeneric_ThrowsInvalidOperationException
+[STRT] System.Reflection.Tests.MethodInfoTests.TestIEnumerable1Method
+[STRT] System.Reflection.Tests.MethodInfoTests.Invoke_TwoParameters_CustomBinder_IncorrectTypeArguments
+[STRT] System.Reflection.Tests.MethodInfoTests.CreateDelegate_ValueTypeParameters
+[STRT] System.Reflection.Tests.MethodInfoTests.Name(type: typeof(System.Reflection.Tests.MI_SubClass), name: "VoidMethodReturningLong")
+[STRT] System.Reflection.Tests.MethodInfoTests.Name(type: typeof(System.Reflection.Tests.MI_SubClass), name: "IntLongMethodReturningLong")
+[STRT] System.Reflection.Tests.MethodInfoTests.Name(type: typeof(System.Reflection.Tests.MI_SubClass), name: "StringArrayMethod")
+[STRT] System.Reflection.Tests.MethodInfoTests.Name(type: typeof(System.Reflection.Tests.MI_Interlocked), name: "Increment")
+[STRT] System.Reflection.Tests.MethodInfoTests.Name(type: typeof(System.Reflection.Tests.MI_Interlocked), name: "Decrement")
+[STRT] System.Reflection.Tests.MethodInfoTests.Name(type: typeof(System.Reflection.Tests.MI_Interlocked), name: "Exchange")
+[STRT] System.Reflection.Tests.MethodInfoTests.Name(type: typeof(System.Reflection.Tests.MI_Interlocked), name: "CompareExchange")
+[STRT] System.Reflection.Tests.MethodInfoTests.TestVoidMethod
+[STRT] System.Reflection.Tests.MethodInfoTests.InvokeUninstantiatedGenericType_NonGenericMethod
+[STRT] System.Reflection.Tests.MethodInfoTests.IsHideBySig(type: typeof(System.Reflection.Tests.MI_AbstractSubClass), name: "AbstractMethod", expected: True)
+[STRT] System.Reflection.Tests.MethodInfoTests.Invoke_OptionalParameterUnassingableFromMissing_WithMissingValue_ThrowsArgumentException
+[STRT] System.Reflection.Tests.MethodInfoTests.TestFunctionPointerDirect
+[STRT] System.Reflection.Tests.MethodInfoTests.CallingConvention
+[STRT] System.Reflection.Tests.MethodInfoTests.GetGenericArguments(type: typeof(System.Reflection.Tests.MI_SubClass), name: "GenericMethod1", expectedCount: 1)
+[STRT] System.Reflection.Tests.MethodInfoTests.GetGenericArguments(type: typeof(System.Reflection.Tests.MI_SubClass), name: "GenericMethod2", expectedCount: 2)
+[STRT] System.Reflection.Tests.MethodInfoTests.GetGenericArguments(type: typeof(System.Reflection.Tests.MI_SubClass), name: "VoidMethodReturningLong", expectedCount: 0)
+[STRT] System.Reflection.Tests.MethodInfoTests.CreateDelegate_InheritedMethod
+DOTNET: Unhandled error: RuntimeError: table index is out of bounds
+DOTNET: table index is out of bounds
+RuntimeError: table index is out of bounds
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[3233]:0x160519
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[2611]:0x11fe69
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[4005]:0x1d7784
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[1583]:0x91744
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[7288]:0x3133a9
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[5473]:0x254251
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[2611]:0x11f06f
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[4005]:0x1d7784
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[1583]:0x91744
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[7288]:0x3133a9
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[5473]:0x254251
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[2611]:0x11f06f
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[4005]:0x1d7784
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[438]:0x1dbc5
+    at http://127.0.0.1:46773/_framework/dotnet.native.yskk64yq6l.wasm:wasm-function[3225]:0x15fecb
+    at SystemJS_ScheduleBackgroundJobTick (http://127.0.0.1:46773/_framework/dotnet.native.wd2dsb9iyb.js:8:99484)
+    at callUserCallback (http://127.0.0.1:46773/_framework/dotnet.native.wd2dsb9iyb.js:8:145083)
+    at http://127.0.0.1:46773/_framework/dotnet.native.wd2dsb9iyb.js:8:145294
+WASM EXIT 1

@@ -1,0 +1,211 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.ComponentModel.Composition.Registration/tests/System.ComponentModel.Composition.Registration.Tests.csproj (in 144 ms).
+  14 of 15 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  System.ComponentModel.Composition -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Composition/ref/Release/net11.0/System.ComponentModel.Composition.dll
+  System.Reflection.Context -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Context/ref/Release/net11.0/System.Reflection.Context.dll
+  System.ComponentModel.Composition -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Composition/Release/net11.0/System.ComponentModel.Composition.dll
+  System.Reflection.Context -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Context/Release/net11.0/System.Reflection.Context.dll
+  System.ComponentModel.Composition.Registration -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration/ref/Release/net11.0/System.ComponentModel.Composition.Registration.dll
+  System.ComponentModel.Composition.Registration -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration/Release/net11.0/System.ComponentModel.Composition.Registration.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.ComponentModel.Composition.Registration.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration.Tests/Release/net11.0/browser-wasm/System.ComponentModel.Composition.Registration.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.ComponentModel.Composition.Registration/tests
+  ----- start Fri Jan 30 13:35:28 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.ComponentModel.Composition.Registration.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.ComponentModel.Composition.Registration/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.ComponentModel.Composition.Registration.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 45009
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 45009.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:43571/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.ComponentModel.Composition.Registration.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.ComponentModel.Composition.Registration.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.ComponentModel.Composition.Registration.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.ComponentModel.Composition.Registration.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.ComponentModel.Composition.Registration.Tests.dll (found 130 of 130 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.ComponentModel.Composition.Registration.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderInterfaceTests.StandardExportInterfacesShouldWork
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderInterfaceTests.StandardExportInterfacesDefaultContractShouldWork
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ExportBuilderUnitTests.ExportInterfaceWithTypeOf2
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ExportBuilderUnitTests.ExportInterfaceWithTypeOf1
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ExportBuilderUnitTests.ExportInheritedInterfaceWithImplements2
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ExportBuilderUnitTests.ExportInheritedInterfaceWithImplements1
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.OfTypeInterfaceWithExport_ShouldFindZeroParts
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.ImplementsIFooNoExport_ShouldFindZeroParts
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.WhereIsTypeWithExport_ShouldFindTwoParts
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.WhereNullArgument_ShouldThrowArgumentException
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.OfTypeTwoPart_ConfigurationAfterConstruction_ShouldFindTwoParts
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.OfTypeTwoPart_ShouldFindTwoParts
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.WhereIsClassAndImplementsIFooWithExport_ShouldFindTwoParts
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.ImplementsIFooWithExport_ShouldFindTwoParts
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.OfTypeOnePart_ShouldFindOnePart
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.UndecoratedContext_ShouldFindZeroParts
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.WhereIsClassAndImplementsIFooNoExport_ShouldFindZeroParts
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.OfTypeTwoPart_ConfigurationAfterParts_ShouldFindZeroParts
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.OfTypeInterfaceNoExport_ShouldFindZeroParts
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportPropertyConvention_JustMetadataOverride_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportInterfaceConvention_InheritedExportAttribute_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ConventionsInInnerAndOuterRCs_InnerRCTakesPrecendence
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.AnyConvention_NotDiscoverablePart_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ImportPropertyConvention_NonImportPropertyDeclarationAttributes_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ConstructorConvention_OverrideOnDeclaration_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.PartMetadataConvention_DeclaredQO_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportPropertyConvention_NoOverrides_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ImportPropertyConvention_ImportAttribute_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportInterfaceConvention_NoOverrides_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ConfigureExportInterfaces_ExportInterfaces_Overridden
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.PartMetadataConvention_NoDeclaredMetadata_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportInterfaceConvention_InheritedExportOnBaseClassDeclaration_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ConfigureExportInterfaces_ExportInterfaces_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ConstructorParameterConvention_NoOverride_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportPropertyConvention_CustomMetadataAttribute_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ImportPropertyConvention_ImportManyAttribute_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.CreationPolicyConvention_CreationPolicyDeclared_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportInterfaceConvention_CustomExportAttribute_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.CreationPolicyConvention_UnrelatedAttributesDeclared_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportPropertyConvention_NonExportPropertyDeclarationAttributes_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportInterfaceConvention_ExportAttribute_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.CreationPolicyConvention_NoCreationPolicyDeclared_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportInterfaceConvention_CustomMetadataAttribute_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportInterfaceConvention_JustMetadataOverride_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportPropertyConvention_ExportAttribute_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.PartMetadataConvention_UnrelatedDeclaredAttributes_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportPropertyConvention_CustomExportAttribute_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportInterfacesConvention_UnrelatedExportOnProperty_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ExportInterfaceConvention_NonExportClassDeclarationAttributes_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ConstructorParameterConvention_ImportOnDeclaration_ConventionIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.ImportPropertyConvention_NoOverrides_ConventionApplied
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.ImportProperty_ShouldGenerateImportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.ExportSelf_ShouldGenerateSingleExportAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.InsideTheLambdaCallGetCustomAttributesShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.ManuallySelectingConstructor_SelectsTheExplicitOne_IEnumerableParameterBecomesImportMany
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.SetCreationPolicy_ShouldGeneratePartCreationPolicyAttributeForType
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.ExportPropertyOfT_ShouldGenerateExportForPropertySelectedWithTAsContractType
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.ImportSelectorNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.AddMetadataWithFunc_ShouldGeneratePartMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.ExportPropertyWithConfiguration_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.NoOperations_ShouldGenerateNoAttributes
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.ExportSelectorNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.ExportInterfaceSelectorNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.ExportOfT_ShouldGenerateSingleExportAttributeWithContractType
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.ManuallySelectingConstructor_SelectsTheExplicitOne
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.ImportProperties_ShouldGenerateImportForPropertySelected_And_ApplyImportMany
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.ExportProperty_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.ConventionSelectsConstructor_SelectsTheOneWithMostParameters
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.AddMetadata_ShouldGeneratePartMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.ExportProperty_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.ExportSelf_ShouldGenerateSingleExportAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.ExportSelectorNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.ManuallySelectingConstructor_SelectsTheExplicitOne_IEnumerableParameterBecomesImportMany
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.ExportPropertyOfT_ShouldGenerateExportForPropertySelectedWithTAsContractType
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.ExportPropertyWithConfiguration_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.ExportInterfaceSelectorNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.AddMetadata_ShouldGeneratePartMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.ImportProperty_ShouldGenerateImportForPropertySelected_And_ApplyImportMany
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.NoOperations_ShouldGenerateNoAttributes
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.ImportSelectorNull_ShouldThrowArgumentNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.ManuallySelectingConstructor_SelectsTheExplicitOne
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.ExportOfT_ShouldGenerateSingleExportAttributeWithContractType
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.ConventionSelectsConstructor_SelectsTheOneWithMostParameters
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.ImportProperty_ShouldGenerateImportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.AddMetadataWithFunc_ShouldGeneratePartMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderExportFuncUnitTests.RegistrationBuilder_WithExportDelegatesShouldNotThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ImportBuilderTests.RequiredCreationPolicy_SetsRequiredCreationPolicyProperty
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ImportBuilderTests.AsContractTypeOfT_SetsContractType
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ImportBuilderTests.AsMany_And_ContractName_ChangesGeneratedAttributeToImportMany
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ImportBuilderTests.AsContractName_AndContractType_SetsContractNameAndType
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ImportBuilderTests.AllowRecomposition_SetsAllowRecompositionProperty
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ImportBuilderTests.AllowDefault_SetsAllowDefaultProperty
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ImportBuilderTests.AsMany_ChangesGeneratedAttributeToImportMany
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ImportBuilderTests.AsContractType_SetsContractType
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ImportBuilderTests.AsContractName_SetsContractName
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTInheritanceTests.ImportPropertyTargetingBaseClass_ShouldGenerateImportManyForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTInheritanceTests.ImportPropertyTargetingBaseClass_ShouldGenerateImportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTInheritanceTests.ExportPropertyTargetingBaseClass_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTInheritanceTests.ExportPropertyTargetingDerivedClass_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTInheritanceTests.ImportPropertyTargetingDerivedClass_ShouldGenerateImportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ExportBuilderTests.AsContractName_SetsContractName
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ExportBuilderTests.AsContractTypeOfT_SetsContractType
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ExportBuilderTests.AddMetadataFuncVal_AddsExportMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ExportBuilderTests.AddMetadata_AddsExportMetadataAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ExportBuilderTests.AsContractName_AndContractType_SetsContractNameAndType
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ExportBuilderTests.Inherited_AddsInheritedExportAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ExportBuilderTests.AsContractType_SetsContractType
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderTests.MapType_OverridingSelectionOfConventionSelectedConstructor
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderTests.MapType_ShouldReturnProjectedAttributesForType
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderTests.ExplicitGenericArity2ExportInRegistrationBuilder
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderTests.GenericExportInRegistrationBuilder
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderTests.GenericInterfaceExportInRegistrationBuilder
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderTests.GenericBaseClassExportInRegistrationBuilder
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderTests.ExplicitGenericExportInRegistrationBuilder
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderTests.ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderTests.MapType_OverridingSelectionOfConventionSelectedConstructor_WithPartBuilderOfT
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderTests.MapType_ConventionSelectedConstructor
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderUnitTests.LongestConstructorWithAttribute_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderUnitTests.ManyConstructorsControllerFindLongestConstructor_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderUnitTests.AmbiguousConstructor_ShouldFail
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderUnitTests.AmbiguousConstructorWithAttributeAppliedToOne_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderUnitTests.LongestConstructorShortestWithAttribute_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderUnitTests.ManyConstructorsControllerFindLongestConstructorAndImportByName_ShouldSucceed
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ExportInterfacesContractExclusionTests.WhenExportingInterfaces_NoPredicate_OnlyContractInterfacesAreExported
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.ExportInterfacesContractExclusionTests.WhenExportingInterfaces_PredicateSpecified_OnlyContractInterfacesAreSeenByThePredicate
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderInheritanceTests.ImportPropertyTargetingBaseClass_ShouldGenerateImportManyForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderInheritanceTests.ImportPropertyTargetingBaseClass_ShouldGenerateImportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderInheritanceTests.ExportPropertyTargetingBaseClass_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderInheritanceTests.ExportPropertyTargetingDerivedClass_ShouldGenerateExportForPropertySelected
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Composition.Registration.Tests.PartBuilderInheritanceTests.ImportPropertyTargetingDerivedClass_ShouldGenerateImportForPropertySelected
+  [40m[32minfo[39m[22m[49m: Finished:    System.ComponentModel.Composition.Registration.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 47630 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 47630 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 130 Passed: 130 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.ComponentModel.Composition.Registration.Tests.dll after 0.019016666666666668 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.ComponentModel.Composition.Registration/tests
+  ----- end Fri Jan 30 13:35:32 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Composition.Registration.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:07.61

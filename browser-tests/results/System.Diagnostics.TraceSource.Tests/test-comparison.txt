@@ -1,0 +1,9 @@
+Test Comparison: System.Diagnostics.TraceSource.Tests
+Generated: 2026-01-30T13:37:58+01:00
+
+Mono tests:    290
+CoreCLR tests: 290
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

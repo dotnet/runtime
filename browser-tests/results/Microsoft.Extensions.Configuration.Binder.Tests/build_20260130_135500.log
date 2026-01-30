@@ -1,0 +1,374 @@
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  Microsoft.Extensions.FileSystemGlobbing -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileSystemGlobbing/ref/Release/net11.0/Microsoft.Extensions.FileSystemGlobbing.dll
+  Microsoft.Extensions.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives/ref/Release/net11.0/Microsoft.Extensions.Primitives.dll
+  Microsoft.Extensions.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives/Release/net11.0/Microsoft.Extensions.Primitives.dll
+  Microsoft.Extensions.FileSystemGlobbing -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileSystemGlobbing/Release/net11.0/Microsoft.Extensions.FileSystemGlobbing.dll
+  Microsoft.Extensions.FileProviders.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileProviders.Abstractions/ref/Release/net11.0/Microsoft.Extensions.FileProviders.Abstractions.dll
+  Microsoft.Extensions.Configuration.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Abstractions/ref/Release/net11.0/Microsoft.Extensions.Configuration.Abstractions.dll
+  Microsoft.Extensions.FileProviders.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileProviders.Abstractions/Release/net11.0/Microsoft.Extensions.FileProviders.Abstractions.dll
+  Microsoft.Extensions.Configuration.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Abstractions/Release/net11.0/Microsoft.Extensions.Configuration.Abstractions.dll
+  Microsoft.Extensions.Configuration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration/ref/Release/net11.0/Microsoft.Extensions.Configuration.dll
+  Microsoft.Extensions.FileProviders.Physical -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileProviders.Physical/ref/Release/net11.0/Microsoft.Extensions.FileProviders.Physical.dll
+  Microsoft.Extensions.Configuration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration/Release/net11.0/Microsoft.Extensions.Configuration.dll
+  Microsoft.Extensions.FileProviders.Physical -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileProviders.Physical/Release/net11.0/Microsoft.Extensions.FileProviders.Physical.dll
+  Microsoft.Extensions.Configuration.Binder.SourceGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.SourceGeneration/Release/netstandard2.0/Microsoft.Extensions.Configuration.Binder.SourceGeneration.dll
+  Microsoft.Extensions.Configuration.FileExtensions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.FileExtensions/ref/Release/net11.0/Microsoft.Extensions.Configuration.FileExtensions.dll
+  Microsoft.Extensions.Configuration.FileExtensions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.FileExtensions/Release/net11.0/Microsoft.Extensions.Configuration.FileExtensions.dll
+  Microsoft.Extensions.Configuration.Binder -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder/ref/Release/net11.0/Microsoft.Extensions.Configuration.Binder.dll
+  Microsoft.Extensions.Configuration.Binder -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder/Release/net11.0/Microsoft.Extensions.Configuration.Binder.dll
+  Microsoft.Extensions.Configuration.Json -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json/ref/Release/net11.0/Microsoft.Extensions.Configuration.Json.dll
+  Microsoft.Extensions.Configuration.Json -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json/Release/net11.0/Microsoft.Extensions.Configuration.Json.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  Microsoft.Extensions.Configuration.Binder.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.Tests/Release/net11.0/browser-wasm/Microsoft.Extensions.Configuration.Binder.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Configuration.Binder/tests/UnitTests
+  ----- start Fri Jan 30 13:55:10 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Binder.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Configuration.Binder/tests/UnitTests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Binder.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 33917
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 33917.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:38955/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Configuration.Binder.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Binder.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Binder.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: Microsoft.Extensions.Configuration.Binder.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  Microsoft.Extensions.Configuration.Binder.Tests.dll (found 220 of 227 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    Microsoft.Extensions.Configuration.Binder.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests+CollectionsBindingWithErrorOnUnknownConfiguration.WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInADictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests+CollectionsBindingWithErrorOnUnknownConfiguration.WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInAnArrayAndValidItemsArePreserved
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests+CollectionsBindingWithErrorOnUnknownConfiguration.WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInAnArray
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests+CollectionsBindingWithErrorOnUnknownConfiguration.WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInADictionaryAndValidItemsArePreserved
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindWithNullValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.NonPublicModeGetStillIgnoresReadonly(property: "InternalReadOnly")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.NonPublicModeGetStillIgnoresReadonly(property: "PrivateReadOnly")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.NonPublicModeGetStillIgnoresReadonly(property: "ProtectedReadOnly")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TypeWithPrimitives_Pass
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetNullValue
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ExceptionWhenTryingToBindToConstructorWithMissingConfig
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.EnumBindCaseInsensitiveNotThrows
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindsToClassConstructorParametersWithDefaultValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindToKnownParsableTypesWithNullValueTest(configuration: ConfigurationRoot { Item = (throws TargetParameterCountException), Providers = [JsonStreamConfigurationProvider] })
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindToKnownParsableTypesWithNullValueTest(configuration: ConfigurationRoot { Item = (throws TargetParameterCountException), Providers = [[···]] })
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ExceptionIncludesKeyOfFailedBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindSemiImmutableClass_WithInitProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindClassWithPrimaryCtor
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.PrivatePropertiesFromBaseClass_Bind
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ThrowsIfPropertyInConfigMissingInModel_Bind
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindToRecursiveTypesTest
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestProvidersOrder
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestAbstractTypeAsNestedMemberForBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindCanReadInheritedProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ExceptionWhenTryingToBindToTypeThrowsWhenActivated
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.RecursiveTypeGraphs_IndirectRef
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.SharedChildInstance
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindByteArray
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestGettingAbstractType
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.DoesNotReadPropertiesUnnecessarily
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.IConfigurationSectionAsCtorParam
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.PrivatePropertiesFromBaseClass_Get
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindImmutableClass_PicksParameterizedConstructorIfNoParameterlessConstructorExists
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestBindingUninitializedAbstractMember
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindNestedStructProperties_SetterCalledWithMissingConfig_Array
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ThrowsIfPropertyInConfigMissingInModel_Get
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetCanReadInheritedProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.RecursiveTypeGraphs_DirectRef
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.AllowsCaseInsensitiveMatch
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.EnsureCallingThePropertySetter
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindNestedStructProperties_SetterCalledWithMissingConfigEntry
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetCanReadStaticProperty
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindToClassWithNewProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindMutableStruct_UnmatchedConstructorsAreIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindImmutableClass_ThrowsOnMultipleParameterizedConstructors
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindRootStructIsNoOp
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindMutableClassWitNestedImmutableObject
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ExceptionWhenTryingToBindToByteArray
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ExceptionWhenTryingToBindClassWithoutParameterlessConstructor
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindCanSetNonPublicWhenSet(property: "PrivateSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindCanSetNonPublicWhenSet(property: "ProtectedSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindCanSetNonPublicWhenSet(property: "InternalSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindCanSetNonPublicWhenSet(property: "InternalProperty")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindCanSetNonPublicWhenSet(property: "PrivateProperty")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindCanSetNonPublicWhenSet(property: "ProtectedProperty")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindCanSetNonPublicWhenSet(property: "ProtectedPrivateSet")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.DoesNotCallSetOnly
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindToObjectProperty
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindNestedStructProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindIConfigurationSectionWithDerivedOptionsSection
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetIConfigurationSection
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindConfigurationKeyNameAttributes
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.NonPublicModeBindStillIgnoresReadonly(property: "InternalReadOnly")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.NonPublicModeBindStillIgnoresReadonly(property: "PrivateReadOnly")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.NonPublicModeBindStillIgnoresReadonly(property: "ProtectedReadOnly")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestBindingAbstractMember_AsCtorParam
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.Get_Scalar
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.EnsureThrowingWithCollectionAndErrorOnUnknownConfigurationOption
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindByteArrayWhenValueIsNull
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindArraysWithNullAndOtherValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ThrowsIfPropertyInConfigMissingInNestedModel_Bind
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindNestedStructProperties_SetterNotCalledWithMissingConfigSection
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestNullHandling_GetValue
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindsToRecordPrimaryConstructorParametersWithDefaultValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestNullHandling_Get
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ThrowsIfPropertyInConfigMissingInNestedModel_Get
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindReadonlyRecordStructOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ExceptionWhenTryingToBindConfigToClassWhereNoMatchingParameterIsFoundInConstructor
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetValue_ScalarNullable
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.EnsureSuccessfullyBind
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.EnsureNotCallingSettersWhenGivenExistingNullOnInstanceNotInConfig
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestDictionaryWithNullableEnumValueType
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindImmutableClass
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetCanReadComplexProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindWithKeyOverload
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetCanSetNonPublicWhenSet(property: "PrivateSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetCanSetNonPublicWhenSet(property: "ProtectedSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetCanSetNonPublicWhenSet(property: "InternalSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetCanSetNonPublicWhenSet(property: "InternalProperty")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetCanSetNonPublicWhenSet(property: "PrivateProperty")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetCanSetNonPublicWhenSet(property: "ProtectedProperty")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetCanSetNonPublicWhenSet(property: "ProtectedPrivateSet")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TraceSwitchTest
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindOnParametersAndProperties_PropertiesAreSetAfterTheConstructor
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindCanReadComplexProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanGetComplexOptionsWhichHasAlsoHasValue
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(int))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(System.TimeSpan))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(System.DateTimeOffset))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(System.DateTime))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(float))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(double))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(decimal))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(char))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(sbyte))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(byte))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(bool))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(ulong))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(long))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(ushort))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(short))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(uint))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(System.AttributeTargets))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ConsistentExceptionOnFailedBinding(type: typeof(System.Guid))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindRecordOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetValue_Scalar
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BinderSupportsObjCreationInput
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.EmptyStringIsNullable
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindImmutableClass_ThrowsOnParameterizedConstructorWithARefParameter
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindWithNestedTypesWithReadOnlyProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.IgnoresReadOnlyNestedStructProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestBindingAbstractInstance
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindValueTypeOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindVirtualProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestBindingInitializedAbstractMember
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetDefaultsWhenDataDoesNotExist
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ForClasses_ParameterlessConstructorIsPickedOverParameterized
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "2147483647", type: typeof(int))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "4294967295", type: typeof(uint))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "32767", type: typeof(short))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "65535", type: typeof(ushort))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "-9223372036854775808", type: typeof(long))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "18446744073709551615", type: typeof(ulong))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "trUE", type: typeof(bool))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "255", type: typeof(byte))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "127", type: typeof(sbyte))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "\xffff", type: typeof(char))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "1.79769e+308", type: typeof(double))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "3.40282347E+38", type: typeof(float))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "http://www.bing.com", type: typeof(System.Uri))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanReadAllSupportedTypes(value: "Constructor", type: typeof(System.AttributeTargets))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ExceptionWhenTryingToBindToInterface
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindNullableNestedStructProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.Get_ScalarNullable
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestBindingEmptyArrayToNullIEnumerable
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.FieldsNotSupported_ExceptionBindingToConstructorWithParameterMatchingAField
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestBindingNestedIEnumerable
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanGetEnumerableNotCollection
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetIgnoresTests(property: "ReadOnly")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetIgnoresTests(property: "PrivateSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetIgnoresTests(property: "ProtectedSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetIgnoresTests(property: "InternalSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetIgnoresTests(property: "InternalProperty")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetIgnoresTests(property: "PrivateProperty")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetIgnoresTests(property: "ProtectedProperty")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetIgnoresTests(property: "ProtectedPrivateSet")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ForStructs_ParameterlessConstructorIsPickedOverParameterized
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindImmutableClass_ThrowsOnParameterizedConstructorWithAnOutParameter
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindOnParametersAndProperties_RecordWithArrayConstructorParameter
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindRecordStructOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindNestedRecordOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindToMockConfigurationSection
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindIConfigurationSection
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ExceptionOnFailedBindingIncludesPath
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindSemiImmutableClass
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.PropertySetterCalledTest
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.ExceptionWhenTryingToBindClassWherePropertiesDoNotMatchConstructorParameters
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.TestNullHandling_Bind
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindClassWithPrimaryCtorWithDefaultValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindImmutableClass_ThrowsOnParameterizedConstructorWithAnInParameter
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.GetUri
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindIgnoresTests(property: "ReadOnly")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindIgnoresTests(property: "PrivateSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindIgnoresTests(property: "ProtectedSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindIgnoresTests(property: "InternalSetter")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindIgnoresTests(property: "InternalProperty")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindIgnoresTests(property: "PrivateProperty")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindIgnoresTests(property: "ProtectedProperty")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BindIgnoresTests(property: "ProtectedPrivateSet")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.CanBindToObjectMembers
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.BinderIgnoresIndexerProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests.NullableDictKeys
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.TestOptionsWithDifferentCollectionInterfaces
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ShouldPreserveExistingKeysInDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindNonInstantiatedDictionaryOfISet
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetByteDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.IntDictionaryBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetListNullValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ObjectDictionaryWithHardcodedElements
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindUninitializedIReadOnlyCollection
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.NonStringKeyDictionaryBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindUninitializedIEnumerable
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInitializedCustomIndirectlyDerivedIEnumerableList
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedReadOnlyDictionary2
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetShortDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindUninitializedIDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.TestMutatingDictionaryValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedHashSetWithSomeValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CustomListBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ISetDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindNonInstantiatedReadOnlyDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindNonInstantiatedCustomICollectionWithoutAnAddMethodWithItems
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindWithInterdependentProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindNonInstantiatedHashSet
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindNonInstantiatedIEnumerableWithItems
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedCustomICollectionWithoutAnAddMethodWithItems
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedDictionaryOfIReadOnlySetWithSomeExistingValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.UnsupportedMultidimensionalArrays
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.DoesNotBindInstantiatedISetWithUnsupportedKeys
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedIReadOnlySet
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetIntDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.AlreadyInitializedListInterfaceBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedReadOnlyDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ThrowsForCustomIEnumerableCollection
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.BindInstantiatedIReadOnlyDictionary_CreatesCopyOfOriginal
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindNonInstantiatedISet
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ObjectListBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedICollectionWithItems
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ArrayInNestedOptionBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.BindStringArray
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedDictionaryOfISetWithSomeExistingValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetStringArray
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindUninitializedIReadOnlyDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.AlreadyInitializedStringDictionaryBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ShouldPreserveExistingKeysInNestedDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ReadOnlyArrayIsIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetUintEnumDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.TestCanBindListPropertyWithoutSetter
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetDictionaryInvalidValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.DoesNotBindUninstantiatedISetWithUnsupportedKeys
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.BindList
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ShouldPreserveExistingValuesInArrayWhenItIsDictionaryElement
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindNonInstantiatedSortedSetWithSomeValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetStringDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.DifferentDictionaryBindingCasesTest
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindISetNoSetter
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.TestCollectionWithNullOrEmptyItems
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetUShortDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedIReadOnlyWithSomeValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedISet
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ObjectDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ThrowsForCustomSet
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetUIntDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindUninitializedIList
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanOverrideExistingDictionaryKey
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetSByteDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.BindInstantiatedConcreteDictionary_OverwritesOriginal
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.BindNonInstantiatedIReadOnlyDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedIEnumerableWithNullItems
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ListInNestedOptionBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.AlreadyInitializedListBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetListInvalidValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ShouldPreserveExistingKeysInDictionaryWithEnumAsKeyType
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ThrowsForCustomICollection
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInitializedIReadOnlyDictionaryAndDoesNotModifyTheOriginal
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.NestedListsBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.BindIntList
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetULongDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInitializedIEnumerableAndTheOriginalItemsAreNotMutated
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetEnumDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedISetWithSomeValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetObjectList
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.JaggedArrayBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetList
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindNonInstantiatedIReadOnlySet
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedIEnumerableWithItems
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetAlreadyInitializedArray
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedDictionaryOfISet
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedSortedSetWithSomeValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.GetLongDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindUninitializedIReadOnlyList
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.StringDictionaryBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ListDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.ThrowsForCustomDictionary
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.BindStringList
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.TestStringValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.BindAlreadyInitializedArray
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInstantiatedIReadOnlyCollectionWithItems
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindUninitializedICollection
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.AlreadyInitializedHashSetDictionaryBinding
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderCollectionTests.CanBindInitializedCustomIEnumerableBasedList
+  [40m[32minfo[39m[22m[49m: Finished:    Microsoft.Extensions.Configuration.Binder.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 85308 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 85308 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 281 Passed: 280 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 1
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Configuration.Binder.Tests.dll after 0.030233333333333334 minutes with result 0 and linear memory 231997440 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Configuration.Binder/tests/UnitTests
+  ----- end Fri Jan 30 13:55:14 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:14.44

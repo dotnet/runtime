@@ -1,0 +1,369 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Diagnostics.TraceSource/tests/System.Diagnostics.TraceSource.Tests/System.Diagnostics.TraceSource.Tests.csproj (in 173 ms).
+  28 of 29 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  System.Diagnostics.EventLog -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.EventLog/ref/Release/net11.0/System.Diagnostics.EventLog.dll
+  System.Security.Cryptography.ProtectedData -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Security.Cryptography.ProtectedData/ref/Release/net11.0/System.Security.Cryptography.ProtectedData.dll
+  System.Security.Cryptography.ProtectedData -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Security.Cryptography.ProtectedData/Release/net11.0/System.Security.Cryptography.ProtectedData.dll
+  System.Diagnostics.EventLog -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.EventLog/Release/net11.0/System.Diagnostics.EventLog.dll
+  System.Configuration.ConfigurationManager -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Configuration.ConfigurationManager/ref/Release/net11.0/System.Configuration.ConfigurationManager.dll
+  System.Configuration.ConfigurationManager -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Configuration.ConfigurationManager/Release/net11.0/System.Configuration.ConfigurationManager.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Diagnostics.TraceSource.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource.Tests/Release/net11.0/browser-wasm/System.Diagnostics.TraceSource.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Diagnostics.TraceSource/tests/System.Diagnostics.TraceSource.Tests
+  ----- start Fri Jan 30 13:37:55 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Diagnostics.TraceSource.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Diagnostics.TraceSource/tests/System.Diagnostics.TraceSource.Tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Diagnostics.TraceSource.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 37509
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 37509.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:37445/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Diagnostics.TraceSource.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Diagnostics.TraceSource.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Diagnostics.TraceSource.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Diagnostics.TraceSource.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Diagnostics.TraceSource.Tests.dll (found 260 of 260 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Diagnostics.TraceSource.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.BooleanSwitchClassTests.Constructor2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.BooleanSwitchClassTests.Enabled
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.BooleanSwitchClassTests.Constructor1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.TraceEvent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.EntryAssemblyName_Default_IncludedInTrace
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.Constructor
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.Fail
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.AssertUiEnabledPropertyTest(expectedAssertUiEnabled: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.AssertUiEnabledPropertyTest(expectedAssertUiEnabled: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.EntryAssemblyName_Null_NotIncludedInTrace
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.WriteNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.Fail_WithLogFile
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.Fail_LogFileDirectoryNotFound
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.LogFileNamePropertyTest(expectedLogFileName: "LogFile")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.WriteLongMessage
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.Fail_WithoutWriteLineOverride
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.EventTypeFilterClassTests.ShouldTrace
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.EventTypeFilterClassTests.EventType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.EventTypeFilterClassTests.Constructor
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.SourceFilterClassTests.ShouldTraceTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.SourceFilterClassTests.SourceTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.SourceFilterClassTests.ConstructorTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.SwitchClassTests.DescriptionTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.SwitchClassTests.PruneTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.SwitchClassTests.ValueTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteObject1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLineIf3Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.AutoFlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.IndentLevelTest(indent: 1, expected: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.IndentLevelTest(indent: 2, expected: 2)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.IndentLevelTest(indent: -2, expected: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteIf2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.TraceTest02
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteIf1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.Assert3Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.Assert1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLineIf2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLine1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.Assert2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteIf3Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLine2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteObject2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLineIf1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.UseGlobalLockTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.FlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLineObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.TraceTest01
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.IndentSizeTest(indent: 1, expected: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.IndentSizeTest(indent: 2, expected: 2)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.IndentSizeTest(indent: -2, expected: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.RefreshTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.CloseTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteIf4Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.FailTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLineIf4Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.TimestampTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.LogicalOperationStack
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.DateTimePropertyTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.ProcessIdTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.CallstackTest_NotEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.CallstackTest_ContainsExpectedFrames
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.ThreadIdTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceFilterClassTests.ShouldTraceTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests.Unindent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.Write2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.FailTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.FlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.TraceEvent2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteLineObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.Fail2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteLineTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteLineObject2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteObject2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.TraceEvent1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteLine2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.Write2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.FailTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.FlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.TraceEvent2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteLineObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.Fail2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteLineTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteLineObject2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteObject2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.TraceEvent1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteLine2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.Write2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.FailTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.FlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.TraceEvent2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteLineObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.Fail2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteLineTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteLineObject2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteObject2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.TraceEvent1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteLine2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.Write2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.FailTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.FlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.TraceEvent2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteLineObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.Fail2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteLineTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteLineObject2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteObject2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.TraceEvent1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteLine2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.Write2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.FailTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.FlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.TraceEvent2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteLineObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.Fail2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteLineTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteLineObject2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteObject2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.TraceEvent1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteLine2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.Write2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.FailTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.FlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.TraceEvent2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteLineObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.Fail2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteLineTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteLineObject2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteObject2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.TraceEvent1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteLine2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteLineObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest_LogicalOperationStack
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.NameTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.FilterTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceEventTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest_Timestamp
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceDataTest2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteCategoryTest2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteObjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest_DateTime
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceDataTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteCategoryTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceEventTest2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest(opts: None, flagCount: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest(opts: Timestamp, flagCount: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest(opts: ProcessId | ThreadId, flagCount: 2)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest(opts: DateTime | Timestamp, flagCount: 2)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest(opts: DateTime | Timestamp | Callstack, flagCount: 3)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteLineCategoryTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest_Callstack
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.IndentLevelTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: Callstack)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: DateTime)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: LogicalOperationStack)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: None)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: ProcessId)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: ThreadId)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: Timestamp)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteLineCategoryTest2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.IndentTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest_ThreadId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.IndentSizeTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Invalid(options: 128)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest_ProcessId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.AddExceptionTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.CopyToTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.TraceListenerIndexerTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.AddRangeArrayTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.RemoveTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.GetEnumeratorTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.InsertExceptionTest2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.RemoveByNameTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.RemoveListenerTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.SyncRootTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.InsertTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.InsertListenerTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IsReadOnlyTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.InsertExceptionTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IndexerGetTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IsFixedSizeTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.TraceListenerNameIndexerTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.CopyToListenerTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IndexerSetTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.RemoveAtTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.GetEnumeratorEmptyTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.AddRangeCollectionTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.AddListenerTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.ContainsTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IndexOfListenerTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.CopyToTest2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IsSynchronizedTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.CountTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IndexOfTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.CopyToExceptionTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.AddTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.DefaultLevelTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.NullSourceName
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.ConstructorExceptionTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.DefaultListenerTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.TraceInformationTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.EmptySourceName
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.PruneTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SetSourceSwitchTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SetSourceSwitchExceptionTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Off, messageLevel: Critical, expected: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Critical, messageLevel: Critical, expected: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Critical, messageLevel: Error, expected: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Error, messageLevel: Error, expected: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Error, messageLevel: Warning, expected: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Warning, messageLevel: Warning, expected: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Warning, messageLevel: Information, expected: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Information, messageLevel: Information, expected: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Information, messageLevel: Verbose, expected: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Verbose, messageLevel: Verbose, expected: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: All, messageLevel: Critical, expected: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: All, messageLevel: Verbose, expected: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Verbose, messageLevel: 32, expected: 0)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: All, messageLevel: 32, expected: 1)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.CloseTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.TraceEvent3Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.TraceTransferTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.FlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.TraceEvent1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.TraceData1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.TraceData2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.TraceEvent2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.TraceEvent3Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.TraceTransferTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.FlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.TraceEvent1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.TraceData1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.TraceData2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.TraceEvent2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.TraceEvent3Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.TraceTransferTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.FlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.TraceEvent1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.TraceData1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.TraceData2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.TraceEvent2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.TraceEvent3Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.TraceTransferTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.FlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.TraceEvent1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.TraceData1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.TraceData2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.TraceEvent2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.TraceEvent3Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.TraceTransferTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.FlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.TraceEvent1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.TraceData1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.TraceData2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.TraceEvent2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.TraceEvent3Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.TraceTransferTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.FlushTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.TraceEvent1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.TraceData1Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.TraceData2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.TraceEvent2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSwitchClassTests.LevelTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSwitchClassTests.EnsureValueSynchronizedWIthLevel
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSwitchClassTests.ConstructorTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSwitchClassTests.ConstructorTest2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSwitchClassTests.SwitchSettingChangedTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.TraceSwitchClassTests.TraceLevelTest(level: Off, error: False, warning: False, info: False, verbose: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_ActivityId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_ActivityIdAcrossAwait
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_CheckStack
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_NullOperationId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_MutateStackPop
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_CorrelationAcrossAwait
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_MutateStackPush
+  [40m[32minfo[39m[22m[49m: [STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_EmptyStack
+  [40m[32minfo[39m[22m[49m: Finished:    System.Diagnostics.TraceSource.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 69024 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 69024 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 288 Passed: 280 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 8
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Diagnostics.TraceSource.Tests.dll after 0.02395 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Diagnostics.TraceSource/tests/System.Diagnostics.TraceSource.Tests
+  ----- end Fri Jan 30 13:37:58 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:08.47

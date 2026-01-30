@@ -1,0 +1,25 @@
+Test Comparison: System.Transactions.Local.Tests
+Generated: 2026-01-30T13:54:27+01:00
+
+Mono tests:    233
+CoreCLR tests: 217
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (16) ===
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortingCloneNotCompleted(promote: False)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortingCloneNotCompleted(promote: True)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcDisposeCommittable(promote: False)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcDisposeCommittable(promote: True)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: False, beforePromote: True, options: EnlistDuringPrepareRequired, secondOptions: EnlistDuringPrepareRequired, expectSecondEnlistSuccess: True)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: False, beforePromote: True, options: EnlistDuringPrepareRequired, secondOptions: None, expectSecondEnlistSuccess: True)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: False, beforePromote: True, options: None, secondOptions: None, expectSecondEnlistSuccess: False)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: False, options: EnlistDuringPrepareRequired, secondOptions: EnlistDuringPrepareRequired, expectSecondEnlistSuccess: True)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: False, options: None, secondOptions: EnlistDuringPrepareRequired, expectSecondEnlistSuccess: False)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: False, options: None, secondOptions: None, expectSecondEnlistSuccess: False)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: True, options: EnlistDuringPrepareRequired, secondOptions: EnlistDuringPrepareRequired, expectSecondEnlistSuccess: True)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: True, options: EnlistDuringPrepareRequired, secondOptions: None, expectSecondEnlistSuccess: True)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: True, options: None, secondOptions: EnlistDuringPrepareRequired, expectSecondEnlistSuccess: False)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: True, options: None, secondOptions: None, expectSecondEnlistSuccess: False)
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcFailPromotableSinglePhaseNotificationCalls
+System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcSetDistributedTransactionIdentifierCallWithWrongNotificationObject

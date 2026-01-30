@@ -1,0 +1,9 @@
+Test Comparison: System.Net.Mail.Unit.Tests
+Generated: 2026-01-30T13:39:20+01:00
+
+Mono tests:    314
+CoreCLR tests: 314
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

@@ -1,0 +1,314 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Transactions.Local/tests/System.Transactions.Local.Tests.csproj (in 160 ms).
+  3 of 4 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Transactions.Local.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Transactions.Local.Tests/Release/net11.0/browser-wasm/System.Transactions.Local.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.Transactions.Local.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.Transactions.Local.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.Transactions.Local.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Transactions.Local/tests
+  ----- start Fri Jan 30 13:43:11 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.Transactions.Local.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Transactions.Local.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Transactions.Local.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.Transactions.Local.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.Transactions.Local.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Transactions.Local/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Transactions.Local.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Transactions.Local.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 41079
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 41079.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:34323/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Transactions.Local.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Transactions.Local.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Transactions.Local.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Transactions.Local.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Transactions.Local.Tests.dll (found 129 of 149 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Transactions.Local.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.LTMEnlistmentTests.EnlistVolatile
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.LTMEnlistmentTests.EnlistDuringPhase0(enlistmentOption: EnlistDuringPrepareRequired, phase1Vote: Prepared, expectPhase0EnlistSuccess: True, commit: True, expectedOutcome: Committed, expectedTxStatus: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.LTMEnlistmentTests.EnlistDuringPhase0(enlistmentOption: None, phase1Vote: Prepared, expectPhase0EnlistSuccess: False, commit: True, expectedOutcome: Committed, expectedTxStatus: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.LTMEnlistmentTests.SinglePhaseDurable(volatileCount: 1, volatileEnlistmentOption: None, volatilePhase1Vote: Prepared, singlePhaseVote: Committed, commit: True, expectedVolatileOutcome: Committed, expectedTxStatus: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.LTMEnlistmentTests.SinglePhaseDurable(volatileCount: 2, volatileEnlistmentOption: None, volatilePhase1Vote: Prepared, singlePhaseVote: Committed, commit: True, expectedVolatileOutcome: Committed, expectedTxStatus: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.LTMEnlistmentTests.SinglePhaseDurable(volatileCount: 1, volatileEnlistmentOption: None, volatilePhase1Vote: Prepared, singlePhaseVote: Aborted, commit: True, expectedVolatileOutcome: Aborted, expectedTxStatus: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.LTMEnlistmentTests.SinglePhaseDurable(volatileCount: 2, volatileEnlistmentOption: None, volatilePhase1Vote: Prepared, singlePhaseVote: Aborted, commit: True, expectedVolatileOutcome: Aborted, expectedTxStatus: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.LTMEnlistmentTests.SinglePhaseDurable(volatileCount: 1, volatileEnlistmentOption: EnlistDuringPrepareRequired, volatilePhase1Vote: Prepared, singlePhaseVote: Committed, commit: True, expectedVolatileOutcome: Committed, expectedTxStatus: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.LTMEnlistmentTests.SinglePhaseDurable(volatileCount: 2, volatileEnlistmentOption: EnlistDuringPrepareRequired, volatilePhase1Vote: Prepared, singlePhaseVote: Committed, commit: True, expectedVolatileOutcome: Committed, expectedTxStatus: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTest.Async5
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTest.Async2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTest.AsyncFail1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTest.Async3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTest.Async4
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTest.Async1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTest.AsyncFail3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTest.AsyncFail2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcSetDistributedTransactionIdentifierCallWithWrongNotificationObject
+  [40m[32minfo[39m[22m[49m: [FAIL] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcSetDistributedTransactionIdentifierCallWithWrongNotificationObject
+  [40m[32minfo[39m[22m[49m: Assert.Null() Failure: Value is not null
+  [40m[32minfo[39m[22m[49m: Expected: null
+  [40m[32minfo[39m[22m[49m: Actual:   System.ApplicationException: Exception System.Transactions.TransactionPromotionException: There is a promotable enlistment for the transaction which has a PromoterType value that is not recognized by System.Transactions. d9a34fdf-d02a-4eed-98c3-5ad092355e17
+  [40m[32minfo[39m[22m[49m:    at System.Transactions.InternalTransaction.ThrowIfPromoterTypeIsNotMSDTC()
+  [40m[32minfo[39m[22m[49m:    at System.Transactions.Transaction.Promote()
+  [40m[32minfo[39m[22m[49m:    at System.Transactions.TransactionInterop.ConvertToOletxTransaction(Transaction transaction)
+  [40m[32minfo[39m[22m[49m:    at System.Transactions.TransactionInterop.GetDtcTransaction(Transaction transaction)
+  [40m[32minfo[39m[22m[49m:    at System.Transactions.Tests.NonMsdtcPromoterTests.TryProhibitedOperations(Transaction tx, Guid expectedPromoterType) occurred, but transaction has an unexpected PromoterType of d9a34fdf-d02a-4eed-98c3-5ad092355e17
+  [40m[32minfo[39m[22m[49m:    at System.Transactions.Tests.NonMsdtcPromoterTests.TryProhibitedOperations(Transaction tx, Guid expectedPromoterType)
+  [40m[32minfo[39m[22m[49m:    at System.Transactions.Tests.NonMsdtcPromoterTests.CreatePSPEEnlistment(Guid promoterType, Byte[] promotedToken, AutoResetEvent outcomeReceived, Boolean nonMSDTC, Transaction tx, TransactionStatus spcResponse, Boolean expectRejection, Boolean comparePromotedToken, Boolean failInitialize, Boolean failPromote, Boolean failSPC, Boolean failGetPromoterType, Boolean failGetId, Boolean incorrectNotificationObjectToSetDistributedTransactionId)
+  [40m[32minfo[39m[22m[49m:    at System.Transactions.Tests.NonMsdtcPromoterTests.TestCase_SetDistributedIdWithWrongNotificationObject()
+  [40m[32minfo[39m[22m[49m:    at System.Transactions.Tests.NonMsdtcPromoterTests.TestCase_SetDistributedIdWithWrongNotificationObject()
+  [40m[32minfo[39m[22m[49m:    at System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcSetDistributedTransactionIdentifierCallWithWrongNotificationObject()
+  [40m[32minfo[39m[22m[49m:    at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+  [40m[32minfo[39m[22m[49m:    at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+  [40m[32minfo[39m[22m[49m:    at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+  [40m[32minfo[39m[22m[49m:    at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcDisposeCommittable(promote: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcDisposeCommittable(promote: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.VolatileEnlistments
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcGetPromoterType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcInCorrectSetDistributedTransactionIdentifierCalls
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcFailPromotableSinglePhaseNotificationCalls
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: False, beforePromote: True, options: EnlistDuringPrepareRequired, secondOptions: EnlistDuringPrepareRequired, expectSecondEnlistSuccess: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: False, beforePromote: True, options: EnlistDuringPrepareRequired, secondOptions: None, expectSecondEnlistSuccess: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: True, options: EnlistDuringPrepareRequired, secondOptions: EnlistDuringPrepareRequired, expectSecondEnlistSuccess: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: True, options: EnlistDuringPrepareRequired, secondOptions: None, expectSecondEnlistSuccess: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: False, options: EnlistDuringPrepareRequired, secondOptions: EnlistDuringPrepareRequired, expectSecondEnlistSuccess: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: False, beforePromote: True, options: None, secondOptions: None, expectSecondEnlistSuccess: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: True, options: None, secondOptions: EnlistDuringPrepareRequired, expectSecondEnlistSuccess: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: True, options: None, secondOptions: None, expectSecondEnlistSuccess: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: False, options: None, secondOptions: EnlistDuringPrepareRequired, expectSecondEnlistSuccess: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcEnlistDuringPhase0(promote: True, beforePromote: False, options: None, secondOptions: None, expectSecondEnlistSuccess: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcCompletedEvent
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: True, promote: False, spcResponse: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: True, promote: True, spcResponse: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: False, promote: False, spcResponse: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: False, promote: True, spcResponse: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: True, promote: False, spcResponse: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: True, promote: True, spcResponse: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: True, promote: False, spcResponse: InDoubt)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithDependentClones(commit: True, promote: True, spcResponse: InDoubt)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: True, promote: False, spcResponse: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: True, promote: True, spcResponse: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: False, promote: False, spcResponse: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: False, promote: True, spcResponse: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: True, promote: False, spcResponse: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: True, promote: True, spcResponse: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: True, promote: False, spcResponse: InDoubt)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMSDTCWithVolatileEnlistments(commit: True, promote: True, spcResponse: InDoubt)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortFromVolatile(promote: False, options: EnlistDuringPrepareRequired)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortFromVolatile(promote: True, options: EnlistDuringPrepareRequired)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortFromVolatile(promote: False, options: None)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortFromVolatile(promote: True, options: None)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcGetStatusAndDistributedId
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortingCloneNotCompleted(promote: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.NonMsdtcPromoterTests.PSPENonMsdtcAbortingCloneNotCompleted(promote: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Throwing_On_First_Prepare_And_Second_Rollback
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol1SPC_Throwing_On_Commit
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol1_Dur0_Fail1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Committed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Throwing_On_Rollback
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Throwing_On_First_Rollback_And_Second_Prepare
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.TransactionDispose3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Throwing_On_Commit
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol0_Dur0_Pspe1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol1_Dur0_Fail3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Dur1_Fail3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol1_Rollback
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Dur1_Fail1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol0_Dur1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Rollback
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Dur1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol0_Dur1_Pspe1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol1_Throwing_On_Commit
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol1_Dur0_2PC
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol1_Dur0_Pspe1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol1_Throwing_On_Rollback
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2SPC_Throwing_On_Commit
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol1SPC_Committed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.TransactionDispose
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Throwing_On_Second_Prepare
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.TransactionCompleted_Committed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Throwing_On_First_Prepare
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Dur0_SPC
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.TransactionCompleted_Rollback
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol1_Throwing_On_Prepare
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol0_Dur0_Pspe2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol0_Dur1_Fail
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Dur1_Fail5
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2_Dur1_Fail4
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol1_Dur0_Fail2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol1_Committed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol1_Dur0
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.Vol2SPC_Committed
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.EnlistTest.TransactionDispose2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: Serializable, forcePromote: False, expectedStatus: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: RepeatableRead, forcePromote: False, expectedStatus: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: ReadCommitted, forcePromote: False, expectedStatus: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: ReadUncommitted, forcePromote: False, expectedStatus: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: Snapshot, forcePromote: False, expectedStatus: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: Chaos, forcePromote: False, expectedStatus: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: Normal, isoLevel: Unspecified, forcePromote: False, expectedStatus: Committed)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: Serializable, forcePromote: False, expectedStatus: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: RepeatableRead, forcePromote: False, expectedStatus: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: ReadCommitted, forcePromote: False, expectedStatus: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: ReadUncommitted, forcePromote: False, expectedStatus: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: Snapshot, forcePromote: False, expectedStatus: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: Chaos, forcePromote: False, expectedStatus: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.CloneTxTests.Run(cloneType: RollbackDependent, isoLevel: Unspecified, forcePromote: False, expectedStatus: Aborted)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction15
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction6b
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.TransactionScopeCompleted1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction8
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction12
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction16
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction10a
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope9
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.TransactionScopeCompleted3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope7
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction6c
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope6
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction9
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope4
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope12
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction6d
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.TransactionScopeCommit
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope10
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction6a
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction10
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction6
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransactionCommit
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction14
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction13
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction4
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction7
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransactionRollback
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope8
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope13
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope5
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope3
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction5
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.TransactionScopeCompleted2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.NestedTransactionScope8a
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction6e
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.TransactionScopeWithInvalidTimeSpanThrows
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.RMFail1
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.TransactionScopeAbort
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction10b
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionScopeTest.ExplicitTransaction8a
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.TransactionManagerTest.DefaultTimeout_MaxTimeout_Set_Get
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.OleTxNonWindowsUnsupportedTests.GetDtcTransaction
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.OleTxNonWindowsUnsupportedTests.GetWhereabouts
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.OleTxNonWindowsUnsupportedTests.Durable_enlistment
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.OleTxNonWindowsUnsupportedTests.GetExportCookie
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.OleTxNonWindowsUnsupportedTests.TransmitterPropagationToken
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.OleTxNonWindowsUnsupportedTests.Promotable_enlistments
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.DoTxNewThread
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyBYOT(asyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyBYOT(asyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.AsyncTSTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyBYOTSyncTSNestedAsync
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.DoTxQueueWorkItem
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyBYOTAsyncTSNestedAsync
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Required, child1AsyncFlowOption: Suppress, child2ScopeOption: Required, child2AsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Required, child1AsyncFlowOption: Enabled, child2ScopeOption: Required, child2AsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Required, child1AsyncFlowOption: Suppress, child2ScopeOption: Required, child2AsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Required, child1AsyncFlowOption: Enabled, child2ScopeOption: Required, child2AsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Required, child1AsyncFlowOption: Suppress, child2ScopeOption: RequiresNew, child2AsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Required, child1AsyncFlowOption: Enabled, child2ScopeOption: RequiresNew, child2AsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Required, child1AsyncFlowOption: Suppress, child2ScopeOption: RequiresNew, child2AsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Required, child1AsyncFlowOption: Enabled, child2ScopeOption: RequiresNew, child2AsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Suppress, child1AsyncFlowOption: Suppress, child2ScopeOption: Required, child2AsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Suppress, child1AsyncFlowOption: Enabled, child2ScopeOption: Required, child2AsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Suppress, child1AsyncFlowOption: Suppress, child2ScopeOption: Required, child2AsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Suppress, child1AsyncFlowOption: Enabled, child2ScopeOption: Required, child2AsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Required, child1AsyncFlowOption: Suppress, child2ScopeOption: Suppress, child2AsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Suppress, child1ScopeOption: Required, child1AsyncFlowOption: Enabled, child2ScopeOption: Suppress, child2AsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Required, child1AsyncFlowOption: Suppress, child2ScopeOption: Suppress, child2AsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyParentTwoChildTest(parentAsyncFlowOption: Enabled, child1ScopeOption: Required, child1AsyncFlowOption: Enabled, child2ScopeOption: Suppress, child2AsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyBYOTOpenConnSimulationTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.NestedAsyncTSAndDependantClone
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.AsyncTSAndDependantClone
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.LegacyNestedTxScope
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Suppress, asyncFlowOption2: Enabled, asyncFlowOption3: Suppress, scopeOption: Required, nested: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Suppress, asyncFlowOption3: Enabled, scopeOption: Required, nested: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Suppress, asyncFlowOption2: Enabled, asyncFlowOption3: Suppress, scopeOption: Required, nested: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Suppress, asyncFlowOption3: Enabled, scopeOption: Required, nested: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Enabled, asyncFlowOption3: Enabled, scopeOption: Required, nested: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Enabled, asyncFlowOption3: Enabled, scopeOption: Required, nested: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Suppress, asyncFlowOption2: Enabled, asyncFlowOption3: Suppress, scopeOption: RequiresNew, nested: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Suppress, asyncFlowOption3: Enabled, scopeOption: RequiresNew, nested: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Enabled, asyncFlowOption3: Enabled, scopeOption: RequiresNew, nested: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Suppress, asyncFlowOption2: Enabled, asyncFlowOption3: Suppress, scopeOption: Suppress, nested: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Suppress, asyncFlowOption3: Enabled, scopeOption: Suppress, nested: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Suppress, asyncFlowOption2: Enabled, asyncFlowOption3: Suppress, scopeOption: Suppress, nested: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Suppress, asyncFlowOption3: Enabled, scopeOption: Suppress, nested: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Enabled, asyncFlowOption3: Enabled, scopeOption: Suppress, nested: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyThreeTxScope(asyncFlowOption1: Enabled, asyncFlowOption2: Enabled, asyncFlowOption3: Enabled, scopeOption: Suppress, nested: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Suppress, childScopeOption: Required, childAsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Enabled, childScopeOption: Required, childAsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Enabled, childScopeOption: Suppress, childAsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Enabled, childScopeOption: RequiresNew, childAsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Enabled, childScopeOption: Required, childAsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Enabled, childScopeOption: Suppress, childAsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Enabled, childScopeOption: RequiresNew, childAsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Enabled, childScopeOption: Required, childAsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Enabled, childScopeOption: Suppress, childAsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Enabled, childScopeOption: RequiresNew, childAsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Enabled, childScopeOption: Required, childAsyncFlowOption: Suppress)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Suppress, childScopeOption: Suppress, childAsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Suppress, childScopeOption: RequiresNew, childAsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Suppress, childScopeOption: Required, childAsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Suppress, childScopeOption: Suppress, childAsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Required, parentAsyncFlowOption: Suppress, childScopeOption: RequiresNew, childAsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Enabled, childScopeOption: RequiresNew, childAsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Transactions.Tests.AsyncTransactionScopeTests.VerifyNestedTxScope(parentScopeOption: Suppress, parentAsyncFlowOption: Enabled, childScopeOption: Suppress, childAsyncFlowOption: Enabled)
+  [40m[32minfo[39m[22m[49m: Finished:    System.Transactions.Local.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.Transactions.Local.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 62275 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 62275 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 223 Passed: 212 Inconclusive: 0 Failed: 1 Ignored: 0 Skipped: 10
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Transactions.Local.Tests.dll after 0.021733333333333334 minutes with result 1 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: WASM EXIT 1
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [41m[30mfail[39m[22m[49m: Application has finished with exit code TESTS_FAILED but 0 was expected
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 71 (GENERAL_FAILURE)
+  ~/dev/runtime/artifacts/bin/System.Transactions.Local.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Transactions.Local/tests
+  ----- end Fri Jan 30 13:43:15 CET 2026 ----- exit code 71 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.Transactions.Local.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+/home/pavelsavara/dev/runtime/eng/testing/tests.targets(206,5): error : One or more tests failed while running tests from 'System.Transactions.Local.Tests'. [/home/pavelsavara/dev/runtime/src/libraries/System.Transactions.Local/tests/System.Transactions.Local.Tests.csproj]
+
+Build FAILED.
+
+/home/pavelsavara/dev/runtime/eng/testing/tests.targets(206,5): error : One or more tests failed while running tests from 'System.Transactions.Local.Tests'. [/home/pavelsavara/dev/runtime/src/libraries/System.Transactions.Local/tests/System.Transactions.Local.Tests.csproj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:06.22

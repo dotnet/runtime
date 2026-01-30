@@ -1,0 +1,196 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:33537/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Xml.Linq.Properties.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Xml.Linq.Properties.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Xml.Linq.Properties.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Xml.Linq.Properties.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Xml.Linq.Properties.Tests.dll (found 51 of 52 test cases)
+Starting:    System.Xml.Linq.Properties.Tests.dll
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespaceNull(xml: "<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'>"···, ns: null)
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespaceDMLSanity
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefixNull(xml: "<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'>"···, prefix: null, expectedException: typeof(System.ArgumentNullException))
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefixNull(xml: "<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'>"···, prefix: "", expectedException: typeof(System.ArgumentException))
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefix(xml: "<A xmlns='x'><p:C xmlns:p='nsc'/><B/></A>", prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefix(xml: "<A xmlns='x'><p:C xmlns:p='nsc'/><B/></A>", prefix: "P", ns: null)
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefix(xml: "<a:A xmlns:a='a'><C xmlns:p='nsc'/><B/></a:A>", prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefix(xml: "<A xmlns:p='nsc'><p:C xmlns:a='a'><a:S/></p:C><B/>"···, prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefix(xml: "<A xmlns:p='nsc'><C xmlns:a='a'/><B/></A>", prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefix(xml: "<p:A xmlns:p='nsc' xmlns:a='a'><C/><B/></p:A>", prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefix(xml: "<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'/"···, prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefix(xml: "<a:A xmlns:a='a' xmlns:p='redefme'><C xmlns:p='nsc"···, prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefix(xml: "<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'/"···, prefix: "X", ns: null)
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefix(xml: "<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'/"···, prefix: "xml", ns: "http://www.w3.org/XML/1998/namespace")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefix(xml: "<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'/"···, prefix: "xmlns", ns: "http://www.w3.org/2000/xmlns/")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefix(xml: "<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'>"···, prefix: "X", ns: null)
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.GetDefaultNamespace(xml: "<A><B xmlns='nsa'/></A>", defNSString: "nsa")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.GetDefaultNamespace(xml: "<A xmlns='nsa'><B/></A>", defNSString: "nsa")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.GetDefaultNamespace(xml: "<A xmlns='nsb'><B xmlns='nsa'/></A>", defNSString: "nsa")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.GetDefaultNamespace(xml: "<A xmlns='nsb'><B xmlns=''/></A>", defNSString: "")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.GetDefaultNamespace(xml: "<A><B/></A>", defNSString: "")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.GetDefaultNamespace(xml: "<A><C xmlns='nsc'/><B/></A>", defNSString: "")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<A xmlns='x'><p:C xmlns:p='nsc'/><B/></A>", prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<A xmlns='x'><p:C xmlns:p='nsc'/><B/></A>", prefix: null, ns: "NSC")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<a:A xmlns:a='a'><C xmlns:p='nsc'/><B/></a:A>", prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<A xmlns:p='nsc'><p:C xmlns:a='a'><a:S/></p:C><B/>"···, prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<A xmlns:p='nsc'><C xmlns:a='a'/><B/></A>", prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<p:A xmlns:p='nsc' xmlns:a='a'><C/><B/></p:A>", prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'/"···, prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<a:A xmlns:a='a' xmlns:p='redefme'><C xmlns:p='nsc"···, prefix: "p", ns: "nsc")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<A xmlns='x'><p:C xmlns:p='nsc'/><B/></A>", prefix: null, ns: "x")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<A xmlns='x'><p:C xmlns:p='nsc'/><B/></A>", prefix: null, ns: "")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'/"···, prefix: null, ns: "nonexisting")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'/"···, prefix: "xml", ns: "http://www.w3.org/XML/1998/namespace")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'/"···, prefix: "xmlns", ns: "http://www.w3.org/2000/xmlns/")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.PrefixOfNamespace(xml: "<A xmlns='x' xmlns:p='redefme'><p:C xmlns:p='nsc'>"···, prefix: null, ns: "nonexisting")
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.NamespaceForPrefixDMLSanity
+[STRT] System.Xml.Linq.Tests.NamespaceAccessors.GetDefaultNamespaceDMLSanity
+[STRT] System.Xml.Linq.Tests.ILineInfoTests.AllNodesTests
+[STRT] System.Xml.Linq.Tests.ILineInfoTests.BaseUriInitial
+[STRT] System.Xml.Linq.Tests.ILineInfoTests.CastToInterface
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Document1
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Nulls
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element(text1: "<A/>", text2: "<A></A>", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element(text1: "<A/>", text2: "<A Id='a'/>", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element(text1: "<A Id='a'/>", text2: "<A Id='a'/>", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element(text1: "<A at='1' Id='a'/>", text2: "<A Id='a' at='1'/>", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element(text1: "<A at='1' Id='a'/>", text2: "<A at='1' Id='a'/>", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element(text1: "<A at='1' Id='a'/>", text2: "<A at='1' Id='ab'/>", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element(text1: "<A p:at='1' xmlns:p='nsp'/>", text2: "<A p:at='1' xmlns:p='nsp'/>", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element(text1: "<A p:at='1' xmlns:p='nsp'/>", text2: "<A q:at='1' xmlns:q='nsp'/>", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element(text1: "<A>text</A>", text2: "<A>text</A>", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element(text1: "<A>text<?PI click?></A>", text2: "<A><?PI click?>text</A>", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element(text1: "<A>text<?PI click?></A>", text2: "<A>text<?PI click?></A>", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.TextWholeVsConcatenate
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.ProcessingInstruction(target1: "PI", data1: "click", target2: "PI", data2: "click", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.ProcessingInstruction(target1: "PI", data1: "PI", target2: "PI", data2: "PI", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.ProcessingInstruction(target1: "PI", data1: "", target2: "PI", data2: "", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.ProcessingInstruction(target1: "PI", data1: "click", target2: "PI", data2: "", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.ProcessingInstruction(target1: "AAAAP", data1: "click", target2: "AAAAQ", data2: "click", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.ProcessingInstruction(target1: "AAAAP", data1: "AAAAQ", target2: "AAAAP", data2: "AAAAQ", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.ProcessingInstruction(target1: "PA", data1: "PA", target2: "PI", data2: "PI", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.ProcessingInstruction(target1: "AAAAP", data1: "AAAAQ", target2: "AAAAQ", data2: "AAAAP", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element4
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element6(param: 1)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element6(param: 2)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.TextVsCData(value1: "same", value2: "same", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.TextVsCData(value1: "", value2: "", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.TextVsCData(value1: " ", value2: " ", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.ElementDynamic
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element2
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.CData(value1: "same", value2: "different", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.CData(value1: "same", value2: "same", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.CData(value1: "", value2: "", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.CData(value1: " ", value2: " ", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.CData(value1: "\n", value2: " ", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.DocumentType(docType1: ["root", "a", "b", "c"], docType2: ["root", "a", "b", "c"], checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.DocumentType(docType1: ["root", null, null, null], docType2: ["root", null, null, null], checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.DocumentType(docType1: ["root", null, null, "data"], docType2: ["root", null, null, "data"], checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.DocumentType(docType1: ["A", "", "", ""], docType2: ["B", "", "", ""], checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.DocumentType(docType1: ["A", null, null, "aa"], docType2: ["A", null, null, "bb"], checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.DocumentType(docType1: ["A", "", "", ""], docType2: ["A", null, null, null], checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element3
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Element5
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Comment(value1: "AAAAP", value2: "AAAAQ", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Comment(value1: "AAAAP", value2: "AAAAP", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Comment(value1: "  ", value2: " ", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Comment(value1: " ", value2: " ", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Comment(value1: "", value2: "", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Document4(checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Document4(checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Text(value1: "same", value2: "different", checkHashCode: False)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Text(value1: "same", value2: "same", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Text(value1: "", value2: "", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Text(value1: " ", value2: " ", checkHashCode: True)
+[STRT] System.Xml.Linq.Tests.DeepEqualsTests.Text(value1: "\n", value2: " ", checkHashCode: False)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntQConvert(xml: "<A a='1'>10</A>", expected: 10)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntQConvert(xml: "<A a='1'>1<B/>7</A>", expected: 17)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntQConvert(xml: "<A a='1'><B/><![CDATA[21]]></A>", expected: 21)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntQConvert(xml: "<A a='1'><B><D><![CDATA[12]]></D></B><C>0</C></A>", expected: 120)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntQConvertNull
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntConvertInvalid(xml: "<A a='1'></A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntConvertInvalid(xml: "<A a='1'>2<B/> 1</A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntConvertInvalid(xml: "<A a='1'>X</A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvertNull
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.StringConvert(xml: "<A>text</A>", expected: "text")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.StringConvert(xml: "<A>text1<B/>text2</A>", expected: "text1text2")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.StringConvert(xml: "<A>text1<B/><![CDATA[text2]]></A>", expected: "text1text2")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.StringConvert(xml: "<A><B>text1<D><![CDATA[text2]]></D></B><C>text3</C"···, expected: "text1text2text3")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.StringConvert(xml: "<A><B><D></D></B><C></C></A>", expected: "")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.StringConvert(xml: "<A><B><D><![CDATA[]]></D></B><C></C></A>", expected: "")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntQConvertNull
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntQConvertInvalid(xml: "<A a='1'></A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntQConvertInvalid(xml: "<A a='1'>2<B/> 1</A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntQConvertInvalid(xml: "<A a='1'>X</A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvertInvalid(xml: "<A a='1'></A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvertInvalid(xml: "<A a='1'>tr<B/> ue</A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvertInvalid(xml: "<A a='1'>2</A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntConvertInvalid(xml: "<A a='1'></A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntConvertInvalid(xml: "<A a='1'>2<B/> 1</A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntConvertInvalid(xml: "<A a='1'>-<B/>1</A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntConvertInvalid(xml: "<A a='1'>X</A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntConvert(xml: "<A a='1'>10</A>", expected: 10)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntConvert(xml: "<A a='1'>1<B/>7</A>", expected: 17)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntConvert(xml: "<A a='1'>-<B/><![CDATA[21]]></A>", expected: -21)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntConvert(xml: "<A a='1'><B>-<D><![CDATA[12]]></D></B><C>0</C></A>", expected: -120)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvert(xml: "<A>true</A>", expected: True)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvert(xml: "<A>1</A>", expected: True)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvert(xml: "<A>false</A>", expected: False)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvert(xml: "<A>0</A>", expected: False)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvert(xml: "<A>tr<B/>ue</A>", expected: True)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvert(xml: "<A>f<B/>alse</A>", expected: False)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvert(xml: "<A>tru<B/><![CDATA[e]]></A>", expected: True)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvert(xml: "<A>fal<B/><![CDATA[se]]></A>", expected: False)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvert(xml: "<A><B>t<D><![CDATA[ru]]></D></B><C>e</C></A>", expected: True)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvert(xml: "<A> <B><D><![CDATA[1]]></D></B><C> </C></A>", expected: True)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvert(xml: "<A><B>fa<D><![CDATA[l]]></D></B><C>se</C></A>", expected: False)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolQConvert(xml: "<A><B> <D><![CDATA[ ]]></D></B><C>0</C></A>", expected: False)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvertInvalid(xml: "<A></A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvertInvalid(xml: "<A>2</A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntQConvert(xml: "<A a='1'>10</A>", expected: 10)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntQConvert(xml: "<A a='1'>1<B/>7</A>", expected: 17)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntQConvert(xml: "<A a='1'>-<B/><![CDATA[21]]></A>", expected: -21)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.IntQConvert(xml: "<A a='1'><B>-<D><![CDATA[12]]></D></B><C>0</C></A>", expected: -120)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntConvert(xml: "<A a='1'>10</A>", expected: 10)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntConvert(xml: "<A a='1'>1<B/>7</A>", expected: 17)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntConvert(xml: "<A a='1'><B/><![CDATA[21]]></A>", expected: 21)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntConvert(xml: "<A a='1'><B><D><![CDATA[12]]></D></B><C>0</C></A>", expected: 120)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvert(xml: "<A>true</A>", expected: True)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvert(xml: "<A>1</A>", expected: True)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvert(xml: "<A>false</A>", expected: False)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvert(xml: "<A>0</A>", expected: False)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvert(xml: "<A>tr<B/>ue</A>", expected: True)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvert(xml: "<A>f<B/>alse</A>", expected: False)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvert(xml: "<A>tru<B/><![CDATA[e]]></A>", expected: True)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvert(xml: "<A>fal<B/><![CDATA[se]]></A>", expected: False)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvert(xml: "<A><B>t<D><![CDATA[ru]]></D></B><C>e</C></A>", expected: True)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvert(xml: "<A> <B><D><![CDATA[1]]></D></B><C> </C></A>", expected: True)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvert(xml: "<A><B>fa<D><![CDATA[l]]></D></B><C>se</C></A>", expected: False)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.BoolConvert(xml: "<A><B> <D><![CDATA[ ]]></D></B><C>0</C></A>", expected: False)
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntQConvertInvalid(xml: "<A a='1'></A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntQConvertInvalid(xml: "<A a='1'>2<B/> 1</A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntQConvertInvalid(xml: "<A a='1'>-<B/>1</A>")
+[STRT] CoreXml.Test.XLinq.ImplicitConversionsElem.UIntQConvertInvalid(xml: "<A a='1'>X</A>")
+[STRT] System.Xml.Linq.Tests.DocOrderComparer.NotXNode(x: a="A", y: <E />, paramName: "x")
+[STRT] System.Xml.Linq.Tests.DocOrderComparer.NotXNode(x: <?xml version="1.0" encoding="UFT8" standalone="false"?>, y: <E />, paramName: "x")
+[STRT] System.Xml.Linq.Tests.DocOrderComparer.NotXNode(x: "", y: <E />, paramName: "x")
+[STRT] System.Xml.Linq.Tests.DocOrderComparer.NotXNode(x: <E />, y: a="A", paramName: "y")
+[STRT] System.Xml.Linq.Tests.DocOrderComparer.NotXNode(x: <E />, y: <?xml version="1.0" encoding="UFT8" standalone="false"?>, paramName: "y")
+[STRT] System.Xml.Linq.Tests.DocOrderComparer.NotXNode(x: <E />, y: "", paramName: "y")
+[STRT] System.Xml.Linq.Tests.DocOrderComparer.Nulls
+[STRT] System.Xml.Linq.Tests.DocOrderComparer.AdjacentTextNodes1
+[STRT] System.Xml.Linq.Tests.DocOrderComparer.StandAloneNodes
+[STRT] System.Xml.Linq.Tests.DocOrderComparer.ConnectedNodes
+[STRT] System.Xml.Linq.Tests.DocOrderComparer.DisconnectedNodes1
+[STRT] System.Xml.Linq.Tests.DocOrderComparer.AdjacentTextNodes2
+Finished:    System.Xml.Linq.Properties.Tests.dll
+Finished uploading 47476 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 176 Passed: 176 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Xml.Linq.Properties.Tests.dll after 0.01625 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

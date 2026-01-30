@@ -1,0 +1,19 @@
+Test Comparison: Microsoft.Extensions.Logging.Tests
+Generated: 2026-01-30T13:34:38+01:00
+
+Mono tests:    298
+CoreCLR tests: 308
+
+=== Extra in CoreCLR (10) ===
+Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.LoggerFactoryCreateOfT_CallsCreateWithCorrectName
+Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.LoggerFactoryCreateOfT_SingleGeneric_CallsCreateWithCorrectName
+Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.LoggerFactoryCreateOfT_TwoGenerics_CallsCreateWithCorrectName
+Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.LoggerFactoryCreate_CallsCreateWithCorrectName
+Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.LoggerFactoryCreate_SingleGeneric_CallsCreateWithCorrectName
+Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.LoggerFactoryCreate_TwoGenerics_CallsCreateWithCorrectName
+Microsoft.Extensions.Logging.Test.LoggerTest.CaptureScopesIsReadFromConfiguration
+Microsoft.Extensions.Logging.Test.LoggerTest.ScopesAreNotCreatedForDisabledLoggers
+Microsoft.Extensions.Logging.Test.LoggerTest.ScopesAreNotCreatedInIScopeProviderWhenScopesAreDisabled
+Microsoft.Extensions.Logging.Test.LoggerTest.ScopesAreNotCreatedWhenScopesAreDisabled
+
+=== Missing in CoreCLR (0) ===

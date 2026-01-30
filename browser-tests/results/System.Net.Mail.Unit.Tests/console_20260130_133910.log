@@ -1,0 +1,327 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:41027/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Net.Mail.Unit.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.Mail.Unit.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Net.Mail.Unit.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Net.Mail.Unit.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Net.Mail.Unit.Tests.dll (found 123 of 123 test cases)
+Starting:    System.Net.Mail.Unit.Tests.dll
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.MessagePriority_WithValueSetByHeader_AndImportanceNotSet_ShouldRespectHeader
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.Message_WithXSenderHeaderSet_ShouldNotOverwriteXSender
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.MessageSubject_UnknownEncodingEncodedUnicode_Accepted
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.MessageSubject_WhenSetViaHeaders_AndSubjectPropertyIsSet_ShouldUsePropertyValue
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.Message_WithTo_WithCc_WithBcc_WithReplyToList_ShouldBeSingletons_ShouldDeleteUserSuppliedHeaders
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.MessageContentTypeHeader_WhenSetByUser_ShouldBeDiscarded
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.MessageSubject_MultiLineEncodedUnicode_Accepted
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.MessageSubject_WhenEmpty_WithHeaderSet_ShouldDiscardHeaderAndLeaveSubjectEmpty
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.Message_WithBccAddresses_ShouldSetXReceiverHeaderForBccAddresses
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.MessageSubject_Unicode_Accepted
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.Message_WithXReceiverSetByUser_ShouldNotClearXReceiverHeader
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.MessageSubject_Utf8EncodedUnicode_Accepted
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.Message_WithNoXSender_ShouldSetXSenderToFromAddress
+[STRT] System.Net.Mail.Tests.MessageHeaderBehaviorTest.MessageSubject_BadBase64EncodedUnicode_Accepted
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "Display Name", expectedDisplayName: null, expectedToString: "\"Display Name\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "Display ÉÀĆĀĉąä Name", expectedDisplayName: null, expectedToString: "\"Display ÉÀĆĀĉąä Name\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "\"Display Name\"", expectedDisplayName: "Display Name", expectedToString: "\"Display Name\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "\"Display ÉÀĆĀĉąä Name\"", expectedDisplayName: "Display ÉÀĆĀĉąä Name", expectedToString: "\"Display ÉÀĆĀĉąä Name\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "Display \" Name", expectedDisplayName: null, expectedToString: "\"Display \\\" Name\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "\"Display \" Name\"", expectedDisplayName: "Display \" Name", expectedToString: "\"Display \\\" Name\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "Display \"\" Name", expectedDisplayName: null, expectedToString: "\"Display \\\"\\\" Name\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "\"Display \"\" Name\"", expectedDisplayName: "Display \"\" Name", expectedToString: "\"Display \\\"\\\" Name\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "Display \"Test\" Name", expectedDisplayName: null, expectedToString: "\"Display \\\"Test\\\" Name\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "\"Display \"Test\" Name\"", expectedDisplayName: "Display \"Test\" Name", expectedToString: "\"Display \\\"Test\\\" Name\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "Display \\\"Test\\\" Name", expectedDisplayName: null, expectedToString: "\"Display \\\\\"Test\\\\\" Name\" <test@example.co"···)
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "\"Display \\\"Test\\\" Name\"", expectedDisplayName: "Display \\\"Test\\\" Name", expectedToString: "\"Display \\\\\"Test\\\\\" Name\" <test@example.co"···)
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "\"", expectedDisplayName: null, expectedToString: "\"\\\"\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "\"\"\"", expectedDisplayName: "\"", expectedToString: "\"\\\"\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: null, expectedDisplayName: "", expectedToString: "test@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_Succeeds(address: "test@example.com", displayName: "\"\"", expectedDisplayName: "", expectedToString: "test@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_FullString_Succeeds(address: "test@example.com", displayName: "Display Name", expectedDisplayName: null, expectedToString: "\"Display Name\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_FullString_Succeeds(address: "test@example.com", displayName: "Display ÉÀĆĀĉąä Name", expectedDisplayName: null, expectedToString: "\"Display ÉÀĆĀĉąä Name\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_FullString_Succeeds(address: "test@example.com", displayName: "\"Display Name\"", expectedDisplayName: "Display Name", expectedToString: "\"Display Name\" <test@example.com>")
+[STRT] System.Net.Mail.Tests.MailAddressDisplayNameTest.MailAddress_Ctor_FullString_Succeeds(address: "test@example.com", displayName: "\"Display ÉÀĆĀĉąä Name\"", expectedDisplayName: "Display ÉÀĆĀĉąä Name", expectedToString: "\"Display ÉÀĆĀĉąä Name\" <test@example.com>")
+[STRT] System.Net.Mime.Tests.EncodedStreamFactoryTests.EncodedStreamFactory_WhenAskedForEncodedStreamForHeader_WithBase64_ShouldReturnBase64Stream
+[STRT] System.Net.Mail.Tests.ReplyToListTest.ReplyTo_WithReplyToListEmpty_ShouldReturnNull
+[STRT] System.Net.Mail.Tests.ReplyToListTest.ReplyToList_WithNoReplyToSet_ShouldReturnEmptyList
+[STRT] System.Net.Mail.Tests.ReplyToListTest.PrepareHeaders_WithReplyToListSet_AndReplyToHeaderSetManually_ShouldEnforceReplyToListIsSingleton
+[STRT] System.Net.Mail.Tests.ReplyToListTest.PrepareHeaders_WithReplyToSet_ShouldIgnoreReplyToList
+[STRT] System.Net.Mail.Tests.ReplyToListTest.PrepareHeaders_WithReplyToNull_AndReplyToListSet_ShouldUseReplyToList
+[STRT] System.Net.Mail.Tests.MessageEncodeHeadersTest.EncodeHeaders_WithMultipleValuesForSameHeader_ShouldEncodeEachOneCorrectly
+[STRT] System.Net.Mail.Tests.MessageEncodeHeadersTest.EncodeHeaders_WithCustomUnicodeHeaders_ShouldEncodeHeaders
+[STRT] System.Net.Mail.Tests.MessageEncodeHeadersTest.EncodeHeaders_WithNoHeadersEncodingPropertySpecified_ShouldDefaultToUTF8
+[STRT] System.Net.Mail.Tests.MessageEncodeHeadersTest.EncodeHeaders_WithHeadersEncodingPropertySet_ShouldEncodeWithProperEncoding
+[STRT] System.Net.Mail.Tests.MessageEncodeHeadersTest.EncodeHeaders_WithWellKnownHeader_ShouldNotEncodeWellKnownHeaders
+[STRT] System.Net.Mail.Tests.MessageEncodeHeadersTest.EncodeHeaders_UserSettableHeaderDoesntAllowUnicode_ShouldEncode
+[STRT] System.Net.Mime.Tests.WriteStateInfoTest.WriteStateInfo_WithSmallBuffer_WhenResize_ShouldDoubleBufferSize
+[STRT] System.Net.Mime.Tests.WriteStateInfoTest.WriteStateInfo_WithSmallBuffer_WhenResizeAlot_ShouldQuadrupleBufferSize
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDate_ToString_ShouldOutputCorrectDateString
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_WithInvalidTimeZone_ShouldParseDateCorrectly
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDate_TryParseTimeZoneString_WithValidShortHand_ShouldReturnCorrectOffset
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDate_ValidateTimeZoneShortHandValue_WithValidShortHand_ShouldReturnTrue
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_CreatedFromDateTimeString_ShouldParseCorrectly(input: "Sun, 17 May 2009 15:34:07 +0000", expectedYear: 2009, expectedMonth: 5, expectedDay: 17, expectedHour: 15, expectedMinut: 34, expectedSecond: 7, expectedTimeZoneOffset: "+0000", expectedKind: Unspecified)
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_CreatedFromDateTimeString_ShouldParseCorrectly(input: "Sun, 17 May 2009 15:34:07 GMT", expectedYear: 2009, expectedMonth: 5, expectedDay: 17, expectedHour: 15, expectedMinut: 34, expectedSecond: 7, expectedTimeZoneOffset: "GMT", expectedKind: Unspecified)
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_CreatedFromDateTimeString_ShouldParseCorrectly(input: "17 May 2009 15:34:07 +0000", expectedYear: 2009, expectedMonth: 5, expectedDay: 17, expectedHour: 15, expectedMinut: 34, expectedSecond: 7, expectedTimeZoneOffset: "+0000", expectedKind: Unspecified)
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_CreatedFromDateTimeString_ShouldParseCorrectly(input: "Sun,\t17 May\t2009\t15:34:07\tGMT", expectedYear: 2009, expectedMonth: 5, expectedDay: 17, expectedHour: 15, expectedMinut: 34, expectedSecond: 7, expectedTimeZoneOffset: "GMT", expectedKind: Unspecified)
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_CreatedFromDateTimeString_ShouldParseCorrectly(input: "Sun,\t17 May\t2009 15:34:07\tGMT\t \"comment\"", expectedYear: 2009, expectedMonth: 5, expectedDay: 17, expectedHour: 15, expectedMinut: 34, expectedSecond: 7, expectedTimeZoneOffset: "GMT", expectedKind: Unspecified)
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_CreatedFromDateTimeString_ShouldParseCorrectly(input: "Sun,\t17 May\t 2009 \t15:34:07 \t GMT  \t ", expectedYear: 2009, expectedMonth: 5, expectedDay: 17, expectedHour: 15, expectedMinut: 34, expectedSecond: 7, expectedTimeZoneOffset: "GMT", expectedKind: Unspecified)
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDate_TryParseTimeZoneString_WithInvalidShortHand_ShouldThrowException
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDate_TryParseTimeZoneString_WithUnknownShortHand_ShouldReturnFalse
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDate_ValidateTimeZoneShortHandValue_WithInvalidShortHand_ShouldReturnFalse
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_WithDateThatHasKindSetToLocal_ShouldSetTimeZoneCorrectly
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_WithDateThatHasUnspecifiedKind_ShouldSetTimeZoneCorrectly
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDate_ValidateTimeZoneOffsetValue_WithValidAndInvalidOffsets_ShouldReturnCorrectly
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDate_WithCompletelyInvalidDateString_ShouldThrowException
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_InvalidInput_ShouldThrowException(input: "Sun, 17 May 2009 15:34:87 +0000")
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_InvalidInput_ShouldThrowException(input: "Sun, 17 May 2009 15:88:07 +0000")
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_InvalidInput_ShouldThrowException(input: "Sun, 17 May 2009 27:34:07 +0000")
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_InvalidInput_ShouldThrowException(input: "Sun, 17 May 20099 15:34:07 +0000")
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_InvalidInput_ShouldThrowException(input: "Sun, 37 May 2009 15:34:07 +0000")
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_InvalidInput_ShouldThrowException(input: "Sun, 17 Smarch 2009 15:34:07 +0000")
+[STRT] System.Net.Mime.Tests.SmtpDateTimeTest.SmtpDateTime_InvalidInput_ShouldThrowException(input: "Thursday, 17 May 2009 15:34:07 +0000")
+[STRT] System.Net.Mime.Tests.Base64EncodingTest.Base64Stream_WithVerySmallBuffer_ShouldTriggerBufferResize_AndShouldEncodeProperly
+[STRT] System.Net.Mime.Tests.Base64EncodingTest.Base64Stream_WithBasicAsciiString_ShouldEncodeAndDecode(testHeader: "some test header to base64 encode")
+[STRT] System.Net.Mime.Tests.Base64EncodingTest.Base64Stream_WithBasicAsciiString_ShouldEncodeAndDecode(testHeader: "some test her to base64asdféå")
+[STRT] System.Net.Mime.Tests.Base64EncodingTest.Base64Stream_WithVeryLongString_ShouldEncodeProperly
+[STRT] System.Net.Mime.Tests.Base64EncodingTest.Base64Stream_EncodeString_WithVerySmallBuffer_ShouldTriggerBufferResize_AndShouldEncodeProperly
+[STRT] System.Net.Mime.Tests.Base64EncodingTest.Base64Stream_EncodeString_WithBasicAsciiString_ShouldEncodeAndDecode(testHeader: "some test header to base64 encode")
+[STRT] System.Net.Mime.Tests.Base64EncodingTest.Base64Stream_EncodeString_WithBasicAsciiString_ShouldEncodeAndDecode(testHeader: "some test her to base64asdféå")
+[STRT] System.Net.Mime.Tests.Base64EncodingTest.Base64Stream_EncodeString_WithVeryLongString_ShouldEncodeProperly
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestLargeListOfValidEmailAddresses
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)this.test.this(comment)<(comment)this.tes"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)\" asciin;,oqu o.tesws \"(comment)<(comme"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)this.test.this(comment)<(comment)this.tes"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)\" asciin;,oqu o.tesws \"(comment)<(comme"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)this.test.this(comment)<(comment)\" ascii"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)this(comment)<(comment)\" asciin);,oqu o."···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)\" asciin;,oqu o.tesws \"(comment)<(comme"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)this.test.this(comment)<(comment)\" ascii"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)this(comment)<(comment)\" asciin;,oqu o.t"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)\" asciin;,oqu o.tesws \"(comment)<(comme"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)this.test.this(comment)@(comment)this.tes"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)this.test.this(comment)@(comment)[  test "···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)\" asciin;,oqu o.tesws \"(comment)@(comme"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)\" asciin;,oqu o.tesws \"(comment)@(comme"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(comment)displayname(comment) <a@b.c>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "a.b <c@d.e>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"Spaced Out\"@NCLMailTest.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "testUser1@NCLMailTest.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "TestUser3@NCLMailTest.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "to_c@ThisIsNeverWhereISenTIt.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "Test User <testUser1@NCLMailTest.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"Test User\" <testUser@nclmailtest.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "testuser@[mail.com]")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "testuser@[ mail.com] ")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "testuser@[mail.com ]")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "testuser@[mail.com \r\n ]")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "testuser@[ \r\n mail.com]")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "testuser@[  mail.com]")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "testuser <testuser@mail.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "Testいど User <testUser1@NCLMailTest.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"Testいど User\" <testUser@nclmailtest.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"Testいど user\" testuser@nclmailtest.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "testuser@[mail.com]")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "testuserいど <testuser@mail.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"Dr. Müller\" <test@mail.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "Dr. Müller <test@mail.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "Dr Müller <test@mail.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "Dr Muller <test@mail.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "    leading spaces  <test@mail.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"(nocomment)displayname(nocomment)\"(comment) <a@"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"Test user\" testuser@nclmailtest.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"test\"@test.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "customer/department=shipping@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "$A12345@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "user+mailbox@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "!def!xyz%abc@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "_somename@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"te\\@st\"@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"test display\" test@(comment)[exam\\@ple](commen"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "NoSpaceBeforeEmail\"a\"@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "NoSpace BeforeEmail\"a\"@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"display\"nospace@domain")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"display\"\"nospace\"@domain")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"escaped\\\"quote\" \"a\"@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"escaped\\\"silly\\\"quotes\" \"a\"@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "SquareBracketInUserName \"test[some\"@NCLMailTest."···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "SquareBracket[InDispaly \"testsome\"@NCLMailTest.c"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"\\\"QuoteEndedDispaly\" testsome@NCLMailTest.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"Quote\\\"MidDispaly\" testsome@NCLMailTest.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "Quote\\\"MidDispaly testsome@NCLMailTest.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "<spaceAfter@NCLMailTest.com>  ")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "spaceAfter@NCLMailTest.com  ")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "<spaceAfter@NCLMailTest.com> (comment) ")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "spaceAfter@NCLMailTest.com (comment) ")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "display (ignoredComment) bracketless@NCLMailTest.c"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "display (displayComment) <bracket@NCLMailTest.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"display\" (ignoredComment) <bracket@NCLMailTest."···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: " \", comma in quotes\" username@domain")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "user.\"name\"@domain")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "((NestedComment)) <\"testsome\"@NCLMailTest.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "<testsome@NCLMailTest.com> (double) (comments)")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(Escaped Unicode \\い Comment) <\"testsome\"@NCLMai"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(com\\)ment) <\"testsome\"@NCLMailTest.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(com \f ment) <\"testsome\"@NCLMailTest.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"disp \f lay\" <\"testsome\"@NCLMailTest.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"EscapedUnicode \\い\\ど display\" <testUser1@NCLMa"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "(Unicode い Comment) <\"testsome\"@NCLMailTest.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"display \r\n name\" <\"folding\"@domain.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"test\r\n test\"@mail.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "UnicodeUserName \"Testいど\"@NCLMailTest.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "<\"EscapedUnicode \\い\\ど User\"@NCLMailTest.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"UnicodeUserName\" <い.ど@NCLMailTest.com>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "\"UnicodeDomainName\" <user@い.ど>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestValidEmailAddresses(validAddress: "い ど い.ど@い.ど")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "test \"test\" user@mail.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "\"test\" \"test\" user@mail.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "\"test\" test user@mail.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "\"test\"test user@mail.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "(d)d(\\")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "@c.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "m@dhat@c.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "test[test]@test.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "...test@test.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: ":TestUser3@NCLMailTest.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "\"unbalancedescaped\"quotes\" \"a\"@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "\"unbalanced escaped\"quotes\" \"a\"@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "\"\\\\\"QuoteEndedDispaly\" testsome@NCLMailTest.c"···)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "[bracketDomain]")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "missing@anglebracket>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "emptyDotAtomDomain@")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "leading@.dot.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: " ")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: " , \"Invalidcomma\" <username@domain>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "\"user\".\"name\"@domain")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "\"user\".name@domain")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "<\"user\".\"name\"@domain>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "Bob \"display\" <user@host>")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "testuser@[mail.com \r ]")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "testuser@[mail.com \n ]")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "testuser@[mailど.com]")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "invalid@unicode\xd800.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "invalid@unicode\xd800.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "invalid\xd800@unicode.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "\xd800 invalid@unicode.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: null)
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "a..b_b@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestInvalidEmailAddresses(address: "a..b_b...@example.com")
+[STRT] System.Net.Mail.Tests.MailAddressParsingTest.TestLargeListOfValidEmails_WithInvalidEmails_ShouldThrow
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncoderAndDecoder_WithQEncodedString_AndNoUnicode_AndShortHeader_ShouldEncodeAndDecode(testHeader: "some test header to base64", expectedFoldedCount: 1)
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncoderAndDecoder_WithQEncodedString_AndNoUnicode_AndShortHeader_ShouldEncodeAndDecode(testHeader: "some test header to base64asdf éå encode that cont"···, expectedFoldedCount: 3)
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncodeHeader_WithNoUnicode_ShouldNotEncode(testHeader: "some test header")
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncodeHeader_WithNoUnicode_ShouldNotEncode(testHeader: "some test header that is really long some test hea"···)
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncodeHeader_QEncoding_ShouldSplitBetweenCodepoints
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncodeHeader_Base64Encoding_ShouldSplitBetweenCodepoints
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncoderAndDecoder_ShouldEncodeAndDecode(testHeader: "some test her to base64asdféå", expectedFoldedCount: 1)
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncoderAndDecoder_ShouldEncodeAndDecode(testHeader: "some test header to base64 å øî asdfພncode that co"···, expectedFoldedCount: 3)
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncodeString_IsSameAsEncodeBytes_IfOneByteCodepointOnLineWrap(useBase64Encoding: False, value: "🕐11111111111111111111111111111111111111111111:111"···)
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncodeString_IsSameAsEncodeBytes_IfOneByteCodepointOnLineWrap(useBase64Encoding: False, value: "🕐111111111111111111111111111111111111111111111:11"···)
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncodeString_IsSameAsEncodeBytes_IfOneByteCodepointOnLineWrap(useBase64Encoding: False, value: "🕐1111111111111111111111111111111111111111111111:1"···)
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncodeString_IsSameAsEncodeBytes_IfOneByteCodepointOnLineWrap(useBase64Encoding: False, value: "🕐11111111111111111111111111111111111111111\r\n111"···)
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncodeString_IsSameAsEncodeBytes_IfOneByteCodepointOnLineWrap(useBase64Encoding: False, value: "🕐111111111111111111111111111111111111111111\r\n11"···)
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncodeString_IsSameAsEncodeBytes_IfOneByteCodepointOnLineWrap(useBase64Encoding: False, value: "🕐1111111111111111111111111111111111111111111\r\n1"···)
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncodeString_IsSameAsEncodeBytes_IfOneByteCodepointOnLineWrap(useBase64Encoding: True, value: "Emoji subject : 🕐🕑🕒🕓🕔🕕:11111")
+[STRT] System.Net.Mime.Tests.ByteEncodingTest.EncodeString_IsSameAsEncodeBytes_IfOneByteCodepointOnLineWrap(useBase64Encoding: True, value: "Emoji subject : 🕐🕑🕒🕓🕔🕕\r\n11")
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadQuotedString_WithValidQuotedString_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadFWS_WithOnlyWhiteSpace_ShouldReadAll
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithQuotedDisplayNameandNoAngleAddress_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadQuotedString_WithInvalidCharacters_ShouldThrow
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadQuotedString_WithUnicodeAndUnicodeIsInvalid_ShouldThrow
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.MailAddress_NeedsUnicodeNormalization_ShouldParseAndNormalize
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.MailAddress_WithDisplayNameParameterNoQuotes_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithDisplayNameAndAddress_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadQuotedString_WithValidMultipleQuotedStrings_ReturnTheIndexPastTheQuote
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadQuotedString_WithEscapedCharacters_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadDotAtom_WithValidDotAtom_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithNoDisplayNameAndNoAngleBrackets_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadDomainLiteral_WithValidDomainLiteralAndEscapedCharacters_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadDotAtom_EndsInDot_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadCFWS_WithNoComment_ShouldDoNothing
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadQuotedPair_WithInvalidNonescapedCharacter_ShouldThrow
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadCFWS_WithOnlyComment_ShouldReadAll
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadDomainLiteral_WithValidDomainLiteral_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadCFWS_WithSingleSpace_ShouldReadTheSpace
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithQuotedDisplayNameAndQuotedLocalAndAngleBrackets_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadDotAtom_WithDotAtBeginning_ShouldThrow
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadQuotedPair_WithValidCharacters_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithDomainLiteral_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.ParseAddresses_WithOnlyOneAddress_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithInvalidLocalPartAtEnd_ShouldThrow
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadFWS_WithNoWhiteSpace_ShouldDoNothing
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadQuotedString_WithValidUnicodeQuotedString_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithQuotedLocalPartAndNoDisplayName_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.MailAddress_NeedsUnicodeNormalizationWithDisplayName_ShouldParseAndNormalize
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.ParseAddress_WithMultipleSimpleAddresses_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithCommentsAndQuotedLocalAndNoDisplayName_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadCFWS_WithNestedComments_ShouldWorkCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadQuotedString_WithValidMultipleStrings_ReturnTheDelimterIndex
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithCommaButNoQuotes_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadDomainLiteral_WithInvalidCharacter_ShouldThrow
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithHangingAngleBracket_ShouldThrow
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithInvalidLocalPart_ShouldThrow
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithNoDisplayNameAndAngleAddress_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithCommentsAndUnquotedLocalAndUnquotedDisplayName_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.ParseAddresses_WithManyComplexAddresses_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadFWS_AtBeginningOfString_ShouldReadFWS
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithNoQuotes_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadCFWS_WithCharsBeforeComment_ShouldWorkCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadDomainLiteral_WithLongListOfBackslashes_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadQuotedPair_WithValidCharacterAndEscapedCharacterAndBackslashIsStartOfString_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.MailAddress_WithDisplayNameParameterQuotes_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryParseAddress_WithEscapedCharacters_AndQuotedLocalPart_ShouldReadCorrectly
+[STRT] System.Net.Mail.Tests.MailAddressParserTest.TryReadQuotedPair_WithValidCharacterAndEscapedCharacter_ShouldReadCorrectly
+[STRT] System.Net.Mime.Tests.EightBitStreamTest.TestEncodeStream(input: "Hello World", encodingName: "ASCII", padLeadingDots: False)
+[STRT] System.Net.Mime.Tests.EightBitStreamTest.TestEncodeStream(input: ".Hello World", encodingName: "ASCII", padLeadingDots: False)
+[STRT] System.Net.Mime.Tests.EightBitStreamTest.TestEncodeStream(input: "Hello World 理", encodingName: "Default", padLeadingDots: True)
+[STRT] System.Net.Mime.Tests.EightBitStreamTest.TestEncodeStream(input: "Hello World 理", encodingName: "UTF8", padLeadingDots: True)
+[STRT] System.Net.Mime.Tests.EightBitStreamTest.TestEncodeStream(input: "Hello World 1 Hello World 2 Hello World 3 Hello Wo"···, encodingName: "ASCII", padLeadingDots: False)
+[STRT] System.Net.Mime.Tests.EightBitStreamTest.TestEncodeStream(input: "Hello World 1 Hello World 2 Hello World 3 Hello Wo"···, encodingName: "ASCII", padLeadingDots: True)
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressAndLongDisplayNameUnicode_ShouldQEncode(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_0(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressAndLongDisplayNameUnicode_ShouldQEncode(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_1(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressAndNoUnicode_AndPaddingValueOfNonZero_ShouldEncodeCorrectly(factory: Func`2 { Method = System.Net.Mail.MailAddress <MailAddressFactory_Address>b__0_0(System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressAndNoUnicode_AndPaddingValueOfNonZero_ShouldEncodeCorrectly(factory: Func`2 { Method = System.Net.Mail.MailAddress <MailAddressFactory_Address>b__0_1(System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeMultipleMailAddress_WithManyAddressesThatAreDifferentAndContainUnicode_ShouldEncodeCorrectly(factoryAddress: Func`2 { Method = System.Net.Mail.MailAddress <MailAddressFactory_Mixed>b__2_0(System.String), Target = <>c { } }, factoryAddressDisplayName: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_Mixed>b__2_1(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeMultipleMailAddress_WithManyAddressesThatAreDifferentAndContainUnicode_ShouldEncodeCorrectly(factoryAddress: Func`2 { Method = System.Net.Mail.MailAddress <MailAddressFactory_Mixed>b__2_2(System.String), Target = <>c { } }, factoryAddressDisplayName: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_Mixed>b__2_3(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressAndNonAsciiAndRangeOfChars_ShouldQEncode(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_0(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressAndNonAsciiAndRangeOfChars_ShouldQEncode(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_1(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressAndDisplayNameUnicode_ShouldQEncode(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_0(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressAndDisplayNameUnicode_ShouldQEncode(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_1(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.CustomEncoding(encoding: UnicodeEncoding { BodyName = "utf-16", CodePage = 1200, DecoderFallback = DecoderReplacementFallback { DefaultString = "�", MaxCharCount = 1 }, EncoderFallback = EncoderReplacementFallback { DefaultString = "�", MaxCharCount = 1 }, EncodingName = "Unicode", ··· })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.CustomEncoding(encoding: ASCIIEncodingSealed { BodyName = "us-ascii", CodePage = 20127, DecoderFallback = DecoderReplacementFallback { DefaultString = "?", MaxCharCount = 1 }, EncoderFallback = EncoderReplacementFallback { DefaultString = "?", MaxCharCount = 1 }, EncodingName = "US-ASCII", ··· })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.CustomEncoding_Null
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeMultipleMailAddress_WithOneAddressAndDisplayName_ShouldEncodeAsDisplayNameAndAddressInBrackets(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_0(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeMultipleMailAddress_WithOneAddressAndDisplayName_ShouldEncodeAsDisplayNameAndAddressInBrackets(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_1(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressAndDisplayName_ShouldEncodeAsDisplayNameAndAddressInBrackets(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_0(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressAndDisplayName_ShouldEncodeAsDisplayNameAndAddressInBrackets(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_1(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressOnly_ShouldEncodeAsAddress(factory: Func`2 { Method = System.Net.Mail.MailAddress <MailAddressFactory_Address>b__0_0(System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressOnly_ShouldEncodeAsAddress(factory: Func`2 { Method = System.Net.Mail.MailAddress <MailAddressFactory_Address>b__0_1(System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeMultipleMailAddress_WithTwoAddressesThatAreTheSame_ShouldEncodeCorrectly(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_0(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeMultipleMailAddress_WithTwoAddressesThatAreTheSame_ShouldEncodeCorrectly(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_1(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeMultipleMailAddress_WithTwoAddressesThatAreDifferentAndContainUnicode_ShouldEncodeCorrectly(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_0(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeMultipleMailAddress_WithTwoAddressesThatAreDifferentAndContainUnicode_ShouldEncodeCorrectly(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_1(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressAndUnicode_AndPaddingValueOfNonZero_ShouldEncodeCorrectly(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_0(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mail.Tests.MailAddressEncodeTest.EncodeSingleMailAddress_WithAddressAndUnicode_AndPaddingValueOfNonZero_ShouldEncodeCorrectly(factory: Func`3 { Method = System.Net.Mail.MailAddress <MailAddressFactory_AddressDisplayName>b__1_1(System.String, System.String), Target = <>c { } })
+[STRT] System.Net.Mime.Tests.QuotedPrintableStreamTest.TestEncodeStream(input: "Hello \r\n World", expectedOutput: "Hello \r\n World", encodingName: "ASCII", encodeCRLF: False)
+[STRT] System.Net.Mime.Tests.QuotedPrintableStreamTest.TestEncodeStream(input: "Hello World  ", expectedOutput: "Hello World =20", encodingName: "ASCII", encodeCRLF: True)
+[STRT] System.Net.Mime.Tests.QuotedPrintableStreamTest.TestEncodeStream(input: ".Hello World", expectedOutput: ".Hello World", encodingName: "ASCII", encodeCRLF: True)
+[STRT] System.Net.Mime.Tests.QuotedPrintableStreamTest.TestEncodeStream(input: "Hello \r World \n", expectedOutput: "Hello =0D World =0A", encodingName: "ASCII", encodeCRLF: True)
+[STRT] System.Net.Mime.Tests.QuotedPrintableStreamTest.TestEncodeStream(input: "Hello \r World \n", expectedOutput: "Hello =0D World =0A", encodingName: "ASCII", encodeCRLF: False)
+[STRT] System.Net.Mime.Tests.QuotedPrintableStreamTest.TestEncodeStream(input: "Hello \r\n World", expectedOutput: "Hello =0D=0A World", encodingName: "ASCII", encodeCRLF: True)
+[STRT] System.Net.Mime.Tests.QuotedPrintableStreamTest.TestEncodeStream(input: "Hello World", expectedOutput: "Hello World", encodingName: "ASCII", encodeCRLF: True)
+[STRT] System.Net.Mime.Tests.QuotedPrintableStreamTest.TestEncodeStream(input: "Hello World é", expectedOutput: "Hello World =C3=A9", encodingName: "Default", encodeCRLF: True)
+[STRT] System.Net.Mime.Tests.QuotedPrintableStreamTest.TestEncodeStream(input: "Hello World 理", expectedOutput: "Hello World =E7=90=86", encodingName: "UTF8", encodeCRLF: True)
+[STRT] System.Net.Mime.Tests.QuotedPrintableStreamTest.TestEncodeStream(input: "Hello World 理理理理理理理", expectedOutput: "Hello World =E7=90=86=E7=90=86=E7=90=86=E7=90=86=E"···, encodingName: "UTF8", encodeCRLF: True)
+[STRT] System.Net.Mime.Tests.QuotedPrintableStreamTest.TestEncodeStream(input: "Hello World 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16"···, expectedOutput: "Hello World 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16"···, encodingName: "ASCII", encodeCRLF: True)
+[STRT] System.Net.Mime.Tests.QuotedPrintableStreamTest.QuotedPrintableStream_EmbededCRAndLFSpltBetweenWrites_EncodeCrlfFlagNotHonored
+Finished:    System.Net.Mail.Unit.Tests.dll
+Finished uploading 101084 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 307 Passed: 307 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Net.Mail.Unit.Tests.dll after 0.018783333333333332 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

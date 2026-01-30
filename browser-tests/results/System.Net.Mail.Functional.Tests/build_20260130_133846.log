@@ -1,0 +1,337 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Net.Mail/tests/Functional/System.Net.Mail.Functional.Tests.csproj (in 173 ms).
+  3 of 4 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Net.Mail.Functional.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Mail.Functional.Tests/Release/net11.0-browser/browser-wasm/System.Net.Mail.Functional.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Mail.Functional.Tests/Release/net11.0-browser/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Mail.Functional.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.Net.Mail.Functional.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Net.Mail/tests/Functional
+  ----- start Fri Jan 30 13:38:49 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Mail.Functional.Tests/Release/net11.0-browser/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Mail.Functional.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Net.Mail.Functional.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.Net.Mail.Functional.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.Net.Mail.Functional.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Net.Mail/tests/Functional
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Mail.Functional.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.Mail.Functional.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 41503
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 41503.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:40323/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Net.Mail.Functional.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.Mail.Functional.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Net.Mail.Functional.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Net.Mail.Functional.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Net.Mail.Functional.Tests.dll (found 129 of 131 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Net.Mail.Functional.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.HeaderCollectionTest.Set_EmptyName_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.HeaderCollectionTest.Add_EmptyValue_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.HeaderCollectionTest.Add_EmptyName_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.HeaderCollectionTest.Set_EmptyValue_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.HeaderCollectionTest.Add_ValidNameAndValue_Success
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.HeaderCollectionTest.Set_ValidNameAndValue_Success
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailMessageTest.AlternateViewTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailMessageTest.BodyAndEncodingTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailMessageTest.ToTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailMessageTest.FromTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailMessageTest.PriorityTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailMessageTest.TestRecipients
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailMessageTest.BodyEncodingTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailMessageTest.BodyTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailMessageTest.AttachmentTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailMessageTest.TestForNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailMessageTest.SubjectTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailMessageTest.SubjectAndEncodingTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailMessageTest.IsBodyHtmlTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_AddressDisplayName(invalidAddress: "<foo@example.com> WhatEver", displayName: " Mr. Foo Bar ")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_AddressDisplayName(invalidAddress: "Mr. Far Bar <foo@example.com> Whatever", displayName: "BarFoo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Valid_AddressDisplayName(inputAddress: " foo@example.com ", inputDisplayName: null, address: "foo@example.com", displayName: "", host: "example.com", toString: "foo@example.com", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Valid_AddressDisplayName(inputAddress: "Mr. Far Bar <foo@example.com>", inputDisplayName: "BarFoo", address: "foo@example.com", displayName: "BarFoo", host: "example.com", toString: "\"BarFoo\" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Valid_AddressDisplayName(inputAddress: "Mr. Far Bar <foo@example.com>  ", inputDisplayName: "", address: "foo@example.com", displayName: "Mr. Far Bar", host: "example.com", toString: "\"Mr. Far Bar\" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Valid_AddressDisplayName(inputAddress: "Mr. Far Bar <foo@example.com>", inputDisplayName: null, address: "foo@example.com", displayName: "Mr. Far Bar", host: "example.com", toString: "\"Mr. Far Bar\" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Valid_AddressDisplayName(inputAddress: "Mr. Far Bar <foo@example.com>   ", inputDisplayName: " ", address: "foo@example.com", displayName: " ", host: "example.com", toString: "\" \" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Valid_Address(inputAddress: " foo@example.com ", address: "foo@example.com", displayName: "", host: "example.com", toString: "foo@example.com", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Valid_Address(inputAddress: "Mr. Foo Bar <foo@example.com>", address: "foo@example.com", displayName: "Mr. Foo Bar", host: "example.com", toString: "\"Mr. Foo Bar\" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Valid_Address(inputAddress: "FooBar <foo@example.com>", address: "foo@example.com", displayName: "FooBar", host: "example.com", toString: "\"FooBar\" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Valid_Address(inputAddress: "\"FooBar\"foo@example.com   ", address: "foo@example.com", displayName: "FooBar", host: "example.com", toString: "\"FooBar\" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Valid_Address(inputAddress: "\"   FooBar   \"< foo@example.com >", address: "foo@example.com", displayName: "   FooBar   ", host: "example.com", toString: "\"   FooBar   \" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Valid_Address(inputAddress: "<foo@example.com>", address: "foo@example.com", displayName: "", host: "example.com", toString: "foo@example.com", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Valid_Address(inputAddress: "    <  foo@example.com  >", address: "foo@example.com", displayName: "", host: "example.com", toString: "foo@example.com", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.MailAddress_AllMembers
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.GetHashCodeTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructor_Address(inputAddress: " foo@example.com ", address: "foo@example.com", displayName: "", host: "example.com", toString: "foo@example.com", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructor_Address(inputAddress: "Mr. Foo Bar <foo@example.com>", address: "foo@example.com", displayName: "Mr. Foo Bar", host: "example.com", toString: "\"Mr. Foo Bar\" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructor_Address(inputAddress: "FooBar <foo@example.com>", address: "foo@example.com", displayName: "FooBar", host: "example.com", toString: "\"FooBar\" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructor_Address(inputAddress: "\"FooBar\"foo@example.com   ", address: "foo@example.com", displayName: "FooBar", host: "example.com", toString: "\"FooBar\" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructor_Address(inputAddress: "\"   FooBar   \"< foo@example.com >", address: "foo@example.com", displayName: "   FooBar   ", host: "example.com", toString: "\"   FooBar   \" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructor_Address(inputAddress: "<foo@example.com>", address: "foo@example.com", displayName: "", host: "example.com", toString: "foo@example.com", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructor_Address(inputAddress: "    <  foo@example.com  >", address: "foo@example.com", displayName: "", host: "example.com", toString: "foo@example.com", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.Address_NoUserNoHost
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.Address_NoClosingQuote
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructor_AddressDisplayName(inputAddress: " foo@example.com ", inputDisplayName: null, address: "foo@example.com", displayName: "", host: "example.com", toString: "foo@example.com", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructor_AddressDisplayName(inputAddress: "Mr. Far Bar <foo@example.com>", inputDisplayName: "BarFoo", address: "foo@example.com", displayName: "BarFoo", host: "example.com", toString: "\"BarFoo\" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructor_AddressDisplayName(inputAddress: "Mr. Far Bar <foo@example.com>  ", inputDisplayName: "", address: "foo@example.com", displayName: "Mr. Far Bar", host: "example.com", toString: "\"Mr. Far Bar\" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructor_AddressDisplayName(inputAddress: "Mr. Far Bar <foo@example.com>", inputDisplayName: null, address: "foo@example.com", displayName: "Mr. Far Bar", host: "example.com", toString: "\"Mr. Far Bar\" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructor_AddressDisplayName(inputAddress: "Mr. Far Bar <foo@example.com>   ", inputDisplayName: " ", address: "foo@example.com", displayName: " ", host: "example.com", toString: "\" \" <foo@example.com>", user: "foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.DisplayName_Precedence(inputAddress: "Hola <foo@bar.com>", displayName: "Hola")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.EqualsTest2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_AddressDisplayName_Precedence(inputAddress: "Hola <foo@bar.com>", inputDisplayName: "Adios", displayName: "Adios")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_AddressDisplayName_Precedence(inputAddress: "Hola <foo@bar.com>", inputDisplayName: "", displayName: "Hola")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_AddressDisplayName_Precedence(inputAddress: "<foo@bar.com>", inputDisplayName: "", displayName: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.EqualsTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructorWithNullString
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: "Mr. Foo Bar")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: "foo@b@ar")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: "Mr. Foo Bar <foo@exa<mple.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: "Mr. Foo Bar <foo@example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: "Mr. \"F@@ Bar\" <foo@example.com> Whatever@You@Wan"···)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: "Mr. F@@ Bar <foo@example.com> What\"ever@You@Want")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: "\"MrFo@Bar\"")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: "\"MrFo@Bar\"<>")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: " ")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: "forbar")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: "fo..o@example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_Address(address: "foo@exa..mple.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: "Mr. Foo Bar")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: "foo@b@ar")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: "Mr. Foo Bar <foo@exa<mple.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: "Mr. Foo Bar <foo@example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: "Mr. \"F@@ Bar\" <foo@example.com> Whatever@You@Wan"···)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: "Mr. F@@ Bar <foo@example.com> What\"ever@You@Want")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: "\"MrFo@Bar\"")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: "\"MrFo@Bar\"<>")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: " ")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: "forbar")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: "fo..o@example.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestInvalidAddressInConstructor_Address(invalidAddress: "foo@exa..mple.com")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TestConstructorWithEmptyString
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.GetHashCodeTest2
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.Address_QuoteFirst
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.AddressDisplayName_Precedence(inputAddress: "Hola <foo@bar.com>", inputDisplayName: "Adios", displayName: "Adios")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.AddressDisplayName_Precedence(inputAddress: "Hola <foo@bar.com>", inputDisplayName: "", displayName: "Hola")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.AddressDisplayName_Precedence(inputAddress: "<foo@bar.com>", inputDisplayName: "", displayName: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_AddressAndDisplayName(address: "<foo@example.com> WhatEver", displayName: " Mr. Foo Bar ")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_Invalid_AddressAndDisplayName(address: "Mr. Far Bar <foo@example.com> Whatever", displayName: "BarFoo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.Address_NoUser
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.Address_QuoteNotFirst
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressTest.TryCreate_DisplayName_Precedence(inputAddress: "Hola <foo@bar.com>", displayName: "Hola")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentTest.ConstructorPathName
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentTest.Name
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentTest.TransferEncodingTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentTest.ContentDisposition
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentTest.ContentType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentTest.TestNullStream
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentTest.CreateAttachmentFromStringNullName
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentTest.ConstructorPathNameContentType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentTest.ConstructorNullName
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentTest.ConstructorPathNameMediaType
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentTest.ContentStream
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentTest.NameEncoding
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.LinkedResourceTest.ThrowsOnNullString
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.LinkedResourceTest.TransferEncodingTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.LinkedResourceTest.ThrowsOnNullStream
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.Filename_Roundtrip
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.GetCustomerParameterThatIsNotSet_ShouldReturnNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.SetDispositionViaConstructor_ShouldSetCorrectly_AndRespectCustomValues
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.SetDateViaConstructor_ShouldPersistToPropertyAndPersistToParametersCollection
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.GetViaDateTimeProperty_WithLocalTime_ShouldSetDateTimeKindAppropriately
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.DefaultCtor_ExpectedDefaultPropertyValues
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.UseDifferentCultureAndConstructorWithDateTimesBefore10AM_DateTimesAreValidForReUse
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.Size_Roundtrip
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.Inline_Roundtrip
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.DispositionType_SetValue_InvalidThrows(exceptionType: typeof(System.ArgumentNullException), contentDisposition: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.DispositionType_SetValue_InvalidThrows(exceptionType: typeof(System.ArgumentException), contentDisposition: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.GetViaDateTimeProperty_WithUniversalTime_ShouldSetDateTimeKindAppropriately
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.CultureSensitiveSetDateViaProperty_ShouldPersistToProprtyAndParametersCollectionAndRespectKindProperty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.SetDateViaProperty_ShouldPersistToProprtyAndParametersCollection_AndRespectKindProperty
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.ConstructorWithOtherPropertyValues_ShouldSetAppropriately
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.GetViaDateTimeProperty_WithOtherTime_ShouldSetDateTimeKindAppropriately
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.Ctor_InvalidThrows(exceptionType: typeof(System.ArgumentNullException), contentDisposition: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.Ctor_InvalidThrows(exceptionType: typeof(System.FormatException), contentDisposition: "inline; creation-date=\"Sun, 32 Say 2009 25:15:15 "···)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.Ctor_InvalidThrows(exceptionType: typeof(System.FormatException), contentDisposition: "inline; size=\"notANumber\"")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.Dates_RoundtripWithoutImpactingOtherDates
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.GetViaDateTimeProperty_WithNonLocalTimeZone_ShouldWorkCorrectly
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.SetAndResetDateViaParameters_ShouldWorkCorrectly
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.DispositionType_Roundtrip
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.SetCreateDateViaParameters_WithInvalidDate_ShouldThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentDispositionTest.ConstructorWithDateTimesBefore10AM_DateTimesAreValidForReUse
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentCollectionTest.InitialCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentCollectionTest.TestDispose
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentCollectionTest.RemoveCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AttachmentCollectionTest.AddCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AlternateViewTest.ArgumentNullException2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AlternateViewTest.CreateAlternateViewFromStringEncodingNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AlternateViewTest.TransferEncodingTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AlternateViewTest.ContentType2Test
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AlternateViewTest.ContentStreamTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AlternateViewTest.ArgumentNullExceptionTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AlternateViewTest.ContentTypeTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithMultipleDots_UsesLastExtension(path: "file.tar.gz", expectedMediaType: "application/gzip")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithMultipleDots_UsesLastExtension(path: "script.min.js", expectedMediaType: "text/javascript")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithMultipleDots_UsesLastExtension(path: "data.backup.json", expectedMediaType: "application/json")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_RoundTrip_CommonMediaTypes
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_RoundTrip_CommonExtensions
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_UnknownMediaType_ReturnsNull(mediaType: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_UnknownMediaType_ReturnsNull(mediaType: ".")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_UnknownMediaType_ReturnsNull(mediaType: "abc")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_UnknownMediaType_ReturnsNull(mediaType: "unknown/type")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_UnknownMediaType_ReturnsNull(mediaType: "application/unknown")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_UnknownMediaType_ReturnsNull(mediaType: "custom/x-custom")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_CaseInsensitive(mediaType: "APPLICATION/PDF", expectedExtension: ".pdf")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_CaseInsensitive(mediaType: "Image/Jpeg", expectedExtension: ".jpg")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_CaseInsensitive(mediaType: "TEXT/HTML", expectedExtension: ".html")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithNullString_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithNullString_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_CaseInsensitive(input: ".PDF", expectedMediaType: "application/pdf")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_CaseInsensitive(input: ".Pdf", expectedMediaType: "application/pdf")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_CaseInsensitive(input: "PDF", expectedMediaType: "application/pdf")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_CaseInsensitive(input: ".JPG", expectedMediaType: "image/jpeg")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_CaseInsensitive(input: "file.PNG", expectedMediaType: "image/png")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".pdf", expectedMediaType: "application/pdf")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".woff2", expectedMediaType: "font/woff2")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".ttf", expectedMediaType: "font/ttf")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".wasm", expectedMediaType: "application/wasm")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".mp3", expectedMediaType: "audio/mpeg")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".mp4", expectedMediaType: "video/mp4")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".cgm", expectedMediaType: "image/cgm")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".txt", expectedMediaType: "text/plain")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".zip", expectedMediaType: "application/zip")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".xml", expectedMediaType: "application/xml")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".json", expectedMediaType: "application/json")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".ods", expectedMediaType: "application/vnd.oasis.opendocument.spreadsheet")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".rtf", expectedMediaType: "application/rtf")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".jfif", expectedMediaType: "image/jpeg")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".jsx", expectedMediaType: "text/jsx")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".mjs", expectedMediaType: "text/javascript")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".js", expectedMediaType: "text/javascript")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".css", expectedMediaType: "text/css")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".htm", expectedMediaType: "text/html")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".html", expectedMediaType: "text/html")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".gif", expectedMediaType: "image/gif")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".png", expectedMediaType: "image/png")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".jpeg", expectedMediaType: "image/jpeg")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: "jpg", expectedMediaType: "image/jpeg")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".jpg", expectedMediaType: "image/jpeg")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: "pdf", expectedMediaType: "application/pdf")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".woff", expectedMediaType: "font/woff")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithExtension_ReturnsCorrectMediaType(extension: ".rar", expectedMediaType: "application/vnd.rar")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithFilePath_ReturnsCorrectMediaType(path: "file.pdf", expectedMediaType: "application/pdf")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithFilePath_ReturnsCorrectMediaType(path: "document.docx", expectedMediaType: "application/vnd.openxmlformats-officedocument.word"···)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithFilePath_ReturnsCorrectMediaType(path: "image.png", expectedMediaType: "image/png")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithFilePath_ReturnsCorrectMediaType(path: "C:\\path\\to\\file.jpg", expectedMediaType: "image/jpeg")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithFilePath_ReturnsCorrectMediaType(path: "/path/to/file.html", expectedMediaType: "text/html")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithFilePath_ReturnsCorrectMediaType(path: "archive.tar.gz", expectedMediaType: "application/gzip")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_WithFilePath_ReturnsCorrectMediaType(path: "style.min.css", expectedMediaType: "text/css")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithParameters_IgnoresParametersAndReturnsExtension(mediaType: "text/html; charset=utf-8", expectedExtension: ".html")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithParameters_IgnoresParametersAndReturnsExtension(mediaType: "application/json; charset=utf-8", expectedExtension: ".json")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithParameters_IgnoresParametersAndReturnsExtension(mediaType: "text/plain;charset=ISO-8859-1", expectedExtension: ".txt")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithParameters_IgnoresParametersAndReturnsExtension(mediaType: "image/png; name=image.png", expectedExtension: ".png")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithWhitespace_TrimsAndReturnsCorrectExtension(mediaType: "   application/pdf   ", expectedExtension: ".pdf")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithWhitespace_TrimsAndReturnsCorrectExtension(mediaType: "text/html  ", expectedExtension: ".html")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithWhitespace_TrimsAndReturnsCorrectExtension(mediaType: "  image/png", expectedExtension: ".png")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithMediaType_ReturnsCorrectExtension(mediaType: "application/pdf", expectedExtension: ".pdf")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithMediaType_ReturnsCorrectExtension(mediaType: "image/cgm", expectedExtension: ".cgm")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithMediaType_ReturnsCorrectExtension(mediaType: "image/jpeg", expectedExtension: ".jpg")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithMediaType_ReturnsCorrectExtension(mediaType: "image/png", expectedExtension: ".png")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithMediaType_ReturnsCorrectExtension(mediaType: "text/html", expectedExtension: ".html")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithMediaType_ReturnsCorrectExtension(mediaType: "text/plain", expectedExtension: ".txt")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithMediaType_ReturnsCorrectExtension(mediaType: "application/json", expectedExtension: ".json")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithMediaType_ReturnsCorrectExtension(mediaType: "video/mp4", expectedExtension: ".mp4")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithMediaType_ReturnsCorrectExtension(mediaType: "audio/mpeg", expectedExtension: ".mp3")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetExtension_WithMediaType_ReturnsCorrectExtension(mediaType: "font/woff2", expectedExtension: ".woff2")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_UnknownExtension_ReturnsNull(input: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_UnknownExtension_ReturnsNull(input: ".")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_UnknownExtension_ReturnsNull(input: "README")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_UnknownExtension_ReturnsNull(input: ".unknown")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_UnknownExtension_ReturnsNull(input: "unknown")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_UnknownExtension_ReturnsNull(input: "file.unknown")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.MediaTypeMapTest.GetMediaType_UnknownExtension_ReturnsNull(input: ".xyz123")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AlternateViewCollectionTest.TestDispose
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AlternateViewCollectionTest.RemoveCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AlternateViewCollectionTest.AddCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.AlternateViewCollectionTest.InitialCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressCollectionTest.InitialCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressCollectionTest.RemoveCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.MailAddressCollectionTest.AddCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.SmtpExceptionTest.TestDefaultConstructor
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.SmtpExceptionTest.TestConstructorWithStringAndExceptionArgument
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.SmtpExceptionTest.TestConstructorWithStatusCodeAndStringArgument
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.SmtpExceptionTest.TestConstructorWithStringArgument
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.SmtpExceptionTest.TestConstructorWithStatusCodeArgument
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.LinkedResourceCollectionTest.InitialCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.LinkedResourceCollectionTest.RemoveCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mail.Tests.LinkedResourceCollectionTest.AddCount
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_ContentString_ParsedValueMatchesExpected(contentType: "text/plain", expectedMediaType: "text/plain", expectedCharSet: null, expectedBoundary: null, expectedName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_ContentString_ParsedValueMatchesExpected(contentType: "text/plain; charset=us-ascii", expectedMediaType: "text/plain", expectedCharSet: "us-ascii", expectedBoundary: null, expectedName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_ContentString_ParsedValueMatchesExpected(contentType: "text/plain; charset=us-ascii; boundary=hello", expectedMediaType: "text/plain", expectedCharSet: "us-ascii", expectedBoundary: "hello", expectedName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_ContentString_ParsedValueMatchesExpected(contentType: "text/plain; boundary=hello; charset=us-ascii; name"···, expectedMediaType: "text/plain", expectedCharSet: "us-ascii", expectedBoundary: "hello", expectedName: "world")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_ContentString_ParsedValueMatchesExpected(contentType: "text/plain; charset=us-ascii; name=world", expectedMediaType: "text/plain", expectedCharSet: "us-ascii", expectedBoundary: null, expectedName: "world")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.MediaType_Roundtrip
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.MediaType_Set_InvalidArgs_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Boundary_Roundtrip
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.CharSet_Roundtrip
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.DefaultCtor_ExpectedDefaultPropertyValues
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Parameters_Roundtrip
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.ArgumentNullException), contentType: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.ArgumentException), contentType: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.FormatException), contentType: "  ")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.FormatException), contentType: "text/plain会")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.FormatException), contentType: "text/plain ,")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.FormatException), contentType: "text/plain,")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.FormatException), contentType: "text/plain; charset=utf-8 ,")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.FormatException), contentType: "text/plain; charset=utf-8,")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.FormatException), contentType: "textplain")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.FormatException), contentType: "text/")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.FormatException), contentType: ",, , ,,text/plain; charset=iso-8859-1; q=1.0,\r\n "···)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.FormatException), contentType: "text/plain; charset=iso-8859-1; q=1.0, */xml; char"···)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.FormatException), contentType: " , */xml; charset=utf-8; q=0.5 ")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Ctor_InvalidContentType_Throws(exceptionType: typeof(System.FormatException), contentType: "text/plain; charset=iso-8859-1; q=1.0 , ")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Net.Mime.Tests.ContentTypeTest.Name_Roundtrip
+  [40m[32minfo[39m[22m[49m: Finished:    System.Net.Mail.Functional.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Mail.Functional.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output/testResults.xml results 77915 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 77915 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 267 Passed: 267 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Net.Mail.Functional.Tests.dll after 0.01905 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/System.Net.Mail.Functional.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Net.Mail/tests/Functional
+  ----- end Fri Jan 30 13:38:52 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Mail.Functional.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:06.18

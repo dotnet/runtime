@@ -1,0 +1,314 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:42561/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Logging.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Logging.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Logging.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Extensions.Logging.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Extensions.Logging.Tests.dll (found 127 of 140 test cases)
+Starting:    Microsoft.Extensions.Logging.Tests.dll
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityTrackingOptions_ShouldAddTagsAndBaggageAsOneScopeAndTraceIdAsOtherScope_WhenTagsBaggageAndTraceIdOptionAreSet
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestCreateLoggers_NullLoggerIsIgnoredWhenReturnedByProvider
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.BeginScope_ReturnsCompositeToken_ForMultipleLoggers
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.Dispose_ProvidersAreDisposed
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityTrackingOptions_ShouldAddNewTagAndBaggageItemsAtRuntime_WhenTagsAndBaggageOptionAreSetAndWithNestedScopes
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.CreateDisposeDisposesInnerServiceProvider
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.BeginScope_ReturnsInternalSourceTokenDirectly
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityTrackingOptions_ShouldNotAddAdditionalScope_WhenTagsBaggageOptionAreSetButTagsAndBaggageAreEmpty
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityTrackingOptions_ShouldAddTagsAsNewScope_WhenTagsOptionIsSet
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityTrackingOptions_ShouldAddBaggageItemsAsNewScope_WhenBaggageOptionIsSet
+Message1
+:
+testKey3:testValue, testKey2:, testKey1:
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.BaggageFormattedOutput
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.AddProvider_ThrowsIfProviderIsNull
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.Dispose_MultipleCallsNoop
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.CreateLogger_ThrowsAfterDisposed
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.BeginScope_ReturnsExternalSourceTokenDirectly
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.AddProvider_ThrowsAfterDisposed
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestInvalidActivityTrackingOptions
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.CallsSetScopeProvider_OnSupportedProviders
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.Dispose_ThrowException_SwallowsException
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId | TraceId | ParentId | TraceFlags)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId | TraceId | ParentId | TraceState)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: TraceId | TraceState | TraceFlags)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: TraceId | ParentId | TraceFlags)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: TraceId | ParentId | TraceState)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId | TraceState | TraceFlags)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId | ParentId | TraceFlags)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId | ParentId | TraceState)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId | TraceId | TraceFlags)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId | TraceId | TraceState)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId | TraceId | ParentId)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: TraceState | TraceFlags)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: ParentId | TraceFlags)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: ParentId | TraceState)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: TraceId | TraceFlags)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: TraceId | TraceState)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: TraceId | ParentId)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId | TraceFlags)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId | TraceState)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId | ParentId)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId | TraceId)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: TraceFlags)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: TraceState)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: ParentId)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: TraceId)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: TraceId | ParentId | TraceState | TraceFlags)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryTest.TestActivityIds(options: SpanId | TraceId | ParentId | TraceState | TraceFlags)
+[STRT] Microsoft.Extensions.Logging.Test.TraceSourceLoggerTest.MultipleLoggers_IsEnabledReturnsCorrectValue(first: Warning, second: Information, expected: True)
+[STRT] Microsoft.Extensions.Logging.Test.TraceSourceLoggerTest.MultipleLoggers_IsEnabledReturnsCorrectValue(first: Information, second: Information, expected: True)
+[STRT] Microsoft.Extensions.Logging.Test.TraceSourceLoggerTest.MultipleLoggers_IsEnabledReturnsCorrectValue(first: Information, second: Warning, expected: True)
+[STRT] Microsoft.Extensions.Logging.Test.TraceSourceLoggerTest.MultipleLoggers_IsEnabledReturnsCorrectValue(first: Warning, second: Warning, expected: False)
+[STRT] Microsoft.Extensions.Logging.Test.TraceSourceLoggerTest.Log_Should_Add_Exception_To_Message_Whether_Formatter_Is_Null_Or_Not(shouldFormatterBeNull: True)
+[STRT] Microsoft.Extensions.Logging.Test.TraceSourceLoggerTest.Log_Should_Add_Exception_To_Message_Whether_Formatter_Is_Null_Or_Not(shouldFormatterBeNull: False)
+[STRT] Microsoft.Extensions.Logging.Test.TraceSourceLoggerTest.IsEnabledReturnsCorrectValue
+[STRT] Microsoft.Extensions.Logging.Test.LoggingServiceCollectionExtensionsTest.AddLogging_TestInjectedScopeProvider
+[STRT] Microsoft.Extensions.Logging.Test.LoggingServiceCollectionExtensionsTest.ClearProviders_RemovesAllProvidersFromServiceCollection
+[STRT] Microsoft.Extensions.Logging.Test.LoggingServiceCollectionExtensionsTest.AddLogging_WrapsServiceCollection
+[STRT] Microsoft.Extensions.Logging.Test.EventIdTest.Equality_operations
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessage_WithNullParameter_DoesNotMutateArgument
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogValues_OutOfRangeAccess_ThrowsIndexOutOfRangeExceptionWithDefaultMessage(parameterCount: 0)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogValues_OutOfRangeAccess_ThrowsIndexOutOfRangeExceptionWithDefaultMessage(parameterCount: 1)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogValues_OutOfRangeAccess_ThrowsIndexOutOfRangeExceptionWithDefaultMessage(parameterCount: 2)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogValues_OutOfRangeAccess_ThrowsIndexOutOfRangeExceptionWithDefaultMessage(parameterCount: 3)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogValues_OutOfRangeAccess_ThrowsIndexOutOfRangeExceptionWithDefaultMessage(parameterCount: 4)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogValues_OutOfRangeAccess_ThrowsIndexOutOfRangeExceptionWithDefaultMessage(parameterCount: 5)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogValues_OutOfRangeAccess_ThrowsIndexOutOfRangeExceptionWithDefaultMessage(parameterCount: 6)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineScope_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(expectedNamedParameterCount: 1)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineScope_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(expectedNamedParameterCount: 2)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineScope_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(expectedNamedParameterCount: 3)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineScope_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(expectedNamedParameterCount: 4)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineScope_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(expectedNamedParameterCount: 5)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineScope_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(expectedNamedParameterCount: 6)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogScope_WithOneParameter
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineMessage_WithNoParameters_ThrowsException_WhenFormatString_HasNamedParameters
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: Define { Method = System.Action`2[Microsoft.Extensions.Logging.ILogger,System.Exception] Define(Microsoft.Extensions.Logging.LogLevel, Microsoft.Extensions.Logging.EventId, System.String), Target = null }, parameters: [Error, 0, null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: Define { Method = System.Action`3[Microsoft.Extensions.Logging.ILogger,System.String,System.Exception] Define[String](Microsoft.Extensions.Logging.LogLevel, Microsoft.Extensions.Logging.EventId, System.String), Target = null }, parameters: [Error, 0, null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: Define { Method = System.Action`4[Microsoft.Extensions.Logging.ILogger,System.String,System.String,System.Exception] Define[String,String](Microsoft.Extensions.Logging.LogLevel, Microsoft.Extensions.Logging.EventId, System.String), Target = null }, parameters: [Error, 0, null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: Define { Method = System.Action`5[Microsoft.Extensions.Logging.ILogger,System.String,System.String,System.String,System.Exception] Define[String,String,String](Microsoft.Extensions.Logging.LogLevel, Microsoft.Extensions.Logging.EventId, System.String), Target = null }, parameters: [Error, 0, null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: Define { Method = System.Action`6[Microsoft.Extensions.Logging.ILogger,System.String,System.String,System.String,System.String,System.Exception] Define[String,String,String,String](Microsoft.Extensions.Logging.LogLevel, Microsoft.Extensions.Logging.EventId, System.String), Target = null }, parameters: [Error, 0, null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: Define { Method = System.Action`7[Microsoft.Extensions.Logging.ILogger,System.String,System.String,System.String,System.String,System.String,System.Exception] Define[String,String,String,String,String](Microsoft.Extensions.Logging.LogLevel, Microsoft.Extensions.Logging.EventId, System.String), Target = null }, parameters: [Error, 0, null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: Define { Method = System.Action`8[Microsoft.Extensions.Logging.ILogger,System.String,System.String,System.String,System.String,System.String,System.String,System.Exception] Define[String,String,String,String,String,String](Microsoft.Extensions.Logging.LogLevel, Microsoft.Extensions.Logging.EventId, System.String), Target = null }, parameters: [Error, 0, null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: DefineScope { Method = System.Func`2[Microsoft.Extensions.Logging.ILogger,System.IDisposable] DefineScope(System.String), Target = null }, parameters: [null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: DefineScope { Method = System.Func`3[Microsoft.Extensions.Logging.ILogger,System.String,System.IDisposable] DefineScope[String](System.String), Target = null }, parameters: [null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: DefineScope { Method = System.Func`4[Microsoft.Extensions.Logging.ILogger,System.String,System.String,System.IDisposable] DefineScope[String,String](System.String), Target = null }, parameters: [null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: DefineScope { Method = System.Func`5[Microsoft.Extensions.Logging.ILogger,System.String,System.String,System.String,System.IDisposable] DefineScope[String,String,String](System.String), Target = null }, parameters: [null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: DefineScope { Method = System.Func`6[Microsoft.Extensions.Logging.ILogger,System.String,System.String,System.String,System.String,System.IDisposable] DefineScope[String,String,String,String](System.String), Target = null }, parameters: [null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: DefineScope { Method = System.Func`7[Microsoft.Extensions.Logging.ILogger,System.String,System.String,System.String,System.String,System.String,System.IDisposable] DefineScope[String,String,String,String,String](System.String), Target = null }, parameters: [null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(method: DefineScope { Method = System.Func`8[Microsoft.Extensions.Logging.ILogger,System.String,System.String,System.String,System.String,System.String,System.String,System.IDisposable] DefineScope[String,String,String,String,String,String](System.String), Target = null }, parameters: [null])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineScope_WithNoParameters_ThrowsException_WhenFormatString_HasNamedParameters
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessages(messageDelegate: Action`2 { Method = Void <Define>b__1(Microsoft.Extensions.Logging.ILogger, System.Exception), Target = <>c__DisplayClass8_0 { eventId = 0, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 0)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessages(messageDelegate: Action`3 { Method = Void <Define>b__1(Microsoft.Extensions.Logging.ILogger, System.String, System.Exception), Target = <>c__DisplayClass10_0`1 { eventId = 1, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 1)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessages(messageDelegate: Action`4 { Method = Void <Define>b__1(Microsoft.Extensions.Logging.ILogger, System.String, System.String, System.Exception), Target = <>c__DisplayClass12_0`2 { eventId = 2, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 2)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessages(messageDelegate: Action`5 { Method = Void <Define>b__1(Microsoft.Extensions.Logging.ILogger, System.String, System.String, System.String, System.Exception), Target = <>c__DisplayClass14_0`3 { eventId = 3, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 3)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessages(messageDelegate: Action`6 { Method = Void <Define>b__1(Microsoft.Extensions.Logging.ILogger, System.String, System.String, System.String, System.String, System.Exception), Target = <>c__DisplayClass16_0`4 { eventId = 4, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 4)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessages(messageDelegate: Action`7 { Method = Void <Define>b__1(Microsoft.Extensions.Logging.ILogger, System.String, System.String, System.String, System.String, System.String, System.Exception), Target = <>c__DisplayClass18_0`5 { eventId = 5, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 5)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessages(messageDelegate: Action`8 { Method = Void <Define>b__1(Microsoft.Extensions.Logging.ILogger, System.String, System.String, System.String, System.String, System.String, System.String, System.Exception), Target = <>c__DisplayClass20_0`6 { eventId = 6, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 6)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessagesSkipEnabledCheck(messageDelegate: Action`2 { Method = Void <Define>g__Log|0(Microsoft.Extensions.Logging.ILogger, System.Exception), Target = <>c__DisplayClass8_0 { eventId = 0, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 0)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessagesSkipEnabledCheck(messageDelegate: Action`3 { Method = Void <Define>g__Log|0(Microsoft.Extensions.Logging.ILogger, System.String, System.Exception), Target = <>c__DisplayClass10_0`1 { eventId = 1, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 1)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessagesSkipEnabledCheck(messageDelegate: Action`4 { Method = Void <Define>g__Log|0(Microsoft.Extensions.Logging.ILogger, System.String, System.String, System.Exception), Target = <>c__DisplayClass12_0`2 { eventId = 2, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 2)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessagesSkipEnabledCheck(messageDelegate: Action`5 { Method = Void <Define>g__Log|0(Microsoft.Extensions.Logging.ILogger, System.String, System.String, System.String, System.Exception), Target = <>c__DisplayClass14_0`3 { eventId = 3, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 3)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessagesSkipEnabledCheck(messageDelegate: Action`6 { Method = Void <Define>g__Log|0(Microsoft.Extensions.Logging.ILogger, System.String, System.String, System.String, System.String, System.Exception), Target = <>c__DisplayClass16_0`4 { eventId = 4, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 4)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessagesSkipEnabledCheck(messageDelegate: Action`7 { Method = Void <Define>g__Log|0(Microsoft.Extensions.Logging.ILogger, System.String, System.String, System.String, System.String, System.String, System.Exception), Target = <>c__DisplayClass18_0`5 { eventId = 5, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 5)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessagesSkipEnabledCheck(messageDelegate: Action`8 { Method = Void <Define>g__Log|0(Microsoft.Extensions.Logging.ILogger, System.String, System.String, System.String, System.String, System.String, System.String, System.Exception), Target = <>c__DisplayClass20_0`6 { eventId = 6, formatter = LogValuesFormatter { ··· }, logLevel = Error } }, argumentCount: 6)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogScope_WithThreeParameters
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineMessage_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(expectedNamedParameterCount: 1)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineMessage_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(expectedNamedParameterCount: 2)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineMessage_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(expectedNamedParameterCount: 3)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineMessage_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(expectedNamedParameterCount: 4)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineMessage_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(expectedNamedParameterCount: 5)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.DefineMessage_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(expectedNamedParameterCount: 6)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogMessage
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogScope_WithoutAnyParameters
+[STRT] Microsoft.Extensions.Logging.Test.LoggerMessageTest.LogScope_WithTwoParameters
+[STRT] Microsoft.Extensions.Logging.Test.LogLevelEnumTest.EnumValuesAreUniqueAndConsecutive
+[STRT] Microsoft.Extensions.Logging.Test.LogLevelEnumTest.EnumStartsAtZero
+[STRT] Microsoft.Extensions.Logging.Test.LoggerTest.ScopesAreNotCreatedForDisabledLoggers
+[STRT] Microsoft.Extensions.Logging.Test.LoggerTest.LoggerDebuggerToString
+[STRT] Microsoft.Extensions.Logging.Test.LoggerTest.CaptureScopesIsReadFromConfiguration
+[STRT] Microsoft.Extensions.Logging.Test.LoggerTest.BeginScope_IgnoresExceptionInIntermediateLoggersAndThrowsAggregateException
+[STRT] Microsoft.Extensions.Logging.Test.LoggerTest.LoggerCanGetProviderAfterItIsCreated
+[STRT] Microsoft.Extensions.Logging.Test.LoggerTest.ScopesAreNotCreatedInIScopeProviderWhenScopesAreDisabled
+[STRT] Microsoft.Extensions.Logging.Test.LoggerTest.ScopesAreNotCreatedWhenScopesAreDisabled
+[STRT] Microsoft.Extensions.Logging.Test.LoggerTest.Log_AggregatesExceptionsFromMultipleLoggers
+[STRT] Microsoft.Extensions.Logging.Test.LoggerTest.IsEnabled_IgnoresExceptionInIntermediateLoggers
+[STRT] Microsoft.Extensions.Logging.Test.LoggerTest.Log_IgnoresExceptionInIntermediateLoggersAndThrowsAggregateException
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.CreatesLoggerName_OnNestedGenericType_CreatesWithoutGenericTypeArgumentsInformation
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.LoggerFactoryCreate_TwoGenerics_CallsCreateWithCorrectName
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.LoggerFactoryCreate_SingleGeneric_CallsCreateWithCorrectName
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.LoggerFactoryCreateOfT_SingleGeneric_CallsCreateWithCorrectName
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.CreatesLoggerName_OnMultipleTypeArgumentGenericType_CreatesWithoutGenericTypeArgumentsInformation
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.LoggerFactoryCreate_CallsCreateWithCorrectName
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.CreatesLoggerName_WithoutGenericTypeArgumentsInformation
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.LoggerFactoryCreateOfT_TwoGenerics_CallsCreateWithCorrectName
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFactoryExtensionsTest.LoggerFactoryCreateOfT_CallsCreateWithCorrectName
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.ProviderLevelIsPreferredOverGlobalFilter
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Trace, Rules = [ProviderName: 'Microsoft.Extensions.Logging.Test.TestLoggerProvider', CategoryName: 'System', LogLevel: 'Information', Filter: '', ProviderName: '', CategoryName: 'Microsoft', LogLevel: 'Trace', Filter: ''] }, message: Tuple ("Microsoft", Debug, True, True))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Trace, Rules = [ProviderName: 'Microsoft.Extensions.Logging.Test.TestLoggerProvider', CategoryName: '', LogLevel: 'Information', Filter: '', ProviderName: '', CategoryName: '', LogLevel: 'Critical', Filter: ''] }, message: Tuple ("Category", Information, True, False))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Trace, Rules = [ProviderName: '', CategoryName: 'Category', LogLevel: 'Information', Filter: '', ProviderName: '', CategoryName: '', LogLevel: 'Critical', Filter: ''] }, message: Tuple ("Category", Information, True, True))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Trace, Rules = [ProviderName: '', CategoryName: 'Category.Sub', LogLevel: 'Trace', Filter: '', ProviderName: '', CategoryName: 'Category', LogLevel: 'Information', Filter: '', ProviderName: '', CategoryName: '', LogLevel: 'Critical', Filter: ''] }, message: Tuple ("Category.Sub", Trace, True, True))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Trace, Rules = [ProviderName: '', CategoryName: 'Category.Sub', LogLevel: 'Trace', Filter: '', ProviderName: 'Microsoft.Extensions.Logging.Test.TestLoggerProvider', CategoryName: 'Category', LogLevel: 'Information', Filter: '', ProviderName: '', CategoryName: '', LogLevel: 'Critical', Filter: ''] }, message: Tuple ("Category.Sub", Trace, False, True))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Trace, Rules = [ProviderName: '', CategoryName: 'Category.Sub', LogLevel: 'Trace', Filter: '', ProviderName: 'Microsoft.Extensions.Logging.Test.TestLoggerProvider', CategoryName: 'Category', LogLevel: 'Information', Filter: '', ProviderName: 'Microsoft.Extensions.Logging.Test.TestLoggerProvider', CategoryName: 'Category', LogLevel: 'Trace', Filter: '', ProviderName: '', CategoryName: '', LogLevel: 'Critical', Filter: ''] }, message: Tuple ("Category.Sub", Trace, True, True))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Trace, Rules = [ProviderName: '', CategoryName: '', LogLevel: 'Critical', Filter: 'System.Func`4[System.String,System.String,Microsoft.Extensions.Logging.LogLevel,System.Boolean]'] }, message: Tuple ("Category.Sub", Error, False, False))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Trace, Rules = [ProviderName: '', CategoryName: '', LogLevel: 'Critical', Filter: 'System.Func`4[System.String,System.String,Microsoft.Extensions.Logging.LogLevel,System.Boolean]', ProviderName: '', CategoryName: '', LogLevel: 'Critical', Filter: 'System.Func`4[System.String,System.String,Microsoft.Extensions.Logging.LogLevel,System.Boolean]'] }, message: Tuple ("Category.Sub", Critical, True, True))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Debug, Rules = [ProviderName: 'Microsoft.Extensions.Logging.Test.TestLoggerProvider', CategoryName: '', LogLevel: 'Trace', Filter: ''] }, message: Tuple ("Category.Sub", Trace, True, False))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Trace, Rules = [ProviderName: 'Microsoft.Extensions.Logging.Test.TestLoggerProvider', CategoryName: 'Category', LogLevel: 'Information', Filter: '', ProviderName: 'TestLogger', CategoryName: 'Category', LogLevel: 'Trace', Filter: '', ProviderName: '', CategoryName: '', LogLevel: 'Critical', Filter: ''] }, message: Tuple ("Category.Sub", Trace, True, False))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Trace, Rules = [ProviderName: 'TestLogger', CategoryName: 'Category', LogLevel: 'Information', Filter: '', ProviderName: 'Microsoft.Extensions.Logging.Test.TestLoggerProvider', CategoryName: 'Category', LogLevel: 'Trace', Filter: '', ProviderName: '', CategoryName: '', LogLevel: 'Critical', Filter: ''] }, message: Tuple ("Category.Sub", Trace, True, False))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Critical, Rules = [ProviderName: 'Microsoft.Extensions.Logging.Test.TestLoggerProvider', CategoryName: 'Category.*.Sub', LogLevel: 'Trace', Filter: '', ProviderName: '', CategoryName: '', LogLevel: 'Critical', Filter: ''] }, message: Tuple ("Category.B.Sub", Trace, True, False))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Critical, Rules = [ProviderName: 'Microsoft.Extensions.Logging.Test.TestLoggerProvider', CategoryName: '*.Sub', LogLevel: 'Trace', Filter: ''] }, message: Tuple ("Category.B.Sub", Trace, True, False))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.FilterTest(options: LoggerFilterOptions { CaptureScopes = True, MinLevel = Critical, Rules = [ProviderName: 'Microsoft.Extensions.Logging.Test.TestLoggerProvider', CategoryName: 'Cat*', LogLevel: 'Trace', Filter: ''] }, message: Tuple ("Category.B.Sub", Trace, True, False))
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.DefaultCategoryIsCaseInsensitive
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.PreferFullNameOverDefaultForFiltering
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.AddFilterWithProviderNameCategoryNameAndFilterFuncFiltersCorrectly
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.MultipleWildcardsAreNotAllowed
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.LogLevelKeyIsCaseInsensitive
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.AddFilterLastWins
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.AddFilterForNonMatchingProviderDoesNotFilter
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.AddFilterForMatchingProviderFilters
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.AddFilterWithProviderNameCategoryNameAndMinLevelFiltersCorrectly
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.ChangingConfigReloadsDefaultFilter
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.CanFilterOnNamedProviders
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.ChangingConfigFromUseConfigurationReloadsDefaultFilter
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.AddFilterWithProviderNameAndCategoryFilterFuncFiltersCorrectly
+[STRT] Microsoft.Extensions.Logging.Test.LoggerFilterTest.DefaultCategoryNameIsUsedIfNoneMatch
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageOnly_LogsCorrectValues(logLevel: Trace)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageOnly_LogsCorrectValues(logLevel: Information)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageOnly_LogsCorrectValues(logLevel: Warning)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageOnly_LogsCorrectValues(logLevel: Error)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageOnly_LogsCorrectValues(logLevel: Critical)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageOnly_LogsCorrectValues(logLevel: Debug)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.BeginScope_CreatesScope_WithFormatStringValues
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesAndError_LogsCorrectValues(logLevel: Trace)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesAndError_LogsCorrectValues(logLevel: Information)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesAndError_LogsCorrectValues(logLevel: Warning)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesAndError_LogsCorrectValues(logLevel: Error)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesAndError_LogsCorrectValues(logLevel: Critical)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesAndError_LogsCorrectValues(logLevel: Debug)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.MessageAndError_LogsCorrectValues
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageAndEventId_LogsCorrectValues(logLevel: Trace, eventId: 1)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageAndEventId_LogsCorrectValues(logLevel: Information, eventId: 2)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageAndEventId_LogsCorrectValues(logLevel: Warning, eventId: 3)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageAndEventId_LogsCorrectValues(logLevel: Error, eventId: 4)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageAndEventId_LogsCorrectValues(logLevel: Critical, eventId: 5)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageAndEventId_LogsCorrectValues(logLevel: Debug, eventId: 6)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesEventIdAndError_LogsCorrectValues(logLevel: Trace, eventId: 1)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesEventIdAndError_LogsCorrectValues(logLevel: Information, eventId: 2)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesEventIdAndError_LogsCorrectValues(logLevel: Warning, eventId: 3)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesEventIdAndError_LogsCorrectValues(logLevel: Error, eventId: 4)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesEventIdAndError_LogsCorrectValues(logLevel: Critical, eventId: 5)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesEventIdAndError_LogsCorrectValues(logLevel: Debug, eventId: 6)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesAndEventId_LogsCorrectValues(logLevel: Trace, eventId: 1)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesAndEventId_LogsCorrectValues(logLevel: Information, eventId: 2)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesAndEventId_LogsCorrectValues(logLevel: Warning, eventId: 3)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesAndEventId_LogsCorrectValues(logLevel: Error, eventId: 4)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesAndEventId_LogsCorrectValues(logLevel: Critical, eventId: 5)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValuesAndEventId_LogsCorrectValues(logLevel: Debug, eventId: 6)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_FormatMessage_LogsCorrectValues(logLevel: Trace)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_FormatMessage_LogsCorrectValues(logLevel: Information)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_FormatMessage_LogsCorrectValues(logLevel: Warning)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_FormatMessage_LogsCorrectValues(logLevel: Error)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_FormatMessage_LogsCorrectValues(logLevel: Critical)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_FormatMessage_LogsCorrectValues(logLevel: Debug)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_FormatMessageAndEventId_LogsCorrectValues(logLevel: Trace, eventId: 1)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_FormatMessageAndEventId_LogsCorrectValues(logLevel: Information, eventId: 2)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_FormatMessageAndEventId_LogsCorrectValues(logLevel: Warning, eventId: 3)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_FormatMessageAndEventId_LogsCorrectValues(logLevel: Error, eventId: 4)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_FormatMessageAndEventId_LogsCorrectValues(logLevel: Critical, eventId: 5)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_FormatMessageAndEventId_LogsCorrectValues(logLevel: Debug, eventId: 6)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogValuesAndError_LogsCorrectValues
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageAndError_LogsCorrectValues(logLevel: Trace)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageAndError_LogsCorrectValues(logLevel: Information)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageAndError_LogsCorrectValues(logLevel: Warning)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageAndError_LogsCorrectValues(logLevel: Error)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageAndError_LogsCorrectValues(logLevel: Critical)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageAndError_LogsCorrectValues(logLevel: Debug)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.FormatMessage_LogsCorrectValues
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.MessageAndEventId_LogsCorrectValues
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.FormatMessage_UsesInvariantCulture
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageEventIdAndError_LogsCorrectValues(logLevel: Trace, eventId: 1)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageEventIdAndError_LogsCorrectValues(logLevel: Information, eventId: 2)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageEventIdAndError_LogsCorrectValues(logLevel: Warning, eventId: 3)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageEventIdAndError_LogsCorrectValues(logLevel: Error, eventId: 4)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageEventIdAndError_LogsCorrectValues(logLevel: Critical, eventId: 5)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_MessageEventIdAndError_LogsCorrectValues(logLevel: Debug, eventId: 6)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.MessageOnly_LogsCorrectValues
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogValuesAndEventId_LogsCorrectValues
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValues_LogsCorrectValues(logLevel: Trace)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValues_LogsCorrectValues(logLevel: Information)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValues_LogsCorrectValues(logLevel: Warning)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValues_LogsCorrectValues(logLevel: Error)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValues_LogsCorrectValues(logLevel: Critical)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogLevel_LogValues_LogsCorrectValues(logLevel: Debug)
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.MessageEventIdAndError_LogsCorrectValues
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.FormatMessageAndEventId_LogsCorrectValues
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogValues_LogsCorrectValues
+[STRT] Microsoft.Extensions.Logging.Test.LoggerExtensionsTest.LogValuesEventIdAndError_LogsCorrectValues
+[STRT] Microsoft.Extensions.Logging.Test.LoggerProviderConfigurationFactoryTest.ChangeTokenFiresWhenSectionAdded
+[STRT] Microsoft.Extensions.Logging.DebugLoggerTest.CallingLogWithCurlyBracesAfterFormatter_DoesNotThrow
+[STRT] Microsoft.Extensions.Logging.DebugLoggerTest.IsEnabledReturnsCorrectValue
+[STRT] Microsoft.Extensions.Logging.DebugLoggerTest.CallingBeginScopeOnLogger_ReturnsNonNullableInstance
+[STRT] Microsoft.Extensions.Logging.Abstractions.NullLoggerTest.IsEnabled_AlwaysFalse
+[STRT] Microsoft.Extensions.Logging.Abstractions.NullLoggerTest.Write_Does_Nothing
+[STRT] Microsoft.Extensions.Logging.Abstractions.NullLoggerTest.BeginScope_CanDispose
+[STRT] Microsoft.Extensions.Logging.Abstractions.NullLoggerFactoryTest.Create_GivesSameLogger
+[STRT] Microsoft.Extensions.Logging.Test.LoggerProviderConfigurationTests.ReturnsConfigurationSectionByAliasGeneric
+[STRT] Microsoft.Extensions.Logging.Test.LoggerProviderConfigurationTests.MergesConfigurationsInOrder
+[STRT] Microsoft.Extensions.Logging.Test.LoggerProviderConfigurationTests.MergesSectionsPreferringAlias
+[STRT] Microsoft.Extensions.Logging.Test.LoggerProviderConfigurationTests.ReturnsConfigurationSectionByFullName
+[STRT] Microsoft.Extensions.Logging.Test.LoggerProviderConfigurationTests.ReturnsConfigurationSectionByFullNameGeneric
+[STRT] Microsoft.Extensions.Logging.Test.LoggerProviderConfigurationTests.ReturnsConfigurationSectionByAlias
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_Escaped_Braces(expected: "{{", format: "{{", args: null)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_Escaped_Braces(expected: "'{{'", format: "'{{'", args: null)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_Escaped_Braces(expected: "'{{}}'", format: "'{{}}'", args: null)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_Escaped_Braces(expected: "arg1 arg2 '{}'  '{' '{:}' '{,:}' {,}- test string", format: "{0} {1} '{{}}'  '{{' '{{:}}' '{{,:}}' {{,}}- test "···, args: ["arg1", "arg2"])
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_Escaped_Braces(expected: "{prefix{arg1}suffix}", format: "{{prefix{{{Argument}}}suffix}}", args: ["arg1"])
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.FormatsEnumerableValues(messageFormat: "The view '{ViewName}' was not found. Searched loca"···, arguments: ["Index", null], expected: "The view 'Index' was not found. Searched locations"···)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.FormatsEnumerableValues(messageFormat: "The view '{ViewName}' was not found. Searched loca"···, arguments: ["Index", []], expected: "The view 'Index' was not found. Searched locations"···)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.FormatsEnumerableValues(messageFormat: "The view '{ViewName}' was not found. Searched loca"···, arguments: ["Index", ["Views/Home/Index.cshtml"]], expected: "The view 'Index' was not found. Searched locations"···)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.FormatsEnumerableValues(messageFormat: "The view '{ViewName}' was not found. Searched loca"···, arguments: ["Index", [null]], expected: "The view 'Index' was not found. Searched locations"···)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.FormatsEnumerableValues(messageFormat: "The view '{ViewName}' was not found. Searched loca"···, arguments: ["Index", [null, "Views/Home/Index.cshtml"]], expected: "The view 'Index' was not found. Searched locations"···)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.FormatsEnumerableValues(messageFormat: "The view '{ViewName}' was not found. Searched loca"···, arguments: ["Index", ["Views/Home/Index.cshtml", "Views/Shared/Index.cshtml"]], expected: "The view 'Index' was not found. Searched locations"···)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.FormatsEnumerableValues(messageFormat: "Media type '{MediaType}' did not match any of the "···, arguments: [application/blah, [text/foo, application/xml]], expected: "Media type 'application/blah' did not match any of"···)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.FormatsEnumerableValues(messageFormat: "The view '{ViewName}' was not found. Searched loca"···, arguments: ["Index", ["Home/Index.cshtml", "Shared/Index.cshtml"]], expected: "The view 'Index' was not found. Searched locations"···)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.FormatsEnumerableValues(messageFormat: "The view '{ViewName}' was not found. Searched loca"···, arguments: ["Index", [[···], [···]]], expected: "The view 'Index' was not found. Searched locations"···)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.FormatsEnumerableValues(messageFormat: "The view '{ViewName}' was not found. Searched loca"···, arguments: ["Index", [null, [···]]], expected: "The view 'Index' was not found. Searched locations"···)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.FormatsEnumerableValues(messageFormat: "The view '{ViewName}' was not found. Searched loca"···, arguments: ["Index", [[···], [···]]], expected: "The view 'Index' was not found. Searched locations"···)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.CachedFormattersAreCapped
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.Log_NullFormat(expected: "[null]", format: null, args: null)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.Log_NullFormat(expected: "[null]", format: null, args: [])
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.Log_NullFormat(expected: "[null]", format: null, args: [null])
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.Log_NullFormat(expected: "[null]", format: null, args: [1])
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_UnbalancedBraces(format: "{foo")
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_UnbalancedBraces(format: "bar}")
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_UnbalancedBraces(format: "{foo bar}}")
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_WithNullAndEnumerable_IsNotMutatingParameter
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_DateTime(expected: "1 2015", format: "{Year,6:d yyyy}")
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_DateTime(expected: "1:01:2015 AM,:        01", format: "{Year,-10:d:MM:yyyy tt},:{second,10:ss}")
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_DateTime(expected: "{prefix{1 2015}suffix}", format: "{{prefix{{{Year,6:d yyyy}}}suffix}}")
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_WithNulls(expected: "(null), (null) : (null)", format: "{0} : {1}", args: [[null, null], null])
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_WithNulls(expected: "(null)", format: "{0}", args: [null])
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_Basic_Types(expected: "", format: "", args: null)
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_Basic_Types(expected: "", format: "", args: [])
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_Basic_Types(expected: "arg1 arg2", format: "{0} {1}", args: ["arg1", "arg2"])
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_Basic_Types(expected: "arg1 arg2", format: "{Start} {End}", args: ["arg1", "arg2"])
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_Basic_Types(expected: "arg1     arg2", format: "{Start,-6} {End,6}", args: ["arg1", "arg2"])
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_Basic_Types(expected: "0064", format: "{Hex:X4}", args: [100])
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_Basic_Types(expected: "8,765", format: "{Number:#,#}", args: [8765.4321])
+[STRT] Microsoft.Extensions.Logging.Test.FormattedLogValuesTest.LogValues_With_Basic_Types(expected: " 8,765", format: "{Number,6:#,#}", args: [8765.4321])
+[STRT] Microsoft.Extensions.Logging.Test.LoggerBuilderExtensionsTests.CaptureScopesDefaultsToTrue
+[STRT] Microsoft.Extensions.Logging.Test.LoggerBuilderExtensionsTests.TypeForwardIsCorrect
+[STRT] Microsoft.Extensions.Logging.Test.LoggerBuilderExtensionsTests.AddDebug_BuilderExtensionAddsSingleSetOfServicesWhenCalledTwice
+[STRT] Microsoft.Extensions.Logging.Test.LoggerBuilderExtensionsTests.AddConsole_BuilderExtensionAddsSingleSetOfServicesWhenCalledTwice
+Finished:    Microsoft.Extensions.Logging.Tests.dll
+Finished uploading 98459 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 291 Passed: 291 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Logging.Tests.dll after 0.028733333333333333 minutes with result 0 and linear memory 231997440 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

@@ -1,0 +1,308 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:37445/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Diagnostics.TraceSource.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Diagnostics.TraceSource.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Diagnostics.TraceSource.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Diagnostics.TraceSource.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Diagnostics.TraceSource.Tests.dll (found 260 of 260 test cases)
+Starting:    System.Diagnostics.TraceSource.Tests.dll
+[STRT] System.Diagnostics.TraceSourceTests.BooleanSwitchClassTests.Constructor2
+[STRT] System.Diagnostics.TraceSourceTests.BooleanSwitchClassTests.Enabled
+[STRT] System.Diagnostics.TraceSourceTests.BooleanSwitchClassTests.Constructor1
+[STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.TraceEvent
+[STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.EntryAssemblyName_Default_IncludedInTrace
+[STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.Constructor
+[STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.Fail
+[STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.AssertUiEnabledPropertyTest(expectedAssertUiEnabled: True)
+[STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.AssertUiEnabledPropertyTest(expectedAssertUiEnabled: False)
+[STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.EntryAssemblyName_Null_NotIncludedInTrace
+[STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.WriteNull
+[STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.Fail_WithLogFile
+[STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.Fail_LogFileDirectoryNotFound
+[STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.LogFileNamePropertyTest(expectedLogFileName: "LogFile")
+[STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.WriteLongMessage
+[STRT] System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.Fail_WithoutWriteLineOverride
+[STRT] System.Diagnostics.TraceSourceTests.EventTypeFilterClassTests.ShouldTrace
+[STRT] System.Diagnostics.TraceSourceTests.EventTypeFilterClassTests.EventType
+[STRT] System.Diagnostics.TraceSourceTests.EventTypeFilterClassTests.Constructor
+[STRT] System.Diagnostics.TraceSourceTests.SourceFilterClassTests.ShouldTraceTest
+[STRT] System.Diagnostics.TraceSourceTests.SourceFilterClassTests.SourceTest
+[STRT] System.Diagnostics.TraceSourceTests.SourceFilterClassTests.ConstructorTest
+[STRT] System.Diagnostics.TraceSourceTests.SwitchClassTests.DescriptionTest
+[STRT] System.Diagnostics.TraceSourceTests.SwitchClassTests.PruneTest
+[STRT] System.Diagnostics.TraceSourceTests.SwitchClassTests.ValueTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteObject1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLineIf3Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.AutoFlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.IndentLevelTest(indent: 1, expected: 1)
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.IndentLevelTest(indent: 2, expected: 2)
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.IndentLevelTest(indent: -2, expected: 0)
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteIf2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.TraceTest02
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteIf1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.Assert3Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.Assert1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLineIf2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLine1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.Assert2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteIf3Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLine2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteObject2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLineIf1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.UseGlobalLockTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.FlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLineObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.TraceTest01
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.IndentSizeTest(indent: 1, expected: 1)
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.IndentSizeTest(indent: 2, expected: 2)
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.IndentSizeTest(indent: -2, expected: 0)
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.RefreshTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.CloseTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteIf4Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.FailTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceClassTests.WriteLineIf4Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.TimestampTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.LogicalOperationStack
+[STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.DateTimePropertyTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.ProcessIdTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.CallstackTest_NotEmpty
+[STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.CallstackTest_ContainsExpectedFrames
+[STRT] System.Diagnostics.TraceSourceTests.TraceEventCacheClassTests.ThreadIdTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceFilterClassTests.ShouldTraceTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests.Unindent
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.Write2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.FailTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.FlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.TraceEvent2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteLineObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.Fail2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteLineTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteLineObject2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteObject2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.TraceEvent1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_Default.WriteLine2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.Write2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.FailTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.FlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.TraceEvent2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteLineObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.Fail2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteLineTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteLineObject2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteObject2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.TraceEvent1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_AutoFlush.WriteLine2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.Write2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.FailTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.FlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.TraceEvent2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteLineObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.Fail2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteLineTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteLineObject2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteObject2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.TraceEvent1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock.WriteLine2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.Write2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.FailTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.FlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.TraceEvent2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteLineObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.Fail2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteLineTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteLineObject2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteObject2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.TraceEvent1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_NoGlobalLock_AutoFlush.WriteLine2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.Write2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.FailTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.FlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.TraceEvent2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteLineObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.Fail2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteLineTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteLineObject2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteObject2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.TraceEvent1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener.WriteLine2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.Write2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.FailTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.FlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.TraceEvent2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteLineObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.Fail2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteLineTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteLineObject2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteObject2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.TraceEvent1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceInternalTests_ThreadSafeListener_AutoFlush.WriteLine2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteLineObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest_LogicalOperationStack
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.NameTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.FilterTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceEventTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest_Timestamp
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceDataTest2
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteCategoryTest2
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteObjectTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest_DateTime
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceDataTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteCategoryTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceEventTest2
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest(opts: None, flagCount: 0)
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest(opts: Timestamp, flagCount: 1)
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest(opts: ProcessId | ThreadId, flagCount: 2)
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest(opts: DateTime | Timestamp, flagCount: 2)
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest(opts: DateTime | Timestamp | Callstack, flagCount: 3)
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteLineCategoryTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest_Callstack
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.IndentLevelTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: Callstack)
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: DateTime)
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: LogicalOperationStack)
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: None)
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: ProcessId)
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: ThreadId)
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Valid(options: Timestamp)
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteLineCategoryTest2
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.IndentTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest_ThreadId
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.IndentSizeTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.TraceOutputOptionsTest_Invalid(options: 128)
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerClassTests.WriteFooterTest_ProcessId
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.AddExceptionTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.CopyToTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.TraceListenerIndexerTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.AddRangeArrayTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.RemoveTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.GetEnumeratorTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.InsertExceptionTest2
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.RemoveByNameTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.RemoveListenerTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.SyncRootTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.InsertTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.InsertListenerTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IsReadOnlyTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.InsertExceptionTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IndexerGetTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IsFixedSizeTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.TraceListenerNameIndexerTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.CopyToListenerTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IndexerSetTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.RemoveAtTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.GetEnumeratorEmptyTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.AddRangeCollectionTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.AddListenerTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.ContainsTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IndexOfListenerTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.CopyToTest2
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IsSynchronizedTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.CountTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.IndexOfTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.CopyToExceptionTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceListenerCollectionClassTests.AddTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.DefaultLevelTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.NullSourceName
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.ConstructorExceptionTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.DefaultListenerTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.TraceInformationTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.EmptySourceName
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.PruneTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SetSourceSwitchTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SetSourceSwitchExceptionTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Off, messageLevel: Critical, expected: 0)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Critical, messageLevel: Critical, expected: 1)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Critical, messageLevel: Error, expected: 0)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Error, messageLevel: Error, expected: 1)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Error, messageLevel: Warning, expected: 0)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Warning, messageLevel: Warning, expected: 1)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Warning, messageLevel: Information, expected: 0)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Information, messageLevel: Information, expected: 1)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Information, messageLevel: Verbose, expected: 0)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Verbose, messageLevel: Verbose, expected: 1)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: All, messageLevel: Critical, expected: 1)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: All, messageLevel: Verbose, expected: 1)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: Verbose, messageLevel: 32, expected: 0)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.SwitchLevelTest(sourceLevel: All, messageLevel: 32, expected: 1)
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceClassTests.CloseTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.TraceEvent3Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.TraceTransferTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.FlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.TraceEvent1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.TraceData1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.TraceData2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_Default.TraceEvent2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.TraceEvent3Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.TraceTransferTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.FlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.TraceEvent1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.TraceData1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.TraceData2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_AutoFlush.TraceEvent2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.TraceEvent3Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.TraceTransferTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.FlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.TraceEvent1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.TraceData1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.TraceData2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock.TraceEvent2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.TraceEvent3Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.TraceTransferTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.FlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.TraceEvent1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.TraceData1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.TraceData2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_NoGlobalLock_AutoFlush.TraceEvent2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.TraceEvent3Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.TraceTransferTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.FlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.TraceEvent1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.TraceData1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.TraceData2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener.TraceEvent2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.TraceEvent3Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.TraceTransferTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.FlushTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.TraceEvent1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.TraceData1Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.TraceData2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSourceTests_ThreadSafeListener_AutoFlush.TraceEvent2Test
+[STRT] System.Diagnostics.TraceSourceTests.TraceSwitchClassTests.LevelTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSwitchClassTests.EnsureValueSynchronizedWIthLevel
+[STRT] System.Diagnostics.TraceSourceTests.TraceSwitchClassTests.ConstructorTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSwitchClassTests.ConstructorTest2
+[STRT] System.Diagnostics.TraceSourceTests.TraceSwitchClassTests.SwitchSettingChangedTest
+[STRT] System.Diagnostics.TraceSourceTests.TraceSwitchClassTests.TraceLevelTest(level: Off, error: False, warning: False, info: False, verbose: False)
+[STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_ActivityId
+[STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_ActivityIdAcrossAwait
+[STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_CheckStack
+[STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_NullOperationId
+[STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_MutateStackPop
+[STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_CorrelationAcrossAwait
+[STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_MutateStackPush
+[STRT] System.Diagnostics.TraceSourceTests.CorrelationManagerTests.CorrelationManager_EmptyStack
+Finished:    System.Diagnostics.TraceSource.Tests.dll
+Finished uploading 69024 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 288 Passed: 280 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 8
+
+test-main.js exiting WasmTestRunner.dll System.Diagnostics.TraceSource.Tests.dll after 0.02395 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0
