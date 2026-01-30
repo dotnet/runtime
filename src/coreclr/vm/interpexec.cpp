@@ -922,6 +922,19 @@ static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* p
     EEPolicy::HandleFatalStackOverflow(&exceptionInfo);
 }
 
+static void UpdateFrameForTailCall(InterpMethodContextFrame *pFrame, PTR_InterpByteCodeStart targetIp, int8_t *callArgsAddress)
+{
+    InterpMethod *pTargetMethod = targetIp->Method;
+    // Move args from callArgsOffset to start of stack frame.
+    _ASSERTE(pTargetMethod->CheckIntegrity());
+    // It is safe to use memcpy because the source and destination are both on the interp stack, not in the GC heap.
+    // We need to use the target method's argsSize, not our argsSize, because tail calls (unlike CEE_JMP) can have a
+    //  different signature from the caller.
+    memcpy(pFrame->pStack, callArgsAddress, pTargetMethod->argsSize);
+    // Reuse current stack frame. We discard the call insn's returnOffset because it's not important and tail calls are
+    //  required to be followed by a ret, so we know nothing is going to read from stack[returnOffset] after the call.
+    pFrame->ReInit(pFrame->pParent, targetIp, pFrame->pRetVal, pFrame->pStack);
+}
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
 {
@@ -977,7 +990,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     }
 
     int32_t returnOffset, callArgsOffset, methodSlot;
-    bool isTailcall = false;
+    bool frameNeedsTailcallUpdate = false;
     MethodDesc* targetMethod;
 
     SAVE_THE_LOWEST_SP;
@@ -2663,7 +2676,7 @@ MAIN_LOOP:
                 case INTOP_CALLVIRT_TAIL:
                 case INTOP_CALLVIRT:
                 {
-                    isTailcall = (*ip == INTOP_CALLVIRT_TAIL);
+                    frameNeedsTailcallUpdate = (*ip == INTOP_CALLVIRT_TAIL);
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
@@ -2688,7 +2701,7 @@ MAIN_LOOP:
                 case INTOP_CALLI_TAIL:
                 case INTOP_CALLI:
                 {
-                    isTailcall = (*ip == INTOP_CALLI_TAIL);
+                    frameNeedsTailcallUpdate = (*ip == INTOP_CALLI_TAIL);
                     returnOffset = ip[1];
                     int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
                     callArgsOffset = ip[2];
@@ -2722,7 +2735,7 @@ MAIN_LOOP:
 // somewhat expensive, we only do it for tailcalls which are relatively rare.
 // TODO-Interpreter: It is plausible that we might want to do the NonVirtualEntry2MethodDesc check for non-tailcall calli as well
 //                   or possibly a slight variant where we build a path for NonVitualEntry2MethodDesc which is lock-free but might fail
-                    else if (isTailcall && (targetMethod = NonVirtualEntry2MethodDesc(calliFunctionPointer)) != NULL)
+                    else if (frameNeedsTailcallUpdate && (targetMethod = NonVirtualEntry2MethodDesc(calliFunctionPointer)) != NULL)
                     {
                         goto CALL_INTERP_METHOD;
                     }
@@ -2752,7 +2765,7 @@ MAIN_LOOP:
                     // This opcode handles p/invokes that don't use a managed wrapper for marshaling. These
                     //  calls are special in that they need an InlinedCallFrame in order for proper EH to happen
 
-                    isTailcall = false;
+                    frameNeedsTailcallUpdate = false;
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     int8_t* callArgsAddress = LOCAL_VAR_ADDR(callArgsOffset, int8_t);
@@ -2786,7 +2799,7 @@ MAIN_LOOP:
                 case INTOP_CALLDELEGATE_TAIL:
                 case INTOP_CALLDELEGATE:
                 {
-                    isTailcall = (*ip == INTOP_CALLDELEGATE_TAIL);
+                    frameNeedsTailcallUpdate = (*ip == INTOP_CALLDELEGATE_TAIL);
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
@@ -2851,17 +2864,10 @@ MAIN_LOOP:
                         {
                             pFrame->ip = ip;
                             InterpMethod* pTargetMethod = targetIp->Method;
-                            if (isTailcall)
+                            if (frameNeedsTailcallUpdate)
                             {
-                                // Move args from callArgsOffset to start of stack frame.
-                                _ASSERTE(pTargetMethod->CheckIntegrity());
-                                // It is safe to use memcpy because the source and destination are both on the interp stack, not in the GC heap.
-                                // We need to use the target method's argsSize, not our argsSize, because tail calls (unlike CEE_JMP) can have a
-                                //  different signature from the caller.
-                                memcpy(pFrame->pStack, LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int8_t), pTargetMethod->argsSize);
-                                // Reuse current stack frame. We discard the call insn's returnOffset because it's not important and tail calls are
-                                //  required to be followed by a ret, so we know nothing is going to read from stack[returnOffset] after the call.
-                                pFrame->ReInit(pFrame->pParent, targetIp, pFrame->pRetVal, pFrame->pStack);
+                                UpdateFrameForTailCall(pFrame, targetIp, LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int8_t));
+                                frameNeedsTailcallUpdate = false;
                             }
                             else
                             {
@@ -2933,7 +2939,7 @@ MAIN_LOOP:
                 case INTOP_CALL_TAIL:
                 case INTOP_CALL:
                 {
-                    isTailcall = (*ip == INTOP_CALL_TAIL);
+                    frameNeedsTailcallUpdate = (*ip == INTOP_CALL_TAIL);
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
@@ -2988,18 +2994,11 @@ CALL_INTERP_METHOD:
                         }
                     }
 
-                    if (isTailcall)
+                    if (frameNeedsTailcallUpdate)
                     {
-                        // Move args from callArgsOffset to start of stack frame.
                         InterpMethod* pTargetMethod = targetIp->Method;
-                        _ASSERTE(pTargetMethod->CheckIntegrity());
-                        // It is safe to use memcpy because the source and destination are both on the interp stack, not in the GC heap.
-                        // We need to use the target method's argsSize, not our argsSize, because tail calls (unlike CEE_JMP) can have a
-                        //  different signature from the caller.
-                        memcpy(pFrame->pStack, callArgsAddress, pTargetMethod->argsSize);
-                        // Reuse current stack frame. We discard the call insn's returnOffset because it's not important and tail calls are
-                        //  required to be followed by a ret, so we know nothing is going to read from stack[returnOffset] after the call.
-                        pFrame->ReInit(pFrame->pParent, targetIp, pFrame->pRetVal, pFrame->pStack);
+                        UpdateFrameForTailCall(pFrame, targetIp, callArgsAddress);
+                        frameNeedsTailcallUpdate = false;
                     }
                     else
                     {
@@ -3039,7 +3038,6 @@ CALL_INTERP_METHOD:
                 }
                 case INTOP_NEWOBJ_GENERIC:
                 {
-                    isTailcall = false;
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[4];
@@ -3058,7 +3056,6 @@ CALL_INTERP_METHOD:
                 }
                 case INTOP_NEWOBJ:
                 {
-                    isTailcall = false;
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
@@ -3090,7 +3087,6 @@ CALL_INTERP_METHOD:
                 }
                 case INTOP_NEWOBJ_VT:
                 {
-                    isTailcall = false;
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
