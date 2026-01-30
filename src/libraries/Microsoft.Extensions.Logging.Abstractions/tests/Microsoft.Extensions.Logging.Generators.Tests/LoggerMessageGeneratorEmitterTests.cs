@@ -283,8 +283,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         [InlineData(@"Foo \"" bar: {foo}")]
         [InlineData(@"Foo \r bar: {foo}")]
         [InlineData(@"Foo \n bar: {foo}")]
-        [InlineData(@"Foo \x00 bar: {foo}")]
-        [InlineData(@"Foo \x1f bar: {foo}")]
+        [InlineData(@"Foo \u0000 bar: {foo}")]
+        [InlineData(@"Foo \u001f bar: {foo}")]
         public async Task EmittedMessageIsWellFormed(string message)
         {
             var code =

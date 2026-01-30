@@ -616,7 +616,7 @@ internal static class __LoggerMessageGenerator
                         break;
 
                     case < (char)0x20:
-                        sb.AppendFormat("\\x{0:x2}", (byte)s[index]);
+                        sb.AppendFormat("\\u{0:x4}", (byte)s[index]);
                         break;
 
                     case '\\':
