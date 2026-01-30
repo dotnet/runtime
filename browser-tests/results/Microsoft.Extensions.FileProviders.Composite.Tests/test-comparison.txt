@@ -1,0 +1,9 @@
+Test Comparison: Microsoft.Extensions.FileProviders.Composite.Tests
+Generated: 2026-01-30T01:38:49+01:00
+
+Mono tests:    13
+CoreCLR tests: 13
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

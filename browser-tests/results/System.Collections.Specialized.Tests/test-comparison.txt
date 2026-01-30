@@ -1,0 +1,10 @@
+Test Comparison: System.Collections.Specialized.Tests
+Generated: 2026-01-30T01:46:07+01:00
+
+Mono tests:    1910
+CoreCLR tests: 1911
+
+=== Extra in CoreCLR (1) ===
+System.Collections.Specialized.Tests.NameValueCollectionCtorTests.Ctor_NegativeCapacity_ThrowsArgumentOutOfRangeException
+
+=== Missing in CoreCLR (0) ===

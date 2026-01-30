@@ -1,0 +1,9 @@
+Test Comparison: System.Collections.NonGeneric.Tests
+Generated: 2026-01-30T01:45:51+01:00
+
+Mono tests:    3955
+CoreCLR tests: 3955
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

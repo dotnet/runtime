@@ -1,0 +1,9 @@
+Test Comparison: Microsoft.Extensions.Configuration.UserSecrets.Tests
+Generated: 2026-01-30T01:38:33+01:00
+
+Mono tests:    15
+CoreCLR tests: 15
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

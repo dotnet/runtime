@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.ComponentModel.EventBasedAsync.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="00:36:02" total="46" passed="32" failed="0" skipped="14" time="0.138" errors="0">
+    <errors />
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests" time="0.006">
+      <test name="System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.CtorTest(expectedResult: null)" type="System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests" method="CtorTest" time="0.0035" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.CtorTest(expectedResult: \&quot;non null\&quot;)" type="System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests" method="CtorTest" time="0.0002" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.ResultPropertyTest(expectedResult: 42, expectedError: null, cancelled: False, expectedExceptionType: null)" type="System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests" method="ResultPropertyTest" time="0.0010999" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.ResultPropertyTest(expectedResult: null, expectedError: null, cancelled: True, expectedExceptionType: typeof(System.InvalidOperationException))" type="System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests" method="ResultPropertyTest" time="0.0008999" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.ResultPropertyTest(expectedResult: null, expectedError: System.FormatException: One of the identified items was in an invalid format., cancelled: False, expectedExceptionType: typeof(System.FormatException))" type="System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests" method="ResultPropertyTest" time="0.0003" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.ResultPropertyTest(expectedResult: null, expectedError: System.DllNotFoundException: Dll was not found., cancelled: True, expectedExceptionType: typeof(System.DllNotFoundException))" type="System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests" method="ResultPropertyTest" time="0" result="Pass" />
+    </collection>
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests" time="0.002">
+      <test name="System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.CtorTest(expectedArgument: null)" type="System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests" method="CtorTest" time="0.0005" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.CtorTest(expectedArgument: \&quot;non null test argument\&quot;)" type="System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests" method="CtorTest" time="0.0003" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.CancelPropertyTest(expectedCancel: True)" type="System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests" method="CancelPropertyTest" time="0.0007" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.CancelPropertyTest(expectedCancel: False)" type="System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests" method="CancelPropertyTest" time="0.0000999" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.ResultPropertyTest(expectedResult: null)" type="System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests" method="ResultPropertyTest" time="0.0001" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.ResultPropertyTest(expectedResult: \&quot;non null test result\&quot;)" type="System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests" method="ResultPropertyTest" time="0.0001" result="Pass" />
+    </collection>
+    <collection total="2" passed="0" failed="0" skipped="2" name="Test collection for System.ComponentModel.Tests.AsyncOperationFinalizerTests" time="0.000">
+      <test name="System.ComponentModel.Tests.AsyncOperationFinalizerTests.Finalizer_OperationCompleted_DoesNotCallOperationCompleted" type="System.ComponentModel.Tests.AsyncOperationFinalizerTests" method="Finalizer_OperationCompleted_DoesNotCallOperationCompleted" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.ComponentModel.Tests.AsyncOperationFinalizerTests.Finalizer_OperationNotCompleted_CompletesOperation" type="System.ComponentModel.Tests.AsyncOperationFinalizerTests" method="Finalizer_OperationNotCompleted_CompletesOperation" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsPreciseGcSupportedAndRemoteExecutorSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="13" passed="6" failed="0" skipped="7" name="Test collection for System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" time="0.006">
+      <test name="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.CtorTest" type="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" method="CtorTest" time="0.0003" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestCancelInsideDoWork" type="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" method="TestCancelInsideDoWork" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.RunWorkerAsync_NoOnWorkHandler_SetsResultToNull" type="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" method="RunWorkerAsync_NoOnWorkHandler_SetsResultToNull" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestFinalization" type="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" method="TestFinalization" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsPreciseGcSupported\"]]></reason>
+      </test>
+      <test name="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestCancelAsync" type="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" method="TestCancelAsync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestThrowExceptionInDoWork" type="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" method="TestThrowExceptionInDoWork" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestBackgroundWorkerBasic" type="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" method="TestBackgroundWorkerBasic" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.RunWorkerAsyncTwice" type="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" method="RunWorkerAsyncTwice" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.ReportProgress_NoProgressHandle_Nop" type="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" method="ReportProgress_NoProgressHandle_Nop" time="0.0006" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestCancelAsyncWithoutCancellationSupport" type="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" method="TestCancelAsyncWithoutCancellationSupport" time="0.0008" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.DisposeTwiceShouldNotThrow" type="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" method="DisposeTwiceShouldNotThrow" time="0.0001" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestReportProgressWithWorkerReportsProgressFalse" type="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" method="TestReportProgressWithWorkerReportsProgressFalse" time="0.0004" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestReportProgressSync" type="System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests" method="TestReportProgressSync" time="0.0033" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for System.ComponentModel.EventBasedAsync.Tests.AsyncOperationManagerTests" time="0.000">
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationManagerTests.SetNullSynchronizationContext" type="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationManagerTests" method="SetNullSynchronizationContext" time="0.0002" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationManagerTests.SetNonNullSynchronizationContext" type="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationManagerTests" method="SetNonNullSynchronizationContext" time="0.0001" result="Pass" />
+    </collection>
+    <collection total="8" passed="8" failed="0" skipped="0" name="Test collection for System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests" time="0.001">
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.CtorTest(expectedException: null, expectedCancelled: False, expectedState: null)" type="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests" method="CtorTest" time="0.0001" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.CtorTest(expectedException: null, expectedCancelled: True, expectedState: typeof(System.InvalidOperationException))" type="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests" method="CtorTest" time="0.0002" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.CtorTest(expectedException: System.FormatException: One of the identified items was in an invalid format., expectedCancelled: False, expectedState: typeof(System.FormatException))" type="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests" method="CtorTest" time="0.0001" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.CtorTest(expectedException: System.DllNotFoundException: Dll was not found., expectedCancelled: True, expectedState: typeof(System.DllNotFoundException))" type="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests" method="CtorTest" time="0" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.RaiseExceptionIfNecessaryTest(expectedError: null, cancelled: False, expectedExceptionType: null)" type="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests" method="RaiseExceptionIfNecessaryTest" time="0.0003" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.RaiseExceptionIfNecessaryTest(expectedError: null, cancelled: True, expectedExceptionType: typeof(System.InvalidOperationException))" type="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests" method="RaiseExceptionIfNecessaryTest" time="0.0004" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.RaiseExceptionIfNecessaryTest(expectedError: System.FormatException: One of the identified items was in an invalid format., cancelled: False, expectedExceptionType: typeof(System.FormatException))" type="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests" method="RaiseExceptionIfNecessaryTest" time="0.0002" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.RaiseExceptionIfNecessaryTest(expectedError: System.DllNotFoundException: Dll was not found., cancelled: True, expectedExceptionType: typeof(System.DllNotFoundException))" type="System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests" method="RaiseExceptionIfNecessaryTest" time="0" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.ComponentModel.EventBasedAsync.Tests.ProgressChangedEventArgsTests" time="0.001">
+      <test name="System.ComponentModel.EventBasedAsync.Tests.ProgressChangedEventArgsTests.CtorAcceptsValuesAsIs(expectedPercentage: -2147483648, expectedState: null)" type="System.ComponentModel.EventBasedAsync.Tests.ProgressChangedEventArgsTests" method="CtorAcceptsValuesAsIs" time="0.001" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.ProgressChangedEventArgsTests.CtorAcceptsValuesAsIs(expectedPercentage: 0, expectedState: \&quot;non null test state\&quot;)" type="System.ComponentModel.EventBasedAsync.Tests.ProgressChangedEventArgsTests" method="CtorAcceptsValuesAsIs" time="0.0003" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.ProgressChangedEventArgsTests.CtorAcceptsValuesAsIs(expectedPercentage: 2147483647, expectedState: \&quot;non null test state\&quot;)" type="System.ComponentModel.EventBasedAsync.Tests.ProgressChangedEventArgsTests" method="CtorAcceptsValuesAsIs" time="0" result="Pass" />
+    </collection>
+    <collection total="6" passed="1" failed="0" skipped="5" name="Test collection for System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests" time="0.001">
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.ThrowAfterAsyncComplete" type="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests" method="ThrowAfterAsyncComplete" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.Cancel" type="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests" method="Cancel" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.Noop" type="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests" method="Noop" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.PostNullDelegate" type="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests" method="PostNullDelegate" time="0.0006" result="Pass" />
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.ThrowAfterSynchronousComplete" type="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests" method="ThrowAfterSynchronousComplete" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.Throw" type="System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests" method="Throw" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+  </assembly>
+</assemblies>

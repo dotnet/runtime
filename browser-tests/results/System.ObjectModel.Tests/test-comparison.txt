@@ -1,0 +1,9 @@
+Test Comparison: System.ObjectModel.Tests
+Generated: 2026-01-30T01:47:04+01:00
+
+Mono tests:    2173
+CoreCLR tests: 2173
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

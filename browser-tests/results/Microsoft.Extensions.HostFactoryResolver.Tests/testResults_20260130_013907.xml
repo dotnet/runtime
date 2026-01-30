@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="Microsoft.Extensions.HostFactoryResolver.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="00:39:05" total="24" passed="2" failed="0" skipped="22" time="0.069" errors="0">
+    <errors />
+    <collection total="24" passed="2" failed="0" skipped="22" name="Test collection for Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" time="0.005">
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.CreateHostBuilderPattern__Invalid_CantFindHostBuilder" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="CreateHostBuilderPattern__Invalid_CantFindHostBuilder" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.NoSpecialEntryPointPatternExits" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="NoSpecialEntryPointPatternExits" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.BuildWebHostPattern__Invalid_CantFindServiceProvider" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="BuildWebHostPattern__Invalid_CantFindServiceProvider" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.BuildWebHostPattern_CanFindWebHost" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="BuildWebHostPattern_CanFindWebHost" time="0.0045999" result="Pass" />
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.NoSpecialEntryPointPatternHostBuilderConfigureHostBuilderCallbackIsCalled" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="NoSpecialEntryPointPatternHostBuilderConfigureHostBuilderCallbackIsCalled" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.BuildWebHostPattern_CanFindServiceProvider" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="BuildWebHostPattern_CanFindServiceProvider" time="0.0009" result="Pass" />
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.NoSpecialEntryPointPatternThrows" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="NoSpecialEntryPointPatternThrows" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.NoSpecialEntryPointPatternMainNoArgs" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="NoSpecialEntryPointPatternMainNoArgs" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.CreateWebHostBuilderPattern_CanFindServiceProvider" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="CreateWebHostBuilderPattern_CanFindServiceProvider" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.NoSpecialEntryPointPatternBuildsThenThrowsCallsEntryPointCompletedCallback" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="NoSpecialEntryPointPatternBuildsThenThrowsCallsEntryPointCompletedCallback" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.NoSpecialEntryPointPatternHangs" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="NoSpecialEntryPointPatternHangs" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.CreateHostBuilderPattern_CanFindServiceProvider" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="CreateHostBuilderPattern_CanFindServiceProvider" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.CreateWebHostBuilderPattern__InvalidReturnType_CanFindServiceProvider" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="CreateWebHostBuilderPattern__InvalidReturnType_CanFindServiceProvider" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.CreateHostBuilderPattern_CanFindHostBuilder" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="CreateHostBuilderPattern_CanFindHostBuilder" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.TopLevelStatementsTestsTimeout" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="TopLevelStatementsTestsTimeout" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.BuildWebHostPattern__Invalid_CantFindWebHost" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="BuildWebHostPattern__Invalid_CantFindWebHost" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.ApplicationNameSetFromArgument" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="ApplicationNameSetFromArgument" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.NoSpecialEntryPointPatternCanRunInParallel" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="NoSpecialEntryPointPatternCanRunInParallel" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.NoSpecialEntryPointPattern" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="NoSpecialEntryPointPattern" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.NoSpecialEntryPointPatternBuildsThenThrowsCallsEntryPointCompletedCallbackWithException" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="NoSpecialEntryPointPatternBuildsThenThrowsCallsEntryPointCompletedCallbackWithException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.TopLevelStatements" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="TopLevelStatements" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.CreateWebHostBuilderPattern__Invalid_CantFindWebHostBuilder" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="CreateWebHostBuilderPattern__Invalid_CantFindWebHostBuilder" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.CreateWebHostBuilderPattern_CanFindWebHostBuilder" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="CreateWebHostBuilderPattern_CanFindWebHostBuilder" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests.CreateHostBuilderPattern__Invalid_CantFindServiceProvider" type="Microsoft.Extensions.Hosting.Tests.HostFactoryResolverTests" method="CreateHostBuilderPattern__Invalid_CantFindServiceProvider" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+  </assembly>
+</assemblies>

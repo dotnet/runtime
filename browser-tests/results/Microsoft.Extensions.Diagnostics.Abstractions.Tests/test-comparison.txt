@@ -1,0 +1,9 @@
+Test Comparison: Microsoft.Extensions.Diagnostics.Abstractions.Tests
+Generated: 2026-01-30T01:38:42+01:00
+
+Mono tests:    28
+CoreCLR tests: 28
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

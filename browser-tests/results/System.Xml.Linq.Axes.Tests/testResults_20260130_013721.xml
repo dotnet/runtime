@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Xml.Linq.Axes.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="00:37:20" total="36" passed="36" failed="0" skipped="0" time="0.108" errors="0">
+    <errors />
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for System.Xml.Linq.Tests.XNodeAxesWithXName" time="0.006">
+      <test name="System.Xml.Linq.Tests.XNodeAxesWithXName.NullXNameTestElement" type="System.Xml.Linq.Tests.XNodeAxesWithXName" method="NullXNameTestElement" time="0.0046" result="Pass" />
+      <test name="System.Xml.Linq.Tests.XNodeAxesWithXName.NullXNameTestElements" type="System.Xml.Linq.Tests.XNodeAxesWithXName" method="NullXNameTestElements" time="0.0011999" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Xml.Linq.Tests.IEnumerableAttributeAxesWithXName" time="0.001">
+      <test name="System.Xml.Linq.Tests.IEnumerableAttributeAxesWithXName.NullXNameTest" type="System.Xml.Linq.Tests.IEnumerableAttributeAxesWithXName" method="NullXNameTest" time="0.0006" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.Xml.Linq.Tests.XAttributeAxesWithXName" time="0.010">
+      <test name="System.Xml.Linq.Tests.XAttributeAxesWithXName.NullXNameTestAttributes" type="System.Xml.Linq.Tests.XAttributeAxesWithXName" method="NullXNameTestAttributes" time="0.0002999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.XAttributeAxesWithXName.InvalidXNameTest" type="System.Xml.Linq.Tests.XAttributeAxesWithXName" method="InvalidXNameTest" time="0.0099" result="Pass" />
+      <test name="System.Xml.Linq.Tests.XAttributeAxesWithXName.NullXNameTestAttribute" type="System.Xml.Linq.Tests.XAttributeAxesWithXName" method="NullXNameTestAttribute" time="0.0000999" result="Pass" />
+    </collection>
+    <collection total="30" passed="30" failed="0" skipped="0" name="Test collection for System.Xml.Linq.Tests.AxisOrderValidation" time="0.011">
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.DescendantsWithXNameOnXDocBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="DescendantsWithXNameOnXDocBeforeAndAfter" time="0.0007999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.IEnumerableInDocumentOrderVariationTwo" type="System.Xml.Linq.Tests.AxisOrderValidation" method="IEnumerableInDocumentOrderVariationTwo" time="0.0017" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.IEnumerableInDocumentOrderVariationOne" type="System.Xml.Linq.Tests.AxisOrderValidation" method="IEnumerableInDocumentOrderVariationOne" time="0.0006999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.AncestorsBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="AncestorsBeforeAndAfter" time="0.0003" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.DescendantsOnXElementBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="DescendantsOnXElementBeforeAndAfter" time="0.0002" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.DescendantNodesAndSelfBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="DescendantNodesAndSelfBeforeAndAfter" time="0.0001999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.ElementsWithXNameOnXDocBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="ElementsWithXNameOnXDocBeforeAndAfter" time="0.0001999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.DescendantsOnXDocBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="DescendantsOnXDocBeforeAndAfter" time="0.0000999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.NodesBeforeSelfBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="NodesBeforeSelfBeforeAndAfter" time="0.0002999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.AttributeWithXNameBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="AttributeWithXNameBeforeAndAfter" time="0.0003" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.ElementsBeforeSelfBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="ElementsBeforeSelfBeforeAndAfter" time="0.0005" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.NodesOnXElementBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="NodesOnXElementBeforeAndAfter" time="0.0004" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.AttributesBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="AttributesBeforeAndAfter" time="0.0002999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.DescendantsAndSelfBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="DescendantsAndSelfBeforeAndAfter" time="0.0001" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.AncestorsAndSelfWithXNameBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="AncestorsAndSelfWithXNameBeforeAndAfter" time="0.0002" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.DescendantNodesOnXElementBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="DescendantNodesOnXElementBeforeAndAfter" time="0.0002" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.ElementsAfterSelfWithXNameBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="ElementsAfterSelfWithXNameBeforeAndAfter" time="0.0005" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.DescendantsWithXNameOnXElementBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="DescendantsWithXNameOnXElementBeforeAndAfter" time="0.0001" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.DescendantNodesOnXDocBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="DescendantNodesOnXDocBeforeAndAfter" time="0.0001999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.ElementsWithXNameOnXElementBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="ElementsWithXNameOnXElementBeforeAndAfter" time="0.0000999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.ElementsOnXElementBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="ElementsOnXElementBeforeAndAfter" time="0.0002" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.DescendantsAndSelfWithXNameBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="DescendantsAndSelfWithXNameBeforeAndAfter" time="0.0003" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.NodesOnXDocBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="NodesOnXDocBeforeAndAfter" time="0.0001" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.AncestorsWithXNameBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="AncestorsWithXNameBeforeAndAfter" time="0.0001999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.ElementsBeforeSelfWithXNameBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="ElementsBeforeSelfWithXNameBeforeAndAfter" time="0.0001999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.ReorderToDocumentOrder" type="System.Xml.Linq.Tests.AxisOrderValidation" method="ReorderToDocumentOrder" time="0.0017" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.ElementsAfterSelfBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="ElementsAfterSelfBeforeAndAfter" time="0.0001999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.AncestorsAndSelfBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="AncestorsAndSelfBeforeAndAfter" time="0.0001999" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.ElementsOnXDocBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="ElementsOnXDocBeforeAndAfter" time="0.0001" result="Pass" />
+      <test name="System.Xml.Linq.Tests.AxisOrderValidation.NodesAfterSelfBeforeAndAfter" type="System.Xml.Linq.Tests.AxisOrderValidation" method="NodesAfterSelfBeforeAndAfter" time="0.0004" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

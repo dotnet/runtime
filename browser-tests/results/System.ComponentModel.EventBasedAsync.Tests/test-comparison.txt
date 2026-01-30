@@ -1,0 +1,9 @@
+Test Comparison: System.ComponentModel.EventBasedAsync.Tests
+Generated: 2026-01-30T01:36:03+01:00
+
+Mono tests:    55
+CoreCLR tests: 55
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

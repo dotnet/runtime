@@ -1,0 +1,339 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Security.Principal.Windows.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="00:42:38" total="30" passed="1" failed="26" skipped="3" time="0.183" errors="0">
+    <errors />
+    <collection total="1" passed="0" failed="1" skipped="0" name="Test collection for System.Security.Principal.Windows.Tests.NTAccountTest" time="0.005">
+      <test name="System.Security.Principal.Windows.Tests.NTAccountTest.Translate_Fail" type="System.Security.Principal.Windows.Tests.NTAccountTest" method="Translate_Fail" time="0.0051999" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.IdentityReference..ctor()
+   at System.Security.Principal.NTAccount..ctor(String name)
+   at System.Security.Principal.Windows.Tests.NTAccountTest.Translate_Fail()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+    </collection>
+    <collection total="11" passed="0" failed="11" skipped="0" name="Test collection for WindowsIdentityTests" time="0.005">
+      <test name="WindowsIdentityTests.RunImpersonatedTest_InvalidHandle" type="WindowsIdentityTests" method="RunImpersonatedTest_InvalidHandle" time="0.0012" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at Microsoft.Win32.SafeHandles.SafeAccessTokenHandle..ctor(IntPtr handle)
+   at WindowsIdentityTests.RunImpersonatedTest_InvalidHandle()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WindowsIdentityTests.AuthenticationCtor(authentication: True)" type="WindowsIdentityTests" method="AuthenticationCtor" time="0.0005" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent()
+   at WindowsIdentityTests.TestUsingAccessToken(Action`1 ctorOrPropertyTest)
+   at WindowsIdentityTests.AuthenticationCtor(Boolean authentication)
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WindowsIdentityTests.AuthenticationCtor(authentication: False)" type="WindowsIdentityTests" method="AuthenticationCtor" time="0.0003" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent()
+   at WindowsIdentityTests.TestUsingAccessToken(Action`1 ctorOrPropertyTest)
+   at WindowsIdentityTests.AuthenticationCtor(Boolean authentication)
+   at InvokeStub_WindowsIdentityTests.AuthenticationCtor(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WindowsIdentityTests.WindowsAccountTypeCtor" type="WindowsIdentityTests" method="WindowsAccountTypeCtor" time="0.0003" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent()
+   at WindowsIdentityTests.TestUsingAccessToken(Action`1 ctorOrPropertyTest)
+   at WindowsIdentityTests.WindowsAccountTypeCtor()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WindowsIdentityTests.CheckDeviceClaims" type="WindowsIdentityTests" method="CheckDeviceClaims" time="0.0004" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent()
+   at WindowsIdentityTests.CheckDeviceClaims()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WindowsIdentityTests.RunImpersonatedAsyncTest" type="WindowsIdentityTests" method="RunImpersonatedAsyncTest" time="0.0007" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent()
+   at WindowsIdentityTests.BeginTask(RunImpersonatedAsyncTestInfo testInfo)
+   at WindowsIdentityTests.RunImpersonatedAsyncTest()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WindowsIdentityTests.CloneAndProperties" type="WindowsIdentityTests" method="CloneAndProperties" time="0.0002999" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent()
+   at WindowsIdentityTests.TestUsingAccessToken(Action`1 ctorOrPropertyTest)
+   at WindowsIdentityTests.CloneAndProperties()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WindowsIdentityTests.GetAnonymousUserTest" type="WindowsIdentityTests" method="GetAnonymousUserTest" time="0.0004" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetAnonymous()
+   at WindowsIdentityTests.GetAnonymousUserTest()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WindowsIdentityTests.CheckUserClaims" type="WindowsIdentityTests" method="CheckUserClaims" time="0.0005999" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent()
+   at WindowsIdentityTests.CheckUserClaims()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WindowsIdentityTests.GetTokenHandle" type="WindowsIdentityTests" method="GetTokenHandle" time="0.0004" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent()
+   at WindowsIdentityTests.GetTokenHandle()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WindowsIdentityTests.ConstructorsAndProperties" type="WindowsIdentityTests" method="ConstructorsAndProperties" time="0.0003999" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent()
+   at WindowsIdentityTests.TestUsingAccessToken(Action`1 ctorOrPropertyTest)
+   at WindowsIdentityTests.ConstructorsAndProperties()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+    </collection>
+    <collection total="3" passed="0" failed="3" skipped="0" name="Test collection for WindowsPrincipalTests" time="0.001">
+      <test name="WindowsPrincipalTests.CheckUserClaims" type="WindowsPrincipalTests" method="CheckUserClaims" time="0.0006" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent()
+   at WindowsPrincipalTests.CheckUserClaims()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WindowsPrincipalTests.WindowsPrincipalIsInRoleNeg" type="WindowsPrincipalTests" method="WindowsPrincipalIsInRoleNeg" time="0.0004" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetAnonymous()
+   at WindowsPrincipalTests.WindowsPrincipalIsInRoleNeg()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WindowsPrincipalTests.CheckDeviceClaims" type="WindowsPrincipalTests" method="CheckDeviceClaims" time="0.0004" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent()
+   at WindowsPrincipalTests.CheckDeviceClaims()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+    </collection>
+    <collection total="6" passed="1" failed="2" skipped="3" name="Test collection for WellKnownSidTypeTests" time="0.003">
+      <test name="WellKnownSidTypeTests.CompareTo_Null" type="WellKnownSidTypeTests" method="CompareTo_Null" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"AccountIsDomainJoined (TargetInvocationException)\"]]></reason>
+      </test>
+      <test name="WellKnownSidTypeTests.CanCreateSecurityIdentifierFromWellKnownSidType_Netcoreapp" type="WellKnownSidTypeTests" method="CanCreateSecurityIdentifierFromWellKnownSidType_Netcoreapp" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"AccountIsDomainJoined (TargetInvocationException)\"]]></reason>
+      </test>
+      <test name="WellKnownSidTypeTests.CreatingSecurityIdentifierOutsideWellKnownSidTypeDefinedRangeThrowsException(sidType: -1)" type="WellKnownSidTypeTests" method="CreatingSecurityIdentifierOutsideWellKnownSidTypeDefinedRangeThrowsException" time="0.0005" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent()
+   at WellKnownSidTypeTests.CreatingSecurityIdentifierOutsideWellKnownSidTypeDefinedRangeThrowsException(WellKnownSidType sidType)
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WellKnownSidTypeTests.CreatingSecurityIdentifierOutsideWellKnownSidTypeDefinedRangeThrowsException(sidType: 95)" type="WellKnownSidTypeTests" method="CreatingSecurityIdentifierOutsideWellKnownSidTypeDefinedRangeThrowsException" time="0.0003999" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent()
+   at WellKnownSidTypeTests.CreatingSecurityIdentifierOutsideWellKnownSidTypeDefinedRangeThrowsException(WellKnownSidType sidType)
+   at InvokeStub_WellKnownSidTypeTests.CreatingSecurityIdentifierOutsideWellKnownSidTypeDefinedRangeThrowsException(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithOneArg(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="WellKnownSidTypeTests.MaxDefinedHasLegacyValue" type="WellKnownSidTypeTests" method="MaxDefinedHasLegacyValue" time="0.0017" result="Pass" />
+      <test name="WellKnownSidTypeTests.CanCreateSecurityIdentifierFromWellKnownSidType" type="WellKnownSidTypeTests" method="CanCreateSecurityIdentifierFromWellKnownSidType" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"AccountIsDomainJoined (TargetInvocationException)\"]]></reason>
+      </test>
+    </collection>
+    <collection total="9" passed="0" failed="9" skipped="0" name="Test collection for SecurityIdentifierTests" time="0.006">
+      <test name="SecurityIdentifierTests.ValidateToString" type="SecurityIdentifierTests" method="ValidateToString" time="0.0005" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent(Boolean ifImpersonating)
+   at SecurityIdentifierTests.ValidateToString()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="SecurityIdentifierTests.SecurityIdentifierBinaryCtorThrowsOnNegativeOffset" type="SecurityIdentifierTests" method="SecurityIdentifierBinaryCtorThrowsOnNegativeOffset" time="0.0016" result="Fail">
+        <failure exception-type="Xunit.Sdk.ThrowsException">
+          <message><![CDATA[Assert.Throws() Failure: Exception type was not an exact match\nExpected: typeof(System.ArgumentOutOfRangeException)\nActual:   typeof(System.PlatformNotSupportedException)\n---- System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.AssertExtensions.Throws[T](String expectedParamName, Func`1 testCode)
+   at SecurityIdentifierTests.SecurityIdentifierBinaryCtorThrowsOnNegativeOffset()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+----- Inner Stack Trace -----
+   at System.Security.Principal.IdentityReference..ctor()
+   at System.Security.Principal.SecurityIdentifier..ctor(Byte[] binaryForm, Int32 offset)
+   at SecurityIdentifierTests.<>c.<SecurityIdentifierBinaryCtorThrowsOnNegativeOffset>b__2_0()]]></stack-trace>
+        </failure>
+      </test>
+      <test name="SecurityIdentifierTests.SecurityIdentifierBinaryCtorThrowsOnExcessiveOffset" type="SecurityIdentifierTests" method="SecurityIdentifierBinaryCtorThrowsOnExcessiveOffset" time="0.0005" result="Fail">
+        <failure exception-type="Xunit.Sdk.ThrowsException">
+          <message><![CDATA[Assert.Throws() Failure: Exception type was not an exact match\nExpected: typeof(System.ArgumentOutOfRangeException)\nActual:   typeof(System.PlatformNotSupportedException)\n---- System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.AssertExtensions.Throws[T](String expectedParamName, Func`1 testCode)
+   at SecurityIdentifierTests.SecurityIdentifierBinaryCtorThrowsOnExcessiveOffset()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+----- Inner Stack Trace -----
+   at System.Security.Principal.IdentityReference..ctor()
+   at System.Security.Principal.SecurityIdentifier..ctor(Byte[] binaryForm, Int32 offset)
+   at SecurityIdentifierTests.<>c.<SecurityIdentifierBinaryCtorThrowsOnExcessiveOffset>b__3_0()]]></stack-trace>
+        </failure>
+      </test>
+      <test name="SecurityIdentifierTests.SecurityIdentifierBinaryCtorThrowsOnTooManySubAuthorities" type="SecurityIdentifierTests" method="SecurityIdentifierBinaryCtorThrowsOnTooManySubAuthorities" time="0.0004" result="Fail">
+        <failure exception-type="Xunit.Sdk.ThrowsException">
+          <message><![CDATA[Assert.Throws() Failure: Exception type was not an exact match\nExpected: typeof(System.ArgumentException)\nActual:   typeof(System.PlatformNotSupportedException)\n---- System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.AssertExtensions.Throws[T](String expectedParamName, Func`1 testCode)
+   at SecurityIdentifierTests.SecurityIdentifierBinaryCtorThrowsOnTooManySubAuthorities()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+----- Inner Stack Trace -----
+   at System.Security.Principal.IdentityReference..ctor()
+   at System.Security.Principal.SecurityIdentifier..ctor(Byte[] binaryForm, Int32 offset)
+   at SecurityIdentifierTests.<>c.<SecurityIdentifierBinaryCtorThrowsOnTooManySubAuthorities>b__5_0()]]></stack-trace>
+        </failure>
+      </test>
+      <test name="SecurityIdentifierTests.ValidateToStringUsingWhoami" type="SecurityIdentifierTests" method="ValidateToStringUsingWhoami" time="0.0011" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent(Boolean ifImpersonating)
+   at SecurityIdentifierTests.ValidateToStringUsingWhoami()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="SecurityIdentifierTests.SecurityIdentifierBinaryCtorThrowsOnEmpty" type="SecurityIdentifierTests" method="SecurityIdentifierBinaryCtorThrowsOnEmpty" time="0.0007" result="Fail">
+        <failure exception-type="Xunit.Sdk.ThrowsException">
+          <message><![CDATA[Assert.Throws() Failure: Exception type was not an exact match\nExpected: typeof(System.ArgumentOutOfRangeException)\nActual:   typeof(System.PlatformNotSupportedException)\n---- System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.AssertExtensions.Throws[T](String expectedParamName, Func`1 testCode)
+   at SecurityIdentifierTests.SecurityIdentifierBinaryCtorThrowsOnEmpty()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+----- Inner Stack Trace -----
+   at System.Security.Principal.IdentityReference..ctor()
+   at System.Security.Principal.SecurityIdentifier..ctor(Byte[] binaryForm, Int32 offset)
+   at SecurityIdentifierTests.<>c.<SecurityIdentifierBinaryCtorThrowsOnEmpty>b__1_0()]]></stack-trace>
+        </failure>
+      </test>
+      <test name="SecurityIdentifierTests.SecurityIdentifierBinaryCtorThrowsOnNull" type="SecurityIdentifierTests" method="SecurityIdentifierBinaryCtorThrowsOnNull" time="0.0007" result="Fail">
+        <failure exception-type="Xunit.Sdk.ThrowsException">
+          <message><![CDATA[Assert.Throws() Failure: Exception type was not an exact match\nExpected: typeof(System.ArgumentNullException)\nActual:   typeof(System.PlatformNotSupportedException)\n---- System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.AssertExtensions.Throws[T](String expectedParamName, Func`1 testCode)
+   at SecurityIdentifierTests.SecurityIdentifierBinaryCtorThrowsOnNull()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+----- Inner Stack Trace -----
+   at System.Security.Principal.IdentityReference..ctor()
+   at System.Security.Principal.SecurityIdentifier..ctor(Byte[] binaryForm, Int32 offset)
+   at SecurityIdentifierTests.<>c.<SecurityIdentifierBinaryCtorThrowsOnNull>b__0_0()]]></stack-trace>
+        </failure>
+      </test>
+      <test name="SecurityIdentifierTests.ValidateGetCurrentUser" type="SecurityIdentifierTests" method="ValidateGetCurrentUser" time="0.0004999" result="Fail">
+        <failure exception-type="System.PlatformNotSupportedException">
+          <message><![CDATA[System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.Security.Principal.WindowsIdentity.GetCurrent(Boolean ifImpersonating)
+   at SecurityIdentifierTests.ValidateGetCurrentUser()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)]]></stack-trace>
+        </failure>
+      </test>
+      <test name="SecurityIdentifierTests.SecurityIdentifierBinaryCtorThrowsOnInvalidRevision" type="SecurityIdentifierTests" method="SecurityIdentifierBinaryCtorThrowsOnInvalidRevision" time="0.0005" result="Fail">
+        <failure exception-type="Xunit.Sdk.ThrowsException">
+          <message><![CDATA[Assert.Throws() Failure: Exception type was not an exact match\nExpected: typeof(System.ArgumentException)\nActual:   typeof(System.PlatformNotSupportedException)\n---- System.PlatformNotSupportedException : Windows Principal functionality is not supported on this platform.]]></message>
+          <stack-trace><![CDATA[   at System.AssertExtensions.Throws[T](String expectedParamName, Func`1 testCode)
+   at SecurityIdentifierTests.SecurityIdentifierBinaryCtorThrowsOnInvalidRevision()
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+----- Inner Stack Trace -----
+   at System.Security.Principal.IdentityReference..ctor()
+   at System.Security.Principal.SecurityIdentifier..ctor(Byte[] binaryForm, Int32 offset)
+   at SecurityIdentifierTests.<>c.<SecurityIdentifierBinaryCtorThrowsOnInvalidRevision>b__4_0()]]></stack-trace>
+        </failure>
+      </test>
+    </collection>
+  </assembly>
+</assemblies>

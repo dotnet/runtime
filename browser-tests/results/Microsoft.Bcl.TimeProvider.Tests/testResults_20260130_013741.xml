@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="Microsoft.Bcl.TimeProvider.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="00:37:40" total="14" passed="8" failed="0" skipped="6" time="0.200" errors="0">
+    <errors />
+    <collection total="14" passed="8" failed="0" skipped="6" name="Test collection for Tests.System.TimeProviderTests" time="0.144">
+      <test name="Tests.System.TimeProviderTests.TestDelayTaskContinuation" type="Tests.System.TimeProviderTests" method="TestDelayTaskContinuation" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Tests.System.TimeProviderTests.TestUtcSystemTime" type="Tests.System.TimeProviderTests" method="TestUtcSystemTime" time="0.005" result="Pass" />
+      <test name="Tests.System.TimeProviderTests.TestSystemProviderWithTimeZone" type="Tests.System.TimeProviderTests" method="TestSystemProviderWithTimeZone" time="0.0106" result="Pass" />
+      <test name="Tests.System.TimeProviderTests.FastClockTest" type="Tests.System.TimeProviderTests" method="FastClockTest" time="0.0145" result="Pass" />
+      <test name="Tests.System.TimeProviderTests.NegativeTests" type="Tests.System.TimeProviderTests" method="NegativeTests" time="0.0098" result="Pass" />
+      <test name="Tests.System.TimeProviderTests.TestCTSWithDelayFiringAfterCancellation" type="Tests.System.TimeProviderTests" method="TestCTSWithDelayFiringAfterCancellation" time="0.001" result="Pass" />
+      <test name="Tests.System.TimeProviderTests.TestLocalSystemTime" type="Tests.System.TimeProviderTests" method="TestLocalSystemTime" time="0" result="Pass" />
+      <test name="Tests.System.TimeProviderTests.RunWaitAsyncTests" type="Tests.System.TimeProviderTests" method="RunWaitAsyncTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Tests.System.TimeProviderTests.TestSystemTimestamp" type="Tests.System.TimeProviderTests" method="TestSystemTimestamp" time="0.1010999" result="Pass" />
+      <test name="Tests.System.TimeProviderTests.PeriodicTimerTests" type="Tests.System.TimeProviderTests" method="PeriodicTimerTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Tests.System.TimeProviderTests.CancellationTokenSourceWithTimer" type="Tests.System.TimeProviderTests" method="CancellationTokenSourceWithTimer" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Tests.System.TimeProviderTests.TestProviderTimer" type="Tests.System.TimeProviderTests" method="TestProviderTimer" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Tests.System.TimeProviderTests.RunDelayTests" type="Tests.System.TimeProviderTests" method="RunDelayTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Tests.System.TimeProviderTests.InvokeCallbackFromCreateTimer" type="Tests.System.TimeProviderTests" method="InvokeCallbackFromCreateTimer" time="0.0020999" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

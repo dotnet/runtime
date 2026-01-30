@@ -1,0 +1,9 @@
+Test Comparison: System.Composition.TypedParts.Tests
+Generated: 2026-01-30T01:40:42+01:00
+
+Mono tests:    50
+CoreCLR tests: 50
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

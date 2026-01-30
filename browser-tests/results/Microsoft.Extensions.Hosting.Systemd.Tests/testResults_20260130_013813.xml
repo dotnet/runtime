@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="Microsoft.Extensions.Hosting.Systemd.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="00:38:12" total="2" passed="2" failed="0" skipped="0" time="0.089" errors="0">
+    <errors />
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Extensions.Hosting.UseSystemdTests" time="0.046">
+      <test name="Microsoft.Extensions.Hosting.UseSystemdTests.ServiceCollectionExtensionMethodDefaultsToOffOutsideOfService" type="Microsoft.Extensions.Hosting.UseSystemdTests" method="ServiceCollectionExtensionMethodDefaultsToOffOutsideOfService" time="0.0385" result="Pass" />
+      <test name="Microsoft.Extensions.Hosting.UseSystemdTests.DefaultsToOffOutsideOfService" type="Microsoft.Extensions.Hosting.UseSystemdTests" method="DefaultsToOffOutsideOfService" time="0.0073" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

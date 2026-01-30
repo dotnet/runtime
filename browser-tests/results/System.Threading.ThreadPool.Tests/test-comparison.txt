@@ -1,0 +1,10 @@
+Test Comparison: System.Threading.ThreadPool.Tests
+Generated: 2026-01-30T01:37:10+01:00
+
+Mono tests:    49
+CoreCLR tests: 50
+
+=== Extra in CoreCLR (1) ===
+System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest
+
+=== Missing in CoreCLR (0) ===

@@ -1,0 +1,9 @@
+Test Comparison: System.Resources.Reader.Tests
+Generated: 2026-01-30T01:35:00+01:00
+
+Mono tests:    27
+CoreCLR tests: 27
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

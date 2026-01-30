@@ -1,0 +1,9 @@
+Test Comparison: Microsoft.Extensions.HostFactoryResolver.Tests
+Generated: 2026-01-30T01:39:07+01:00
+
+Mono tests:    26
+CoreCLR tests: 26
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

@@ -1,0 +1,11 @@
+Test Comparison: System.Runtime.Loader.RefEmitLoadContext.Tests
+Generated: 2026-01-30T01:34:04+01:00
+
+Mono tests:    1
+CoreCLR tests: 3
+
+=== Extra in CoreCLR (2) ===
+System.Runtime.Loader.Tests.RefEmitLoadContextTests.LoadRefEmitAssembly
+Test collection for System.Runtime.Loader.Tests.RefEmitLoadContextTests
+
+=== Missing in CoreCLR (0) ===

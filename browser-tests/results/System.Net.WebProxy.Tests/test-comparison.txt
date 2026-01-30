@@ -1,0 +1,9 @@
+Test Comparison: System.Net.WebProxy.Tests
+Generated: 2026-01-30T01:41:07+01:00
+
+Mono tests:    21
+CoreCLR tests: 21
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

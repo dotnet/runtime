@@ -1,0 +1,9 @@
+Test Comparison: Microsoft.Bcl.TimeProvider.Tests
+Generated: 2026-01-30T01:37:42+01:00
+
+Mono tests:    16
+CoreCLR tests: 16
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

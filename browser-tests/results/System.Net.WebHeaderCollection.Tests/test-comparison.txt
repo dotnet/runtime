@@ -1,0 +1,9 @@
+Test Comparison: System.Net.WebHeaderCollection.Tests
+Generated: 2026-01-30T01:41:02+01:00
+
+Mono tests:    113
+CoreCLR tests: 113
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===
