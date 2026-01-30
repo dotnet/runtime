@@ -218,18 +218,29 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("echo1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Array<JSType.Number>>]
         internal static partial double[]? echo1_DoubleArray([JSMarshalAs<JSType.Array<JSType.Number>>] double[]? value);
+        [JSImport("echo1", "JavaScriptTestHelper")]
+        internal static partial double[]? echo1_DoubleArray_NoAttributes(double[]? value);
 
         [JSImport("storeAt", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial double? store_DoubleArray([JSMarshalAs<JSType.Array<JSType.Number>>] double[]? value, [JSMarshalAs<JSType.Number>] int index);
 
+        [JSImport("storeAt", "JavaScriptTestHelper")]
+        internal static partial double? store_DoubleArray_NoAttributes(double[]? value, int index);
+
         [JSImport("echo1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Array<JSType.Number>>]
         internal static partial float[]? echo1_SingleArray([JSMarshalAs<JSType.Array<JSType.Number>>] float[]? value);
 
+        [JSImport("echo1", "JavaScriptTestHelper")]
+        internal static partial float[]? echo1_SingleArray_NoAttributes(float[]? value);
+
         [JSImport("storeAt", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial float? store_SingleArray([JSMarshalAs<JSType.Array<JSType.Number>>] float[]? value, [JSMarshalAs<JSType.Number>] int index);
+
+        [JSImport("storeAt", "JavaScriptTestHelper")]
+        internal static partial float? store_SingleArray_NoAttributes(float[]? value, int index);
 
         [JSImport("echo1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Array<JSType.String>>]

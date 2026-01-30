@@ -350,6 +350,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     Assert.Equal(expected[i], actualI);
                 }
         }
+
+        [Theory]
+        [MemberData(nameof(MarshalDoubleArrayCases))]
+        public unsafe void JsImportDoubleArray_NoAttributes(double[]? expected)
+        {
+            var actual = JavaScriptTestHelper.echo1_DoubleArray_NoAttributes(expected);
+            Assert.Equal(expected, actual);
+            if (expected != null) for (int i = 0; i < expected.Length; i++)
+                {
+                    var actualI = JavaScriptTestHelper.store_DoubleArray_NoAttributes(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
+        }
+
         [Theory]
         [MemberData(nameof(MarshalSingleArrayCases))]
         public unsafe void JsImportSingleArray(float[]? expected)
@@ -359,6 +373,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             if (expected != null) for (int i = 0; i < expected.Length; i++)
                 {
                     var actualI = JavaScriptTestHelper.store_SingleArray(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalSingleArrayCases))]
+        public unsafe void JsImportSingleArray_NoAttributes(float[]? expected)
+        {
+            var actual = JavaScriptTestHelper.echo1_SingleArray_NoAttributes(expected);
+            Assert.Equal(expected, actual);
+            if (expected != null) for (int i = 0; i < expected.Length; i++)
+                {
+                    var actualI = JavaScriptTestHelper.store_SingleArray_NoAttributes(expected, i);
                     Assert.Equal(expected[i], actualI);
                 }
         }
