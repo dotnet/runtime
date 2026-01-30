@@ -1,0 +1,142 @@
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  System.Composition.Runtime -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Runtime/Release/net11.0/System.Composition.Runtime.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.Composition.Runtime.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Runtime.Tests/Release/net11.0/browser-wasm/System.Composition.Runtime.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Runtime.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Runtime.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.Composition.Runtime.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Composition.Runtime/tests
+  ----- start Fri Jan 30 02:09:25 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Runtime.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Runtime.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.Composition.Runtime.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.Composition.Runtime.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.Composition.Runtime.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Composition.Runtime/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Runtime.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Composition.Runtime.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 38295
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 38295.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:37155/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Composition.Runtime.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Composition.Runtime.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.Composition.Runtime.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.Composition.Runtime.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.Composition.Runtime.Tests.dll (found 30 of 30 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.Composition.Runtime.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.ExportFactoryTMetadataTests.Ctor_NullExport_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.ExportFactoryTMetadataTests.CreateExport_ValidCreator_ReturnsExpected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.ExportFactoryTMetadataTests.CreateExport_MultipleTimes_ReturnsDifferentExports
+  [40m[32minfo[39m[22m[49m: [STRT] System.Compostition.Runtime.Tests.ExportTests.Dispose_NullAction_Nop
+  [40m[32minfo[39m[22m[49m: [STRT] System.Compostition.Runtime.Tests.ExportTests.Ctor_Value_Action
+  [40m[32minfo[39m[22m[49m: [STRT] System.Compostition.Runtime.Tests.ExportTests.Dispose_MultipleTimes_InvokesDisposeAction
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.ExportFactoryTests.Ctor_NullExport_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.ExportFactoryTests.CreateExport_ValidCreator_ReturnsExpected
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.ExportFactoryTests.CreateExport_MultipleTimes_ReturnsDifferentExports
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExports_Invoke_ReturnsExpected(success: True, contractName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExports_Invoke_ReturnsExpected(success: False, contractName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExports_Invoke_ReturnsExpected(success: True, contractName: "contractName")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExports_Invoke_ReturnsExpected(success: False, contractName: "contractName")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExport_Invoke_ReturnsExpected(success: True, contractName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExport_Invoke_ReturnsExpected(success: False, contractName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExport_Invoke_ReturnsExpected(success: True, contractName: "contractName")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContextTests.GetExport_Invoke_ReturnsExpected(success: False, contractName: "contractName")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionFailedExceptionTests.Ctor_Message_InnerException(message: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionFailedExceptionTests.Ctor_Message_InnerException(message: "message")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionFailedExceptionTests.Ctor_Default
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionFailedExceptionTests.Ctor_Message(message: "")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionFailedExceptionTests.Ctor_Message(message: "message")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.TryUnwrapMetadataConstraint_NullContractName_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_ContractType_MetadataConstraints(contractType: typeof(int), contractName: null, metadataConstraints: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_ContractType_MetadataConstraints(contractType: typeof(object), contractName: "contractName", metadataConstraints: [["key"] = "value"])
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.ToString_NullTypeInGenericTypeArguments_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.TryUnwrapMetadataConstraint_UnwrapAllConstraints_ReturnsTrue
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.TryUnwrapMetadataConstraint_IncorrectConstraintNameType_ReturnsFalse
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_EmptyMetadataConstraints_ThrowsArgumentOutOfRangeException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.TryUnwrapMetadataConstraint_NoSuchConstraintName_ReturnsFalse
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.TryUnwrapMetadataConstraint_NullConstraints_ReturnsFalse
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.ChangeType_ValidType_Success
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_ContractType(contractType: typeof(int))
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.ChangeType_NullNewContractType_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_NullContractType_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_ContractType_ContractName(contractType: typeof(int), contractName: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Ctor_ContractType_ContractName(contractType: typeof(object), contractName: "contractName")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.ToString_NullValueInDictionary_ThrowsArgumentNullException
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.ToString_Get_ReturnsExpected(contract: Int32, expected: "Int32")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.ToString_Get_ReturnsExpected(contract: Int32 "contractName", expected: "Int32 \"contractName\"")
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.ToString_Get_ReturnsExpected(contract: List`1 "contractName" { key1 = "value", key2 = 2 }, expected: "List`1 \"contractName\" { key1 = \"value\", key2 ="···)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.ToString_Get_ReturnsExpected(contract: List<String> "contractName" { key1 = "value", key2 = 2 }, expected: "List<String> \"contractName\" { key1 = \"value\", "···)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: Int32, expected: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: String, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: Int32 "contractName", expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: Int32 { key = "value" }, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName", other: Int32 "contractName", expected: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName", other: Int32 "ContractName", expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName", other: Int32, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: Int32 "contractName" { key = "value" }, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = "value" }, other: Int32 "contractName" { key = "value" }, expected: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = 1 }, other: Int32 "contractName" { key = 1 }, expected: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = System.String[] }, other: Int32 "contractName" { key = System.Object[] }, expected: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = System.String[] }, other: Int32 "contractName" { key = System.Object[] }, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = "value" }, other: Int32 "contractName" { key = "value", key2 = "value2" }, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = "value", key2 = "value2" }, other: Int32 "contractName" { key = "value" }, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = "value" }, other: Int32 "contractName" { key2 = "value" }, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = "value" }, other: Int32 "contractName" { key = "value2" }, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = System.String[] }, other: Int32 "contractName" { key = System.String[] }, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = System.String[] }, other: Int32 "contractName" { key = "value" }, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = System.String[] }, other: Int32 "contractName" { key = System.Object }, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: TargetInvocationException was thrown formatting an object of type "System.Composition.Hosting.Core.CompositionContract", other: Int32 "contractName" { key = "value" }, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = "value" }, other: TargetInvocationException was thrown formatting an object of type "System.Composition.Hosting.Core.CompositionContract", expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32 "contractName" { key = System.Object[] }, other: TargetInvocationException was thrown formatting an object of type "System.Composition.Hosting.Core.CompositionContract", expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: TargetInvocationException was thrown formatting an object of type "System.Composition.Hosting.Core.CompositionContract", other: TargetInvocationException was thrown formatting an object of type "System.Composition.Hosting.Core.CompositionContract", expected: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: Object { }, expected: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected(contract: Int32, other: null, expected: False)
+  [40m[32minfo[39m[22m[49m: Finished:    System.Composition.Runtime.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Runtime.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 23241 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 23241 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 67 Passed: 67 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.Composition.Runtime.Tests.dll after 0.009466666666666667 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/System.Composition.Runtime.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Composition.Runtime/tests
+  ----- end Fri Jan 30 02:09:28 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.Composition.Runtime.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:06.01

@@ -1,0 +1,9 @@
+Test Comparison: System.Drawing.Primitives.Tests
+Generated: 2026-01-30T02:11:11+01:00
+
+Mono tests:    2444
+CoreCLR tests: 2444
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

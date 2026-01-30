@@ -1,0 +1,2 @@
+MSBUILD : error MSB1009: Project file does not exist.
+Switch: src/libraries/System.Composition.AttributedModel/tests/System.Composition.AttributedModel.Tests.csproj

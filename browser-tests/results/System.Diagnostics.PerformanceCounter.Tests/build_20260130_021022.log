@@ -1,0 +1,10 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Diagnostics.PerformanceCounter/tests/System.Diagnostics.PerformanceCounter.Tests.csproj (in 197 ms).
+  30 of 31 projects are up-to-date for restore.
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.24

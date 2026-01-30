@@ -1,0 +1,21 @@
+Test Comparison: System.Data.DataSetExtensions.Tests
+Generated: 2026-01-30T02:10:01+01:00
+
+Mono tests:    85
+CoreCLR tests: 85
+
+=== Extra in CoreCLR (6) ===
+System.Data.Tests.DataRowComparerTests.Equals_Rows_ReturnsExpected(row1: DataRow { HasErrors = False, Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), ··· }, row2: DataRow { HasErrors = False, Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), ··· }, expected: False)
+System.Data.Tests.DataRowComparerTests.Equals_Rows_ReturnsExpected(row1: DataRow { HasErrors = False, Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), ··· }, row2: DataRow { HasErrors = False, Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), ··· }, expected: True)
+System.Data.Tests.DataRowComparerTests.Equals_Rows_ReturnsExpected(row1: DataRow { HasErrors = False, Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), ··· }, row2: null, expected: False)
+System.Data.Tests.DataRowComparerTests.Equals_Rows_ReturnsExpected(row1: null, row2: DataRow { HasErrors = False, Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), Item = (throws TargetParameterCountException), ··· }, expected: False)
+System.Data.Tests.DataRowComparerTests.GetHashCode_HasColumns_ReturnsExpected(value: [1, 2, 3, 4], expected: 2383799)
+System.Data.Tests.DataRowComparerTests.GetHashCode_HasColumns_ReturnsExpected(value: null, expected: 45004109)
+
+=== Missing in CoreCLR (6) ===
+System.Data.Tests.DataRowComparerTests.Equals_Rows_ReturnsExpected(row1: DataRow { HasErrors = False, Item = (throws ArgumentException), Item = (throws ArgumentException), Item = (throws ArgumentException), Item = (throws ArgumentException), ··· }, row2: DataRow { HasErrors = False, Item = (throws ArgumentException), Item = (throws ArgumentException), Item = (throws ArgumentException), Item = (throws ArgumentException), ··· }, expected: False)
+System.Data.Tests.DataRowComparerTests.Equals_Rows_ReturnsExpected(row1: DataRow { HasErrors = False, Item = (throws ArgumentException), Item = (throws ArgumentException), Item = (throws ArgumentException), Item = (throws ArgumentException), ··· }, row2: DataRow { HasErrors = False, Item = (throws ArgumentException), Item = (throws ArgumentException), Item = (throws ArgumentException), Item = (throws ArgumentException), ··· }, expected: True)
+System.Data.Tests.DataRowComparerTests.Equals_Rows_ReturnsExpected(row1: DataRow { HasErrors = False, Item = (throws ArgumentException), Item = (throws ArgumentException), Item = (throws ArgumentException), Item = (throws ArgumentException), ··· }, row2: null, expected: False)
+System.Data.Tests.DataRowComparerTests.Equals_Rows_ReturnsExpected(row1: null, row2: DataRow { HasErrors = False, Item = (throws ArgumentException), Item = (throws ArgumentException), Item = (throws ArgumentException), Item = (throws ArgumentException), ··· }, expected: False)
+System.Data.Tests.DataRowComparerTests.GetHashCode_HasColumns_ReturnsExpected(value: [1, 2, 3, 4], expected: 520051001)
+System.Data.Tests.DataRowComparerTests.GetHashCode_HasColumns_ReturnsExpected(value: null, expected: 67571241)

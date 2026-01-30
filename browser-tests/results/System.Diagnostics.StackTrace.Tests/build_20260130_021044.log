@@ -1,0 +1,25 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Diagnostics.StackTrace/tests/ExceptionTestAssembly/ExceptionTestAssembly.csproj (in 161 ms).
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.Diagnostics.StackTrace/tests/System.Diagnostics.StackTrace.Tests.csproj (in 161 ms).
+  3 of 5 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  Microsoft.Interop.SourceGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Interop.SourceGeneration/Release/netstandard2.0/Microsoft.Interop.SourceGeneration.dll
+  DownlevelLibraryImportGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/DownlevelLibraryImportGenerator/Release/netstandard2.0/Microsoft.Interop.LibraryImportGenerator.Downlevel.dll
+  ExceptionTestAssembly -> /home/pavelsavara/dev/runtime/artifacts/bin/ExceptionTestAssembly/Release/netstandard2.0/ExceptionTestAssembly.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error : System.InvalidOperationException: No file exists for the asset at either location '/home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.StackTrace.Tests/Release/net11.0/browser-wasm/publish/System.Diagnostics.StackTrace.Tests.dll' or '/home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.StackTrace.Tests/Release/net11.0/browser-wasm/publish/System.Diagnostics.StackTrace.Tests.dll'. [/home/pavelsavara/dev/runtime/src/libraries/System.Diagnostics.StackTrace/tests/System.Diagnostics.StackTrace.Tests.csproj]
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error :    at Microsoft.AspNetCore.StaticWebAssets.Tasks.StaticWebAsset.ResolveFile(String identity, String originalItemSpec) [/home/pavelsavara/dev/runtime/src/libraries/System.Diagnostics.StackTrace/tests/System.Diagnostics.StackTrace.Tests.csproj]
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error :    at Microsoft.AspNetCore.StaticWebAssets.Tasks.DefineStaticWebAssets.ResolveFileDetails(String originalItemSpec, String identity) [/home/pavelsavara/dev/runtime/src/libraries/System.Diagnostics.StackTrace/tests/System.Diagnostics.StackTrace.Tests.csproj]
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error :    at Microsoft.AspNetCore.StaticWebAssets.Tasks.DefineStaticWebAssets.Execute() [/home/pavelsavara/dev/runtime/src/libraries/System.Diagnostics.StackTrace/tests/System.Diagnostics.StackTrace.Tests.csproj]
+
+Build FAILED.
+
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error : System.InvalidOperationException: No file exists for the asset at either location '/home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.StackTrace.Tests/Release/net11.0/browser-wasm/publish/System.Diagnostics.StackTrace.Tests.dll' or '/home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.StackTrace.Tests/Release/net11.0/browser-wasm/publish/System.Diagnostics.StackTrace.Tests.dll'. [/home/pavelsavara/dev/runtime/src/libraries/System.Diagnostics.StackTrace/tests/System.Diagnostics.StackTrace.Tests.csproj]
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error :    at Microsoft.AspNetCore.StaticWebAssets.Tasks.StaticWebAsset.ResolveFile(String identity, String originalItemSpec) [/home/pavelsavara/dev/runtime/src/libraries/System.Diagnostics.StackTrace/tests/System.Diagnostics.StackTrace.Tests.csproj]
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error :    at Microsoft.AspNetCore.StaticWebAssets.Tasks.DefineStaticWebAssets.ResolveFileDetails(String originalItemSpec, String identity) [/home/pavelsavara/dev/runtime/src/libraries/System.Diagnostics.StackTrace/tests/System.Diagnostics.StackTrace.Tests.csproj]
+/home/pavelsavara/dev/runtime/eng/testing/tests.browser.targets(263,5): error :    at Microsoft.AspNetCore.StaticWebAssets.Tasks.DefineStaticWebAssets.Execute() [/home/pavelsavara/dev/runtime/src/libraries/System.Diagnostics.StackTrace/tests/System.Diagnostics.StackTrace.Tests.csproj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:02.52

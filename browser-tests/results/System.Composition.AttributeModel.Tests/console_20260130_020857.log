@@ -1,0 +1,49 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:34613/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Composition.AttributeModel.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Composition.AttributeModel.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Composition.AttributeModel.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Composition.AttributeModel.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Composition.AttributeModel.Tests.dll (found 19 of 19 test cases)
+Starting:    System.Composition.AttributeModel.Tests.dll
+[STRT] System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_ContractName_ContractType(contractName: null, contractType: null)
+[STRT] System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_ContractName_ContractType(contractName: "ContractName", contractType: typeof(string))
+[STRT] System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_Default
+[STRT] System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_ContractType(contractType: null)
+[STRT] System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_ContractType(contractType: typeof(string))
+[STRT] System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_ContractName(contractName: null)
+[STRT] System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_ContractName(contractName: "ContractName")
+[STRT] System.Composition.AttributeModel.Tests.SharingBoundaryAttributeTests.Ctor_NullSharingBoundaryNames_ThrowsArgumentNullException
+[STRT] System.Composition.AttributeModel.Tests.SharingBoundaryAttributeTests.Ctor_SharingBoundaryNames(sharingBoundaryNames: [])
+[STRT] System.Composition.AttributeModel.Tests.SharingBoundaryAttributeTests.Ctor_SharingBoundaryNames(sharingBoundaryNames: ["1", null, "2"])
+[STRT] System.Composition.AttributeModel.Tests.ImportManyAttributeTests.Ctor_ContractName(contractName: null)
+[STRT] System.Composition.AttributeModel.Tests.ImportManyAttributeTests.Ctor_ContractName(contractName: "ContractName")
+[STRT] System.Composition.AttributeModel.Tests.ImportManyAttributeTests.Ctor_Default
+[STRT] System.Composition.AttributeModel.Tests.ImportingConstructorAttributeTests.Ctor_Default
+[STRT] System.Composition.AttributeModel.Tests.SharedAttributeTests.Ctor_SharingBoundaryName(sharingBoundaryName: null)
+[STRT] System.Composition.AttributeModel.Tests.SharedAttributeTests.Ctor_SharingBoundaryName(sharingBoundaryName: "Name")
+[STRT] System.Composition.AttributeModel.Tests.SharedAttributeTests.Ctor_Default
+[STRT] System.Composition.AttributeModel.Tests.ExportMetadataAttributeTests.Ctor_Name_Value(name: null, value: null)
+[STRT] System.Composition.AttributeModel.Tests.ExportMetadataAttributeTests.Ctor_Name_Value(name: "Name", value: "Value")
+[STRT] System.Composition.AttributeModel.Tests.ImportMetadataConstraintAttributeTests.Ctor_Name_Value(name: null, value: null)
+[STRT] System.Composition.AttributeModel.Tests.ImportMetadataConstraintAttributeTests.Ctor_Name_Value(name: "Name", value: "Value")
+[STRT] System.Composition.AttributeModel.Tests.PartMetadataAttributeTests.Ctor_NullName_ThrowsArgumentNullException
+[STRT] System.Composition.AttributeModel.Tests.PartMetadataAttributeTests.Ctor_Name_Value(name: "", value: null)
+[STRT] System.Composition.AttributeModel.Tests.PartMetadataAttributeTests.Ctor_Name_Value(name: "Name", value: "Value")
+[STRT] System.Composition.AttributeModel.Tests.ImportAttributeTests.Ctor_ContractName(contractName: null)
+[STRT] System.Composition.AttributeModel.Tests.ImportAttributeTests.Ctor_ContractName(contractName: "ContractName")
+[STRT] System.Composition.AttributeModel.Tests.ImportAttributeTests.Ctor_Default
+[STRT] System.Composition.AttributeModel.Tests.MetadataAttributeAttributeTests.Ctor_Default
+[STRT] System.Composition.AttributeModel.Tests.PartNotDiscoverableAttributeTests.Ctor_Default
+Finished:    System.Composition.AttributeModel.Tests.dll
+Finished uploading 10157 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 29 Passed: 29 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Composition.AttributeModel.Tests.dll after 0.008316666666666667 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

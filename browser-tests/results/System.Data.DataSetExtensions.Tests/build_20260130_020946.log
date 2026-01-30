@@ -1,0 +1,2 @@
+MSBUILD : error MSB1009: Project file does not exist.
+Switch: src/libraries/System.Data.DataSetExtensions/tests/System.Data.DataSetExtensions.Tests.csproj

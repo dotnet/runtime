@@ -1,0 +1,461 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:39407/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.IO.Pipelines.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.IO.Pipelines.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.IO.Pipelines.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.IO.Pipelines.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.IO.Pipelines.Tests.dll (found 385 of 419 test cases)
+Starting:    System.IO.Pipelines.Tests.dll
+[STRT] System.IO.Pipelines.Tests.PipeWriterCopyToAsyncTests.CopyToAsyncCalledMultipleTimesWorks
+[STRT] System.IO.Pipelines.Tests.PipeWriterCopyToAsyncTests.CopyToAsyncWorks
+[STRT] System.IO.Pipelines.Tests.PipeWriterCopyToAsyncTests.CancelingStreamViaCancellationTokenThrows
+[STRT] System.IO.Pipelines.Tests.PipeWriterCopyToAsyncTests.StreamCopyToAsyncWorks
+[STRT] System.IO.Pipelines.Tests.PipeWriterCopyToAsyncTests.CancelingViaCancellationTokenThrows
+[STRT] System.IO.Pipelines.Tests.PipeWriterCopyToAsyncTests.CopyToAsyncThrowsTaskCanceledExceptionForAlreadyCancelledToken
+[STRT] System.IO.Pipelines.Tests.PipeWriterCopyToAsyncTests.CancelingViaCancelPendingFlushThrows
+[STRT] System.IO.Pipelines.Tests.PipeWriterCopyToAsyncTests.CopyToAsyncThrowsArgumentNullExceptionForNullSource
+[STRT] System.IO.Pipelines.Tests.PipeWriterCopyToAsyncTests.CopyToAsyncThrowsArgumentNullExceptionForNullDestination
+[STRT] System.IO.Pipelines.Tests.PipeResetTests.ResetThrowsIfWriterNotCompleted
+[STRT] System.IO.Pipelines.Tests.PipeResetTests.ResetThrowsIfReaderNotCompleted
+[STRT] System.IO.Pipelines.Tests.PipeResetTests.LengthIsReseted
+[STRT] System.IO.Pipelines.Tests.PipeResetTests.ResetResetsReaderAwaitable
+[STRT] System.IO.Pipelines.Tests.PipeResetTests.ReadsAndWritesAfterReset
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.ReadingFromPipeWriterStreamThrowsNotSupported
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.FlushAsyncFlushesBufferedData
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.DisposeAsyncCallsCompleteAsync
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.CancellationTokenFlowsToUnderlyingPipeWriter
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.AsStreamDoNotCompleteWriter
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.AsStreamReturnsPipeWriterStream(writeAsync: WriteAsyncDelegate { Method = System.Threading.Tasks.Task <get_WriteCalls>b__14_0(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.AsStreamReturnsPipeWriterStream(writeAsync: WriteAsyncDelegate { Method = System.Threading.Tasks.Task <get_WriteCalls>b__14_1(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.AsStreamReturnsPipeWriterStream(writeAsync: WriteAsyncDelegate { Method = System.Threading.Tasks.Task <get_WriteCalls>b__14_2(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.AsStreamReturnsPipeWriterStream(writeAsync: WriteAsyncDelegate { Method = System.Threading.Tasks.Task <get_WriteCalls>b__14_3(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.DefaultPipeWriterImplementationReturnsPipeWriterStream
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.WritingToPipeStreamWritesToUnderlyingPipeWriter(writeAsync: WriteAsyncDelegate { Method = System.Threading.Tasks.Task <get_WriteCalls>b__14_0(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.WritingToPipeStreamWritesToUnderlyingPipeWriter(writeAsync: WriteAsyncDelegate { Method = System.Threading.Tasks.Task <get_WriteCalls>b__14_1(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.WritingToPipeStreamWritesToUnderlyingPipeWriter(writeAsync: WriteAsyncDelegate { Method = System.Threading.Tasks.Task <get_WriteCalls>b__14_2(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.WritingToPipeStreamWritesToUnderlyingPipeWriter(writeAsync: WriteAsyncDelegate { Method = System.Threading.Tasks.Task <get_WriteCalls>b__14_3(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.CancellingPendingFlushThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.PipeWriterStreamTests.DisposingPipeWriterStreamCompletesPipeWriter
+[STRT] System.IO.Pipelines.Tests.SequencePipeReaderTests.NextReadAfterPartiallyExaminedReturnsImmediately
+[STRT] System.IO.Pipelines.Tests.SequencePipeReaderTests.CompleteReaderWithoutAdvanceDoesNotThrow
+[STRT] System.IO.Pipelines.Tests.SequencePipeReaderTests.OnWriterCompletedNoops
+[STRT] System.IO.Pipelines.Tests.SequencePipeReaderTests.ThrowsOnReadAfterCompleteReader
+[STRT] System.IO.Pipelines.Tests.SequencePipeReaderTests.ReadAsyncReturnsCanceledInterleaved
+[STRT] System.IO.Pipelines.Tests.SequencePipeReaderTests.DataCanBeReadMultipleTimes
+[STRT] System.IO.Pipelines.Tests.SequencePipeReaderTests.TryReadAfterCancelPendingReadReturnsTrue
+[STRT] System.IO.Pipelines.Tests.SequencePipeReaderTests.TryReadReturnsFalseIfBufferedBytesAndEverythingExamined
+[STRT] System.IO.Pipelines.Tests.SequencePipeReaderTests.ReadAsyncReturnsCanceledIfCanceledBeforeRead
+[STRT] System.IO.Pipelines.Tests.SequencePipeReaderTests.CanRead
+[STRT] System.IO.Pipelines.Tests.SequencePipeReaderTests.AdvanceAfterCompleteThrows
+[STRT] System.IO.Pipelines.Tests.SequencePipeReaderTests.TryReadReturnsTrueIfBufferedBytesAndNotExaminedEverything
+[STRT] System.IO.Pipelines.Tests.SequencePipeReaderTests.ReadAsyncAfterReceivingCompletedReadResultDoesNotThrow
+[STRT] System.IO.Pipelines.Tests.BufferSegmentPoolTest.BufferSegmentsAreReused
+[STRT] System.IO.Pipelines.Tests.BufferSegmentPoolTest.BufferSegmentsPooledUpToThreshold
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.ReadAsyncCompletedAfterPreCancellation
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.ReadAsyncCancellationE2E
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.TryReadWithDataIsNotCancelledWhenCancellationTokenCancelledBetweenReads
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.ReadAsyncReturnsIsCancelOnCancelPendingReadBeforeGetResult
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.TryReadIsNotCancelledWhenCancellationTokenCancelledBetweenReads
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.ReadAsyncNotCompletedAfterCancellationTokenCanceled
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.ReadingCanBeCanceled
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.GetResultThrowsIfFlushAsyncTokenFiredAfterCancelPending
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.ReadAsyncWithNewCancellationTokenNotAffectedByPrevious
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.CancellingPendingAfterReadAsync
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.WriteAndCancellingPendingReadBeforeReadAsync
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.ReadAsyncCancellationDeadlock
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.CancellingBeforeAdvance
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.ReadAsyncIsNotCancelledWhenCancellationTokenCancelledBetweenReads
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.GetResultThrowsIfReadAsyncCanceledAfterOnCompleted
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.AdvanceShouldResetStateIfReadCanceled
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.ReadAsyncThrowsIfPassedCanceledCancellationToken
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.ReadAsyncReturnsIsCancelOnCancelPendingReadAfterGetResult
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.ReadAsyncNotCompletedAfterCancellation
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.CancellingPendingReadBeforeReadAsync
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCancellationTests.GetResultThrowsIfReadAsyncCanceledBeforeOnCompleted
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ReadCanBeCanceledViaCancelPendingReadWhenReadAtLeastAsync
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ReadCanBeCanceledViaCancelPendingReadWhenReadAsync
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.OperationCancelledExceptionNotSwallowedIfNotThrownFromSpecifiedToken
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.CompletingReturnsUnconsumedMemoryToPool
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.CompleteCallsAppropriateDisposeMethodOnUnderlyingStream
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ConsumePartialBufferWorks
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.InvalidBufferSizeThrows
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.AdvanceAfterCompleteThrows
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.NullStreamThrows
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ReadWithDifferentSettings(bytesInBuffer: 1024, bufferSize: 1024, minimumReadSize: 1024, readBufferSizes: [1024, 0])
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ReadWithDifferentSettings(bytesInBuffer: 1023, bufferSize: 512, minimumReadSize: 512, readBufferSizes: [512, 511, 0])
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ReadWithDifferentSettings(bytesInBuffer: 512, bufferSize: 1000, minimumReadSize: 512, readBufferSizes: [512, 0])
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ReadWithDifferentSettings(bytesInBuffer: 10, bufferSize: 100, minimumReadSize: 512, readBufferSizes: [10, 0])
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ReadWithDifferentSettings(bytesInBuffer: 8192, bufferSize: 3000, minimumReadSize: 2048, readBufferSizes: [3000, 3000, 2192, 0])
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ReadWithDifferentSettings(bytesInBuffer: 4096, bufferSize: 3000, minimumReadSize: 2048, readBufferSizes: [3000, 1096, 0])
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.InvalidMinimumReadSizeThrows
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.NextReadAfterPartiallyExaminedReturnsImmediately
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ReadAsyncAfterReceivingCompletedReadResultDoesNotThrow
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.StreamPipeReaderOptions_Ctor_Defaults
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.CompleteReaderWithoutAdvanceDoesNotThrow
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.TryReadReturnsTrueIfBufferedBytesAndNotExaminedEverything
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.StreamPipeReaderOptions_Ctor_Roundtrip
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.InvalidCursorThrows
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.OnWriterCompletedNoops
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.TryReadAfterCancelPendingReadReturnsTrue
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ThrowsOnReadAfterCompleteReader
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.NewSegmentsAllocatedWhenBufferReachesMinimumReadSize
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ReadAsyncReturnsCanceledIfCanceledBeforeRead
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ReadCanBeCancelledViaProvidedCancellationToken
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ConsumingSegmentsReturnsMemoryToPool
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.CanReadMultipleTimes
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.TryReadReturnsFalseIfBufferedBytesAndEverythingExamined
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.CompletingTheReadingDisposesStream
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ReadAsyncReturnsCanceledInterleaved
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.BufferingDataPastEndOfStreamCanBeReadAgain
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.ReadAsyncAfterReceivingCompletedReadResultAndResettingStreamPositionWorks
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.CanRead
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.LeaveUnderlyingStreamOpen
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderTests.CompletingAlreadyCompletePipeReaderNoopsSecondTime
+[STRT] System.IO.Pipelines.Tests.PipeOptionsTests.InvalidArgs_Throws
+[STRT] System.IO.Pipelines.Tests.PipeOptionsTests.Default_ExpectedValues(options: PipeOptions { MinimumSegmentSize = 4096, PauseWriterThreshold = 65536, Pool = ArrayMemoryPool`1 { MaxBufferSize = 2147483591 }, ReaderScheduler = ThreadPoolScheduler { }, ResumeWriterThreshold = 32768, ··· })
+[STRT] System.IO.Pipelines.Tests.PipeOptionsTests.Default_ExpectedValues(options: PipeOptions { MinimumSegmentSize = 4096, PauseWriterThreshold = 65536, Pool = ArrayMemoryPool`1 { MaxBufferSize = 2147483591 }, ReaderScheduler = ThreadPoolScheduler { }, ResumeWriterThreshold = 32768, ··· })
+[STRT] System.IO.Pipelines.Tests.PipeOptionsTests.Default_ExpectedValues(options: PipeOptions { MinimumSegmentSize = 4096, PauseWriterThreshold = 65536, Pool = ArrayMemoryPool`1 { MaxBufferSize = 2147483591 }, ReaderScheduler = ThreadPoolScheduler { }, ResumeWriterThreshold = 32768, ··· })
+[STRT] System.IO.Pipelines.Tests.PipeOptionsTests.InvalidArgs_NoThrow(minimumSegmentSize: -100)
+[STRT] System.IO.Pipelines.Tests.PipeOptionsTests.InvalidArgs_NoThrow(minimumSegmentSize: -1)
+[STRT] System.IO.Pipelines.Tests.PipeOptionsTests.InvalidArgs_NoThrow(minimumSegmentSize: 0)
+[STRT] System.IO.Pipelines.Tests.PipeOptionsTests.InvalidArgs_NoThrow(minimumSegmentSize: 1)
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.CancelingBetweenReadsThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.CancelingThePendingReadThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.CopyToAsyncStreamDoesNotDoZeroLengthWrite
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.CancelingPipeWriterViaPendingFlushThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.CopyToAsyncPipeWriterCopiesRemainderAfterReadingSome
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.CancelingViaCancellationTokenThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.ThrowingFromStreamCallsAdvanceToWithStartOfLastReadResult
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.MultiSegmentWritesWorks
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.ThrowingFromStreamDoesNotLeavePipeReaderInBrokenState
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.CopyToAsyncThrowsTaskCanceledExceptionForAlreadyCancelledToken
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.CancelingStreamViaCancellationTokenThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.CopyToAsyncPipeWriterWorks
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.CopyToAsyncStreamWorks
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.CopyToAsyncStreamCopiesRemainderAfterReadingSome
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.MultiSegmentWritesUntilFailure
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.CopyToAsyncThrowsArgumentNullExceptionForNullDestination
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.CancelingPipeWriterViaCancellationTokenThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderCopyToAsyncTests.EmptyBufferNotWrittenToStream
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.FlushAsyncReturnsIsCancelOnCancelPendingFlushAfterGetResult
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.FlushAsyncReturnsCanceledIfFlushCanceled
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.ReadAsyncReturnsDataAfterItWasWrittenDuringCancelledRead
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.FlushAsyncWithNewCancellationTokenNotAffectedByPrevious
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.FlushAsyncThrowsIfPassedCanceledCancellationTokenAndPipeIsAbleToComplete
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.FlushAsyncReturnsIsCancelOnCancelPendingFlushBeforeGetResult
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.GetResultThrowsIfFlushAsyncCanceledBeforeOnCompleted
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.FlushAsyncNotCompletedAfterCancellation
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.GetResultThrowsIfFlushAsyncCanceledAfterOnCompleted
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.FlushAsyncCancellationE2E
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.GetResultThrowsIfFlushAsyncTokenFiredAfterCancelPending
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.FlushAsyncCompletedAfterPreCancellation
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.FlushAsyncCancellationDeadlock
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.FlushAsyncThrowsIfPassedCanceledCancellationToken
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.FlushAsyncNotCompletedAfterCancellationTokenCanceled
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCancellationTests.FlushAsyncReturnsCanceledIfCanceledBeforeFlush
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.StreamFlushAsyncThrowingDoesReturnMemoryToPool
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.StreamWriteAsyncThrowingDoesNotReturnMemoryToPool
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.OperationCancelledExceptionNotSwallowedIfNotThrownFromSpecifiedToken
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.GetMemoryBiggerThanPoolSizeAllocatesArrayPoolArray
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.LeaveUnderlyingStreamOpen
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.CompletingWithBufferedBytesStillReturnsMemoryToPool
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.AdvancingOutOfRangeThrows
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.CanCancelFlushAsyncWithCancellationTokenStreamFlushAsyncThrows
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.CallGetSpanWithNegativeSizeHint_ThrowsArgException
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.DataNotFlushedOnCompleteAsyncWithException
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.CallGetMemoryWithNegativeSizeHint_ThrowsArgException
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.WritesUsingGetMemoryWorks
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.DataWrittenOnFlushAsync
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.GetMemoryAfterCompleteThrows
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.CanDoMultipleAsyncWritesToStream
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.DataFlushedOnComplete
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.OnReaderCompletedNoops
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.GetSpanAfterCompleteThrows
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.StreamPipeWriterOptions_Ctor_Defaults
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.CanCancelFlushAsyncWithCancelPendingFlushStreamFlushAsyncThrows
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.CanCancelFlushAsyncWithCancelPendingFlushStreamWriteAsyncThrows
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.StreamPipeWriterOptions_Ctor_Roundtrip
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.CompletingTheReadingDisposesStream
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.CanCancelFlushAsyncWithCancellationTokenWhenStreamWriteAsyncThrows
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.CompleteAlwaysCallsDispose
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.CompleteAsyncDoesNotThrowObjectDisposedException
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.DataNotFlushedOnCompleteWithException
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.CompletingAlreadyCompletePipeReaderNoopsSecondTime
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.CompleteAsyncAlwaysCallsDisposeAsync
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.WriteAsyncThrowsDuringMultiSegmentWriteCompleteReturnsAllMemory
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.WritesUsingGetSpanWorks
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.NothingWrittenToStreamUnlessFlushed
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.UnflushedBytesWorks
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.GetMemorySameAsTheMaxPoolSizeUsesThePool
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.FlushAsyncWithoutWritingDoesNotFlushAsync
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.DataFlushedOnCompleteAsync
+[STRT] System.IO.Pipelines.Tests.StreamPipeWriterTests.InvalidMinimumBufferSize_ThrowsArgException
+[STRT] System.IO.Pipelines.Tests.FlushResultTests.FlushResultCanBeConstructed(cancelled: True, completed: True)
+[STRT] System.IO.Pipelines.Tests.FlushResultTests.FlushResultCanBeConstructed(cancelled: True, completed: False)
+[STRT] System.IO.Pipelines.Tests.FlushResultTests.FlushResultCanBeConstructed(cancelled: False, completed: True)
+[STRT] System.IO.Pipelines.Tests.FlushResultTests.FlushResultCanBeConstructed(cancelled: False, completed: False)
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCompletionTests.CompletingWithExceptionDoesNotAffectState
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCompletionTests.CompletingWithExceptionDoesNotAffectFailedState
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCompletionTests.CompletingWithoutExceptionDoesNotAffectState
+[STRT] System.IO.Pipelines.Tests.FlushAsyncCompletionTests.AwaitingFlushAsyncAwaitableTwiceCompletesReaderWithException
+[STRT] System.IO.Pipelines.Tests.UnflushedBytesTests.NonOverriddenUnflushedBytesThrows
+[STRT] System.IO.Pipelines.Tests.UnflushedBytesTests.UnflushedBytesWorks
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnReaderCompletedRunsInRegistrationOrder
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnReaderCompletedThrowsWithNullCallback
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnWriterCompletedUsingReaderScheduler
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnWriterCompletedExecutedSchedulerIfCompleted
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnWriterCompletedThrowsWithNullCallback
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnReaderCompletedUsingWriterScheduler
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnWriterCompletedPassesState
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnReaderCompletedIsDetachedDuringReset
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnWriterCompletedPassesException
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnReaderCompletedContinuesOnException
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnWriterCompletedRanBeforeReadContinuation
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnReaderCompletedExecutesOnSchedulerIfCompleted
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnReaderCompletedExceptionSurfacesToWriterScheduler
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnWriterCompletedRunsInRegistrationOrder
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnReaderCompletedPassesException
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.CompletingReaderFromWriterCallbackWorks
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnWriterCompletedIsDetachedDuringReset
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnWriterCompletedExceptionSurfacesToReaderScheduler
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnWriterCompletedContinuesOnException
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnReaderCompletedPassesState
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.CompletingWriterFromReaderCallbackWorks
+[STRT] System.IO.Pipelines.Tests.PipeCompletionCallbacksTests.OnReaderCompletedRanBeforeFlushContinuation
+[STRT] System.IO.Pipelines.Tests.ReadAtLeastAsyncTests.CanReadAtLeast(bufferSize: -1, bufferedRead: False)
+[STRT] System.IO.Pipelines.Tests.ReadAtLeastAsyncTests.CanReadAtLeast(bufferSize: -1, bufferedRead: True)
+[STRT] System.IO.Pipelines.Tests.ReadAtLeastAsyncTests.CanReadAtLeast(bufferSize: 5, bufferedRead: False)
+[STRT] System.IO.Pipelines.Tests.ReadAtLeastAsyncTests.CanReadAtLeast(bufferSize: 5, bufferedRead: True)
+[STRT] System.IO.Pipelines.Tests.ReadAtLeastAsyncTests.ReadAtLeastReturnsIfCompleted
+[STRT] System.IO.Pipelines.Tests.ReadAtLeastAsyncTests.ReadAtLeastAsyncCancelableAfterReadingSomeAndWritingAfterStartingRead
+[STRT] System.IO.Pipelines.Tests.ReadAtLeastAsyncTests.WriteAndCancellingPendingReadBeforeReadAtLeastAsync
+[STRT] System.IO.Pipelines.Tests.ReadAtLeastAsyncTests.ReadAtLeastAsyncCancelableAfterReadingSome
+[STRT] System.IO.Pipelines.Tests.ReadAtLeastAsyncTests.CanAlternateReadAtLeastAndRead
+[STRT] System.IO.Pipelines.Tests.ReadAtLeastAsyncTests.ReadAtLeastAsyncCancelableWhenWaitingForMoreData
+[STRT] System.IO.Pipelines.Tests.ReadAtLeastAsyncTests.ReadAtLeastShouldNotCompleteIfWriterWroteLessThanMinimum
+[STRT] System.IO.Pipelines.Tests.ReadAtLeastAsyncTests.ReadAtLeastAsyncThrowsIfPassedCanceledCancellationToken
+[STRT] System.IO.Pipelines.Tests.ReadAtLeastAsyncTests.CanWriteAndReadAtLeast
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.LengthIsBasedOnPreviouslyExamined
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.PooledSegmentsDontAffectLastExaminedSegment
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.AdvanceFollowedByWriteAsyncTest
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.ExaminedAtSecondLastBlockWorks
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.NullExaminedAndConsumedNoops
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.LengthChangesIfExaminedChanges
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.NullConsumedOrExaminedNoops
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.LengthDecreasedAfterReadAdvanceExamined
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.ConsumedGreaterThanExaminedThrows
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.LengthCorrectAfterAlloc0AdvanceFlush
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.NullExaminedNoops
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.LengthCorrectAfterAllocAdvanceFlush
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.ByteByByteTest
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.PooledSegmentsDontAffectLastExaminedSegmentEmptyGapWithDifferentBlocks
+[STRT] System.IO.Pipelines.Tests.PipeLengthTests.LengthDoesNotChangeIfExamineDoesNotChange
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastReturnsIfCompleted
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.CanReadAtLeast(bufferSize: -1, bufferedRead: False)
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.CanReadAtLeast(bufferSize: -1, bufferedRead: True)
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.CanReadAtLeast(bufferSize: 5, bufferedRead: False)
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.CanReadAtLeast(bufferSize: 5, bufferedRead: True)
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncCancelableAfterReadingSomeAndWritingAfterStartingRead
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.WriteAndCancellingPendingReadBeforeReadAtLeastAsync
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncCancelableAfterReadingSome
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.CanAlternateReadAtLeastAndRead
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncCancelableWhenWaitingForMoreData
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.CanWriteAndReadAtLeast
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncThrowsIfPassedCanceledCancellationToken
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncSegmentSizeLessThanMaxBufferSize(pool: null, bufferSize: 1, isSingleSegment: True, isFromCustomPool: False)
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncSegmentSizeLessThanMaxBufferSize(pool: null, bufferSize: 2097152, isSingleSegment: True, isFromCustomPool: False)
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncSegmentSizeLessThanMaxBufferSize(pool: null, bufferSize: 2097153, isSingleSegment: False, isFromCustomPool: False)
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncSegmentSizeLessThanMaxBufferSize(pool: DisposeTrackingBufferPool { CurrentlyRentedBlocks = 0, DisposedBlocks = 0, MaxBufferSize = 4096 }, bufferSize: 1, isSingleSegment: True, isFromCustomPool: True)
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncSegmentSizeLessThanMaxBufferSize(pool: DisposeTrackingBufferPool { CurrentlyRentedBlocks = 0, DisposedBlocks = 0, MaxBufferSize = 4096 }, bufferSize: 4096, isSingleSegment: True, isFromCustomPool: True)
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncSegmentSizeLessThanMaxBufferSize(pool: DisposeTrackingBufferPool { CurrentlyRentedBlocks = 0, DisposedBlocks = 0, MaxBufferSize = 4096 }, bufferSize: 4097, isSingleSegment: True, isFromCustomPool: False)
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncSegmentSizeLessThanMaxBufferSize(pool: DisposeTrackingBufferPool { CurrentlyRentedBlocks = 0, DisposedBlocks = 0, MaxBufferSize = 4096 }, bufferSize: 2097152, isSingleSegment: True, isFromCustomPool: False)
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncSegmentSizeLessThanMaxBufferSize(pool: DisposeTrackingBufferPool { CurrentlyRentedBlocks = 0, DisposedBlocks = 0, MaxBufferSize = 4096 }, bufferSize: 2097153, isSingleSegment: False, isFromCustomPool: False)
+[STRT] System.IO.Pipelines.Tests.StreamPipeReaderReadAtLeastAsyncTests.ReadAtLeastShouldNotCompleteIfWriterWroteLessThanMinimum
+[STRT] System.IO.Pipelines.Tests.SchedulerFacts.DefaultWriterSchedulerRunsOnThreadPool
+[STRT] System.IO.Pipelines.Tests.SchedulerFacts.UseSynchronizationContextFalseIgnoresSyncContextForWriterScheduler
+[STRT] System.IO.Pipelines.Tests.SchedulerFacts.ThreadPoolScheduler_SchedulesOnThreadPool
+[STRT] System.IO.Pipelines.Tests.SchedulerFacts.DefaultWriterSchedulerIgnoresSynchronizationContext
+[STRT] System.IO.Pipelines.Tests.SchedulerFacts.ReadAsyncCallbackRunsOnReaderScheduler
+[STRT] System.IO.Pipelines.Tests.SchedulerFacts.DefaultReaderSchedulerRunsOnThreadPool
+[STRT] System.IO.Pipelines.Tests.SchedulerFacts.FlushCallbackRunsOnWriterScheduler
+[STRT] System.IO.Pipelines.Tests.SchedulerFacts.DefaultReaderSchedulerRunsOnSynchronizationContext
+[STRT] System.IO.Pipelines.Tests.SchedulerFacts.DefaultWriterSchedulerRunsOnSynchronizationContext
+[STRT] System.IO.Pipelines.Tests.SchedulerFacts.UseSynchronizationContextFalseIgnoresSyncContextForReaderScheduler
+[STRT] System.IO.Pipelines.Tests.SchedulerFacts.DefaultReaderSchedulerIgnoresSyncContextIfConfigureAwaitFalse
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.CancellingPendingReadThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.WritingToPipeReaderStreamThrowsNotSupported
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.ZeroByteReadWorksWhenExaminedDoesNotEqualConsumed
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.DefaultPipeReaderImplementationReturnsPipeReaderStream
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.AsStreamDoNotCompleteReader
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.CanReadAfterCancellingPendingRead
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.PipeWriterStreamProducesToConsumingPipeReaderStream
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.ReadingWithSmallerBufferWorks
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.AsStreamReturnsSameInstance
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.ReadingFromPipeReaderStreamReadsFromUnderlyingPipeReader(readAsync: ReadAsyncDelegate { Method = System.Threading.Tasks.Task`1[System.Int32] <get_ReadCalls>b__21_0(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.ReadingFromPipeReaderStreamReadsFromUnderlyingPipeReader(readAsync: ReadAsyncDelegate { Method = System.Threading.Tasks.Task`1[System.Int32] <get_ReadCalls>b__21_1(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.ReadingFromPipeReaderStreamReadsFromUnderlyingPipeReader(readAsync: ReadAsyncDelegate { Method = System.Threading.Tasks.Task`1[System.Int32] <get_ReadCalls>b__21_3(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.ReadingFromPipeReaderStreamReadsFromUnderlyingPipeReader(readAsync: ReadAsyncDelegate { Method = System.Threading.Tasks.Task`1[System.Int32] <get_ReadCalls>b__21_4(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.ReadThrowsOriginalExceptionWhenItOccurs
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.AsStreamReturnsPipeReaderStream(readAsync: ReadAsyncDelegate { Method = System.Threading.Tasks.Task`1[System.Int32] <get_ReadCalls>b__21_0(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.AsStreamReturnsPipeReaderStream(readAsync: ReadAsyncDelegate { Method = System.Threading.Tasks.Task`1[System.Int32] <get_ReadCalls>b__21_1(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.AsStreamReturnsPipeReaderStream(readAsync: ReadAsyncDelegate { Method = System.Threading.Tasks.Task`1[System.Int32] <get_ReadCalls>b__21_3(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.AsStreamReturnsPipeReaderStream(readAsync: ReadAsyncDelegate { Method = System.Threading.Tasks.Task`1[System.Int32] <get_ReadCalls>b__21_4(System.IO.Stream, Byte[]), Target = <>c { } })
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.DisposingPipeReaderStreamCompletesPipeReader
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.CancellationTokenFlowsToUnderlyingPipeReader
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.EndOfPipeReaderReturnsZeroBytesFromReadAsync
+[STRT] System.IO.Pipelines.Tests.PipeReaderStreamTests.BuggyPipeReaderImplementationThrows
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.ThrowsOnReadAfterCompleteReader
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.ThrowsOnAllocAfterCompleteWriter
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.ExaminedCannotBeBeforeConsumed
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.CompleteAfterAdvanceCommits
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.AdvanceToWithExaminedCanUnExamine
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.TryReadAfterWriterCompleteReturnsTrue
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.CancelledFlushAsyncReturnsTaskWithValue
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.ReadAsyncOnCompletedCapturesTheExecutionContext
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.FlushAsyncWithoutBackpressureReturnsTaskWithValue
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.CompleteReaderAfterFlushWithoutAdvancingDoesNotThrow
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.EmptyFlushAsyncDoesntWakeUpReader
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.ReaderShouldNotGetUnflushedBytes
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.HelloWorldAcrossTwoBlocks
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.EmptyFlushAsyncDoesntWakeUpReaderAfterAdvance
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.ReaderShouldNotGetUnflushedBytesWithAppend
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.AdvanceShouldResetStateIfReadCanceled
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.AdvanceToWithoutExaminedCanUnExamine
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.ReadAsyncReturnsDataAfterCanceledRead
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.ReadAsyncWithDataReadyReturnsTaskWithValue
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.ReadingCanBeCanceled
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.SyncReadThenAsyncRead
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.CancelledReadAsyncReturnsTaskWithValue
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.TryReadAfterReaderCompleteThrows
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.TryReadAfterCancelPendingReadReturnsTrue
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.WritingDataMakesDataReadableViaPipeline
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.ReadAsync_ThrowsIfWriterCompletedWithException
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.AdvanceWithGetPositionCrossingIntoWriteHeadWorks
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.WhenTryReadReturnsFalseDontNeedToCallAdvance
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.DoubleAsyncReadThrows
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.TryReadAfterCloseWriterWithExceptionThrows
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.ReaderShouldNotGetUnflushedBytesWhenOverflowingSegments
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.CanReadAndWrite
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.GetMemoryZeroReturnsNonEmpty
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.FlushAsyncOnCompletedCapturesTheExecutionContextAndSyncContext
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.WriteAsync_ThrowsIfReaderCompletedWithException
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.AdvanceToInvalidCursorThrows
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.AdvanceWithoutReadThrows
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.AdvanceAfterCompleteThrows
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.GetResultBeforeCompletedThrows
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.TryReadAfterReadAsyncThrows
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.AdvanceResetsCommitHeadIndex
+[STRT] System.IO.Pipelines.Tests.PipelineReaderWriterFacts.ResetAfterCompleteReaderAndWriterWithoutAdvancingClearsEverything
+[STRT] System.IO.Pipelines.Tests.BasePipeReaderReadAtLeastAsyncTests.CanReadAtLeast(bufferSize: -1, bufferedRead: False)
+[STRT] System.IO.Pipelines.Tests.BasePipeReaderReadAtLeastAsyncTests.CanReadAtLeast(bufferSize: -1, bufferedRead: True)
+[STRT] System.IO.Pipelines.Tests.BasePipeReaderReadAtLeastAsyncTests.CanReadAtLeast(bufferSize: 5, bufferedRead: False)
+[STRT] System.IO.Pipelines.Tests.BasePipeReaderReadAtLeastAsyncTests.CanReadAtLeast(bufferSize: 5, bufferedRead: True)
+[STRT] System.IO.Pipelines.Tests.BasePipeReaderReadAtLeastAsyncTests.ReadAtLeastReturnsIfCompleted
+[STRT] System.IO.Pipelines.Tests.BasePipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncCancelableAfterReadingSomeAndWritingAfterStartingRead
+[STRT] System.IO.Pipelines.Tests.BasePipeReaderReadAtLeastAsyncTests.WriteAndCancellingPendingReadBeforeReadAtLeastAsync
+[STRT] System.IO.Pipelines.Tests.BasePipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncCancelableAfterReadingSome
+[STRT] System.IO.Pipelines.Tests.BasePipeReaderReadAtLeastAsyncTests.CanAlternateReadAtLeastAndRead
+[STRT] System.IO.Pipelines.Tests.BasePipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncCancelableWhenWaitingForMoreData
+[STRT] System.IO.Pipelines.Tests.BasePipeReaderReadAtLeastAsyncTests.ReadAtLeastShouldNotCompleteIfWriterWroteLessThanMinimum
+[STRT] System.IO.Pipelines.Tests.BasePipeReaderReadAtLeastAsyncTests.ReadAtLeastAsyncThrowsIfPassedCanceledCancellationToken
+[STRT] System.IO.Pipelines.Tests.BasePipeReaderReadAtLeastAsyncTests.CanWriteAndReadAtLeast
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.WriteNothingThenWriteToNewSegment
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.CanWriteNothingToBuffer
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.UnflushedBytes_HandlesLargeValues
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.ThrowsOnAdvanceOverMemorySize
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.GetMemoryFlushWithACompletedReaderNoops
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.WriteNothingThenWriteSomeBytes
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.WritesUsingGetMemoryWorks
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.EnsureAllocatesSpan
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.WritesUsingGetSpanWorks
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.CanWriteIntoHeadlessBuffer
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.CompleteWithLargeWriteThrows
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.CanWriteOverTheBlockLength
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.CanWriteWithOffsetAndLength(offset: 0, length: 3)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.CanWriteWithOffsetAndLength(offset: 1, length: 1)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.CanWriteWithOffsetAndLength(offset: 1, length: 2)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.CanWriteWithOffsetAndLength(offset: 2, length: 1)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.WriteAsyncWithACompletedReaderNoops
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.SlicesSpanAndAdvancesAfterWrite
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.ThrowsForInvalidParameters(arrayLength: 3, offset: -1, length: 0)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.ThrowsForInvalidParameters(arrayLength: 3, offset: 0, length: -1)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.ThrowsForInvalidParameters(arrayLength: 3, offset: 0, length: 4)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.ThrowsForInvalidParameters(arrayLength: 3, offset: 4, length: 0)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.ThrowsForInvalidParameters(arrayLength: 3, offset: -1, length: -1)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.ThrowsForInvalidParameters(arrayLength: 3, offset: 4, length: 4)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.ThrowsOnAdvanceWithNoMemory
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.EmptyWriteDoesNotThrow
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.WriteNothingBetweenTwoFullWrites
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.CanWriteMultipleTimes
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.WriteLargeDataBinary(length: 5)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.WriteLargeDataBinary(length: 50)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.WriteLargeDataBinary(length: 500)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.WriteLargeDataBinary(length: 5000)
+[STRT] System.IO.Pipelines.Tests.PipeWriterTests.WriteLargeDataBinary(length: 50000)
+[STRT] System.IO.Pipelines.Tests.FlushAsyncTests.CallingFlushAsyncMultipleTimesAllowsFirstToComplete
+[STRT] System.IO.Pipelines.Tests.FlushAsyncTests.FlushAsync_ReturnsCompletedTaskWhenMaxSizeIfZero
+[STRT] System.IO.Pipelines.Tests.FlushAsyncTests.DoubleFlushAsyncThrows
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCompletionTests.CompletingWithExceptionDoesNotAffectState
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCompletionTests.CompletingWithExceptionDoesNotAffectFailedState
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCompletionTests.CompletingWithoutExceptionDoesNotAffectState
+[STRT] System.IO.Pipelines.Tests.ReadAsyncCompletionTests.AwaitingReadAsyncAwaitableTwiceCompletesWriterWithException
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.CancelingBetweenReadsThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.CancelingThePendingReadThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.CopyToAsyncStreamDoesNotDoZeroLengthWrite
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.CancelingPipeWriterViaPendingFlushThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.CopyToAsyncPipeWriterCopiesRemainderAfterReadingSome
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.CancelingViaCancellationTokenThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.ThrowingFromStreamCallsAdvanceToWithStartOfLastReadResult
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.MultiSegmentWritesWorks
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.ThrowingFromStreamDoesNotLeavePipeReaderInBrokenState
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.CopyToAsyncThrowsTaskCanceledExceptionForAlreadyCancelledToken
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.CancelingStreamViaCancellationTokenThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.CopyToAsyncPipeWriterWorks
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.CopyToAsyncStreamWorks
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.CopyToAsyncStreamCopiesRemainderAfterReadingSome
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.MultiSegmentWritesUntilFailure
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.CopyToAsyncThrowsArgumentNullExceptionForNullDestination
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.CancelingPipeWriterViaCancellationTokenThrowsOperationCancelledException
+[STRT] System.IO.Pipelines.Tests.CopyToAsyncTests.EmptyBufferNotWrittenToStream
+[STRT] System.IO.Pipelines.Tests.BackpressureTests.FlushAsyncReturnsCompletedIfReaderCompletes
+[STRT] System.IO.Pipelines.Tests.BackpressureTests.FlushAsyncAwaitableResetsOnCommit
+[STRT] System.IO.Pipelines.Tests.BackpressureTests.FlushAsyncAwaitableDoesNotCompleteWhenReaderUnexamines
+[STRT] System.IO.Pipelines.Tests.BackpressureTests.FlushAsyncReturnsCompletedTaskWhenSizeLessThenLimit
+[STRT] System.IO.Pipelines.Tests.BackpressureTests.FlushAsyncThrowsIfReaderCompletedWithException
+[STRT] System.IO.Pipelines.Tests.BackpressureTests.FlushAsyncAwaitableDoesNotCompletesWhenReaderAdvancesUnderHight
+[STRT] System.IO.Pipelines.Tests.BackpressureTests.ReadAtLeastAsyncUnblocksWriterIfMinimumlowerThanResumeThreshold
+[STRT] System.IO.Pipelines.Tests.BackpressureTests.FlushAsyncAwaitableCompletesWhenReaderAdvancesExaminedUnderLow
+[STRT] System.IO.Pipelines.Tests.BackpressureTests.FlushAsyncReturnsNonCompletedSizeWhenCommitOverTheLimit
+[STRT] System.IO.Pipelines.Tests.BackpressureTests.FlushAsyncAwaitableCompletesWhenReaderAdvancesUnderLow
+[STRT] System.IO.Pipelines.Tests.BackpressureTests.FlushAsyncReturnsCompletedIfReaderCompletesWithoutAdvance
+[STRT] System.IO.Pipelines.Tests.BackpressureTests.CanBufferPastPauseThresholdButGetPausedEachTime
+[STRT] System.IO.Pipelines.Tests.ReadResultTests.ReadResultCanBeConstructed(cancelled: True, completed: True)
+[STRT] System.IO.Pipelines.Tests.ReadResultTests.ReadResultCanBeConstructed(cancelled: True, completed: False)
+[STRT] System.IO.Pipelines.Tests.ReadResultTests.ReadResultCanBeConstructed(cancelled: False, completed: True)
+[STRT] System.IO.Pipelines.Tests.ReadResultTests.ReadResultCanBeConstructed(cancelled: False, completed: False)
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.ReturnsWriteHeadWhenRequestingLargerBlock
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.ReturnsWriteHeadOnComplete
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.WriteAsyncWritesIntoPool
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.OnReaderCompletedCalledAfterBlocksReturned
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.GetMemoryAtMaxPoolSizeAllocatesFromPool
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.WriteDuringReadIsNotReturned
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.WritesToArrayPoolByDefault
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.CanWriteAfterReturningMultipleBlocks
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.GetMemoryOverMaxPoolSizeAllocatesArray
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.AdvanceToEndReturnsAllBlocks
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.OnWriterCompletedCalledAfterBlocksReturned
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.AdvanceToEndReturnsAllButOneBlockIfWritingBeforeAdvance
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.MultipleCompleteReaderWriterCauseDisposeOnlyOnce
+[STRT] System.IO.Pipelines.Tests.PipePoolTests.RentsMinimumSegmentSize
+Finished:    System.IO.Pipelines.Tests.dll
+Finished uploading 123876 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 441 Passed: 389 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 52
+
+test-main.js exiting WasmTestRunner.dll System.IO.Pipelines.Tests.dll after 0.7191333333333333 minutes with result 0 and linear memory 231997440 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

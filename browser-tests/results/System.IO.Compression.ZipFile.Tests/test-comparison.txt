@@ -1,0 +1,9 @@
+Test Comparison: System.IO.Compression.ZipFile.Tests
+Generated: 2026-01-30T02:12:18+01:00
+
+Mono tests:    196
+CoreCLR tests: 196
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

@@ -1,0 +1,256 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/System.IO.Compression.ZipFile/tests/System.IO.Compression.ZipFile.Tests.csproj (in 16.47 sec).
+  3 of 4 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.IO.Compression.ZipFile.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.IO.Compression.ZipFile.Tests/Release/net11.0-browser/browser-wasm/System.IO.Compression.ZipFile.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.IO.Compression.ZipFile.Tests/Release/net11.0-browser/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.IO.Compression.ZipFile.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.IO.Compression.ZipFile.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.IO.Compression.ZipFile/tests
+  ----- start Fri Jan 30 02:11:59 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.IO.Compression.ZipFile.Tests/Release/net11.0-browser/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.IO.Compression.ZipFile.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.IO.Compression.ZipFile.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.IO.Compression.ZipFile.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.IO.Compression.ZipFile.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.IO.Compression.ZipFile/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.IO.Compression.ZipFile.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.IO.Compression.ZipFile.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 34303
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 34303.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:46329/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.IO.Compression.ZipFile.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.IO.Compression.ZipFile.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.IO.Compression.ZipFile.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.IO.Compression.ZipFile.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.IO.Compression.ZipFile.Tests.dll (found 64 of 69 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.IO.Compression.ZipFile.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_ZipArchive_Extract.ExtractToDirectoryExtension_Unicode(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_ZipArchive_Extract.ExtractToDirectoryExtension_Unicode(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_ZipArchive_Extract.ExtractToDirectoryExtension(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_ZipArchive_Extract.ExtractToDirectoryExtension(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryOverwriteEncoding(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryOverwriteEncoding(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryUnicode(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryUnicode(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.Unix_ZipWithInvalidFileNames(zipName: "NullCharFileName_FromWindows", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.Unix_ZipWithInvalidFileNames(zipName: "NullCharFileName_FromUnix", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.Unix_ZipWithInvalidFileNames(zipName: "NullCharFileName_FromWindows", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.Unix_ZipWithInvalidFileNames(zipName: "NullCharFileName_FromUnix", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryOverwrite(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryOverwrite(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.DirectoryEntryWithData(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.DirectoryEntryWithData(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectory_PassDirectoryAsArchiveFile_ThrowsUnauthorizedAccessException(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectory_PassDirectoryAsArchiveFile_ThrowsUnauthorizedAccessException(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.FilesOutsideDirectory(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.FilesOutsideDirectory(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.Unix_ZipWithOSSpecificFileNames(zipName: "backslashes_FromUnix", fileName: "aa\\bb\\cc\\dd", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.Unix_ZipWithOSSpecificFileNames(zipName: "backslashes_FromWindows", fileName: "aa\\bb\\cc\\dd", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.Unix_ZipWithOSSpecificFileNames(zipName: "WindowsInvalid_FromUnix", fileName: "aa<b>d", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.Unix_ZipWithOSSpecificFileNames(zipName: "WindowsInvalid_FromWindows", fileName: "aa<b>d", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.Unix_ZipWithOSSpecificFileNames(zipName: "backslashes_FromUnix", fileName: "aa\\bb\\cc\\dd", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.Unix_ZipWithOSSpecificFileNames(zipName: "backslashes_FromWindows", fileName: "aa\\bb\\cc\\dd", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.Unix_ZipWithOSSpecificFileNames(zipName: "WindowsInvalid_FromUnix", fileName: "aa<b>d", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.Unix_ZipWithOSSpecificFileNames(zipName: "WindowsInvalid_FromWindows", fileName: "aa<b>d", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNull(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNull(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractOutOfRoot_Async(entryName: "../Foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractOutOfRoot_Async(entryName: "../Barbell")
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "normal.zip", folder: "normal", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "empty.zip", folder: "empty", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "explicitdir1.zip", folder: "explicitdir", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "explicitdir2.zip", folder: "explicitdir", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "appended.zip", folder: "small", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "prepended.zip", folder: "small", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "noexplicitdir.zip", folder: "explicitdir", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "normal.zip", folder: "normal", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "empty.zip", folder: "empty", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "explicitdir1.zip", folder: "explicitdir", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "explicitdir2.zip", folder: "explicitdir", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "appended.zip", folder: "small", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "prepended.zip", folder: "small", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractToDirectoryNormal(file: "noexplicitdir.zip", folder: "explicitdir", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractOutOfRoot(entryName: "../Foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract.ExtractOutOfRoot(entryName: "../Barbell")
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.ReadStreamOps(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.ReadStreamOps(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.InvalidFiles
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.InvalidInstanceMethods(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.InvalidInstanceMethods(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.InvalidDates(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.InvalidDates(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.UpdateAddFile(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.UpdateAddFile(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.OpenAsync_PassDirectory_ThrowsUnauthorizedAccessException
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.UpdateReadTwice(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.UpdateReadTwice(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.UnsupportedCompressionRoutine(zipName: "LZMA.zip", throwsOnOpen: True, async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.UnsupportedCompressionRoutine(zipName: "invalidDeflate.zip", throwsOnOpen: False, async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.UnsupportedCompressionRoutine(zipName: "LZMA.zip", throwsOnOpen: True, async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.UnsupportedCompressionRoutine(zipName: "invalidDeflate.zip", throwsOnOpen: False, async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.Open_PassDirectory_ThrowsUnauthorizedAccessException
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.InvalidFilesAsync
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.InvalidConstructors(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Open.InvalidConstructors(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_ZipArchiveEntry_Extract.ExtractToFileExtension(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_ZipArchiveEntry_Extract.ExtractToFileExtension(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Unix.UnixExtractFilePermissionsCompat(zipName: "sharpziplib.zip", expectedPermissions: null, async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Unix.UnixExtractFilePermissionsCompat(zipName: "Linux_RW_RW_R__.zip", expectedPermissions: "664", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Unix.UnixExtractFilePermissionsCompat(zipName: "Linux_RWXRW_R__.zip", expectedPermissions: "764", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Unix.UnixExtractFilePermissionsCompat(zipName: "OSX_RWXRW_R__.zip", expectedPermissions: "764", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Unix.UnixExtractFilePermissionsCompat(zipName: "sharpziplib.zip", expectedPermissions: null, async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Unix.UnixExtractFilePermissionsCompat(zipName: "Linux_RW_RW_R__.zip", expectedPermissions: "664", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Unix.UnixExtractFilePermissionsCompat(zipName: "Linux_RWXRW_R__.zip", expectedPermissions: "764", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Unix.UnixExtractFilePermissionsCompat(zipName: "OSX_RWXRW_R__.zip", expectedPermissions: "764", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Unix.UnixCreateSetsPermissionsInExternalAttributesUMaskZero
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Unix.UnixExtractSetsFilePermissionsFromExternalAttributes
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Unix.UnixExtractSetsFilePermissionsFromExternalAttributesUMaskZero
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Unix.UnixCreateSetsPermissionsInExternalAttributes
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreatedEmptyUtf32DirectoriesRoundtrip(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreatedEmptyUtf32DirectoriesRoundtrip(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectoryNormal(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectoryNormal(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_IncludeBaseDirectory(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_IncludeBaseDirectory(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreatedEmptyDirectoriesRoundtrip(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreatedEmptyDirectoriesRoundtrip(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateSetsExternalAttributesCorrectly(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateSetsExternalAttributesCorrectly(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_UnwritableStream_Throws(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_UnwritableStream_Throws(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreatedEmptyRootDirectoryRoundtrips(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreatedEmptyRootDirectoryRoundtrips(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectoryUnicode(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectoryUnicode(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_CompressionLevel_OutOfRange_Throws(invalidCompressionLevel: -2147483648, async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_CompressionLevel_OutOfRange_Throws(invalidCompressionLevel: -1, async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_CompressionLevel_OutOfRange_Throws(invalidCompressionLevel: 4, async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_CompressionLevel_OutOfRange_Throws(invalidCompressionLevel: 2147483647, async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_CompressionLevel_OutOfRange_Throws(invalidCompressionLevel: -2147483648, async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_CompressionLevel_OutOfRange_Throws(invalidCompressionLevel: -1, async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_CompressionLevel_OutOfRange_Throws(invalidCompressionLevel: 4, async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_CompressionLevel_OutOfRange_Throws(invalidCompressionLevel: 2147483647, async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectoryNormal_Unreadable_Unseekable(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectoryNormal_Unreadable_Unseekable(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_NullSourceDirectory_Throws(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create_Stream.CreateFromDirectory_NullSourceDirectory_Throws(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_ZipArchive_Create.CreateEntryFromFileExtension(withCompressionLevel: False, async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_ZipArchive_Create.CreateEntryFromFileExtension(withCompressionLevel: False, async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_ZipArchive_Create.CreateEntryFromFileExtension(withCompressionLevel: True, async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_ZipArchive_Create.CreateEntryFromFileExtension(withCompressionLevel: True, async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.FilesOutsideDirectory(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.FilesOutsideDirectory(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryUnicode(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryUnicode(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.Unix_ZipWithInvalidFileNames(zipName: "NullCharFileName_FromWindows", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.Unix_ZipWithInvalidFileNames(zipName: "NullCharFileName_FromUnix", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.Unix_ZipWithInvalidFileNames(zipName: "NullCharFileName_FromWindows", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.Unix_ZipWithInvalidFileNames(zipName: "NullCharFileName_FromUnix", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryOverwrite(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryOverwrite(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.DirectoryEntryWithData(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.DirectoryEntryWithData(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "normal.zip", folder: "normal", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "empty.zip", folder: "empty", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "explicitdir1.zip", folder: "explicitdir", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "explicitdir2.zip", folder: "explicitdir", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "appended.zip", folder: "small", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "prepended.zip", folder: "small", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "noexplicitdir.zip", folder: "explicitdir", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "normal.zip", folder: "normal", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "empty.zip", folder: "empty", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "explicitdir1.zip", folder: "explicitdir", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "explicitdir2.zip", folder: "explicitdir", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "appended.zip", folder: "small", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "prepended.zip", folder: "small", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal_Unwritable_Unseekable(file: "noexplicitdir.zip", folder: "explicitdir", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryRoundTrip(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryRoundTrip(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryOverwriteEncoding(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryOverwriteEncoding(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "normal.zip", folder: "normal", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "empty.zip", folder: "empty", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "explicitdir1.zip", folder: "explicitdir", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "explicitdir2.zip", folder: "explicitdir", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "appended.zip", folder: "small", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "prepended.zip", folder: "small", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "noexplicitdir.zip", folder: "explicitdir", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "normal.zip", folder: "normal", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "empty.zip", folder: "empty", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "explicitdir1.zip", folder: "explicitdir", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "explicitdir2.zip", folder: "explicitdir", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "appended.zip", folder: "small", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "prepended.zip", folder: "small", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectoryNormal(file: "noexplicitdir.zip", folder: "explicitdir", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.Unix_ZipWithOSSpecificFileNames(zipName: "backslashes_FromUnix", fileName: "aa\\bb\\cc\\dd", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.Unix_ZipWithOSSpecificFileNames(zipName: "backslashes_FromWindows", fileName: "aa\\bb\\cc\\dd", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.Unix_ZipWithOSSpecificFileNames(zipName: "WindowsInvalid_FromUnix", fileName: "aa<b>d", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.Unix_ZipWithOSSpecificFileNames(zipName: "WindowsInvalid_FromWindows", fileName: "aa<b>d", async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.Unix_ZipWithOSSpecificFileNames(zipName: "backslashes_FromUnix", fileName: "aa\\bb\\cc\\dd", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.Unix_ZipWithOSSpecificFileNames(zipName: "backslashes_FromWindows", fileName: "aa\\bb\\cc\\dd", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.Unix_ZipWithOSSpecificFileNames(zipName: "WindowsInvalid_FromUnix", fileName: "aa<b>d", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.Unix_ZipWithOSSpecificFileNames(zipName: "WindowsInvalid_FromWindows", fileName: "aa<b>d", async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectory_NullStream_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractOutOfRoot(entryName: "../Foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractOutOfRoot(entryName: "../Barbell")
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractToDirectory_UnreadableStream_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractOutOfRoot_Async(entryName: "../Foo")
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Extract_Stream.ExtractOutOfRoot_Async(entryName: "../Barbell")
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreatedEmptyRootDirectoryRoundtrips(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreatedEmptyRootDirectoryRoundtrips(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreateFromDirectory_IncludeBaseDirectory(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreateFromDirectory_IncludeBaseDirectory(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreatedEmptyDirectoriesRoundtrip(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreatedEmptyDirectoriesRoundtrip(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreatedEmptyUtf32DirectoriesRoundtrip(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreatedEmptyUtf32DirectoriesRoundtrip(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreateSetsExternalAttributesCorrectly(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreateSetsExternalAttributesCorrectly(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreateFromDirectoryNormal(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreateFromDirectoryNormal(async: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreateFromDirectoryUnicode(async: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.IO.Compression.Tests.ZipFile_Create.CreateFromDirectoryUnicode(async: True)
+  [40m[32minfo[39m[22m[49m: Finished:    System.IO.Compression.ZipFile.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.IO.Compression.ZipFile.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output/testResults.xml results 52410 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 52410 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 186 Passed: 184 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 2
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.IO.Compression.ZipFile.Tests.dll after 0.28663333333333335 minutes with result 0 and linear memory 231997440 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/System.IO.Compression.ZipFile.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.IO.Compression.ZipFile/tests
+  ----- end Fri Jan 30 02:12:18 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.IO.Compression.ZipFile.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:39.84

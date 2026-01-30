@@ -1,0 +1,115 @@
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  System.ComponentModel.EventBasedAsync.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.EventBasedAsync.Tests/Release/net11.0/browser-wasm/System.ComponentModel.EventBasedAsync.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.EventBasedAsync.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.EventBasedAsync.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/System.ComponentModel.EventBasedAsync.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.ComponentModel.EventBasedAsync/tests
+  ----- start Fri Jan 30 02:08:02 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.EventBasedAsync.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.EventBasedAsync.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll System.ComponentModel.EventBasedAsync.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/System.ComponentModel.EventBasedAsync.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/System.ComponentModel.EventBasedAsync.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.ComponentModel.EventBasedAsync/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.EventBasedAsync.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.ComponentModel.EventBasedAsync.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 46033
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 46033.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:38049/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.ComponentModel.EventBasedAsync.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.ComponentModel.EventBasedAsync.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll System.ComponentModel.EventBasedAsync.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: System.ComponentModel.EventBasedAsync.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  System.ComponentModel.EventBasedAsync.Tests.dll (found 31 of 31 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    System.ComponentModel.EventBasedAsync.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.ProgressChangedEventArgsTests.CtorAcceptsValuesAsIs(expectedPercentage: -2147483648, expectedState: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.ProgressChangedEventArgsTests.CtorAcceptsValuesAsIs(expectedPercentage: 0, expectedState: "non null test state")
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.ProgressChangedEventArgsTests.CtorAcceptsValuesAsIs(expectedPercentage: 2147483647, expectedState: "non null test state")
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestReportProgressSync
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.DisposeTwiceShouldNotThrow
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestFinalization
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestCancelInsideDoWork
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestThrowExceptionInDoWork
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.ReportProgress_NoProgressHandle_Nop
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestCancelAsyncWithoutCancellationSupport
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.CtorTest
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestReportProgressWithWorkerReportsProgressFalse
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestBackgroundWorkerBasic
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.RunWorkerAsyncTwice
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestCancelAsync
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.RunWorkerAsync_NoOnWorkHandler_SetsResultToNull
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.Cancel
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.PostNullDelegate
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.Throw
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.ThrowAfterAsyncComplete
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.Noop
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.ThrowAfterSynchronousComplete
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.RaiseExceptionIfNecessaryTest(expectedError: null, cancelled: False, expectedExceptionType: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.RaiseExceptionIfNecessaryTest(expectedError: null, cancelled: True, expectedExceptionType: typeof(System.InvalidOperationException))
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.RaiseExceptionIfNecessaryTest(expectedError: System.FormatException: One of the identified items was in an invalid format., cancelled: False, expectedExceptionType: typeof(System.FormatException))
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.RaiseExceptionIfNecessaryTest(expectedError: System.DllNotFoundException: Dll was not found., cancelled: True, expectedExceptionType: typeof(System.DllNotFoundException))
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.CtorTest(expectedException: null, expectedCancelled: False, expectedState: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.CtorTest(expectedException: null, expectedCancelled: True, expectedState: typeof(System.InvalidOperationException))
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.CtorTest(expectedException: System.FormatException: One of the identified items was in an invalid format., expectedCancelled: False, expectedState: typeof(System.FormatException))
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.CtorTest(expectedException: System.DllNotFoundException: Dll was not found., expectedCancelled: True, expectedState: typeof(System.DllNotFoundException))
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationManagerTests.SetNonNullSynchronizationContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationManagerTests.SetNullSynchronizationContext
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.CancelPropertyTest(expectedCancel: True)
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.CancelPropertyTest(expectedCancel: False)
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.ResultPropertyTest(expectedResult: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.ResultPropertyTest(expectedResult: "non null test result")
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.CtorTest(expectedArgument: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.CtorTest(expectedArgument: "non null test argument")
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.ResultPropertyTest(expectedResult: 42, expectedError: null, cancelled: False, expectedExceptionType: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.ResultPropertyTest(expectedResult: null, expectedError: null, cancelled: True, expectedExceptionType: typeof(System.InvalidOperationException))
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.ResultPropertyTest(expectedResult: null, expectedError: System.FormatException: One of the identified items was in an invalid format., cancelled: False, expectedExceptionType: typeof(System.FormatException))
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.ResultPropertyTest(expectedResult: null, expectedError: System.DllNotFoundException: Dll was not found., cancelled: True, expectedExceptionType: typeof(System.DllNotFoundException))
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.CtorTest(expectedResult: null)
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.CtorTest(expectedResult: "non null")
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Tests.AsyncOperationFinalizerTests.Finalizer_OperationNotCompleted_CompletesOperation
+  [40m[32minfo[39m[22m[49m: [STRT] System.ComponentModel.Tests.AsyncOperationFinalizerTests.Finalizer_OperationCompleted_DoesNotCallOperationCompleted
+  [40m[32minfo[39m[22m[49m: Finished:    System.ComponentModel.EventBasedAsync.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.EventBasedAsync.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 16597 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 16597 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 46 Passed: 32 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 14
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll System.ComponentModel.EventBasedAsync.Tests.dll after 0.008583333333333333 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/System.ComponentModel.EventBasedAsync.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.ComponentModel.EventBasedAsync/tests
+  ----- end Fri Jan 30 02:08:05 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.EventBasedAsync.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:05.25

@@ -1,0 +1,66 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:38049/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.ComponentModel.EventBasedAsync.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.ComponentModel.EventBasedAsync.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.ComponentModel.EventBasedAsync.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.ComponentModel.EventBasedAsync.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.ComponentModel.EventBasedAsync.Tests.dll (found 31 of 31 test cases)
+Starting:    System.ComponentModel.EventBasedAsync.Tests.dll
+[STRT] System.ComponentModel.EventBasedAsync.Tests.ProgressChangedEventArgsTests.CtorAcceptsValuesAsIs(expectedPercentage: -2147483648, expectedState: null)
+[STRT] System.ComponentModel.EventBasedAsync.Tests.ProgressChangedEventArgsTests.CtorAcceptsValuesAsIs(expectedPercentage: 0, expectedState: "non null test state")
+[STRT] System.ComponentModel.EventBasedAsync.Tests.ProgressChangedEventArgsTests.CtorAcceptsValuesAsIs(expectedPercentage: 2147483647, expectedState: "non null test state")
+[STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestReportProgressSync
+[STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.DisposeTwiceShouldNotThrow
+[STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestFinalization
+[STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestCancelInsideDoWork
+[STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestThrowExceptionInDoWork
+[STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.ReportProgress_NoProgressHandle_Nop
+[STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestCancelAsyncWithoutCancellationSupport
+[STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.CtorTest
+[STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestReportProgressWithWorkerReportsProgressFalse
+[STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestBackgroundWorkerBasic
+[STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.RunWorkerAsyncTwice
+[STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.TestCancelAsync
+[STRT] System.ComponentModel.EventBasedAsync.Tests.BackgroundWorkerTests.RunWorkerAsync_NoOnWorkHandler_SetsResultToNull
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.Cancel
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.PostNullDelegate
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.Throw
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.ThrowAfterAsyncComplete
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.Noop
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationTests.ThrowAfterSynchronousComplete
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.RaiseExceptionIfNecessaryTest(expectedError: null, cancelled: False, expectedExceptionType: null)
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.RaiseExceptionIfNecessaryTest(expectedError: null, cancelled: True, expectedExceptionType: typeof(System.InvalidOperationException))
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.RaiseExceptionIfNecessaryTest(expectedError: System.FormatException: One of the identified items was in an invalid format., cancelled: False, expectedExceptionType: typeof(System.FormatException))
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.RaiseExceptionIfNecessaryTest(expectedError: System.DllNotFoundException: Dll was not found., cancelled: True, expectedExceptionType: typeof(System.DllNotFoundException))
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.CtorTest(expectedException: null, expectedCancelled: False, expectedState: null)
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.CtorTest(expectedException: null, expectedCancelled: True, expectedState: typeof(System.InvalidOperationException))
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.CtorTest(expectedException: System.FormatException: One of the identified items was in an invalid format., expectedCancelled: False, expectedState: typeof(System.FormatException))
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncCompletedEventArgsTests.CtorTest(expectedException: System.DllNotFoundException: Dll was not found., expectedCancelled: True, expectedState: typeof(System.DllNotFoundException))
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationManagerTests.SetNonNullSynchronizationContext
+[STRT] System.ComponentModel.EventBasedAsync.Tests.AsyncOperationManagerTests.SetNullSynchronizationContext
+[STRT] System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.CancelPropertyTest(expectedCancel: True)
+[STRT] System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.CancelPropertyTest(expectedCancel: False)
+[STRT] System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.ResultPropertyTest(expectedResult: null)
+[STRT] System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.ResultPropertyTest(expectedResult: "non null test result")
+[STRT] System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.CtorTest(expectedArgument: null)
+[STRT] System.ComponentModel.EventBasedAsync.Tests.DoWorkEventArgsTests.CtorTest(expectedArgument: "non null test argument")
+[STRT] System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.ResultPropertyTest(expectedResult: 42, expectedError: null, cancelled: False, expectedExceptionType: null)
+[STRT] System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.ResultPropertyTest(expectedResult: null, expectedError: null, cancelled: True, expectedExceptionType: typeof(System.InvalidOperationException))
+[STRT] System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.ResultPropertyTest(expectedResult: null, expectedError: System.FormatException: One of the identified items was in an invalid format., cancelled: False, expectedExceptionType: typeof(System.FormatException))
+[STRT] System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.ResultPropertyTest(expectedResult: null, expectedError: System.DllNotFoundException: Dll was not found., cancelled: True, expectedExceptionType: typeof(System.DllNotFoundException))
+[STRT] System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.CtorTest(expectedResult: null)
+[STRT] System.ComponentModel.EventBasedAsync.Tests.RunWorkerCompletedEventArgsTests.CtorTest(expectedResult: "non null")
+[STRT] System.ComponentModel.Tests.AsyncOperationFinalizerTests.Finalizer_OperationNotCompleted_CompletesOperation
+[STRT] System.ComponentModel.Tests.AsyncOperationFinalizerTests.Finalizer_OperationCompleted_DoesNotCallOperationCompleted
+Finished:    System.ComponentModel.EventBasedAsync.Tests.dll
+Finished uploading 16597 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 46 Passed: 32 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 14
+
+test-main.js exiting WasmTestRunner.dll System.ComponentModel.EventBasedAsync.Tests.dll after 0.008583333333333333 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

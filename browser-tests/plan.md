@@ -103,10 +103,10 @@ Total: **203 test suites** (sorted by Mono baseline duration, longest first)
 | 0.01 | Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests | src/libraries/Microsoft.Extensions.Options.ConfigurationExtensions/tests/SourceGenerationTests/Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.csproj | ✅ |
 | 0.01 | Microsoft.Extensions.Options.SourceGeneration.Unit.Tests | src/libraries/Microsoft.Extensions.Options/tests/SourceGeneration.Unit.Tests/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.csproj | ✅ |
 | 0.01 | Microsoft.Win32.Primitives.Tests | src/libraries/Microsoft.Win32.Primitives/tests/Microsoft.Win32.Primitives.Tests.csproj | ✅ |
-| 0.01 | Microsoft.XmlSerializer.Generator.Tests | src/libraries/Microsoft.XmlSerializer.Generator/tests/Microsoft.XmlSerializer.Generator.Tests.csproj | ⬜ |
-| 0.01 | System.ComponentModel.EventBasedAsync.Tests | src/libraries/System.ComponentModel.EventBasedAsync/tests/System.ComponentModel.EventBasedAsync.Tests.csproj | ⬜ |
-| 0.01 | System.ComponentModel.Tests | src/libraries/System.ComponentModel/tests/System.ComponentModel.Tests.csproj | ⬜ |
-| 0.01 | System.Composition.AttributeModel.Tests | src/libraries/System.Composition.AttributedModel/tests/System.Composition.AttributeModel.Tests.csproj | ⬜ |
+| 0.01 | Microsoft.XmlSerializer.Generator.Tests | src/libraries/Microsoft.XmlSerializer.Generator/tests/Microsoft.XmlSerializer.Generator.Tests.csproj | ✅ |
+| 0.01 | System.ComponentModel.EventBasedAsync.Tests | src/libraries/System.ComponentModel.EventBasedAsync/tests/System.ComponentModel.EventBasedAsync.Tests.csproj | ✅ |
+| 0.01 | System.ComponentModel.Tests | src/libraries/System.ComponentModel/tests/System.ComponentModel.Tests.csproj | ✅ |
+| 0.01 | System.Composition.AttributeModel.Tests | src/libraries/System.Composition.AttributedModel/tests/System.Composition.AttributeModel.Tests.csproj | ✅ |
 | 0.01 | System.Console.Manual.Tests | src/libraries/System.Console/tests/ManualTests/System.Console.Manual.Tests.csproj | ⬜ |
 | 0.01 | System.Diagnostics.Contracts.Tests | src/libraries/System.Diagnostics.Contracts/tests/System.Diagnostics.Contracts.Tests.csproj | ⬜ |
 | 0.01 | System.Diagnostics.DiagnosticSource.Switches.Tests | src/libraries/System.Diagnostics.DiagnosticSource/tests/TestWithConfigSwitches/System.Diagnostics.DiagnosticSource.Switches.Tests.csproj | ⬜ |
