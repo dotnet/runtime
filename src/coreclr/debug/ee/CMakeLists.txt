@@ -51,12 +51,10 @@ set(CORDBEE_HEADERS_DAC
 
 list(APPEND CORDBEE_SOURCES_WKS ${ARCH_SOURCES_DIR}/walker.cpp)
 
-if (NOT CMAKE_GENERATOR MATCHES "Visual Studio")
-  # interpreterwalker.cpp is only needed when FEATURE_INTERPRETER is enabled
-  # This follows the same pattern as the interpreter CMakeLists.txt
+if(FEATURE_INTERPRETER)
   list(APPEND CORDBEE_SOURCES_WKS interpreterwalker.cpp)
   list(APPEND CORDBEE_HEADERS_WKS interpreterwalker.h)
-endif()
+endif(FEATURE_INTERPRETER)
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
   list(APPEND CORDBEE_SOURCES_WKS ${ARCH_SOURCES_DIR}/debuggerregdisplayhelper.cpp)
