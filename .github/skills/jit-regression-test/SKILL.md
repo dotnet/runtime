@@ -89,10 +89,10 @@ public class Runtime_99391
 ## [Optional] Step 4: Create a .csproj File (Only When Needed)
 
 A custom `.csproj` file is **only required** when:
-- Environment variables are needed to reproduce the bug
+- Environment variables are needed to reproduce the bug (such as `DOTNET_JitStressModeNames`)
 - Special compilation settings are required
 
-If the issue mentions environment variables like `DOTNET_TieredCompilation=0`, `DOTNET_JitStressModeNames`, etc., create a `Runtime_<issue_number>.csproj` file:
+It should be located next to the test source file with the following name: `Runtime_<issue_number>.csproj`. Example:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
