@@ -62,6 +62,7 @@ Each work item has a `DetailsUrl` that links to Helix logs with `ConsoleOutputUr
 | System.Net.Http.Functional.Tests | 901 run, 781 pass, 120 skip | 901 run, 781 pass, 120 skip | ✅ | **Requires Release config** |
 | System.Net.WebSockets.Tests | 268 run, 266 pass, 2 skip | 268 run, 266 pass, 2 skip | ✅ | Interpreter assert (non-fatal) |
 | System.Linq.AsyncEnumerable.Tests | 613 run, 613 pass, 0 skip | 613 run, 613 pass, 0 skip | ✅ | Interpreter assert (non-fatal) |
+| System.Collections.Immutable.Tests | 22420 run, 22279 pass, 85 fail, 56 skip | 22497 run, 22441 pass, 56 skip | ⚠️ | EnumComparer<T> bug - 85 failures |
 
 ### In Progress
 
