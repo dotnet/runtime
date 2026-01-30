@@ -1,0 +1,6 @@
+nohup: ignoring input
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime2/artifacts/bin/TestUtilities/Debug/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime2/artifacts/bin/ILLink.RoslynAnalyzer/Debug/netstandard2.0/ILLink.RoslynAnalyzer.dll

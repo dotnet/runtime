@@ -1124,6 +1124,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(underlyingArray?.GetHashCode() ?? 0, array.GetHashCode());
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", TestPlatforms.Browser)]
         [Theory]
         [MemberData(nameof(AddData))]
         public void Add(IEnumerable<int> source, IEnumerable<int> items)

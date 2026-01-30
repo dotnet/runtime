@@ -1,0 +1,40 @@
+nohup: ignoring input
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime2/artifacts/bin/TestUtilities/Debug/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime2/artifacts/bin/ILLink.RoslynAnalyzer/Debug/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime2/artifacts/bin/ILLink.CodeFixProvider/Debug/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime2/artifacts/bin/Mono.Linker/ref/Debug/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime2/artifacts/bin/Mono.Linker/Debug/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime2/artifacts/bin/ILLink.Tasks/Debug/net/ILLink.Tasks.dll
+  System.Private.CoreLib.Generators -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Private.CoreLib.Generators/Debug/netstandard2.0/System.Private.CoreLib.Generators.dll
+  System.Private.CoreLib -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Private.CoreLib/ref/Debug/net11.0/System.Private.CoreLib.dll
+  EventSourceGenerator -> /home/pavelsavara/dev/runtime2/artifacts/bin/EventSourceGenerator/Debug/netstandard2.0/EventSourceGenerator.dll
+  Microsoft.Interop.SourceGeneration -> /home/pavelsavara/dev/runtime2/artifacts/bin/Microsoft.Interop.SourceGeneration/Debug/netstandard2.0/Microsoft.Interop.SourceGeneration.dll
+  LibraryImportGenerator -> /home/pavelsavara/dev/runtime2/artifacts/bin/LibraryImportGenerator/Debug/netstandard2.0/Microsoft.Interop.LibraryImportGenerator.dll
+  System.Private.CoreLib -> /home/pavelsavara/dev/runtime2/artifacts/bin/coreclr/browser.wasm.Debug/IL/System.Private.CoreLib.dll
+  System.Private.Uri -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Private.Uri/Debug/net11.0/System.Private.Uri.dll
+  System.Runtime -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Runtime/ref/Debug/net11.0/System.Runtime.dll
+  System.Threading -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Threading/ref/Debug/net11.0/System.Threading.dll
+  System.Collections -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections/ref/Debug/net11.0/System.Collections.dll
+  System.Memory -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Memory/ref/Debug/net11.0/System.Memory.dll
+  System.Diagnostics.Tracing -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Diagnostics.Tracing/ref/Debug/net11.0/System.Diagnostics.Tracing.dll
+  System.Numerics.Vectors -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Numerics.Vectors/ref/Debug/net11.0/System.Numerics.Vectors.dll
+  System.Runtime -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Runtime/Debug/net11.0/System.Runtime.dll
+  System.Collections -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections/Debug/net11.0/System.Collections.dll
+  System.Threading -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Threading/Debug/net11.0/System.Threading.dll
+  System.Memory -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Memory/Debug/net11.0/System.Memory.dll
+  System.Runtime.Intrinsics -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Runtime.Intrinsics/ref/Debug/net11.0/System.Runtime.Intrinsics.dll
+  System.Numerics.Vectors -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Numerics.Vectors/Debug/net11.0/System.Numerics.Vectors.dll
+  System.Diagnostics.Tracing -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Diagnostics.Tracing/Debug/net11.0/System.Diagnostics.Tracing.dll
+  System.Runtime.Intrinsics -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Runtime.Intrinsics/Debug/net11.0/System.Runtime.Intrinsics.dll
+  System.Collections.Concurrent -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Concurrent/ref/Debug/net11.0/System.Collections.Concurrent.dll
+  System.Collections.Concurrent -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Concurrent/Debug/net11.0/System.Collections.Concurrent.dll
+  System.Runtime.InteropServices -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Runtime.InteropServices/ref/Debug/net11.0/System.Runtime.InteropServices.dll
+  System.Runtime.InteropServices -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Runtime.InteropServices/Debug/net11.0/System.Runtime.InteropServices.dll
+  System.Linq -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Linq/ref/Debug/net11.0/System.Linq.dll
+  ComInterfaceGenerator -> /home/pavelsavara/dev/runtime2/artifacts/bin/ComInterfaceGenerator/Debug/netstandard2.0/Microsoft.Interop.ComInterfaceGenerator.dll
+  System.Linq -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Linq/Debug/net11.0/System.Linq.dll
+  System.Collections.Immutable -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Immutable/ref/Debug/net11.0/System.Collections.Immutable.dll
+  System.Collections.Immutable -> /home/pavelsavara/dev/runtime2/artifacts/bin/System.Collections.Immutable/Debug/net11.0/System.Collections.Immutable.dll

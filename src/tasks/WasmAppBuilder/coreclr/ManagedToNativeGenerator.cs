@@ -83,6 +83,7 @@ public class ManagedToNativeGenerator : Task
                         "if",
                         "iff",
                         "iid",
+                        "iidi",
                         "iif",
                         "iifiif",
                         "iiiiiiiiiiiiiiiiii",
