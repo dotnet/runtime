@@ -20,7 +20,7 @@ namespace System.Diagnostics.Eventing.Reader
         public EventLogQuery(string? path, PathType pathType, string? query)
         {
             Session = EventLogSession.GlobalSession;
-            Path = path;   // can be null
+            Path = path;
             ThePathType = pathType;
 
             if (query == null)

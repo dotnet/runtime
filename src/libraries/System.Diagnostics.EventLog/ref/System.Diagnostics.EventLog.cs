@@ -204,13 +204,13 @@ namespace System.Diagnostics.Eventing.Reader
         public EventLogConfiguration(string logName, System.Diagnostics.Eventing.Reader.EventLogSession? session) { }
         public bool IsClassicLog { get { throw null; } }
         public bool IsEnabled { get { throw null; } set { } }
-        public string? LogFilePath { get { throw null; } set { } }
+        public string LogFilePath { get { throw null; } set { } }
         public System.Diagnostics.Eventing.Reader.EventLogIsolation LogIsolation { get { throw null; } }
         public System.Diagnostics.Eventing.Reader.EventLogMode LogMode { get { throw null; } set { } }
         public string LogName { get { throw null; } }
         public System.Diagnostics.Eventing.Reader.EventLogType LogType { get { throw null; } }
         public long MaximumSizeInBytes { get { throw null; } set { } }
-        public string? OwningProviderName { get { throw null; } }
+        public string OwningProviderName { get { throw null; } }
         public int? ProviderBufferSize { get { throw null; } }
         public System.Guid? ProviderControlGuid { get { throw null; } }
         public long? ProviderKeywords { get { throw null; } set { } }
@@ -218,8 +218,8 @@ namespace System.Diagnostics.Eventing.Reader
         public int? ProviderLevel { get { throw null; } set { } }
         public int? ProviderMaximumNumberOfBuffers { get { throw null; } }
         public int? ProviderMinimumNumberOfBuffers { get { throw null; } }
-        public System.Collections.Generic.IEnumerable<string?>? ProviderNames { get { throw null; } }
-        public string? SecurityDescriptor { get { throw null; } set { } }
+        public System.Collections.Generic.IEnumerable<string?> ProviderNames { get { throw null; } }
+        public string SecurityDescriptor { get { throw null; } set { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public void SaveChanges() { }
