@@ -1266,13 +1266,6 @@ public:
     }
 };
 
-// MarshalByRefObjectBaseObject
-// This class is the base class for MarshalByRefObject
-//
-class MarshalByRefObjectBaseObject : public Object
-{
-};
-
 // AssemblyBaseObject
 // This class is the base class for assemblies
 //
@@ -1476,7 +1469,7 @@ STRINGREF AllocateString(SString sstr);
 //
 //
 //-------------------------------------------------------------
-class ComObject : public MarshalByRefObjectBaseObject
+class ComObject : public Object
 {
     friend class CoreLibBinder;
 
