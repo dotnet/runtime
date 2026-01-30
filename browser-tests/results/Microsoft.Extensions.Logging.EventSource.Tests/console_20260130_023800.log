@@ -1,0 +1,46 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:46729/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Logging.EventSource.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Logging.EventSource.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Logging.EventSource.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Extensions.Logging.EventSource.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Extensions.Logging.EventSource.Tests.dll (found 22 of 22 test cases)
+Starting:    Microsoft.Extensions.Logging.EventSource.Tests.dll
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_Nothing_AfterDispose
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_TracingDetailsAsExpected_WithDefaults(hasTrace: True, useW3CFormatId: True, sampled: True)
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_TracingDetailsAsExpected_WithDefaults(hasTrace: True, useW3CFormatId: True, sampled: False)
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_TracingDetailsAsExpected_WithDefaults(hasTrace: True, useW3CFormatId: False, sampled: True)
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_TracingDetailsAsExpected_WithDefaults(hasTrace: False, useW3CFormatId: True, sampled: True)
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_AsExpected_AtWarningLevel
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_AsExpected_AtErrorLevel
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_AsExpected_ActivityJson_WithNullString
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_AllEvents_IfTraceSet
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.IsEnabledReturnsCorrectValue
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_AsExpected_WithSingleLoggerSpecWithVerbosity
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_Nothing_IfNotEnabled
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.FilterSpecs_IncreaseLoggingLevelForOneCategory_DisablesExistingRulesByDefault(prefix: "")
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.FilterSpecs_IncreaseLoggingLevelForOneCategory_DisablesExistingRulesByDefault(prefix: "UseAppFilters_StartsThisWay:Debug;")
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_AsExpected_MessageJson_WithNullString
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_OnlyFormattedMessage_IfKeywordSet
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_OnlyJson_IfKeywordSet
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_AsExpected_FormattedMessage_WithNullString
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_OnlyMessage_IfKeywordSet
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_AsExpected_WithComplexLoggerSpec
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.FilterSpecs_UseAppFilters_IncreaseLoggingLevelForOneCategory_GuaranteesAllRulesRemainAvailable
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_AsExpected_AfterSettingsReload
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_AsExpected_WithSingleLoggerSpec
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_AsExpected_WithDefaults_EnabledEarly
+[STRT] Microsoft.Extensions.Logging.Test.EventSourceLoggerTest.Logs_AsExpected_WithDefaults
+[STRT] Microsoft.Extensions.Logging.AzureAppServices.Test.LoggerFactoryExtensionsTests.BuilderExtensionAddsSingleSetOfServicesWhenCalledTwice
+Finished:    Microsoft.Extensions.Logging.EventSource.Tests.dll
+Finished uploading 7775 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 26 Passed: 26 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Logging.EventSource.Tests.dll after 0.013266666666666666 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

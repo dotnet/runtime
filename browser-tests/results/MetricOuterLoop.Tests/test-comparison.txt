@@ -1,0 +1,9 @@
+Test Comparison: MetricOuterLoop.Tests
+Generated: 2026-01-30T02:32:12+01:00
+
+Mono tests:    4
+CoreCLR tests: 4
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

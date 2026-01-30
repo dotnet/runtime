@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="Microsoft.Extensions.Options.SourceGeneration.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:38:48" total="60" passed="59" failed="0" skipped="1" time="0.232" errors="0">
+    <errors />
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Gen.OptionsValidation.Test.MultiModelValidatorTests" time="0.013">
+      <test name="Microsoft.Gen.OptionsValidation.Test.MultiModelValidatorTests.Invalid" type="Microsoft.Gen.OptionsValidation.Test.MultiModelValidatorTests" method="Invalid" time="0.012" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.MultiModelValidatorTests.Valid" type="Microsoft.Gen.OptionsValidation.Test.MultiModelValidatorTests" method="Valid" time="0.0008" result="Pass" />
+    </collection>
+    <collection total="1" passed="0" failed="0" skipped="1" name="Test collection for Microsoft.Gen.OptionsValidation.Test.EmitterTests" time="0.000">
+      <test name="Microsoft.Gen.OptionsValidation.Test.EmitterTests.TestEmitter" type="Microsoft.Gen.OptionsValidation.Test.EmitterTests" method="TestEmitter" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for Microsoft.Gen.OptionsValidation.Test.SelfValidationTests" time="0.002">
+      <test name="Microsoft.Gen.OptionsValidation.Test.SelfValidationTests.Valid" type="Microsoft.Gen.OptionsValidation.Test.SelfValidationTests" method="Valid" time="0.0007999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.SelfValidationTests.Invalid" type="Microsoft.Gen.OptionsValidation.Test.SelfValidationTests" method="Invalid" time="0.0002999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.SelfValidationTests.SelfValidateOptionsTest" type="Microsoft.Gen.OptionsValidation.Test.SelfValidationTests" method="SelfValidateOptionsTest" time="0.0007999" result="Pass" />
+    </collection>
+    <collection total="33" passed="33" failed="0" skipped="0" name="Test collection for Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" time="0.053">
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RangeAttributeModelIntInvalid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="RangeAttributeModelIntInvalid" time="0.0008" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RequiredAttributeInvalid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="RequiredAttributeInvalid" time="0.0004" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.ComplexModelInvalid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="ComplexModelInvalid" time="0.0254" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.MultipleAttributeModelValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="MultipleAttributeModelValid" time="0.0006999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.CustomValidationAttributeValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="CustomValidationAttributeValid" time="0.0015999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.DataTypeAttributeValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="DataTypeAttributeValid" time="0.0003" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RangeAttributeModelIntValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="RangeAttributeModelIntValid" time="0.0001" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.DerivedModelIsValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="DerivedModelIsValid" time="0.0004" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.EmailAttributeValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="EmailAttributeValid" time="0.0005" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.EmailAttributeInvalid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="EmailAttributeInvalid" time="0.0003" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RegularExpressionAttributeInvalid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="RegularExpressionAttributeInvalid" time="0.004" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RangeAttributeModelDoubleInvalid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="RangeAttributeModelDoubleInvalid" time="0.0004" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.DerivedModelIsInvalid(val: 0, derivedVal: \&quot;\&quot;, virtValAttr: 1, virtVal: null, hiddenValBaseClass: \&quot;Valid hidden member from base class\&quot;)" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="DerivedModelIsInvalid" time="0.0008" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.DerivedModelIsInvalid(val: null, derivedVal: \&quot;Valid\&quot;, virtValAttr: 1, virtVal: null, hiddenValBaseClass: \&quot;Valid hidden member from base class\&quot;)" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="DerivedModelIsInvalid" time="0.0005" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.DerivedModelIsInvalid(val: 1, derivedVal: \&quot;Valid\&quot;, virtValAttr: null, virtVal: null, hiddenValBaseClass: \&quot;Valid hidden member from base class\&quot;)" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="DerivedModelIsInvalid" time="0.0001999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.OptionsUsingRangeWithTimeSpanValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="OptionsUsingRangeWithTimeSpanValid" time="0.0041" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RangeAttributeModelDoubleValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="RangeAttributeModelDoubleValid" time="0.0002" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RegularExpressionAttributeValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="RegularExpressionAttributeValid" time="0.0002" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RequiredAttributeValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="RequiredAttributeValid" time="0.0002" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.CustomTypeCustomValidationAttributeModelValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="CustomTypeCustomValidationAttributeModelValid" time="0.0005999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.CustomValidationAttributeInvalid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="CustomValidationAttributeInvalid" time="0.0015" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.AttributePropertyModelTestOnErrorMessage" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="AttributePropertyModelTestOnErrorMessage" time="0.0003" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.AttributePropertyModelTestOnErrorMessageResource" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="AttributePropertyModelTestOnErrorMessageResource" time="0.0003" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.LeafModelIsValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="LeafModelIsValid" time="0.0004999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.MultipleAttributeModelInvalid(val1: \&quot;\&quot;, val2: 2, val3: 4, val4: 7)" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="MultipleAttributeModelInvalid" time="0.0003" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.MultipleAttributeModelInvalid(val1: null, val2: 2, val3: 4, val4: 7)" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="MultipleAttributeModelInvalid" time="0.0005999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.MultipleAttributeModelInvalid(val1: \&quot;abc\&quot;, val2: 0, val3: 4, val4: 9)" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="MultipleAttributeModelInvalid" time="0.0001999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.MultipleAttributeModelInvalid(val1: \&quot;abc\&quot;, val2: 2, val3: 8, val4: 8)" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="MultipleAttributeModelInvalid" time="0.0001999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.MultipleAttributeModelInvalid(val1: \&quot;abc\&quot;, val2: 2, val3: 4, val4: 10)" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="MultipleAttributeModelInvalid" time="0.0001999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.CustomTypeCustomValidationAttributeModelInvalid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="CustomTypeCustomValidationAttributeModelInvalid" time="0.001" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RangeAttributeModelDateInvalid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="RangeAttributeModelDateInvalid" time="0.0042999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.RangeAttributeModelDateValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="RangeAttributeModelDateValid" time="0.0017" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests.ComplexModelValid" type="Microsoft.Gen.OptionsValidation.Test.OptionsValidationTests" method="ComplexModelValid" time="0.0005" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Gen.OptionsValidation.Test.FunnyStringsTests" time="0.001">
+      <test name="Microsoft.Gen.OptionsValidation.Test.FunnyStringsTests.Invalid" type="Microsoft.Gen.OptionsValidation.Test.FunnyStringsTests" method="Invalid" time="0.0011" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.FunnyStringsTests.Valid" type="Microsoft.Gen.OptionsValidation.Test.FunnyStringsTests" method="Valid" time="0.0001" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Gen.OptionsValidation.Test.GenericsTests" time="0.001">
+      <test name="Microsoft.Gen.OptionsValidation.Test.GenericsTests.Invalid" type="Microsoft.Gen.OptionsValidation.Test.GenericsTests" method="Invalid" time="0.001" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.GenericsTests.Valid" type="Microsoft.Gen.OptionsValidation.Test.GenericsTests" method="Valid" time="0.0001" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Gen.OptionsValidation.Test.NestedTests" time="0.001">
+      <test name="Microsoft.Gen.OptionsValidation.Test.NestedTests.Invalid" type="Microsoft.Gen.OptionsValidation.Test.NestedTests" method="Invalid" time="0.0007999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.NestedTests.Valid" type="Microsoft.Gen.OptionsValidation.Test.NestedTests" method="Valid" time="0.0002" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Gen.OptionsValidation.Test.RecordTypesTests" time="0.001">
+      <test name="Microsoft.Gen.OptionsValidation.Test.RecordTypesTests.Invalid" type="Microsoft.Gen.OptionsValidation.Test.RecordTypesTests" method="Invalid" time="0.001" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.RecordTypesTests.Valid" type="Microsoft.Gen.OptionsValidation.Test.RecordTypesTests" method="Valid" time="0.0001999" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for Microsoft.Gen.OptionsValidation.Test.EnumerationTests" time="0.003">
+      <test name="Microsoft.Gen.OptionsValidation.Test.EnumerationTests.NullElement" type="Microsoft.Gen.OptionsValidation.Test.EnumerationTests" method="NullElement" time="0.0015" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.EnumerationTests.Invalid" type="Microsoft.Gen.OptionsValidation.Test.EnumerationTests" method="Invalid" time="0.0008999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.EnumerationTests.Valid" type="Microsoft.Gen.OptionsValidation.Test.EnumerationTests" method="Valid" time="0.0005" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Gen.OptionsValidation.Test.CustomAttrTests" time="0.001">
+      <test name="Microsoft.Gen.OptionsValidation.Test.CustomAttrTests.Invalid" type="Microsoft.Gen.OptionsValidation.Test.CustomAttrTests" method="Invalid" time="0.0005" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.CustomAttrTests.Valid" type="Microsoft.Gen.OptionsValidation.Test.CustomAttrTests" method="Valid" time="0.0002" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Gen.OptionsValidation.Test.NoNamespaceTests" time="0.001">
+      <test name="Microsoft.Gen.OptionsValidation.Test.NoNamespaceTests.Invalid" type="Microsoft.Gen.OptionsValidation.Test.NoNamespaceTests" method="Invalid" time="0.0005999" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.NoNamespaceTests.Valid" type="Microsoft.Gen.OptionsValidation.Test.NoNamespaceTests" method="Valid" time="0.0001999" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Gen.OptionsValidation.Test.RandomMembersTests" time="0.000">
+      <test name="Microsoft.Gen.OptionsValidation.Test.RandomMembersTests.Invalid" type="Microsoft.Gen.OptionsValidation.Test.RandomMembersTests" method="Invalid" time="0.0002" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.RandomMembersTests.Valid" type="Microsoft.Gen.OptionsValidation.Test.RandomMembersTests" method="Valid" time="0.0001" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Gen.OptionsValidation.Test.ValueTypesTests" time="0.001">
+      <test name="Microsoft.Gen.OptionsValidation.Test.ValueTypesTests.Invalid" type="Microsoft.Gen.OptionsValidation.Test.ValueTypesTests" method="Invalid" time="0.0007" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.ValueTypesTests.Valid" type="Microsoft.Gen.OptionsValidation.Test.ValueTypesTests" method="Valid" time="0.0001" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Gen.OptionsValidation.Test.RepeatedTypesTests" time="0.001">
+      <test name="Microsoft.Gen.OptionsValidation.Test.RepeatedTypesTests.Invalid" type="Microsoft.Gen.OptionsValidation.Test.RepeatedTypesTests" method="Invalid" time="0.0008" result="Pass" />
+      <test name="Microsoft.Gen.OptionsValidation.Test.RepeatedTypesTests.Valid" type="Microsoft.Gen.OptionsValidation.Test.RepeatedTypesTests" method="Valid" time="0.0004" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

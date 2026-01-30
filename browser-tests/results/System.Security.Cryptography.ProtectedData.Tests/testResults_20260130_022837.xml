@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Security.Cryptography.ProtectedData.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:28:44" total="4" passed="4" failed="0" skipped="0" time="0.060" errors="0">
+    <errors />
+    <collection total="4" passed="4" failed="0" skipped="0" name="Test collection for System.Security.Cryptography.ProtectedDataTests.ProtectedUnsupportedDataTests" time="0.005">
+      <test name="System.Security.Cryptography.ProtectedDataTests.ProtectedUnsupportedDataTests.Unprotect_PlatformNotSupported(scope: LocalMachine)" type="System.Security.Cryptography.ProtectedDataTests.ProtectedUnsupportedDataTests" method="Unprotect_PlatformNotSupported" time="0.0043" result="Pass" />
+      <test name="System.Security.Cryptography.ProtectedDataTests.ProtectedUnsupportedDataTests.Unprotect_PlatformNotSupported(scope: CurrentUser)" type="System.Security.Cryptography.ProtectedDataTests.ProtectedUnsupportedDataTests" method="Unprotect_PlatformNotSupported" time="0.0004" result="Pass" />
+      <test name="System.Security.Cryptography.ProtectedDataTests.ProtectedUnsupportedDataTests.Protect_PlatformNotSupported(scope: LocalMachine)" type="System.Security.Cryptography.ProtectedDataTests.ProtectedUnsupportedDataTests" method="Protect_PlatformNotSupported" time="0.0004" result="Pass" />
+      <test name="System.Security.Cryptography.ProtectedDataTests.ProtectedUnsupportedDataTests.Protect_PlatformNotSupported(scope: CurrentUser)" type="System.Security.Cryptography.ProtectedDataTests.ProtectedUnsupportedDataTests" method="Protect_PlatformNotSupported" time="0.0003" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

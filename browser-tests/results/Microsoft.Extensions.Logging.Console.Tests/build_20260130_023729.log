@@ -1,0 +1,512 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/Microsoft.Extensions.Logging.Console/tests/Microsoft.Extensions.Logging.Console.Tests/Microsoft.Extensions.Logging.Console.Tests.csproj (in 212 ms).
+  118 of 119 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  Microsoft.Extensions.Options.SourceGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration/Release/netstandard2.0/Microsoft.Extensions.Options.SourceGeneration.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  Microsoft.Extensions.Configuration.Binder.SourceGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.SourceGeneration/Release/netstandard2.0/Microsoft.Extensions.Configuration.Binder.SourceGeneration.dll
+  Microsoft.Extensions.DependencyInjection.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.DependencyInjection.Abstractions/ref/Release/net11.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+  Microsoft.Extensions.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives/ref/Release/net11.0/Microsoft.Extensions.Primitives.dll
+  Microsoft.Extensions.DependencyInjection.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.DependencyInjection.Abstractions/Release/net11.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+  Microsoft.Extensions.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives/Release/net11.0/Microsoft.Extensions.Primitives.dll
+  Microsoft.Extensions.Logging.Generators.Roslyn4.0 -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Generators.Roslyn4.0/Release/netstandard2.0/Microsoft.Extensions.Logging.Generators.dll
+  Microsoft.Extensions.Logging.Generators.Roslyn4.4 -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Generators.Roslyn4.4/Release/netstandard2.0/Microsoft.Extensions.Logging.Generators.dll
+  Microsoft.Extensions.Logging.Generators.Roslyn3.11 -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Generators.Roslyn3.11/Release/netstandard2.0/Microsoft.Extensions.Logging.Generators.dll
+  Microsoft.Extensions.DependencyInjection -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.DependencyInjection/ref/Release/net11.0/Microsoft.Extensions.DependencyInjection.dll
+  Microsoft.Extensions.Options -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options/ref/Release/net11.0/Microsoft.Extensions.Options.dll
+  Microsoft.Extensions.Configuration.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Abstractions/ref/Release/net11.0/Microsoft.Extensions.Configuration.Abstractions.dll
+  Microsoft.Extensions.DependencyInjection -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.DependencyInjection/Release/net11.0/Microsoft.Extensions.DependencyInjection.dll
+  Microsoft.Extensions.Configuration.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Abstractions/Release/net11.0/Microsoft.Extensions.Configuration.Abstractions.dll
+  Microsoft.Extensions.Options -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options/Release/net11.0/Microsoft.Extensions.Options.dll
+  Microsoft.Extensions.Logging.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Abstractions/ref/Release/net11.0/Microsoft.Extensions.Logging.Abstractions.dll
+  Microsoft.Extensions.Configuration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration/ref/Release/net11.0/Microsoft.Extensions.Configuration.dll
+  Microsoft.Extensions.Logging.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Abstractions/Release/net11.0/Microsoft.Extensions.Logging.Abstractions.dll
+  Microsoft.Extensions.Configuration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration/Release/net11.0/Microsoft.Extensions.Configuration.dll
+  Microsoft.Extensions.Logging -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging/ref/Release/net11.0/Microsoft.Extensions.Logging.dll
+  Microsoft.Extensions.Configuration.Binder -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder/ref/Release/net11.0/Microsoft.Extensions.Configuration.Binder.dll
+  Microsoft.Extensions.Logging -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging/Release/net11.0/Microsoft.Extensions.Logging.dll
+  Microsoft.Extensions.Configuration.Binder -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder/Release/net11.0/Microsoft.Extensions.Configuration.Binder.dll
+  Microsoft.Extensions.Options.ConfigurationExtensions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.ConfigurationExtensions/ref/Release/net11.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll
+  Microsoft.Extensions.Options.ConfigurationExtensions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.ConfigurationExtensions/Release/net11.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll
+  Microsoft.Extensions.Logging.Configuration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Configuration/ref/Release/net11.0/Microsoft.Extensions.Logging.Configuration.dll
+  Microsoft.Extensions.Logging.Configuration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Configuration/Release/net11.0/Microsoft.Extensions.Logging.Configuration.dll
+  Microsoft.Extensions.Logging.Console -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console/ref/Release/net11.0/Microsoft.Extensions.Logging.Console.dll
+  Microsoft.Extensions.Logging.Console -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console/Release/net11.0/Microsoft.Extensions.Logging.Console.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  Microsoft.Extensions.Logging.Console.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console.Tests/Release/net11.0/browser-wasm/Microsoft.Extensions.Logging.Console.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Logging.Console/tests/Microsoft.Extensions.Logging.Console.Tests
+  ----- start Fri Jan 30 02:37:37 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll Microsoft.Extensions.Logging.Console.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Logging.Console/tests/Microsoft.Extensions.Logging.Console.Tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Logging.Console.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 41159
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 41159.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:40005/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Logging.Console.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Logging.Console.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Logging.Console.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: Microsoft.Extensions.Logging.Console.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  Microsoft.Extensions.Logging.Console.Tests.dll (found 115 of 117 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    Microsoft.Extensions.Logging.Console.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.TextWriterExtensionsTests.WriteColoredMessage_NullColors_NoAnsiEmbedded
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.TextWriterExtensionsTests.WriteColoredMessage_InOrder_WhenBothForegroundOrBackgroundColorsSpecified
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.TextWriterExtensionsTests.WriteColoredMessage_WithForegroundEscapeCode_AndNoBackgroundColorSpecified
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.TextWriterExtensionsTests.WriteColoredMessage_WithBackgroundEscapeCode_AndNoForegroundColorSpecified
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.Log_LogsCorrectTimestamp
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.InvalidLogLevel_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.Log_TimestampFormatSet_ContainsTimestamp
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.Log_ScopeIsIEnumerable_SerializesKeyValuePair
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.Log_StateAndScopeContainsNullValue_SerializesNull
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.Log_StateAndScopeContainsFloatingPointType_SerializesValue
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.ConsoleLoggerOptions_TimeStampFormat_IsReloaded
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.Log_NullMessage_LogsWhenMessageIsNotProvided
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.Log_ExceptionWithMessage_ExtractsInfo
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.NoLogScope_DoesNotWriteAnyScopeContentToOutput_Json
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.Log_StateAndScopeContainsSpecialCaseValue_SerializesValueAsExpected
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.Log_IncludeScopes_ContainsDuplicateNamedPropertiesInScope_AcceptableJson
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.Log_StateAndScopeAreCollections_IncludesMessageAndCollectionValues
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.NoMessageOrException_Noop
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.ShouldContainInnerException
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.ShouldContainAggregateExceptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.JsonConsoleFormatterTests.NullFormatterName_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.NullDelegate_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b[77mInfo", output: ["Info"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1bmMessage", output: ["\x1bmMessage"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "Message\x1b ", output: ["Message\x1b "])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b\x1b\x1bMessage", output: ["\x1b\x1b\x1bMessage"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b\x1bMessage\x1b", output: ["\x1b\x1bMessage\x1b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "Message\x1b\x1b\x1b", output: ["Message\x1b\x1b\x1b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b\x1b\x1b", output: ["\x1b\x1b\x1b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b[7777m", output: ["\x1b[7777m"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b[xym", output: ["\x1b[xym"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b[ m", output: ["\x1b[ m"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b[ ", output: ["\x1b[ "])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b[77m\x1b m\x1b[40m", output: ["\x1b m"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b[m", output: ["\x1b[m"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1bxym", output: ["\x1bxym"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b m", output: ["\x1b m"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1bm", output: ["\x1bm"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b ", output: ["\x1b "])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b", output: ["\x1b"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "Info\x1b[7m:", output: ["Info", ":"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "Info\x1b[77m:", output: ["Info", ":"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b[40m\x1b[1m\x1b[33mwarn\x1b[39m\x1b[22m\x1b[49"···, output: ["warn", ":"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b[7mInfo", output: ["Info"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b[77m\x1b[1m\x1b[2m\x1b[0mInfo\x1b[1m", output: ["Info"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b[", output: ["\x1b["])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_ValidSupportedOrUnsupportedCodesInMessage_MessageParsedSuccessfully(messageWithUnsupportedCode: "\x1b mMessage\x1bxym", output: ["\x1b mMessage\x1bxym"])
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_CheckTimesWrittenToConsole(numSegments: 1, message: "No Color", lastSegment: "No Color")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_CheckTimesWrittenToConsole(numSegments: 2, message: "\x1b[41mColored\x1b[49mNo Color", lastSegment: "No Color")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_CheckTimesWrittenToConsole(numSegments: 2, message: "\x1b[41m\x1b[1m\x1b[31mmColored\x1b[39m\x1b[49mNo "···, lastSegment: "No Color")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_MessageWithMultipleColors_ParsedIntoMultipleSegments
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_RepeatedColorChange_PicksLastSet
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Black, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkBlue, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGreen, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkCyan, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkRed, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkMagenta, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkYellow, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Gray, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: DarkGray, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Blue, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Green, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Cyan, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Red, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Magenta, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: Yellow, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: Black)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: DarkBlue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: DarkGreen)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: DarkCyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: DarkRed)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: DarkMagenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: DarkYellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: Gray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: DarkGray)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: Blue)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: Green)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: Cyan)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: Red)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: Magenta)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: Yellow)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.AnsiParserTests.Parse_SetBackgroundForegroundAndMessageThenReset_Success(background: White, foreground: White)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerProcessorTests.FullMode_SetInvalid_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerProcessorTests.MaxQueueLength_SetInvalid_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerProcessorTests.LogAfterDisposeWritesLog
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerProcessorTests.LogsFlushedAfterDispose
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddConsole_FormatterNameIsSet_UsingSystemdFormat_IgnoreDeprecatedAndUseFormatterOptionsInstead
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddConsole_NullFormatterName_UsingDefaultFormat_IgnoreFormatterOptionsAndUseDeprecatedInstead
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddSystemdConsole_NullConfigure_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddJsonConsole_OutsideConfig_TakesProperty
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddSystemdConsole_OutsideConfig_TakesProperty
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddSystemdConsole_ChangeProperties_IsReadFromLoggingConfiguration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddConsole_NullFormatterName_UsingSystemdFormat_IgnoreFormatterOptionsAndUseDeprecatedInstead
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddJsonConsole_NullConfigure_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddConsoleFormatter_NullConfigure_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddConsole_NullConfigure_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddSimpleConsole_ChangeProperties_IsReadFromLoggingConfiguration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddConsole_ConsoleLoggerOptionsFromConfigFile_IsReadFromLoggingConfiguration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddSimpleConsole_NullConfigure_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddConsole_MaxQueueLengthSetToNegativeOrZero_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddConsoleFormatter_CustomFormatter_IsReadFromLoggingConfiguration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddJsonConsole_ChangeProperties_IsReadFromLoggingConfiguration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddConsole_FormatterNameIsSet_UsingDefaultFormat_IgnoreDeprecatedAndUseFormatterOptionsInstead
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddSimpleConsole_OutsideConfig_TakesProperty
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.EnsureFormatterOptions_OnlyHaveSimpleProperties(type: typeof(Microsoft.Extensions.Logging.Console.JsonConsoleFormatterOptions))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.EnsureFormatterOptions_OnlyHaveSimpleProperties(type: typeof(Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.EnsureFormatterOptions_OnlyHaveSimpleProperties(type: typeof(Microsoft.Extensions.Logging.Console.SimpleConsoleFormatterOptions))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.EnsureFormatterOptions_OnlyHaveSimpleProperties(type: typeof(Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions))
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddConsole_MaxQueueLengthLargerThanZero_ConfiguredProperly
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerExtensionsTests.AddConsole_NullFormatterNameUsingSystemdFormat_AnyDeprecatedPropertiesOverwriteFormatterOptions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_LogAsErrorLevel_IsAppliedToLoggers
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_TimeStampFormat_MultipleReloads
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.LogsWhenNullFilterGiven
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WriteCore_MessageWithNullException
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.CallingBeginScopeOnLogger_AlwaysReturnsNewDisposableInstance
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WritingNestedScopes_LogsExpectedMessage
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_TimeStampFormat_IsReloaded
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WriteWarning_LogsCorrectColors
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.AddConsole_IsOutputRedirected_ColorDisabled
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.DoesNotLog_NewLine_WhenNoExceptionIsProvided
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WriteCore_LogsCorrectTimestampInUtc
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WriteCritical_LogsCorrectColors
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.LogsWhenMessageIsNotProvided
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WriteCore_NullMessageWithNullException
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.Writes_NewLine_WhenExceptionIsProvided
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.Log_LogsCorrectTimestamp
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_DisableColors_IsReadFromLoggingConfiguration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WriteDebug_LogsCorrectColors
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_SetInvalidMaxQueueLength_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_IncludeScopes_IsReadFromLoggingConfiguration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WriteTrace_LogsCorrectColors
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WriteError_LogsCorrectColors
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_LogAsErrorLevel_IsReadFromLoggingConfiguration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_SetInvalidBufferMode_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WriteCore_NullMessageWithException
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_IncludeScopes_IsAppliedToLoggers
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WritingMultipleScopes_LogsExpectedMessage
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WriteInformation_LogsCorrectColors
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.CallingBeginScopeOnLogger_ReturnsNonNullableInstance
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_UpdateQueueOptions_UpdatesConsoleLoggerProcessorProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WritingNestedScope_LogsNullScopeName
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WriteCore_EmptyMessageWithException
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.IsEnabledReturnsCorrectValue
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WriteCore_LogsCorrectMessages
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.NoLogScope_DoesNotWriteAnyScopeContentToOutput
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WritingScopes_LogsExpectedMessage
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WritingScopes_LogsWithCorrectColors
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.Log_LogsCorrectOverrideTimestamp
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ThrowsException_WhenNoFormatterIsProvided
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_UseUtcTimestamp_IsAppliedToLoggers
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_DisableColors_IsAppliedToLoggers
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.LogMultipleArrays
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.Options_FormatterNameNull_UsesDeprecatedProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.WriteAllLevelsDisabledColors_LogsNoColors
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_InvalidFormat_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerLogsToError_WhenOverErrorLevel
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerTest.ConsoleLoggerOptions_TimeStampFormat_IsReadFromLoggingConfiguration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.SimpleConsoleFormatterTests.NullFormatterName_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.SimpleConsoleFormatterTests.NoMessageOrException_Noop
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.SimpleConsoleFormatterTests.Log_WritingScopes_LogsWithCorrectColorsWhenColorEnabled
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.SimpleConsoleFormatterTests.ConsoleLoggerOptions_TimeStampFormat_IsReloaded
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.SimpleConsoleFormatterTests.Log_SingleLine_LogsWhenBothMessageAndExceptionProvided
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.SimpleConsoleFormatterTests.InvalidLogLevel_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.SimpleConsoleFormatterTests.Log_LogsCorrectTimestamp
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.SimpleConsoleFormatterTests.Log_NoLogScope_DoesNotWriteAnyScopeContentToOutput
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.SimpleConsoleFormatterTests.Log_SingleLine_LogsWhenMessageIsNotProvided
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleFormatterTests.NullFormatterName_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleFormatterTests.Log_LogsCorrectTimestamp
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleFormatterTests.ConsoleLoggerOptions_TimeStampFormat_IsReloaded
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleFormatterTests.NoMessageOrException_Noop
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleFormatterTests.InvalidLogLevel_Throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerConfigureOptions.ConsoleLoggerConfigureOptions_InvalidConfigurationData(key: "Console:LogToStandardErrorThreshold", value: "invalid")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerConfigureOptions.ConsoleLoggerConfigureOptions_InvalidConfigurationData(key: "Console:MaxQueueLength", value: "notANumber")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerConfigureOptions.ConsoleLoggerConfigureOptions_InvalidConfigurationData(key: "Console:QueueFullMode", value: "invalid")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerConfigureOptions.ConsoleLoggerConfigureOptions_InvalidConfigurationData(key: "Console:FormatterOptions:IncludeScopes", value: "not a bool")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerConfigureOptions.ConsoleLoggerConfigureOptions_InvalidConfigurationData(key: "Console:FormatterOptions:UseUtcTimestamp", value: "not a bool")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerConfigureOptions.ConsoleLoggerConfigureOptions_InvalidConfigurationData(key: "Console:FormatterOptions:ColorBehavior", value: "not a behavior")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerConfigureOptions.ConsoleLoggerConfigureOptions_InvalidConfigurationData(key: "Console:FormatterOptions:SingleLine", value: "not a bool")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerConfigureOptions.ConsoleLoggerConfigureOptions_InvalidConfigurationData(key: "Console:FormatterOptions:JsonWriterOptions:Indente"···, value: "not a bool")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerConfigureOptions.ConsoleLoggerConfigureOptions_InvalidConfigurationData(key: "Console:FormatterOptions:JsonWriterOptions:MaxDept"···, value: "not an int")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerConfigureOptions.ConsoleLoggerConfigureOptions_InvalidConfigurationData(key: "Console:FormatterOptions:JsonWriterOptions:SkipVal"···, value: "not a bool")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Logging.Console.Test.ConsoleLoggerConfigureOptions.EnsureConsoleLoggerOptions_ConfigureOptions_SupportsAllProperties
+  [40m[32minfo[39m[22m[49m: Finished:    Microsoft.Extensions.Logging.Console.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 146559 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 146559 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 408 Passed: 306 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 102
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Logging.Console.Tests.dll after 0.019883333333333333 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Logging.Console/tests/Microsoft.Extensions.Logging.Console.Tests
+  ----- end Fri Jan 30 02:37:41 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Logging.Console.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:12.34

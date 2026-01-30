@@ -1,0 +1,67 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:35197/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Threading.ThreadPool.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Threading.ThreadPool.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Threading.ThreadPool.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Threading.ThreadPool.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Threading.ThreadPool.Tests.dll (found 47 of 49 test cases)
+Starting:    System.Threading.ThreadPool.Tests.dll
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.UnsafeQueueUserWorkItem_IThreadPoolWorkItem_SameObjectReused_AllInvoked
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.UnsafeQueueUserWorkItem_IThreadPoolWorkItem_ManyIndividualItems_AllInvoked
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.ThreadPoolThreadCreationDoesNotTransferExecutionContext
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.QueueUserWorkItem_PreferLocal_ValueTypeStateObjectPassedThrough
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.ThreadPoolCanPickUpOneOrMoreWorkItemsWhenThreadIsAvailable
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.PrioritizationExperimentConfigVarTest
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest_ChangedInDotNetCore
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.WorkerThreadStateResetTest
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.ThreadPoolMinMaxThreadsEventTest
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.GetMinMaxThreadsTest
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinThreadsTo0Test
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.RunProcessorCountItemsInParallel
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.GetAvailableThreadsTest
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.UnsafeQueueUserWorkItem_IThreadPoolWorkItem_ExecutionContextNotFlowed
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.CooperativeBlockingWithProcessingThreadsAndGoalThreadsAndAddWorkerRaceTest
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.QueueUserWorkItem_PreferLocal_RunsAsynchronously
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.WorkQueueDepletionTest
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.QueueUserWorkItem_PreferLocal_ReferenceTypeStateObjectPassedThrough
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.UnsafeQueueUserWorkItem_IThreadPoolWorkItem_Invalid_Throws
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.RunMoreThanMaxWorkItemsMakesOneWorkItemWaitForStarvationDetection
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.CooperativeBlockingCanCreateThreadsFaster
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.FileStreamFlushAsyncThreadPoolDeadlockTest
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.QueueUserWorkItem_PreferLocal_NullValidForState
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.QueueUserWorkItem_PreferLocal_InvalidArguments_Throws
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.MetricsTest
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.ReadWriteAsyncTest
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.SettingMinWorkerThreadsWillCreateThreadsUpToMinimum
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.QueueUserWorkItem_PreferLocal_ExecutionContextFlowedIfSafe
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest
+[STRT] System.Threading.ThreadPools.Tests.ThreadPoolTests.ThreadPoolCanProcessManyWorkItemsInParallelWithoutDeadlocking
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.RepeatingWaitFiresUntilUnregistered
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.UnregisterEventSignaledWhenUnregistered
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.CallingUnregisterOnAutomaticallyUnregisteredHandleReturnsTrue
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.UnregisteringWaitWithInvalidWaitHandleBeforeSignalingDoesNotCallCallback
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.StateIsPassedThroughToCallback
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.MultipleRegisteredWaitsUnregisterHandleShiftTest
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.QueueRegisterNegativeTest
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.UnregisterWaitHandleIsNotSignaledWhenCallbackIsRunning
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.CanDisposeEventAfterNonblockingUnregister
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.QueueRegisterPositiveAndFlowTest
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.SignalingRegisteredWaitHandleCallsCallback
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.CanRegisterMoreThan64Waits
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.TimingOutRegisteredWaitHandleCallsCallback
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.NonrepeatingWaitFiresOnlyOnce
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.EventSetAfterUnregisterNotObservedOnWaitThread
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.UnregisteringWaitWithEventBeforeSignalingDoesNotCallCallback
+[STRT] System.Threading.ThreadPools.Tests.RegisteredWaitTests.BlockingUnregisterBlocksWhileCallbackIsRunning
+Finished:    System.Threading.ThreadPool.Tests.dll
+Finished uploading 17526 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 47 Passed: 0 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 47
+
+test-main.js exiting WasmTestRunner.dll System.Threading.ThreadPool.Tests.dll after 0.009283333333333333 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

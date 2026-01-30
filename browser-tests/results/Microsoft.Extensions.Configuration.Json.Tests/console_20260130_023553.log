@@ -1,0 +1,64 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:39149/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Configuration.Json.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Json.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Json.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Extensions.Configuration.Json.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Extensions.Configuration.Json.Tests.dll (found 43 of 43 test cases)
+Starting:    Microsoft.Extensions.Configuration.Json.Tests.dll
+[STRT] Microsoft.Extensions.Configuration.Json.Test.EmptyObjectTest.NestedObject_DoesNotAddParent
+[STRT] Microsoft.Extensions.Configuration.Json.Test.EmptyObjectTest.NullObject_AddsEmptyString
+[STRT] Microsoft.Extensions.Configuration.Json.Test.EmptyObjectTest.EmptyObject_AddsAsNull
+[STRT] Microsoft.Extensions.Configuration.Json.JsonConfigurationExtensionsTest.AddJsonFile_ThrowsIfFileDoesNotExistAtPath
+[STRT] Microsoft.Extensions.Configuration.Json.JsonConfigurationExtensionsTest.AddJsonFile_ThrowsIfFilePathIsNullOrEmpty(path: null)
+[STRT] Microsoft.Extensions.Configuration.Json.JsonConfigurationExtensionsTest.AddJsonFile_ThrowsIfFilePathIsNullOrEmpty(path: "")
+[STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Combining_from_multiple_providers_is_case_insensitive
+[STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Combine_before_other_provider
+[STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Load_from_single_provider
+[STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Second_provider_overrides_values_from_first
+[STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Load_from_single_provider_with_duplicates_throws
+[STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Bind_to_object
+[STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Has_debug_view
+[STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Null_values_are_included_in_the_config
+[STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Combine_after_other_provider
+[STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Load_from_single_provider_with_differing_case_duplicates_throws
+[STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.PropertiesAreSortedByNumberOnlyFirst
+[STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.ArrayMerge
+[STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.ArrayOfObjects
+[STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.ArraysAreKeptInFileOrder
+[STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.ArraysAreConvertedToKeyValuePairs
+[STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.EmptyArrayNotIgnored
+[STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.NestedArrays
+[STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.ImplicitArrayItemReplacement
+[STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.ExplicitArrayReplacement
+[STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.TrailingCommas
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.ThrowExceptionWhenPassingEmptyStringAsFilePath
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.ThrowExceptionWhenUnexpectedEndFoundBeforeFinishParsing
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.LoadMethodCanHandleEmptyValue
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.ThrowExceptionWhenPassingNullAsFilePath
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.ReloadThrowsFromStreamProvider
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.ThrowFormatExceptionWhenFileIsEmpty
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.LoadWithCulture
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.NonObjectRootIsInvalid
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.LoadKeyValuePairsFromValidJson
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.SupportAndIgnoreComments
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.JsonConfiguration_Throws_On_Missing_Configuration_File
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.SupportAndIgnoreTrailingCommas
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.ThrowExceptionWhenMissingCurlyBeforeFinishParsing
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.CanLoadValidJsonFromStreamProvider
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.AddJsonFile_FileProvider_Is_Not_Disposed_When_SourcesGetReloaded
+[STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.JsonConfiguration_Does_Not_Throw_On_Optional_Configuration
+[STRT] Microsoft.Extensions.Configuration.Json.Test.IntegrationTest.LoadJsonConfiguration
+[STRT] Microsoft.Extensions.Configuration.Json.Test.IntegrationTest.MinimalJson_GetChildrenFromConfiguration_NoConfigurationSection
+Finished:    Microsoft.Extensions.Configuration.Json.Tests.dll
+Finished uploading 12737 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 44 Passed: 44 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Configuration.Json.Tests.dll after 0.01215 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

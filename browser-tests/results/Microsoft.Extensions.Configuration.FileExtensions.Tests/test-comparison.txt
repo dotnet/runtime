@@ -1,0 +1,17 @@
+Test Comparison: Microsoft.Extensions.Configuration.FileExtensions.Tests
+Generated: 2026-01-30T02:34:34+01:00
+
+Mono tests:    19
+CoreCLR tests: 19
+
+=== Extra in CoreCLR (4) ===
+Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderThrowsDirectoryNotFoundExceptionWhenNotFound(physicalPath: \&quot;/6751dd4c-2e2e-436d-bdb6-732e52b91476/configuratio\&quot;···)
+Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderThrowsDirectoryNotFoundExceptionWhenNotFound(physicalPath: \&quot;C:/86a9768a-e081-478c-b4e6-16cc1c1cb866/configurat\&quot;···)
+Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderThrowsFileNotFoundExceptionWhenNotFound(physicalPath: \&quot;/6751dd4c-2e2e-436d-bdb6-732e52b91476/configuratio\&quot;···)
+Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderThrowsFileNotFoundExceptionWhenNotFound(physicalPath: \&quot;C:/86a9768a-e081-478c-b4e6-16cc1c1cb866/configurat\&quot;···)
+
+=== Missing in CoreCLR (4) ===
+Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderThrowsDirectoryNotFoundExceptionWhenNotFound(physicalPath: \&quot;/dc8f10c7-eedb-4f2d-947d-ca0ec07b6195/configuratio\&quot;···)
+Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderThrowsDirectoryNotFoundExceptionWhenNotFound(physicalPath: \&quot;C:/3de41bf7-e2fb-4e7c-82c6-fa929e9caa2a/configurat\&quot;···)
+Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderThrowsFileNotFoundExceptionWhenNotFound(physicalPath: \&quot;/dc8f10c7-eedb-4f2d-947d-ca0ec07b6195/configuratio\&quot;···)
+Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderThrowsFileNotFoundExceptionWhenNotFound(physicalPath: \&quot;C:/3de41bf7-e2fb-4e7c-82c6-fa929e9caa2a/configurat\&quot;···)

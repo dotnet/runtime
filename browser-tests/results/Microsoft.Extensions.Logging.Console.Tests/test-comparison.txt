@@ -1,0 +1,9 @@
+Test Comparison: Microsoft.Extensions.Logging.Console.Tests
+Generated: 2026-01-30T02:37:41+01:00
+
+Mono tests:    418
+CoreCLR tests: 418
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

@@ -1,0 +1,35 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:37223/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Configuration.FileExtensions.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Configuration.FileExtensions.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Configuration.FileExtensions.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Extensions.Configuration.FileExtensions.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Extensions.Configuration.FileExtensions.Tests.dll (found 12 of 12 test cases)
+Starting:    Microsoft.Extensions.Configuration.FileExtensions.Tests.dll
+[STRT] Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderThrowsFileNotFoundExceptionWhenNotFound(physicalPath: "C:/86a9768a-e081-478c-b4e6-16cc1c1cb866/configurat"···)
+[STRT] Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderThrowsFileNotFoundExceptionWhenNotFound(physicalPath: "/6751dd4c-2e2e-436d-bdb6-732e52b91476/configuratio"···)
+[STRT] Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderThrowsDirectoryNotFoundExceptionWhenNotFound(physicalPath: "C:/86a9768a-e081-478c-b4e6-16cc1c1cb866/configurat"···)
+[STRT] Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderThrowsDirectoryNotFoundExceptionWhenNotFound(physicalPath: "/6751dd4c-2e2e-436d-bdb6-732e52b91476/configuratio"···)
+[STRT] Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderThrowsInvalidDataExceptionWhenLoadFails
+[STRT] Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationProviderTest.ProviderDisposesChangeTokenRegistration
+[STRT] Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationBuilderExtensionsTest.GetFileProvider_ReturnPhysicalProviderWithBaseDirectoryIfNotSet
+[STRT] Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationBuilderExtensionsTest.SetFileProvider_CheckPropertiesValueOnBuilder
+[STRT] Microsoft.Extensions.Configuration.FileExtensions.Test.FileConfigurationBuilderExtensionsTest.SetFileProvider_ThrowsIfBasePathIsNull
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationRootTest.SecretsAreConcealed
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationRootTest.ChainedConfigurationIsDisposed(shouldDispose: False)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationRootTest.ChainedConfigurationIsDisposed(shouldDispose: True)
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationRootTest.NonSecretsAreNotConcealed
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationRootTest.RootDisposesChangeTokenRegistrations
+[STRT] Microsoft.Extensions.Configuration.Test.ConfigurationRootTest.RootDisposesProviders
+Finished:    Microsoft.Extensions.Configuration.FileExtensions.Tests.dll
+Finished uploading 5921 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 15 Passed: 15 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Configuration.FileExtensions.Tests.dll after 0.009983333333333334 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

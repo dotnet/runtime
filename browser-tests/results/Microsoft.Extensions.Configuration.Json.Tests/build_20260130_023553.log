@@ -1,0 +1,138 @@
+
+  Determining projects to restore...
+  Restored /home/pavelsavara/dev/runtime/src/libraries/Microsoft.Extensions.Configuration.Json/tests/Microsoft.Extensions.Configuration.Json.Tests.csproj (in 148 ms).
+  106 of 107 projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  Microsoft.Extensions.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives/ref/Release/net11.0/Microsoft.Extensions.Primitives.dll
+  Microsoft.Extensions.FileSystemGlobbing -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileSystemGlobbing/ref/Release/net11.0/Microsoft.Extensions.FileSystemGlobbing.dll
+  Microsoft.Extensions.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives/Release/net11.0/Microsoft.Extensions.Primitives.dll
+  Microsoft.Extensions.FileSystemGlobbing -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileSystemGlobbing/Release/net11.0/Microsoft.Extensions.FileSystemGlobbing.dll
+  Microsoft.Extensions.Configuration.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Abstractions/ref/Release/net11.0/Microsoft.Extensions.Configuration.Abstractions.dll
+  Microsoft.Extensions.FileProviders.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileProviders.Abstractions/ref/Release/net11.0/Microsoft.Extensions.FileProviders.Abstractions.dll
+  Microsoft.Extensions.Configuration.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Abstractions/Release/net11.0/Microsoft.Extensions.Configuration.Abstractions.dll
+  Microsoft.Extensions.FileProviders.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileProviders.Abstractions/Release/net11.0/Microsoft.Extensions.FileProviders.Abstractions.dll
+  Microsoft.Extensions.Configuration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration/ref/Release/net11.0/Microsoft.Extensions.Configuration.dll
+  Microsoft.Extensions.FileProviders.Physical -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileProviders.Physical/ref/Release/net11.0/Microsoft.Extensions.FileProviders.Physical.dll
+  Microsoft.Extensions.Configuration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration/Release/net11.0/Microsoft.Extensions.Configuration.dll
+  Microsoft.Extensions.FileProviders.Physical -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.FileProviders.Physical/Release/net11.0/Microsoft.Extensions.FileProviders.Physical.dll
+  Microsoft.Extensions.Configuration.Binder.SourceGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder.SourceGeneration/Release/netstandard2.0/Microsoft.Extensions.Configuration.Binder.SourceGeneration.dll
+  Microsoft.Extensions.Configuration.FileExtensions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.FileExtensions/ref/Release/net11.0/Microsoft.Extensions.Configuration.FileExtensions.dll
+  Microsoft.Extensions.Configuration.Binder -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder/ref/Release/net11.0/Microsoft.Extensions.Configuration.Binder.dll
+  Microsoft.Extensions.Configuration.FileExtensions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.FileExtensions/Release/net11.0/Microsoft.Extensions.Configuration.FileExtensions.dll
+  Microsoft.Extensions.Configuration.Binder -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Binder/Release/net11.0/Microsoft.Extensions.Configuration.Binder.dll
+  Microsoft.Extensions.Configuration.Json -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json/ref/Release/net11.0/Microsoft.Extensions.Configuration.Json.dll
+  Microsoft.Extensions.Configuration.Json -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json/Release/net11.0/Microsoft.Extensions.Configuration.Json.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  Microsoft.Extensions.Configuration.Json.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json.Tests/Release/net11.0/browser-wasm/Microsoft.Extensions.Configuration.Json.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Configuration.Json/tests
+  ----- start Fri Jan 30 02:36:01 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Json.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Configuration.Json/tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Json.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 44631
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 44631.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:39149/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Configuration.Json.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Json.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Json.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: Microsoft.Extensions.Configuration.Json.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  Microsoft.Extensions.Configuration.Json.Tests.dll (found 43 of 43 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    Microsoft.Extensions.Configuration.Json.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.EmptyObjectTest.NestedObject_DoesNotAddParent
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.EmptyObjectTest.NullObject_AddsEmptyString
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.EmptyObjectTest.EmptyObject_AddsAsNull
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.JsonConfigurationExtensionsTest.AddJsonFile_ThrowsIfFileDoesNotExistAtPath
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.JsonConfigurationExtensionsTest.AddJsonFile_ThrowsIfFilePathIsNullOrEmpty(path: null)
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.JsonConfigurationExtensionsTest.AddJsonFile_ThrowsIfFilePathIsNullOrEmpty(path: "")
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Combining_from_multiple_providers_is_case_insensitive
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Combine_before_other_provider
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Load_from_single_provider
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Second_provider_overrides_values_from_first
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Load_from_single_provider_with_duplicates_throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Bind_to_object
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Has_debug_view
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Null_values_are_included_in_the_config
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Combine_after_other_provider
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.ConfigurationProviderJsonTest.Load_from_single_provider_with_differing_case_duplicates_throws
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.PropertiesAreSortedByNumberOnlyFirst
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.ArrayMerge
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.ArrayOfObjects
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.ArraysAreKeptInFileOrder
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.ArraysAreConvertedToKeyValuePairs
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.EmptyArrayNotIgnored
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.NestedArrays
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.ImplicitArrayItemReplacement
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.ExplicitArrayReplacement
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.ArrayTest.TrailingCommas
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.ThrowExceptionWhenPassingEmptyStringAsFilePath
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.ThrowExceptionWhenUnexpectedEndFoundBeforeFinishParsing
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.LoadMethodCanHandleEmptyValue
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.ThrowExceptionWhenPassingNullAsFilePath
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.ReloadThrowsFromStreamProvider
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.ThrowFormatExceptionWhenFileIsEmpty
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.LoadWithCulture
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.NonObjectRootIsInvalid
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.LoadKeyValuePairsFromValidJson
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.SupportAndIgnoreComments
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.JsonConfiguration_Throws_On_Missing_Configuration_File
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.SupportAndIgnoreTrailingCommas
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.ThrowExceptionWhenMissingCurlyBeforeFinishParsing
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.CanLoadValidJsonFromStreamProvider
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.AddJsonFile_FileProvider_Is_Not_Disposed_When_SourcesGetReloaded
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.JsonConfigurationTest.JsonConfiguration_Does_Not_Throw_On_Optional_Configuration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.IntegrationTest.LoadJsonConfiguration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Extensions.Configuration.Json.Test.IntegrationTest.MinimalJson_GetChildrenFromConfiguration_NoConfigurationSection
+  [40m[32minfo[39m[22m[49m: Finished:    Microsoft.Extensions.Configuration.Json.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 12737 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 12737 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 44 Passed: 44 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Configuration.Json.Tests.dll after 0.01215 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Configuration.Json/tests
+  ----- end Fri Jan 30 02:36:04 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Configuration.Json.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:11.19

@@ -1,0 +1,63 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:38269/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Configuration.Xml.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Xml.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Xml.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Extensions.Configuration.Xml.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Extensions.Configuration.Xml.Tests.dll (found 43 of 44 test cases)
+Starting:    Microsoft.Extensions.Configuration.Xml.Tests.dll
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.ConfigurationProviderXmlTest.Combine_before_other_provider
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.ConfigurationProviderXmlTest.Load_from_single_provider_with_duplicates_throws
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.ConfigurationProviderXmlTest.Load_from_single_provider
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.ConfigurationProviderXmlTest.Second_provider_overrides_values_from_first
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.ConfigurationProviderXmlTest.Has_debug_view
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.ConfigurationProviderXmlTest.Null_values_are_included_in_the_config
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.ConfigurationProviderXmlTest.Combine_after_other_provider
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.ConfigurationProviderXmlTest.Bind_to_object
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.ConfigurationProviderXmlTest.Combining_from_multiple_providers_is_case_insensitive
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.ConfigurationProviderXmlTest.Load_from_single_provider_with_differing_case_duplicates_throws
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationExtensionsTest.AddXmlFile_ThrowsIfFileDoesNotExistAtPath
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.LoadKeyValuePairsFromValidXml
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.NameAttributeContributesToPrefix
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.NestedRepeatedElementsContributeToPrefix
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.SupportAndIgnoreXMLDeclaration
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.RepeatedElementDetectionIsCaseInsensitive
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.SupportMixingNameAttributesAndCommonAttributes
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.LoadMethodCanHandleEmptyValue
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.ThrowExceptionWhenPassingEmptyStringAsFilePath
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.SupportAndIgnoreProcessingInstructions
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.ThrowExceptionWhenKeyIsDuplicatedWithDifferentCasing
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.XmlConfiguration_Does_Not_Throw_On_Optional_Configuration
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.LoadValidXmlFromStreamProvider
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.ThrowExceptionWhenFindNamespace
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.ThrowExceptionWhenPassingNullAsFilePath
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.SupportCDATAAsTextNode
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.LowercaseNameAttributeContributesToPrefix
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.ThrowExceptionWhenDuplicateKeyOfElementContents
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.KeysAreCaseInsensitive
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.RepeatedElementsUnderNameContributeToPrefix
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.RepeatedElementsWithDifferentNamesContributeToPrefix
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.XmlConfiguration_Throws_On_Missing_Configuration_File
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.ThrowExceptionWhenFindDTD
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.ReloadThrowsFromStreamProvider
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.RepeatedElementsContributeToPrefix
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.ThrowExceptionWhenKeyIsDuplicated
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.RepeatedElementsWithSameNameContributeToPrefix
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.NameAttributeCanBeUsedToSimulateArrays
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.SupportAndIgnoreComments
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.SupportMixingChildElementsAndAttributes
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.NameAttributeInRootElementContributesToPrefix
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.SupportMixingRepeatedElementsWithNonRepeatedElements
+[STRT] Microsoft.Extensions.Configuration.Xml.Test.XmlConfigurationTest.CommonAttributesContributeToKeyValuePairs
+Finished:    Microsoft.Extensions.Configuration.Xml.Tests.dll
+Finished uploading 12919 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 43 Passed: 43 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Configuration.Xml.Tests.dll after 0.010633333333333333 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

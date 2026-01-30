@@ -1,0 +1,9 @@
+Test Comparison: Microsoft.Extensions.Configuration.CommandLine.Tests
+Generated: 2026-01-30T02:32:42+01:00
+
+Mono tests:    24
+CoreCLR tests: 24
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

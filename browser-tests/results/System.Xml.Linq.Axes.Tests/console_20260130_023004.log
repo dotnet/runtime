@@ -1,0 +1,56 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:44887/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Xml.Linq.Axes.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Xml.Linq.Axes.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Xml.Linq.Axes.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Xml.Linq.Axes.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Xml.Linq.Axes.Tests.dll (found 36 of 36 test cases)
+Starting:    System.Xml.Linq.Axes.Tests.dll
+[STRT] System.Xml.Linq.Tests.XAttributeAxesWithXName.NullXNameTestAttributes
+[STRT] System.Xml.Linq.Tests.XAttributeAxesWithXName.NullXNameTestAttribute
+[STRT] System.Xml.Linq.Tests.XAttributeAxesWithXName.InvalidXNameTest
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.ElementsWithXNameOnXElementBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.AncestorsWithXNameBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.DescendantsWithXNameOnXDocBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.DescendantNodesOnXDocBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.ElementsBeforeSelfBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.ReorderToDocumentOrder
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.AncestorsAndSelfBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.ElementsBeforeSelfWithXNameBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.ElementsOnXDocBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.DescendantsAndSelfBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.AttributesBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.NodesOnXElementBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.DescendantsOnXElementBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.AncestorsAndSelfWithXNameBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.ElementsOnXElementBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.DescendantsOnXDocBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.NodesBeforeSelfBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.DescendantNodesOnXElementBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.ElementsWithXNameOnXDocBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.ElementsAfterSelfWithXNameBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.AttributeWithXNameBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.AncestorsBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.IEnumerableInDocumentOrderVariationTwo
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.DescendantsAndSelfWithXNameBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.ElementsAfterSelfBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.DescendantNodesAndSelfBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.NodesAfterSelfBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.DescendantsWithXNameOnXElementBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.NodesOnXDocBeforeAndAfter
+[STRT] System.Xml.Linq.Tests.AxisOrderValidation.IEnumerableInDocumentOrderVariationOne
+[STRT] System.Xml.Linq.Tests.XNodeAxesWithXName.NullXNameTestElements
+[STRT] System.Xml.Linq.Tests.XNodeAxesWithXName.NullXNameTestElement
+[STRT] System.Xml.Linq.Tests.IEnumerableAttributeAxesWithXName.NullXNameTest
+Finished:    System.Xml.Linq.Axes.Tests.dll
+Finished uploading 8810 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 36 Passed: 36 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Xml.Linq.Axes.Tests.dll after 0.0077666666666666665 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0
