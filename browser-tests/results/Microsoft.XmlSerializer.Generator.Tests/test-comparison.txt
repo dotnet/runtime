@@ -1,5 +1,5 @@
-Test Comparison: Microsoft.Win32.Primitives.Tests
-Generated: 2026-01-30T02:06:22+01:00
+Test Comparison: Microsoft.XmlSerializer.Generator.Tests
+Generated: 2026-01-30T02:06:46+01:00
 
 Mono tests:    3
 CoreCLR tests: 3

@@ -1,0 +1,17 @@
+The command could not be loaded, possibly because:
+  * You intended to execute a .NET application:
+      The application 'build' does not exist or is not a managed .dll or .exe.
+  * You intended to execute a .NET SDK command:
+      A compatible .NET SDK was not found.
+
+Requested SDK version: 11.0.100-alpha.1.26060.102
+global.json file: /home/pavelsavara/dev/runtime/global.json
+
+Installed SDKs:
+
+Install the [11.0.100-alpha.1.26060.102] .NET SDK or update [/home/pavelsavara/dev/runtime/global.json] to match an installed SDK.
+
+Learn about SDK resolution:
+https://aka.ms/dotnet/sdk-not-found
+10.0.100-rc.1.25451.107 [/home/pavelsavara/dev/.dotnet/sdk]
+10.0.100-rc.2.25480.112 [/home/pavelsavara/dev/.dotnet/sdk]

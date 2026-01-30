@@ -1,0 +1,78 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:36033/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll (found 58 of 58 test cases)
+Starting:    Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestCustomGeneratedAttributes
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestValidationWithEnumeration
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestValidationWithCyclicReferences
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestBasicDataAnnotationFailures
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestValidationSuccessResults
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestGeneratedRangeAttributeThreadSafety
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestObjectsWithIndexerProperties
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestValidationWithNestedTypes
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestNewDataAnnotationFailures
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.GenerateSourceUsingVariousLanguageVersions
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldProduceWarn_WhenTransitiveAttrMisused
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldSkipAtrributeWhenAttributeSymbolIsNotBasedOnValidationAttribute
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NoStaticValidator
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ValidationAttributeOnStaticMember
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.InaccessibleValidationAttributesTest
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldProduceWarningWhenTheClassHasNoEligibleMembers
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ClosedGenerics
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldAcceptAtrributeWhenAttributeIsInDifferentNamespace
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.OptionsExtendingSystemClassTest
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.PotentiallyMissingAttributes
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NotEnumerable
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.LanguageVersionTest
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceErrorWhenDataTypeAttributesAreUsed
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ValidatorAlreadyImplementValidateFunction
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldProduceWarningWhenTheClassMembersAreInaccessible
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.UsingInterfaceAsPropertyTypeForLengthAttributesTests
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.GeneratedAttributesTest
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceErrorWhenMultipleValidationAnnotationsExist
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ClosedGenericsInEnumeration
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.IgnoredStaticMembers
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.CircularTypeReferencesInEnumeration
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.DataAnnotationAttributesWithParams
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldHandleAtrributePropertiesOtherThanString
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.CantValidateOpenGenericMembersInEnumeration
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.InternalsVisibleToAssembliesTest
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.CantValidateOpenGenericMembers
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldSkipWhenOptionsValidatorAttributeDoesNotExist
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.TestEmitterWithCustomValidator
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NullValidator
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.AlreadyImplemented
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.MultiModelValidatorGeneratesOnlyOnePartialTypeBlock
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ProduceDiagnosticFromOtherAssemblyTest
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NoEligibleMembers
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceInfoWhenTransitiveClassHasABaseClass
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldStoreFloatValuesCorrectly
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.InvalidValidatorInterface
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldSkipAtrributeWhenAttributeSymbolCannotBeFound
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceErrorWhenConstVariableIsUsedAsAttributeArgument
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.CircularTypeReferences
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceErrorWhenPropertiesAreUsedAsAttributeArgument
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NotValidatorInEnumeration
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NoSimpleValidatorConstructor
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.BogusModelType
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceInfoWhenTheClassHasABaseClass
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NoSimpleValidatorConstructorInEnumeration
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NotValidator
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NullValidatorInEnumeration
+[STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceAnyMessagesWhenExistingValidationsArePlaced
+Finished:    Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll
+Finished uploading 20382 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 58 Passed: 0 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 58
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll after 0.009333333333333334 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

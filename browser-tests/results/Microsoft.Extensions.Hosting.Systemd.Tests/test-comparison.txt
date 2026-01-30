@@ -1,5 +1,5 @@
 Test Comparison: Microsoft.Extensions.Hosting.Systemd.Tests
-Generated: 2026-01-30T01:38:13+01:00
+Generated: 2026-01-30T02:04:20+01:00
 
 Mono tests:    4
 CoreCLR tests: 4

@@ -1,5 +1,5 @@
 Test Comparison: Microsoft.Extensions.FileProviders.Composite.Tests
-Generated: 2026-01-30T01:38:49+01:00
+Generated: 2026-01-30T02:02:41+01:00
 
 Mono tests:    13
 CoreCLR tests: 13

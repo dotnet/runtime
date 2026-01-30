@@ -1,0 +1,109 @@
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  System.Private.CoreLib.Generators -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.CoreLib.Generators/Release/netstandard2.0/System.Private.CoreLib.Generators.dll
+  System.Private.CoreLib -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.CoreLib/ref/Release/net11.0/System.Private.CoreLib.dll
+  EventSourceGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/EventSourceGenerator/Release/netstandard2.0/EventSourceGenerator.dll
+  Microsoft.Interop.SourceGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Interop.SourceGeneration/Release/netstandard2.0/Microsoft.Interop.SourceGeneration.dll
+  LibraryImportGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/LibraryImportGenerator/Release/netstandard2.0/Microsoft.Interop.LibraryImportGenerator.dll
+  System.Private.CoreLib -> /home/pavelsavara/dev/runtime/artifacts/bin/coreclr/browser.wasm.Release/IL/System.Private.CoreLib.dll
+  System.Private.Uri -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.Uri/Release/net11.0/System.Private.Uri.dll
+  System.Runtime -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime/ref/Release/net11.0/System.Runtime.dll
+  System.Memory -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Memory/ref/Release/net11.0/System.Memory.dll
+  System.Diagnostics.Tracing -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.Tracing/ref/Release/net11.0/System.Diagnostics.Tracing.dll
+  System.Numerics.Vectors -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Numerics.Vectors/ref/Release/net11.0/System.Numerics.Vectors.dll
+  System.Threading -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading/ref/Release/net11.0/System.Threading.dll
+  System.Collections -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections/ref/Release/net11.0/System.Collections.dll
+  System.Threading.Overlapped -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Overlapped/ref/Release/net11.0/System.Threading.Overlapped.dll
+  System.Runtime -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime/Release/net11.0/System.Runtime.dll
+  System.Threading.Thread -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread/ref/Release/net11.0/System.Threading.Thread.dll
+  System.Runtime.Intrinsics -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Intrinsics/ref/Release/net11.0/System.Runtime.Intrinsics.dll
+  System.Threading.ThreadPool -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.ThreadPool/ref/Release/net11.0/System.Threading.ThreadPool.dll
+  System.Diagnostics.Tracing -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.Tracing/Release/net11.0/System.Diagnostics.Tracing.dll
+  System.Threading -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading/Release/net11.0/System.Threading.dll
+  System.Collections -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections/Release/net11.0/System.Collections.dll
+  System.Numerics.Vectors -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Numerics.Vectors/Release/net11.0/System.Numerics.Vectors.dll
+  System.Threading.Thread -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread/Release/net11.0/System.Threading.Thread.dll
+  System.Memory -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Memory/Release/net11.0/System.Memory.dll
+  System.Threading.ThreadPool -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.ThreadPool/Release/net11.0/System.Threading.ThreadPool.dll
+  System.Runtime.Intrinsics -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Intrinsics/Release/net11.0/System.Runtime.Intrinsics.dll
+  System.Collections.Concurrent -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections.Concurrent/ref/Release/net11.0/System.Collections.Concurrent.dll
+  System.Collections.Concurrent -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections.Concurrent/Release/net11.0/System.Collections.Concurrent.dll
+  System.Runtime.InteropServices -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.InteropServices/ref/Release/net11.0/System.Runtime.InteropServices.dll
+  System.Runtime.InteropServices -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.InteropServices/Release/net11.0/System.Runtime.InteropServices.dll
+  System.Linq -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Linq/ref/Release/net11.0/System.Linq.dll
+  ComInterfaceGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/ComInterfaceGenerator/Release/netstandard2.0/Microsoft.Interop.ComInterfaceGenerator.dll
+  System.Linq -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Linq/Release/net11.0/System.Linq.dll
+  System.Diagnostics.DiagnosticSource -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource/ref/Release/net11.0/System.Diagnostics.DiagnosticSource.dll
+  System.Diagnostics.DiagnosticSource -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource/Release/net11.0/System.Diagnostics.DiagnosticSource.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  MetricOuterLoop1.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/MetricOuterLoop1.Tests/Release/net11.0-browser/browser-wasm/MetricOuterLoop1.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/MetricOuterLoop1.Tests/Release/net11.0-browser/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/MetricOuterLoop1.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/MetricOuterLoop1.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Diagnostics.DiagnosticSource/tests/MetricOuterLoopTests
+  ----- start Fri Jan 30 02:00:48 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/MetricOuterLoop1.Tests/Release/net11.0-browser/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/MetricOuterLoop1.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll MetricOuterLoop1.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/MetricOuterLoop1.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/MetricOuterLoop1.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Diagnostics.DiagnosticSource/tests/MetricOuterLoopTests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/MetricOuterLoop1.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll MetricOuterLoop1.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 42949
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 42949.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:35133/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=MetricOuterLoop1.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll MetricOuterLoop1.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll MetricOuterLoop1.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: MetricOuterLoop1.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  MetricOuterLoop1.Tests.dll (found 0 of 17 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    MetricOuterLoop1.Tests.dll
+  [40m[32minfo[39m[22m[49m: Finished:    MetricOuterLoop1.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/MetricOuterLoop1.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output/testResults.xml results 362 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 362 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 0 Passed: 0 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll MetricOuterLoop1.Tests.dll after 0.006733333333333333 minutes with result 0 and linear memory 161087488 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/MetricOuterLoop1.Tests/Release/net11.0-browser/browser-wasm/wwwroot ~/dev/runtime/src/libraries/System.Diagnostics.DiagnosticSource/tests/MetricOuterLoopTests
+  ----- end Fri Jan 30 02:00:51 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/MetricOuterLoop1.Tests/Release/net11.0-browser/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:12.66

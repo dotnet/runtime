@@ -90,19 +90,19 @@ Total: **203 test suites** (sorted by Mono baseline duration, longest first)
 
 | Mono (min) | Test Suite | csproj Path | Status |
 |------------|------------|-------------|--------|
-| 0.01 | IcuAppLocal.Tests | src/libraries/System.Runtime/tests/System.Globalization.Tests/IcuAppLocal/IcuAppLocal.Tests.csproj | ⬜ |
-| 0.01 | MetricOuterLoop1.Tests | src/libraries/System.Diagnostics.DiagnosticSource/tests/MetricOuterLoopTests/MetricOuterLoop1.Tests.csproj | ⬜ |
-| 0.01 | Microsoft.Bcl.TimeProvider.Tests | src/libraries/Microsoft.Bcl.TimeProvider/tests/Microsoft.Bcl.TimeProvider.Tests.csproj | ⬜ |
-| 0.01 | Microsoft.Extensions.Configuration.UserSecrets.Tests | src/libraries/Microsoft.Extensions.Configuration.UserSecrets/tests/Microsoft.Extensions.Configuration.UserSecrets.Tests.csproj | ⬜ |
-| 0.01 | Microsoft.Extensions.Diagnostics.Abstractions.Tests | src/libraries/Microsoft.Extensions.Diagnostics.Abstractions/tests/Microsoft.Extensions.Diagnostics.Abstractions.Tests.csproj | ⬜ |
-| 0.01 | Microsoft.Extensions.FileProviders.Composite.Tests | src/libraries/Microsoft.Extensions.FileProviders.Composite/tests/Microsoft.Extensions.FileProviders.Composite.Tests.csproj | ⬜ |
-| 0.01 | Microsoft.Extensions.HostFactoryResolver.Tests | src/libraries/Microsoft.Extensions.HostFactoryResolver/tests/Microsoft.Extensions.HostFactoryResolver.Tests.csproj | ⬜ |
-| 0.01 | Microsoft.Extensions.Hosting.Abstractions.Tests | src/libraries/Microsoft.Extensions.Hosting.Abstractions/tests/Microsoft.Extensions.Hosting.Abstractions.Tests.csproj | ⬜ |
-| 0.01 | Microsoft.Extensions.Hosting.Systemd.Tests | src/libraries/Microsoft.Extensions.Hosting.Systemd/tests/Microsoft.Extensions.Hosting.Systemd.Tests.csproj | ⬜ |
-| 0.01 | Microsoft.Extensions.Logging.Testing.Tests | src/libraries/Microsoft.Extensions.Logging/tests/DI.Common/Common/tests/Microsoft.Extensions.Logging.Testing.Tests.csproj | ⬜ |
-| 0.01 | Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests | src/libraries/Microsoft.Extensions.Options.ConfigurationExtensions/tests/SourceGenerationTests/Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.csproj | ⬜ |
-| 0.01 | Microsoft.Extensions.Options.SourceGeneration.Unit.Tests | src/libraries/Microsoft.Extensions.Options/tests/SourceGeneration.Unit.Tests/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.csproj | ⬜ |
-| 0.01 | Microsoft.Win32.Primitives.Tests | src/libraries/Microsoft.Win32.Primitives/tests/Microsoft.Win32.Primitives.Tests.csproj | ⬜ |
+| 0.01 | IcuAppLocal.Tests | src/libraries/System.Runtime/tests/System.Globalization.Tests/IcuAppLocal/IcuAppLocal.Tests.csproj | ✅ |
+| 0.01 | MetricOuterLoop1.Tests | src/libraries/System.Diagnostics.DiagnosticSource/tests/MetricOuterLoopTests/MetricOuterLoop1.Tests.csproj | ✅ |
+| 0.01 | Microsoft.Bcl.TimeProvider.Tests | src/libraries/Microsoft.Bcl.TimeProvider/tests/Microsoft.Bcl.TimeProvider.Tests.csproj | ✅ |
+| 0.01 | Microsoft.Extensions.Configuration.UserSecrets.Tests | src/libraries/Microsoft.Extensions.Configuration.UserSecrets/tests/Microsoft.Extensions.Configuration.UserSecrets.Tests.csproj | ✅ |
+| 0.01 | Microsoft.Extensions.Diagnostics.Abstractions.Tests | src/libraries/Microsoft.Extensions.Diagnostics.Abstractions/tests/Microsoft.Extensions.Diagnostics.Abstractions.Tests.csproj | ✅ |
+| 0.01 | Microsoft.Extensions.FileProviders.Composite.Tests | src/libraries/Microsoft.Extensions.FileProviders.Composite/tests/Microsoft.Extensions.FileProviders.Composite.Tests.csproj | ✅ |
+| 0.01 | Microsoft.Extensions.HostFactoryResolver.Tests | src/libraries/Microsoft.Extensions.HostFactoryResolver/tests/Microsoft.Extensions.HostFactoryResolver.Tests.csproj | ✅ |
+| 0.01 | Microsoft.Extensions.Hosting.Abstractions.Tests | src/libraries/Microsoft.Extensions.Hosting.Abstractions/tests/Microsoft.Extensions.Hosting.Abstractions.Tests.csproj | ✅ |
+| 0.01 | Microsoft.Extensions.Hosting.Systemd.Tests | src/libraries/Microsoft.Extensions.Hosting.Systemd/tests/Microsoft.Extensions.Hosting.Systemd.Tests.csproj | ✅ |
+| 0.01 | Microsoft.Extensions.Logging.Testing.Tests | src/libraries/Microsoft.Extensions.Logging/tests/DI.Common/Common/tests/Microsoft.Extensions.Logging.Testing.Tests.csproj | ✅ |
+| 0.01 | Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests | src/libraries/Microsoft.Extensions.Options.ConfigurationExtensions/tests/SourceGenerationTests/Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.csproj | ✅ |
+| 0.01 | Microsoft.Extensions.Options.SourceGeneration.Unit.Tests | src/libraries/Microsoft.Extensions.Options/tests/SourceGeneration.Unit.Tests/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.csproj | ✅ |
+| 0.01 | Microsoft.Win32.Primitives.Tests | src/libraries/Microsoft.Win32.Primitives/tests/Microsoft.Win32.Primitives.Tests.csproj | ✅ |
 | 0.01 | Microsoft.XmlSerializer.Generator.Tests | src/libraries/Microsoft.XmlSerializer.Generator/tests/Microsoft.XmlSerializer.Generator.Tests.csproj | ⬜ |
 | 0.01 | System.ComponentModel.EventBasedAsync.Tests | src/libraries/System.ComponentModel.EventBasedAsync/tests/System.ComponentModel.EventBasedAsync.Tests.csproj | ⬜ |
 | 0.01 | System.ComponentModel.Tests | src/libraries/System.ComponentModel/tests/System.ComponentModel.Tests.csproj | ⬜ |
@@ -291,7 +291,7 @@ Total: **203 test suites** (sorted by Mono baseline duration, longest first)
 | 2.75 | System.Net.WebSockets.Client.Tests | src/libraries/System.Net.WebSockets.Client/tests/System.Net.WebSockets.Client.Tests.csproj | ⬜ |
 | 7.15 | System.Linq.Tests | src/libraries/System.Linq/tests/System.Linq.Tests.csproj | ⬜ |
 | 7.24 | System.Memory.Tests | src/libraries/System.Memory/tests/System.Memory.Tests.csproj | ⬜ |
-| N/A | System.IO.Tests | src/libraries/System.Runtime/tests/System.IO.Tests/System.IO.Tests.csproj | ⬜ |
-| N/A | System.Text.Json.Tests | src/libraries/System.Text.Json/tests/System.Text.Json.Tests/System.Text.Json.Tests.csproj | ⬜ |
+| 8.00 | System.IO.Tests | src/libraries/System.Runtime/tests/System.IO.Tests/System.IO.Tests.csproj | ⬜ |
+| 9.00 | System.Text.Json.Tests | src/libraries/System.Text.Json/tests/System.Text.Json.Tests/System.Text.Json.Tests.csproj | ⬜ |
 
 **Legend:** ⬜ Not started | ✅ Passing | ⚠️ Has ActiveIssue | ❌ Blocked

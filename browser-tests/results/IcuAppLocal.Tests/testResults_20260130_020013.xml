@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="IcuAppLocal.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:00:18" total="1" passed="0" failed="0" skipped="1" time="0.033" errors="0">
+    <errors />
+    <collection total="1" passed="0" failed="0" skipped="1" name="Test collection for System.Globalization.Tests.IcuAppLocalTests" time="0.000">
+      <test name="System.Globalization.Tests.IcuAppLocalTests.TestIcuAppLocal" type="System.Globalization.Tests.IcuAppLocalTests" method="TestIcuAppLocal" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"SupportsIcuPackageDownload\"]]></reason>
+      </test>
+    </collection>
+  </assembly>
+</assemblies>

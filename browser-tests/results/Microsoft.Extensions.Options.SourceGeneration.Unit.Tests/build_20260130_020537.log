@@ -1,0 +1,265 @@
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Microsoft.Extensions.Options.SourceGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration/Release/netstandard2.0/Microsoft.Extensions.Options.SourceGeneration.dll
+  TestUtilities -> /home/pavelsavara/dev/runtime/artifacts/bin/TestUtilities/Release/net10.0/TestUtilities.dll
+  ILLink.RoslynAnalyzer -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.RoslynAnalyzer/Release/netstandard2.0/ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.CodeFixProvider/Release/netstandard2.0/ILLink.CodeFixProvider.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/ref/Release/net11.0/illink.dll
+  Mono.Linker -> /home/pavelsavara/dev/runtime/artifacts/bin/Mono.Linker/Release/net11.0/illink.dll
+  ILLink.Tasks -> /home/pavelsavara/dev/runtime/artifacts/bin/ILLink.Tasks/Release/net/ILLink.Tasks.dll
+  System.Text.RegularExpressions.Generator -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Text.RegularExpressions.Generator/Release/netstandard2.0/System.Text.RegularExpressions.Generator.dll
+  System.Private.CoreLib.Generators -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.CoreLib.Generators/Release/netstandard2.0/System.Private.CoreLib.Generators.dll
+  System.Private.CoreLib -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.CoreLib/ref/Release/net11.0/System.Private.CoreLib.dll
+  EventSourceGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/EventSourceGenerator/Release/netstandard2.0/EventSourceGenerator.dll
+  Microsoft.Interop.SourceGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Interop.SourceGeneration/Release/netstandard2.0/Microsoft.Interop.SourceGeneration.dll
+  LibraryImportGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/LibraryImportGenerator/Release/netstandard2.0/Microsoft.Interop.LibraryImportGenerator.dll
+  System.Private.CoreLib -> /home/pavelsavara/dev/runtime/artifacts/bin/coreclr/browser.wasm.Release/IL/System.Private.CoreLib.dll
+  System.Private.Uri -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.Uri/Release/net11.0/System.Private.Uri.dll
+  System.Runtime -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime/ref/Release/net11.0/System.Runtime.dll
+  System.Threading -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading/ref/Release/net11.0/System.Threading.dll
+  System.Reflection.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Primitives/ref/Release/net11.0/System.Reflection.Primitives.dll
+  System.Memory -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Memory/ref/Release/net11.0/System.Memory.dll
+  System.Collections -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections/ref/Release/net11.0/System.Collections.dll
+  System.Runtime.Loader -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Loader/ref/Release/net11.0/System.Runtime.Loader.dll
+  System.Diagnostics.Tracing -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.Tracing/ref/Release/net11.0/System.Diagnostics.Tracing.dll
+  System.Numerics.Vectors -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Numerics.Vectors/ref/Release/net11.0/System.Numerics.Vectors.dll
+  System.Runtime -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime/Release/net11.0/System.Runtime.dll
+  System.Diagnostics.StackTrace -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.StackTrace/ref/Release/net11.0/System.Diagnostics.StackTrace.dll
+  System.Threading.Thread -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread/ref/Release/net11.0/System.Threading.Thread.dll
+  System.Runtime.InteropServices -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.InteropServices/ref/Release/net11.0/System.Runtime.InteropServices.dll
+  System.Collections -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections/Release/net11.0/System.Collections.dll
+  System.Runtime.Intrinsics -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Intrinsics/ref/Release/net11.0/System.Runtime.Intrinsics.dll
+  System.Runtime.Loader -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Loader/Release/net11.0/System.Runtime.Loader.dll
+  System.Diagnostics.Tracing -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.Tracing/Release/net11.0/System.Diagnostics.Tracing.dll
+  System.Threading -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading/Release/net11.0/System.Threading.dll
+  System.Reflection.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Primitives/Release/net11.0/System.Reflection.Primitives.dll
+  System.Numerics.Vectors -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Numerics.Vectors/Release/net11.0/System.Numerics.Vectors.dll
+  System.Memory -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Memory/Release/net11.0/System.Memory.dll
+  System.Runtime.Intrinsics -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Intrinsics/Release/net11.0/System.Runtime.Intrinsics.dll
+  System.Reflection.Emit.ILGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration/ref/Release/net11.0/System.Reflection.Emit.ILGeneration.dll
+  System.Threading.Thread -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Thread/Release/net11.0/System.Threading.Thread.dll
+  System.ComponentModel -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel/ref/Release/net11.0/System.ComponentModel.dll
+  System.Collections.Concurrent -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections.Concurrent/ref/Release/net11.0/System.Collections.Concurrent.dll
+  System.Reflection.Emit.Lightweight -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit.Lightweight/ref/Release/net11.0/System.Reflection.Emit.Lightweight.dll
+  System.Reflection.Emit.ILGeneration -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit.ILGeneration/Release/net11.0/System.Reflection.Emit.ILGeneration.dll
+  System.ComponentModel -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel/Release/net11.0/System.ComponentModel.dll
+  System.Collections.NonGeneric -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections.NonGeneric/ref/Release/net11.0/System.Collections.NonGeneric.dll
+  System.ObjectModel -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ObjectModel/ref/Release/net11.0/System.ObjectModel.dll
+  System.Reflection.Emit.Lightweight -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit.Lightweight/Release/net11.0/System.Reflection.Emit.Lightweight.dll
+  System.Collections.Concurrent -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections.Concurrent/Release/net11.0/System.Collections.Concurrent.dll
+  System.Resources.Writer -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Resources.Writer/ref/Release/net11.0/System.Resources.Writer.dll
+  System.ObjectModel -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ObjectModel/Release/net11.0/System.ObjectModel.dll
+  System.Collections.NonGeneric -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections.NonGeneric/Release/net11.0/System.Collections.NonGeneric.dll
+  System.Runtime.InteropServices -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.InteropServices/Release/net11.0/System.Runtime.InteropServices.dll
+  System.Resources.Writer -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Resources.Writer/Release/net11.0/System.Resources.Writer.dll
+  System.IO.MemoryMappedFiles -> /home/pavelsavara/dev/runtime/artifacts/bin/System.IO.MemoryMappedFiles/ref/Release/net11.0/System.IO.MemoryMappedFiles.dll
+  System.ComponentModel.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Primitives/ref/Release/net11.0/System.ComponentModel.Primitives.dll
+  System.Linq -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Linq/ref/Release/net11.0/System.Linq.dll
+  System.IO.Compression -> /home/pavelsavara/dev/runtime/artifacts/bin/System.IO.Compression/ref/Release/net11.0/System.IO.Compression.dll
+  System.ComponentModel.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Primitives/Release/net11.0/System.ComponentModel.Primitives.dll
+  ComInterfaceGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/ComInterfaceGenerator/Release/netstandard2.0/Microsoft.Interop.ComInterfaceGenerator.dll
+  System.Collections.Specialized -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections.Specialized/ref/Release/net11.0/System.Collections.Specialized.dll
+  System.IO.MemoryMappedFiles -> /home/pavelsavara/dev/runtime/artifacts/bin/System.IO.MemoryMappedFiles/Release/net11.0/System.IO.MemoryMappedFiles.dll
+  System.IO.Compression -> /home/pavelsavara/dev/runtime/artifacts/bin/System.IO.Compression/Release/net11.0/System.IO.Compression.dll
+  System.Linq -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Linq/Release/net11.0/System.Linq.dll
+  System.Collections.Specialized -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections.Specialized/Release/net11.0/System.Collections.Specialized.dll
+  System.Collections.Immutable -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections.Immutable/ref/Release/net11.0/System.Collections.Immutable.dll
+  System.Collections.Immutable -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Collections.Immutable/Release/net11.0/System.Collections.Immutable.dll
+  System.Diagnostics.TraceSource -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource/ref/Release/net11.0/System.Diagnostics.TraceSource.dll
+  System.Text.Encoding.Extensions -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Text.Encoding.Extensions/ref/Release/net11.0/System.Text.Encoding.Extensions.dll
+  System.Diagnostics.TraceSource -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.TraceSource/Release/net11.0/System.Diagnostics.TraceSource.dll
+  System.Text.Encoding.Extensions -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Text.Encoding.Extensions/Release/net11.0/System.Text.Encoding.Extensions.dll
+  System.Reflection.Metadata -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata/ref/Release/net11.0/System.Reflection.Metadata.dll
+  System.Reflection.Metadata -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Metadata/Release/net11.0/System.Reflection.Metadata.dll
+  System.Reflection.Emit -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit/ref/Release/net11.0/System.Reflection.Emit.dll
+  System.Reflection.Emit -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Reflection.Emit/Release/net11.0/System.Reflection.Emit.dll
+  System.Text.RegularExpressions -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Text.RegularExpressions/ref/Release/net11.0/System.Text.RegularExpressions.dll
+  System.Linq.Expressions -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Linq.Expressions/ref/Release/net11.0/System.Linq.Expressions.dll
+  System.Text.RegularExpressions -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Text.RegularExpressions/Release/net11.0/System.Text.RegularExpressions.dll
+  System.Linq.Expressions -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Linq.Expressions/Release/net11.0/System.Linq.Expressions.dll
+  System.Diagnostics.StackTrace -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.StackTrace/Release/net11.0/System.Diagnostics.StackTrace.dll
+  System.Runtime.Numerics -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Numerics/ref/Release/net11.0/System.Runtime.Numerics.dll
+  Microsoft.Win32.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Win32.Primitives/ref/Release/net11.0/Microsoft.Win32.Primitives.dll
+  System.Runtime.Numerics -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Numerics/Release/net11.0/System.Runtime.Numerics.dll
+  Microsoft.Win32.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Win32.Primitives/Release/net11.0/Microsoft.Win32.Primitives.dll
+  System.Threading.Overlapped -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Overlapped/ref/Release/net11.0/System.Threading.Overlapped.dll
+  System.Threading.ThreadPool -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.ThreadPool/ref/Release/net11.0/System.Threading.ThreadPool.dll
+  System.Console -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Console/ref/Release/net11.0/System.Console.dll
+  System.Net.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Primitives/ref/Release/net11.0/System.Net.Primitives.dll
+  System.Threading.ThreadPool -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.ThreadPool/Release/net11.0/System.Threading.ThreadPool.dll
+  System.Console -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Console/Release/net11.0/System.Console.dll
+  System.Formats.Asn1 -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Formats.Asn1/ref/Release/net11.0/System.Formats.Asn1.dll
+  System.Net.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Primitives/Release/net11.0/System.Net.Primitives.dll
+  System.Formats.Asn1 -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Formats.Asn1/Release/net11.0/System.Formats.Asn1.dll
+  System.Threading.Overlapped -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Overlapped/Release/net11.0/System.Threading.Overlapped.dll
+  System.Diagnostics.DiagnosticSource -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource/ref/Release/net11.0/System.Diagnostics.DiagnosticSource.dll
+  System.Threading.Channels -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Channels/ref/Release/net11.0/System.Threading.Channels.dll
+  System.IO.Compression.Brotli -> /home/pavelsavara/dev/runtime/artifacts/bin/System.IO.Compression.Brotli/ref/Release/net11.0/System.IO.Compression.Brotli.dll
+  System.Security.Claims -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Security.Claims/ref/Release/net11.0/System.Security.Claims.dll
+  System.Security.Cryptography -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Security.Cryptography/ref/Release/net11.0/System.Security.Cryptography.dll
+  System.Threading.Channels -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Threading.Channels/Release/net11.0/System.Threading.Channels.dll
+  System.Diagnostics.DiagnosticSource -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Diagnostics.DiagnosticSource/Release/net11.0/System.Diagnostics.DiagnosticSource.dll
+  System.Security.Claims -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Security.Claims/Release/net11.0/System.Security.Claims.dll
+  System.IO.Compression.Brotli -> /home/pavelsavara/dev/runtime/artifacts/bin/System.IO.Compression.Brotli/Release/net11.0/System.IO.Compression.Brotli.dll
+  System.Security.Cryptography -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Security.Cryptography/Release/net11.0/System.Security.Cryptography.dll
+  System.Security.Principal.Windows -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Security.Principal.Windows/ref/Release/net11.0/System.Security.Principal.Windows.dll
+  System.Security.Principal.Windows -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Security.Principal.Windows/Release/net11.0/System.Security.Principal.Windows.dll
+  System.Net.NameResolution -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.NameResolution/ref/Release/net11.0/System.Net.NameResolution.dll
+  System.Net.NameResolution -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.NameResolution/Release/net11.0/System.Net.NameResolution.dll
+  System.Net.Sockets -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Sockets/ref/Release/net11.0/System.Net.Sockets.dll
+  System.Net.Sockets -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Sockets/Release/net11.0/System.Net.Sockets.dll
+  System.Net.Security -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Security/ref/Release/net11.0/System.Net.Security.dll
+  System.Net.NetworkInformation -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.NetworkInformation/ref/Release/net11.0/System.Net.NetworkInformation.dll
+  System.Net.Security -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Security/Release/net11.0/System.Net.Security.dll
+  System.Net.NetworkInformation -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.NetworkInformation/Release/net11.0/System.Net.NetworkInformation.dll
+  System.Net.Quic -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Quic/ref/Release/net11.0/System.Net.Quic.dll
+  System.Net.Quic -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Quic/Release/net11.0/System.Net.Quic.dll
+  System.Net.Http -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Http/ref/Release/net11.0/System.Net.Http.dll
+  System.Net.Http -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Net.Http/Release/net11.0/System.Net.Http.dll
+  System.Private.Xml -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.Xml/Release/net11.0/System.Private.Xml.dll
+  System.Private.Xml.Linq -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Private.Xml.Linq/Release/net11.0/System.Private.Xml.Linq.dll
+  System.Xml.ReaderWriter -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Xml.ReaderWriter/ref/Release/net11.0/System.Xml.ReaderWriter.dll
+  System.Xml.XDocument -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Xml.XDocument/ref/Release/net11.0/System.Xml.XDocument.dll
+  System.Xml.XDocument -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Xml.XDocument/Release/net11.0/System.Xml.XDocument.dll
+  System.Drawing.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Drawing.Primitives/ref/Release/net11.0/System.Drawing.Primitives.dll
+  System.Runtime.Serialization.Formatters -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Serialization.Formatters/ref/Release/net11.0/System.Runtime.Serialization.Formatters.dll
+  System.Drawing.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Drawing.Primitives/Release/net11.0/System.Drawing.Primitives.dll
+  System.Runtime.Serialization.Formatters -> /home/pavelsavara/dev/runtime/artifacts/bin/System.Runtime.Serialization.Formatters/Release/net11.0/System.Runtime.Serialization.Formatters.dll
+  System.ComponentModel.TypeConverter -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.TypeConverter/ref/Release/net11.0/System.ComponentModel.TypeConverter.dll
+  System.ComponentModel.TypeConverter -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.TypeConverter/Release/net11.0/System.ComponentModel.TypeConverter.dll
+  System.ComponentModel.Annotations -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Annotations/ref/Release/net11.0/System.ComponentModel.Annotations.dll
+  System.ComponentModel.Annotations -> /home/pavelsavara/dev/runtime/artifacts/bin/System.ComponentModel.Annotations/Release/net11.0/System.ComponentModel.Annotations.dll
+  Microsoft.Extensions.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives/ref/Release/net11.0/Microsoft.Extensions.Primitives.dll
+  Microsoft.Extensions.DependencyInjection.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.DependencyInjection.Abstractions/ref/Release/net11.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+  Microsoft.Extensions.Primitives -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Primitives/Release/net11.0/Microsoft.Extensions.Primitives.dll
+  Microsoft.Extensions.DependencyInjection.Abstractions -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.DependencyInjection.Abstractions/Release/net11.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+  Microsoft.Extensions.Options -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options/ref/Release/net11.0/Microsoft.Extensions.Options.dll
+  Microsoft.Extensions.Options -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options/Release/net11.0/Microsoft.Extensions.Options.dll
+  Microsoft.Extensions.Options.DataAnnotations -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.DataAnnotations/ref/Release/net11.0/Microsoft.Extensions.Options.DataAnnotations.dll
+  Microsoft.Extensions.Options.DataAnnotations -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.DataAnnotations/Release/net11.0/Microsoft.Extensions.Options.DataAnnotations.dll
+  DownlevelLibraryImportGenerator -> /home/pavelsavara/dev/runtime/artifacts/bin/DownlevelLibraryImportGenerator/Release/netstandard2.0/Microsoft.Interop.LibraryImportGenerator.Downlevel.dll
+  Microsoft.Bcl.AsyncInterfaces -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Bcl.AsyncInterfaces/Release/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll
+  WasmTriggerPublishApp for CoreCLR not implemented
+  Microsoft.Extensions.Options.SourceGeneration.Unit.Tests -> /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests/Release/net11.0/browser-wasm/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll
+  export SCENARIO=WasmTestOnChrome
+  export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+  export PREPEND_PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64
+  export RuntimeIdentifier=browser-wasm
+  PATH=/home/pavelsavara/dev/runtime/artifacts/bin/chromedriver/chromedriver_linux64:/home/pavelsavara/.jsvu/bin:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/dev/runtime/.dotnet:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/pavelsavara/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/home/pavelsavara/.vscode-server/bin/c9d77990917f3102ada88be140d28b038d1dd7c7/bin/remote-cli:/home/pavelsavara/bin:/home/pavelsavara/bin:/home/pavelsavara/dev/.dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/windows/system32:/mnt/c/windows:/mnt/d/.dotnet/:/mnt/c/windows/System32/Wbem:/mnt/c/windows/System32/WindowsPowerShell/v1.0/:/mnt/c/windows/System32/OpenSSH/:/mnt/c/Program Files/HP/HP One Agent:/mnt/c/Program Files/nodejs/:/mnt/c/Program Files/Meld/:/mnt/c/Program Files/dotnet/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/PuTTY/:/mnt/c/Program Files/PowerShell/7/:/mnt/c/Program Files/Microsoft SQL Server/170/Tools/Binn/:/mnt/c/Program Files/GitExtensions/:/mnt/c/Program Files/GitHub CLI/:/mnt/d/bin:/mnt/d/.dotnet/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/pavelsavara/AppData/Local/Programs/MicrosoftVSCode/bin:/mnt/c/Users/pavelsavara/AppData/Roaming/npm:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/:/mnt/c/Users/pavelsavara/AppData/Local/Programs/Python/Python310/Scripts/:/mnt/c/Users/pavelsavara/AppData/Local/Microsoft/WinGet/Packages/GitHub.Copilot.Prerelease_Microsoft.Winget.Source_8wekyb3d8bbwe:/mnt/c/Users/pavelsavara/.dotnet/tools:/snap/bin
+  EXECUTION_DIR=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests/Release/net11.0/browser-wasm/wwwroot
+  SCENARIO=WasmTestOnChrome
+  XHARNESS_OUT=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+  XHARNESS_CLI_PATH=
+  HARNESS_RUNNER=dotnet xharness
+  XHARNESS_COMMAND=test-browser
+  MAIN_JS=
+  JS_ENGINE=
+  JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000
+  XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Options/tests/SourceGeneration.Unit.Tests
+  ----- start Fri Jan 30 02:05:52 CET 2026 =============== To repro directly: =====================================================
+  pushd /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests/Release/net11.0/browser-wasm/wwwroot
+  dotnet xharness wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00  --browser-arg=--js-flags=--stack-trace-limit=1000   --  --setenv=XHARNESS_LOG_TEST_START=true  --run WasmTestRunner.dll Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll  -notrait category=OuterLoop -notrait category=failing 
+  popd
+  ===========================================================================================================
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Options/tests/SourceGeneration.Unit.Tests
+  [11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=/home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --browser-path=/home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 -- --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll -notrait category=OuterLoop -notrait category=failing
+  [40m[1m[33mwarn[39m[22m[49m: Cannot find symbols file dotnet.native.js.symbols
+  [40m[32minfo[39m[22m[49m: Using Chrome from /home/pavelsavara/dev/runtime/artifacts/bin/chrome/chrome-linux/chrome
+  [40m[32minfo[39m[22m[49m: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: Normal
+  Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 34815
+  Only local connections are allowed.
+  Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+  ChromeDriver was started successfully on port 34815.
+  [40m[32minfo[39m[22m[49m: Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+  [40m[32minfo[39m[22m[49m: Running at: http://127.0.0.1:36033/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+  [40m[32minfo[39m[22m[49m: could not load /runArgs.json: 404. Ignoring
+  [40m[32minfo[39m[22m[49m: Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+  [40m[32minfo[39m[22m[49m: Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+  [40m[32minfo[39m[22m[49m: Using threadless Xunit runner
+  [40m[32minfo[39m[22m[49m: Discovering: Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll (method display = ClassAndMethod, method display options = None)
+  [40m[32minfo[39m[22m[49m: Discovered:  Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll (found 58 of 58 test cases)
+  [40m[32minfo[39m[22m[49m: Starting:    Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestCustomGeneratedAttributes
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestValidationWithEnumeration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestValidationWithCyclicReferences
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestBasicDataAnnotationFailures
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestValidationSuccessResults
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestGeneratedRangeAttributeThreadSafety
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestObjectsWithIndexerProperties
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestValidationWithNestedTypes
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestNewDataAnnotationFailures
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.GenerateSourceUsingVariousLanguageVersions
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldProduceWarn_WhenTransitiveAttrMisused
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldSkipAtrributeWhenAttributeSymbolIsNotBasedOnValidationAttribute
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NoStaticValidator
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ValidationAttributeOnStaticMember
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.InaccessibleValidationAttributesTest
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldProduceWarningWhenTheClassHasNoEligibleMembers
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ClosedGenerics
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldAcceptAtrributeWhenAttributeIsInDifferentNamespace
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.OptionsExtendingSystemClassTest
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.PotentiallyMissingAttributes
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NotEnumerable
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.LanguageVersionTest
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceErrorWhenDataTypeAttributesAreUsed
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ValidatorAlreadyImplementValidateFunction
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldProduceWarningWhenTheClassMembersAreInaccessible
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.UsingInterfaceAsPropertyTypeForLengthAttributesTests
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.GeneratedAttributesTest
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceErrorWhenMultipleValidationAnnotationsExist
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ClosedGenericsInEnumeration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.IgnoredStaticMembers
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.CircularTypeReferencesInEnumeration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.DataAnnotationAttributesWithParams
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldHandleAtrributePropertiesOtherThanString
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.CantValidateOpenGenericMembersInEnumeration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.InternalsVisibleToAssembliesTest
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.CantValidateOpenGenericMembers
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldSkipWhenOptionsValidatorAttributeDoesNotExist
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.TestEmitterWithCustomValidator
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NullValidator
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.AlreadyImplemented
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.MultiModelValidatorGeneratesOnlyOnePartialTypeBlock
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ProduceDiagnosticFromOtherAssemblyTest
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NoEligibleMembers
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceInfoWhenTransitiveClassHasABaseClass
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldStoreFloatValuesCorrectly
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.InvalidValidatorInterface
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldSkipAtrributeWhenAttributeSymbolCannotBeFound
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceErrorWhenConstVariableIsUsedAsAttributeArgument
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.CircularTypeReferences
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceErrorWhenPropertiesAreUsedAsAttributeArgument
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NotValidatorInEnumeration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NoSimpleValidatorConstructor
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.BogusModelType
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceInfoWhenTheClassHasABaseClass
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NoSimpleValidatorConstructorInEnumeration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NotValidator
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NullValidatorInEnumeration
+  [40m[32minfo[39m[22m[49m: [STRT] Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceAnyMessagesWhenExistingValidationsArePlaced
+  [40m[32minfo[39m[22m[49m: Finished:    Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll
+  [40m[32minfo[39m[22m[49m: Stored /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output/testResults.xml results 20382 bytes
+  [40m[32minfo[39m[22m[49m: Finished uploading 20382 bytes of RESULTXML
+  [40m[32minfo[39m[22m[49m: Xml file was written to the provided writer.
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: === TEST EXECUTION SUMMARY ===
+  [40m[32minfo[39m[22m[49m: Tests run: 58 Passed: 0 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 58
+  [40m[32minfo[39m[22m[49m: 
+  [40m[32minfo[39m[22m[49m: test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll after 0.009333333333333334 minutes with result 0 and linear memory 193331200 bytes
+  [40m[32minfo[39m[22m[49m: DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+  [40m[32minfo[39m[22m[49m: WASM EXIT 0
+  [40m[32minfo[39m[22m[49m: Waiting to flush log messages with a timeout of 120 secs ..
+  [40m[32minfo[39m[22m[49m: Closing 1 browser tabs before setting the main tab to config page and quitting.
+  XHarness exit code: 0
+  ~/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests/Release/net11.0/browser-wasm/wwwroot ~/dev/runtime/src/libraries/Microsoft.Extensions.Options/tests/SourceGeneration.Unit.Tests
+  ----- end Fri Jan 30 02:05:55 CET 2026 ----- exit code 0 ----------------------------------------------------------
+  XHarness artifacts: /home/pavelsavara/dev/runtime/artifacts/bin/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests/Release/net11.0/browser-wasm/wwwroot/xharness-output
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:18.29

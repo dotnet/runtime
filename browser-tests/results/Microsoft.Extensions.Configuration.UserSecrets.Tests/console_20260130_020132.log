@@ -1,0 +1,31 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:44031/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Configuration.UserSecrets.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Configuration.UserSecrets.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Configuration.UserSecrets.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Extensions.Configuration.UserSecrets.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Extensions.Configuration.UserSecrets.Tests.dll (found 10 of 10 test cases)
+Starting:    Microsoft.Extensions.Configuration.UserSecrets.Tests.dll
+[STRT] Microsoft.Extensions.Configuration.UserSecrets.Test.PathHelperTest.Throws_If_UserSecretId_Contains_Invalid_Characters
+[STRT] Microsoft.Extensions.Configuration.UserSecrets.Test.PathHelperTest.Gives_Correct_Secret_Path
+[STRT] Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_Does_Not_Fail_On_Non_Existing_File
+[STRT] Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_DoesNotThrowsIfOptionalByDefault
+[STRT] Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_FindsAssemblyAttributeFromType
+[STRT] Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_With_SecretsId_Passed_Explicitly
+[STRT] Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_DoesThrowsIfNotOptionalAndSecretDoesNotExist
+[STRT] Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_ThrowsIfAssemblyAttributeFromType
+[STRT] Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_FindsAssemblyAttribute
+[STRT] Microsoft.Extensions.Configuration.UserSecrets.MsBuildTargetTest.GeneratesAssemblyAttributeFile(projectExt: ".csproj", sourceExt: ".cs")
+[STRT] Microsoft.Extensions.Configuration.UserSecrets.MsBuildTargetTest.GeneratesAssemblyAttributeFile(projectExt: ".fsproj", sourceExt: ".fs")
+Finished:    Microsoft.Extensions.Configuration.UserSecrets.Tests.dll
+Finished uploading 4590 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 11 Passed: 9 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 2
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Configuration.UserSecrets.Tests.dll after 0.007983333333333334 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

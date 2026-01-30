@@ -1,0 +1,31 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:35071/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.FileProviders.Composite.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.FileProviders.Composite.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.FileProviders.Composite.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Extensions.FileProviders.Composite.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Extensions.FileProviders.Composite.Tests.dll (found 11 of 11 test cases)
+Starting:    Microsoft.Extensions.FileProviders.Composite.Tests.dll
+[STRT] Microsoft.Extensions.FileProviders.Composite.CompositeFileProviderTests.GetDirectoryContents_ReturnsCombinaisionOFFiles
+[STRT] Microsoft.Extensions.FileProviders.Composite.CompositeFileProviderTests.GetDirectoryContents_ReturnsNonExistingEmptySequence_IfResourcesDoNotExist
+[STRT] Microsoft.Extensions.FileProviders.Composite.CompositeFileProviderTests.Watch_ReturnsNoopChangeToken_IfNoWatcherReturnedByFileProviders
+[STRT] Microsoft.Extensions.FileProviders.Composite.CompositeFileProviderTests.GetFileInfo_ReturnsNotFoundFileInfo_IfFileDoesNotExist
+[STRT] Microsoft.Extensions.FileProviders.Composite.CompositeFileProviderTests.Watch_CompositeChangeToken_HasChangedIsCorrectlyComputed
+[STRT] Microsoft.Extensions.FileProviders.Composite.CompositeFileProviderTests.GetDirectoryContents_ReturnsCombinaitionOFFiles_WhenSomeFileProviderRetunsNoContent
+[STRT] Microsoft.Extensions.FileProviders.Composite.CompositeFileProviderTests.Watch_CompositeChangeToken_RegisterChangeCallbackCorrectlyTransmitsAllParameters
+[STRT] Microsoft.Extensions.FileProviders.Composite.CompositeFileProviderTests.GetDirectoryContents_ReturnsNonExistingEmptySequence_IfNoFileProviderSpecified
+[STRT] Microsoft.Extensions.FileProviders.Composite.CompositeFileProviderTests.GetFileInfo_ReturnsNotFoundFileInfo_IfNoFileProviderSpecified
+[STRT] Microsoft.Extensions.FileProviders.Composite.CompositeFileProviderTests.Watch_ReturnsNoopChangeToken_IfNoFileProviderSpecified
+[STRT] Microsoft.Extensions.FileProviders.Composite.CompositeFileProviderTests.GetFileInfo_ReturnsTheFirstFoundFileInfo
+Finished:    Microsoft.Extensions.FileProviders.Composite.Tests.dll
+Finished uploading 4309 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 11 Passed: 11 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.FileProviders.Composite.Tests.dll after 0.00825 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

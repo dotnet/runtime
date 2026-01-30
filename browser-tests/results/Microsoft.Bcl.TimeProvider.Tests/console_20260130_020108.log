@@ -1,0 +1,34 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:34457/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Bcl.TimeProvider.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Bcl.TimeProvider.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Bcl.TimeProvider.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Bcl.TimeProvider.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Bcl.TimeProvider.Tests.dll (found 14 of 14 test cases)
+Starting:    Microsoft.Bcl.TimeProvider.Tests.dll
+[STRT] Tests.System.TimeProviderTests.RunDelayTests
+[STRT] Tests.System.TimeProviderTests.RunWaitAsyncTests
+[STRT] Tests.System.TimeProviderTests.TestLocalSystemTime
+[STRT] Tests.System.TimeProviderTests.TestProviderTimer
+[STRT] Tests.System.TimeProviderTests.TestUtcSystemTime
+[STRT] Tests.System.TimeProviderTests.FastClockTest
+[STRT] Tests.System.TimeProviderTests.TestDelayTaskContinuation
+[STRT] Tests.System.TimeProviderTests.CancellationTokenSourceWithTimer
+[STRT] Tests.System.TimeProviderTests.TestSystemTimestamp
+[STRT] Tests.System.TimeProviderTests.TestSystemProviderWithTimeZone
+[STRT] Tests.System.TimeProviderTests.TestCTSWithDelayFiringAfterCancellation
+[STRT] Tests.System.TimeProviderTests.NegativeTests
+[STRT] Tests.System.TimeProviderTests.InvokeCallbackFromCreateTimer
+[STRT] Tests.System.TimeProviderTests.PeriodicTimerTests
+Finished:    Microsoft.Bcl.TimeProvider.Tests.dll
+Finished uploading 3500 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 14 Passed: 8 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 6
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Bcl.TimeProvider.Tests.dll after 0.00975 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

@@ -1,0 +1,36 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:34281/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.dll (found 16 of 16 test cases)
+Starting:    Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.dll
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.ConfigurationExtensionsTests.TestNullHandling_IServiceCollectionExt_Configure
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.ConfigurationExtensionsTests.TestBindingInvocationsWithNewlines_StaticCalls
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.ConfigurationExtensionsTests.TestBindingInvocationsWithNewlines_BindConfigurationExtension
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.ConfigurationExtensionsTests.TestNullHandling_OptionsBuilderExt_Bind
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.ConfigurationExtensionsTests.TestBindAndConfigureWithNamedParameters
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.ConfigurationExtensionsTests.TestBindingInvocationsWithNewlines_BindExtension
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.ConfigurationExtensionsTests.TestNullHandling_OptionsBuilderExt_BindConfiguration
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.ConfigurationExtensionsTests.TestBindingInvocationsWithNewlines_ConfigureExtension
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.OptionsBuilderConfigurationExtensionsTests.BindConfiguration_ReturnsSameBuilderInstance
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.OptionsBuilderConfigurationExtensionsTests.BindConfiguration_UpdatesOptionOnConfigurationUpdateWithEmptySectionName
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.OptionsBuilderConfigurationExtensionsTests.BindConfiguration_UsesConfigurationSectionPath
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.OptionsBuilderConfigurationExtensionsTests.BindConfiguration_ThrowsForNullBuilder
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.OptionsBuilderConfigurationExtensionsTests.BindConfiguration_UpdatesOptionOnConfigurationUpdate
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.OptionsBuilderConfigurationExtensionsTests.BindConfiguration_OptionsMaterializationThrowsIfNoConfigurationInDI
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.OptionsBuilderConfigurationExtensionsTests.BindConfiguration_ThrowsForNullConfigurationSectionPath
+[STRT] Microsoft.Extensions.Options.ConfigurationExtensions.Tests.OptionsBuilderConfigurationExtensionsTests.BindConfiguration_UsesConfigurationRootIfSectionNameIsEmptyString
+Finished:    Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.dll
+Finished uploading 6631 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 16 Passed: 16 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.dll after 0.008183333333333334 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

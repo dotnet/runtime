@@ -1,5 +1,5 @@
 Test Comparison: Microsoft.Extensions.Configuration.UserSecrets.Tests
-Generated: 2026-01-30T01:38:33+01:00
+Generated: 2026-01-30T02:01:49+01:00
 
 Mono tests:    15
 CoreCLR tests: 15

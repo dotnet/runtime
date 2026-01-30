@@ -1,0 +1,50 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:44751/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Hosting.Abstractions.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll Microsoft.Extensions.Hosting.Abstractions.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Hosting.Abstractions.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: Microsoft.Extensions.Hosting.Abstractions.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  Microsoft.Extensions.Hosting.Abstractions.Tests.dll (found 23 of 23 test cases)
+Starting:    Microsoft.Extensions.Hosting.Abstractions.Tests.dll
+[STRT] Microsoft.Extensions.Hosting.Tests.EnvironmentsTests.EnvironmentConstants_HaveExpectedValues
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsDevelopment_WithNonDevelopmentEnvironment_ReturnsFalse
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.EnvironmentChecks_AreCaseInsensitive
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsProduction_WithNonProductionEnvironment_ReturnsFalse
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsDevelopment_WithDevelopmentEnvironment_ReturnsTrue
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsProduction_WithNullEnvironment_ThrowsArgumentNullException
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsProduction_WithProductionEnvironment_ReturnsTrue
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsEnvironment_ComparesEnvironmentNameCaseInsensitive(actualEnvironment: "Development", testEnvironment: "Development", expected: True)
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsEnvironment_ComparesEnvironmentNameCaseInsensitive(actualEnvironment: "Development", testEnvironment: "development", expected: True)
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsEnvironment_ComparesEnvironmentNameCaseInsensitive(actualEnvironment: "Development", testEnvironment: "DEVELOPMENT", expected: True)
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsEnvironment_ComparesEnvironmentNameCaseInsensitive(actualEnvironment: "Development", testEnvironment: "Production", expected: False)
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsEnvironment_ComparesEnvironmentNameCaseInsensitive(actualEnvironment: "Production", testEnvironment: "Production", expected: True)
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsEnvironment_ComparesEnvironmentNameCaseInsensitive(actualEnvironment: "Staging", testEnvironment: "staging", expected: True)
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsEnvironment_ComparesEnvironmentNameCaseInsensitive(actualEnvironment: "Custom", testEnvironment: "Custom", expected: True)
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsEnvironment_ComparesEnvironmentNameCaseInsensitive(actualEnvironment: "Custom", testEnvironment: "custom", expected: True)
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsStaging_WithNonStagingEnvironment_ReturnsFalse
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsEnvironment_WithEmptyString_ReturnsFalseForNonEmptyEnvironmentName
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsEnvironment_WithNullEnvironment_ThrowsArgumentNullException
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsEnvironment_WithEmptyEnvironmentName_ReturnsTrueForEmptyString
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsStaging_WithNullEnvironment_ThrowsArgumentNullException
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsStaging_WithStagingEnvironment_ReturnsTrue
+[STRT] Microsoft.Extensions.Hosting.Tests.HostEnvironmentEnvExtensionsTests.IsDevelopment_WithNullEnvironment_ThrowsArgumentNullException
+[STRT] Microsoft.Extensions.Hosting.Tests.HostDefaultsTests.KeyConstants_HaveExpectedValues
+[STRT] Microsoft.Extensions.Hosting.Tests.HostBuilderContextTests.Constructor_WithProperties_InitializesProperties
+[STRT] Microsoft.Extensions.Hosting.Tests.HostBuilderContextTests.AllProperties_CanBeSetTogether
+[STRT] Microsoft.Extensions.Hosting.Tests.HostBuilderContextTests.Configuration_CanBeSet
+[STRT] Microsoft.Extensions.Hosting.Tests.HostBuilderContextTests.Constructor_WithNullProperties_ThrowsArgumentNullException
+[STRT] Microsoft.Extensions.Hosting.Tests.HostBuilderContextTests.Properties_CanBeModified
+[STRT] Microsoft.Extensions.Hosting.Tests.HostBuilderContextTests.HostingEnvironment_CanBeSet
+[STRT] Microsoft.Extensions.Hosting.Tests.HostBuilderContextTests.Properties_SharedWithConstructorDictionary
+Finished:    Microsoft.Extensions.Hosting.Abstractions.Tests.dll
+Finished uploading 10775 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 30 Passed: 30 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Hosting.Abstractions.Tests.dll after 0.007933333333333334 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0
