@@ -279,6 +279,17 @@ struct Range
         return lLimit.IsConstant() && uLimit.IsConstant() && IsValid();
     }
 
+    // Check if the range represents a single constant value. Example: [7..7]
+    bool IsSingleConstValue(int* pConstVal) const
+    {
+        if (lLimit.IsConstant() && lLimit.Equals(uLimit))
+        {
+            *pConstVal = lLimit.GetConstant();
+            return true;
+        }
+        return false;
+    }
+
     bool IsUndef() const
     {
         return lLimit.IsUndef() && uLimit.IsUndef();
@@ -406,61 +417,45 @@ struct RangeOps
 
     static Range And(const Range& r1, const Range& r2)
     {
-        const Limit& r1lo = r1.LowerLimit();
-        const Limit& r2lo = r2.LowerLimit();
+        // Conservatively expect at least one operand to be a single-value constant.
+        // The math gets too complicated otherwise (and rarely useful in practice).
+        int  r1ConstVal;
+        int  r2ConstVal;
+        bool r1IsConstVal = r1.IsSingleConstValue(&r1ConstVal);
+        bool r2IsConstVal = r2.IsSingleConstValue(&r2ConstVal);
 
-        const Limit& r1hi = r1.UpperLimit();
-        const Limit& r2hi = r2.UpperLimit();
-
-        Range result = Limit(Limit::keUnknown);
-
-        // if either lower bound is a non-negative constant, result >= 0
-        if ((r1lo.IsConstant() && (r1lo.GetConstant() >= 0)) || (r2lo.IsConstant() && (r2lo.GetConstant() >= 0)))
+        // Both ranges are single constant values.
+        // Example: [7..7] & [3..3] = [3..3]
+        if (r1IsConstVal && r2IsConstVal)
         {
-            // Example: [4.. ] & [unknown.. ] = [4.. ]
-            result.lLimit = Limit(Limit::keConstant, 0);
-        }
-        // Even if both r1 and r2 lower bounds are known non-negative constants, still the best we can do
-        // is >= 0 in a general case due to the way bitwise AND works.
-
-        // if either upper bound is a non-negative constant, result <= cns
-        if (r2hi.IsConstant() && (r2hi.GetConstant() >= 0))
-        {
-            // Example: [ ..X] & [ ..5] = [ ..5]
-            result.uLimit = Limit(Limit::keConstant, r2hi.GetConstant());
-        }
-        else if (r1hi.IsConstant() && (r1hi.GetConstant() >= 0))
-        {
-            // Example: [ ..5] & [ ..X] = [ ..5]
-            result.uLimit = Limit(Limit::keConstant, r1hi.GetConstant());
+            return Range(Limit(Limit::keConstant, r1ConstVal & r2ConstVal));
         }
 
-        // Both upper bounds are constant, take the min
-        if (r1hi.IsConstant() && r2hi.IsConstant() && (r1hi.GetConstant() >= 0) && (r2hi.GetConstant() >= 0))
+        // One of the ranges is a single constant value.
+        // Example: [unknown..unknown] & [3..3] = [0..3]
+        if (r1IsConstVal && (r1ConstVal >= 0))
         {
-            // Example: [ ..7] & [ ..5] = [ ..5]
-            result.uLimit = Limit(Limit::keConstant, min(r1hi.GetConstant(), r2hi.GetConstant()));
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, r1ConstVal));
+        }
+        if (r2IsConstVal && (r2ConstVal >= 0))
+        {
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, r2ConstVal));
         }
 
-        return result;
+        // Otherwise, we cannot determine the result range.
+        return Range(Limit(Limit::keUnknown));
     }
 
     static Range UnsignedMod(const Range& r1, const Range& r2)
     {
-        Range result = Limit(Limit::keUnknown);
-
-        const Limit& r2lo = r2.LowerLimit();
-        const Limit& r2hi = r2.UpperLimit();
-
-        // For X UMOD Y we only handle the case when Y is a fixed non-negative constant.
+        // For X UMOD Y we only handle the case when Y is a fixed positive constant.
         // Example: X % 5 -> [0..4]
-        //
-        if (r2lo.IsConstant() && r2lo.Equals(r2hi) && (r2lo.GetConstant() > 0))
+        int r2ConstVal;
+        if (r2.IsSingleConstValue(&r2ConstVal) && (r2ConstVal > 0))
         {
-            result.lLimit = Limit(Limit::keConstant, 0);
-            result.uLimit = Limit(Limit::keConstant, r2lo.GetConstant() - 1);
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, r2ConstVal - 1));
         }
-        return result;
+        return Range(Limit(Limit::keUnknown));
     }
 
     // Given two ranges "r1" and "r2", do a Phi merge. If "monIncreasing" is true,
