@@ -930,19 +930,13 @@ inline STRINGREF* StringObject::GetEmptyStringRefPtr(void** pinnedString) {
     return refptr;
 }
 
-// This is used to account for the remoting cache on RuntimeType,
-// RuntimeMethodInfo, and RtFieldInfo.
-class BaseObjectWithCachedData : public Object
-{
-};
-
 // This is the Class version of the Reflection object.
 //  A Class has adddition information.
 //  For a ReflectClassBaseObject the m_pData is a pointer to a FieldDesc array that
 //      contains all of the final static primitives if its defined.
 //  m_cnt = the number of elements defined in the m_pData FieldDesc array.  -1 means
 //      this hasn't yet been defined.
-class ReflectClassBaseObject : public BaseObjectWithCachedData
+class ReflectClassBaseObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -1022,7 +1016,7 @@ public:
 // (RuntimeConstructorInfo, RuntimeMethodInfo, and RuntimeMethodInfoStub). These types are unrelated in the type
 // system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
-class ReflectMethodObject : public BaseObjectWithCachedData
+class ReflectMethodObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -1066,7 +1060,7 @@ public:
 // (RtFieldInfo and RuntimeFieldInfoStub). These types are unrelated in the type
 // system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
-class ReflectFieldObject : public BaseObjectWithCachedData
+class ReflectFieldObject : public Object
 {
     friend class CoreLibBinder;
 
