@@ -369,13 +369,20 @@ struct RangeOps
 
     static Range ShiftRight(const Range& r1, const Range& r2, bool logical)
     {
+        Range result = Limit(Limit::keUnknown);
+
+        // For SHR we require the rhs to be a constant range within [0..31].
+        // We only perform the shift if the lhs is also a constant range (never-negative for now
+        // to handle both logical and arithmetic shifts uniformly).
         if (!r2.IsConstantRange() || (static_cast<unsigned>(r2.LowerLimit().GetConstant()) > 31) ||
             (static_cast<unsigned>(r2.UpperLimit().GetConstant()) > 31))
         {
-            return Range(Limit(Limit::keUnknown));
+            return result;
         }
 
-        Range result = Limit(Limit::keUnknown);
+        // We shift by r2.UpperLimit() for the lower limit and by r2.LowerLimit() for the upper limit.
+        // Example: [0..65535] >> [0..3] = [0 >> 3 .. 65535 >> 0] = [0..65535]
+        //          [0..65535] >> [2..2] = [0 >> 2 .. 65535 >> 2] = [0..16383]
         if (r1.LowerLimit().IsConstant() && (r1.LowerLimit().GetConstant() >= 0))
         {
             result.lLimit = Limit(Limit::keConstant, r1.LowerLimit().GetConstant() >> r2.UpperLimit().GetConstant());
