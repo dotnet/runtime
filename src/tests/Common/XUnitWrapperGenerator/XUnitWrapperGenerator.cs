@@ -890,7 +890,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return testInfos;
     }
 
-    private static ImmutableArray<ITestInfo> DecorateWithSkipOnCoreClrConfiguration(ImmutableArray<ITestInfo> testInfos, Xunit.RuntimeTestModes skippedTestModes, Xunit.RuntimeConfiguration skippedConfigurations, Xunit.TestPlatforms skippedTestPlatforms)
+    private static ImmutableArray<ITestInfo> DecorateWithSkipOnCoreClrConfiguration(ImmutableArray<ITestInfo> testInfos, Xunit.RuntimeTestModes skippedTestModes, Xunit.RuntimeConfiguration skippedConfigurations, Xunit.TestPlatforms skippedTestPlatforms, AnalyzerConfigOptionsProvider options)
     {
         const string ConditionClass = "TestLibrary.CoreClrConfigurationDetection";
         List<string> conditions = new();
