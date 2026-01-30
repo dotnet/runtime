@@ -341,20 +341,7 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 		default_port_builder.suspend_mode = port_suspend > 0 ? DS_PORT_SUSPEND_MODE_SUSPEND : DS_PORT_SUSPEND_MODE_NOSUSPEND;
 		default_port_builder.type = DS_PORT_TYPE_LISTEN;
 
-		bool default_listen_port_ready = ipc_stream_factory_build_and_add_port (&default_port_builder, callback, true);
-#if HAVE_SYS_MMAN_H && HAVE_MEMFD_CREATE && HAVE_UNISTD_H
-		// Create a mapping to signal that the diagnostic server IPC is available.
-		// External tools can use this to detect when the runtime is ready to accept diagnostic commands.
-		// The mapping's lifetime is tied to the process, so tools that start after the .NET process can still detect it.
-		if (default_listen_port_ready) {
-			int fd = (int)syscall (__NR_memfd_create, "dotnet_ipc_created", (unsigned int)MFD_CLOEXEC);
-			if (fd >= 0) {
-				mmap (NULL, 1, PROT_EXEC | PROT_READ, MAP_PRIVATE, fd, 0);
-				close (fd);
-			}
-		}
-#endif
-		result &= default_listen_port_ready;
+		result &= ipc_stream_factory_build_and_add_port (&default_port_builder, callback, true);
 
 		ds_port_builder_fini (&default_port_builder);
 	} else {
@@ -362,6 +349,19 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 	}
 #else
 	DS_LOG_DEBUG_0 ("ds_ipc_stream_factory_configure - Ignoring default LISTEN port");
+#endif
+
+#if HAVE_SYS_MMAN_H && HAVE_MEMFD_CREATE && HAVE_UNISTD_H
+	// Create a mapping to signal that the diagnostic server IPC is available.
+	// External tools can use this to detect when the runtime is ready to accept diagnostic commands.
+	// The mapping's lifetime is tied to the process, so tools that start after the .NET process can still detect it.
+	if (ds_ipc_stream_factory_any_listen_ports ()) {
+		int fd = (int)syscall (__NR_memfd_create, "dotnet_ipc_created", (unsigned int)MFD_CLOEXEC);
+		if (fd >= 0) {
+			mmap (NULL, 1, PROT_EXEC | PROT_READ, MAP_PRIVATE, fd, 0);
+			close (fd);
+		}
+	}
 #endif
 
 	return result;
@@ -499,6 +499,17 @@ ds_ipc_stream_factory_resume_current_port (void)
 {
 	if (_ds_current_port != NULL)
 		_ds_current_port->has_resumed_runtime = true;
+}
+
+bool
+ds_ipc_stream_factory_any_listen_ports (void)
+{
+	bool any_listen_ports = false;
+	DN_VECTOR_PTR_FOREACH_BEGIN (DiagnosticsPort *, port, _ds_port_array) {
+		any_listen_ports |= (port->type == DS_PORT_TYPE_LISTEN);
+	} DN_VECTOR_PTR_FOREACH_END;
+
+	return any_listen_ports;
 }
 
 bool
