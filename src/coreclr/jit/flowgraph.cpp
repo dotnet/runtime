@@ -3597,6 +3597,10 @@ void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
             helper = CORINFO_HELP_FAIL_FAST;
             break;
 
+        case SCK_NULL_CHECK:
+            helper = CORINFO_HELP_THROWNULLREF;
+            break;
+
         default:
             noway_assert(!"unexpected code addition kind");
     }
@@ -3607,7 +3611,9 @@ void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
     //
     GenTreeCall* tree = gtNewHelperCallNode(helper, TYP_VOID);
 
-    // There are no args here but fgMorphArgs has side effects
+    // For Wasm we may add an arg to the throw helper.
+    //
+    // Also fgMorphArgs has side effects
     // such as setting the outgoing arg area (which is necessary
     // on AMD if there are any calls).
     //
@@ -3621,8 +3627,8 @@ void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
     }
     else
     {
-        LIR::AsRange(block).InsertAtEnd(tree);
-        LIR::ReadOnlyRange range(tree, tree);
+        LIR::Range range = LIR::SeqTree(this, tree);
+        LIR::AsRange(block).InsertAtEnd(std::move(range));
         m_pLowering->LowerRange(block, range);
     }
 }
