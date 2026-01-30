@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="Microsoft.Extensions.Configuration.Functional.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:14:15" total="20" passed="17" failed="0" skipped="3" time="0.347" errors="0">
+    <errors />
+    <collection total="18" passed="15" failed="0" skipped="3" name="Test collection for Microsoft.Extensions.Configuration.Test.ConfigurationTests" time="0.190">
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.ThrowsOnFileNotFoundWhenNotIgnored" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="ThrowsOnFileNotFoundWhenNotIgnored" time="0.0217" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.BindingDoesNotThrowIfReloadedDuringBinding" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="BindingDoesNotThrowIfReloadedDuringBinding" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.GetDefaultBasePathForSources" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="GetDefaultBasePathForSources" time="0.0632" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.CanOverrideValuesWithNewConfigurationProvider" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="CanOverrideValuesWithNewConfigurationProvider" time="0.0267" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.OnChangeGetFiredForRelativeLinuxPath" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="OnChangeGetFiredForRelativeLinuxPath" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsLinux\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.CanHandleExceptionIfFileNotFound" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="CanHandleExceptionIfFileNotFound" time="0.0069" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.LoadIncorrectJsonFile_ThrowException" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="LoadIncorrectJsonFile_ThrowException" time="0.0099" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.MissingFileDoesNotIncludesAbsolutePathIfWithNullFileInfo" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="MissingFileDoesNotIncludesAbsolutePathIfWithNullFileInfo" time="0.0018" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.OnLoadErrorWillBeCalledOnIniLoadError" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="OnLoadErrorWillBeCalledOnIniLoadError" time="0.0076" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.MissingFileIncludesAbsolutePathIfPhysicalFileProvider" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="MissingFileIncludesAbsolutePathIfPhysicalFileProvider" time="0.0025" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.OnLoadErrorWillBeCalledOnXmlParseError" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="OnLoadErrorWillBeCalledOnXmlParseError" time="0.0035" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.OnLoadErrorWillBeCalledOnJsonParseError" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="OnLoadErrorWillBeCalledOnJsonParseError" time="0.0037" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.LoadAndCombineKeyValuePairsFromDifferentConfigurationProviders" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="LoadAndCombineKeyValuePairsFromDifferentConfigurationProviders" time="0.0168" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.OnLoadErrorCanIgnoreErrors" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="OnLoadErrorCanIgnoreErrors" time="0.0027" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.OnChangeGetFiredForRelativeWindowsPath" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="OnChangeGetFiredForRelativeWindowsPath" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsWindows\"]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.LoadAndCombineKeyValuePairsFromDifferentConfigurationProvidersWithAbsolutePath" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="LoadAndCombineKeyValuePairsFromDifferentConfigurationProvidersWithAbsolutePath" time="0.0123" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.SetBasePathCalledMultipleTimesForEachSourceLastOneWins" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="SetBasePathCalledMultipleTimesForEachSourceLastOneWins" time="0.0088" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.Test.ConfigurationTests.MissingFileDoesNotIncludesAbsolutePathIfWithNoPhysicalPath" type="Microsoft.Extensions.Configuration.Test.ConfigurationTests" method="MissingFileDoesNotIncludesAbsolutePathIfWithNoPhysicalPath" time="0.0014" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Extensions.Configuration.FunctionalTests.ArrayTests" time="0.032">
+      <test name="Microsoft.Extensions.Configuration.FunctionalTests.ArrayTests.DifferentConfigSources_Merged_KeysAreSorted" type="Microsoft.Extensions.Configuration.FunctionalTests.ArrayTests" method="DifferentConfigSources_Merged_KeysAreSorted" time="0.0242" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.FunctionalTests.ArrayTests.DifferentConfigSources_Merged_WithOverwrites" type="Microsoft.Extensions.Configuration.FunctionalTests.ArrayTests" method="DifferentConfigSources_Merged_WithOverwrites" time="0.008" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

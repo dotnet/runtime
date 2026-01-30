@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Xml.Linq.SDMSample.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:19:31" total="110" passed="110" failed="0" skipped="0" time="0.501" errors="0">
+    <errors />
+    <collection total="4" passed="4" failed="0" skipped="0" name="Test collection for XDocumentTests.SDMSample.SDM_XName" time="0.022">
+      <test name="XDocumentTests.SDMSample.SDM_XName.NamespaceOperators" type="XDocumentTests.SDMSample.SDM_XName" method="NamespaceOperators" time="0.0181" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_XName.NameGetInvalid" type="XDocumentTests.SDMSample.SDM_XName" method="NameGetInvalid" time="0.0027" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_XName.NameOperators" type="XDocumentTests.SDMSample.SDM_XName" method="NameOperators" time="0.001" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_XName.NamespaceGetNull" type="XDocumentTests.SDMSample.SDM_XName" method="NamespaceGetNull" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="21" passed="21" failed="0" skipped="0" name="Test collection for XDocumentTests.SDMSample.SDM_Attribute" time="0.102">
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToGuid" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToGuid" time="0.0038999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeConstructor" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeConstructor" time="0.0013" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeRemove" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeRemove" time="0.0039" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToDouble" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToDouble" time="0.0043" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToDecimal" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToDecimal" time="0.0024" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToFloat_NotNetFramework" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToFloat_NotNetFramework" time="0.0025999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToTimeSpan" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToTimeSpan" time="0.0042" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToDouble_NotNetFramework" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToDouble_NotNetFramework" time="0.0003" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeEmptySequence" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeEmptySequence" time="0.0007999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToFloat" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToFloat" time="0.0008999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToString" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToString" time="0.0017" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToBoolean" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToBoolean" time="0.0011" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeParent" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeParent" time="0.0014" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToUInt32" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToUInt32" time="0.0026" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeIsNamespaceDeclaration" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeIsNamespaceDeclaration" time="0.0005" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToDateTime" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToDateTime" time="0.0487999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToInt32" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToInt32" time="0.002" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToNullables" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToNullables" time="0.0144" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToInt64" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToInt64" time="0.0022" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeValue" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeValue" time="0.0004" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Attribute.AttributeExplicitToUInt64" type="XDocumentTests.SDMSample.SDM_Attribute" method="AttributeExplicitToUInt64" time="0.0019" result="Pass" />
+    </collection>
+    <collection total="9" passed="9" failed="0" skipped="0" name="Test collection for XDocumentTests.SDMSample.SDM_Container" time="0.034">
+      <test name="XDocumentTests.SDMSample.SDM_Container.ContainerRemoveTextual" type="XDocumentTests.SDMSample.SDM_Container" method="ContainerRemoveTextual" time="0.0162" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Container.ContainerAdd" type="XDocumentTests.SDMSample.SDM_Container" method="ContainerAdd" time="0.0063999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Container.ContainerAddFirst" type="XDocumentTests.SDMSample.SDM_Container" method="ContainerAddFirst" time="0.0014" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Container.ContainerReplaceNodes" type="XDocumentTests.SDMSample.SDM_Container" method="ContainerReplaceNodes" time="0.0029" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Container.ContainerAnnotations" type="XDocumentTests.SDMSample.SDM_Container" method="ContainerAnnotations" time="0.0022" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Container.ContainerDescendents" type="XDocumentTests.SDMSample.SDM_Container" method="ContainerDescendents" time="0.002" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Container.ContainerElements" type="XDocumentTests.SDMSample.SDM_Container" method="ContainerElements" time="0.001" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Container.ContainerContent" type="XDocumentTests.SDMSample.SDM_Container" method="ContainerContent" time="0.0011" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Container.ContainerAddAttributes" type="XDocumentTests.SDMSample.SDM_Container" method="ContainerAddAttributes" time="0.0008" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for XDocumentTests.SDMSample.SDM_Misc" time="0.002">
+      <test name="XDocumentTests.SDMSample.SDM_Misc.NodeTypes" type="XDocumentTests.SDMSample.SDM_Misc" method="NodeTypes" time="0.0019" result="Pass" />
+    </collection>
+    <collection total="13" passed="13" failed="0" skipped="0" name="Test collection for XDocumentTests.SDMSample.SDM_Node" time="0.030">
+      <test name="XDocumentTests.SDMSample.SDM_Node.NodeElementsAfterSelf" type="XDocumentTests.SDMSample.SDM_Node" method="NodeElementsAfterSelf" time="0.0024" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Node.NodeParent" type="XDocumentTests.SDMSample.SDM_Node" method="NodeParent" time="0.0008999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Node.NodeAddAfterSelf" type="XDocumentTests.SDMSample.SDM_Node" method="NodeAddAfterSelf" time="0.0007999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Node.NodeContentBeforeSelf" type="XDocumentTests.SDMSample.SDM_Node" method="NodeContentBeforeSelf" time="0.001" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Node.NodeElementsBeforeSelf" type="XDocumentTests.SDMSample.SDM_Node" method="NodeElementsBeforeSelf" time="0.0024" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Node.NodeAllContentAfterSelf" type="XDocumentTests.SDMSample.SDM_Node" method="NodeAllContentAfterSelf" time="0.0006" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Node.NodeDocument" type="XDocumentTests.SDMSample.SDM_Node" method="NodeDocument" time="0.0006" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Node.NodeAllContentBeforeSelf" type="XDocumentTests.SDMSample.SDM_Node" method="NodeAllContentBeforeSelf" time="0.0005" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Node.NodeReadFrom" type="XDocumentTests.SDMSample.SDM_Node" method="NodeReadFrom" time="0.0133999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Node.NodeContentAfterSelf" type="XDocumentTests.SDMSample.SDM_Node" method="NodeContentAfterSelf" time="0.0051" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Node.NodeNoParentAddRemove" type="XDocumentTests.SDMSample.SDM_Node" method="NodeNoParentAddRemove" time="0.0009" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Node.NodeAddBeforeSelf" type="XDocumentTests.SDMSample.SDM_Node" method="NodeAddBeforeSelf" time="0.0008" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Node.NodeRemove" type="XDocumentTests.SDMSample.SDM_Node" method="NodeRemove" time="0.0008999" result="Pass" />
+    </collection>
+    <collection total="5" passed="5" failed="0" skipped="0" name="Test collection for XDocumentTests.SDMSample.SDM_LoadSave" time="0.005">
+      <test name="XDocumentTests.SDMSample.SDM_LoadSave.ElementSaveToXmlWriter" type="XDocumentTests.SDMSample.SDM_LoadSave" method="ElementSaveToXmlWriter" time="0.0007" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_LoadSave.DocumentLoadFromXmlReader" type="XDocumentTests.SDMSample.SDM_LoadSave" method="DocumentLoadFromXmlReader" time="0.0031" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_LoadSave.DocumentSaveToXmlWriter" type="XDocumentTests.SDMSample.SDM_LoadSave" method="DocumentSaveToXmlWriter" time="0.0004" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_LoadSave.ElementLoadFromXmlReader" type="XDocumentTests.SDMSample.SDM_LoadSave" method="ElementLoadFromXmlReader" time="0.0008" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_LoadSave.DocumentWriteTo" type="XDocumentTests.SDMSample.SDM_LoadSave" method="DocumentWriteTo" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="5" passed="5" failed="0" skipped="0" name="Test collection for XDocumentTests.SDMSample.SDM__PI" time="0.007">
+      <test name="XDocumentTests.SDMSample.SDM__PI.ProcessingInstructionWriteTo" type="XDocumentTests.SDMSample.SDM__PI" method="ProcessingInstructionWriteTo" time="0.0044999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM__PI.CreateProcessingInstructionSimple" type="XDocumentTests.SDMSample.SDM__PI" method="CreateProcessingInstructionSimple" time="0.0007" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM__PI.CreateProcessingInstructionFromReader" type="XDocumentTests.SDMSample.SDM__PI" method="CreateProcessingInstructionFromReader" time="0.0010999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM__PI.ProcessingInstructionValues" type="XDocumentTests.SDMSample.SDM__PI" method="ProcessingInstructionValues" time="0.0006999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM__PI.ProcessingInstructionEquals" type="XDocumentTests.SDMSample.SDM__PI" method="ProcessingInstructionEquals" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="34" passed="34" failed="0" skipped="0" name="Test collection for XDocumentTests.SDMSample.SDM_Element" time="0.039">
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementWithXmlnsAttribute" type="XDocumentTests.SDMSample.SDM_Element" method="ElementWithXmlnsAttribute" time="0.0033" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.CreateElementWithContent" type="XDocumentTests.SDMSample.SDM_Element" method="CreateElementWithContent" time="0.0015" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToString" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToString" time="0.0003999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToNullables" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToNullables" time="0.0016999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementSetElementValue" type="XDocumentTests.SDMSample.SDM_Element" method="ElementSetElementValue" time="0.0009" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementAncestors" type="XDocumentTests.SDMSample.SDM_Element" method="ElementAncestors" time="0.001" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementGetPrefixOfNamespace" type="XDocumentTests.SDMSample.SDM_Element" method="ElementGetPrefixOfNamespace" time="0.0016999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementRemove" type="XDocumentTests.SDMSample.SDM_Element" method="ElementRemove" time="0.0008" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.CreateElementSimple" type="XDocumentTests.SDMSample.SDM_Element" method="CreateElementSimple" time="0.0003" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementDescendents" type="XDocumentTests.SDMSample.SDM_Element" method="ElementDescendents" time="0.0009" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToBoolean" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToBoolean" time="0.0008" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToInt64" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToInt64" time="0.0008" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementHasAttributesAndElements" type="XDocumentTests.SDMSample.SDM_Element" method="ElementHasAttributesAndElements" time="0.0003" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToDouble" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToDouble" time="0.0007" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.CreateElementCopy" type="XDocumentTests.SDMSample.SDM_Element" method="CreateElementCopy" time="0.0054" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToGuid" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToGuid" time="0.0005" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToUInt32" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToUInt32" time="0.0006" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementGetNamespaceOfPrefix" type="XDocumentTests.SDMSample.SDM_Element" method="ElementGetNamespaceOfPrefix" time="0.0016" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToDecimal" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToDecimal" time="0.0007999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementEmptyElementSequence" type="XDocumentTests.SDMSample.SDM_Element" method="ElementEmptyElementSequence" time="0.0003" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementAttributes" type="XDocumentTests.SDMSample.SDM_Element" method="ElementAttributes" time="0.0021" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToUInt64" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToUInt64" time="0.0006" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementAppendedChildIsIterated" type="XDocumentTests.SDMSample.SDM_Element" method="ElementAppendedChildIsIterated" time="0.0003999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToTimeSpan" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToTimeSpan" time="0.0006" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.CreateElementFromReader" type="XDocumentTests.SDMSample.SDM_Element" method="CreateElementFromReader" time="0.0036" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToFloat" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToFloat" time="0.0006" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToDouble_NotNetFramework" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToDouble_NotNetFramework" time="0.0001999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementEquality" type="XDocumentTests.SDMSample.SDM_Element" method="ElementEquality" time="0.0026999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementGetDefaultNamespace" type="XDocumentTests.SDMSample.SDM_Element" method="ElementGetDefaultNamespace" time="0.0004999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementValue" type="XDocumentTests.SDMSample.SDM_Element" method="ElementValue" time="0.0006" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementIsEmpty" type="XDocumentTests.SDMSample.SDM_Element" method="ElementIsEmpty" time="0.0003" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToDateTime" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToDateTime" time="0.0006" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToFloat_NotNetFramework" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToFloat_NotNetFramework" time="0.0002999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Element.ElementExplicitToInt32" type="XDocumentTests.SDMSample.SDM_Element" method="ElementExplicitToInt32" time="0.0012" result="Pass" />
+    </collection>
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for XDocumentTests.SDMSample.SDM_CDATA" time="0.002">
+      <test name="XDocumentTests.SDMSample.SDM_CDATA.TextWriteTo" type="XDocumentTests.SDMSample.SDM_CDATA" method="TextWriteTo" time="0.0006999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_CDATA.CreateTextSimple" type="XDocumentTests.SDMSample.SDM_CDATA" method="CreateTextSimple" time="0.0005" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_CDATA.CreateTextFromReader" type="XDocumentTests.SDMSample.SDM_CDATA" method="CreateTextFromReader" time="0.0002999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_CDATA.TextValue" type="XDocumentTests.SDMSample.SDM_CDATA" method="TextValue" time="0.0003" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_CDATA.DeepEquals" type="XDocumentTests.SDMSample.SDM_CDATA" method="DeepEquals" time="0.0000999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_CDATA.TextEquals" type="XDocumentTests.SDMSample.SDM_CDATA" method="TextEquals" time="0.0002" result="Pass" />
+    </collection>
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for XDocumentTests.SDMSample.SDM_Document" time="0.005">
+      <test name="XDocumentTests.SDMSample.SDM_Document.DocumentAddString" type="XDocumentTests.SDMSample.SDM_Document" method="DocumentAddString" time="0.0026999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Document.CreateEmptyDocument" type="XDocumentTests.SDMSample.SDM_Document" method="CreateEmptyDocument" time="0.0005" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Document.CreateDocumentWithContent" type="XDocumentTests.SDMSample.SDM_Document" method="CreateDocumentWithContent" time="0.0004998" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Document.DocumentRoot" type="XDocumentTests.SDMSample.SDM_Document" method="DocumentRoot" time="0.0003999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Document.DocumentXmlDeclaration" type="XDocumentTests.SDMSample.SDM_Document" method="DocumentXmlDeclaration" time="0.0001" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Document.CreateDocumentCopy" type="XDocumentTests.SDMSample.SDM_Document" method="CreateDocumentCopy" time="0.001" result="Pass" />
+    </collection>
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for XDocumentTests.SDMSample.SDM_Comment" time="0.002">
+      <test name="XDocumentTests.SDMSample.SDM_Comment.CommentWriteTo" type="XDocumentTests.SDMSample.SDM_Comment" method="CommentWriteTo" time="0.0006" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Comment.CreateCommentSimple" type="XDocumentTests.SDMSample.SDM_Comment" method="CreateCommentSimple" time="0.0006" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Comment.CreateCommentFromReader" type="XDocumentTests.SDMSample.SDM_Comment" method="CreateCommentFromReader" time="0.0002999" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Comment.CommentValue" type="XDocumentTests.SDMSample.SDM_Comment" method="CommentValue" time="0.0004" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Comment.CommentDeepEquals" type="XDocumentTests.SDMSample.SDM_Comment" method="CommentDeepEquals" time="0.0001" result="Pass" />
+      <test name="XDocumentTests.SDMSample.SDM_Comment.CommentEquals" type="XDocumentTests.SDMSample.SDM_Comment" method="CommentEquals" time="0.0002" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

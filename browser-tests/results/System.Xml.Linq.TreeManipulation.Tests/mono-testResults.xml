@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Xml.Linq.TreeManipulation.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:19:36" total="15" passed="15" failed="0" skipped="0" time="0.159" errors="0">
+    <errors />
+    <collection total="4" passed="4" failed="0" skipped="0" name="Test collection for XLinqTests.XElementChangedNotificationTests+SkipNotifyTests" time="0.008">
+      <test name="XLinqTests.XElementChangedNotificationTests+SkipNotifyTests.AddRemoveEventXElementShouldNotBeNotifiedWithAnnotations" type="XLinqTests.XElementChangedNotificationTests+SkipNotifyTests" method="AddRemoveEventXElementShouldNotBeNotifiedWithAnnotations" time="0.0067" result="Pass" />
+      <test name="XLinqTests.XElementChangedNotificationTests+SkipNotifyTests.AddEventXElementShouldBeNotifiedWithAnnotations" type="XLinqTests.XElementChangedNotificationTests+SkipNotifyTests" method="AddEventXElementShouldBeNotifiedWithAnnotations" time="0.0008999" result="Pass" />
+      <test name="XLinqTests.XElementChangedNotificationTests+SkipNotifyTests.AddEventXElementShouldBeNotified" type="XLinqTests.XElementChangedNotificationTests+SkipNotifyTests" method="AddEventXElementShouldBeNotified" time="0.0002999" result="Pass" />
+      <test name="XLinqTests.XElementChangedNotificationTests+SkipNotifyTests.AddRemoveEventXElementShouldNotBeNotified" type="XLinqTests.XElementChangedNotificationTests+SkipNotifyTests" method="AddRemoveEventXElementShouldNotBeNotified" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="11" passed="11" failed="0" skipped="0" name="Test collection for XLinqTests.SaveWithFileName" time="0.068">
+      <test name="XLinqTests.SaveWithFileName.XStreamingElementSave" type="XLinqTests.SaveWithFileName" method="XStreamingElementSave" time="0.0384998" result="Pass" />
+      <test name="XLinqTests.SaveWithFileName.XElementSave_NullParameter" type="XLinqTests.SaveWithFileName" method="XElementSave_NullParameter" time="0.0013999" result="Pass" />
+      <test name="XLinqTests.SaveWithFileName.XDocumentSave_NullParameter" type="XLinqTests.SaveWithFileName" method="XDocumentSave_NullParameter" time="0.0007" result="Pass" />
+      <test name="XLinqTests.SaveWithFileName.XStreamingElementSave_SaveOptions" type="XLinqTests.SaveWithFileName" method="XStreamingElementSave_SaveOptions" time="0.0017999" result="Pass" />
+      <test name="XLinqTests.SaveWithFileName.XDocumentSaveToFile" type="XLinqTests.SaveWithFileName" method="XDocumentSaveToFile" time="0.012" result="Pass" />
+      <test name="XLinqTests.SaveWithFileName.XElementSave_SaveOptions" type="XLinqTests.SaveWithFileName" method="XElementSave_SaveOptions" time="0.0014" result="Pass" />
+      <test name="XLinqTests.SaveWithFileName.XElementSave" type="XLinqTests.SaveWithFileName" method="XElementSave" time="0.0011999" result="Pass" />
+      <test name="XLinqTests.SaveWithFileName.XStreamingElementSave_NullParameter" type="XLinqTests.SaveWithFileName" method="XStreamingElementSave_NullParameter" time="0.0003" result="Pass" />
+      <test name="XLinqTests.SaveWithFileName.XElementSaveToFile" type="XLinqTests.SaveWithFileName" method="XElementSaveToFile" time="0.0078999" result="Pass" />
+      <test name="XLinqTests.SaveWithFileName.XDocumentSave" type="XLinqTests.SaveWithFileName" method="XDocumentSave" time="0.0012999" result="Pass" />
+      <test name="XLinqTests.SaveWithFileName.XDocumentSave_SaveOptions" type="XLinqTests.SaveWithFileName" method="XDocumentSave_SaveOptions" time="0.0011" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

@@ -1,0 +1,137 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Runtime.CompilerServices.Unsafe.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:17:48" total="129" passed="129" failed="0" skipped="0" time="2.216" errors="0">
+    <errors />
+    <collection total="129" passed="129" failed="0" skipped="0" name="Test collection for System.Runtime.CompilerServices.UnsafeTests" time="1.951">
+      <test name="System.Runtime.CompilerServices.UnsafeTests.IsNullRef_Null" type="System.Runtime.CompilerServices.UnsafeTests" method="IsNullRef_Null" time="0.0056999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.ReadUnaligned_ByRef_StructManaged" type="System.Runtime.CompilerServices.UnsafeTests" method="ReadUnaligned_ByRef_StructManaged" time="0.0036" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockRef(numBytes: 0)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockRef" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockRef(numBytes: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockRef" time="0.0017" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockRef(numBytes: 10)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockRef" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockRef(numBytes: 100)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockRef" time="0.0013" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockRef(numBytes: 100000)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockRef" time="0.5439" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefIsAddressLessThanOrEqualTo" type="System.Runtime.CompilerServices.UnsafeTests" method="RefIsAddressLessThanOrEqualTo" time="0.0054" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.WriteUnaligned_Ptr_Struct" type="System.Runtime.CompilerServices.UnsafeTests" method="WriteUnaligned_Ptr_Struct" time="0.0015" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.WriteUnaligned_ByRef_Double" type="System.Runtime.CompilerServices.UnsafeTests" method="WriteUnaligned_ByRef_Double" time="0.0001" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockUnaligned(numBytes: 0)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockUnaligned" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockUnaligned(numBytes: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockUnaligned" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockUnaligned(numBytes: 10)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockUnaligned" time="0.0000999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockUnaligned(numBytes: 100)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockUnaligned" time="0.0007" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockUnaligned(numBytes: 100000)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockUnaligned" time="0.7001" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.WriteSpan" type="System.Runtime.CompilerServices.UnsafeTests" method="WriteSpan" time="0.0005" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.ReadUnaligned_ByRef_Struct" type="System.Runtime.CompilerServices.UnsafeTests" method="ReadUnaligned_ByRef_Struct" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.WriteUnaligned_Ptr_Int32" type="System.Runtime.CompilerServices.UnsafeTests" method="WriteUnaligned_Ptr_Int32" time="0.0001" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyToRef" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyToRef" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.ReadUnaligned_Ptr_Struct" type="System.Runtime.CompilerServices.UnsafeTests" method="ReadUnaligned_Ptr_Struct" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.Unbox_CustomValueType" type="System.Runtime.CompilerServices.UnsafeTests" method="Unbox_CustomValueType" time="0.0011" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefIsAddressGreaterThan" type="System.Runtime.CompilerServices.UnsafeTests" method="RefIsAddressGreaterThan" time="0.0002999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefAddNuintByteOffset" type="System.Runtime.CompilerServices.UnsafeTests" method="RefAddNuintByteOffset" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefAddIntPtr_RefStruct" type="System.Runtime.CompilerServices.UnsafeTests" method="RefAddIntPtr_RefStruct" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.ReadUnaligned_ByRef_Double" type="System.Runtime.CompilerServices.UnsafeTests" method="ReadUnaligned_ByRef_Double" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedRefStack(numBytes: 0, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedRefStack" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedRefStack(numBytes: 1, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedRefStack" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedRefStack(numBytes: 10, value: 0)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedRefStack" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedRefStack(numBytes: 10, value: 2)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedRefStack" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedRefStack(numBytes: 10, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedRefStack" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedRefStack(numBytes: 10000, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedRefStack" time="0.0128999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyToVoidPtrGenericStruct" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyToVoidPtrGenericStruct" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.ReadSpan" type="System.Runtime.CompilerServices.UnsafeTests" method="ReadSpan" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.WriteUnaligned_ByRef_Struct" type="System.Runtime.CompilerServices.UnsafeTests" method="WriteUnaligned_ByRef_Struct" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefAdd" type="System.Runtime.CompilerServices.UnsafeTests" method="RefAdd" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.SizeOf" type="System.Runtime.CompilerServices.UnsafeTests" method="SizeOf" time="0.0005" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedStack(numBytes: 0, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedStack" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedStack(numBytes: 1, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedStack" time="0.0002999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedStack(numBytes: 10, value: 0)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedStack" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedStack(numBytes: 10, value: 2)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedStack" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedStack(numBytes: 10, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedStack" time="0.0000999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedStack(numBytes: 10000, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedStack" time="0.0111" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.IsNullRef_NotNull" type="System.Runtime.CompilerServices.UnsafeTests" method="IsNullRef_NotNull" time="0.0002999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefAs" type="System.Runtime.CompilerServices.UnsafeTests" method="RefAs" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedRefUnmanaged(numBytes: 0, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedRefUnmanaged" time="0.0003999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedRefUnmanaged(numBytes: 1, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedRefUnmanaged" time="0.0001999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedRefUnmanaged(numBytes: 10, value: 0)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedRefUnmanaged" time="0.0001" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedRefUnmanaged(numBytes: 10, value: 2)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedRefUnmanaged" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedRefUnmanaged(numBytes: 10, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedRefUnmanaged" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedRefUnmanaged(numBytes: 10000, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedRefUnmanaged" time="0.0128" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefAddIntPtr" type="System.Runtime.CompilerServices.UnsafeTests" method="RefAddIntPtr" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefSubtractNuintByteOffset" type="System.Runtime.CompilerServices.UnsafeTests" method="RefSubtractNuintByteOffset" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockStack(numBytes: 0, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockStack" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockStack(numBytes: 1, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockStack" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockStack(numBytes: 10, value: 0)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockStack" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockStack(numBytes: 10, value: 2)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockStack" time="0.0001" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockStack(numBytes: 10, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockStack" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockStack(numBytes: 10000, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockStack" time="0.0133999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.WriteUnaligned_ByRef_StructManaged" type="System.Runtime.CompilerServices.UnsafeTests" method="WriteUnaligned_ByRef_StructManaged" time="0.0006" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.AsRef_RefStruct" type="System.Runtime.CompilerServices.UnsafeTests" method="AsRef_RefStruct" time="0.0014" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefAreSame" type="System.Runtime.CompilerServices.UnsafeTests" method="RefAreSame" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.WriteInt32" type="System.Runtime.CompilerServices.UnsafeTests" method="WriteInt32" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.Unbox_Int32" type="System.Runtime.CompilerServices.UnsafeTests" method="Unbox_Int32" time="0.0004" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockRefUnmanaged(numBytes: 0, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockRefUnmanaged" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockRefUnmanaged(numBytes: 1, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockRefUnmanaged" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockRefUnmanaged(numBytes: 10, value: 0)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockRefUnmanaged" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockRefUnmanaged(numBytes: 10, value: 2)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockRefUnmanaged" time="0.0000999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockRefUnmanaged(numBytes: 10, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockRefUnmanaged" time="0.0001" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockRefUnmanaged(numBytes: 10000, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockRefUnmanaged" time="0.0127" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.ReadWriteDoublePointer" type="System.Runtime.CompilerServices.UnsafeTests" method="ReadWriteDoublePointer" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.WriteUnaligned_Ptr_Double" type="System.Runtime.CompilerServices.UnsafeTests" method="WriteUnaligned_Ptr_Double" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.WriteBytesIntoInt32" type="System.Runtime.CompilerServices.UnsafeTests" method="WriteBytesIntoInt32" time="0.0004" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.NullRef" type="System.Runtime.CompilerServices.UnsafeTests" method="NullRef" time="0.001" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.SkipInit_PreservesPrevious" type="System.Runtime.CompilerServices.UnsafeTests" method="SkipInit_PreservesPrevious" time="0.0083" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.ReadUnaligned_Ptr_Double" type="System.Runtime.CompilerServices.UnsafeTests" method="ReadUnaligned_Ptr_Double" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefAddByteOffset" type="System.Runtime.CompilerServices.UnsafeTests" method="RefAddByteOffset" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockUnalignedRef(numBytes: 0)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockUnalignedRef" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockUnalignedRef(numBytes: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockUnalignedRef" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockUnalignedRef(numBytes: 10)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockUnalignedRef" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockUnalignedRef(numBytes: 100)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockUnalignedRef" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlockUnalignedRef(numBytes: 100000)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlockUnalignedRef" time="0.2733999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedUnmanaged(numBytes: 0, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedUnmanaged" time="0.0001999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedUnmanaged(numBytes: 1, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedUnmanaged" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedUnmanaged(numBytes: 10, value: 0)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedUnmanaged" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedUnmanaged(numBytes: 10, value: 2)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedUnmanaged" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedUnmanaged(numBytes: 10, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedUnmanaged" time="0.0001" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnalignedUnmanaged(numBytes: 10000, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnalignedUnmanaged" time="0.0138" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.WriteUnaligned_ByRef_Int32" type="System.Runtime.CompilerServices.UnsafeTests" method="WriteUnaligned_ByRef_Int32" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.DangerousAs" type="System.Runtime.CompilerServices.UnsafeTests" method="DangerousAs" time="0.0006" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefAddNuint" type="System.Runtime.CompilerServices.UnsafeTests" method="RefAddNuint" time="0.0001" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.VoidPointerAdd" type="System.Runtime.CompilerServices.UnsafeTests" method="VoidPointerAdd" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.ReadUnaligned_ByRef_Int32" type="System.Runtime.CompilerServices.UnsafeTests" method="ReadUnaligned_ByRef_Int32" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.VoidPointerSubtract" type="System.Runtime.CompilerServices.UnsafeTests" method="VoidPointerSubtract" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.ReadUnaligned_Ptr_Int32" type="System.Runtime.CompilerServices.UnsafeTests" method="ReadUnaligned_Ptr_Int32" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.ByteOffsetArray" type="System.Runtime.CompilerServices.UnsafeTests" method="ByteOffsetArray" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnmanaged(numBytes: 0, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnmanaged" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnmanaged(numBytes: 1, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnmanaged" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnmanaged(numBytes: 10, value: 0)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnmanaged" time="0.0001" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnmanaged(numBytes: 10, value: 2)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnmanaged" time="0.0001" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnmanaged(numBytes: 10, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnmanaged" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockUnmanaged(numBytes: 10000, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockUnmanaged" time="0.0138" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InAsRef" type="System.Runtime.CompilerServices.UnsafeTests" method="InAsRef" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.ByteOffsetConstantRef" type="System.Runtime.CompilerServices.UnsafeTests" method="ByteOffsetConstantRef" time="0.0006" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefSubtractIntPtr" type="System.Runtime.CompilerServices.UnsafeTests" method="RefSubtractIntPtr" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.LongIntoCompoundStruct" type="System.Runtime.CompilerServices.UnsafeTests" method="LongIntoCompoundStruct" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefIsAddressGreaterThanOrEqualTo" type="System.Runtime.CompilerServices.UnsafeTests" method="RefIsAddressGreaterThanOrEqualTo" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.As" type="System.Runtime.CompilerServices.UnsafeTests" method="As" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefSubtract" type="System.Runtime.CompilerServices.UnsafeTests" method="RefSubtract" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefIsAddressLessThan" type="System.Runtime.CompilerServices.UnsafeTests" method="RefIsAddressLessThan" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlock(numBytes: 0)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlock" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlock(numBytes: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlock" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlock(numBytes: 10)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlock" time="0.0001" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlock(numBytes: 100)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlock" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyBlock(numBytes: 100000)" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyBlock" time="0.2672" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.AsRef" type="System.Runtime.CompilerServices.UnsafeTests" method="AsRef" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.ReadInt32" type="System.Runtime.CompilerServices.UnsafeTests" method="ReadInt32" time="0.0004" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefSubtractByteOffset" type="System.Runtime.CompilerServices.UnsafeTests" method="RefSubtractByteOffset" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyToVoidPtr" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyToVoidPtr" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.BitCast" type="System.Runtime.CompilerServices.UnsafeTests" method="BitCast" time="0.0095999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.SkipInit" type="System.Runtime.CompilerServices.UnsafeTests" method="SkipInit" time="0.0002999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockRefStack(numBytes: 0, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockRefStack" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockRefStack(numBytes: 1, value: 1)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockRefStack" time="0.0001999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockRefStack(numBytes: 10, value: 0)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockRefStack" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockRefStack(numBytes: 10, value: 2)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockRefStack" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockRefStack(numBytes: 10, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockRefStack" time="0" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.InitBlockRefStack(numBytes: 10000, value: 255)" type="System.Runtime.CompilerServices.UnsafeTests" method="InitBlockRefStack" time="0.0132" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.ByteOffsetStackByte4" type="System.Runtime.CompilerServices.UnsafeTests" method="ByteOffsetStackByte4" time="0.0002999" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.RefSubtractNuint" type="System.Runtime.CompilerServices.UnsafeTests" method="RefSubtractNuint" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.UnsafeTests.CopyToRefGenericStruct" type="System.Runtime.CompilerServices.UnsafeTests" method="CopyToRefGenericStruct" time="0.0001" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

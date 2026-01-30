@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="Microsoft.Win32.Primitives.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:14:36" total="1" passed="1" failed="0" skipped="0" time="0.066" errors="0">
+    <errors />
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.ComponentModel.Tests.Win32ExceptionTestType" time="0.011">
+      <test name="System.ComponentModel.Tests.Win32ExceptionTestType.InstantiateException" type="System.ComponentModel.Tests.Win32ExceptionTestType" method="InstantiateException" time="0.0105" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

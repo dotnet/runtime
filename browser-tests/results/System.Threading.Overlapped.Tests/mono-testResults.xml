@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Threading.Overlapped.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:18:54" total="18" passed="18" failed="0" skipped="0" time="0.151" errors="0">
+    <errors />
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for OverlappedTests" time="0.019">
+      <test name="OverlappedTests.PackNegTest" type="OverlappedTests" method="PackNegTest" time="0.0073999" result="Pass" />
+      <test name="OverlappedTests.PropertyTest1" type="OverlappedTests" method="PropertyTest1" time="0.01" result="Pass" />
+      <test name="OverlappedTests.PackNegTest1" type="OverlappedTests" method="PackNegTest1" time="0.0005" result="Pass" />
+      <test name="OverlappedTests.PropertyTest3" type="OverlappedTests" method="PropertyTest3" time="0.0002999" result="Pass" />
+      <test name="OverlappedTests.PropertyTest2" type="OverlappedTests" method="PropertyTest2" time="0.0003" result="Pass" />
+      <test name="OverlappedTests.UnPackTest" type="OverlappedTests" method="UnPackTest" time="0.0008" result="Pass" />
+    </collection>
+    <collection total="12" passed="12" failed="0" skipped="0" name="Test collection for ThreadPoolBoundHandleTests" time="0.024">
+      <test name="ThreadPoolBoundHandleTests.PreAllocatedOverlapped_ReturnedNativeOverlapped_OffsetLowAndOffsetHighSetToZero" type="ThreadPoolBoundHandleTests" method="PreAllocatedOverlapped_ReturnedNativeOverlapped_OffsetLowAndOffsetHighSetToZero" time="0.0055998" result="Pass" />
+      <test name="ThreadPoolBoundHandleTests.PreAllocatedOverlapped_NullAsContext_DoesNotThrow" type="ThreadPoolBoundHandleTests" method="PreAllocatedOverlapped_NullAsContext_DoesNotThrow" time="0.0010999" result="Pass" />
+      <test name="ThreadPoolBoundHandleTests.GetNativeOverlappedState_NullAsNativeOverlapped_ThrowsArgumentNullException" type="ThreadPoolBoundHandleTests" method="GetNativeOverlappedState_NullAsNativeOverlapped_ThrowsArgumentNullException" time="0.0080998" result="Pass" />
+      <test name="ThreadPoolBoundHandleTests.BindHandle_NullAsHandle_ThrowsArgumentNullException" type="ThreadPoolBoundHandleTests" method="BindHandle_NullAsHandle_ThrowsArgumentNullException" time="0.0008999" result="Pass" />
+      <test name="ThreadPoolBoundHandleTests.PreAllocatedOverlapped_BlittableTypeAsPinData_DoesNotThrow" type="ThreadPoolBoundHandleTests" method="PreAllocatedOverlapped_BlittableTypeAsPinData_DoesNotThrow" time="0.0009999" result="Pass" />
+      <test name="ThreadPoolBoundHandleTests.BindHandle_ValidHandle_ThrowsPlatformNotSupportedException" type="ThreadPoolBoundHandleTests" method="BindHandle_ValidHandle_ThrowsPlatformNotSupportedException" time="0.0014999" result="Pass" />
+      <test name="ThreadPoolBoundHandleTests.BindHandle_ZeroAsHandle_ThrowsArgumentException" type="ThreadPoolBoundHandleTests" method="BindHandle_ZeroAsHandle_ThrowsArgumentException" time="0.0012999" result="Pass" />
+      <test name="ThreadPoolBoundHandleTests.PreAllocatedOverlapped_ReturnedNativeOverlapped_InternalLowAndInternalHighSetToZero" type="ThreadPoolBoundHandleTests" method="PreAllocatedOverlapped_ReturnedNativeOverlapped_InternalLowAndInternalHighSetToZero" time="0.0014999" result="Pass" />
+      <test name="ThreadPoolBoundHandleTests.BindHandle_MinusOneAsHandle_ThrowsArgumentException" type="ThreadPoolBoundHandleTests" method="BindHandle_MinusOneAsHandle_ThrowsArgumentException" time="0.0011999" result="Pass" />
+      <test name="ThreadPoolBoundHandleTests.PreAllocatedOverlapped_ObjectArrayAsPinData_DoesNotThrow" type="ThreadPoolBoundHandleTests" method="PreAllocatedOverlapped_ObjectArrayAsPinData_DoesNotThrow" time="0.0006998" result="Pass" />
+      <test name="ThreadPoolBoundHandleTests.PreAllocatedOverlapped_NullAsPinData_DoesNotThrow" type="ThreadPoolBoundHandleTests" method="PreAllocatedOverlapped_NullAsPinData_DoesNotThrow" time="0.0008999" result="Pass" />
+      <test name="ThreadPoolBoundHandleTests.PreAllocatedOverlapped_EmptyArrayAsPinData_DoesNotThrow" type="ThreadPoolBoundHandleTests" method="PreAllocatedOverlapped_EmptyArrayAsPinData_DoesNotThrow" time="0.0006999" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

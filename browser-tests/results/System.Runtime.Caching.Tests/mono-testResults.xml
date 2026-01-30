@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Runtime.Caching.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:17:51" total="41" passed="40" failed="0" skipped="1" time="8.558" errors="0">
+    <errors />
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for MonoTests.System.Runtime.Caching.MemoryCacheTestExpires4" time="4.766">
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTestExpires4.TestCacheShrink" type="MonoTests.System.Runtime.Caching.MemoryCacheTestExpires4" method="TestCacheShrink" time="4.7662" result="Pass" />
+    </collection>
+    <collection total="33" passed="32" failed="0" skipped="1" name="Test collection for MonoTests.System.Runtime.Caching.MemoryCacheTest" time="1.652">
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.AddOrGetExisting_CacheItem_CacheItemPolicy" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="AddOrGetExisting_CacheItem_CacheItemPolicy" time="0.0105" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Contains(throwOnDisposed: \&quot;true\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Contains" time="0.504" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Contains(throwOnDisposed: \&quot;false\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Contains" time="0.5007" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Contains(throwOnDisposed: null)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Contains" time="0.5001" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.PhysicalMemoryLimitNotSupported" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="PhysicalMemoryLimitNotSupported" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"DoesNotSupportPhysicalMemoryMonitor\"]]></reason>
+      </test>
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Trim(throwOnDisposed: \&quot;true\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Trim" time="0.0018" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Trim(throwOnDisposed: \&quot;false\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Trim" time="0.0005" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Trim(throwOnDisposed: null)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Trim" time="0.0006" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.CreateCacheEntryChangeMonitor" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="CreateCacheEntryChangeMonitor" time="0.0043999" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.ConstructorValues" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="ConstructorValues" time="0.0017" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.ChangeMonitors" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="ChangeMonitors" time="0.0018" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.GetValues(throwOnDisposed: \&quot;true\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="GetValues" time="0.0022" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.GetValues(throwOnDisposed: \&quot;false\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="GetValues" time="0.0006" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.GetValues(throwOnDisposed: null)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="GetValues" time="0.0003" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Set_String_Object_DateTimeOffset_String" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Set_String_Object_DateTimeOffset_String" time="0.0005" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.AddOrGetExisting_String_Object_DateTimeOffset_String(throwOnDisposed: \&quot;true\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="AddOrGetExisting_String_Object_DateTimeOffset_String" time="0.0012" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.AddOrGetExisting_String_Object_DateTimeOffset_String(throwOnDisposed: \&quot;false\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="AddOrGetExisting_String_Object_DateTimeOffset_String" time="0.0005" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.AddOrGetExisting_String_Object_DateTimeOffset_String(throwOnDisposed: null)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="AddOrGetExisting_String_Object_DateTimeOffset_String" time="0.0003" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Remove(throwOnDisposed: \&quot;true\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Remove" time="0.0029" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Remove(throwOnDisposed: \&quot;false\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Remove" time="0.0007" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Remove(throwOnDisposed: null)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Remove" time="0.0006" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Set_CacheItem_CacheItemPolicy" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Set_CacheItem_CacheItemPolicy" time="0.0012" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Defaults" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Defaults" time="0.0013" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.ConstructorParameters" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="ConstructorParameters" time="0.0044" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.TestExpiredGetValues" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="TestExpiredGetValues" time="0.1003999" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.AddOrGetExisting_String_Object_CacheItemPolicy_String" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="AddOrGetExisting_String_Object_CacheItemPolicy_String" time="0.0025999" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.DefaultInstanceDefaults" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="DefaultInstanceDefaults" time="0.0004" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Indexer(throwOnDisposed: \&quot;true\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Indexer" time="0.0019" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Indexer(throwOnDisposed: \&quot;false\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Indexer" time="0.0005" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Indexer(throwOnDisposed: null)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Indexer" time="0.0002999" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Set_String_Object_CacheItemPolicy_String(throwOnDisposed: \&quot;true\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Set_String_Object_CacheItemPolicy_String" time="0.0013" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Set_String_Object_CacheItemPolicy_String(throwOnDisposed: \&quot;false\&quot;)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Set_String_Object_CacheItemPolicy_String" time="0.0007" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTest.Set_String_Object_CacheItemPolicy_String(throwOnDisposed: null)" type="MonoTests.System.Runtime.Caching.MemoryCacheTest" method="Set_String_Object_CacheItemPolicy_String" time="0.0011" result="Pass" />
+    </collection>
+    <collection total="5" passed="5" failed="0" skipped="0" name="Test collection for MonoTests.System.Runtime.Caching.ObjectCacheTest" time="0.002">
+      <test name="MonoTests.System.Runtime.Caching.ObjectCacheTest.Add_String_Object_DateTimeOffset_String" type="MonoTests.System.Runtime.Caching.ObjectCacheTest" method="Add_String_Object_DateTimeOffset_String" time="0.0006" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.ObjectCacheTest.Add_String_Object_CacheItemPolicy_String" type="MonoTests.System.Runtime.Caching.ObjectCacheTest" method="Add_String_Object_CacheItemPolicy_String" time="0.0004" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.ObjectCacheTest.Add_CacheItem_CacheItemPolicy" type="MonoTests.System.Runtime.Caching.ObjectCacheTest" method="Add_CacheItem_CacheItemPolicy" time="0.0002" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.ObjectCacheTest.Defaults" type="MonoTests.System.Runtime.Caching.ObjectCacheTest" method="Defaults" time="0.0004" result="Pass" />
+      <test name="MonoTests.System.Runtime.Caching.ObjectCacheTest.GetValues" type="MonoTests.System.Runtime.Caching.ObjectCacheTest" method="GetValues" time="0.0004" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Runtime.Caching.Tests.AdditionalCacheTests" time="0.001">
+      <test name="System.Runtime.Caching.Tests.AdditionalCacheTests.DisposedCacheTest" type="System.Runtime.Caching.Tests.AdditionalCacheTests" method="DisposedCacheTest" time="0.0007" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for MonoTests.System.Runtime.Caching.MemoryCacheTestExpires5" time="2.010">
+      <test name="MonoTests.System.Runtime.Caching.MemoryCacheTestExpires5.TestCacheExpiryOrdering" type="MonoTests.System.Runtime.Caching.MemoryCacheTestExpires5" method="TestCacheExpiryOrdering" time="2.0103999" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

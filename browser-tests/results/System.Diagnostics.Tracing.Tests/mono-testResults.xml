@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Diagnostics.Tracing.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-assembly, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:16:07" total="39" passed="37" failed="0" skipped="2" time="2.764" errors="0">
+    <errors />
+    <collection total="39" passed="37" failed="0" skipped="2" name="Test collection for System.Diagnostics.Tracing.Tests.dll" time="2.607">
+      <test name="BasicEventSourceTests.ActivityTracking.SetCurrentActivityIdBeforeEventFlowsAsync" type="BasicEventSourceTests.ActivityTracking" method="SetCurrentActivityIdBeforeEventFlowsAsync" time="0.0635" result="Pass" />
+      <test name="BasicEventSourceTests.ActivityTracking.StartStopCreatesActivity" type="BasicEventSourceTests.ActivityTracking" method="StartStopCreatesActivity" time="0.0039" result="Pass" />
+      <test name="BasicEventSourceTests.ActivityTracking.SetCurrentActivityIdAfterEventDoesNotFlowAsync" type="BasicEventSourceTests.ActivityTracking" method="SetCurrentActivityIdAfterEventDoesNotFlowAsync" time="0.0042" result="Pass" />
+      <test name="BasicEventSourceTests.ActivityTracking.ActivityFlowsAsync" type="BasicEventSourceTests.ActivityTracking" method="ActivityFlowsAsync" time="0.0036" result="Pass" />
+      <test name="BasicEventSourceTests.ActivityTracking.ActivityIdIsZeroedOnThreadSwitchOut" type="BasicEventSourceTests.ActivityTracking" method="ActivityIdIsZeroedOnThreadSwitchOut" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="BasicEventSourceTests.ActivityTracking.IsSupported" type="BasicEventSourceTests.ActivityTracking" method="IsSupported" time="0.0009" result="Pass" />
+      <test name="BasicEventSourceTests.TestFilter.TestFilterEvent" type="BasicEventSourceTests.TestFilter" method="TestFilterEvent" time="0.0032" result="Pass" />
+      <test name="BasicEventSourceTests.TestNotSupported.TestBasicOperations_IsSupported_False" type="BasicEventSourceTests.TestNotSupported" method="TestBasicOperations_IsSupported_False" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="BasicEventSourceTests.TestsManifestGeneration.Test_EventSource_NamedEventSource" type="BasicEventSourceTests.TestsManifestGeneration" method="Test_EventSource_NamedEventSource" time="0.0033" result="Pass" />
+      <test name="BasicEventSourceTests.TestsManifestNegative.Test_GenerateManifest_InvalidEventSources" type="BasicEventSourceTests.TestsManifestNegative" method="Test_GenerateManifest_InvalidEventSources" time="0.0702" result="Pass" />
+      <test name="BasicEventSourceTests.TestsTraits.Test_EventSource_Traits_Contract_Guid_Manifest" type="BasicEventSourceTests.TestsTraits" method="Test_EventSource_Traits_Contract_Guid_Manifest" time="0.0022" result="Pass" />
+      <test name="BasicEventSourceTests.TestsTraits.Test_EventSource_Traits_Dynamic" type="BasicEventSourceTests.TestsTraits" method="Test_EventSource_Traits_Dynamic" time="0.011" result="Pass" />
+      <test name="BasicEventSourceTests.TestsTraits.Test_EventSource_Traits_Dynamic_Guid" type="BasicEventSourceTests.TestsTraits" method="Test_EventSource_Traits_Dynamic_Guid" time="0.0005" result="Pass" />
+      <test name="BasicEventSourceTests.TestsTraits.Test_EventSource_Traits_Contract" type="BasicEventSourceTests.TestsTraits" method="Test_EventSource_Traits_Contract" time="0.0009" result="Pass" />
+      <test name="BasicEventSourceTests.TestsTraits.Test_EventSource_Traits_Contract_Guid" type="BasicEventSourceTests.TestsTraits" method="Test_EventSource_Traits_Contract_Guid" time="0.0003" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEvent.Test_WriteEvent_ComplexData_SelfDescribing(listener: EventListener(UseEventsToListen=False))" type="BasicEventSourceTests.TestsWriteEvent" method="Test_WriteEvent_ComplexData_SelfDescribing" time="0.0503" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEvent.Test_WriteEvent_ComplexData_SelfDescribing(listener: EventListener(UseEventsToListen=True))" type="BasicEventSourceTests.TestsWriteEvent" method="Test_WriteEvent_ComplexData_SelfDescribing" time="0.0107" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEvent.Test_WriteEvent_NoAttribute" type="BasicEventSourceTests.TestsWriteEvent" method="Test_WriteEvent_NoAttribute" time="0.0059" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEvent.Test_WriteEvent_ByteArray(listener: EventListener(UseEventsToListen=False), useSelfDescribingEvents: False)" type="BasicEventSourceTests.TestsWriteEvent" method="Test_WriteEvent_ByteArray" time="0.0143" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEvent.Test_WriteEvent_ByteArray(listener: EventListener(UseEventsToListen=True), useSelfDescribingEvents: False)" type="BasicEventSourceTests.TestsWriteEvent" method="Test_WriteEvent_ByteArray" time="0.0044" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEvent.Test_WriteEvent_ByteArray(listener: EventListener(UseEventsToListen=False), useSelfDescribingEvents: True)" type="BasicEventSourceTests.TestsWriteEvent" method="Test_WriteEvent_ByteArray" time="0.0041" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEvent.Test_WriteEvent_ByteArray(listener: EventListener(UseEventsToListen=True), useSelfDescribingEvents: True)" type="BasicEventSourceTests.TestsWriteEvent" method="Test_WriteEvent_ByteArray" time="0.0044" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEvent.Test_WriteEvent(listener: EventListener(UseEventsToListen=False), useSelfDescribingEvents: False)" type="BasicEventSourceTests.TestsWriteEvent" method="Test_WriteEvent" time="0.0447" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEvent.Test_WriteEvent(listener: EventListener(UseEventsToListen=True), useSelfDescribingEvents: False)" type="BasicEventSourceTests.TestsWriteEvent" method="Test_WriteEvent" time="0.031" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEvent.Test_WriteEvent(listener: EventListener(UseEventsToListen=False), useSelfDescribingEvents: True)" type="BasicEventSourceTests.TestsWriteEvent" method="Test_WriteEvent" time="0.0171" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEvent.Test_WriteEvent(listener: EventListener(UseEventsToListen=True), useSelfDescribingEvents: True)" type="BasicEventSourceTests.TestsWriteEvent" method="Test_WriteEvent" time="0.0127" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEventToListener.Test_EventSourceCreatedEvents_BeforeListener" type="BasicEventSourceTests.TestsWriteEventToListener" method="Test_EventSourceCreatedEvents_BeforeListener" time="1.0027" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEventToListener.Test_WriteEvent_InvalidCalls" type="BasicEventSourceTests.TestsWriteEventToListener" method="Test_WriteEvent_InvalidCalls" time="0.0014" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEventToListener.Test_EventSourceCreatedEvents_AfterListener" type="BasicEventSourceTests.TestsWriteEventToListener" method="Test_EventSourceCreatedEvents_AfterListener" time="1.0004" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEventToListener.Test_WriteEvent_ArgsCornerCases" type="BasicEventSourceTests.TestsWriteEventToListener" method="Test_WriteEvent_ArgsCornerCases" time="0.0144" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEventToListener.Test_WriteEvent_ZeroKwds" type="BasicEventSourceTests.TestsWriteEventToListener" method="Test_WriteEvent_ZeroKwds" time="0.0102" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEventToListener.Test_WriteEvent_ArgsBasicTypes" type="BasicEventSourceTests.TestsWriteEventToListener" method="Test_WriteEvent_ArgsBasicTypes" time="0.0297" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEventToListener.Test_WriteEvent_ToChannel_Coverage" type="BasicEventSourceTests.TestsWriteEventToListener" method="Test_WriteEvent_ToChannel_Coverage" time="0.002" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEventToListener.Test_EventListenerThrows_ExceptionIsNotRethrownToCaller(setThrowOnEventWriteErrorsFlag: True)" type="BasicEventSourceTests.TestsWriteEventToListener" method="Test_EventListenerThrows_ExceptionIsNotRethrownToCaller" time="0.0154" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWriteEventToListener.Test_EventListenerThrows_ExceptionIsNotRethrownToCaller(setThrowOnEventWriteErrorsFlag: False)" type="BasicEventSourceTests.TestsWriteEventToListener" method="Test_EventListenerThrows_ExceptionIsNotRethrownToCaller" time="0.0118" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWrite.Test_Write_T(listener: EventListener(UseEventsToListen=False))" type="BasicEventSourceTests.TestsWrite" method="Test_Write_T" time="0.1166" result="Pass" />
+      <test name="BasicEventSourceTests.TestsWrite.Test_Write_T(listener: EventListener(UseEventsToListen=True))" type="BasicEventSourceTests.TestsWrite" method="Test_Write_T" time="0.0164" result="Pass" />
+      <test name="BasicEventSourceTests.TestsUserErrors.Test_BadEventSource_MismatchedIds" type="BasicEventSourceTests.TestsUserErrors" method="Test_BadEventSource_MismatchedIds" time="0.0169" result="Pass" />
+      <test name="BasicEventSourceTests.TestsUserErrors.Test_BadTypes_Manifest_UserClass" type="BasicEventSourceTests.TestsUserErrors" method="Test_BadTypes_Manifest_UserClass" time="0.0017" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

@@ -73,7 +73,7 @@ This downloads to `browser-tests/results/<TestProject>/mono-console.log` and dis
 9. **Create or update** `browser-tests/results/<TestProject>/Summary.md` with the outcome
 10. **Update the overall status** in "Completed Test Suites" of [plan.md](./plan.md)
 11. **Stop and ask for feedback before proceeding.**
-12. **Rebuild and re-run** the test suite to continue until all enabled tests pass.
+12. **Rebuild and re-run** the test suite to continue until all enabled tests pass or until you tried to run the suite more then 3 times already.
 
 ### Handling Timeouts/Crashes/Aborts
 

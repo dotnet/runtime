@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Xml.Linq.xNodeReader.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:19:36" total="20" passed="20" failed="0" skipped="0" time="0.464" errors="0">
+    <errors />
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for CoreXml.Test.XLinq.XNodeReaderFunctionalTests+XNodeReaderTests+TCReadEndElement" time="0.111">
+      <test name="CoreXml.Test.XLinq.XNodeReaderFunctionalTests+XNodeReaderTests+TCReadEndElement.TestReadEndElementOnEndElementWithNamespace" type="CoreXml.Test.XLinq.XNodeReaderFunctionalTests+XNodeReaderTests+TCReadEndElement" method="TestReadEndElementOnEndElementWithNamespace" time="0.083" result="Pass" />
+      <test name="CoreXml.Test.XLinq.XNodeReaderFunctionalTests+XNodeReaderTests+TCReadEndElement.TestReadEndElementOnEndElementWithoutNamespace" type="CoreXml.Test.XLinq.XNodeReaderFunctionalTests+XNodeReaderTests+TCReadEndElement" method="TestReadEndElementOnEndElementWithoutNamespace" time="0.0283999" result="Pass" />
+    </collection>
+    <collection total="15" passed="15" failed="0" skipped="0" name="Test collection for System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" time="0.237">
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnAttributeCountPlusOne" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="IndexerThrowsOnAttributeCountPlusOne" time="0.0496" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeThrowsOnIndexMinusTwo" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="GetAttributeThrowsOnIndexMinusTwo" time="0.0253" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnAttributeCount" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="IndexerThrowsOnAttributeCount" time="0.0185" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnNonInteractiveMode" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="IndexerThrowsOnNonInteractiveMode" time="0.0025" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeThrowsOnAttributeCountPlusOne" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="GetAttributeThrowsOnAttributeCountPlusOne" time="0.0171" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeStringReturnsNullInNonInteractiveMode" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="GetAttributeStringReturnsNullInNonInteractiveMode" time="0.0008" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeThrowsOnNegativeIndicesOnXNodes" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="GetAttributeThrowsOnNegativeIndicesOnXNodes" time="0.0016999" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeThrowsOnAttributeCount" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="GetAttributeThrowsOnAttributeCount" time="0.021" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnIndexMinusOne" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="IndexerThrowsOnIndexMinusOne" time="0.0158" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnNegativeIndicesOnXNodes" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="IndexerThrowsOnNegativeIndicesOnXNodes" time="0.0016" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnIndexMinusTwo" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="IndexerThrowsOnIndexMinusTwo" time="0.0109" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.IndexerThrowsOnOutOfRangeUpperBound" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="IndexerThrowsOnOutOfRangeUpperBound" time="0.0008" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeThrowsOnOutOfRangeUpperBound" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="GetAttributeThrowsOnOutOfRangeUpperBound" time="0.0003" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeThrowsOnIndexMinusOne" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="GetAttributeThrowsOnIndexMinusOne" time="0.0703" result="Pass" />
+      <test name="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests.GetAttributeIntThrowsInNonInteractiveMode" type="System.Xml.Linq.xNodeReader.Tests.XNodeReaderAttributeTests" method="GetAttributeIntThrowsInNonInteractiveMode" time="0.0007" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for CoreXml.Test.XLinq.FunctionalTests_XNodeReaderTests_TCRegressions1" time="0.006">
+      <test name="CoreXml.Test.XLinq.FunctionalTests_XNodeReaderTests_TCRegressions1.EnsureReadToFollowingMovesToAttributeAndNotToDtd" type="CoreXml.Test.XLinq.FunctionalTests_XNodeReaderTests_TCRegressions1" method="EnsureReadToFollowingMovesToAttributeAndNotToDtd" time="0.0055" result="Pass" />
+      <test name="CoreXml.Test.XLinq.FunctionalTests_XNodeReaderTests_TCRegressions1.IncorrentBehaviorOfReadAttributeValue" type="CoreXml.Test.XLinq.FunctionalTests_XNodeReaderTests_TCRegressions1" method="IncorrentBehaviorOfReadAttributeValue" time="0.0006" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for CoreXml.Test.XLinq.XNodeReaderFunctionalTests+XNodeReaderTests+TCReadOuterXml" time="0.010">
+      <test name="CoreXml.Test.XLinq.XNodeReaderFunctionalTests+XNodeReaderTests+TCReadOuterXml.ReadOuterXmlOnXmlDeclarationAttributes" type="CoreXml.Test.XLinq.XNodeReaderFunctionalTests+XNodeReaderTests+TCReadOuterXml" method="ReadOuterXmlOnXmlDeclarationAttributes" time="0.01" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

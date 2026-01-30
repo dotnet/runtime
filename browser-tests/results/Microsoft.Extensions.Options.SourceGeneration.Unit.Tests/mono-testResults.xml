@@ -1,0 +1,184 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:14:31" total="58" passed="0" failed="0" skipped="58" time="0.153" errors="0">
+    <errors />
+    <collection total="49" passed="0" failed="0" skipped="49" name="Test collection for Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" time="0.000">
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NoSimpleValidatorConstructor" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="NoSimpleValidatorConstructor" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.IgnoredStaticMembers" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="IgnoredStaticMembers" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldProduceWarningWhenTheClassHasNoEligibleMembers" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldProduceWarningWhenTheClassHasNoEligibleMembers" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.InternalsVisibleToAssembliesTest" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="InternalsVisibleToAssembliesTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"SupportRemoteExecutionAndNotInBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.BogusModelType" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="BogusModelType" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.MultiModelValidatorGeneratesOnlyOnePartialTypeBlock" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="MultiModelValidatorGeneratesOnlyOnePartialTypeBlock" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.CircularTypeReferencesInEnumeration" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="CircularTypeReferencesInEnumeration" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.InaccessibleValidationAttributesTest" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="InaccessibleValidationAttributesTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"SupportRemoteExecutionAndNotInBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.TestEmitterWithCustomValidator" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="TestEmitterWithCustomValidator" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NullValidatorInEnumeration" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="NullValidatorInEnumeration" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.LanguageVersionTest" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="LanguageVersionTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.UsingInterfaceAsPropertyTypeForLengthAttributesTests" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="UsingInterfaceAsPropertyTypeForLengthAttributesTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.GeneratedAttributesTest" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="GeneratedAttributesTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceErrorWhenMultipleValidationAnnotationsExist" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldNotProduceErrorWhenMultipleValidationAnnotationsExist" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NoEligibleMembers" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="NoEligibleMembers" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NotValidator" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="NotValidator" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ValidationAttributeOnStaticMember" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ValidationAttributeOnStaticMember" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NotEnumerable" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="NotEnumerable" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.CircularTypeReferences" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="CircularTypeReferences" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ProduceDiagnosticFromOtherAssemblyTest" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ProduceDiagnosticFromOtherAssemblyTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"SupportRemoteExecutionAndNotInBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NullValidator" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="NullValidator" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NotValidatorInEnumeration" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="NotValidatorInEnumeration" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceInfoWhenTransitiveClassHasABaseClass" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldNotProduceInfoWhenTransitiveClassHasABaseClass" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.InvalidValidatorInterface" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="InvalidValidatorInterface" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceErrorWhenDataTypeAttributesAreUsed" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldNotProduceErrorWhenDataTypeAttributesAreUsed" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldStoreFloatValuesCorrectly" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldStoreFloatValuesCorrectly" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NoSimpleValidatorConstructorInEnumeration" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="NoSimpleValidatorConstructorInEnumeration" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.PotentiallyMissingAttributes" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="PotentiallyMissingAttributes" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldSkipAtrributeWhenAttributeSymbolCannotBeFound" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldSkipAtrributeWhenAttributeSymbolCannotBeFound" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.AlreadyImplemented" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="AlreadyImplemented" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ClosedGenerics" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ClosedGenerics" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceInfoWhenTheClassHasABaseClass" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldNotProduceInfoWhenTheClassHasABaseClass" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldAcceptAtrributeWhenAttributeIsInDifferentNamespace" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldAcceptAtrributeWhenAttributeIsInDifferentNamespace" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.GenerateSourceUsingVariousLanguageVersions" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="GenerateSourceUsingVariousLanguageVersions" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceAnyMessagesWhenExistingValidationsArePlaced" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldNotProduceAnyMessagesWhenExistingValidationsArePlaced" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.OptionsExtendingSystemClassTest" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="OptionsExtendingSystemClassTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.NoStaticValidator" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="NoStaticValidator" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldSkipAtrributeWhenAttributeSymbolIsNotBasedOnValidationAttribute" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldSkipAtrributeWhenAttributeSymbolIsNotBasedOnValidationAttribute" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.CantValidateOpenGenericMembers" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="CantValidateOpenGenericMembers" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ValidatorAlreadyImplementValidateFunction" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ValidatorAlreadyImplementValidateFunction" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.CantValidateOpenGenericMembersInEnumeration" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="CantValidateOpenGenericMembersInEnumeration" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceErrorWhenConstVariableIsUsedAsAttributeArgument" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldNotProduceErrorWhenConstVariableIsUsedAsAttributeArgument" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldHandleAtrributePropertiesOtherThanString" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldHandleAtrributePropertiesOtherThanString" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldSkipWhenOptionsValidatorAttributeDoesNotExist" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldSkipWhenOptionsValidatorAttributeDoesNotExist" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ClosedGenericsInEnumeration" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ClosedGenericsInEnumeration" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.DataAnnotationAttributesWithParams" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="DataAnnotationAttributesWithParams" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldProduceWarn_WhenTransitiveAttrMisused" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldProduceWarn_WhenTransitiveAttrMisused" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldNotProduceErrorWhenPropertiesAreUsedAsAttributeArgument" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldNotProduceErrorWhenPropertiesAreUsedAsAttributeArgument" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests.ShouldProduceWarningWhenTheClassMembersAreInaccessible" type="Microsoft.Gen.OptionsValidation.Unit.Test.EmitterTests" method="ShouldProduceWarningWhenTheClassMembersAreInaccessible" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+    </collection>
+    <collection total="9" passed="0" failed="0" skipped="9" name="Test collection for Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests" time="0.000">
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestBasicDataAnnotationFailures" type="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests" method="TestBasicDataAnnotationFailures" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestValidationSuccessResults" type="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests" method="TestValidationSuccessResults" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestObjectsWithIndexerProperties" type="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests" method="TestObjectsWithIndexerProperties" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestCustomGeneratedAttributes" type="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests" method="TestCustomGeneratedAttributes" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestValidationWithEnumeration" type="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests" method="TestValidationWithEnumeration" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestNewDataAnnotationFailures" type="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests" method="TestNewDataAnnotationFailures" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestValidationWithCyclicReferences" type="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests" method="TestValidationWithCyclicReferences" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestGeneratedRangeAttributeThreadSafety" type="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests" method="TestGeneratedRangeAttributeThreadSafety" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+      <test name="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests.TestValidationWithNestedTypes" type="Microsoft.Gen.OptionsValidation.Unit.Test.OptionsRuntimeTests" method="TestValidationWithNestedTypes" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotBrowser\"]]></reason>
+      </test>
+    </collection>
+  </assembly>
+</assemblies>

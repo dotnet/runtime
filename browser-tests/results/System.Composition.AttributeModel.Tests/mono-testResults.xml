@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Composition.AttributeModel.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:16:23" total="29" passed="29" failed="0" skipped="0" time="0.178" errors="0">
+    <errors />
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Composition.AttributeModel.Tests.PartNotDiscoverableAttributeTests" time="0.009">
+      <test name="System.Composition.AttributeModel.Tests.PartNotDiscoverableAttributeTests.Ctor_Default" type="System.Composition.AttributeModel.Tests.PartNotDiscoverableAttributeTests" method="Ctor_Default" time="0.0088" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.Composition.AttributeModel.Tests.SharingBoundaryAttributeTests" time="0.008">
+      <test name="System.Composition.AttributeModel.Tests.SharingBoundaryAttributeTests.Ctor_SharingBoundaryNames(sharingBoundaryNames: [])" type="System.Composition.AttributeModel.Tests.SharingBoundaryAttributeTests" method="Ctor_SharingBoundaryNames" time="0.0058" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.SharingBoundaryAttributeTests.Ctor_SharingBoundaryNames(sharingBoundaryNames: [\&quot;1\&quot;, null, \&quot;2\&quot;])" type="System.Composition.AttributeModel.Tests.SharingBoundaryAttributeTests" method="Ctor_SharingBoundaryNames" time="0.0005999" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.SharingBoundaryAttributeTests.Ctor_NullSharingBoundaryNames_ThrowsArgumentNullException" type="System.Composition.AttributeModel.Tests.SharingBoundaryAttributeTests" method="Ctor_NullSharingBoundaryNames_ThrowsArgumentNullException" time="0.0011999" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for System.Composition.AttributeModel.Tests.ImportMetadataConstraintAttributeTests" time="0.001">
+      <test name="System.Composition.AttributeModel.Tests.ImportMetadataConstraintAttributeTests.Ctor_Name_Value(name: null, value: null)" type="System.Composition.AttributeModel.Tests.ImportMetadataConstraintAttributeTests" method="Ctor_Name_Value" time="0.0005" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.ImportMetadataConstraintAttributeTests.Ctor_Name_Value(name: \&quot;Name\&quot;, value: \&quot;Value\&quot;)" type="System.Composition.AttributeModel.Tests.ImportMetadataConstraintAttributeTests" method="Ctor_Name_Value" time="0.0001" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.Composition.AttributeModel.Tests.SharedAttributeTests" time="0.001">
+      <test name="System.Composition.AttributeModel.Tests.SharedAttributeTests.Ctor_Default" type="System.Composition.AttributeModel.Tests.SharedAttributeTests" method="Ctor_Default" time="0.0005" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.SharedAttributeTests.Ctor_SharingBoundaryName(sharingBoundaryName: null)" type="System.Composition.AttributeModel.Tests.SharedAttributeTests" method="Ctor_SharingBoundaryName" time="0.0003" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.SharedAttributeTests.Ctor_SharingBoundaryName(sharingBoundaryName: \&quot;Name\&quot;)" type="System.Composition.AttributeModel.Tests.SharedAttributeTests" method="Ctor_SharingBoundaryName" time="0.0001" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Composition.AttributeModel.Tests.MetadataAttributeAttributeTests" time="0.001">
+      <test name="System.Composition.AttributeModel.Tests.MetadataAttributeAttributeTests.Ctor_Default" type="System.Composition.AttributeModel.Tests.MetadataAttributeAttributeTests" method="Ctor_Default" time="0.0005" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for System.Composition.AttributeModel.Tests.ExportMetadataAttributeTests" time="0.001">
+      <test name="System.Composition.AttributeModel.Tests.ExportMetadataAttributeTests.Ctor_Name_Value(name: null, value: null)" type="System.Composition.AttributeModel.Tests.ExportMetadataAttributeTests" method="Ctor_Name_Value" time="0.0003999" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.ExportMetadataAttributeTests.Ctor_Name_Value(name: \&quot;Name\&quot;, value: \&quot;Value\&quot;)" type="System.Composition.AttributeModel.Tests.ExportMetadataAttributeTests" method="Ctor_Name_Value" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Composition.AttributeModel.Tests.ImportingConstructorAttributeTests" time="0.001">
+      <test name="System.Composition.AttributeModel.Tests.ImportingConstructorAttributeTests.Ctor_Default" type="System.Composition.AttributeModel.Tests.ImportingConstructorAttributeTests" method="Ctor_Default" time="0.0005" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.Composition.AttributeModel.Tests.ImportManyAttributeTests" time="0.001">
+      <test name="System.Composition.AttributeModel.Tests.ImportManyAttributeTests.Ctor_Default" type="System.Composition.AttributeModel.Tests.ImportManyAttributeTests" method="Ctor_Default" time="0.0005" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.ImportManyAttributeTests.Ctor_ContractName(contractName: null)" type="System.Composition.AttributeModel.Tests.ImportManyAttributeTests" method="Ctor_ContractName" time="0.0003999" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.ImportManyAttributeTests.Ctor_ContractName(contractName: \&quot;ContractName\&quot;)" type="System.Composition.AttributeModel.Tests.ImportManyAttributeTests" method="Ctor_ContractName" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.Composition.AttributeModel.Tests.PartMetadataAttributeTests" time="0.001">
+      <test name="System.Composition.AttributeModel.Tests.PartMetadataAttributeTests.Ctor_Name_Value(name: \&quot;\&quot;, value: null)" type="System.Composition.AttributeModel.Tests.PartMetadataAttributeTests" method="Ctor_Name_Value" time="0.0004998" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.PartMetadataAttributeTests.Ctor_Name_Value(name: \&quot;Name\&quot;, value: \&quot;Value\&quot;)" type="System.Composition.AttributeModel.Tests.PartMetadataAttributeTests" method="Ctor_Name_Value" time="0.0002" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.PartMetadataAttributeTests.Ctor_NullName_ThrowsArgumentNullException" type="System.Composition.AttributeModel.Tests.PartMetadataAttributeTests" method="Ctor_NullName_ThrowsArgumentNullException" time="0.0005" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.Composition.AttributeModel.Tests.ImportAttributeTests" time="0.001">
+      <test name="System.Composition.AttributeModel.Tests.ImportAttributeTests.Ctor_Default" type="System.Composition.AttributeModel.Tests.ImportAttributeTests" method="Ctor_Default" time="0.0004999" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.ImportAttributeTests.Ctor_ContractName(contractName: null)" type="System.Composition.AttributeModel.Tests.ImportAttributeTests" method="Ctor_ContractName" time="0.0005" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.ImportAttributeTests.Ctor_ContractName(contractName: \&quot;ContractName\&quot;)" type="System.Composition.AttributeModel.Tests.ImportAttributeTests" method="Ctor_ContractName" time="0.0002" result="Pass" />
+    </collection>
+    <collection total="7" passed="7" failed="0" skipped="0" name="Test collection for System.Composition.AttributeModel.Tests.ExportAttributeTests" time="0.003">
+      <test name="System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_Default" type="System.Composition.AttributeModel.Tests.ExportAttributeTests" method="Ctor_Default" time="0.0005998" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_ContractName(contractName: null)" type="System.Composition.AttributeModel.Tests.ExportAttributeTests" method="Ctor_ContractName" time="0.0002999" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_ContractName(contractName: \&quot;ContractName\&quot;)" type="System.Composition.AttributeModel.Tests.ExportAttributeTests" method="Ctor_ContractName" time="0.0002" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_ContractType(contractType: null)" type="System.Composition.AttributeModel.Tests.ExportAttributeTests" method="Ctor_ContractType" time="0.001" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_ContractType(contractType: typeof(string))" type="System.Composition.AttributeModel.Tests.ExportAttributeTests" method="Ctor_ContractType" time="0.0005" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_ContractName_ContractType(contractName: null, contractType: null)" type="System.Composition.AttributeModel.Tests.ExportAttributeTests" method="Ctor_ContractName_ContractType" time="0.0002999" result="Pass" />
+      <test name="System.Composition.AttributeModel.Tests.ExportAttributeTests.Ctor_ContractName_ContractType(contractName: \&quot;ContractName\&quot;, contractType: typeof(string))" type="System.Composition.AttributeModel.Tests.ExportAttributeTests" method="Ctor_ContractName_ContractType" time="0.0002" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

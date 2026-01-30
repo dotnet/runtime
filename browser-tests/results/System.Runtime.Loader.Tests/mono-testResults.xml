@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Runtime.Loader.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:18:06" total="53" passed="41" failed="0" skipped="12" time="1.693" errors="0">
+    <errors />
+    <collection total="1" passed="0" failed="0" skipped="1" name="Test collection for LoaderLinkTest.LoaderLinkTest" time="0.000">
+      <test name="LoaderLinkTest.LoaderLinkTest.EnsureTypesLinked" type="LoaderLinkTest.LoaderLinkTest" method="EnsureTypesLinked" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+    </collection>
+    <collection total="4" passed="0" failed="0" skipped="4" name="Test collection for System.Runtime.Loader.Tests.AssemblyResolutionDowngradeTest" time="0.000">
+      <test name="System.Runtime.Loader.Tests.AssemblyResolutionDowngradeTest.CustomAssemblyLoadContextLoad_CanDowngradeVersion" type="System.Runtime.Loader.Tests.AssemblyResolutionDowngradeTest" method="CustomAssemblyLoadContextLoad_CanDowngradeVersion" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Runtime.Loader.Tests.AssemblyResolutionDowngradeTest.AssemblyLoadContextResolving_CanDowngradeVersion" type="System.Runtime.Loader.Tests.AssemblyResolutionDowngradeTest" method="AssemblyLoadContextResolving_CanDowngradeVersion" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Runtime.Loader.Tests.AssemblyResolutionDowngradeTest.AppDomainAssemblyResolve_CanDowngradeVersion" type="System.Runtime.Loader.Tests.AssemblyResolutionDowngradeTest" method="AppDomainAssemblyResolve_CanDowngradeVersion" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Runtime.Loader.Tests.AssemblyResolutionDowngradeTest.NormalResolution_CannotDowngradeVersion" type="System.Runtime.Loader.Tests.AssemblyResolutionDowngradeTest" method="NormalResolution_CannotDowngradeVersion" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="22" passed="21" failed="0" skipped="1" name="DisableParallelization" time="0.790">
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.TestAddStaticLambda" type="System.Reflection.Metadata.ApplyUpdateTest" method="TestAddStaticLambda" time="0.0223" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.TestStaticLambdaRegression" type="System.Reflection.Metadata.ApplyUpdateTest" method="TestStaticLambdaRegression" time="0.0595" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.LambdaCapturesThis" type="System.Reflection.Metadata.ApplyUpdateTest" method="LambdaCapturesThis" time="0.0467999" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.TestNewMethodThrows" type="System.Reflection.Metadata.ApplyUpdateTest" method="TestNewMethodThrows" time="0.026" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.LambdaBodyChange" type="System.Reflection.Metadata.ApplyUpdateTest" method="LambdaBodyChange" time="0.0499" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.StaticMethodBodyUpdate" type="System.Reflection.Metadata.ApplyUpdateTest" method="StaticMethodBodyUpdate" time="0.0344" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.GetCapabilities" type="System.Reflection.Metadata.ApplyUpdateTest" method="GetCapabilities" time="0.0039" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.ClassWithCustomAttributes" type="System.Reflection.Metadata.ApplyUpdateTest" method="ClassWithCustomAttributes" time="0.024" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.IsSupported" type="System.Reflection.Metadata.ApplyUpdateTest" method="IsSupported" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"TestUsingRemoteExecutor\"]]></reason>
+      </test>
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.TestGenericAddStaticField" type="System.Reflection.Metadata.ApplyUpdateTest" method="TestGenericAddStaticField" time="0.0326" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.TestGenericAddInstanceField" type="System.Reflection.Metadata.ApplyUpdateTest" method="TestGenericAddInstanceField" time="0.0675" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.TestAddNestedClass" type="System.Reflection.Metadata.ApplyUpdateTest" method="TestAddNestedClass" time="0.0228999" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.ApplyUpdateInvalidParameters" type="System.Reflection.Metadata.ApplyUpdateTest" method="ApplyUpdateInvalidParameters" time="0.0116" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.CustomAttributeUpdates" type="System.Reflection.Metadata.ApplyUpdateTest" method="CustomAttributeUpdates" time="0.0343" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.TestReflectionAddNewMethod" type="System.Reflection.Metadata.ApplyUpdateTest" method="TestReflectionAddNewMethod" time="0.0315" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.TestAddLambdaCapturingThis" type="System.Reflection.Metadata.ApplyUpdateTest" method="TestAddLambdaCapturingThis" time="0.0243" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.AsyncMethodChanges" type="System.Reflection.Metadata.ApplyUpdateTest" method="AsyncMethodChanges" time="0.0492" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.TestIncreaseMetadataRowSize" type="System.Reflection.Metadata.ApplyUpdateTest" method="TestIncreaseMetadataRowSize" time="0.1129999" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.CustomAttributeDelete" type="System.Reflection.Metadata.ApplyUpdateTest" method="CustomAttributeDelete" time="0.0386" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.TestReflectionAddNewType" type="System.Reflection.Metadata.ApplyUpdateTest" method="TestReflectionAddNewType" time="0.0437999" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.TestAddStaticField" type="System.Reflection.Metadata.ApplyUpdateTest" method="TestAddStaticField" time="0.0173999" result="Pass" />
+      <test name="System.Reflection.Metadata.ApplyUpdateTest.FirstCallAfterUpdate" type="System.Reflection.Metadata.ApplyUpdateTest" method="FirstCallAfterUpdate" time="0.0365" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Reflection.Metadata.MetadataUpdateHandlerAttributeTest" time="0.008">
+      <test name="System.Reflection.Metadata.MetadataUpdateHandlerAttributeTest.Ctor_RoundtripType" type="System.Reflection.Metadata.MetadataUpdateHandlerAttributeTest" method="Ctor_RoundtripType" time="0.0076" result="Pass" />
+    </collection>
+    <collection total="20" passed="18" failed="0" skipped="2" name="Test collection for System.Runtime.Loader.Tests.AssemblyLoadContextTest" time="0.089">
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.GetLoadContextTest_ValidUserAssembly" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="GetLoadContextTest_ValidUserAssembly" time="0.0176" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromAssemblyPath_PartiallyQualifiedPath_ThrowsArgumentException" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="LoadFromAssemblyPath_PartiallyQualifiedPath_ThrowsArgumentException" time="0.0071999" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.Finalizer_CollectibleWithNoAssemblyLoaded" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="Finalizer_CollectibleWithNoAssemblyLoaded" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsPreciseGcSupported\"]]></reason>
+      </test>
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.PublicConstructor_Default" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="PublicConstructor_Default" time="0.008" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromNativeImagePath_PartiallyQualifiedPath_ThrowsArgumentException2" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="LoadFromNativeImagePath_PartiallyQualifiedPath_ThrowsArgumentException2" time="0.0035" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadAssemblyByPath_ValidUserAssembly" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="LoadAssemblyByPath_ValidUserAssembly" time="0.0168" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.GetAssemblyNameTest_NullParameter" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="GetAssemblyNameTest_NullParameter" time="0.0004" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromAssemblyName_AssemblyNotFound" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="LoadFromAssemblyName_AssemblyNotFound" time="0.0024" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromAssemblyName_FallbackToDefaultContext" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="LoadFromAssemblyName_FallbackToDefaultContext" time="0.0017" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.PublicConstructor_Theory(name: \&quot;AssemblyLoadContextCollectible\&quot;, isCollectible: True)" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="PublicConstructor_Theory" time="0.0023" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.PublicConstructor_Theory(name: \&quot;AssemblyLoadContextNonCollectible\&quot;, isCollectible: False)" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="PublicConstructor_Theory" time="0.0006" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromNativeImagePath_PartiallyQualifiedPath_ThrowsArgumentException" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="LoadFromNativeImagePath_PartiallyQualifiedPath_ThrowsArgumentException" time="0.0003999" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.GetAssemblyNameTest_ValidAssembly" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="GetAssemblyNameTest_ValidAssembly" time="0.0226" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.GetLoadContextTest_SystemPrivateCorelibAssembly" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="GetLoadContextTest_SystemPrivateCorelibAssembly" time="0.0002" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadAssemblyByStream_ValidUserAssembly" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="LoadAssemblyByStream_ValidUserAssembly" time="0.0008999" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.SubclassAssemblyLoadContext_Properties" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="SubclassAssemblyLoadContext_Properties" time="0.0006" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromAssemblyName_ValidTrustedPlatformAssembly" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="LoadFromAssemblyName_ValidTrustedPlatformAssembly" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.DefaultAssemblyLoadContext_Properties" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="DefaultAssemblyLoadContext_Properties" time="0.0016" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.GetAssemblyNameTest_AssemblyNotFound" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="GetAssemblyNameTest_AssemblyNotFound" time="0.0019" result="Pass" />
+      <test name="System.Runtime.Loader.Tests.AssemblyLoadContextTest.GetLoadContextTest_ValidTrustedPlatformAssembly" type="System.Runtime.Loader.Tests.AssemblyLoadContextTest" method="GetLoadContextTest_ValidTrustedPlatformAssembly" time="0.0002" result="Pass" />
+    </collection>
+    <collection total="4" passed="0" failed="0" skipped="4" name="Test collection for System.Runtime.Loader.Tests.SatelliteAssembliesTests" time="0.000">
+      <test name="System.Runtime.Loader.Tests.SatelliteAssembliesTests.describeLib" type="System.Runtime.Loader.Tests.SatelliteAssembliesTests" method="describeLib" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="System.Runtime.Loader.Tests.SatelliteAssembliesTests.SatelliteLoadsCorrectly_FromName" type="System.Runtime.Loader.Tests.SatelliteAssembliesTests" method="SatelliteLoadsCorrectly_FromName" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="System.Runtime.Loader.Tests.SatelliteAssembliesTests.SatelliteLoadsCorrectly_FromPath" type="System.Runtime.Loader.Tests.SatelliteAssembliesTests" method="SatelliteLoadsCorrectly_FromPath" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="System.Runtime.Loader.Tests.SatelliteAssembliesTests.mainResources" type="System.Runtime.Loader.Tests.SatelliteAssembliesTests" method="mainResources" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Runtime.Loader.Tests.AssemblyExtensionsTest" time="0.001">
+      <test name="System.Runtime.Loader.Tests.AssemblyExtensionsTest.TryGetRawMetadata" type="System.Runtime.Loader.Tests.AssemblyExtensionsTest" method="TryGetRawMetadata" time="0.0014999" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

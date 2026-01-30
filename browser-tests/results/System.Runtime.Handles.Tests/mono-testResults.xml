@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Runtime.Handles.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:18:00" total="14" passed="14" failed="0" skipped="0" time="0.113" errors="0">
+    <errors />
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for SafeWaitHandleTests" time="0.005">
+      <test name="SafeWaitHandleTests.SafeWaitHandle_valid" type="SafeWaitHandleTests" method="SafeWaitHandle_valid" time="0.0050999" result="Pass" />
+      <test name="SafeWaitHandleTests.SafeWaitHandle_invalid" type="SafeWaitHandleTests" method="SafeWaitHandle_invalid" time="0.0000999" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for SafeWaitHandleExtensionsTests" time="0.005">
+      <test name="SafeWaitHandleExtensionsTests.SafeWaitHandleExtensions_set" type="SafeWaitHandleExtensionsTests" method="SafeWaitHandleExtensions_set" time="0.0037" result="Pass" />
+      <test name="SafeWaitHandleExtensionsTests.SafeWaitHandleExtensions_nullWaitHandle" type="SafeWaitHandleExtensionsTests" method="SafeWaitHandleExtensions_nullWaitHandle" time="0.0007999" result="Pass" />
+      <test name="SafeWaitHandleExtensionsTests.SafeWaitHandleExtensions_get" type="SafeWaitHandleExtensionsTests" method="SafeWaitHandleExtensions_get" time="0.0002" result="Pass" />
+    </collection>
+    <collection total="5" passed="5" failed="0" skipped="0" name="Test collection for SafeHandleTests" time="0.001">
+      <test name="SafeHandleTests.SafeHandle_valid_close" type="SafeHandleTests" method="SafeHandle_valid_close" time="0.0004" result="Pass" />
+      <test name="SafeHandleTests.SafeHandle_invalid_close" type="SafeHandleTests" method="SafeHandle_invalid_close" time="0.0001" result="Pass" />
+      <test name="SafeHandleTests.SafeHandle_valid" type="SafeHandleTests" method="SafeHandle_valid" time="0.0002" result="Pass" />
+      <test name="SafeHandleTests.SafeHandle_SetHandleAsInvalid" type="SafeHandleTests" method="SafeHandle_SetHandleAsInvalid" time="0.0002" result="Pass" />
+      <test name="SafeHandleTests.SafeHandle_invalid" type="SafeHandleTests" method="SafeHandle_invalid" time="0.0002" result="Pass" />
+    </collection>
+    <collection total="4" passed="4" failed="0" skipped="0" name="Test collection for CriticalHandleTests" time="0.001">
+      <test name="CriticalHandleTests.CriticalHandle_invalid_close" type="CriticalHandleTests" method="CriticalHandle_invalid_close" time="0.0002" result="Pass" />
+      <test name="CriticalHandleTests.CriticalHandle_valid_close" type="CriticalHandleTests" method="CriticalHandle_valid_close" time="0.0002999" result="Pass" />
+      <test name="CriticalHandleTests.CriticalHandle_valid" type="CriticalHandleTests" method="CriticalHandle_valid" time="0.0001999" result="Pass" />
+      <test name="CriticalHandleTests.CriticalHandle_invalid" type="CriticalHandleTests" method="CriticalHandle_invalid" time="0.0001999" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

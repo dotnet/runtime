@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Xml.Linq.Streaming.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:19:30" total="41" passed="41" failed="0" skipped="0" time="7.220" errors="0">
+    <errors />
+    <collection total="41" passed="41" failed="0" skipped="0" name="Test collection for XDocumentTests.Streaming.XStreamingElementAPI" time="7.059">
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.SaveWithXmlTextWriter" type="XDocumentTests.Streaming.XStreamingElementAPI" method="SaveWithXmlTextWriter" time="0.0461" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.NamePropertyGet" type="XDocumentTests.Streaming.XStreamingElementAPI" method="NamePropertyGet" time="0.0079" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.AddIEnumerableOfXNodesPlusString" type="XDocumentTests.Streaming.XStreamingElementAPI" method="AddIEnumerableOfXNodesPlusString" time="0.0261" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XmlDeclInXStreamingElement" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XmlDeclInXStreamingElement" time="0.0027" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XNameWithNamespaceConstructor" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XNameWithNamespaceConstructor" time="0.0032999" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XNameAndEmptyStringConstructor" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XNameAndEmptyStringConstructor" time="0.0017" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.AddIEnumerableOfXNodes" type="XDocumentTests.Streaming.XStreamingElementAPI" method="AddIEnumerableOfXNodes" time="0.2844" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.IEnumerableLazinessTest1" type="XDocumentTests.Streaming.XStreamingElementAPI" method="IEnumerableLazinessTest1" time="0.0016" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XStreamingElementInXElement" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XStreamingElementInXElement" time="0.0008" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XMLPropertyGet" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XMLPropertyGet" time="0.0006999" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.AddIEnumerableOfXNodesPlusAttribute" type="XDocumentTests.Streaming.XStreamingElementAPI" method="AddIEnumerableOfXNodesPlusAttribute" time="0.0083" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.WriteToWithNull" type="XDocumentTests.Streaming.XStreamingElementAPI" method="WriteToWithNull" time="0.0018" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XCDataInXStreamingElement" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XCDataInXStreamingElement" time="0.001" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.NestedXStreamingElement" type="XDocumentTests.Streaming.XStreamingElementAPI" method="NestedXStreamingElement" time="0.0032999" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XStreamingElementInXDocument" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XStreamingElementInXDocument" time="0.0027" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.SaveWithNull" type="XDocumentTests.Streaming.XStreamingElementAPI" method="SaveWithNull" time="0.0004" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XDocInXStreamingElement" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XDocInXStreamingElement" time="0.0022" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.AddIEnumerableOfNulls" type="XDocumentTests.Streaming.XStreamingElementAPI" method="AddIEnumerableOfNulls" time="0.004" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.NestedXStreamingElementPlusIEnumerable" type="XDocumentTests.Streaming.XStreamingElementAPI" method="NestedXStreamingElementPlusIEnumerable" time="0.0108" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.AddIEnumerableOfMixedNodes" type="XDocumentTests.Streaming.XStreamingElementAPI" method="AddIEnumerableOfMixedNodes" time="6.6342999" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.NamePropertySet" type="XDocumentTests.Streaming.XStreamingElementAPI" method="NamePropertySet" time="0.0002999" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.AddTimeSpanObject" type="XDocumentTests.Streaming.XStreamingElementAPI" method="AddTimeSpanObject" time="0.0012" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.AddWithNull" type="XDocumentTests.Streaming.XStreamingElementAPI" method="AddWithNull" time="0.0000999" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XNameAsEmptyStringConstructor" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XNameAsEmptyStringConstructor" time="0.002" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XNameAndObjectArrayConstructor" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XNameAndObjectArrayConstructor" time="0.0007" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.SaveTwice" type="XDocumentTests.Streaming.XStreamingElementAPI" method="SaveTwice" time="0.0007" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XCommentInXStreamingElement" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XCommentInXStreamingElement" time="0.0009" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XDocTypeInXStreamingElement" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XDocTypeInXStreamingElement" time="0.0005" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.AddObject(content: 9255550134)" type="XDocumentTests.Streaming.XStreamingElementAPI" method="AddObject" time="0.0017" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.AddObject(content: \&quot;9255550134\&quot;)" type="XDocumentTests.Streaming.XStreamingElementAPI" method="AddObject" time="0.0005" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.AddObject(content: 9255550134)" type="XDocumentTests.Streaming.XStreamingElementAPI" method="AddObject" time="0.0009" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.AddAttributeAfterContent" type="XDocumentTests.Streaming.XStreamingElementAPI" method="AddAttributeAfterContent" time="0.0009" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XNameAndCollectionObjectConstructor" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XNameAndCollectionObjectConstructor" time="0.0007" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XNameAsNullConstructor" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XNameAsNullConstructor" time="0.0002" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XNameConstructor" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XNameConstructor" time="0.0002999" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XNameAndXElementObjectConstructor" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XNameAndXElementObjectConstructor" time="0.0006" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.IEnumerableLazinessTest2" type="XDocumentTests.Streaming.XStreamingElementAPI" method="IEnumerableLazinessTest2" time="0.001" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.XNameAndNullObjectConstructor" type="XDocumentTests.Streaming.XStreamingElementAPI" method="XNameAndNullObjectConstructor" time="0.0003" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.NamePropertySetInvalid" type="XDocumentTests.Streaming.XStreamingElementAPI" method="NamePropertySetInvalid" time="0.0002" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.ModifyOriginalElement" type="XDocumentTests.Streaming.XStreamingElementAPI" method="ModifyOriginalElement" time="0.0007" result="Pass" />
+      <test name="XDocumentTests.Streaming.XStreamingElementAPI.AddAttribute" type="XDocumentTests.Streaming.XStreamingElementAPI" method="AddAttribute" time="0.0006" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

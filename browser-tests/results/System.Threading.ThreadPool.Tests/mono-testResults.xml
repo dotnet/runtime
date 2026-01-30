@@ -1,0 +1,148 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Threading.ThreadPool.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:19:17" total="46" passed="0" failed="0" skipped="46" time="0.113" errors="0">
+    <errors />
+    <collection total="29" passed="0" failed="0" skipped="29" name="Test collection for System.Threading.ThreadPools.Tests.ThreadPoolTests" time="0.000">
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.QueueUserWorkItem_PreferLocal_ReferenceTypeStateObjectPassedThrough" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="QueueUserWorkItem_PreferLocal_ReferenceTypeStateObjectPassedThrough" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.ThreadPoolThreadCreationDoesNotTransferExecutionContext" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="ThreadPoolThreadCreationDoesNotTransferExecutionContext" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingAndRemoteExecutorSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.GetMinMaxThreadsTest" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="GetMinMaxThreadsTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.UnsafeQueueUserWorkItem_IThreadPoolWorkItem_Invalid_Throws" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="UnsafeQueueUserWorkItem_IThreadPoolWorkItem_Invalid_Throws" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.UnsafeQueueUserWorkItem_IThreadPoolWorkItem_SameObjectReused_AllInvoked" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="UnsafeQueueUserWorkItem_IThreadPoolWorkItem_SameObjectReused_AllInvoked" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.SettingMinWorkerThreadsWillCreateThreadsUpToMinimum" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="SettingMinWorkerThreadsWillCreateThreadsUpToMinimum" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingAndRemoteExecutorSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.QueueUserWorkItem_PreferLocal_NullValidForState" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="QueueUserWorkItem_PreferLocal_NullValidForState" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.QueueUserWorkItem_PreferLocal_ExecutionContextFlowedIfSafe" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="QueueUserWorkItem_PreferLocal_ExecutionContextFlowedIfSafe" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.WorkerThreadStateResetTest" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="WorkerThreadStateResetTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingAndRemoteExecutorSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.QueueUserWorkItem_PreferLocal_RunsAsynchronously" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="QueueUserWorkItem_PreferLocal_RunsAsynchronously" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.ThreadPoolMinMaxThreadsEventTest" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="ThreadPoolMinMaxThreadsEventTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingAndRemoteExecutorSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.FileStreamFlushAsyncThreadPoolDeadlockTest" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="FileStreamFlushAsyncThreadPoolDeadlockTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingAndRemoteExecutorSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.RunProcessorCountItemsInParallel" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="RunProcessorCountItemsInParallel" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.GetAvailableThreadsTest" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="GetAvailableThreadsTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.WorkQueueDepletionTest" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="WorkQueueDepletionTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.ReadWriteAsyncTest" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="ReadWriteAsyncTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingAndRemoteExecutorSupported\", \"UseWindowsThreadPool\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.QueueUserWorkItem_PreferLocal_ValueTypeStateObjectPassedThrough" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="QueueUserWorkItem_PreferLocal_ValueTypeStateObjectPassedThrough" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.ThreadPoolCanPickUpOneOrMoreWorkItemsWhenThreadIsAvailable" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="ThreadPoolCanPickUpOneOrMoreWorkItemsWhenThreadIsAvailable" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.UnsafeQueueUserWorkItem_IThreadPoolWorkItem_ManyIndividualItems_AllInvoked" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="UnsafeQueueUserWorkItem_IThreadPoolWorkItem_ManyIndividualItems_AllInvoked" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.CooperativeBlockingCanCreateThreadsFaster" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="CooperativeBlockingCanCreateThreadsFaster" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingAndRemoteExecutorSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinThreadsTo0Test" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="SetMinThreadsTo0Test" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingAndRemoteExecutorSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.UnsafeQueueUserWorkItem_IThreadPoolWorkItem_ExecutionContextNotFlowed" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="UnsafeQueueUserWorkItem_IThreadPoolWorkItem_ExecutionContextNotFlowed" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.ThreadPoolCanProcessManyWorkItemsInParallelWithoutDeadlocking" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="ThreadPoolCanProcessManyWorkItemsInParallelWithoutDeadlocking" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.QueueUserWorkItem_PreferLocal_InvalidArguments_Throws" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="QueueUserWorkItem_PreferLocal_InvalidArguments_Throws" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.RunMoreThanMaxWorkItemsMakesOneWorkItemWaitForStarvationDetection" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="RunMoreThanMaxWorkItemsMakesOneWorkItemWaitForStarvationDetection" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.CooperativeBlockingWithProcessingThreadsAndGoalThreadsAndAddWorkerRaceTest" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="CooperativeBlockingWithProcessingThreadsAndGoalThreadsAndAddWorkerRaceTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingAndRemoteExecutorSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.PrioritizationExperimentConfigVarTest" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="PrioritizationExperimentConfigVarTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingAndRemoteExecutorSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.MetricsTest" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="MetricsTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsMetricsTestSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest_ChangedInDotNetCore" type="System.Threading.ThreadPools.Tests.ThreadPoolTests" method="SetMinMaxThreadsTest_ChangedInDotNetCore" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingAndRemoteExecutorSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="17" passed="0" failed="0" skipped="17" name="Test collection for System.Threading.ThreadPools.Tests.RegisteredWaitTests" time="0.000">
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.TimingOutRegisteredWaitHandleCallsCallback" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="TimingOutRegisteredWaitHandleCallsCallback" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.CallingUnregisterOnAutomaticallyUnregisteredHandleReturnsTrue" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="CallingUnregisterOnAutomaticallyUnregisteredHandleReturnsTrue" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.QueueRegisterPositiveAndFlowTest" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="QueueRegisterPositiveAndFlowTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.NonrepeatingWaitFiresOnlyOnce" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="NonrepeatingWaitFiresOnlyOnce" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.RepeatingWaitFiresUntilUnregistered" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="RepeatingWaitFiresUntilUnregistered" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.BlockingUnregisterBlocksWhileCallbackIsRunning" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="BlockingUnregisterBlocksWhileCallbackIsRunning" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.UnregisteringWaitWithInvalidWaitHandleBeforeSignalingDoesNotCallCallback" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="UnregisteringWaitWithInvalidWaitHandleBeforeSignalingDoesNotCallCallback" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.UnregisterEventSignaledWhenUnregistered" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="UnregisterEventSignaledWhenUnregistered" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.UnregisterWaitHandleIsNotSignaledWhenCallbackIsRunning" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="UnregisterWaitHandleIsNotSignaledWhenCallbackIsRunning" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.UnregisteringWaitWithEventBeforeSignalingDoesNotCallCallback" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="UnregisteringWaitWithEventBeforeSignalingDoesNotCallCallback" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.MultipleRegisteredWaitsUnregisterHandleShiftTest" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="MultipleRegisteredWaitsUnregisterHandleShiftTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.CanDisposeEventAfterNonblockingUnregister" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="CanDisposeEventAfterNonblockingUnregister" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.CanRegisterMoreThan64Waits" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="CanRegisterMoreThan64Waits" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.QueueRegisterNegativeTest" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="QueueRegisterNegativeTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.StateIsPassedThroughToCallback" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="StateIsPassedThroughToCallback" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.EventSetAfterUnregisterNotObservedOnWaitThread" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="EventSetAfterUnregisterNotObservedOnWaitThread" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.ThreadPools.Tests.RegisteredWaitTests.SignalingRegisteredWaitHandleCallsCallback" type="System.Threading.ThreadPools.Tests.RegisteredWaitTests" method="SignalingRegisteredWaitHandleCallsCallback" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+  </assembly>
+</assemblies>

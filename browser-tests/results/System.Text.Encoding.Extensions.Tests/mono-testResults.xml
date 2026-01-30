@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Text.Encoding.Extensions.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:18:35" total="5" passed="5" failed="0" skipped="0" time="0.115" errors="0">
+    <errors />
+    <collection total="5" passed="5" failed="0" skipped="0" name="Test collection for EncodingTests.Fallback" time="0.027">
+      <test name="EncodingTests.Fallback.TestDecoderReplacementFallback" type="EncodingTests.Fallback" method="TestDecoderReplacementFallback" time="0.0106" result="Pass" />
+      <test name="EncodingTests.Fallback.TestCustomFallback" type="EncodingTests.Fallback" method="TestCustomFallback" time="0.0019" result="Pass" />
+      <test name="EncodingTests.Fallback.TestDecoderExceptionFallback" type="EncodingTests.Fallback" method="TestDecoderExceptionFallback" time="0.0135" result="Pass" />
+      <test name="EncodingTests.Fallback.TestEncoderExceptionFallback" type="EncodingTests.Fallback" method="TestEncoderExceptionFallback" time="0.0007" result="Pass" />
+      <test name="EncodingTests.Fallback.TestEncoderReplacementFallback" type="EncodingTests.Fallback" method="TestEncoderReplacementFallback" time="0.0006" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

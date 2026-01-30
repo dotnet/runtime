@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="MetricOuterLoop.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:14:38" total="2" passed="1" failed="0" skipped="1" time="0.102" errors="0">
+    <errors />
+    <collection total="2" passed="1" failed="0" skipped="1" name="Test collection for System.Diagnostics.Metrics.Tests.MetricEventSourceTests" time="0.008">
+      <test name="System.Diagnostics.Metrics.Tests.MetricEventSourceTests.TestVersion" type="System.Diagnostics.Metrics.Tests.MetricEventSourceTests" method="TestVersion" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricEventSourceTests.GetInstanceMethodIsReflectable" type="System.Diagnostics.Metrics.Tests.MetricEventSourceTests" method="GetInstanceMethodIsReflectable" time="0.0082" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

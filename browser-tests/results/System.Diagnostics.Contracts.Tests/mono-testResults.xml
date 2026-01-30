@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Diagnostics.Contracts.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-assembly, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:15:52" total="19" passed="19" failed="0" skipped="0" time="0.149" errors="0">
+    <errors />
+    <collection total="19" passed="19" failed="0" skipped="0" name="Test collection for System.Diagnostics.Contracts.Tests.dll" time="0.033">
+      <test name="System.Diagnostics.Contracts.Tests.AssertTests.AssertFalseRaisesEvent" type="System.Diagnostics.Contracts.Tests.AssertTests" method="AssertFalseRaisesEvent" time="0.0067999" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.AssertTests.AssertTrueDoesNotRaiseEvent" type="System.Diagnostics.Contracts.Tests.AssertTests" method="AssertTrueDoesNotRaiseEvent" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.AssertTests.AssertFalseThrows" type="System.Diagnostics.Contracts.Tests.AssertTests" method="AssertFalseThrows" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.AssumeTests.AssertFalseRaisesEvent" type="System.Diagnostics.Contracts.Tests.AssumeTests" method="AssertFalseRaisesEvent" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.AssumeTests.AssertTrueDoesNotRaiseEvent" type="System.Diagnostics.Contracts.Tests.AssumeTests" method="AssertTrueDoesNotRaiseEvent" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.AssumeTests.AssertFalseThrows" type="System.Diagnostics.Contracts.Tests.AssumeTests" method="AssertFalseThrows" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.ExistsTests.EmptyInputReturnsFalse" type="System.Diagnostics.Contracts.Tests.ExistsTests" method="EmptyInputReturnsFalse" time="0.0010999" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.ExistsTests.AllFailPredicateReturnsFalse" type="System.Diagnostics.Contracts.Tests.ExistsTests" method="AllFailPredicateReturnsFalse" time="0.0009" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.ExistsTests.ArgumentExceptions" type="System.Diagnostics.Contracts.Tests.ExistsTests" method="ArgumentExceptions" time="0.0114" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.ExistsTests.AnyPassesPredicateReturnsTrueImmediately" type="System.Diagnostics.Contracts.Tests.ExistsTests" method="AnyPassesPredicateReturnsTrueImmediately" time="0.0074" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.ExistsTests.ExceptionsPropagatedImmediately" type="System.Diagnostics.Contracts.Tests.ExistsTests" method="ExceptionsPropagatedImmediately" time="0.0007999" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.ForAllTests.EmptyInputReturnsTrue" type="System.Diagnostics.Contracts.Tests.ForAllTests" method="EmptyInputReturnsTrue" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.ForAllTests.AnyFailsPredicateReturnsFalseImmediately" type="System.Diagnostics.Contracts.Tests.ForAllTests" method="AnyFailsPredicateReturnsFalseImmediately" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.ForAllTests.ArgumentExceptions" type="System.Diagnostics.Contracts.Tests.ForAllTests" method="ArgumentExceptions" time="0.0006" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.ForAllTests.AllPassPredicateReturnsTrue" type="System.Diagnostics.Contracts.Tests.ForAllTests" method="AllPassPredicateReturnsTrue" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.ForAllTests.ExceptionsPropagatedImmediately" type="System.Diagnostics.Contracts.Tests.ForAllTests" method="ExceptionsPropagatedImmediately" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.ValueTests.ResultReturnsDefault" type="System.Diagnostics.Contracts.Tests.ValueTests" method="ResultReturnsDefault" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.ValueTests.OldValueReturnsDefault" type="System.Diagnostics.Contracts.Tests.ValueTests" method="OldValueReturnsDefault" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Contracts.Tests.ValueTests.ValueAtReturnReturnsDefault" type="System.Diagnostics.Contracts.Tests.ValueTests" method="ValueAtReturnReturnsDefault" time="0.0002999" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

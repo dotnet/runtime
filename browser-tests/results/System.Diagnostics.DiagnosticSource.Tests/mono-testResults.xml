@@ -1,0 +1,572 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Diagnostics.DiagnosticSource.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:16:00" total="332" passed="230" failed="0" skipped="102" time="1.376" errors="0">
+    <errors />
+    <collection total="3" passed="1" failed="0" skipped="2" name="Test collection for System.Diagnostics.Tests.PropagatorTests" time="0.007">
+      <test name="System.Diagnostics.Tests.PropagatorTests.TestAllPropagators" type="System.Diagnostics.Tests.PropagatorTests" method="TestAllPropagators" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.PropagatorTests.TestCustomPropagator" type="System.Diagnostics.Tests.PropagatorTests" method="TestCustomPropagator" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.PropagatorTests.TestBuiltInPropagatorsAreCached" type="System.Diagnostics.Tests.PropagatorTests" method="TestBuiltInPropagatorsAreCached" time="0.0072999" result="Pass" />
+    </collection>
+    <collection total="1" passed="0" failed="0" skipped="1" name="Test collection for System.Diagnostics.Metrics.Tests.MetricsNotSupportedTest" time="0.000">
+      <test name="System.Diagnostics.Metrics.Tests.MetricsNotSupportedTest.IsSupportedSwitch" type="System.Diagnostics.Metrics.Tests.MetricsNotSupportedTest" method="IsSupportedSwitch" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="14" passed="14" failed="0" skipped="0" name="Test collection for System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" time="0.031">
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleMinusTen" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="IndexLookupScaleMinusTen" time="0.0045998" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.TestDeltasAggregation" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="TestDeltasAggregation" time="0.0045999" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.InfinityHandling" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="InfinityHandling" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleMinusOne" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="IndexLookupScaleMinusOne" time="0.0029" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.TestNoDeltasAggregation" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="TestNoDeltasAggregation" time="0.0012" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleTwenty" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="IndexLookupScaleTwenty" time="0.0005" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.NaNHandling" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="NaNHandling" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleMinusEleven" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="IndexLookupScaleMinusEleven" time="0.0007999" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.ZeroHandling" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="ZeroHandling" time="0.0003998" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleOne" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="IndexLookupScaleOne" time="0.0032" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScaleMinusTwo" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="IndexLookupScaleMinusTwo" time="0.0018" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.IndexLookupScale0" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="IndexLookupScale0" time="0.0025" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.ScaleOneIndexesWithPowerOfTwoLowerBound" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="ScaleOneIndexesWithPowerOfTwoLowerBound" time="0.0041999" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests.ScalingFactorCalculation" type="System.Diagnostics.Metrics.Base2ExponentialHistogramAggregatorTests" method="ScalingFactorCalculation" time="0.0036" result="Pass" />
+    </collection>
+    <collection total="32" passed="1" failed="0" skipped="31" name="Test collection for System.Diagnostics.Tests.ActivitySourceTests" time="0.013">
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestExpectedListenersReturnValues" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestExpectedListenersReturnValues" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestTraceState" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestTraceState" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestEventNotificationOrder" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestEventNotificationOrder" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestActivitySourceAttachedObject" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestActivitySourceAttachedObject" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestAddingMorePropertiesWithActivityCreate" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestAddingMorePropertiesWithActivityCreate" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestAddingSamplerTags" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestAddingSamplerTags" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestDefaultTraceIdWithHierarchicalParentId" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestDefaultTraceIdWithHierarchicalParentId" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestActivityContextParsing" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestActivityContextParsing" time="0.0133998" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestNotAddedSamplerTags" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestNotAddedSamplerTags" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestTraceIdAutoGenerationWithNullParentId" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestTraceIdAutoGenerationWithNullParentId" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestActivityContextIsRemote" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestActivityContextIsRemote" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestActivityCreationProperties" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestActivityCreationProperties" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestHasRemoteParent" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestHasRemoteParent" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestCreatingActivityUsingDifferentParentIds" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestCreatingActivityUsingDifferentParentIds" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.AllDataSamplingTest" type="System.Diagnostics.Tests.ActivitySourceTests" method="AllDataSamplingTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestListeningToConstructedActivityEvents" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestListeningToConstructedActivityEvents" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.PropagationDataSamplingTest" type="System.Diagnostics.Tests.ActivitySourceTests" method="PropagationDataSamplingTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestTraceIdAutoGeneration" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestTraceIdAutoGeneration" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestActivityWithListenerActivityCreateAndAllDataRequested" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestActivityWithListenerActivityCreateAndAllDataRequested" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.RestoreOriginalParentTest" type="System.Diagnostics.Tests.ActivitySourceTests" method="RestoreOriginalParentTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestSamplerTagsWithMixedListenerModels" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestSamplerTagsWithMixedListenerModels" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestActivityTriggeringCallerMemberNameAttribute" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestActivityTriggeringCallerMemberNameAttribute" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestActivityCreate" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestActivityCreate" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestActivityWithListenerNoActivityCreate" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestActivityWithListenerNoActivityCreate" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestAddSamplerAndActivityCreationTags" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestAddSamplerAndActivityCreationTags" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestDefaultParentContext" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestDefaultParentContext" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestAddingSamplerTagsUsingParentId" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestAddingSamplerTagsUsingParentId" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestIdFormats" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestIdFormats" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestAddingSamplerTagsFromMultipleListeners" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestAddingSamplerTagsFromMultipleListeners" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestConstruction" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestConstruction" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.TestStartActivityWithNoListener" type="System.Diagnostics.Tests.ActivitySourceTests" method="TestStartActivityWithNoListener" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivitySourceTests.AllDataAndRecordedSamplingTest" type="System.Diagnostics.Tests.ActivitySourceTests" method="AllDataAndRecordedSamplingTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="6" passed="4" failed="0" skipped="2" name="Test collection for System.Diagnostics.Metrics.Tests.RuntimeMetricsTests" time="0.538">
+      <test name="System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.CpuTime" type="System.Diagnostics.Metrics.Tests.RuntimeMetricsTests" method="CpuTime" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotMobile\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.HeapTags(metricName: \&quot;dotnet.gc.last_collection.heap.size\&quot;)" type="System.Diagnostics.Metrics.Tests.RuntimeMetricsTests" method="HeapTags" time="0.1293" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.HeapTags(metricName: \&quot;dotnet.gc.last_collection.heap.fragmentation.size\&quot;)" type="System.Diagnostics.Metrics.Tests.RuntimeMetricsTests" method="HeapTags" time="0.1020999" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.ExceptionsCount" type="System.Diagnostics.Metrics.Tests.RuntimeMetricsTests" method="ExceptionsCount" time="0.2049" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.GcCollectionsCount" type="System.Diagnostics.Metrics.Tests.RuntimeMetricsTests" method="GcCollectionsCount" time="0.1021" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.RuntimeMetricsTests.ValidateMeasurements" type="System.Diagnostics.Metrics.Tests.RuntimeMetricsTests" method="ValidateMeasurements" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotMobile\"]]></reason>
+      </test>
+    </collection>
+    <collection total="18" passed="18" failed="0" skipped="0" name="Test collection for System.Diagnostics.Metrics.Tests.AggregationStoreTests" time="0.031">
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetThreeLabel" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetThreeLabel" time="0.0088" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.AggregatorLimitReached_Multisize_TwoLabel" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="AggregatorLimitReached_Multisize_TwoLabel" time="0.0048" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank1Start" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetMultiRank1Start" time="0.005" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetTwoLabel" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetTwoLabel" time="0.0006" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.AggregatorLimitReached_Multisize_NoLabel" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="AggregatorLimitReached_Multisize_NoLabel" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank0Start" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetMultiRank0Start" time="0.0009999" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank3Start" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetMultiRank3Start" time="0.0008" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetThreeLabelUnordered" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetThreeLabelUnordered" time="0.0005" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank2Start" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetMultiRank2Start" time="0.0006999" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetFourLabelUnordered" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetFourLabelUnordered" time="0.0047999" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetFourLabel" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetFourLabel" time="0.0015" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetTwoLabelUnordered" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetTwoLabelUnordered" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.AggregatorLimitReached_NoLabel" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="AggregatorLimitReached_NoLabel" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetOneLabel" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetOneLabel" time="0.0006" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetNoLabels" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetNoLabels" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetDefaultAggregator" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetDefaultAggregator" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.GetMultiRank4Start" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="GetMultiRank4Start" time="0.0007" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.AggregationStoreTests.AggregatorLimitReached_WithLabels" type="System.Diagnostics.Metrics.Tests.AggregationStoreTests" method="AggregatorLimitReached_WithLabels" time="0.0002999" result="Pass" />
+    </collection>
+    <collection total="17" passed="17" failed="0" skipped="0" name="Test collection for System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" time="0.012">
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.DifferencesLessThanErrorBound" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="DifferencesLessThanErrorBound" time="0.0020998" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.FilterOnlyNaNAndInfinities" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="FilterOnlyNaNAndInfinities" time="0.0013" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.NoUpdatesInSomeIntervals" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="NoUpdatesInSomeIntervals" time="0.0017" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.NoQuantiles" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="NoQuantiles" time="0.0005" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.FilterNaNAndInfinities" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="FilterNaNAndInfinities" time="0.0004" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.UpdatesAfterNoUpdates" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="UpdatesAfterNoUpdates" time="0.0005" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.IterateCollect" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="IterateCollect" time="0.0005" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.DifferencesGreaterThanErrorBound" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="DifferencesGreaterThanErrorBound" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.NegativeValues" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="NegativeValues" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.OneUpdate" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="OneUpdate" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.UnorderedQuantiles" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="UnorderedQuantiles" time="0.0009" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.OutOfBoundsQuantiles" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="OutOfBoundsQuantiles" time="0.0009" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.ZeroValues" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="ZeroValues" time="0.0005" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.NoUpdates" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="NoUpdates" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.MinMax" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="MinMax" time="0.0004999" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.HappyPath" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="HappyPath" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests.MixedValues" type="System.Diagnostics.Metrics.Tests.ExponentialHistogramTests" method="MixedValues" time="0.0001999" result="Pass" />
+    </collection>
+    <collection total="18" passed="18" failed="0" skipped="0" name="Test collection for System.Diagnostics.Tests.TagListTests" time="0.041">
+      <test name="System.Diagnostics.Tests.TagListTests.TestSearchOperations" type="System.Diagnostics.Tests.TagListTests" method="TestSearchOperations" time="0.0106" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestNegativeCases" type="System.Diagnostics.Tests.TagListTests" method="TestNegativeCases" time="0.0025999" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestRemove" type="System.Diagnostics.Tests.TagListTests" method="TestRemove" time="0.0012" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestInlineInitialization" type="System.Diagnostics.Tests.TagListTests" method="TestInlineInitialization" time="0.0009" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestEmptyTagListCopyTo" type="System.Diagnostics.Tests.TagListTests" method="TestEmptyTagListCopyTo" time="0.0025999" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestInsert" type="System.Diagnostics.Tests.TagListTests" method="TestInsert" time="0.0011" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 1)" type="System.Diagnostics.Tests.TagListTests" method="TestEnumerator" time="0.0004999" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 2)" type="System.Diagnostics.Tests.TagListTests" method="TestEnumerator" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 8)" type="System.Diagnostics.Tests.TagListTests" method="TestEnumerator" time="0.0001" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 10)" type="System.Diagnostics.Tests.TagListTests" method="TestEnumerator" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestEnumerator(count: 100)" type="System.Diagnostics.Tests.TagListTests" method="TestEnumerator" time="0.0015" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestClear" type="System.Diagnostics.Tests.TagListTests" method="TestClear" time="0.0023999" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestIndex(count: 2)" type="System.Diagnostics.Tests.TagListTests" method="TestIndex" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestIndex(count: 7)" type="System.Diagnostics.Tests.TagListTests" method="TestIndex" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestIndex(count: 9)" type="System.Diagnostics.Tests.TagListTests" method="TestIndex" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestIndex(count: 20)" type="System.Diagnostics.Tests.TagListTests" method="TestIndex" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestCopyTo" type="System.Diagnostics.Tests.TagListTests" method="TestCopyTo" time="0.0049" result="Pass" />
+      <test name="System.Diagnostics.Tests.TagListTests.TestConstruction" type="System.Diagnostics.Tests.TagListTests" method="TestConstruction" time="0.0107" result="Pass" />
+    </collection>
+    <collection total="29" passed="1" failed="0" skipped="28" name="Test collection for System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" time="0.034">
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestBaseClassDuplicateProperties" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestBaseClassDuplicateProperties" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestSamplingPrecedence" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestSamplingPrecedence" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestBadProperties" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestBadProperties" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestTransformSpecs" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestTransformSpecs" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestRateLimitingSampler" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestRateLimitingSampler" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestMessages" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestMessages" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestShortcutKeywords" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestShortcutKeywords" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestWildCardSourceName" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestWildCardSourceName" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestActivities" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestActivities" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestNoImplicitTransforms" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestNoImplicitTransforms" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestWithPropertyThrowing" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestWithPropertyThrowing" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.LinuxNewLineConventions" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="LinuxNewLineConventions" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.NoExceptionThrownWhenProcessingStaticActivityProperties" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="NoExceptionThrownWhenProcessingStaticActivityProperties" time="0.0340999" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestNulls" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestNulls" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestFilteringWithActivityName" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestFilteringWithActivityName" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestMultipleSpecs" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestMultipleSpecs" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestBaseClassProperties" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestBaseClassProperties" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestWildCardEventName" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestWildCardEventName" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestEnableAllActivitySourcesWithSpeciifcSamplingResult" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestEnableAllActivitySourcesWithSpeciifcSamplingResult" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestRuleWithWildcardSourceAndActivityNameIsIgnored" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestRuleWithWildcardSourceAndActivityNameIsIgnored" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.ActivityObjectsAreInspectable" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="ActivityObjectsAreInspectable" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestDefaultActivitySource" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestDefaultActivitySource" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestParentRatioSampler" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestParentRatioSampler" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestEnableAllActivitySourcesWithOneEvent" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestEnableAllActivitySourcesWithOneEvent" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestMultipleRulesOnlyFirstTaken" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestMultipleRulesOnlyFirstTaken" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestSpecificEvents" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestSpecificEvents" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestVersion" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestVersion" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.IndexGetters_DontThrow" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="IndexGetters_DontThrow" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests.TestEnableAllActivitySourcesAllEvents" type="System.Diagnostics.Tests.DiagnosticSourceEventSourceBridgeTests" method="TestEnableAllActivitySourcesAllEvents" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="49" passed="49" failed="0" skipped="0" name="Test collection for System.Diagnostics.Tests.W3CPropagatorTests" time="0.038">
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.TestExtractingBaggageWithCorrelationContextHeader" type="System.Diagnostics.Tests.W3CPropagatorTests" method="TestExtractingBaggageWithCorrelationContextHeader" time="0.006" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918\&quot;···, isValid: True)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0.0015999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;0f-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918\&quot;···, isValid: True)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0.0001" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;f0-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918\&quot;···, isValid: True)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0.0001" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;ff-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;f-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918e\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0.0001" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;0g-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;0F-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00-af7651916cd43dd8448eb211c80319c-b9c7c989f97918e\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0.0000999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00-00000000000000000000000000000000-b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0.0001" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00-0af7651916cd43dd8448eb211c80319c-00000000000000\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0.0001" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00-0af7651916cd43dd8448eb211c80319C-b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00-0af7651916cd43dd8448eb211c80319c-B9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0.0000999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00-0af7651916cd43dd8448ek211c80319c-b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0.0001" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00-0af7651916cd43dd8448ee211c80319c-b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00_0af7651916cd43dd8448eb211c80319c-b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00-0af7651916cd43dd8448eb211c80319c_b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;00-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0.0000999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;01-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918\&quot;···, isValid: False)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.ValidateTraceIdAndStateExtraction(traceParent: \&quot;01-0af7651916cd43dd8448eb211c80319c-b9c7c989f97918\&quot;···, isValid: True)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="ValidateTraceIdAndStateExtraction" time="0" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: \&quot;key==value\&quot;, expected: [[\&quot;key\&quot;] = \&quot;=value\&quot;], encodedBack: \&quot;key = =value\&quot;)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="TestDecoding" time="0.0027" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: \&quot;SomeKey=SomeValue,SomeKey2=SomeValue2\&quot;, expected: [[\&quot;SomeKey2\&quot;] = \&quot;SomeValue2\&quot;, [\&quot;SomeKey\&quot;] = \&quot;SomeValue\&quot;], encodedBack: \&quot;SomeKey = SomeValue, SomeKey2 = SomeValue2\&quot;)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="TestDecoding" time="0.001" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: \&quot;SomeKey \\t = \\t SomeValue \\t , \\t SomeKey2 \\t = \\t\&quot;···, expected: [[\&quot;SomeKey2\&quot;] = \&quot;SomeValue2\&quot;, [\&quot;SomeKey\&quot;] = \&quot;SomeValue\&quot;], encodedBack: \&quot;SomeKey = SomeValue, SomeKey2 = SomeValue2\&quot;)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="TestDecoding" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: \&quot;SomeKey=SomeValue=equals\&quot;, expected: [[\&quot;SomeKey\&quot;] = \&quot;SomeValue=equals\&quot;], encodedBack: \&quot;SomeKey = SomeValue=equals\&quot;)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="TestDecoding" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: \&quot;SomeKey=%09%20%22%27%3B%3Dasdf%21%40%23%24%25%5E%2\&quot;···, expected: [[\&quot;SomeKey\&quot;] = \&quot;\\t \\\&quot;';=asdf!@#$%^&amp;*()\&quot;], encodedBack: \&quot;SomeKey = %22'%3B=asdf!@#$%25^&amp;*()\&quot;)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="TestDecoding" time="0.0005" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: \&quot;SomeKey \\t = \\t \\t \\\&quot;';=asdf!@#$%^&amp;*()\\t\&quot;, expected: null, encodedBack: null)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="TestDecoding" time="0.0001" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.TestDecoding(input: \&quot;SomeKey \\t = \\t \\t \\\&quot;';=asdf!@#$%25^&amp;*()\\t\&quot;, expected: [[\&quot;SomeKey\&quot;] = \&quot;\\\&quot;';=asdf!@#$%^&amp;*()\&quot;], encodedBack: \&quot;SomeKey = %22'%3B=asdf!@#$%25^&amp;*()\&quot;)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="TestDecoding" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.TestW3CPropagatorBasics" type="System.Diagnostics.Tests.W3CPropagatorTests" method="TestW3CPropagatorBasics" time="0.0023" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.TestBaggagePropagationLimits" type="System.Diagnostics.Tests.W3CPropagatorTests" method="TestBaggagePropagationLimits" time="0.0159" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.TestInvalidBaggage(input: \&quot;invalid\&quot;)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="TestInvalidBaggage" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.TestInvalidBaggage(input: \&quot;=value\&quot;)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="TestInvalidBaggage" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.TestInvalidBaggage(input: \&quot;key=\&quot;)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="TestInvalidBaggage" time="0.0001" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: \&quot;state=1\&quot;, expectedTraceState: \&quot;state=1\&quot;, baggage: [[\&quot;b1\&quot;] = \&quot;v1\&quot;], expectedBaggageString: \&quot;b1 = v1\&quot;, expectedBaggage: [[\&quot;b1\&quot;] = \&quot;v1\&quot;])" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0.0015" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: \&quot;PassThroughW3CState=1\&quot;, expectedTraceState: null, baggage: null, expectedBaggageString: null, expectedBaggage: null)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: \&quot;1start=1\&quot;, expectedTraceState: \&quot;1start=1\&quot;, baggage: null, expectedBaggageString: null, expectedBaggage: null)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0.0001" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: \&quot;123@456=1\&quot;, expectedTraceState: \&quot;123@456=1\&quot;, baggage: null, expectedBaggageString: null, expectedBaggage: null)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: \&quot;start=1, end=\\t1\&quot;, expectedTraceState: \&quot;start=1\&quot;, baggage: null, expectedBaggageString: null, expectedBaggage: null)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: \&quot;start=1, end=1\&quot;, expectedTraceState: \&quot;start=1, end=1\&quot;, baggage: null, expectedBaggageString: null, expectedBaggage: null)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: \&quot;aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\&quot;···, expectedTraceState: null, baggage: null, expectedBaggageString: null, expectedBaggage: null)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: \&quot;aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\&quot;···, expectedTraceState: \&quot;aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\&quot;···, baggage: null, expectedBaggageString: null, expectedBaggage: null)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0.0005999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [[\&quot;b 1\&quot;] = \&quot;v1\&quot;, [\&quot;b=2\&quot;] = \&quot;v2\&quot;, [\&quot;b\\t3\&quot;] = \&quot;v3\&quot;, [\&quot;b(4\&quot;] = \&quot;v4\&quot;, [\&quot;b:5\&quot;] = \&quot;v5\&quot;, ···], expectedBaggageString: null, expectedBaggage: null)" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [[\&quot;b 1\&quot;] = \&quot;v1\&quot;, [\&quot;b2\&quot;] = \&quot;v2\&quot;], expectedBaggageString: \&quot;b2 = v2\&quot;, expectedBaggage: [[\&quot;b2\&quot;] = \&quot;v2\&quot;])" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [[\&quot;key\&quot;] = \&quot;!#$&amp;'()*+-/059:&lt;@&gt;[~]^_amxBNW\&quot;], expectedBaggageString: \&quot;key = !#$&amp;'()*+-/059:&lt;@&gt;[~]^_amxBNW\&quot;, expectedBaggage: [[\&quot;key\&quot;] = \&quot;!#$&amp;'()*+-/059:&lt;@&gt;[~]^_amxBNW\&quot;])" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [[\&quot;key\&quot;] = \&quot;% \\\&quot;\&quot;], expectedBaggageString: \&quot;key = %25%20%22\&quot;, expectedBaggage: [[\&quot;key\&quot;] = \&quot;% \\\&quot;\&quot;])" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0.0004" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [[\&quot;key\&quot;] = \&quot;à€😀\&quot;], expectedBaggageString: \&quot;key = %C3%A0%E2%82%AC%F0%9F%98%80\&quot;, expectedBaggage: [[\&quot;key\&quot;] = \&quot;à€😀\&quot;])" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Tests.W3CPropagatorTests.W3CPropagatorValidationTests(traceState: null, expectedTraceState: null, baggage: [[\&quot;key\&quot;] = \&quot;\\xd800\\xd800\&quot;], expectedBaggageString: \&quot;key = %EF%BF%BD%EF%BF%BD\&quot;, expectedBaggage: [[\&quot;key\&quot;] = \&quot;��\&quot;])" type="System.Diagnostics.Tests.W3CPropagatorTests" method="W3CPropagatorValidationTests" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="8" passed="8" failed="0" skipped="0" name="Test collection for System.Diagnostics.Tests.ActivityTagsCollectionTests" time="0.009">
+      <test name="System.Diagnostics.Tests.ActivityTagsCollectionTests.TestAdd" type="System.Diagnostics.Tests.ActivityTagsCollectionTests" method="TestAdd" time="0.0016" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTagsCollectionTests.TestEnumeration" type="System.Diagnostics.Tests.ActivityTagsCollectionTests" method="TestEnumeration" time="0.005" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTagsCollectionTests.TestIndexer" type="System.Diagnostics.Tests.ActivityTagsCollectionTests" method="TestIndexer" time="0.0004" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTagsCollectionTests.TestNonDefaultConstructor" type="System.Diagnostics.Tests.ActivityTagsCollectionTests" method="TestNonDefaultConstructor" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTagsCollectionTests.TestRemove" type="System.Diagnostics.Tests.ActivityTagsCollectionTests" method="TestRemove" time="0.0007999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTagsCollectionTests.TestTryGetValue" type="System.Diagnostics.Tests.ActivityTagsCollectionTests" method="TestTryGetValue" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTagsCollectionTests.TestContains" type="System.Diagnostics.Tests.ActivityTagsCollectionTests" method="TestContains" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTagsCollectionTests.TestDefaultConstructor" type="System.Diagnostics.Tests.ActivityTagsCollectionTests" method="TestDefaultConstructor" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="97" passed="83" failed="0" skipped="14" name="Test collection for System.Diagnostics.Tests.ActivityTests" time="0.162">
+      <test name="System.Diagnostics.Tests.ActivityTests.ParentSpanId_W3CNonHexCharsNotSupportedAndDoesNotThrow" type="System.Diagnostics.Tests.ActivityTests" method="ParentSpanId_W3CNonHexCharsNotSupportedAndDoesNotThrow" time="0.0038" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestActivityDebuggerProxy" type="System.Diagnostics.Tests.ActivityTests" method="TestActivityDebuggerProxy" time="0.0026" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.StopNotStarted" type="System.Diagnostics.Tests.ActivityTests" method="StopNotStarted" time="0.0010999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdFormat_W3CValidVersions" type="System.Diagnostics.Tests.ActivityTests" method="IdFormat_W3CValidVersions" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestEventsToString" type="System.Diagnostics.Tests.ActivityTests" method="TestEventsToString" time="0.0019" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.ActivityCurrentFlowsWithAsyncSimple" type="System.Diagnostics.Tests.ActivityTests" method="ActivityCurrentFlowsWithAsyncSimple" time="0.0072999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestEvent" type="System.Diagnostics.Tests.ActivityTests" method="TestEvent" time="0.0009" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.SetIdFormat_OverridesParentHierarchicalFormat" type="System.Diagnostics.Tests.ActivityTests" method="SetIdFormat_OverridesParentHierarchicalFormat" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestCustomProperties" type="System.Diagnostics.Tests.ActivityTests" method="TestCustomProperties" time="0.0004" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.ActivityCurrentSet" type="System.Diagnostics.Tests.ActivityTests" method="ActivityCurrentSet" time="0.0013999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.ActivityTraceFlagsTests" type="System.Diagnostics.Tests.ActivityTests" method="ActivityTraceFlagsTests" time="0.0028" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.SetIdFormat_OverridesForcedHierarchical" type="System.Diagnostics.Tests.ActivityTests" method="SetIdFormat_OverridesForcedHierarchical" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.StructEnumerator_TagsLinkedList" type="System.Diagnostics.Tests.ActivityTests" method="StructEnumerator_TagsLinkedList" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.StopWithoutTimestamp" type="System.Diagnostics.Tests.ActivityTests" method="StopWithoutTimestamp" time="0.001" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdFormat_W3CForcedOverridesParentActivityIdFormat" type="System.Diagnostics.Tests.ActivityTests" method="IdFormat_W3CForcedOverridesParentActivityIdFormat" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.IdFormat_W3CWhenForcedAndHierarchicalParentId" type="System.Diagnostics.Tests.ActivityTests" method="IdFormat_W3CWhenForcedAndHierarchicalParentId" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetW3CAfterHierarchicalParentIsSet" type="System.Diagnostics.Tests.ActivityTests" method="SetIdFormat_CanSetW3CAfterHierarchicalParentIsSet" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_FromInProcParent" type="System.Diagnostics.Tests.ActivityTests" method="TraceIdBeforeStart_FromInProcParent" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdFormat_W3CInvalidVersionFF" type="System.Diagnostics.Tests.ActivityTests" method="IdFormat_W3CInvalidVersionFF" time="0.0004" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestStatus" type="System.Diagnostics.Tests.ActivityTests" method="TestStatus" time="0.0014" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.AddLinkTest" type="System.Diagnostics.Tests.ActivityTests" method="AddLinkTest" time="0.0031" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TraceId_W3CNonHexCharsNotSupportedAndDoesNotThrow" type="System.Diagnostics.Tests.ActivityTests" method="TraceId_W3CNonHexCharsNotSupportedAndDoesNotThrow" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.EnumerateLinkTagsTest" type="System.Diagnostics.Tests.ActivityTests" method="EnumerateLinkTagsTest" time="0.0016999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdFormat_W3CWhenTraceIdAndSpanIdProvided" type="System.Diagnostics.Tests.ActivityTests" method="IdFormat_W3CWhenTraceIdAndSpanIdProvided" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.EnumerateTagObjectsTest" type="System.Diagnostics.Tests.ActivityTests" method="EnumerateTagObjectsTest" time="0.0018999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.SetIdFormat_OverridesParentW3CFormat" type="System.Diagnostics.Tests.ActivityTests" method="SetIdFormat_OverridesParentW3CFormat" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_NoParent" type="System.Diagnostics.Tests.ActivityTests" method="TraceIdBeforeStart_NoParent" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.RestoreOriginalParentTest" type="System.Diagnostics.Tests.ActivityTests" method="RestoreOriginalParentTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.TestActivityLinkDebuggerDisplay" type="System.Diagnostics.Tests.ActivityTests" method="TestActivityLinkDebuggerDisplay" time="0.0010999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdFormat_WithTheEnvironmentSwitch" type="System.Diagnostics.Tests.ActivityTests" method="IdFormat_WithTheEnvironmentSwitch" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.Version_W3CNonHexCharsNotSupportedAndDoesNotThrow_ForceW3C" type="System.Diagnostics.Tests.ActivityTests" method="Version_W3CNonHexCharsNotSupportedAndDoesNotThrow_ForceW3C" time="0.0011" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.ActivityCurrentNotSetToStopped" type="System.Diagnostics.Tests.ActivityTests" method="ActivityCurrentNotSetToStopped" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestLinksToString" type="System.Diagnostics.Tests.ActivityTests" method="TestLinksToString" time="0.0011" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.EnumerateLinksTest" type="System.Diagnostics.Tests.ActivityTests" method="EnumerateLinksTest" time="0.0067999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TraceStateString_InheritsFromParent" type="System.Diagnostics.Tests.ActivityTests" method="TraceStateString_InheritsFromParent" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.ActivityCurrentFlowsWithAsyncComplex" type="System.Diagnostics.Tests.ActivityTests" method="ActivityCurrentFlowsWithAsyncComplex" time="0.0029" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_FromExplicitTraceId" type="System.Diagnostics.Tests.ActivityTests" method="TraceIdBeforeStart_FromExplicitTraceId" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdGenerationExternalParentId" type="System.Diagnostics.Tests.ActivityTests" method="IdGenerationExternalParentId" time="0.0012" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestActivityDebuggerDisplay" type="System.Diagnostics.Tests.ActivityTests" method="TestActivityDebuggerDisplay" time="0.0014999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.ParentChild" type="System.Diagnostics.Tests.ActivityTests" method="ParentChild" time="0.0007" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IsStoppedTest" type="System.Diagnostics.Tests.ActivityTests" method="IsStoppedTest" time="0.001" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_FromInvalidTraceparentHeader" type="System.Diagnostics.Tests.ActivityTests" method="TraceIdBeforeStart_FromInvalidTraceparentHeader" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.EnumerateEventTagsTest" type="System.Diagnostics.Tests.ActivityTests" method="EnumerateEventTagsTest" time="0.0006999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestParentTraceFlags" type="System.Diagnostics.Tests.ActivityTests" method="TestParentTraceFlags" time="0.0004" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.StartStopWithTimestamp" type="System.Diagnostics.Tests.ActivityTests" method="StartStopWithTimestamp" time="0.0355" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TraceIdCustomGenerationTest" type="System.Diagnostics.Tests.ActivityTests" method="TraceIdCustomGenerationTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.RootId" type="System.Diagnostics.Tests.ActivityTests" method="RootId" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdGenerationInternalParent" type="System.Diagnostics.Tests.ActivityTests" method="IdGenerationInternalParent" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.StartTwice" type="System.Diagnostics.Tests.ActivityTests" method="StartTwice" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdFormat_HierarchicalWhenDefaultIsW3CButHierarchicalParentId" type="System.Diagnostics.Tests.ActivityTests" method="IdFormat_HierarchicalWhenDefaultIsW3CButHierarchicalParentId" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.TestTagObjects" type="System.Diagnostics.Tests.ActivityTests" method="TestTagObjects" time="0.0064" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.StopParent" type="System.Diagnostics.Tests.ActivityTests" method="StopParent" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.StartStop" type="System.Diagnostics.Tests.ActivityTests" method="StartStop" time="0.0012" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetHierarchicalBeforeStart" type="System.Diagnostics.Tests.ActivityTests" method="SetIdFormat_CanSetHierarchicalBeforeStart" time="0.0004" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.DefaultActivity" type="System.Diagnostics.Tests.ActivityTests" method="DefaultActivity" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestActivityContextDebuggerDisplay" type="System.Diagnostics.Tests.ActivityTests" method="TestActivityContextDebuggerDisplay" time="0.0009" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestSetBaggage" type="System.Diagnostics.Tests.ActivityTests" method="TestSetBaggage" time="0.0005999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdFormat_W3CWhenDefaultIsW3C" type="System.Diagnostics.Tests.ActivityTests" method="IdFormat_W3CWhenDefaultIsW3C" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.TraceId_W3CUppercaseCharsNotSupportedAndDoesNotThrow" type="System.Diagnostics.Tests.ActivityTests" method="TraceId_W3CUppercaseCharsNotSupportedAndDoesNotThrow" time="0.0051999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetAndOverrideBeforeStart" type="System.Diagnostics.Tests.ActivityTests" method="SetIdFormat_CanSetAndOverrideBeforeStart" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.Tags" type="System.Diagnostics.Tests.ActivityTests" method="Tags" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.ActivityCurrentEventTest" type="System.Diagnostics.Tests.ActivityTests" method="ActivityCurrentEventTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.SetIdFormat_OverridesForcedW3C" type="System.Diagnostics.Tests.ActivityTests" method="SetIdFormat_OverridesForcedW3C" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.Options_W3CNonHexCharsNotSupportedAndDoesNotThrow" type="System.Diagnostics.Tests.ActivityTests" method="Options_W3CNonHexCharsNotSupportedAndDoesNotThrow" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.ActivitySpanIdTests" type="System.Diagnostics.Tests.ActivityTests" method="ActivitySpanIdTests" time="0.0042" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.StructEnumerator_GenericLinkedList" type="System.Diagnostics.Tests.ActivityTests" method="StructEnumerator_GenericLinkedList" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.RootIdBeforeStartTests" type="System.Diagnostics.Tests.ActivityTests" method="RootIdBeforeStartTests" time="0.0001" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestInsertingFirstTag(key: \&quot;key1\&quot;, value: null, add: True, resultCount: 1)" type="System.Diagnostics.Tests.ActivityTests" method="TestInsertingFirstTag" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestInsertingFirstTag(key: \&quot;key2\&quot;, value: null, add: False, resultCount: 0)" type="System.Diagnostics.Tests.ActivityTests" method="TestInsertingFirstTag" time="0.0002" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestInsertingFirstTag(key: \&quot;key3\&quot;, value: \&quot;v1\&quot;, add: True, resultCount: 1)" type="System.Diagnostics.Tests.ActivityTests" method="TestInsertingFirstTag" time="0" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestInsertingFirstTag(key: \&quot;key4\&quot;, value: \&quot;v2\&quot;, add: False, resultCount: 1)" type="System.Diagnostics.Tests.ActivityTests" method="TestInsertingFirstTag" time="0.0001" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdGenerationNoParent" type="System.Diagnostics.Tests.ActivityTests" method="IdGenerationNoParent" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.TestDisplayName" type="System.Diagnostics.Tests.ActivityTests" method="TestDisplayName" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.AddExceptionTest" type="System.Diagnostics.Tests.ActivityTests" method="AddExceptionTest" time="0.0047" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.ActivityIdOverflow" type="System.Diagnostics.Tests.ActivityTests" method="ActivityIdOverflow" time="0.0012999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TraceIdBeforeStart_FromTraceparentHeader" type="System.Diagnostics.Tests.ActivityTests" method="TraceIdBeforeStart_FromTraceparentHeader" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.ActivityCurrentNotSetToNotStarted" type="System.Diagnostics.Tests.ActivityTests" method="ActivityCurrentNotSetToNotStarted" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.ActivityCurrentSetToNull" type="System.Diagnostics.Tests.ActivityTests" method="ActivityCurrentSetToNull" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.SetParentId" type="System.Diagnostics.Tests.ActivityTests" method="SetParentId" time="0.0007" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.Version_W3CNonHexCharsNotSupportedAndDoesNotThrow" type="System.Diagnostics.Tests.ActivityTests" method="Version_W3CNonHexCharsNotSupportedAndDoesNotThrow" time="0.0001" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.Baggage" type="System.Diagnostics.Tests.ActivityTests" method="Baggage" time="0.0065" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestKind" type="System.Diagnostics.Tests.ActivityTests" method="TestKind" time="0.001" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestActivityEventDebuggerDisplay" type="System.Diagnostics.Tests.ActivityTests" method="TestActivityEventDebuggerDisplay" time="0.0246" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdFormat_W3CIsDefaultForNet5" type="System.Diagnostics.Tests.ActivityTests" method="IdFormat_W3CIsDefaultForNet5" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdFormat_ZeroTraceIdAndSpanIdWithW3CFormat" type="System.Diagnostics.Tests.ActivityTests" method="IdFormat_ZeroTraceIdAndSpanIdWithW3CFormat" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.ActivityTraceIdTests" type="System.Diagnostics.Tests.ActivityTests" method="ActivityTraceIdTests" time="0.0045" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestDispose" type="System.Diagnostics.Tests.ActivityTests" method="TestDispose" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.StopTwice" type="System.Diagnostics.Tests.ActivityTests" method="StopTwice" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestGetTagItem" type="System.Diagnostics.Tests.ActivityTests" method="TestGetTagItem" time="0.0006" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetW3CBeforeStart" type="System.Diagnostics.Tests.ActivityTests" method="SetIdFormat_CanSetW3CBeforeStart" time="0.0007" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.SetIdFormat_CanSetHierarchicalAfterW3CParentIsSet" type="System.Diagnostics.Tests.ActivityTests" method="SetIdFormat_CanSetHierarchicalAfterW3CParentIsSet" time="0.0000999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.CreateActivityWithNullOperationName" type="System.Diagnostics.Tests.ActivityTests" method="CreateActivityWithNullOperationName" time="0.0006999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestBaggageWithChainedActivities" type="System.Diagnostics.Tests.ActivityTests" method="TestBaggageWithChainedActivities" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.TestIsAllDataRequested" type="System.Diagnostics.Tests.ActivityTests" method="TestIsAllDataRequested" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.TestBaggageOrderAndDuplicateKeys" type="System.Diagnostics.Tests.ActivityTests" method="TestBaggageOrderAndDuplicateKeys" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.EnumerateEventsTest" type="System.Diagnostics.Tests.ActivityTests" method="EnumerateEventsTest" time="0.0031" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdFormat_W3CWhenParentIdIsW3C" type="System.Diagnostics.Tests.ActivityTests" method="IdFormat_W3CWhenParentIdIsW3C" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="24" passed="1" failed="0" skipped="23" name="Test collection for System.Diagnostics.Metrics.Tests.MetricsTests" time="0.016">
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.InstrumentMeasurementTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="InstrumentMeasurementTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.TestRecordingWithEmptyTagList" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="TestRecordingWithEmptyTagList" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.MultipleListenersTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="MultipleListenersTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.SupportedGenericParameterTypesTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="SupportedGenericParameterTypesTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.TestHistogramCreationWithAdvice" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="TestHistogramCreationWithAdvice" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.NullMeasurementEventCallbackTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="NullMeasurementEventCallbackTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.SerializedEventsTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="SerializedEventsTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.PassingVariableTagsParametersTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="PassingVariableTagsParametersTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.ParallelRunningTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="ParallelRunningTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.ListenerWithoutMeasurementsCompletedDisposalsTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="ListenerWithoutMeasurementsCompletedDisposalsTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.MeterDisposalsTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="MeterDisposalsTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.ObservableInstrumentMeasurementTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="ObservableInstrumentMeasurementTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.TestMeterCreationWithOptions" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="TestMeterCreationWithOptions" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.ListenerDisposalsTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="ListenerDisposalsTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.CreateInstrumentParametersTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="CreateInstrumentParametersTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.InstrumentCreationTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="InstrumentCreationTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.ThrowingExceptionsFromObservableInstrumentCallbacks" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="ThrowingExceptionsFromObservableInstrumentCallbacks" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.EnableListeningMultipleTimesWithDifferentState" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="EnableListeningMultipleTimesWithDifferentState" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.MeterConstructionTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="MeterConstructionTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.TestCachedInstruments" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="TestCachedInstruments" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.TestRecordingMeasurementsWithTagList" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="TestRecordingMeasurementsWithTagList" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.ListeningToInstrumentsPublishingTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="ListeningToInstrumentsPublishingTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.TestInstrumentCreationWithTags" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="TestInstrumentCreationWithTags" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Metrics.Tests.MetricsTests.MeasurementConstructionTest" type="System.Diagnostics.Metrics.Tests.MetricsTests" method="MeasurementConstructionTest" time="0.0157999" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Diagnostics.Metrics.Tests.MetricsAdviceTests" time="0.005">
+      <test name="System.Diagnostics.Metrics.Tests.MetricsAdviceTests.HistogramAdviceConstructionTest" type="System.Diagnostics.Metrics.Tests.MetricsAdviceTests" method="HistogramAdviceConstructionTest" time="0.0048" result="Pass" />
+    </collection>
+    <collection total="15" passed="14" failed="0" skipped="1" name="Test collection for System.Diagnostics.Tests.DiagnosticSourceTest" time="0.038">
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.BasicIsEnabled" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="BasicIsEnabled" time="0.0007" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.ActivityImportExport" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="ActivityImportExport" time="0.0007999" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.AllListenersAddRemove" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="AllListenersAddRemove" time="0.0018999" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.StructPayload" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="StructPayload" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.SubscribeWithNullPredicate" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="SubscribeWithNullPredicate" time="0.0001999" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.AllListenersCheckCatchupList" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="AllListenersCheckCatchupList" time="0.031" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.DoubleDisposeOfListener" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="DoubleDisposeOfListener" time="0.0007" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.IsEnabledMultipleArgs" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="IsEnabledMultipleArgs" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.MultiSubscriberStress" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="MultiSubscriberStress" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.MultiSubscriber" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="MultiSubscriber" time="0.0009" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.Completed" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="Completed" time="0.0004" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.ObjectPayload" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="ObjectPayload" time="0.0003" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.DisposeAllListenerSubscriptionInSameOrderSubscribed" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="DisposeAllListenerSubscriptionInSameOrderSubscribed" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.ListenerToString" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="ListenerToString" time="0.0003999" result="Pass" />
+      <test name="System.Diagnostics.Tests.DiagnosticSourceTest.IntPayload" type="System.Diagnostics.Tests.DiagnosticSourceTest" method="IntPayload" time="0.0001999" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

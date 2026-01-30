@@ -1,0 +1,305 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Xml.XmlSerializer.ReflectionOnly.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:19:32" total="297" passed="297" failed="0" skipped="0" time="2.753" errors="0">
+    <errors />
+    <collection total="297" passed="297" failed="0" skipped="0" name="Test collection for XmlSerializerTests" time="2.372">
+      <test name="XmlSerializerTests.Xml_Soap_WithNullables" type="XmlSerializerTests" method="Xml_Soap_WithNullables" time="0.0886" result="Pass" />
+      <test name="XmlSerializerTests.Xml_SerializeClassNestedInStaticClassTest" type="XmlSerializerTests" method="Xml_SerializeClassNestedInStaticClassTest" time="0.049" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_Enum" type="XmlSerializerTests" method="Xml_Soap_Enum" time="0.0067999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_TypeWithXmlQualifiedName" type="XmlSerializerTests" method="Xml_Soap_TypeWithXmlQualifiedName" time="0.013" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DefaultNamespaceChange_SimpleArray_ObjectAsRoot" type="XmlSerializerTests" method="Xml_DefaultNamespaceChange_SimpleArray_ObjectAsRoot" time="0.0115" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlElementAsRoot" type="XmlSerializerTests" method="Xml_XmlElementAsRoot" time="0.0065999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_Dictionary" type="XmlSerializerTests" method="Xml_Soap_Dictionary" time="0.0025" result="Pass" />
+      <test name="XmlSerializerTests.CodeIdentifierTest" type="XmlSerializerTests" method="CodeIdentifierTest" time="0.0011" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithShouldSerializeMethod_WithNonDefaultValue" type="XmlSerializerTests" method="Xml_TypeWithShouldSerializeMethod_WithNonDefaultValue" time="0.0070999" result="Pass" />
+      <test name="XmlSerializerTests.DeserializeIDREFSIntoStringTest" type="XmlSerializerTests" method="DeserializeIDREFSIntoStringTest" time="0.0067" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ArraylikeMembers" type="XmlSerializerTests" method="Xml_ArraylikeMembers" time="0.0719" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithBinaryProperty" type="XmlSerializerTests" method="Xml_TypeWithBinaryProperty" time="0.0211" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Soap_SimpleType" type="XmlSerializerTests" method="XmlMembersMapping_Soap_SimpleType" time="0.0081" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ConstructorWithTypeMapping" type="XmlSerializerTests" method="Xml_ConstructorWithTypeMapping" time="0.0047999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_Basic_FromMappings" type="XmlSerializerTests" method="Xml_Soap_Basic_FromMappings" time="0.0186999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DeserializeDateTimeOffsetType" type="XmlSerializerTests" method="Xml_DeserializeDateTimeOffsetType" time="0.003" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithEnumPropertyHavingDefaultValue" type="XmlSerializerTests" method="Xml_TypeWithEnumPropertyHavingDefaultValue" time="0.0055999" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_MultipleMembers" type="XmlSerializerTests" method="XmlMembersMapping_MultipleMembers" time="0.0044" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DefaultNamespaceChange_SimpleTypeAsRoot" type="XmlSerializerTests" method="Xml_DefaultNamespaceChange_SimpleTypeAsRoot" time="0.0024" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithArrayPropertyHavingChoiceErrors" type="XmlSerializerTests" method="Xml_TypeWithArrayPropertyHavingChoiceErrors" time="0.0147999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TimeSpanAsRoot" type="XmlSerializerTests" method="Xml_TimeSpanAsRoot" time="0.0066" result="Pass" />
+      <test name="XmlSerializerTests.XML_XmlSchemaWithNamespacesWriteWithNamespaceManager" type="XmlSerializerTests" method="XML_XmlSchemaWithNamespacesWriteWithNamespaceManager" time="0.0755" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XsdValidationAndDeserialization" type="XmlSerializerTests" method="Xml_XsdValidationAndDeserialization" time="0.0655999" result="Pass" />
+      <test name="XmlSerializerTests.ObsoleteAttribute_WithAppContextSwitch_IgnoresObsoleteMembers" type="XmlSerializerTests" method="ObsoleteAttribute_WithAppContextSwitch_IgnoresObsoleteMembers" time="0.0082" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlAnyAttributeTest" type="XmlSerializerTests" method="Xml_XmlAnyAttributeTest" time="0.0086" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithArrayPropertyHavingChoice" type="XmlSerializerTests" method="Xml_TypeWithArrayPropertyHavingChoice" time="0.009" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XsdDate_With_DateOnly_And_DateTime" type="XmlSerializerTests" method="Xml_XsdDate_With_DateOnly_And_DateTime" time="0.0145" result="Pass" />
+      <test name="XmlSerializerTests.Xml_NamespaceTypeNameClashTest" type="XmlSerializerTests" method="Xml_NamespaceTypeNameClashTest" time="0.011" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XSCoverTest" type="XmlSerializerTests" method="Xml_XSCoverTest" time="0.0515" result="Pass" />
+      <test name="XmlSerializerTests.Xml_GuidAsRoot" type="XmlSerializerTests" method="Xml_GuidAsRoot" time="0.0050999" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_TypeWithXmlAttributes" type="XmlSerializerTests" method="XmlMembersMapping_TypeWithXmlAttributes" time="0.0059" result="Pass" />
+      <test name="XmlSerializerTests.XML_TypeWithQNameArrayAsXmlAttribute" type="XmlSerializerTests" method="XML_TypeWithQNameArrayAsXmlAttribute" time="0.0063" result="Pass" />
+      <test name="XmlSerializerTests.XmlSerializerFactoryTest" type="XmlSerializerTests" method="XmlSerializerFactoryTest" time="0.0087999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DeserializeTypeWithEmptyDateTimeOffsetProperties" type="XmlSerializerTests" method="Xml_DeserializeTypeWithEmptyDateTimeOffsetProperties" time="0.0274" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Member_With_XmlAnyAttribute" type="XmlSerializerTests" method="XmlMembersMapping_Member_With_XmlAnyAttribute" time="0.0031" result="Pass" />
+      <test name="XmlSerializerTests.XML_TypeWithTypeNameInXmlTypeAttribute_WithValue" type="XmlSerializerTests" method="XML_TypeWithTypeNameInXmlTypeAttribute_WithValue" time="0.003" result="Pass" />
+      <test name="XmlSerializerTests.Xml_NookTypes" type="XmlSerializerTests" method="Xml_NookTypes" time="0.0211999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_EnumerableRoot" type="XmlSerializerTests" method="Xml_EnumerableRoot" time="0.0051999" result="Pass" />
+      <test name="XmlSerializerTests.IXmlTextParserTest" type="XmlSerializerTests" method="IXmlTextParserTest" time="0.0002" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlIncludedTypesInCollectionSingle" type="XmlSerializerTests" method="Xml_XmlIncludedTypesInCollectionSingle" time="0.0061" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_TypeWithNullableFields" type="XmlSerializerTests" method="Xml_Soap_TypeWithNullableFields" time="0.011" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Soap_SoapComplexTypeWithArray" type="XmlSerializerTests" method="XmlMembersMapping_Soap_SoapComplexTypeWithArray" time="0.0165" result="Pass" />
+      <test name="XmlSerializerTests.Xml_KnownTypesThroughConstructorWithEnumFlagsXmlQualifiedName" type="XmlSerializerTests" method="Xml_KnownTypesThroughConstructorWithEnumFlagsXmlQualifiedName" time="0.0037999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_FromTypes" type="XmlSerializerTests" method="Xml_FromTypes" time="0.0044" result="Pass" />
+      <test name="XmlSerializerTests.Xml_SimpleType" type="XmlSerializerTests" method="Xml_SimpleType" time="0.0015" result="Pass" />
+      <test name="XmlSerializerTests.Xml_StringAsRoot" type="XmlSerializerTests" method="Xml_StringAsRoot" time="0.0063" result="Pass" />
+      <test name="XmlSerializerTests.XML_TypeWithMemberWithXmlNamespaceDeclarationsAttribute_WithInitialValue" type="XmlSerializerTests" method="XML_TypeWithMemberWithXmlNamespaceDeclarationsAttribute_WithInitialValue" time="0.0093" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DateOnlyParseErrors(badDateString: \&quot;1-1-1\&quot;)" type="XmlSerializerTests" method="Xml_DateOnlyParseErrors" time="0.0015" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DateOnlyParseErrors(badDateString: \&quot;0079-08-24+02:00\&quot;)" type="XmlSerializerTests" method="Xml_DateOnlyParseErrors" time="0.0006999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DateOnlyParseErrors(badDateString: \&quot;1912-04-15Z\&quot;)" type="XmlSerializerTests" method="Xml_DateOnlyParseErrors" time="0.0006" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DateOnlyParseErrors(badDateString: \&quot;1917-12-6\&quot;)" type="XmlSerializerTests" method="Xml_DateOnlyParseErrors" time="0.0004" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DateOnlyParseErrors(badDateString: \&quot;1937-5-06\&quot;)" type="XmlSerializerTests" method="Xml_DateOnlyParseErrors" time="0.0003999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DateOnlyParseErrors(badDateString: \&quot;98-01-01\&quot;)" type="XmlSerializerTests" method="Xml_DateOnlyParseErrors" time="0.0004" result="Pass" />
+      <test name="XmlSerializerTests.XML_TypeWithByteArrayArrayAsXmlAttribute" type="XmlSerializerTests" method="XML_TypeWithByteArrayArrayAsXmlAttribute" time="0.0078" result="Pass" />
+      <test name="XmlSerializerTests.Xml_GenericBase" type="XmlSerializerTests" method="Xml_GenericBase" time="0.0109" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_Enum_With_SoapEnumOverrides" type="XmlSerializerTests" method="Xml_Soap_Enum_With_SoapEnumOverrides" time="0.0022" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DeserializeHiddenMembersTest" type="XmlSerializerTests" method="Xml_DeserializeHiddenMembersTest" time="0.0062" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DefaultNamespaceChange_ArrayAsRoot" type="XmlSerializerTests" method="Xml_DefaultNamespaceChange_ArrayAsRoot" time="0.0030999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Nullables" type="XmlSerializerTests" method="Xml_Nullables" time="0.0132" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DefaultNamespaceChange_SimpleTypeAsRoot_WithXmlSerializerNamespaces" type="XmlSerializerTests" method="Xml_DefaultNamespaceChange_SimpleTypeAsRoot_WithXmlSerializerNamespaces" time="0.0027" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TimeOnlyParseErrors(timeString: \&quot;07:25:13.45-04:00\&quot;, succeedsWithCompat: True, expected: \&quot;07:25:13.45\&quot;)" type="XmlSerializerTests" method="Xml_TimeOnlyParseErrors" time="0.0073" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TimeOnlyParseErrors(timeString: \&quot;02:38:23.40Z\&quot;, succeedsWithCompat: True, expected: \&quot;02:38:23.4\&quot;)" type="XmlSerializerTests" method="Xml_TimeOnlyParseErrors" time="0.0032999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TimeOnlyParseErrors(timeString: \&quot;7:48:07\&quot;, succeedsWithCompat: False, expected: \&quot;\&quot;)" type="XmlSerializerTests" method="Xml_TimeOnlyParseErrors" time="0.0025" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TimeOnlyParseErrors(timeString: \&quot;08:32 AM\&quot;, succeedsWithCompat: False, expected: \&quot;\&quot;)" type="XmlSerializerTests" method="Xml_TimeOnlyParseErrors" time="0.0026" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithIndirectReferencedAssembly" type="XmlSerializerTests" method="Xml_TypeWithIndirectReferencedAssembly" time="0.0074" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_TypeWithMyCollectionField" type="XmlSerializerTests" method="Xml_Soap_TypeWithMyCollectionField" time="0.0054" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DateOnlyAsRoot(dateString: \&quot;0001-01-01\&quot;)" type="XmlSerializerTests" method="Xml_DateOnlyAsRoot" time="0.0378" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DateOnlyAsRoot(dateString: \&quot;2002-06-17\&quot;)" type="XmlSerializerTests" method="Xml_DateOnlyAsRoot" time="0.0006999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DateOnlyAsRoot(dateString: \&quot;2345-12-1\&quot;)" type="XmlSerializerTests" method="Xml_DateOnlyAsRoot" time="0.0005" result="Pass" />
+      <test name="XmlSerializerTests.SoapEncodedSerialization_SoapAttribute" type="XmlSerializerTests" method="SoapEncodedSerialization_SoapAttribute" time="0.0066999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_BoolAsRoot" type="XmlSerializerTests" method="Xml_BoolAsRoot" time="0.0046" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_ObjectAsRoot" type="XmlSerializerTests" method="Xml_Soap_ObjectAsRoot" time="0.0079" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ArrayAsRoot" type="XmlSerializerTests" method="Xml_ArrayAsRoot" time="0.0055999" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_SimpleType_SpecifiedField_True_IgnoreSpecifiedField_Wrapper" type="XmlSerializerTests" method="XmlMembersMapping_SimpleType_SpecifiedField_True_IgnoreSpecifiedField_Wrapper" time="0.0026" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XElementAsRoot" type="XmlSerializerTests" method="Xml_XElementAsRoot" time="0.0058" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithMismatchBetweenAttributeAndPropertyType" type="XmlSerializerTests" method="Xml_TypeWithMismatchBetweenAttributeAndPropertyType" time="0.0025" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_IntList" type="XmlSerializerTests" method="XmlMembersMapping_IntList" time="0.0041" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_NestedPublicType" type="XmlSerializerTests" method="Xml_Soap_NestedPublicType" time="0.003" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_TypeWithReadOnlyMyCollectionProperty" type="XmlSerializerTests" method="Xml_Soap_TypeWithReadOnlyMyCollectionProperty" time="0.0061" result="Pass" />
+      <test name="XmlSerializerTests.Xml_IntAsRoot" type="XmlSerializerTests" method="Xml_IntAsRoot" time="0.0082" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithDateOnlyAndTimeOnly" type="XmlSerializerTests" method="Xml_TypeWithDateOnlyAndTimeOnly" time="0.0173" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_List" type="XmlSerializerTests" method="Xml_Soap_List" time="0.0188" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DerivedClasses" type="XmlSerializerTests" method="Xml_DerivedClasses" time="0.0065" result="Pass" />
+      <test name="XmlSerializerTests.Xml_BaseClassAndDerivedClass2WithSameProperty" type="XmlSerializerTests" method="Xml_BaseClassAndDerivedClass2WithSameProperty" time="0.0223" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DeserializeOutOfRangeByteProperty" type="XmlSerializerTests" method="Xml_DeserializeOutOfRangeByteProperty" time="0.0035999" result="Pass" />
+      <test name="XmlSerializerTests.XML_TypeWithEnumArrayAsXmlAttribute" type="XmlSerializerTests" method="XML_TypeWithEnumArrayAsXmlAttribute" time="0.0044" result="Pass" />
+      <test name="XmlSerializerTests.XmlDeserializationEventsTest" type="XmlSerializerTests" method="XmlDeserializationEventsTest" time="0.0057999" result="Pass" />
+      <test name="XmlSerializerTests.XmlReflectionMember_NullXmlAttributes" type="XmlSerializerTests" method="XmlReflectionMember_NullXmlAttributes" time="0.0002999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DeserializeTypeWithEmptyTimeSpanProperty" type="XmlSerializerTests" method="Xml_DeserializeTypeWithEmptyTimeSpanProperty" time="0.0030999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithTwoDimensionalArrayProperty1" type="XmlSerializerTests" method="Xml_TypeWithTwoDimensionalArrayProperty1" time="0.0097" result="Pass" />
+      <test name="XmlSerializerTests.SoapEncodedSerialization_IncludeTypes_NullProvider" type="XmlSerializerTests" method="SoapEncodedSerialization_IncludeTypes_NullProvider" time="0.0002999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ArrayAsGetSet" type="XmlSerializerTests" method="Xml_ArrayAsGetSet" time="0.0208999" result="Pass" />
+      <test name="XmlSerializerTests.SerializeWithDefaultValueSetToNegativeInfinityTest" type="XmlSerializerTests" method="SerializeWithDefaultValueSetToNegativeInfinityTest" time="0.0040999" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_SimpleType_SpecifiedField_True_Wrapper" type="XmlSerializerTests" method="XmlMembersMapping_SimpleType_SpecifiedField_True_Wrapper" time="0.0052" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_With_SoapType" type="XmlSerializerTests" method="Xml_Soap_With_SoapType" time="0.0036" result="Pass" />
+      <test name="XmlSerializerTests.Xml_SimpleCollectionDataContract" type="XmlSerializerTests" method="Xml_SimpleCollectionDataContract" time="0.0046999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithSchemaFormInXmlAttribute" type="XmlSerializerTests" method="Xml_TypeWithSchemaFormInXmlAttribute" time="0.0068" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XsdTime_With_TimeOnly_And_DateTime(dateTimeString: \&quot;12:34:56.789\&quot;, kind: Unspecified)" type="XmlSerializerTests" method="Xml_XsdTime_With_TimeOnly_And_DateTime" time="0.0111" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XsdTime_With_TimeOnly_And_DateTime(dateTimeString: \&quot;02:38:23.40\&quot;, kind: Utc)" type="XmlSerializerTests" method="Xml_XsdTime_With_TimeOnly_And_DateTime" time="0.0088999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XsdTime_With_TimeOnly_And_DateTime(dateTimeString: \&quot;08:32:00\&quot;, kind: Local)" type="XmlSerializerTests" method="Xml_XsdTime_With_TimeOnly_And_DateTime" time="0.0027" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlAttributes_RemoveXmlAnyElementAttributeThrowsOnMissingItem" type="XmlSerializerTests" method="Xml_XmlAttributes_RemoveXmlAnyElementAttributeThrowsOnMissingItem" time="0.0022" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_Basic" type="XmlSerializerTests" method="Xml_Soap_Basic" time="0.003" result="Pass" />
+      <test name="XmlSerializerTests.Xml_NullRefInXmlSerializerCtorTest" type="XmlSerializerTests" method="Xml_NullRefInXmlSerializerCtorTest" time="0.0352" result="Pass" />
+      <test name="XmlSerializerTests.XML_TypeWithArrayLikeXmlAttribute" type="XmlSerializerTests" method="XML_TypeWithArrayLikeXmlAttribute" time="0.0050999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithMyCollectionField" type="XmlSerializerTests" method="Xml_TypeWithMyCollectionField" time="0.0020999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Struct" type="XmlSerializerTests" method="Xml_Struct" time="0.0034" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Soap_MultipleMembers_IsReturnValue" type="XmlSerializerTests" method="XmlMembersMapping_Soap_MultipleMembers_IsReturnValue" time="0.0021" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlTextAttributeTest" type="XmlSerializerTests" method="Xml_XmlTextAttributeTest" time="0.0242999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_CollectionGenericRoot" type="XmlSerializerTests" method="Xml_CollectionGenericRoot" time="0.0026" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ObjectAsRoot" type="XmlSerializerTests" method="Xml_ObjectAsRoot" time="0.0042" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ClassImplementingIXmlSerializable" type="XmlSerializerTests" method="Xml_ClassImplementingIXmlSerializable" time="0.0027" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_With_ComplexChoiceIdentifier" type="XmlSerializerTests" method="XmlMembersMapping_With_ComplexChoiceIdentifier" time="0.0088" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ConstructorWithXmlRootAttr" type="XmlSerializerTests" method="Xml_ConstructorWithXmlRootAttr" time="0.0023" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_PrimitiveValue" type="XmlSerializerTests" method="XmlMembersMapping_PrimitiveValue" time="0.001" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithPropertiesHavingDefaultValue_DefaultValue" type="XmlSerializerTests" method="Xml_TypeWithPropertiesHavingDefaultValue_DefaultValue" time="0.0052" result="Pass" />
+      <test name="XmlSerializerTests.Xml_SerializedFormat" type="XmlSerializerTests" method="Xml_SerializedFormat" time="0.0013" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlIncludedTypesInCollection" type="XmlSerializerTests" method="Xml_XmlIncludedTypesInCollection" time="0.0066" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ValidateExceptionOnUnspecifiedRootSerializationType" type="XmlSerializerTests" method="Xml_ValidateExceptionOnUnspecifiedRootSerializationType" time="0.0038" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithTwoDimensionalArrayProperty2" type="XmlSerializerTests" method="Xml_TypeWithTwoDimensionalArrayProperty2" time="0.0082999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_AliasedPropertyTest" type="XmlSerializerTests" method="Xml_AliasedPropertyTest" time="0.0075" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlIncludedTypesInTypedCollectionSingle" type="XmlSerializerTests" method="Xml_XmlIncludedTypesInTypedCollectionSingle" time="0.0058" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Member_With_XmlAnyAttribute_Specified_True" type="XmlSerializerTests" method="XmlMembersMapping_Member_With_XmlAnyAttribute_Specified_True" time="0.0065" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_With_ChoiceErrors" type="XmlSerializerTests" method="XmlMembersMapping_With_ChoiceErrors" time="0.0046999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TimeOnlyAsRoot(timeString: \&quot;20:17:40\&quot;)" type="XmlSerializerTests" method="Xml_TimeOnlyAsRoot" time="0.0017999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TimeOnlyAsRoot(timeString: \&quot;10:35 AM\&quot;)" type="XmlSerializerTests" method="Xml_TimeOnlyAsRoot" time="0.0007" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TimeOnlyAsRoot(timeString: \&quot;10:45 PM\&quot;)" type="XmlSerializerTests" method="Xml_TimeOnlyAsRoot" time="0.0004" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TestIgnoreWhitespaceForDeserialization" type="XmlSerializerTests" method="Xml_TestIgnoreWhitespaceForDeserialization" time="0.0021" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlDocumentAsRoot" type="XmlSerializerTests" method="Xml_XmlDocumentAsRoot" time="0.0047999" result="Pass" />
+      <test name="XmlSerializerTests.VerifyRestrictionElementForTimeSpanTest" type="XmlSerializerTests" method="VerifyRestrictionElementForTimeSpanTest" time="0.0738" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ByteArrayAsRoot" type="XmlSerializerTests" method="Xml_ByteArrayAsRoot" time="0.0025" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DecimalAsRoot" type="XmlSerializerTests" method="Xml_DecimalAsRoot" time="0.006" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithMultiNamedXmlAnyElementAndOtherFields" type="XmlSerializerTests" method="Xml_TypeWithMultiNamedXmlAnyElementAndOtherFields" time="0.0084" result="Pass" />
+      <test name="XmlSerializerTests.XML_TypeWithXmlSchemaFormAttribute" type="XmlSerializerTests" method="XML_TypeWithXmlSchemaFormAttribute" time="0.0106" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Soap_SoapComplexType" type="XmlSerializerTests" method="XmlMembersMapping_Soap_SoapComplexType" time="0.008" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithEnumFlagPropertyHavingDefaultValue" type="XmlSerializerTests" method="Xml_TypeWithEnumFlagPropertyHavingDefaultValue" time="0.0055" result="Pass" />
+      <test name="XmlSerializerTests.XmlSchemaTest" type="XmlSerializerTests" method="XmlSchemaTest" time="0.0761" result="Pass" />
+      <test name="XmlSerializerTests.XML_TypeWithTypeNameInXmlTypeAttribute" type="XmlSerializerTests" method="XML_TypeWithTypeNameInXmlTypeAttribute" time="0.0016" result="Pass" />
+      <test name="XmlSerializerTests.Xml_KnownTypesThroughConstructorWithEnumFlags" type="XmlSerializerTests" method="Xml_KnownTypesThroughConstructorWithEnumFlags" time="0.0025" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithFieldNameEndBySpecified" type="XmlSerializerTests" method="Xml_TypeWithFieldNameEndBySpecified" time="0.0047999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TestTypeWithPrivateOrNoSetters" type="XmlSerializerTests" method="Xml_TestTypeWithPrivateOrNoSetters" time="0.004" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ShortAsRoot" type="XmlSerializerTests" method="Xml_ShortAsRoot" time="0.0047" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithDateTimePropertyAsXmlTime" type="XmlSerializerTests" method="Xml_TypeWithDateTimePropertyAsXmlTime" time="0.0038" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DefaultValueAttributeSetToNaNTest" type="XmlSerializerTests" method="Xml_DefaultValueAttributeSetToNaNTest" time="0.0071" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithTypesHavingCustomFormatter" type="XmlSerializerTests" method="Xml_TypeWithTypesHavingCustomFormatter" time="0.0182" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DeserializeEmptyDateTimeOffsetType" type="XmlSerializerTests" method="Xml_DeserializeEmptyDateTimeOffsetType" time="0.0004" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_TypeHavingIntArray" type="XmlSerializerTests" method="XmlMembersMapping_TypeHavingIntArray" time="0.0047999" result="Pass" />
+      <test name="XmlSerializerTests.SoapAttributeTests" type="XmlSerializerTests" method="SoapAttributeTests" time="0.0001999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DefaultValueAttributeSetToPositiveInfinityTest" type="XmlSerializerTests" method="Xml_DefaultValueAttributeSetToPositiveInfinityTest" time="0.0095" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ImmutableCollections(type: typeof(System.Collections.Immutable.ImmutableArray&lt;int&gt;), collection: [42], createException: null, addException: typeof(System.InvalidOperationException), expectedXml: \&quot;&lt;?xml version=\\\&quot;1.0\\\&quot; encoding=\\\&quot;utf-8\\\&quot;?&gt;\\n&lt;Array\&quot;···, exMsg: \&quot;Specified method is not supported.\&quot;)" type="XmlSerializerTests" method="Xml_ImmutableCollections" time="0.0050999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ImmutableCollections(type: typeof(System.Collections.Immutable.ImmutableArray&lt;object&gt;), collection: [Object { }], createException: null, addException: typeof(System.InvalidOperationException), expectedXml: \&quot;&lt;?xml version=\\\&quot;1.0\\\&quot; encoding=\\\&quot;utf-8\\\&quot;?&gt;\\n&lt;Array\&quot;···, exMsg: \&quot;Specified method is not supported.\&quot;)" type="XmlSerializerTests" method="Xml_ImmutableCollections" time="0.0044" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ImmutableCollections(type: typeof(System.Collections.Immutable.ImmutableList&lt;int&gt;), collection: [42], createException: null, addException: typeof(System.InvalidOperationException), expectedXml: \&quot;&lt;?xml version=\\\&quot;1.0\\\&quot; encoding=\\\&quot;utf-8\\\&quot;?&gt;\\n&lt;Array\&quot;···, exMsg: \&quot;Specified method is not supported.\&quot;)" type="XmlSerializerTests" method="Xml_ImmutableCollections" time="0.0028999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ImmutableCollections(type: typeof(System.Collections.Immutable.ImmutableStack&lt;int&gt;), collection: [···], createException: typeof(System.InvalidOperationException), addException: null, expectedXml: \&quot;&lt;?xml version=\\\&quot;1.0\\\&quot; encoding=\\\&quot;utf-8\\\&quot;?&gt;\\n&lt;Array\&quot;···, exMsg: \&quot;To be XML serializable, types which inherit from I\&quot;···)" type="XmlSerializerTests" method="Xml_ImmutableCollections" time="0.0009" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ImmutableCollections(type: typeof(System.Collections.Immutable.ImmutableQueue&lt;int&gt;), collection: [···], createException: typeof(System.InvalidOperationException), addException: null, expectedXml: \&quot;&lt;?xml version=\\\&quot;1.0\\\&quot; encoding=\\\&quot;utf-8\\\&quot;?&gt;\\n&lt;Array\&quot;···, exMsg: \&quot;To be XML serializable, types which inherit from I\&quot;···)" type="XmlSerializerTests" method="Xml_ImmutableCollections" time="0.001" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ImmutableCollections(type: typeof(System.Collections.Immutable.ImmutableDictionary&lt;string, int&gt;), collection: [[\&quot;one\&quot;] = 1], createException: typeof(System.InvalidOperationException), addException: null, expectedXml: null, exMsg: \&quot;is not supported because it implements IDictionary\&quot;···)" type="XmlSerializerTests" method="Xml_ImmutableCollections" time="0.0006" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Soap_PrimitiveValue_HasWrapperElement_Validate" type="XmlSerializerTests" method="XmlMembersMapping_Soap_PrimitiveValue_HasWrapperElement_Validate" time="0.0032" result="Pass" />
+      <test name="XmlSerializerTests.XmlSerializerVersionAttributeTest" type="XmlSerializerTests" method="XmlSerializerVersionAttributeTest" time="0.0002999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithXmlElementProperty" type="XmlSerializerTests" method="Xml_TypeWithXmlElementProperty" time="0.0042999" result="Pass" />
+      <test name="XmlSerializerTests.XML_EnumerableCollection" type="XmlSerializerTests" method="XML_EnumerableCollection" time="0.0064" result="Pass" />
+      <test name="XmlSerializerTests.XmlSerializationReaderWriterTest" type="XmlSerializerTests" method="XmlSerializationReaderWriterTest" time="0.0006999" result="Pass" />
+      <test name="XmlSerializerTests.ValidateXElementStruct" type="XmlSerializerTests" method="ValidateXElementStruct" time="0.0028" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_SimpleType" type="XmlSerializerTests" method="XmlMembersMapping_SimpleType" time="0.0022" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DefaultValueAttributeSetToNegativeInfinityTest" type="XmlSerializerTests" method="Xml_DefaultValueAttributeSetToNegativeInfinityTest" time="0.0075" result="Pass" />
+      <test name="XmlSerializerTests.XmlReflectionImporterTest" type="XmlSerializerTests" method="XmlReflectionImporterTest" time="0.0013" result="Pass" />
+      <test name="XmlSerializerTests.XmlSerializationGeneratedCodeTest" type="XmlSerializerTests" method="XmlSerializationGeneratedCodeTest" time="0.0002999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Enums" type="XmlSerializerTests" method="Xml_Enums" time="0.0051999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_WithXElementWithNestedXElement" type="XmlSerializerTests" method="Xml_WithXElementWithNestedXElement" time="0.0035999" result="Pass" />
+      <test name="XmlSerializerTests.XmlReflectionMember_NullSoapAttributes" type="XmlSerializerTests" method="XmlReflectionMember_NullSoapAttributes" time="0.0003" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlAttributesTest" type="XmlSerializerTests" method="Xml_XmlAttributesTest" time="0.0199" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithNestedPublicType" type="XmlSerializerTests" method="Xml_TypeWithNestedPublicType" time="0.0049" result="Pass" />
+      <test name="XmlSerializerTests.Xml_HiddenMembersChangeMappings" type="XmlSerializerTests" method="Xml_HiddenMembersChangeMappings" time="0.0314" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_SimpleType_SpecifiedField_False" type="XmlSerializerTests" method="XmlMembersMapping_SimpleType_SpecifiedField_False" time="0.0026999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithSpecialCharacterInStringMember" type="XmlSerializerTests" method="Xml_TypeWithSpecialCharacterInStringMember" time="0.0032" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithTimeSpanProperty" type="XmlSerializerTests" method="Xml_TypeWithTimeSpanProperty" time="0.0017999" result="Pass" />
+      <test name="XmlSerializerTests.XML_TypeWithArrayLikeXmlAttributeWithFields" type="XmlSerializerTests" method="XML_TypeWithArrayLikeXmlAttributeWithFields" time="0.0096" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_MultipleMembers_IsReturnValue" type="XmlSerializerTests" method="XmlMembersMapping_MultipleMembers_IsReturnValue" time="0.0022999" result="Pass" />
+      <test name="XmlSerializerTests.XmlSchema_Import_DateOnly_TimeOnly_And_XsdTime" type="XmlSerializerTests" method="XmlSchema_Import_DateOnly_TimeOnly_And_XsdTime" time="0.1466999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_VerifyCompilationIssueOnly" type="XmlSerializerTests" method="Xml_VerifyCompilationIssueOnly" time="0.0205" result="Pass" />
+      <test name="XmlSerializerTests.Xml_EnumFlags" type="XmlSerializerTests" method="Xml_EnumFlags" time="0.0017" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_Enums" type="XmlSerializerTests" method="Xml_Soap_Enums" time="0.0022999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DefaultNamespaceChangeTest" type="XmlSerializerTests" method="Xml_DefaultNamespaceChangeTest" time="0.0008" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithStringPropertyWithDefaultValue_NonDefaultValue" type="XmlSerializerTests" method="Xml_TypeWithStringPropertyWithDefaultValue_NonDefaultValue" time="0.0018" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ListRoot" type="XmlSerializerTests" method="Xml_ListRoot" time="0.0022" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithXmlElementsAndUnnamedXmlAny" type="XmlSerializerTests" method="Xml_TypeWithXmlElementsAndUnnamedXmlAny" time="0.0037" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_Nullable" type="XmlSerializerTests" method="Xml_Soap_Nullable" time="0.0060999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_EnumAsRoot" type="XmlSerializerTests" method="Xml_EnumAsRoot" time="0.0143" result="Pass" />
+      <test name="XmlSerializerTests.Xml_WithListOfXElement" type="XmlSerializerTests" method="Xml_WithListOfXElement" time="0.0063" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Member_With_XmlAnyAttribute_Specified_False" type="XmlSerializerTests" method="XmlMembersMapping_Member_With_XmlAnyAttribute_Specified_False" time="0.0032" result="Pass" />
+      <test name="XmlSerializerTests.Xml_WithXElementWithEmptyNestedElement" type="XmlSerializerTests" method="Xml_WithXElementWithEmptyNestedElement" time="0.0365" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeNamesWithSpecialCharacters" type="XmlSerializerTests" method="Xml_TypeNamesWithSpecialCharacters" time="0.0101" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ConstructorWithXmlAttributeOverrides" type="XmlSerializerTests" method="Xml_ConstructorWithXmlAttributeOverrides" time="0.0138" result="Pass" />
+      <test name="XmlSerializerTests.XmlUnknownAttributeAndEventHandlerTest" type="XmlSerializerTests" method="XmlUnknownAttributeAndEventHandlerTest" time="0.0015999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithNonPublicDefaultConstructor" type="XmlSerializerTests" method="Xml_TypeWithNonPublicDefaultConstructor" time="0.0029" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DoubleAsRoot" type="XmlSerializerTests" method="Xml_DoubleAsRoot" time="0.0047999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithMultiXmlAnyElement" type="XmlSerializerTests" method="Xml_TypeWithMultiXmlAnyElement" time="0.0078" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlQualifiedNameAsRoot" type="XmlSerializerTests" method="Xml_XmlQualifiedNameAsRoot" time="0.0033" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ByteAsRoot" type="XmlSerializerTests" method="Xml_ByteAsRoot" time="0.0035" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DateTimeAsRoot" type="XmlSerializerTests" method="Xml_DateTimeAsRoot" time="0.0061" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ListGenericRoot" type="XmlSerializerTests" method="Xml_ListGenericRoot" time="0.0021" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ArrayAsGetOnly" type="XmlSerializerTests" method="Xml_ArrayAsGetOnly" time="0.0013" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypesWithArrayOfOtherTypes" type="XmlSerializerTests" method="Xml_TypesWithArrayOfOtherTypes" time="0.005" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_With_SoapIgnore" type="XmlSerializerTests" method="Xml_Soap_With_SoapIgnore" time="0.0034" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Soap_PrimitiveValue_HasWrapperElement" type="XmlSerializerTests" method="XmlMembersMapping_Soap_PrimitiveValue_HasWrapperElement" time="0.0056999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_ObjectAsRoot_Nullable" type="XmlSerializerTests" method="Xml_Soap_ObjectAsRoot_Nullable" time="0.0061" result="Pass" />
+      <test name="XmlSerializerTests.SoapEncodedSerialization_CircularLink" type="XmlSerializerTests" method="SoapEncodedSerialization_CircularLink" time="0.0091999" result="Pass" />
+      <test name="XmlSerializerTests.ObsoleteAttribute_DoesNotAffectSerialization" type="XmlSerializerTests" method="ObsoleteAttribute_DoesNotAffectSerialization" time="0.0021999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_HighScoreManager" type="XmlSerializerTests" method="Xml_HighScoreManager" time="0.0055" result="Pass" />
+      <test name="XmlSerializerTests.Xml_JaggedArrayAsRoot" type="XmlSerializerTests" method="Xml_JaggedArrayAsRoot" time="0.0172" result="Pass" />
+      <test name="XmlSerializerTests.XmlSchema_DateOnly_TimeOnly_Primitives_And_Time_Override" type="XmlSerializerTests" method="XmlSchema_DateOnly_TimeOnly_Primitives_And_Time_Override" time="0.0096" result="Pass" />
+      <test name="XmlSerializerTests.XML_TypeWithXmlTextAttributeOnArray" type="XmlSerializerTests" method="XML_TypeWithXmlTextAttributeOnArray" time="0.0035999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithShouldSerializeMethod_WithDefaultValue" type="XmlSerializerTests" method="Xml_TypeWithShouldSerializeMethod_WithDefaultValue" time="0.0011" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_SimpleType_SpecifiedField_MissingSpecifiedValue" type="XmlSerializerTests" method="XmlMembersMapping_SimpleType_SpecifiedField_MissingSpecifiedValue" time="0.0018" result="Pass" />
+      <test name="XmlSerializerTests.Xml_EnumAsMember" type="XmlSerializerTests" method="Xml_EnumAsMember" time="0.0039" result="Pass" />
+      <test name="XmlSerializerTests.SoapSchemaMemberTest" type="XmlSerializerTests" method="SoapSchemaMemberTest" time="0.0061" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_TypeWithEnumFlagPropertyHavingDefaultValue" type="XmlSerializerTests" method="Xml_Soap_TypeWithEnumFlagPropertyHavingDefaultValue" time="0.0032999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithDefaultTimeSpanProperty" type="XmlSerializerTests" method="Xml_TypeWithDefaultTimeSpanProperty" time="0.0066" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_IntArray" type="XmlSerializerTests" method="XmlMembersMapping_IntArray" time="0.003" result="Pass" />
+      <test name="XmlSerializerTests.XML_TypeWithNullableByteArray" type="XmlSerializerTests" method="XML_TypeWithNullableByteArray" time="0.0025" result="Pass" />
+      <test name="XmlSerializerTests.Xml_BaseClassAndDerivedClassWithSameProperty" type="XmlSerializerTests" method="Xml_BaseClassAndDerivedClassWithSameProperty" time="0.0174" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_CompositeType" type="XmlSerializerTests" method="XmlMembersMapping_CompositeType" time="0.0066" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithNonParameterlessConstructor" type="XmlSerializerTests" method="Xml_TypeWithNonParameterlessConstructor" time="0.0007" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlAttributes_RemoveXmlAnyElementAttribute" type="XmlSerializerTests" method="Xml_XmlAttributes_RemoveXmlAnyElementAttribute" time="0.0002999" result="Pass" />
+      <test name="XmlSerializerTests.XmlUnknownElementAndEventHandlerTest" type="XmlSerializerTests" method="XmlUnknownElementAndEventHandlerTest" time="0.0016999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DCClassWithEnumAndStruct" type="XmlSerializerTests" method="Xml_DCClassWithEnumAndStruct" time="0.0051" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DefaultNamespaceChange_ObjectAsRoot" type="XmlSerializerTests" method="Xml_DefaultNamespaceChange_ObjectAsRoot" time="0.003" result="Pass" />
+      <test name="XmlSerializerTests.Xml_HiddenDerivedFieldTest" type="XmlSerializerTests" method="Xml_HiddenDerivedFieldTest" time="0.0022999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_MyCollection" type="XmlSerializerTests" method="Xml_Soap_MyCollection" time="0.0022" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DefaultNamespaceChange_XmlAttributesTestAsRoot" type="XmlSerializerTests" method="Xml_DefaultNamespaceChange_XmlAttributesTestAsRoot" time="0.006" result="Pass" />
+      <test name="XmlSerializerTests.Xml_WithXElement" type="XmlSerializerTests" method="Xml_WithXElement" time="0.0044" result="Pass" />
+      <test name="XmlSerializerTests.Xml_KnownTypesThroughConstructorWithArrayProperties" type="XmlSerializerTests" method="Xml_KnownTypesThroughConstructorWithArrayProperties" time="0.0044" result="Pass" />
+      <test name="XmlSerializerTests.Xml_PublicTypeWithNestedPublicTypeWithNestedPublicType" type="XmlSerializerTests" method="Xml_PublicTypeWithNestedPublicTypeWithNestedPublicType" time="0.0093" result="Pass" />
+      <test name="XmlSerializerTests.ValidateXElementArray" type="XmlSerializerTests" method="ValidateXElementArray" time="0.0047999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_WithArrayOfXElement" type="XmlSerializerTests" method="Xml_WithArrayOfXElement" time="0.0046" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DifferentSerializeDeserializeOverloads" type="XmlSerializerTests" method="Xml_DifferentSerializeDeserializeOverloads" time="0.0041" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_Array" type="XmlSerializerTests" method="Xml_Soap_Array" time="0.0069" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Soap_MemberSpecified_False" type="XmlSerializerTests" method="XmlMembersMapping_Soap_MemberSpecified_False" time="0.0015" result="Pass" />
+      <test name="XmlSerializerTests.ObsoleteAttribute_IsError_ThrowsException" type="XmlSerializerTests" method="ObsoleteAttribute_IsError_ThrowsException" time="0.0011" result="Pass" />
+      <test name="XmlSerializerTests.XmlSerializerImplementationTest" type="XmlSerializerTests" method="XmlSerializerImplementationTest" time="0.0032" result="Pass" />
+      <test name="XmlSerializerTests.DerivedTypeWithDifferentOverrides" type="XmlSerializerTests" method="DerivedTypeWithDifferentOverrides" time="0.0095" result="Pass" />
+      <test name="XmlSerializerTests.Xml_FloatAsRoot" type="XmlSerializerTests" method="Xml_FloatAsRoot" time="0.006" result="Pass" />
+      <test name="XmlSerializerTests.Xml_EnumerableGenericRoot" type="XmlSerializerTests" method="Xml_EnumerableGenericRoot" time="0.0028" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ReadOnlyCollection" type="XmlSerializerTests" method="Xml_ReadOnlyCollection" time="0.0016" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithByteArrayAsXmlText" type="XmlSerializerTests" method="Xml_TypeWithByteArrayAsXmlText" time="0.0039" result="Pass" />
+      <test name="XmlSerializerTests.Xml_UlongAsRoot" type="XmlSerializerTests" method="Xml_UlongAsRoot" time="0.0045" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlIncludedTypesInTypedCollection" type="XmlSerializerTests" method="Xml_XmlIncludedTypesInTypedCollection" time="0.003" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_SimpleType_HasWrapperElement" type="XmlSerializerTests" method="XmlMembersMapping_SimpleType_HasWrapperElement" time="0.0029" result="Pass" />
+      <test name="XmlSerializerTests.XmlUnknownNodeAndEventHandlerTest" type="XmlSerializerTests" method="XmlUnknownNodeAndEventHandlerTest" time="0.0018" result="Pass" />
+      <test name="XmlSerializerTests.Xml_LongAsRoot" type="XmlSerializerTests" method="Xml_LongAsRoot" time="0.0047999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlAttributes_RemoveXmlElementAttribute" type="XmlSerializerTests" method="Xml_XmlAttributes_RemoveXmlElementAttribute" time="0.0005" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TestDeserializingUnknownNode" type="XmlSerializerTests" method="Xml_TestDeserializingUnknownNode" time="0.0079" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_ComplexField" type="XmlSerializerTests" method="Xml_Soap_ComplexField" time="0.0065" result="Pass" />
+      <test name="XmlSerializerTests.XmlSerializerAssemblyAttributeTest" type="XmlSerializerTests" method="XmlSerializerAssemblyAttributeTest" time="0.0006" result="Pass" />
+      <test name="XmlSerializerTests.ValidateXElement" type="XmlSerializerTests" method="ValidateXElement" time="0.0232" result="Pass" />
+      <test name="XmlSerializerTests.SoapEncodedSerialization_ImportMembersMapping_NullMembers" type="XmlSerializerTests" method="SoapEncodedSerialization_ImportMembersMapping_NullMembers" time="0.0101" result="Pass" />
+      <test name="XmlSerializerTests.Xml_UintAsRoot" type="XmlSerializerTests" method="Xml_UintAsRoot" time="0.0057" result="Pass" />
+      <test name="XmlSerializerTests.Xml_UshortAsRoot" type="XmlSerializerTests" method="Xml_UshortAsRoot" time="0.0096" result="Pass" />
+      <test name="XmlSerializerTests.Xml_SbyteAsRoot" type="XmlSerializerTests" method="Xml_SbyteAsRoot" time="0.0041" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Soap_MemberSpecified_True" type="XmlSerializerTests" method="XmlMembersMapping_Soap_MemberSpecified_True" time="0.0036999" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_SimpleType_SpecifiedField_False_Wrapper" type="XmlSerializerTests" method="XmlMembersMapping_SimpleType_SpecifiedField_False_Wrapper" time="0.0032" result="Pass" />
+      <test name="XmlSerializerTests.Xml_StringWithNullChar" type="XmlSerializerTests" method="Xml_StringWithNullChar" time="0.0021999" result="Pass" />
+      <test name="XmlSerializerTests.XML_TypeWithByteArrayAsXmlAttribute" type="XmlSerializerTests" method="XML_TypeWithByteArrayAsXmlAttribute" time="0.0035" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlAttributes_RemoveXmlArrayItemAttribute_ThrowsOnMissingItem" type="XmlSerializerTests" method="Xml_XmlAttributes_RemoveXmlArrayItemAttribute_ThrowsOnMissingItem" time="0.0008" result="Pass" />
+      <test name="XmlSerializerTests.SerializePrimitiveXmlTextAttributeOnDerivedClass" type="XmlSerializerTests" method="SerializePrimitiveXmlTextAttributeOnDerivedClass" time="0.0025999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_CharAsRoot" type="XmlSerializerTests" method="Xml_CharAsRoot" time="0.0028" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TestTypeWithListPropertiesWithoutPublicSetters" type="XmlSerializerTests" method="Xml_TestTypeWithListPropertiesWithoutPublicSetters" time="0.0374" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithReadOnlyMyCollectionProperty" type="XmlSerializerTests" method="Xml_TypeWithReadOnlyMyCollectionProperty" time="0.0017" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlAttributes_CtorWithNullArgument" type="XmlSerializerTests" method="Xml_XmlAttributes_CtorWithNullArgument" time="0.0001" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_MultipleMembers_XmlAnyElement" type="XmlSerializerTests" method="XmlMembersMapping_MultipleMembers_XmlAnyElement" time="0.0034" result="Pass" />
+      <test name="XmlSerializerTests.Xml_BuiltInTypes" type="XmlSerializerTests" method="Xml_BuiltInTypes" time="0.0025" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithArrayPropertyHavingComplexChoice" type="XmlSerializerTests" method="Xml_TypeWithArrayPropertyHavingComplexChoice" time="0.0053" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Xmlns_True" type="XmlSerializerTests" method="XmlMembersMapping_Xmlns_True" time="0.0019" result="Pass" />
+      <test name="XmlSerializerTests.XML_TypeWithMemberWithXmlNamespaceDeclarationsAttribute" type="XmlSerializerTests" method="XML_TypeWithMemberWithXmlNamespaceDeclarationsAttribute" time="0.0044" result="Pass" />
+      <test name="XmlSerializerTests.XmlSchemaExporter_ExportMembersMapping_NotSupportedDefaultValue" type="XmlSerializerTests" method="XmlSchemaExporter_ExportMembersMapping_NotSupportedDefaultValue" time="0.0032999" result="Pass" />
+      <test name="XmlSerializerTests.CodeIdentifierNullArgumentTest" type="XmlSerializerTests" method="CodeIdentifierNullArgumentTest" time="0.0008" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ArrayOfXmlNodeProperty" type="XmlSerializerTests" method="Xml_ArrayOfXmlNodeProperty" time="0.0034" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlAttributes_RemoveXmlElementAttribute_ThrowsOnMissingItem" type="XmlSerializerTests" method="Xml_XmlAttributes_RemoveXmlElementAttribute_ThrowsOnMissingItem" time="0.0006999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_ByteArrayNull" type="XmlSerializerTests" method="Xml_ByteArrayNull" time="0.0022" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Soap_PrimitiveValue" type="XmlSerializerTests" method="XmlMembersMapping_Soap_PrimitiveValue" time="0.0012" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithXmlDocumentProperty" type="XmlSerializerTests" method="Xml_TypeWithXmlDocumentProperty" time="0.0044" result="Pass" />
+      <test name="XmlSerializerTests.Xml_DeserializeEmptyTimeSpanType" type="XmlSerializerTests" method="Xml_DeserializeEmptyTimeSpanType" time="0.0003" result="Pass" />
+      <test name="XmlSerializerTests.Xml_EnumAsObject" type="XmlSerializerTests" method="Xml_EnumAsObject" time="0.0019" result="Pass" />
+      <test name="XmlSerializerTests.Xml_FloatAsRoot_NotNetFramework" type="XmlSerializerTests" method="Xml_FloatAsRoot_NotNetFramework" time="0.0016" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_With_ChoiceIdentifier" type="XmlSerializerTests" method="XmlMembersMapping_With_ChoiceIdentifier" time="0.0022" result="Pass" />
+      <test name="XmlSerializerTests.Xml_KnownTypesThroughConstructor" type="XmlSerializerTests" method="Xml_KnownTypesThroughConstructor" time="0.0053" result="Pass" />
+      <test name="XmlSerializerTests.Xml_Soap_With_SoapElement" type="XmlSerializerTests" method="Xml_Soap_With_SoapElement" time="0.0036999" result="Pass" />
+      <test name="XmlSerializerTests.XmlMembersMapping_Soap_CompositeType" type="XmlSerializerTests" method="XmlMembersMapping_Soap_CompositeType" time="0.0025" result="Pass" />
+      <test name="XmlSerializerTests.Xml_SerializeClassThatImplementsInterface" type="XmlSerializerTests" method="Xml_SerializeClassThatImplementsInterface" time="0.0045" result="Pass" />
+      <test name="XmlSerializerTests.DerivedTypeWithDifferentOverrides2" type="XmlSerializerTests" method="DerivedTypeWithDifferentOverrides2" time="0.0086999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_XmlAttributes_RemoveXmlArrayItemAttribute" type="XmlSerializerTests" method="Xml_XmlAttributes_RemoveXmlArrayItemAttribute" time="0.0003" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithXmlQualifiedName" type="XmlSerializerTests" method="Xml_TypeWithXmlQualifiedName" time="0.0013" result="Pass" />
+      <test name="XmlSerializerTests.Xml_CollectionRoot" type="XmlSerializerTests" method="Xml_CollectionRoot" time="0.0039" result="Pass" />
+      <test name="XmlSerializerTests.Xml_CollectionRoot_MorePrimitiveTypes" type="XmlSerializerTests" method="Xml_CollectionRoot_MorePrimitiveTypes" time="0.0055999" result="Pass" />
+      <test name="XmlSerializerTests.SoapEncodedSerialization_IncludeType" type="XmlSerializerTests" method="SoapEncodedSerialization_IncludeType" time="0.0067" result="Pass" />
+      <test name="XmlSerializerTests.SerializeWithDefaultValueSetToPositiveInfinityTest" type="XmlSerializerTests" method="SerializeWithDefaultValueSetToPositiveInfinityTest" time="0.0017999" result="Pass" />
+      <test name="XmlSerializerTests.Xml_FromMappings" type="XmlSerializerTests" method="Xml_FromMappings" time="0.0044" result="Pass" />
+      <test name="XmlSerializerTests.SerializeXmlTextAttributeOnDerivedClass" type="XmlSerializerTests" method="SerializeXmlTextAttributeOnDerivedClass" time="0.0038" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithDateTimeOffsetProperty" type="XmlSerializerTests" method="Xml_TypeWithDateTimeOffsetProperty" time="0.005" result="Pass" />
+      <test name="XmlSerializerTests.Xml_TypeWithByteProperty" type="XmlSerializerTests" method="Xml_TypeWithByteProperty" time="0.0012" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

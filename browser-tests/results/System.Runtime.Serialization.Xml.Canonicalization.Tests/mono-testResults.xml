@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Runtime.Serialization.Xml.Canonicalization.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:18:14" total="4" passed="4" failed="0" skipped="0" time="1.140" errors="0">
+    <errors />
+    <collection total="4" passed="4" failed="0" skipped="0" name="Test collection for System.Runtime.Serialization.Xml.Canonicalization.Tests.XmlCanonicalizationTest" time="1.075">
+      <test name="System.Runtime.Serialization.Xml.Canonicalization.Tests.XmlCanonicalizationTest.TestC14NInclusivePrefixes" type="System.Runtime.Serialization.Xml.Canonicalization.Tests.XmlCanonicalizationTest" method="TestC14NInclusivePrefixes" time="0.3233" result="Pass" />
+      <test name="System.Runtime.Serialization.Xml.Canonicalization.Tests.XmlCanonicalizationTest.ReaderWriter_C14N_DifferentReadersWriters" type="System.Runtime.Serialization.Xml.Canonicalization.Tests.XmlCanonicalizationTest" method="ReaderWriter_C14N_DifferentReadersWriters" time="0.6178999" result="Pass" />
+      <test name="System.Runtime.Serialization.Xml.Canonicalization.Tests.XmlCanonicalizationTest.CryptoCanonicalizationTest" type="System.Runtime.Serialization.Xml.Canonicalization.Tests.XmlCanonicalizationTest" method="CryptoCanonicalizationTest" time="0.1326999" result="Pass" />
+      <test name="System.Runtime.Serialization.Xml.Canonicalization.Tests.XmlCanonicalizationTest.C14NWriterNegativeTests" type="System.Runtime.Serialization.Xml.Canonicalization.Tests.XmlCanonicalizationTest" method="C14NWriterNegativeTests" time="0.0011" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

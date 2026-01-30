@@ -1,0 +1,803 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Threading.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-assembly, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:19:13" total="627" passed="543" failed="0" skipped="84" time="16.776" errors="0">
+    <errors />
+    <collection total="627" passed="543" failed="0" skipped="84" name="Test collection for System.Threading.Tests.dll" time="16.163">
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncMethodNotifications" type="System.Threading.Tests.AsyncLocalTests" method="AsyncMethodNotifications" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 1)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.01" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 2)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0014" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 3)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0022" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 4)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0039" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 5)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0176" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 6)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0104" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 7)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0107" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 8)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0455" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 9)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0177" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 10)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0253" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 11)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0297999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 12)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0298999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 13)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0351" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 14)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0996" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 15)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0485999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 16)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0551999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 17)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.07" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 18)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0857" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 19)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.0995" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 20)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.1195" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 21)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.1405" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 22)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.1607999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 23)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.1858999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 24)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.2277" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 25)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.249" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 26)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.2786" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 27)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.3179" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 28)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.363" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 29)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.393" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 30)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.4323999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 31)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.4822" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 32)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.5259" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 33)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.5888999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 34)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.6391" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 35)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.6555" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 36)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.6781" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 37)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.8256999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 38)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.9127999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 39)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="0.9721999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AsyncLocalsUnwind(count: 40)" type="System.Threading.Tests.AsyncLocalTests" method="AsyncLocalsUnwind" time="1.0566999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreEmptyContext" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreEmptyContext" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.NotifyOnValuePropertyChange" type="System.Threading.Tests.AsyncLocalTests" method="NotifyOnValuePropertyChange" time="0.0016" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.NotifyCountOnObjectValueChange" type="System.Threading.Tests.AsyncLocalTests" method="NotifyCountOnObjectValueChange" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 1)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0011999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 2)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 3)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 4)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 5)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0000999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 6)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 7)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 8)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 9)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0016" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 10)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 11)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 12)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0031999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 13)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0014" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 14)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0006999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 15)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 16)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 17)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0017" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 18)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0033" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 19)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0036" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 20)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0048" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 21)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0040999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 22)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.005" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 23)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0046999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 24)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0076999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 25)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0063" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 26)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0080999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 27)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0079" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 28)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0109" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 29)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0107999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 30)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.011" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 31)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0176" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 32)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0141999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 33)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0158" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 34)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0144" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 35)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0156" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 36)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.017" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 37)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0194" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 38)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0196" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 39)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0213" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType(count: 40)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType" time="0.0231999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.NotifyOnThreadContextChange" type="System.Threading.Tests.AsyncLocalTests" method="NotifyOnThreadContextChange" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRunOnFlowSuppressedContext" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRunOnFlowSuppressedContext" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestore" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestore" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.SetValueFromNotification" type="System.Threading.Tests.AsyncLocalTests" method="SetValueFromNotification" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.ValueProperty" type="System.Threading.Tests.AsyncLocalTests" method="ValueProperty" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.NotifyOnThreadContextChangeWithOneEmptyContext" type="System.Threading.Tests.AsyncLocalTests" method="NotifyOnThreadContextChangeWithOneEmptyContext" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 1)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 2)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 3)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.001" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 4)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 5)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 6)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 7)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 8)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 9)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 10)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.001" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 11)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0023" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 12)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.001" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 13)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0021" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 14)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0012" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 15)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0011999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 16)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0021999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 17)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0024" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 18)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0039" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 19)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0046999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 20)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.004" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 21)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0046999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 22)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0051999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 23)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0059" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 24)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0067" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 25)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0087999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 26)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0086" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 27)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0095" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 28)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0112" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 29)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0115" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 30)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0127" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 31)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0159" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 32)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0152999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 33)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0172" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 34)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0183" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 35)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0196" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 36)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.021" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 37)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0226999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 38)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.024" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 39)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.0257" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(count: 40)" type="System.Threading.Tests.AsyncLocalTests" method="AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange" time="0.028" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 1)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 2)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 3)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 4)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 5)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 6)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 7)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 8)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 9)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 10)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 11)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 12)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 13)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 14)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 15)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 16)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0011999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 17)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0021999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 18)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0021999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 19)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0027" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 20)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0032999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 21)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0038" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 22)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0045" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 23)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0052" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 24)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0065" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 25)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0072" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 26)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0076999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 27)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0085" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 28)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0096" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 29)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0105" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 30)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0115" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 31)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0129" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 32)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0148" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 33)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0152" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 34)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0167999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 35)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0177" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 36)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0194" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 37)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0208" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 38)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0224" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 39)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0241" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.AddAndUpdateManyLocals_ValueType(count: 40)" type="System.Threading.Tests.AsyncLocalTests" method="AddAndUpdateManyLocals_ValueType" time="0.0261" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.ExecutionContextCopyOnWrite" type="System.Threading.Tests.AsyncLocalTests" method="ExecutionContextCopyOnWrite" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 1)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 2)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 3)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 4)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 5)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 6)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 7)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 8)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 9)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 10)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 11)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 12)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 13)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 14)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 15)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 16)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 17)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 18)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 19)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0000999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 20)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 21)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 22)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 23)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 24)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 25)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 26)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 27)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 28)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 29)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 30)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 31)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 32)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 33)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0013" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 34)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 35)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 36)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 37)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 38)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 39)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.AsyncLocalTests.CaptureAndRestoreNullAsyncLocals(count: 40)" type="System.Threading.Tests.AsyncLocalTests" method="CaptureAndRestoreNullAsyncLocals" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.AutoResetEventTests.WaitHandleWaitAll_Invalid" type="System.Threading.Tests.AutoResetEventTests" method="WaitHandleWaitAll_Invalid" time="0.0017" result="Pass" />
+      <test name="System.Threading.Tests.AutoResetEventTests.PingPong" type="System.Threading.Tests.AutoResetEventTests" method="PingPong" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.AutoResetEventTests.SetAndResetTest" type="System.Threading.Tests.AutoResetEventTests" method="SetAndResetTest" time="0.0013" result="Pass" />
+      <test name="System.Threading.Tests.AutoResetEventTests.MultiWaitWithAllIndexesSetTest" type="System.Threading.Tests.AutoResetEventTests" method="MultiWaitWithAllIndexesSetTest" time="0.0017999" result="Pass" />
+      <test name="System.Threading.Tests.AutoResetEventTests.MultiWaitWithInnerIndexesSetTest" type="System.Threading.Tests.AutoResetEventTests" method="MultiWaitWithInnerIndexesSetTest" time="0.0561999" result="Pass" />
+      <test name="System.Threading.Tests.AutoResetEventTests.WaitHandleWaitAny" type="System.Threading.Tests.AutoResetEventTests" method="WaitHandleWaitAny" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.AutoResetEventTests.MultiWaitWithAllIndexesResetTest" type="System.Threading.Tests.AutoResetEventTests" method="MultiWaitWithAllIndexesResetTest" time="0.0999" result="Pass" />
+      <test name="System.Threading.Tests.AutoResetEventTests.WaitTest" type="System.Threading.Tests.AutoResetEventTests" method="WaitTest" time="0.0502" result="Pass" />
+      <test name="System.Threading.Tests.AutoResetEventTests.ConstructorAndDisposeTest" type="System.Threading.Tests.AutoResetEventTests" method="ConstructorAndDisposeTest" time="0.0015" result="Pass" />
+      <test name="System.Threading.Tests.AutoResetEventTests.WaitHandleWaitAny_Invalid" type="System.Threading.Tests.AutoResetEventTests" method="WaitHandleWaitAny_Invalid" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.AutoResetEventTests.WaitHandleWaitAll" type="System.Threading.Tests.AutoResetEventTests" method="WaitHandleWaitAll" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierTest6_Dispose" type="System.Threading.Tests.BarrierTests" method="RunBarrierTest6_Dispose" time="0.001" result="Pass" />
+      <test name="System.Threading.Tests.BarrierTests.PostPhaseException" type="System.Threading.Tests.BarrierTests" method="PostPhaseException" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierSignalAndWaitTests" type="System.Threading.Tests.BarrierTests" method="RunBarrierSignalAndWaitTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.BarrierTests.TooManyParticipants" type="System.Threading.Tests.BarrierTests" method="TooManyParticipants" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.BarrierTests.RemovingWaitingParticipants" type="System.Threading.Tests.BarrierTests" method="RemovingWaitingParticipants" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierTest10b" type="System.Threading.Tests.BarrierTests" method="RunBarrierTest10b" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierRemoveParticipantsTests" type="System.Threading.Tests.BarrierTests" method="RunBarrierRemoveParticipantsTests" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierAddParticipantsTest_NegativeTests" type="System.Threading.Tests.BarrierTests" method="RunBarrierAddParticipantsTest_NegativeTests" time="0.0087999" result="Pass" />
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierSignalAndWaitTests_NegativeTests" type="System.Threading.Tests.BarrierTests" method="RunBarrierSignalAndWaitTests_NegativeTests" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierRemoveParticipantsTests_NegativeTests" type="System.Threading.Tests.BarrierTests" method="RunBarrierRemoveParticipantsTests_NegativeTests" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierConstructorTests_NegativeTests" type="System.Threading.Tests.BarrierTests" method="RunBarrierConstructorTests_NegativeTests" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierAddParticipantsTest" type="System.Threading.Tests.BarrierTests" method="RunBarrierAddParticipantsTest" time="0.0011999" result="Pass" />
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierTest10c" type="System.Threading.Tests.BarrierTests" method="RunBarrierTest10c" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierTest9_PostPhaseException" type="System.Threading.Tests.BarrierTests" method="RunBarrierTest9_PostPhaseException" time="0.0022999" result="Pass" />
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierTest8_PostPhaseException" type="System.Threading.Tests.BarrierTests" method="RunBarrierTest8_PostPhaseException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.BarrierTests.RemovingParticipants" type="System.Threading.Tests.BarrierTests" method="RemovingParticipants" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.BarrierTests.SignalBarrierWithoutParticipants" type="System.Threading.Tests.BarrierTests" method="SignalBarrierWithoutParticipants" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierTest7a" type="System.Threading.Tests.BarrierTests" method="RunBarrierTest7a" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.BarrierTests.RunBarrierConstructorTests" type="System.Threading.Tests.BarrierTests" method="RunBarrierConstructorTests" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest1_SimpleTimeout" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest1_SimpleTimeout" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest2_Exceptions" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest2_Exceptions" time="0.0029" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest0_StateTrans(initCount: 0, increms: 0, takeAllAtOnce: False)" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest0_StateTrans" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest0_StateTrans(initCount: 1, increms: 0, takeAllAtOnce: False)" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest0_StateTrans" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest0_StateTrans(initCount: 128, increms: 0, takeAllAtOnce: False)" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest0_StateTrans" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest0_StateTrans(initCount: 1048576, increms: 0, takeAllAtOnce: False)" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest0_StateTrans" time="1.5348" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest0_StateTrans(initCount: 1, increms: 1024, takeAllAtOnce: False)" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest0_StateTrans" time="0.0039" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest0_StateTrans(initCount: 128, increms: 1024, takeAllAtOnce: False)" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest0_StateTrans" time="0.0032999" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest0_StateTrans(initCount: 1048576, increms: 1024, takeAllAtOnce: False)" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest0_StateTrans" time="1.4962999" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest0_StateTrans(initCount: 1, increms: 0, takeAllAtOnce: True)" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest0_StateTrans" time="0" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest0_StateTrans(initCount: 128, increms: 0, takeAllAtOnce: True)" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest0_StateTrans" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest0_StateTrans(initCount: 1048576, increms: 0, takeAllAtOnce: True)" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest0_StateTrans" time="0" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest0_StateTrans(initCount: 1, increms: 1024, takeAllAtOnce: True)" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest0_StateTrans" time="0.0018" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest0_StateTrans(initCount: 128, increms: 1024, takeAllAtOnce: True)" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest0_StateTrans" time="0.0037999" result="Pass" />
+      <test name="System.Threading.Tests.CountdownEventTests.RunCountdownEventTest0_StateTrans(initCount: 1048576, increms: 1024, takeAllAtOnce: True)" type="System.Threading.Tests.CountdownEventTests" method="RunCountdownEventTest0_StateTrans" time="0.0036" result="Pass" />
+      <test name="System.Threading.Tests.EtwTests.WaitHandleWaitEventTest" type="System.Threading.Tests.EtwTests" method="WaitHandleWaitEventTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.EtwTests.TestEtw" type="System.Threading.Tests.EtwTests" method="TestEtw" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.EventWaitHandleTests.Ctor_NamesArentSupported_Unix" type="System.Threading.Tests.EventWaitHandleTests" method="Ctor_NamesArentSupported_Unix" time="0.0012" result="Pass" />
+      <test name="System.Threading.Tests.EventWaitHandleTests.OpenExisting_NotSupported_Unix" type="System.Threading.Tests.EventWaitHandleTests" method="OpenExisting_NotSupported_Unix" time="0.0007999" result="Pass" />
+      <test name="System.Threading.Tests.EventWaitHandleTests.Ctor_StateMode(initialState: False, mode: AutoReset)" type="System.Threading.Tests.EventWaitHandleTests" method="Ctor_StateMode" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.EventWaitHandleTests.Ctor_StateMode(initialState: False, mode: ManualReset)" type="System.Threading.Tests.EventWaitHandleTests" method="Ctor_StateMode" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.EventWaitHandleTests.Ctor_StateMode(initialState: True, mode: AutoReset)" type="System.Threading.Tests.EventWaitHandleTests" method="Ctor_StateMode" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.EventWaitHandleTests.Ctor_StateMode(initialState: True, mode: ManualReset)" type="System.Threading.Tests.EventWaitHandleTests" method="Ctor_StateMode" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.EventWaitHandleTests.Ctor_InvalidMode" type="System.Threading.Tests.EventWaitHandleTests" method="Ctor_InvalidMode" time="0.0011" result="Pass" />
+      <test name="System.Threading.Tests.EventWaitHandleTests.SetReset" type="System.Threading.Tests.EventWaitHandleTests" method="SetReset" time="0.2501999" result="Pass" />
+      <test name="System.Threading.Tests.HostExecutionContextTests.BasicTest" type="System.Threading.Tests.HostExecutionContextTests" method="BasicTest" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.HostExecutionContextManagerTests.BasicTest" type="System.Threading.Tests.HostExecutionContextManagerTests" method="BasicTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int16_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int16_NullRef" time="0.0014999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAddAndRead_Multithreaded_Int64" type="System.Threading.Tests.InterlockedTests" method="InterlockedAddAndRead_Multithreaded_Int64" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_Int16" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_Int16" time="0.0024999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_Enum" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_Enum" time="0.0021" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_Object" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_Object" time="0.0010999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int64(initial: 305419888, operand: 124076833, expected: 393566065)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int64" time="0.0012" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int64(initial: -9223372036854775808, operand: 9223372036854775807, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int64" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int64(initial: 0, operand: -1, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int64" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int64(initial: -1, operand: 0, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int64" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int64(initial: 0, operand: 0, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int64" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Int32" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Int32" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_UIntPtr" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_UIntPtr" time="0.0022999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_Float" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_Float" time="0.002" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_UInt32" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_UInt32" time="0.0014999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_Int8" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_Int8" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_Object" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_Object" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.MemoryBarrierIntrinsic" type="System.Threading.Tests.InterlockedTests" method="MemoryBarrierIntrinsic" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.MemoryBarrierProcessWide" type="System.Threading.Tests.InterlockedTests" method="MemoryBarrierProcessWide" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt64_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt64_NullRef" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Int64" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Int64" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt16(initial: 4660, operand: 22136, expected: 4656)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt16" time="0.0023" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt16(initial: 65535, operand: 0, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt16" time="0.0009999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt16(initial: 43690, operand: 21845, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt16" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt16(initial: 65535, operand: 65535, expected: 65535)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt16" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt16(initial: 0, operand: 65535, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt16" time="0.0000999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt64(initial: 305419888, operand: 124076833, expected: 393566065)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt64" time="0.002" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt64(initial: 0, operand: 18446744073709551615, expected: 18446744073709551615)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt64" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt64(initial: 12297829382473034410, operand: 6148914691236517205, expected: 18446744073709551615)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt64" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt64(initial: 18446744073709551615, operand: 0, expected: 18446744073709551615)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt64" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt64(initial: 0, operand: 0, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt64" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_Double" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_Double" time="0.0021" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_Unsupported" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_Unsupported" time="0.0011" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_SByte(initial: 80, operand: 33, expected: 113)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_SByte" time="0.0022999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_SByte(initial: -128, operand: 127, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_SByte" time="0.001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_SByte(initial: 0, operand: -1, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_SByte" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_SByte(initial: -1, operand: 0, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_SByte" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_SByte(initial: 0, operand: 0, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_SByte" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Int64" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Int64" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAdd_Int32" type="System.Threading.Tests.InterlockedTests" method="InterlockedAdd_Int32" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_UIntPtr" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_UIntPtr" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_Int64" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_Int64" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Byte_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Byte_NullRef" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt32_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt32_NullRef" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt32(initial: 305419888, operand: 124076833, expected: 35930656)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt32" time="0.001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt32(initial: 4294967295, operand: 0, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt32" time="0.0006999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt32(initial: 2863311530, operand: 1431655765, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt32" time="0.0000999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt32(initial: 4294967295, operand: 4294967295, expected: 4294967295)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt32" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt32(initial: 0, operand: 4294967295, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt32" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_UInt8" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_UInt8" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int16(initial: 4660, operand: 20488, expected: 21052)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int16" time="0.0021" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int16(initial: -32768, operand: 32767, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int16" time="0.0007999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int16(initial: 0, operand: -1, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int16" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int16(initial: -1, operand: 0, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int16" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int16(initial: 0, operand: 0, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int16" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_Float" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_Float" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt16_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt16_NullRef" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_Char" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_Char" time="0.0036" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Byte(initial: 240, operand: 12, expected: 252)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Byte" time="0.0021" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Byte(initial: 0, operand: 255, expected: 255)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Byte" time="0.0007999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Byte(initial: 170, operand: 85, expected: 255)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Byte" time="0.0000999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Byte(initial: 255, operand: 0, expected: 255)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Byte" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Byte(initial: 0, operand: 0, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Byte" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Half_ThrowsNotSupported" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Half_ThrowsNotSupported" time="0.0034999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedDecrement_UInt32" type="System.Threading.Tests.InterlockedTests" method="InterlockedDecrement_UInt32" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Double_ThrowsNotSupported" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Double_ThrowsNotSupported" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedIncrement_UInt32" type="System.Threading.Tests.InterlockedTests" method="InterlockedIncrement_UInt32" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAdd_Int64" type="System.Threading.Tests.InterlockedTests" method="InterlockedAdd_Int64" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedRead_UInt64" type="System.Threading.Tests.InterlockedTests" method="InterlockedRead_UInt64" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_IntPtr" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_IntPtr" time="0.0021" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int16_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int16_NullRef" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Enum_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Enum_NullRef" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_UInt32" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_UInt32" time="0.0010999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int32(initial: 305419888, operand: 124076833, expected: 35930656)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int32" time="0.0011999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int32(initial: -1, operand: 2147483647, expected: 2147483647)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int32" time="0.0006999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int32(initial: -2147483648, operand: 2147483647, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int32" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int32(initial: -1, operand: -1, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int32" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int32(initial: 0, operand: -1, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int32" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Int32" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Int32" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Unsupported" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Unsupported" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_SByte_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_SByte_NullRef" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Enum_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Enum_NullRef" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedDecrement_UInt64" type="System.Threading.Tests.InterlockedTests" method="InterlockedDecrement_UInt64" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt64_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt64_NullRef" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_UInt64" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_UInt64" time="0.0012" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int32_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int32_NullRef" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_IntPtr" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_IntPtr" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Float_ThrowsNotSupported" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Float_ThrowsNotSupported" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedDecrement_Int32" type="System.Threading.Tests.InterlockedTests" method="InterlockedDecrement_Int32" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedIncrement_Multithreaded_Int32" type="System.Threading.Tests.InterlockedTests" method="InterlockedIncrement_Multithreaded_Int32" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Enum(initial: Sunday, operand: Monday, expected: Monday)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Enum" time="0.0011999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Enum(initial: Monday, operand: Tuesday, expected: Wednesday)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Enum" time="0.0007999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Enum(initial: Sunday, operand: 255, expected: 255)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Enum" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Enum(initial: 255, operand: Sunday, expected: 255)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Enum" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_Multithreaded_Double" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_Multithreaded_Double" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_SByte_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_SByte_NullRef" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_Int64" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_Int64" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int32_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int32_NullRef" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedIncrement_UInt64" type="System.Threading.Tests.InterlockedTests" method="InterlockedIncrement_UInt64" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_BoxedObject" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_BoxedObject" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedIncrement_Int64" type="System.Threading.Tests.InterlockedTests" method="InterlockedIncrement_Int64" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_Bool" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_Bool" time="0.0007999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt32_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt32_NullRef" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_UInt64" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_UInt64" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_Double" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_Double" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Float_ThrowsNotSupported" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Float_ThrowsNotSupported" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Byte_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Byte_NullRef" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_UInt64" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_UInt64" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt32(initial: 305419888, operand: 124076833, expected: 393566065)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt32" time="0.0008999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt32(initial: 0, operand: 4294967295, expected: 4294967295)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt32" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt32(initial: 2863311530, operand: 1431655765, expected: 4294967295)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt32" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt32(initial: 4294967295, operand: 0, expected: 4294967295)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt32" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt32(initial: 0, operand: 0, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt32" time="0.0000999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Unsupported" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Unsupported" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int32(initial: 305419888, operand: 124076833, expected: 393566065)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int32" time="0.0008999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int32(initial: -2147483648, operand: 2147483647, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int32" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int32(initial: 0, operand: -1, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int32" time="0.0000999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int32(initial: -1, operand: 0, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int32" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int32(initial: 0, operand: 0, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int32" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Half_ThrowsNotSupported" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Half_ThrowsNotSupported" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_UInt64" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_UInt64" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_SByte(initial: 112, operand: 33, expected: 32)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_SByte" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_SByte(initial: -1, operand: 127, expected: 127)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_SByte" time="0.0006999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_SByte(initial: -128, operand: 127, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_SByte" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_SByte(initial: -1, operand: -1, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_SByte" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_SByte(initial: 0, operand: -1, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_SByte" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_UInt32" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_UInt32" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Double_ThrowsNotSupported" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Double_ThrowsNotSupported" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_Int64_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_Int64_NullRef" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int64_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int64_NullRef" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt64(initial: 305419888, operand: 124076833, expected: 35930656)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt64" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt64(initial: 18446744073709551615, operand: 0, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt64" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt64(initial: 12297829382473034410, operand: 6148914691236517205, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt64" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt64(initial: 18446744073709551615, operand: 18446744073709551615, expected: 18446744073709551615)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt64" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt64(initial: 0, operand: 18446744073709551615, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt64" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedDecrement_Int64" type="System.Threading.Tests.InterlockedTests" method="InterlockedDecrement_Int64" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAdd_UInt64" type="System.Threading.Tests.InterlockedTests" method="InterlockedAdd_UInt64" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt16(initial: 4660, operand: 20488, expected: 21052)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt16" time="0.0011" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt16(initial: 0, operand: 65535, expected: 65535)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt16" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt16(initial: 43690, operand: 21845, expected: 65535)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt16" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt16(initial: 65535, operand: 0, expected: 65535)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt16" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedOr_Generic_UInt16(initial: 0, operand: 0, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedOr_Generic_UInt16" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_UInt8" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_UInt8" time="0.0011" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedIncrement_Int32" type="System.Threading.Tests.InterlockedTests" method="InterlockedIncrement_Int32" time="0.0000999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int16(initial: 4660, operand: 22136, expected: 4656)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int16" time="0.0013999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int16(initial: -1, operand: 32767, expected: 32767)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int16" time="0.0008999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int16(initial: -32768, operand: 32767, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int16" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int16(initial: -1, operand: -1, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int16" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int16(initial: 0, operand: -1, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int16" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_Unsupported" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_Unsupported" time="0.0007999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_Int32" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_Int32" time="0.0008999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAdd_UInt32" type="System.Threading.Tests.InterlockedTests" method="InterlockedAdd_UInt32" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_UInt32" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_UInt32" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_UInt16" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_UInt16" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_BoxedObject" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_BoxedObject" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedRead_Int64" type="System.Threading.Tests.InterlockedTests" method="InterlockedRead_Int64" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_UInt16_NullRef" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_UInt16_NullRef" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_Int32" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_Int32" time="0.0004999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_Int8" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_Int8" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedCompareExchange_Int16" type="System.Threading.Tests.InterlockedTests" method="InterlockedCompareExchange_Int16" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int64(initial: 305419888, operand: 124076833, expected: 35930656)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int64" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int64(initial: -1, operand: 9223372036854775807, expected: 9223372036854775807)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int64" time="0.0006999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int64(initial: -9223372036854775808, operand: 9223372036854775807, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int64" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int64(initial: -1, operand: -1, expected: -1)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int64" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Int64(initial: 0, operand: -1, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Int64" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Byte(initial: 240, operand: 60, expected: 48)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Byte" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Byte(initial: 255, operand: 0, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Byte" time="0.0006999" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Byte(initial: 170, operand: 85, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Byte" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Byte(initial: 255, operand: 255, expected: 255)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Byte" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Byte(initial: 0, operand: 255, expected: 0)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Byte" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Enum(initial: Wednesday, operand: Monday, expected: Monday)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Enum" time="0.001" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Enum(initial: 7, operand: Wednesday, expected: Wednesday)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Enum" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Enum(initial: 255, operand: Sunday, expected: Sunday)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Enum" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedAnd_Generic_Enum(initial: 255, operand: 255, expected: 255)" type="System.Threading.Tests.InterlockedTests" method="InterlockedAnd_Generic_Enum" time="0" result="Pass" />
+      <test name="System.Threading.Tests.InterlockedTests.InterlockedExchange_UInt16" type="System.Threading.Tests.InterlockedTests" method="InterlockedExchange_UInt16" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.LockTests.Exit_WhenHeldBySomeoneElse_ThrowsSynchronizationLockException" type="System.Threading.Tests.LockTests" method="Exit_WhenHeldBySomeoneElse_ThrowsSynchronizationLockException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.LockTests.InterruptWaitTest" type="System.Threading.Tests.LockTests" method="InterruptWaitTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.LockTests.BasicRecursion" type="System.Threading.Tests.LockTests" method="BasicRecursion" time="0.001" result="Pass" />
+      <test name="System.Threading.Tests.LockTests.IsHeldByCurrentThread" type="System.Threading.Tests.LockTests" method="IsHeldByCurrentThread" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.LockTests.IsHeldByCurrentThread_WhenHeldBySomeoneElse" type="System.Threading.Tests.LockTests" method="IsHeldByCurrentThread_WhenHeldBySomeoneElse" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.LockTests.Enter_HasToWait_LockContentionCountTest" type="System.Threading.Tests.LockTests" method="Enter_HasToWait_LockContentionCountTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.LockTests.Exit_Invalid" type="System.Threading.Tests.LockTests" method="Exit_Invalid" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.LockTests.DeepRecursion" type="System.Threading.Tests.LockTests" method="DeepRecursion" time="0.0147" result="Pass" />
+      <test name="System.Threading.Tests.LockTests.LockStatementWithLockVsMonitor" type="System.Threading.Tests.LockTests" method="LockStatementWithLockVsMonitor" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.LockTests.TryEnter_Invalid" type="System.Threading.Tests.LockTests" method="TryEnter_Invalid" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.LockTests.Enter_HasToWait" type="System.Threading.Tests.LockTests" method="Enter_HasToWait" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ManualResetEventTests.MultiWaitWithAllIndexesResetTest" type="System.Threading.Tests.ManualResetEventTests" method="MultiWaitWithAllIndexesResetTest" time="0.1000999" result="Pass" />
+      <test name="System.Threading.Tests.ManualResetEventTests.PingPong" type="System.Threading.Tests.ManualResetEventTests" method="PingPong" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ManualResetEventTests.SetAndResetTest" type="System.Threading.Tests.ManualResetEventTests" method="SetAndResetTest" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.ManualResetEventTests.MultiWaitWithAllIndexesSetTest" type="System.Threading.Tests.ManualResetEventTests" method="MultiWaitWithAllIndexesSetTest" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.ManualResetEventTests.MultiWaitWithInnerIndexesSetTest" type="System.Threading.Tests.ManualResetEventTests" method="MultiWaitWithInnerIndexesSetTest" time="0.0495" result="Pass" />
+      <test name="System.Threading.Tests.ManualResetEventTests.WaitHandleWaitAny" type="System.Threading.Tests.ManualResetEventTests" method="WaitHandleWaitAny" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ManualResetEventTests.WaitTest" type="System.Threading.Tests.ManualResetEventTests" method="WaitTest" time="0.0501999" result="Pass" />
+      <test name="System.Threading.Tests.ManualResetEventTests.ConstructorAndDisposeTest" type="System.Threading.Tests.ManualResetEventTests" method="ConstructorAndDisposeTest" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.ManualResetEventTests.WaitHandleWaitAll" type="System.Threading.Tests.ManualResetEventTests" method="WaitHandleWaitAll" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ManualResetEventSlimTests.RunManualResetEventSlimTest4_CombinedStateTests" type="System.Threading.Tests.ManualResetEventSlimTests" method="RunManualResetEventSlimTest4_CombinedStateTests" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.ManualResetEventSlimTests.RunManualResetEventSlimTest6_Exceptions" type="System.Threading.Tests.ManualResetEventSlimTests" method="RunManualResetEventSlimTest6_Exceptions" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.ManualResetEventSlimTests.RunManualResetEventSlimTest0_StateTrans(init: True)" type="System.Threading.Tests.ManualResetEventSlimTests" method="RunManualResetEventSlimTest0_StateTrans" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.ManualResetEventSlimTests.RunManualResetEventSlimTest0_StateTrans(init: False)" type="System.Threading.Tests.ManualResetEventSlimTests" method="RunManualResetEventSlimTest0_StateTrans" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.ManualResetEventSlimTests.RunManualResetEventSlimTest2_TimeoutWait" type="System.Threading.Tests.ManualResetEventSlimTests" method="RunManualResetEventSlimTest2_TimeoutWait" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ManualResetEventSlimTests.RunManualResetEventSlimTest3_ConstructorTests" type="System.Threading.Tests.ManualResetEventSlimTests" method="RunManualResetEventSlimTest3_ConstructorTests" time="0.0005999" result="Pass" />
+      <test name="System.Threading.Tests.ManualResetEventSlimTests.RunManualResetEventSlimTest5_Dispose_Negative" type="System.Threading.Tests.ManualResetEventSlimTests" method="RunManualResetEventSlimTest5_Dispose_Negative" time="0.0005999" result="Pass" />
+      <test name="System.Threading.Tests.ManualResetEventSlimTests.RunManualResetEventSlimTest1_SimpleWait" type="System.Threading.Tests.ManualResetEventSlimTests" method="RunManualResetEventSlimTest1_SimpleWait" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ManualResetEventSlimTests.RunManualResetEventSlimTest5_Dispose" type="System.Threading.Tests.ManualResetEventSlimTests" method="RunManualResetEventSlimTest5_Dispose" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.MonitorTests.PulseAll_Invalid" type="System.Threading.Tests.MonitorTests" method="PulseAll_Invalid" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.MonitorTests.ObjectHeaderSyncBlockTransitionTryEnterRaceTest" type="System.Threading.Tests.MonitorTests" method="ObjectHeaderSyncBlockTransitionTryEnterRaceTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MonitorTests.IsEntered" type="System.Threading.Tests.MonitorTests" method="IsEntered" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.MonitorTests.Exit_Invalid" type="System.Threading.Tests.MonitorTests" method="Exit_Invalid" time="0.0005999" result="Pass" />
+      <test name="System.Threading.Tests.MonitorTests.Exit_WhenHeldBySomeoneElse_ThrowsSynchronizationLockException" type="System.Threading.Tests.MonitorTests" method="Exit_WhenHeldBySomeoneElse_ThrowsSynchronizationLockException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MonitorTests.WaitTest" type="System.Threading.Tests.MonitorTests" method="WaitTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MonitorTests.IsEntered_Invalid" type="System.Threading.Tests.MonitorTests" method="IsEntered_Invalid" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.MonitorTests.Enter_Invalid" type="System.Threading.Tests.MonitorTests" method="Enter_Invalid" time="0.0007999" result="Pass" />
+      <test name="System.Threading.Tests.MonitorTests.IsEntered_WhenHeldBySomeoneElse" type="System.Threading.Tests.MonitorTests" method="IsEntered_WhenHeldBySomeoneElse" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MonitorTests.TryEnter_SetsLockTaken" type="System.Threading.Tests.MonitorTests" method="TryEnter_SetsLockTaken" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.MonitorTests.DeepRecursion" type="System.Threading.Tests.MonitorTests" method="DeepRecursion" time="0.0134" result="Pass" />
+      <test name="System.Threading.Tests.MonitorTests.Enter_SetsLockTaken" type="System.Threading.Tests.MonitorTests" method="Enter_SetsLockTaken" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.MonitorTests.Enter_HasToWait_LockContentionCountTest" type="System.Threading.Tests.MonitorTests" method="Enter_HasToWait_LockContentionCountTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MonitorTests.Wait_Invalid" type="System.Threading.Tests.MonitorTests" method="Wait_Invalid" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MonitorTests.Enter_HasToWait" type="System.Threading.Tests.MonitorTests" method="Enter_HasToWait" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MonitorTests.Pulse_Invalid" type="System.Threading.Tests.MonitorTests" method="Pulse_Invalid" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.MonitorTests.TryEnter_Invalid" type="System.Threading.Tests.MonitorTests" method="TryEnter_Invalid" time="0.0011999" result="Pass" />
+      <test name="System.Threading.Tests.MonitorTests.BasicRecursion" type="System.Threading.Tests.MonitorTests" method="BasicRecursion" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamePrefixAndOptionsCompatibilityTest(currentUserOnly: False, currentSessionOnly: False, namePrefix: \&quot;\&quot;)" type="System.Threading.Tests.MutexTests" method="NamePrefixAndOptionsCompatibilityTest" time="0.0062999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamePrefixAndOptionsCompatibilityTest(currentUserOnly: False, currentSessionOnly: False, namePrefix: \&quot;Local\\\\\&quot;)" type="System.Threading.Tests.MutexTests" method="NamePrefixAndOptionsCompatibilityTest" time="0.0012" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamePrefixAndOptionsCompatibilityTest(currentUserOnly: False, currentSessionOnly: False, namePrefix: \&quot;Global\\\\\&quot;)" type="System.Threading.Tests.MutexTests" method="NamePrefixAndOptionsCompatibilityTest" time="0.0019999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamePrefixAndOptionsCompatibilityTest(currentUserOnly: False, currentSessionOnly: True, namePrefix: \&quot;\&quot;)" type="System.Threading.Tests.MutexTests" method="NamePrefixAndOptionsCompatibilityTest" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamePrefixAndOptionsCompatibilityTest(currentUserOnly: False, currentSessionOnly: True, namePrefix: \&quot;Local\\\\\&quot;)" type="System.Threading.Tests.MutexTests" method="NamePrefixAndOptionsCompatibilityTest" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamePrefixAndOptionsCompatibilityTest(currentUserOnly: False, currentSessionOnly: True, namePrefix: \&quot;Global\\\\\&quot;)" type="System.Threading.Tests.MutexTests" method="NamePrefixAndOptionsCompatibilityTest" time="0.0004999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamePrefixAndOptionsCompatibilityTest(currentUserOnly: True, currentSessionOnly: False, namePrefix: \&quot;\&quot;)" type="System.Threading.Tests.MutexTests" method="NamePrefixAndOptionsCompatibilityTest" time="0.0004999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamePrefixAndOptionsCompatibilityTest(currentUserOnly: True, currentSessionOnly: False, namePrefix: \&quot;Local\\\\\&quot;)" type="System.Threading.Tests.MutexTests" method="NamePrefixAndOptionsCompatibilityTest" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamePrefixAndOptionsCompatibilityTest(currentUserOnly: True, currentSessionOnly: False, namePrefix: \&quot;Global\\\\\&quot;)" type="System.Threading.Tests.MutexTests" method="NamePrefixAndOptionsCompatibilityTest" time="0.0005998" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamePrefixAndOptionsCompatibilityTest(currentUserOnly: True, currentSessionOnly: True, namePrefix: \&quot;\&quot;)" type="System.Threading.Tests.MutexTests" method="NamePrefixAndOptionsCompatibilityTest" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamePrefixAndOptionsCompatibilityTest(currentUserOnly: True, currentSessionOnly: True, namePrefix: \&quot;Local\\\\\&quot;)" type="System.Threading.Tests.MutexTests" method="NamePrefixAndOptionsCompatibilityTest" time="0.0004999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamePrefixAndOptionsCompatibilityTest(currentUserOnly: True, currentSessionOnly: True, namePrefix: \&quot;Global\\\\\&quot;)" type="System.Threading.Tests.MutexTests" method="NamePrefixAndOptionsCompatibilityTest" time="0.0012999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamedMutex_TooSmallSharedMemoryFile" type="System.Threading.Tests.MutexTests" method="NamedMutex_TooSmallSharedMemoryFile" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotMobile\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MutexTests.MultiWaitWithAllIndexesUnlockedTest" type="System.Threading.Tests.MutexTests" method="MultiWaitWithAllIndexesUnlockedTest" time="0.0022" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.Ctor_ValidName(name: \&quot;e88c32b8b20e49e6891a9217969cf8a6\&quot;)" type="System.Threading.Tests.MutexTests" method="Ctor_ValidName" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.Ctor_ValidName(name: \&quot;0a720628b77047aa9dfc5413e9286148aaaaaaaaaaaaaaaaaa\&quot;···)" type="System.Threading.Tests.MutexTests" method="Ctor_ValidName" time="0.0003998" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.OpenExisting_InvalidNames" type="System.Threading.Tests.MutexTests" method="OpenExisting_InvalidNames" time="0.0009999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamedMutex_InvalidSharedMemoryHeaderVersion" type="System.Threading.Tests.MutexTests" method="NamedMutex_InvalidSharedMemoryHeaderVersion" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotMobile\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MutexTests.OpenExisting_UnavailableName" type="System.Threading.Tests.MutexTests" method="OpenExisting_UnavailableName" time="0.0014" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.Ctor_InvalidNames_Unix" type="System.Threading.Tests.MutexTests" method="Ctor_InvalidNames_Unix" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotMobile\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MutexTests.MultiWaitWithOuterIndexesLockedTest" type="System.Threading.Tests.MutexTests" method="MultiWaitWithOuterIndexesLockedTest" time="0.0015" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameOptionsApiCompatibilityTest(namePrefix: \&quot;\&quot;)" type="System.Threading.Tests.MutexTests" method="NameOptionsApiCompatibilityTest" time="0.0008998" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameOptionsApiCompatibilityTest(namePrefix: \&quot;Local\\\\\&quot;)" type="System.Threading.Tests.MutexTests" method="NameOptionsApiCompatibilityTest" time="0.0005999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameOptionsApiCompatibilityTest(namePrefix: \&quot;Global\\\\\&quot;)" type="System.Threading.Tests.MutexTests" method="NameOptionsApiCompatibilityTest" time="0.0006998" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.AcquireAndReleaseTest" type="System.Threading.Tests.MutexTests" method="AcquireAndReleaseTest" time="0.0010999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.MutualExclusionTest" type="System.Threading.Tests.MutexTests" method="MutualExclusionTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MutexTests.NamedMutex_InvalidSharedMemoryHeaderKind" type="System.Threading.Tests.MutexTests" method="NamedMutex_InvalidSharedMemoryHeaderKind" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotMobile\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MutexTests.NamedMutex_SharedMemoryFileAlreadyOpen" type="System.Threading.Tests.MutexTests" method="NamedMutex_SharedMemoryFileAlreadyOpen" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotMobile\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MutexTests.NamedMutex_OtherEvent_NotCompatible" type="System.Threading.Tests.MutexTests" method="NamedMutex_OtherEvent_NotCompatible" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsNotMobile\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MutexTests.NamedWaitHandleOptionsTest" type="System.Threading.Tests.MutexTests" method="NamedWaitHandleOptionsTest" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: False, create_currentSessionOnly: False, open_currentUserOnly: False, open_currentSessionOnly: False)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: False, create_currentSessionOnly: False, open_currentUserOnly: False, open_currentSessionOnly: True)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0015999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: False, create_currentSessionOnly: False, open_currentUserOnly: True, open_currentSessionOnly: False)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: False, create_currentSessionOnly: False, open_currentUserOnly: True, open_currentSessionOnly: True)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0004999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: False, create_currentSessionOnly: True, open_currentUserOnly: False, open_currentSessionOnly: False)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: False, create_currentSessionOnly: True, open_currentUserOnly: False, open_currentSessionOnly: True)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0004999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: False, create_currentSessionOnly: True, open_currentUserOnly: True, open_currentSessionOnly: False)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: False, create_currentSessionOnly: True, open_currentUserOnly: True, open_currentSessionOnly: True)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0006998" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: True, create_currentSessionOnly: False, open_currentUserOnly: False, open_currentSessionOnly: False)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: True, create_currentSessionOnly: False, open_currentUserOnly: False, open_currentSessionOnly: True)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: True, create_currentSessionOnly: False, open_currentUserOnly: True, open_currentSessionOnly: False)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0013" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: True, create_currentSessionOnly: False, open_currentUserOnly: True, open_currentSessionOnly: True)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0003999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: True, create_currentSessionOnly: True, open_currentUserOnly: False, open_currentSessionOnly: False)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: True, create_currentSessionOnly: True, open_currentUserOnly: False, open_currentSessionOnly: True)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: True, create_currentSessionOnly: True, open_currentUserOnly: True, open_currentSessionOnly: False)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NameNamespaceTest(create_currentUserOnly: True, create_currentSessionOnly: True, open_currentUserOnly: True, open_currentSessionOnly: True)" type="System.Threading.Tests.MutexTests" method="NameNamespaceTest" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.NamedMutex_DisposeWhenLockedRaceTest" type="System.Threading.Tests.MutexTests" method="NamedMutex_DisposeWhenLockedRaceTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MutexTests.MultiWaitWithAllIndexesLockedTest" type="System.Threading.Tests.MutexTests" method="MultiWaitWithAllIndexesLockedTest" time="0.0010999" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.WaitTest" type="System.Threading.Tests.MutexTests" method="WaitTest" time="0.0007998" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.CrossProcess_NamedMutex_ProtectedFileAccessAtomic" type="System.Threading.Tests.MutexTests" method="CrossProcess_NamedMutex_ProtectedFileAccessAtomic" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsRemoteExecutorAndCrossProcessNamedMutexSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MutexTests.OpenExisting" type="System.Threading.Tests.MutexTests" method="OpenExisting" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.MutexTests.ConstructorAndDisposeTest" type="System.Threading.Tests.MutexTests" method="ConstructorAndDisposeTest" time="0.0012" result="Pass" />
+      <test name="System.Threading.Tests.MutexTests.AbandonExisting" type="System.Threading.Tests.MutexTests" method="AbandonExisting" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest5_CurrentCount" type="System.Threading.Tests.SemaphoreSlimTests" method="RunSemaphoreSlimTest5_CurrentCount" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SemaphoreSlimTests.WaitAsync_Timeout_NoUnhandledException" type="System.Threading.Tests.SemaphoreSlimTests" method="WaitAsync_Timeout_NoUnhandledException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest0_Ctor_Negative" type="System.Threading.Tests.SemaphoreSlimTests" method="RunSemaphoreSlimTest0_Ctor_Negative" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest1_WaitAsync" type="System.Threading.Tests.SemaphoreSlimTests" method="RunSemaphoreSlimTest1_WaitAsync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest2_Release_NegativeCases" type="System.Threading.Tests.SemaphoreSlimTests" method="RunSemaphoreSlimTest2_Release_NegativeCases" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest8_ConcWaitAsyncAndRelease" type="System.Threading.Tests.SemaphoreSlimTests" method="RunSemaphoreSlimTest8_ConcWaitAsyncAndRelease" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest2_Release" type="System.Threading.Tests.SemaphoreSlimTests" method="RunSemaphoreSlimTest2_Release" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest1_Wait_NegativeCases" type="System.Threading.Tests.SemaphoreSlimTests" method="RunSemaphoreSlimTest1_Wait_NegativeCases" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest1_Wait" type="System.Threading.Tests.SemaphoreSlimTests" method="RunSemaphoreSlimTest1_Wait" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest7_AvailableWaitHandle" type="System.Threading.Tests.SemaphoreSlimTests" method="RunSemaphoreSlimTest7_AvailableWaitHandle" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest0_Ctor" type="System.Threading.Tests.SemaphoreSlimTests" method="RunSemaphoreSlimTest0_Ctor" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest4_Dispose" type="System.Threading.Tests.SemaphoreSlimTests" method="RunSemaphoreSlimTest4_Dispose" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SemaphoreSlimTests.TestConcurrentWaitAndWaitAsync" type="System.Threading.Tests.SemaphoreSlimTests" method="TestConcurrentWaitAndWaitAsync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest8_ConcWaitAndRelease" type="System.Threading.Tests.SemaphoreSlimTests" method="RunSemaphoreSlimTest8_ConcWaitAndRelease" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SemaphoreTests.Ctor_InitialAndMax(initialCount: 0, maximumCount: 1)" type="System.Threading.Tests.SemaphoreTests" method="Ctor_InitialAndMax" time="0.0004999" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreTests.Ctor_InitialAndMax(initialCount: 1, maximumCount: 1)" type="System.Threading.Tests.SemaphoreTests" method="Ctor_InitialAndMax" time="0.0004999" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreTests.Ctor_InitialAndMax(initialCount: 1, maximumCount: 2)" type="System.Threading.Tests.SemaphoreTests" method="Ctor_InitialAndMax" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreTests.Ctor_InitialAndMax(initialCount: 0, maximumCount: 2147483647)" type="System.Threading.Tests.SemaphoreTests" method="Ctor_InitialAndMax" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreTests.Ctor_InitialAndMax(initialCount: 2147483647, maximumCount: 2147483647)" type="System.Threading.Tests.SemaphoreTests" method="Ctor_InitialAndMax" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreTests.AnonymousProducerConsumer" type="System.Threading.Tests.SemaphoreTests" method="AnonymousProducerConsumer" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SemaphoreTests.SignalAndUnsignalTest" type="System.Threading.Tests.SemaphoreTests" method="SignalAndUnsignalTest" time="0.001" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreTests.MultiWaitWithAllIndexesSignaledTest" type="System.Threading.Tests.SemaphoreTests" method="MultiWaitWithAllIndexesSignaledTest" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreTests.MultiWaitWithInnerIndexesSignaled" type="System.Threading.Tests.SemaphoreTests" method="MultiWaitWithInnerIndexesSignaled" time="0.0495999" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreTests.CanWaitWithoutBlockingForReleasedCount" type="System.Threading.Tests.SemaphoreTests" method="CanWaitWithoutBlockingForReleasedCount" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreTests.MultiWaitWithAllIndexesUnsignaled" type="System.Threading.Tests.SemaphoreTests" method="MultiWaitWithAllIndexesUnsignaled" time="0.1" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreTests.WaitTest" type="System.Threading.Tests.SemaphoreTests" method="WaitTest" time="0.0498" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreTests.ConstructorAndDisposeTest" type="System.Threading.Tests.SemaphoreTests" method="ConstructorAndDisposeTest" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreTests.Ctor_InvalidArguments" type="System.Threading.Tests.SemaphoreTests" method="Ctor_InvalidArguments" time="0.0011999" result="Pass" />
+      <test name="System.Threading.Tests.SemaphoreTests.CanWaitWithoutBlockingUntilNoCount" type="System.Threading.Tests.SemaphoreTests" method="CanWaitWithoutBlockingUntilNoCount" time="0.0001999" result="Pass" />
+      <test name="System.Threading.Tests.SpinLockTests.RunSpinLockTests_NegativeTests" type="System.Threading.Tests.SpinLockTests" method="RunSpinLockTests_NegativeTests" time="0.0014" result="Pass" />
+      <test name="System.Threading.Tests.SpinLockTests.RunSpinLockTestExceptions" type="System.Threading.Tests.SpinLockTests" method="RunSpinLockTestExceptions" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.SpinLockTests.EnterExit" type="System.Threading.Tests.SpinLockTests" method="EnterExit" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockTests.ReadersWaitingOnWaitingWriterTest" type="System.Threading.Tests.ReaderWriterLockTests" method="ReadersWaitingOnWaitingWriterTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockTests.OverflowOnExcessiveNestedWriterLock" type="System.Threading.Tests.ReaderWriterLockTests" method="OverflowOnExcessiveNestedWriterLock" time="0.009" result="Pass" />
+      <test name="System.Threading.Tests.ReaderWriterLockTests.ShouldNotBeOwnerForRestoreLockTest" type="System.Threading.Tests.ReaderWriterLockTests" method="ShouldNotBeOwnerForRestoreLockTest" time="0.0044" result="Pass" />
+      <test name="System.Threading.Tests.ReaderWriterLockTests.SingleThreadLockOwnerMiscellaneousTest" type="System.Threading.Tests.ReaderWriterLockTests" method="SingleThreadLockOwnerMiscellaneousTest" time="0.0027999" result="Pass" />
+      <test name="System.Threading.Tests.ReaderWriterLockTests.DowngradeQuirks_ChangedInDotNetCore" type="System.Threading.Tests.ReaderWriterLockTests" method="DowngradeQuirks_ChangedInDotNetCore" time="0.0015" result="Pass" />
+      <test name="System.Threading.Tests.ReaderWriterLockTests.AtomicDowngradeTest" type="System.Threading.Tests.ReaderWriterLockTests" method="AtomicDowngradeTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockTests.WaitingReadersTest" type="System.Threading.Tests.ReaderWriterLockTests" method="WaitingReadersTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockTests.BasicLockTest" type="System.Threading.Tests.ReaderWriterLockTests" method="BasicLockTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockTests.InvalidLockCookieTest" type="System.Threading.Tests.ReaderWriterLockTests" method="InvalidLockCookieTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockTests.WaitingWritersTest" type="System.Threading.Tests.ReaderWriterLockTests" method="WaitingWritersTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockTests.InvalidTimeoutTest_ChangedInDotNetCore" type="System.Threading.Tests.ReaderWriterLockTests" method="InvalidTimeoutTest_ChangedInDotNetCore" time="0.001" result="Pass" />
+      <test name="System.Threading.Tests.ReaderWriterLockTests.MultipleNestedReadersMiscellaneousTest" type="System.Threading.Tests.ReaderWriterLockTests" method="MultipleNestedReadersMiscellaneousTest" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.ReaderWriterLockTests.OverflowOnExcessiveNestedReaderLock" type="System.Threading.Tests.ReaderWriterLockTests" method="OverflowOnExcessiveNestedReaderLock" time="0.0091" result="Pass" />
+      <test name="System.Threading.Tests.ReaderWriterLockTests.AtomicRecursiveReaderTest" type="System.Threading.Tests.ReaderWriterLockTests" method="AtomicRecursiveReaderTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockTests.WaitingUpgradersTest" type="System.Threading.Tests.ReaderWriterLockTests" method="WaitingUpgradersTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockTests.NotOwnerTest" type="System.Threading.Tests.ReaderWriterLockTests" method="NotOwnerTest" time="0.002" result="Pass" />
+      <test name="System.Threading.Tests.ReaderWriterLockTests.ReadersWaitingOnWaitingUpgraderTest" type="System.Threading.Tests.ReaderWriterLockTests" method="ReadersWaitingOnWaitingUpgraderTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockSlimTests.WritersAreMutuallyExclusiveFromWriters" type="System.Threading.Tests.ReaderWriterLockSlimTests" method="WritersAreMutuallyExclusiveFromWriters" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockSlimTests.WriterToUpgradeableReaderChain" type="System.Threading.Tests.ReaderWriterLockSlimTests" method="WriterToUpgradeableReaderChain" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockSlimTests.Dispose" type="System.Threading.Tests.ReaderWriterLockSlimTests" method="Dispose" time="0.0021" result="Pass" />
+      <test name="System.Threading.Tests.ReaderWriterLockSlimTests.InvalidExits" type="System.Threading.Tests.ReaderWriterLockSlimTests" method="InvalidExits" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockSlimTests.InvalidTimeouts" type="System.Threading.Tests.ReaderWriterLockSlimTests" method="InvalidTimeouts" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tests.ReaderWriterLockSlimTests.WriterToReaderChain" type="System.Threading.Tests.ReaderWriterLockSlimTests" method="WriterToReaderChain" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockSlimTests.DeadlockAvoidance" type="System.Threading.Tests.ReaderWriterLockSlimTests" method="DeadlockAvoidance" time="0.0016" result="Pass" />
+      <test name="System.Threading.Tests.ReaderWriterLockSlimTests.EnterExit" type="System.Threading.Tests.ReaderWriterLockSlimTests" method="EnterExit" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.ReaderWriterLockSlimTests.Ctor" type="System.Threading.Tests.ReaderWriterLockSlimTests" method="Ctor" time="0.0013" result="Pass" />
+      <test name="System.Threading.Tests.ReaderWriterLockSlimTests.ReadersMayBeConcurrent" type="System.Threading.Tests.ReaderWriterLockSlimTests" method="ReadersMayBeConcurrent" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockSlimTests.WritersAreMutuallyExclusiveFromReaders" type="System.Threading.Tests.ReaderWriterLockSlimTests" method="WritersAreMutuallyExclusiveFromReaders" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ReaderWriterLockSlimTests.WriterToWriterChain" type="System.Threading.Tests.ReaderWriterLockSlimTests" method="WriterToWriterChain" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SpinWaitTests.RunSpinWaitTests_Negative" type="System.Threading.Tests.SpinWaitTests" method="RunSpinWaitTests_Negative" time="0.1007" result="Pass" />
+      <test name="System.Threading.Tests.SpinWaitTests.SpinOnce_Sleep1Threshold" type="System.Threading.Tests.SpinWaitTests" method="SpinOnce_Sleep1Threshold" time="0.004" result="Pass" />
+      <test name="System.Threading.Tests.SpinWaitTests.RunSpinWaitTests" type="System.Threading.Tests.SpinWaitTests" method="RunSpinWaitTests" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest5_Dispose_Negative" type="System.Threading.Tests.ThreadLocalTests" method="RunThreadLocalTest5_Dispose_Negative" time="0.0031" result="Pass" />
+      <test name="System.Threading.Tests.ThreadLocalTests.TestUnrelatedThreadLocalDoesNotInterfereWithTrackAllValues" type="System.Threading.Tests.ThreadLocalTests" method="TestUnrelatedThreadLocalDoesNotInterfereWithTrackAllValues" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest1_Ctor_Negative" type="System.Threading.Tests.ThreadLocalTests" method="RunThreadLocalTest1_Ctor_Negative" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest4_Value" type="System.Threading.Tests.ThreadLocalTests" method="RunThreadLocalTest4_Value" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest4_Value_NegativeCases" type="System.Threading.Tests.ThreadLocalTests" method="RunThreadLocalTest4_Value_NegativeCases" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest8_Values_NegativeCases" type="System.Threading.Tests.ThreadLocalTests" method="RunThreadLocalTest8_Values_NegativeCases" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsPreciseGcSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest5_Dispose" type="System.Threading.Tests.ThreadLocalTests" method="RunThreadLocalTest5_Dispose" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingAndPreciseGcSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest3_IsValueCreated" type="System.Threading.Tests.ThreadLocalTests" method="RunThreadLocalTest3_IsValueCreated" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest2_ToString" type="System.Threading.Tests.ThreadLocalTests" method="RunThreadLocalTest2_ToString" time="0.0010999" result="Pass" />
+      <test name="System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest6_SlowPath" type="System.Threading.Tests.ThreadLocalTests" method="RunThreadLocalTest6_SlowPath" time="0.0858" result="Pass" />
+      <test name="System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest1_Ctor" type="System.Threading.Tests.ThreadLocalTests" method="RunThreadLocalTest1_Ctor" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest7_WeakReference" type="System.Threading.Tests.ThreadLocalTests" method="RunThreadLocalTest7_WeakReference" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsPreciseGcSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest9_Uninitialized" type="System.Threading.Tests.ThreadLocalTests" method="RunThreadLocalTest9_Uninitialized" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tests.ExecutionContextTests.FlowTest" type="System.Threading.Tests.ExecutionContextTests" method="FlowTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ExecutionContextTests.AsyncFlowControlTest" type="System.Threading.Tests.ExecutionContextTests" method="AsyncFlowControlTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ExecutionContextTests.CreateCopyTest" type="System.Threading.Tests.ExecutionContextTests" method="CreateCopyTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.ExecutionContextTests.DisposeTest" type="System.Threading.Tests.ExecutionContextTests" method="DisposeTest" time="0.0002999" result="Pass" />
+      <test name="System.Threading.Tests.ExecutionContextTests.RestoreTest" type="System.Threading.Tests.ExecutionContextTests" method="RestoreTest" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tests.ExecutionContextTests.CaptureThenSuppressThenRunFlowTest" type="System.Threading.Tests.ExecutionContextTests" method="CaptureThenSuppressThenRunFlowTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tests.SynchronizationContextTests.WaitTest_ChangedInDotNetCore" type="System.Threading.Tests.SynchronizationContextTests" method="WaitTest_ChangedInDotNetCore" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tests.SynchronizationContextTests.WaitTest" type="System.Threading.Tests.SynchronizationContextTests" method="WaitTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+  </assembly>
+</assemblies>

@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.IO.FileSystem.Primitives.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:16:13" total="4" passed="4" failed="0" skipped="0" time="0.096" errors="0">
+    <errors />
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.IO.Tests.FileAttributesTests" time="0.009">
+      <test name="System.IO.Tests.FileAttributesTests.ValueTest" type="System.IO.Tests.FileAttributesTests" method="ValueTest" time="0.0086" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.IO.Tests.FileShareTests" time="0.000">
+      <test name="System.IO.Tests.FileShareTests.ValueTest" type="System.IO.Tests.FileShareTests" method="ValueTest" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.IO.Tests.FileModeTests" time="0.000">
+      <test name="System.IO.Tests.FileModeTests.ValueTest" type="System.IO.Tests.FileModeTests" method="ValueTest" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.IO.Tests.FileAccessTests" time="0.000">
+      <test name="System.IO.Tests.FileAccessTests.ValueTest" type="System.IO.Tests.FileAccessTests" method="ValueTest" time="0.0002999" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

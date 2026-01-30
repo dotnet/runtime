@@ -1,0 +1,1415 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Threading.Tasks.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:18:58" total="651" passed="311" failed="0" skipped="340" time="1.259" errors="0">
+    <errors />
+    <collection total="18" passed="0" failed="0" skipped="18" name="Test collection for System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" time="0.000">
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait23" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait23" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait3" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait3" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait4" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait4" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait24" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait24" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait6" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait6" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait9" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait9" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait2" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait2" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait19" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait19" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait22" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait22" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait21" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait21" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait17" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait17" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait14" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait14" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait1" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait1" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait25" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait25" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait10" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait10" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait12" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait12" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait8" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait8" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases.TaskCancelWait16" type="System.Threading.Tasks.Tests.CancelWait.TaskCancelWaitTestCases" method="TaskCancelWait16" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Threading.Tasks.Tests.OperationCanceledExceptionTests" time="0.009">
+      <test name="System.Threading.Tasks.Tests.OperationCanceledExceptionTests.BasicConstructors" type="System.Threading.Tasks.Tests.OperationCanceledExceptionTests" method="BasicConstructors" time="0.0086" result="Pass" />
+    </collection>
+    <collection total="6" passed="6" failed="0" skipped="0" name="Test collection for System.Threading.Tasks.Tests.AggregateExceptionTests" time="0.017">
+      <test name="System.Threading.Tasks.Tests.AggregateExceptionTests.Flatten" type="System.Threading.Tasks.Tests.AggregateExceptionTests" method="Flatten" time="0.0097" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AggregateExceptionTests.ConstructorBasic" type="System.Threading.Tasks.Tests.AggregateExceptionTests" method="ConstructorBasic" time="0.0021" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AggregateExceptionTests.ConstructorInvalidArguments" type="System.Threading.Tasks.Tests.AggregateExceptionTests" method="ConstructorInvalidArguments" time="0.0017" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AggregateExceptionTests.HandleInvalidCases" type="System.Threading.Tasks.Tests.AggregateExceptionTests" method="HandleInvalidCases" time="0.001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AggregateExceptionTests.BaseExceptions" type="System.Threading.Tasks.Tests.AggregateExceptionTests" method="BaseExceptions" time="0.0016" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AggregateExceptionTests.Handle" type="System.Threading.Tasks.Tests.AggregateExceptionTests" method="Handle" time="0.0004" result="Pass" />
+    </collection>
+    <collection total="12" passed="6" failed="0" skipped="6" name="Test collection for System.Threading.Tasks.Tests.Status.TaskStatusTests" time="0.007">
+      <test name="System.Threading.Tasks.Tests.Status.TaskStatusTests.TaskStatus17" type="System.Threading.Tasks.Tests.Status.TaskStatusTests" method="TaskStatus17" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.Status.TaskStatusTests.TaskStatus1" type="System.Threading.Tasks.Tests.Status.TaskStatusTests" method="TaskStatus1" time="0.0015" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskStatusTests.TaskStatus4" type="System.Threading.Tasks.Tests.Status.TaskStatusTests" method="TaskStatus4" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskStatusTests.Status_IsProperties_Match" type="System.Threading.Tasks.Tests.Status.TaskStatusTests" method="Status_IsProperties_Match" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.Status.TaskStatusTests.TaskStatus5" type="System.Threading.Tasks.Tests.Status.TaskStatusTests" method="TaskStatus5" time="0.002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskStatusTests.TaskStatus6" type="System.Threading.Tasks.Tests.Status.TaskStatusTests" method="TaskStatus6" time="0.0017" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskStatusTests.TaskStatus0" type="System.Threading.Tasks.Tests.Status.TaskStatusTests" method="TaskStatus0" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskStatusTests.TaskStatus14" type="System.Threading.Tasks.Tests.Status.TaskStatusTests" method="TaskStatus14" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.Status.TaskStatusTests.TaskStatus15" type="System.Threading.Tasks.Tests.Status.TaskStatusTests" method="TaskStatus15" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.Status.TaskStatusTests.TaskStatus11" type="System.Threading.Tasks.Tests.Status.TaskStatusTests" method="TaskStatus11" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.Status.TaskStatusTests.TaskStatus10" type="System.Threading.Tasks.Tests.Status.TaskStatusTests" method="TaskStatus10" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.Status.TaskStatusTests.TaskStatus7" type="System.Threading.Tasks.Tests.Status.TaskStatusTests" method="TaskStatus7" time="0.0012" result="Pass" />
+    </collection>
+    <collection total="9" passed="1" failed="0" skipped="8" name="Test collection for System.Threading.Tasks.Tests.CESchedulerPairTests" time="0.004">
+      <test name="System.Threading.Tasks.Tests.CESchedulerPairTests.TestSchedulerNesting" type="System.Threading.Tasks.Tests.CESchedulerPairTests" method="TestSchedulerNesting" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CESchedulerPairTests.TestMaxItemsPerTask" type="System.Threading.Tasks.Tests.CESchedulerPairTests" method="TestMaxItemsPerTask" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CESchedulerPairTests.TestLowerConcurrencyLevel" type="System.Threading.Tasks.Tests.CESchedulerPairTests" method="TestLowerConcurrencyLevel" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CESchedulerPairTests.TestConcurrentExclusiveChain" type="System.Threading.Tasks.Tests.CESchedulerPairTests" method="TestConcurrentExclusiveChain" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CESchedulerPairTests.TestCreationOptions" type="System.Threading.Tasks.Tests.CESchedulerPairTests" method="TestCreationOptions" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CESchedulerPairTests.TestConcurrentBlockage" type="System.Threading.Tasks.Tests.CESchedulerPairTests" method="TestConcurrentBlockage" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CESchedulerPairTests.TestIntegration" type="System.Threading.Tasks.Tests.CESchedulerPairTests" method="TestIntegration" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CESchedulerPairTests.TestCompletionTask" type="System.Threading.Tasks.Tests.CESchedulerPairTests" method="TestCompletionTask" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CESchedulerPairTests.TestInvalidParameters" type="System.Threading.Tasks.Tests.CESchedulerPairTests" method="TestInvalidParameters" time="0.0036" result="Pass" />
+    </collection>
+    <collection total="3" passed="2" failed="0" skipped="1" name="Test collection for System.Threading.Tasks.Tests.ExecutionContextFlowTest" time="0.002">
+      <test name="System.Threading.Tasks.Tests.ExecutionContextFlowTest.TaskCompletionSourceDoesntCaptureExecutionContext" type="System.Threading.Tasks.Tests.ExecutionContextFlowTest" method="TaskCompletionSourceDoesntCaptureExecutionContext" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsPreciseGcSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ExecutionContextFlowTest.SuppressFlow_TaskCapturesContextAccordingly(suppressFlow: False)" type="System.Threading.Tasks.Tests.ExecutionContextFlowTest" method="SuppressFlow_TaskCapturesContextAccordingly" time="0.0017" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.ExecutionContextFlowTest.SuppressFlow_TaskCapturesContextAccordingly(suppressFlow: True)" type="System.Threading.Tasks.Tests.ExecutionContextFlowTest" method="SuppressFlow_TaskCapturesContextAccordingly" time="0.0007" result="Pass" />
+    </collection>
+    <collection total="60" passed="55" failed="0" skipped="5" name="Test collection for System.Threading.Tasks.Tests.UnwrapTests" time="0.026">
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_DefaultSchedulerUsed" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_DefaultSchedulerUsed" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_Completed_Completed_OptimizeToUseSameInner(inner: Task&lt;VoidTaskResult&gt; { Status = RanToCompletion })" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_Completed_Completed_OptimizeToUseSameInner" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_Completed_Completed_OptimizeToUseSameInner(inner: Task { Status = Canceled })" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_Completed_Completed_OptimizeToUseSameInner" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_Completed_Completed_OptimizeToUseSameInner(inner: Task { Status = Faulted })" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_Completed_Completed_OptimizeToUseSameInner" time="0" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_Completed_Completed_OptimizeToUseSameInner(inner: Task&lt;int&gt; { Status = Canceled })" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_Completed_Completed_OptimizeToUseSameInner" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_Completed_Completed(inner: Task&lt;string&gt; { Status = RanToCompletion })" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_Completed_Completed" time="0.0031" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_Completed_Completed(inner: Task&lt;string&gt; { Status = Canceled })" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_Completed_Completed" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_Completed_Completed(inner: Task&lt;string&gt; { Status = Faulted })" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_Completed_Completed" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_Completed_Completed(inner: Task&lt;string&gt; { Status = Canceled })" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_Completed_Completed" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_DefaultSchedulerUsed" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_DefaultSchedulerUsed" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_Completed_Completed_OptimizeToUseSameInner(inner: Task&lt;string&gt; { Status = RanToCompletion })" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_Completed_Completed_OptimizeToUseSameInner" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_Completed_Completed_OptimizeToUseSameInner(inner: Task&lt;string&gt; { Status = Canceled })" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_Completed_Completed_OptimizeToUseSameInner" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_Completed_Completed_OptimizeToUseSameInner(inner: Task&lt;string&gt; { Status = Faulted })" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_Completed_Completed_OptimizeToUseSameInner" time="0" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_Completed_Completed_OptimizeToUseSameInner(inner: Task&lt;string&gt; { Status = Canceled })" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_Completed_Completed_OptimizeToUseSameInner" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_NotCompleted_Completed(inner: Task&lt;string&gt; { Status = RanToCompletion })" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_NotCompleted_Completed" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_NotCompleted_Completed(inner: Task&lt;string&gt; { Status = Canceled })" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_NotCompleted_Completed" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_NotCompleted_Completed(inner: Task&lt;string&gt; { Status = Faulted })" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_NotCompleted_Completed" time="0.001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_NotCompleted_Completed(inner: Task&lt;string&gt; { Status = Canceled })" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_NotCompleted_Completed" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_Completed_Completed(inner: Task&lt;VoidTaskResult&gt; { Status = RanToCompletion })" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_Completed_Completed" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_Completed_Completed(inner: Task { Status = Canceled })" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_Completed_Completed" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_Completed_Completed(inner: Task { Status = Faulted })" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_Completed_Completed" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_Completed_Completed(inner: Task&lt;int&gt; { Status = Canceled })" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_Completed_Completed" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_UnsuccessfulOuter(outerCompletesBeforeUnwrap: True, outerStatus: RanToCompletion)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_UnsuccessfulOuter" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_UnsuccessfulOuter(outerCompletesBeforeUnwrap: True, outerStatus: Faulted)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_UnsuccessfulOuter" time="0.0011" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_UnsuccessfulOuter(outerCompletesBeforeUnwrap: True, outerStatus: Canceled)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_UnsuccessfulOuter" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_UnsuccessfulOuter(outerCompletesBeforeUnwrap: False, outerStatus: RanToCompletion)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_UnsuccessfulOuter" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_UnsuccessfulOuter(outerCompletesBeforeUnwrap: False, outerStatus: Faulted)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_UnsuccessfulOuter" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_UnsuccessfulOuter(outerCompletesBeforeUnwrap: False, outerStatus: Canceled)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_UnsuccessfulOuter" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_AttachedToParent" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_AttachedToParent" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_AttachedToParent" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_AttachedToParent" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_UnsuccessfulOuter(outerCompletesBeforeUnwrap: True, outerStatus: RanToCompletion)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_UnsuccessfulOuter" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_UnsuccessfulOuter(outerCompletesBeforeUnwrap: True, outerStatus: Faulted)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_UnsuccessfulOuter" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_UnsuccessfulOuter(outerCompletesBeforeUnwrap: True, outerStatus: Canceled)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_UnsuccessfulOuter" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_UnsuccessfulOuter(outerCompletesBeforeUnwrap: False, outerStatus: RanToCompletion)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_UnsuccessfulOuter" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_UnsuccessfulOuter(outerCompletesBeforeUnwrap: False, outerStatus: Faulted)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_UnsuccessfulOuter" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_UnsuccessfulOuter(outerCompletesBeforeUnwrap: False, outerStatus: Canceled)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_UnsuccessfulOuter" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_NotCompleted_NotCompleted(outerCompletesFirst: True, innerStatus: RanToCompletion)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_NotCompleted_NotCompleted" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_NotCompleted_NotCompleted(outerCompletesFirst: True, innerStatus: Canceled)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_NotCompleted_NotCompleted" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_NotCompleted_NotCompleted(outerCompletesFirst: True, innerStatus: Faulted)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_NotCompleted_NotCompleted" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_NotCompleted_NotCompleted(outerCompletesFirst: False, innerStatus: RanToCompletion)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_NotCompleted_NotCompleted" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_NotCompleted_NotCompleted(outerCompletesFirst: False, innerStatus: Canceled)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_NotCompleted_NotCompleted" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_NotCompleted_NotCompleted(outerCompletesFirst: False, innerStatus: Faulted)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_NotCompleted_NotCompleted" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.ArgumentValidation" type="System.Threading.Tasks.Tests.UnwrapTests" method="ArgumentValidation" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.RunStackGuardTests" type="System.Threading.Tasks.Tests.UnwrapTests" method="RunStackGuardTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_Completed_NotCompleted(innerStatus: RanToCompletion)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_Completed_NotCompleted" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_Completed_NotCompleted(innerStatus: Faulted)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_Completed_NotCompleted" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_Completed_NotCompleted(innerStatus: Canceled)" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_Completed_NotCompleted" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_Completed_NotCompleted(innerStatus: RanToCompletion)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_Completed_NotCompleted" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_Completed_NotCompleted(innerStatus: Faulted)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_Completed_NotCompleted" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_Completed_NotCompleted(innerStatus: Canceled)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_Completed_NotCompleted" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_NotCompleted_Completed(inner: Task&lt;VoidTaskResult&gt; { Status = RanToCompletion })" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_NotCompleted_Completed" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_NotCompleted_Completed(inner: Task { Status = Canceled })" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_NotCompleted_Completed" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_NotCompleted_Completed(inner: Task { Status = Faulted })" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_NotCompleted_Completed" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.NonGeneric_NotCompleted_Completed(inner: Task&lt;int&gt; { Status = Canceled })" type="System.Threading.Tasks.Tests.UnwrapTests" method="NonGeneric_NotCompleted_Completed" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_NotCompleted_NotCompleted(outerCompletesFirst: True, innerStatus: RanToCompletion)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_NotCompleted_NotCompleted" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_NotCompleted_NotCompleted(outerCompletesFirst: True, innerStatus: Canceled)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_NotCompleted_NotCompleted" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_NotCompleted_NotCompleted(outerCompletesFirst: True, innerStatus: Faulted)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_NotCompleted_NotCompleted" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_NotCompleted_NotCompleted(outerCompletesFirst: False, innerStatus: RanToCompletion)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_NotCompleted_NotCompleted" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_NotCompleted_NotCompleted(outerCompletesFirst: False, innerStatus: Canceled)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_NotCompleted_NotCompleted" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.UnwrapTests.Generic_NotCompleted_NotCompleted(outerCompletesFirst: False, innerStatus: Faulted)" type="System.Threading.Tasks.Tests.UnwrapTests" method="Generic_NotCompleted_NotCompleted" time="0.0005" result="Pass" />
+    </collection>
+    <collection total="3" passed="2" failed="0" skipped="1" name="Test collection for System.Threading.Tasks.Tests.TaskFactory_FromAsyncTests" time="0.002">
+      <test name="System.Threading.Tasks.Tests.TaskFactory_FromAsyncTests.FromAsync_CompletedSynchronouslyIAsyncResult_CompletesSynchronously(invokesCallback: False)" type="System.Threading.Tasks.Tests.TaskFactory_FromAsyncTests" method="FromAsync_CompletedSynchronouslyIAsyncResult_CompletesSynchronously" time="0.0016" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskFactory_FromAsyncTests.FromAsync_CompletedSynchronouslyIAsyncResult_CompletesSynchronously(invokesCallback: True)" type="System.Threading.Tasks.Tests.TaskFactory_FromAsyncTests" method="FromAsync_CompletedSynchronouslyIAsyncResult_CompletesSynchronously" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskFactory_FromAsyncTests.RunAPMFactoryTests" type="System.Threading.Tasks.Tests.TaskFactory_FromAsyncTests" method="RunAPMFactoryTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="73" passed="27" failed="0" skipped="46" name="Test collection for System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" time="0.015">
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest61" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest61" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest32" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest32" time="0.0065" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest29" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest29" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest70" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest70" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest37" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest37" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest54" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest54" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest21" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest21" time="0.0011" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest35" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest35" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest64" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest64" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest55" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest55" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest48" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest48" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest23" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest23" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest2" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest2" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest74" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest74" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest7" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest7" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest73" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest73" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest0" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest0" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest1" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest1" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest8" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest8" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest65" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest65" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest18" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest18" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest28" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest28" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest30" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest30" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest59" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest59" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest4" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest4" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest14" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest14" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest72" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest72" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest31" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest31" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest60" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest60" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest5" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest5" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest50" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest50" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest75" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest75" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest3" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest3" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest33" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest33" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest38" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest38" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest62" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest62" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest22" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest22" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest19" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest19" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest9" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest9" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest53" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest53" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest11" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest11" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest43" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest43" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest56" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest56" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest66" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest66" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest47" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest47" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest36" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest36" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest57" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest57" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest58" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest58" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest67" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest67" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest34" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest34" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest46" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest46" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest12" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest12" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest39" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest39" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest20" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest20" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest44" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest44" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest45" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest45" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest17" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest17" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest41" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest41" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest13" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest13" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest52" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest52" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest16" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest16" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest77" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest77" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest40" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest40" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest69" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest69" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest71" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest71" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest25" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest25" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest10" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest10" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest42" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest42" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest15" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest15" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest6" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest6" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest27" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest27" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest68" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest68" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests.TaskFromAsyncTest63" type="System.Threading.Tasks.Tests.FromAsync.TaskFromAsyncTests" method="TaskFromAsyncTest63" time="0.0002" result="Pass" />
+    </collection>
+    <collection total="24" passed="15" failed="0" skipped="9" name="Test collection for System.Threading.Tasks.Tests.TaskAwaiterTests" time="0.067">
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.ConfigureAwaitOptions_ForceYielding_IsCompletedAlwaysFalse(options: ForceYielding)" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="ConfigureAwaitOptions_ForceYielding_IsCompletedAlwaysFalse" time="0.0013" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.ConfigureAwaitOptions_ForceYielding_IsCompletedAlwaysFalse(options: ContinueOnCapturedContext | ForceYielding)" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="ConfigureAwaitOptions_ForceYielding_IsCompletedAlwaysFalse" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.ConfigureAwaitOptions_ForceYielding_IsCompletedAlwaysFalse(options: SuppressThrowing | ForceYielding)" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="ConfigureAwaitOptions_ForceYielding_IsCompletedAlwaysFalse" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.ConfigureAwaitOptions_ForceYielding_IsCompletedAlwaysFalse(options: ContinueOnCapturedContext | SuppressThrowing | ForceYielding)" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="ConfigureAwaitOptions_ForceYielding_IsCompletedAlwaysFalse" time="0" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.Await_TaskCompletesOnNonDefaultScheduler_ContinuesOnDefaultScheduler" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="Await_TaskCompletesOnNonDefaultScheduler_ContinuesOnDefaultScheduler" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.Await_TaskCompletesOnNonDefaultSyncCtx_ContinuesOnDefaultSyncCtx" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="Await_TaskCompletesOnNonDefaultSyncCtx_ContinuesOnDefaultSyncCtx" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.ConfigureAwaitOptions_SuppressThrowing_NoExceptionsAreThrown" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="ConfigureAwaitOptions_SuppressThrowing_NoExceptionsAreThrown" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.GetResult_Completed_Success" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="GetResult_Completed_Success" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.GetResult_CanceledTask_ThrowsCancellationException" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="GetResult_CanceledTask_ThrowsCancellationException" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.OnCompleted_CompletesInAnotherTaskScheduler" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="OnCompleted_CompletesInAnotherTaskScheduler" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.AwaiterAndAwaitableEquality" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="AwaiterAndAwaitableEquality" time="0.0036" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.ConfigureAwaitOptions_SuppressThrowingUnsupportedOnGenericTask" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="ConfigureAwaitOptions_SuppressThrowingUnsupportedOnGenericTask" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.OperationCanceledException_PropagatesThroughCanceledTask" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="OperationCanceledException_PropagatesThroughCanceledTask" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.BaseSynchronizationContext_SameAsNoSynchronizationContext" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="BaseSynchronizationContext_SameAsNoSynchronizationContext" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.ConfigureAwait_CanceledAndTimedOut_AlreadyCompleted_UsesTaskResult" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="ConfigureAwait_CanceledAndTimedOut_AlreadyCompleted_UsesTaskResult" time="0.0078" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.OnCompleted_CompletesInAnotherSynchronizationContext" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="OnCompleted_CompletesInAnotherSynchronizationContext" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.ConfigureAwaitOptions_ContinueOnCapturedContext_QueuesAccordingly" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="ConfigureAwaitOptions_ContinueOnCapturedContext_QueuesAccordingly" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.GetResult_FaultedTask_MultipleExceptions_ThrowsFirstException" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="GetResult_FaultedTask_MultipleExceptions_ThrowsFirstException" time="0.001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.ConfigureAwait_InvalidTimeout_Throws" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="ConfigureAwait_InvalidTimeout_Throws" time="0.0037" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.GetResult_FaultedTask_OneException_ThrowsOriginalException" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="GetResult_FaultedTask_OneException_ThrowsOriginalException" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.Await_MultipleAwaits_FirstCompletesAccordingToOptions_RestCompleteAsynchronously" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="Await_MultipleAwaits_FirstCompletesAccordingToOptions_RestCompleteAsynchronously" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.ConfigureAwait_NoCancellationOrTimeoutOccurs_Success" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="ConfigureAwait_NoCancellationOrTimeoutOccurs_Success" time="0.0085" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.ConfigureAwaitOptions_Invalid(options: 8)" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="ConfigureAwaitOptions_Invalid" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskAwaiterTests.ConfigureAwait_TimeoutOrCanceled_Throws" type="System.Threading.Tasks.Tests.TaskAwaiterTests" method="ConfigureAwait_TimeoutOrCanceled_Throws" time="0.0382" result="Pass" />
+    </collection>
+    <collection total="1" passed="0" failed="0" skipped="1" name="Test collection for System.Threading.Tasks.Tests.AsyncIteratorMethodBuilderTests" time="0.000">
+      <test name="System.Threading.Tasks.Tests.AsyncIteratorMethodBuilderTests.AsyncIteratorMethodBuilder_TaskCompleted" type="System.Threading.Tasks.Tests.AsyncIteratorMethodBuilderTests" method="AsyncIteratorMethodBuilder_TaskCompleted" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="17" passed="9" failed="0" skipped="8" name="Test collection for System.Threading.Tasks.Tests.TaskRtTests" time="0.051">
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.RunHideSchedulerTests_Negative" type="System.Threading.Tasks.Tests.TaskRtTests" method="RunHideSchedulerTests_Negative" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.RunFromResult" type="System.Threading.Tasks.Tests.TaskRtTests" method="RunFromResult" time="0.0153" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.FromResult_KnownResults_Cached" type="System.Threading.Tasks.Tests.TaskRtTests" method="FromResult_KnownResults_Cached" time="0.0293" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.RunBasicFutureTest_Negative" type="System.Threading.Tasks.Tests.TaskRtTests" method="RunBasicFutureTest_Negative" time="0.0014" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.RunFromResult_FaultedTask" type="System.Threading.Tasks.Tests.TaskRtTests" method="RunFromResult_FaultedTask" time="0.0026" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.TaskDelay_OutOfBounds_ThrowsException(delay: -2)" type="System.Threading.Tasks.Tests.TaskRtTests" method="TaskDelay_OutOfBounds_ThrowsException" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.TaskDelay_OutOfBounds_ThrowsException(delay: -2147483648)" type="System.Threading.Tasks.Tests.TaskRtTests" method="TaskDelay_OutOfBounds_ThrowsException" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.TaskDelay_OutOfBounds_ThrowsException(delay: 4294967295)" type="System.Threading.Tasks.Tests.TaskRtTests" method="TaskDelay_OutOfBounds_ThrowsException" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.RunRunTests_Unwrap_NegativeCases" type="System.Threading.Tasks.Tests.TaskRtTests" method="RunRunTests_Unwrap_NegativeCases" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.RunExceptionWrappingTest" type="System.Threading.Tasks.Tests.TaskRtTests" method="RunExceptionWrappingTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.RunDenyChildAttachTests" type="System.Threading.Tasks.Tests.TaskRtTests" method="RunDenyChildAttachTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.TaskDelay_Cancellation_ContinuationsInvokedAsynchronously" type="System.Threading.Tasks.Tests.TaskRtTests" method="TaskDelay_Cancellation_ContinuationsInvokedAsynchronously" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.RunDelayTests_NegativeCases" type="System.Threading.Tasks.Tests.TaskRtTests" method="RunDelayTests_NegativeCases" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.RunDelayTests" type="System.Threading.Tasks.Tests.TaskRtTests" method="RunDelayTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.RunRunTests_FastPathTests" type="System.Threading.Tasks.Tests.TaskRtTests" method="RunRunTests_FastPathTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.RunHideSchedulerTests" type="System.Threading.Tasks.Tests.TaskRtTests" method="RunHideSchedulerTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests.TaskDelay_MaxSupported_Success" type="System.Threading.Tasks.Tests.TaskRtTests" method="TaskDelay_MaxSupported_Success" time="0.001" result="Pass" />
+    </collection>
+    <collection total="32" passed="22" failed="0" skipped="10" name="Test collection for TaskCoverage.Coverage" time="0.025">
+      <test name="TaskCoverage.Coverage.Task_WhenAll_TwoTasks_WakesOnBothCompletionWithExceptionAndCancellation" type="TaskCoverage.Coverage" method="Task_WhenAll_TwoTasks_WakesOnBothCompletionWithExceptionAndCancellation" time="0.0024" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenAny_NoTasks_Throws" type="TaskCoverage.Coverage" method="Task_WhenAny_NoTasks_Throws" time="0.0029" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenAny_NullTaskElement_Throws" type="TaskCoverage.Coverage" method="Task_WhenAny_NullTaskElement_Throws" time="0.0014" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenEach_EmptyInputsCompleteImmediately" type="TaskCoverage.Coverage" method="Task_WhenEach_EmptyInputsCompleteImmediately" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="TaskCoverage.Coverage.Task_WhenAny_TwoTasks_BothPreCompleted" type="TaskCoverage.Coverage" method="Task_WhenAny_TwoTasks_BothPreCompleted" time="0.001" result="Pass" />
+      <test name="TaskCoverage.Coverage.TaskConfigurableAwaiter" type="TaskCoverage.Coverage" method="TaskConfigurableAwaiter" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="TaskCoverage.Coverage.Task_WhenAny_TwoTasks_InvalidArgs_Throws" type="TaskCoverage.Coverage" method="Task_WhenAny_TwoTasks_InvalidArgs_Throws" time="0.0009" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenAll_TwoTasks_WhenBothPreCompletedFromException" type="TaskCoverage.Coverage" method="Task_WhenAll_TwoTasks_WhenBothPreCompletedFromException" time="0.0018" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenAll_TwoTasks_WakesOnBothCompletionWithSameCancellationForBoth" type="TaskCoverage.Coverage" method="Task_WhenAll_TwoTasks_WakesOnBothCompletionWithSameCancellationForBoth" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="TaskCoverage.Coverage.Task_WhenAll_TwoTasks_WakesOnBothCompletionWithCancellation" type="TaskCoverage.Coverage" method="Task_WhenAll_TwoTasks_WakesOnBothCompletionWithCancellation" time="0.0006" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenAll_TwoTasks_WakesOnBothCompletionWithExceptionForBoth" type="TaskCoverage.Coverage" method="Task_WhenAll_TwoTasks_WakesOnBothCompletionWithExceptionForBoth" time="0.002" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenAll_TwoTasks_BothPreCompleted" type="TaskCoverage.Coverage" method="Task_WhenAll_TwoTasks_BothPreCompleted" time="0.001" result="Pass" />
+      <test name="TaskCoverage.Coverage.TaskWait_MaxInt32" type="TaskCoverage.Coverage" method="TaskWait_MaxInt32" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="TaskCoverage.Coverage.Task_WhenEach_IteratesThroughCompleteAndIncompleteTasks" type="TaskCoverage.Coverage" method="Task_WhenEach_IteratesThroughCompleteAndIncompleteTasks" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="TaskCoverage.Coverage.Task_WaitAll_InvalidArgument_Throws" type="TaskCoverage.Coverage" method="Task_WaitAll_InvalidArgument_Throws" time="0.001" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WaitAll_NullArgument_Throws" type="TaskCoverage.Coverage" method="Task_WaitAll_NullArgument_Throws" time="0.0006" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WaitAll_NullTaskElement_Throws" type="TaskCoverage.Coverage" method="Task_WaitAll_NullTaskElement_Throws" time="0.0009" result="Pass" />
+      <test name="TaskCoverage.Coverage.TaskWaitWithCTS" type="TaskCoverage.Coverage" method="TaskWaitWithCTS" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="TaskCoverage.Coverage.Task_WhenAll_NullTaskElement_Throws" type="TaskCoverage.Coverage" method="Task_WhenAll_NullTaskElement_Throws" time="0.0017" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenEach_NullsTriggerExceptions" type="TaskCoverage.Coverage" method="Task_WhenEach_NullsTriggerExceptions" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="TaskCoverage.Coverage.Task_WhenAll_TwoTasks_OnePreCompleted" type="TaskCoverage.Coverage" method="Task_WhenAll_TwoTasks_OnePreCompleted" time="0.0005" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenAny_TwoTasks_OnePreCompleted" type="TaskCoverage.Coverage" method="Task_WhenAny_TwoTasks_OnePreCompleted" time="0.0006" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenAll_TwoTasks_WakesOnBothCompletion" type="TaskCoverage.Coverage" method="Task_WhenAll_TwoTasks_WakesOnBothCompletion" time="0.0005" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenAll_TwoTasks_WakesOnBothCompletionWithCancellationForBoth" type="TaskCoverage.Coverage" method="Task_WhenAll_TwoTasks_WakesOnBothCompletionWithCancellationForBoth" time="0.0005" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenAll_NullArgument_Throws" type="TaskCoverage.Coverage" method="Task_WhenAll_NullArgument_Throws" time="0.0005" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenAll_NoTasks_IsCompletedSuccessfully" type="TaskCoverage.Coverage" method="Task_WhenAll_NoTasks_IsCompletedSuccessfully" time="0.0016" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenEach_TasksOnlyEnumerableOnce" type="TaskCoverage.Coverage" method="Task_WhenEach_TasksOnlyEnumerableOnce" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="TaskCoverage.Coverage.TaskWaitAny_WhenAny" type="TaskCoverage.Coverage" method="TaskWaitAny_WhenAny" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="TaskCoverage.Coverage.Task_WhenAll_TwoTasks_WakesOnBothCompletionWithException" type="TaskCoverage.Coverage" method="Task_WhenAll_TwoTasks_WakesOnBothCompletionWithException" time="0.0006" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenAny_TwoTasks_WakesOnFirstCompletion" type="TaskCoverage.Coverage" method="Task_WhenAny_TwoTasks_WakesOnFirstCompletion" time="0.0009" result="Pass" />
+      <test name="TaskCoverage.Coverage.Task_WhenAll_TwoTasks_WhenPreCompletedFromException" type="TaskCoverage.Coverage" method="Task_WhenAll_TwoTasks_WhenPreCompletedFromException" time="0.0006" result="Pass" />
+      <test name="TaskCoverage.Coverage.FromAsync" type="TaskCoverage.Coverage" method="FromAsync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="20" passed="20" failed="0" skipped="0" name="Test collection for System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" time="0.012">
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetFromTask_Faulted(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetFromTask_Faulted" time="0.0012" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetFromTask_Faulted(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetFromTask_Faulted" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.Ctor_InvalidArguments_Throws" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="Ctor_InvalidArguments_Throws" time="0.001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetResult_CompletesSuccessfully(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetResult_CompletesSuccessfully" time="0.0011" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetResult_CompletesSuccessfully(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetResult_CompletesSuccessfully" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetFromTask_Canceled(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetFromTask_Canceled" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetFromTask_Canceled(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetFromTask_Canceled" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetCanceled_CompletesSuccessfully(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetCanceled_CompletesSuccessfully" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetCanceled_CompletesSuccessfully(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetCanceled_CompletesSuccessfully" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetCanceled_Token_CompletesSuccessfully(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetCanceled_Token_CompletesSuccessfully" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetCanceled_Token_CompletesSuccessfully(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetCanceled_Token_CompletesSuccessfully" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.Ctor_ArgumentsRoundtrip" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="Ctor_ArgumentsRoundtrip" time="0.0016" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetFromTask_AlreadyCompleted_ReturnsFalseOrThrows" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetFromTask_AlreadyCompleted_ReturnsFalseOrThrows" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetFromTask_CompletedSuccessfully(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetFromTask_CompletedSuccessfully" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetFromTask_CompletedSuccessfully(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetFromTask_CompletedSuccessfully" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetFromTask_InvalidArgument_Throws" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetFromTask_InvalidArgument_Throws" time="0.0015" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetException_Enumerable_CompletesSuccessfully(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetException_Enumerable_CompletesSuccessfully" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetException_Enumerable_CompletesSuccessfully(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetException_Enumerable_CompletesSuccessfully" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetException_Exception_CompletesSuccessfully(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetException_Exception_CompletesSuccessfully" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests.SetException_Exception_CompletesSuccessfully(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTests" method="SetException_Exception_CompletesSuccessfully" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="16" passed="0" failed="0" skipped="16" name="Test collection for System.Threading.Tasks.Tests.TaskContinueWithTests" time="0.000">
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunLazyCancellationTests_Negative" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunLazyCancellationTests_Negative" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunContinuationChainingTest" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunContinuationChainingTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunContinueWithParamsTest_Cancellation" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunContinueWithParamsTest_Cancellation" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.TestNoDeadlockOnContinueWithExecuteSynchronously" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="TestNoDeadlockOnContinueWithExecuteSynchronously" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunContinueWithParamsTest_IllegalArgs" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunContinueWithParamsTest_IllegalArgs" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunContinuationCancelTest" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunContinuationCancelTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunContinueWithPreCancelTests" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunContinueWithPreCancelTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunUnwrapTests_CancellationTests" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunUnwrapTests_CancellationTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunLazyCancellationTests" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunLazyCancellationTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunContinuationCancelTest_State" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunContinuationCancelTest_State" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunUnwrapTests_ExceptionTests" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunUnwrapTests_ExceptionTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunContinueWithAllParamsTestsNoState" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunContinueWithAllParamsTestsNoState" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunContinueWithAsyncStateCheckTests" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunContinueWithAsyncStateCheckTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.LongContinuationChain_Unwrap_DoesNotStackOverflow" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="LongContinuationChain_Unwrap_DoesNotStackOverflow" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunContinueWithExceptionTestsNoState" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunContinueWithExceptionTestsNoState" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWithTests.RunUnwrapTests" type="System.Threading.Tasks.Tests.TaskContinueWithTests" method="RunUnwrapTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="3" passed="1" failed="0" skipped="2" name="Test collection for System.Threading.Tasks.Tests.TaskPropertiesTests" time="0.001">
+      <test name="System.Threading.Tasks.Tests.TaskPropertiesTests.TaskOptionsTestSync" type="System.Threading.Tasks.Tests.TaskPropertiesTests" method="TaskOptionsTestSync" time="0.0012" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskPropertiesTests.TaskIDTest" type="System.Threading.Tasks.Tests.TaskPropertiesTests" method="TaskIDTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskPropertiesTests.TaskOptionsTestAsync" type="System.Threading.Tasks.Tests.TaskPropertiesTests" method="TaskOptionsTestAsync" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="55" passed="0" failed="0" skipped="55" name="Test collection for System.Threading.Tasks.Tests.TaskCreateTests" time="0.000">
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest47" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest47" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest9" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest9" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest8" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest8" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest51" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest51" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest11" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest11" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest15" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest15" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest6" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest6" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest35" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest35" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest46" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest46" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest43" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest43" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest41" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest41" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest30" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest30" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest0" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest0" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest53" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest53" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest22" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest22" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest20" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest20" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest19" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest19" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest1" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest1" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest24" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest24" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest48" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest48" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest28" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest28" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest7" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest7" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest33" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest33" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest45" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest45" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest23" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest23" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest26" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest26" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest52" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest52" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest5" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest5" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest44" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest44" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest2" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest2" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest40" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest40" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest54" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest54" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest21" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest21" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest32" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest32" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest36" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest36" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest16" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest16" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest29" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest29" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest27" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest27" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest18" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest18" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest13" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest13" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest4" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest4" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest38" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest38" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest49" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest49" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest42" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest42" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest39" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest39" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest10" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest10" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest14" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest14" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest17" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest17" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest25" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest25" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest34" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest34" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest12" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest12" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest31" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest31" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest37" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest37" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest50" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest50" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskCreateTests.TaskCreateTest3" type="System.Threading.Tasks.Tests.TaskCreateTests" method="TaskCreateTest3" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="5" passed="5" failed="0" skipped="0" name="Test collection for System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests" time="0.005">
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests.DisposeAsync_ContinuesOnCapturedContextIfExpected(continueOnCapturedContext: False)" type="System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests" method="DisposeAsync_ContinuesOnCapturedContextIfExpected" time="0.0024" result="Pass" />
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests.DisposeAsync_ContinuesOnCapturedContextIfExpected(continueOnCapturedContext: True)" type="System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests" method="DisposeAsync_ContinuesOnCapturedContextIfExpected" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests.Default_GetAsyncEnumerator_Throws" type="System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests" method="Default_GetAsyncEnumerator_Throws" time="0.0006" result="Pass" />
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests.DisposeAsync_InvokesUnderlyingDisposeAsync(continueOnCapturedContext: False)" type="System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests" method="DisposeAsync_InvokesUnderlyingDisposeAsync" time="0.0013" result="Pass" />
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests.DisposeAsync_InvokesUnderlyingDisposeAsync(continueOnCapturedContext: True)" type="System.Runtime.CompilerServices.Tests.ConfiguredAsyncDisposableTests" method="DisposeAsync_InvokesUnderlyingDisposeAsync" time="0.0002" result="Pass" />
+    </collection>
+    <collection total="16" passed="0" failed="0" skipped="16" name="Test collection for System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" time="0.000">
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithTaskFuture_FaultedCanceled_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithTaskFuture_FaultedCanceled_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithFutureTask_NoneCompleted" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithFutureTask_NoneCompleted" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithFutureFuture_NoneCompleted" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithFutureFuture_NoneCompleted" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithFutureFuture_FaultedCanceled_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithFutureFuture_FaultedCanceled_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithTestsNoState_FaultedCanceled" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithTestsNoState_FaultedCanceled" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithTaskFuture_FaultedCanceled" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithTaskFuture_FaultedCanceled" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithTaskFuture_NoneCompleted" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithTaskFuture_NoneCompleted" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithFutureTask_NoneCompleted_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithFutureTask_NoneCompleted_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithTestsNoState_FaultedCanceled_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithTestsNoState_FaultedCanceled_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithFutureFuture_NoneCompleted_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithFutureFuture_NoneCompleted_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithTaskFuture_NoneCompleted_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithTaskFuture_NoneCompleted_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithFutureFuture_FaultedCanceled" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithFutureFuture_FaultedCanceled" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithTestsNoState_NoneCompleted" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithTestsNoState_NoneCompleted" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithFutureTask_FaultedCanceled_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithFutureTask_FaultedCanceled_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithFutureTask_FaultedCanceled" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithFutureTask_FaultedCanceled" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests.RunContinueWithTestsNoState_NoneCompleted_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionTests" method="RunContinueWithTestsNoState_NoneCompleted_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="4" passed="1" failed="0" skipped="3" name="Test collection for System.Threading.Tasks.Tests.TaskDisposeTests" time="0.001">
+      <test name="System.Threading.Tasks.Tests.TaskDisposeTests.Dispose_ThenUseTaskCompletionSource" type="System.Threading.Tasks.Tests.TaskDisposeTests" method="Dispose_ThenUseTaskCompletionSource" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskDisposeTests.Dispose_BeforeComplete" type="System.Threading.Tasks.Tests.TaskDisposeTests" method="Dispose_BeforeComplete" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskDisposeTests.Dispose_InContinuation" type="System.Threading.Tasks.Tests.TaskDisposeTests" method="Dispose_InContinuation" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskDisposeTests.Dispose_ThenAddContinuation" type="System.Threading.Tasks.Tests.TaskDisposeTests" method="Dispose_ThenAddContinuation" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="5" passed="0" failed="0" skipped="5" name="Test collection for System.Threading.Tasks.Tests.TaskContinueWhenAllTests" time="0.000">
+      <test name="System.Threading.Tasks.Tests.TaskContinueWhenAllTests.RunContinueWhenAllTests_Exceptions" type="System.Threading.Tasks.Tests.TaskContinueWhenAllTests" method="RunContinueWhenAllTests_Exceptions" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWhenAllTests.TestContinueWhenAll_bare" type="System.Threading.Tasks.Tests.TaskContinueWhenAllTests" method="TestContinueWhenAll_bare" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWhenAllTests.TestContinueWhenAll_CancellationToken" type="System.Threading.Tasks.Tests.TaskContinueWhenAllTests" method="TestContinueWhenAll_CancellationToken" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWhenAllTests.TestCWAll_CancellationToken_TaskContinuation_TaskScheduler" type="System.Threading.Tasks.Tests.TaskContinueWhenAllTests" method="TestCWAll_CancellationToken_TaskContinuation_TaskScheduler" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWhenAllTests.TestContinueWhenAll_TaskContinuationOptions" type="System.Threading.Tasks.Tests.TaskContinueWhenAllTests" method="TestContinueWhenAll_TaskContinuationOptions" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="68" passed="49" failed="0" skipped="19" name="Test collection for System.Threading.Tasks.Tests.CancellationTokenTests" time="0.033">
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_DisposeAsyncOnDefaultIsNop" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_DisposeAsyncOnDefaultIsNop" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenWaitHandle_SignalAfterWait" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenWaitHandle_SignalAfterWait" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenLateEnlistment" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenLateEnlistment" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_DisposeAsync_NopAfterDispose(mode: 0)" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_DisposeAsync_NopAfterDispose" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_DisposeAsync_NopAfterDispose(mode: 1)" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_DisposeAsync_NopAfterDispose" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_DisposeAsync_NopAfterDispose(mode: 2)" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_DisposeAsync_NopAfterDispose" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CreateLinkedTokenSource_OneToken" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CreateLinkedTokenSource_OneToken" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CreateLinkedToken_SourceTokenAlreadySignalled_TwoTokens" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CreateLinkedToken_SourceTokenAlreadySignalled_TwoTokens" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenActiveListening" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenActiveListening" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.EnlistWithSyncContext_BeforeCancel" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="EnlistWithSyncContext_BeforeCancel" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.Register_ExecutionContextFlowsIfExpected(callbackWithToken: False)" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="Register_ExecutionContextFlowsIfExpected" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.Register_ExecutionContextFlowsIfExpected(callbackWithToken: True)" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="Register_ExecutionContextFlowsIfExpected" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_UnregisterRemovesDelegate" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_UnregisterRemovesDelegate" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_Token_AccessibleAfterCtsDispose" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_Token_AccessibleAfterCtsDispose" time="0.0006" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenSourceWithTimer_SupportsInfinite" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenSourceWithTimer_SupportsInfinite" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenEquality" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenEquality" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenSource_CancelAsync_CallbacksInvokedAsynchronously" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenSource_CancelAsync_CallbacksInvokedAsynchronously" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationRegistration_RepeatDispose" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationRegistration_RepeatDispose" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.BehaviourAfterCancelSignalled" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="BehaviourAfterCancelSignalled" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.Cancel_ThrowOnFirstException" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="Cancel_ThrowOnFirstException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegister_Exceptions" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegister_Exceptions" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenLinking_ODEinTarget" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenLinking_ODEinTarget" time="0.0042" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_DisposeAsyncRemovesDelegate" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_DisposeAsyncRemovesDelegate" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.DerivedCancellationTokenSource_Negative" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="DerivedCancellationTokenSource_Negative" time="0.0083" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.AddAndRemoveDelegates" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="AddAndRemoveDelegates" time="0.0035" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenSource_TryReset_ReturnsTrueIfNotCanceledAndTimerHasntFired" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenSource_TryReset_ReturnsTrueIfNotCanceledAndTimerHasntFired" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_UnregisterDuringCancellation_SuccessfullyRemovedIfNotYetInvoked" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_UnregisterDuringCancellation_SuccessfullyRemovedIfNotYetInvoked" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_EqualityAndHashCode" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_EqualityAndHashCode" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.ODEWhenDisposingLinkedCTS" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="ODEWhenDisposingLinkedCTS" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenSource_CancelAsync_NoRegistrations_CallbackCompletesImmediately" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenSource_CancelAsync_NoRegistrations_CallbackCompletesImmediately" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenWaitHandle_SignalBeforeWait" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenWaitHandle_SignalBeforeWait" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_ConcurrentUnregisterWithCancel_ReturnsFalseOrCallbackInvoked" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_ConcurrentUnregisterWithCancel_ReturnsFalseOrCallbackInvoked" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationToken_GetHashCode" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationToken_GetHashCode" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_Token_MatchesExpectedValue" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_Token_MatchesExpectedValue" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenSource_CancelAsync_AllCallbacksInvoked" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenSource_CancelAsync_AllCallbacksInvoked" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.Cancel_DontThrowOnFirstException" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="Cancel_DontThrowOnFirstException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenSource_TryReset_ReturnsTrueIfNotCanceledAndNoTimer" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenSource_TryReset_ReturnsTrueIfNotCanceledAndNoTimer" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.EnlistWithSyncContext_BeforeCancel_ThrowingExceptionInSyncContextDelegate_ThrowOnFirst" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="EnlistWithSyncContext_BeforeCancel_ThrowingExceptionInSyncContextDelegate_ThrowOnFirst" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CallbacksOrderIsLifo" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CallbacksOrderIsLifo" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenSourceWithTimer_Negative" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenSourceWithTimer_Negative" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenSourceWithTimer" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenSourceWithTimer" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.ThrowIfCancellationRequested" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="ThrowIfCancellationRequested" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CreateLinkedTokenSource_Simple_MultiToken(useSpan: False)" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CreateLinkedTokenSource_Simple_MultiToken" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CreateLinkedTokenSource_Simple_MultiToken(useSpan: True)" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CreateLinkedTokenSource_Simple_MultiToken" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.TokenSourceDispose" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="TokenSourceDispose" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.Bug720327_DeregisterFromWithinACallbackIsSafe_SyncContextTest" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="Bug720327_DeregisterFromWithinACallbackIsSafe_SyncContextTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_UnregisterWhileCallbackRunning_UnregisterDoesntWaitForCallbackToComplete" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_UnregisterWhileCallbackRunning_UnregisterDoesntWaitForCallbackToComplete" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_DisposeAsyncWhileCallbackRunning_WaitsForCallbackToComplete" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_DisposeAsyncWhileCallbackRunning_WaitsForCallbackToComplete" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_UnregisterOnDefaultIsNop" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_UnregisterOnDefaultIsNop" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenWaitHandle_WaitAny" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenWaitHandle_WaitAny" time="0.0012" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CreateLinkedToken_SourceTokenAlreadySignalled_OneToken" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CreateLinkedToken_SourceTokenAlreadySignalled_OneToken" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CreateLinkedToken_MultistepComposition_SourceTokenAlreadySignalled" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CreateLinkedToken_MultistepComposition_SourceTokenAlreadySignalled" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.WaitAll" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="WaitAll" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenSource_TryReset_UnregistersAll" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenSource_TryReset_UnregistersAll" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CreateLinkedTokenSource_Simple_TwoToken" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CreateLinkedTokenSource_Simple_TwoToken" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.DeregisterFromWithinACallbackIsSafe_BasicTest" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="DeregisterFromWithinACallbackIsSafe_BasicTest" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.SyncContextWithExceptionThrowingCallback" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="SyncContextWithExceptionThrowingCallback" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenSource_TryReset_ReturnsFalseIfAlreadyCanceled" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenSource_TryReset_ReturnsFalseIfAlreadyCanceled" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_DisposeDuringCancellation_SuccessfullyRemovedIfNotYetInvoked" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_DisposeDuringCancellation_SuccessfullyRemovedIfNotYetInvoked" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.EnlistWithSyncContext_BeforeCancel_ThrowingExceptionInSyncContextDelegate" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="EnlistWithSyncContext_BeforeCancel_ThrowingExceptionInSyncContextDelegate" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.DerivedCancellationTokenSource" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="DerivedCancellationTokenSource" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.TokenSourceDispose_Negative" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="TokenSourceDispose_Negative" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.Enlist_EarlyAndLate" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="Enlist_EarlyAndLate" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenRegistration_DisposeAsyncDuringCancellation_SuccessfullyRemovedIfNotYetInvoked" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenRegistration_DisposeAsyncDuringCancellation_SuccessfullyRemovedIfNotYetInvoked" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationToken_EqualityAndDispose" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationToken_EqualityAndDispose" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenSource_Ctor_ZeroTimeout(timeSpan: False)" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenSource_Ctor_ZeroTimeout" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenSource_Ctor_ZeroTimeout(timeSpan: True)" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenSource_Ctor_ZeroTimeout" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.CancellationTokenTests.CancellationTokenPassiveListening" type="System.Threading.Tasks.Tests.CancellationTokenTests" method="CancellationTokenPassiveListening" time="0.0001" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Threading.Tasks.Tests.TaskCanceledExceptionTests" time="0.001">
+      <test name="System.Threading.Tasks.Tests.TaskCanceledExceptionTests.TaskCanceledException_Ctor_StringExceptionToken" type="System.Threading.Tasks.Tests.TaskCanceledExceptionTests" method="TaskCanceledException_Ctor_StringExceptionToken" time="0.0005" result="Pass" />
+    </collection>
+    <collection total="5" passed="1" failed="0" skipped="4" name="Test collection for System.Threading.Tasks.Tests.YieldAwaitableTests" time="0.000">
+      <test name="System.Threading.Tasks.Tests.YieldAwaitableTests.AsyncMethod_Yields_ReturnsToCorrectSynchronizationContext" type="System.Threading.Tasks.Tests.YieldAwaitableTests" method="AsyncMethod_Yields_ReturnsToCorrectSynchronizationContext" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.YieldAwaitableTests.RunAsyncYieldAwaiterTests" type="System.Threading.Tasks.Tests.YieldAwaitableTests" method="RunAsyncYieldAwaiterTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.YieldAwaitableTests.RunAsyncYieldAwaiterTests_Negative" type="System.Threading.Tasks.Tests.YieldAwaitableTests" method="RunAsyncYieldAwaiterTests_Negative" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.YieldAwaitableTests.AsyncMethod_Yields_ReturnsToCorrectTaskScheduler" type="System.Threading.Tasks.Tests.YieldAwaitableTests" method="AsyncMethod_Yields_ReturnsToCorrectTaskScheduler" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.YieldAwaitableTests.AsyncMethod_Yields_ReturnsToDefaultTaskScheduler" type="System.Threading.Tasks.Tests.YieldAwaitableTests" method="AsyncMethod_Yields_ReturnsToDefaultTaskScheduler" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="21" passed="0" failed="0" skipped="21" name="Test collection for System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" time="0.000">
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithOnDisposedTaskTest_State" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithOnDisposedTaskTest_State" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithFutureFuture_State" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithFutureFuture_State" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithFutureTask_State" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithFutureTask_State" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithParamsTest_State_Cancellation" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithParamsTest_State_Cancellation" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithTaskFuture_State_FaultedCanceled" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithTaskFuture_State_FaultedCanceled" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithFutureTask_State_FaultedCanceled" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithFutureTask_State_FaultedCanceled" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithTaskFuture_State" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithTaskFuture_State" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithTaskFuture_State_FaultedCanceled_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithTaskFuture_State_FaultedCanceled_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinuationChainingTest_State" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinuationChainingTest_State" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithFutureFuture_State_FaultedCanceled_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithFutureFuture_State_FaultedCanceled_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithFutureTask_State_FaultedCanceled_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithFutureTask_State_FaultedCanceled_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithFutureTask_State_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithFutureTask_State_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithTaskTask_State" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithTaskTask_State" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithParamsTest_State_IllegalParameters" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithParamsTest_State_IllegalParameters" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithTaskTask_State_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithTaskTask_State_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithTaskFuture_State_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithTaskFuture_State_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithFutureFuture_State_FaultedCanceled" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithFutureFuture_State_FaultedCanceled" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithTaskTask_State_FaultedCanceled" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithTaskTask_State_FaultedCanceled" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithTaskTask_State_FaultedCanceled_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithTaskTask_State_FaultedCanceled_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithPreCancelTests_State" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithPreCancelTests_State" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests.RunContinueWithFutureFuture_State_OnException" type="System.Threading.Tasks.Tests.TaskContinueWith_ContFuncAndActionWithArgsTests" method="RunContinueWithFutureFuture_State_OnException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="1" passed="0" failed="0" skipped="1" name="Test collection for System.Threading.Tasks.Tests.TaskContinueWhenAnyTests" time="0.000">
+      <test name="System.Threading.Tasks.Tests.TaskContinueWhenAnyTests.RunContinueWhenAnyTests" type="System.Threading.Tasks.Tests.TaskContinueWhenAnyTests" method="RunContinueWhenAnyTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="20" passed="20" failed="0" skipped="0" name="Test collection for System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" time="0.008">
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetFromTask_Faulted(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetFromTask_Faulted" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetFromTask_Faulted(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetFromTask_Faulted" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.Ctor_InvalidArguments_Throws" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="Ctor_InvalidArguments_Throws" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetResult_CompletesSuccessfully(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetResult_CompletesSuccessfully" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetResult_CompletesSuccessfully(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetResult_CompletesSuccessfully" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetFromTask_Canceled(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetFromTask_Canceled" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetFromTask_Canceled(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetFromTask_Canceled" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetCanceled_CompletesSuccessfully(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetCanceled_CompletesSuccessfully" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetCanceled_CompletesSuccessfully(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetCanceled_CompletesSuccessfully" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetCanceled_Token_CompletesSuccessfully(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetCanceled_Token_CompletesSuccessfully" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetCanceled_Token_CompletesSuccessfully(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetCanceled_Token_CompletesSuccessfully" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.Ctor_ArgumentsRoundtrip" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="Ctor_ArgumentsRoundtrip" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetFromTask_AlreadyCompleted_ReturnsFalseOrThrows" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetFromTask_AlreadyCompleted_ReturnsFalseOrThrows" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetFromTask_CompletedSuccessfully(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetFromTask_CompletedSuccessfully" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetFromTask_CompletedSuccessfully(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetFromTask_CompletedSuccessfully" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetFromTask_InvalidArgument_Throws" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetFromTask_InvalidArgument_Throws" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetException_Enumerable_CompletesSuccessfully(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetException_Enumerable_CompletesSuccessfully" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetException_Enumerable_CompletesSuccessfully(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetException_Enumerable_CompletesSuccessfully" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetException_Exception_CompletesSuccessfully(tryMethod: False)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetException_Exception_CompletesSuccessfully" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests.SetException_Exception_CompletesSuccessfully(tryMethod: True)" type="System.Threading.Tasks.Tests.Status.TaskCompletionSourceTResultTests" method="SetException_Exception_CompletesSuccessfully" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for System.Threading.Tasks.Tests.TaskArgumentValidationTests" time="0.001">
+      <test name="System.Threading.Tasks.Tests.TaskArgumentValidationTests.Task_Wait_ArgumentOutOfRange(milliseconds: -2)" type="System.Threading.Tasks.Tests.TaskArgumentValidationTests" method="Task_Wait_ArgumentOutOfRange" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskArgumentValidationTests.Task_Wait_ArgumentOutOfRange(milliseconds: 2147483648)" type="System.Threading.Tasks.Tests.TaskArgumentValidationTests" method="Task_Wait_ArgumentOutOfRange" time="0.0004" result="Pass" />
+    </collection>
+    <collection total="38" passed="35" failed="0" skipped="3" name="Test collection for System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" time="0.016">
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TrackedSyncContext_ValidateException" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TrackedSyncContext_ValidateException" time="0.0055" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderT_DoesNotTouchSyncContext" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderT_DoesNotTouchSyncContext" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderT_Basic" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderT_Basic" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.CancellationDoesntResultInEventFiring" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="CancellationDoesntResultInEventFiring" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.VoidMethodBuilder_IncorrectUsage" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="VoidMethodBuilder_IncorrectUsage" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderT_IncorrectUsage" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderT_IncorrectUsage" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilder_DoesNotTouchSyncContext" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilder_DoesNotTouchSyncContext" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderBoolean_UsesCompletedCache(result: True)" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderBoolean_UsesCompletedCache" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderBoolean_UsesCompletedCache(result: False)" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderBoolean_UsesCompletedCache" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderT_ValidateFaultedTask" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderT_ValidateFaultedTask" time="0.001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.Tcs_ValidateFaultedTask" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="Tcs_ValidateFaultedTask" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderRef_UsesCompletedCache(result: null, shouldBeCached: True)" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderRef_UsesCompletedCache" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderRef_UsesCompletedCache(result: \&quot;test\&quot;, shouldBeCached: False)" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderRef_UsesCompletedCache" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderT_Cancellation" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderT_Cancellation" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.VoidMethodBuilder_TrackedContext" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="VoidMethodBuilder_TrackedContext" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.AsyncTaskMethodBuilder_NullStateEvenAfterSuspend" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="AsyncTaskMethodBuilder_NullStateEvenAfterSuspend" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilder_Cancellation" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilder_Cancellation" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilder_SetException_CantBeReset1" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilder_SetException_CantBeReset1" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.AsyncMethodBuilderCreate_SetExceptionTest2" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="AsyncMethodBuilderCreate_SetExceptionTest2" time="0.0007" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.VoidMethodBuilder_NoContext" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="VoidMethodBuilder_NoContext" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderT_SetExceptionTest0" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderT_SetExceptionTest0" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.FaultedTaskExceptions" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="FaultedTaskExceptions" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilder_TaskIsCached" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilder_TaskIsCached" time="0" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilder_IncorrectUsage" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilder_IncorrectUsage" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilder_UsesCompletedCache" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilder_UsesCompletedCache" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilder_ValidateFaultedTask" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilder_ValidateFaultedTask" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilder_SetException_CantBeReset0" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilder_SetException_CantBeReset0" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderT_SetExceptionTest1" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderT_SetExceptionTest1" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.AsyncTaskMethodBuilder_Completed_RemovedFromTracking" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="AsyncTaskMethodBuilder_Completed_RemovedFromTracking" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilder_Basic" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilder_Basic" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderDecimal_DoesntUseCompletedCache" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderDecimal_DoesntUseCompletedCache" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilder_CantBeReset" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilder_CantBeReset" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderInt32_UsesCompletedCache(result: 0, shouldBeCached: True)" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderInt32_UsesCompletedCache" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderInt32_UsesCompletedCache(result: 5, shouldBeCached: True)" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderInt32_UsesCompletedCache" time="0.0002" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderInt32_UsesCompletedCache(result: -5, shouldBeCached: False)" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderInt32_UsesCompletedCache" time="0" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderInt32_UsesCompletedCache(result: 42, shouldBeCached: False)" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderInt32_UsesCompletedCache" time="0" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderT_TaskIsCached" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderT_TaskIsCached" time="0.0001" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests.TaskMethodBuilderT_CantBeReset" type="System.Threading.Tasks.Tests.AsyncTaskMethodBuilderTests" method="TaskMethodBuilderT_CantBeReset" time="0.0003" result="Pass" />
+    </collection>
+    <collection total="10" passed="9" failed="0" skipped="1" name="Test collection for System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests" time="0.004">
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.CanBeEnumeratedWithStandardPattern" type="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests" method="CanBeEnumeratedWithStandardPattern" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.Default_EnumeratorMembers_Throws" type="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests" method="Default_EnumeratorMembers_Throws" time="0.0008" result="Pass" />
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.Default_GetAsyncEnumerator_Throws" type="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests" method="Default_GetAsyncEnumerator_Throws" time="0.0006" result="Pass" />
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.WithCancellation_TokenPassedThrough" type="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests" method="WithCancellation_TokenPassedThrough" time="0.0006" result="Pass" />
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.Default_WithCancellation_ConfigureAwait_NoThrow" type="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests" method="Default_WithCancellation_ConfigureAwait_NoThrow" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.Default_ConfigureAwait_WithCancellation_NoThrow" type="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests" method="Default_ConfigureAwait_WithCancellation_NoThrow" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.ConfigureAwait_AwaitMoveNextAsync_FlagsSetAppropriately(continueOnCapturedContext: False)" type="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests" method="ConfigureAwait_AwaitMoveNextAsync_FlagsSetAppropriately" time="0.001" result="Pass" />
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.ConfigureAwait_AwaitMoveNextAsync_FlagsSetAppropriately(continueOnCapturedContext: True)" type="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests" method="ConfigureAwait_AwaitMoveNextAsync_FlagsSetAppropriately" time="0.0003" result="Pass" />
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.ConfigureAwait_AwaitDisposeAsync_FlagsSetAppropriately(continueOnCapturedContext: False)" type="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests" method="ConfigureAwait_AwaitDisposeAsync_FlagsSetAppropriately" time="0.0002" result="Pass" />
+      <test name="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests.ConfigureAwait_AwaitDisposeAsync_FlagsSetAppropriately(continueOnCapturedContext: True)" type="System.Runtime.CompilerServices.Tests.ConfiguredCancelableAsyncEnumerableTests" method="ConfigureAwait_AwaitDisposeAsync_FlagsSetAppropriately" time="0.0001" result="Pass" />
+    </collection>
+    <collection total="5" passed="2" failed="0" skipped="3" name="Test collection for System.Threading.Tasks.Tests.TaskSchedulerTests" time="0.003">
+      <test name="System.Threading.Tasks.Tests.TaskSchedulerTests.GetScheduledTasksForDebugger_DebuggerAttached_ReturnsTasksFromCustomSchedulers" type="System.Threading.Tasks.Tests.TaskSchedulerTests" method="GetScheduledTasksForDebugger_DebuggerAttached_ReturnsTasksFromCustomSchedulers" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"DebuggerIsAttached\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskSchedulerTests.RunBuggySchedulerTests" type="System.Threading.Tasks.Tests.TaskSchedulerTests" method="RunBuggySchedulerTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskSchedulerTests.RunSynchronizationContextTaskSchedulerTests_Negative" type="System.Threading.Tasks.Tests.TaskSchedulerTests" method="RunSynchronizationContextTaskSchedulerTests_Negative" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskSchedulerTests.GetTaskSchedulersForDebugger_DebuggerAttached_ReturnsAllSchedulers" type="System.Threading.Tasks.Tests.TaskSchedulerTests" method="GetTaskSchedulersForDebugger_DebuggerAttached_ReturnsAllSchedulers" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"DebuggerIsAttached\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskSchedulerTests.GetTaskSchedulersForDebugger_ReturnsDefaultScheduler" type="System.Threading.Tasks.Tests.TaskSchedulerTests" method="GetTaskSchedulersForDebugger_ReturnsDefaultScheduler" time="0.0023" result="Pass" />
+    </collection>
+    <collection total="23" passed="0" failed="0" skipped="23" name="Test collection for System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" time="0.000">
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest34" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest34" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest6" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest6" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest8" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest8" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest36" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest36" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest12" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest12" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest15" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest15" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest4" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest4" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest27" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest27" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest35" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest35" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest32" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest32" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest31" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest31" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest21" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest21" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest0" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest0" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest37" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest37" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest18" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest18" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest16" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest16" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest19" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest19" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest1" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest1" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest20" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest20" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest33" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest33" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest23" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest23" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest13" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest13" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests.TaskContinueWithAllAnyTest25" type="System.Threading.Tasks.Tests.ContinueWithAllAny.TaskContinueWithAllAnyTests" method="TaskContinueWithAllAnyTest25" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="4" passed="0" failed="0" skipped="4" name="Test collection for System.Threading.Tasks.Tests.RunContinuationsAsynchronouslyTests" time="0.000">
+      <test name="System.Threading.Tasks.Tests.RunContinuationsAsynchronouslyTests.ViaWhenAny" type="System.Threading.Tasks.Tests.RunContinuationsAsynchronouslyTests" method="ViaWhenAny" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.RunContinuationsAsynchronouslyTests.Direct" type="System.Threading.Tasks.Tests.RunContinuationsAsynchronouslyTests" method="Direct" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.RunContinuationsAsynchronouslyTests.ViaUnwrap" type="System.Threading.Tasks.Tests.RunContinuationsAsynchronouslyTests" method="ViaUnwrap" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.RunContinuationsAsynchronouslyTests.ViaWhenAll" type="System.Threading.Tasks.Tests.RunContinuationsAsynchronouslyTests" method="ViaWhenAll" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="36" passed="10" failed="0" skipped="26" name="Test collection for System.Threading.Tasks.Tests.TaskRtTests_Core" time="0.021">
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskRecursiveWaitTest" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskRecursiveWaitTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskCompletionSourceTests_SetException" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskCompletionSourceTests_SetException" time="0.0013" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskCompletionSourceTests_SetCanceled" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskCompletionSourceTests_SetCanceled" time="0.0099" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskCanceledExceptionTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskCanceledExceptionTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskCreateTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskCreateTests" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.TestTaskTConstruction_ct" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="TestTaskTConstruction_ct" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskCompletionSourceTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskCompletionSourceTests" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunLongRunningTaskTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunLongRunningTaskTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskWaitTimeoutTest" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskWaitTimeoutTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskStatusTests_NegativeTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskStatusTests_NegativeTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskStatusTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskStatusTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskExceptionTest" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskExceptionTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTCSCompletionStateTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTCSCompletionStateTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunAsyncWaitHandleTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunAsyncWaitHandleTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunBasicFutureTest_Negative" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunBasicFutureTest_Negative" time="0.0012" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunBasicFutureTest" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunBasicFutureTest" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunBasicFutureTest_PromiseTestsAndCancellation" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunBasicFutureTest_PromiseTestsAndCancellation" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTCSCompletionStateTests_SetCancel" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTCSCompletionStateTests_SetCancel" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunSynchronouslyTest" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunSynchronouslyTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskWaitTest_NegativeTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskWaitTest_NegativeTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskWaitAnyTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskWaitAnyTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskCompletionSourceTests_Negative" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskCompletionSourceTests_Negative" time="0.0005" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskWaitAnyTests_WithCancellationTokenTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskWaitAnyTests_WithCancellationTokenTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskRecursiveWaitTimeoutTest" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskRecursiveWaitTimeoutTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.TestTaskTConstruction_ct_tco" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="TestTaskTConstruction_ct_tco" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.CoreRunSynchronouslyTest_NegativeTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="CoreRunSynchronouslyTest_NegativeTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskSchedulerExceptionTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskSchedulerExceptionTests" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskCompletionSourceTests_CancellationTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskCompletionSourceTests_CancellationTests" time="0.0061" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunRefactoringTests_NegativeTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunRefactoringTests_NegativeTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTCSCompletionStateTests_SetException" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTCSCompletionStateTests_SetException" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunRefactoringTests" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunRefactoringTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskWaitTest" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskWaitTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.TestTaskTConstruction_tco" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="TestTaskTConstruction_tco" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.CoreRunSynchronouslyTest" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="CoreRunSynchronouslyTest" time="0.0004" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.RunTaskWaitAnyTests_Negative" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="RunTaskWaitAnyTests_Negative" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRtTests_Core.TestTaskTConstruction_bare" type="System.Threading.Tasks.Tests.TaskRtTests_Core" method="TestTaskTConstruction_bare" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Threading.Tasks.Tests.TaskAPMTests" time="0.001">
+      <test name="System.Threading.Tasks.Tests.TaskAPMTests.AsyncWaitHandle_DisposeHandleThenCompleteTask_Succeeds" type="System.Threading.Tasks.Tests.TaskAPMTests" method="AsyncWaitHandle_DisposeHandleThenCompleteTask_Succeeds" time="0.0008" result="Pass" />
+    </collection>
+    <collection total="2" passed="0" failed="0" skipped="2" name="Test collection for System.Threading.Tasks.Tests.AsyncEnumerableToBlockingEnumerableTests" time="0.000">
+      <test name="System.Threading.Tasks.Tests.AsyncEnumerableToBlockingEnumerableTests.SimpleAsyncEnumerable" type="System.Threading.Tasks.Tests.AsyncEnumerableToBlockingEnumerableTests" method="SimpleAsyncEnumerable" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.AsyncEnumerableToBlockingEnumerableTests.EmptyAsyncEnumerable" type="System.Threading.Tasks.Tests.AsyncEnumerableToBlockingEnumerableTests" method="EmptyAsyncEnumerable" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="20" passed="0" failed="0" skipped="20" name="Test collection for System.Threading.Tasks.Tests.TaskRunSyncTests" time="0.000">
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest28" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest28" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest4" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest4" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest2" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest2" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest29" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest29" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest6" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest6" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest7" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest7" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest1" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest1" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest14" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest14" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest22" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest22" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest16" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest16" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest13" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest13" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest11" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest11" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest0" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest0" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest30" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest30" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest9" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest9" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest8" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest8" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest10" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest10" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest5" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest5" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest12" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest12" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskRunSyncTests.TaskRunSyncTest21" type="System.Threading.Tasks.Tests.TaskRunSyncTests" method="TaskRunSyncTest21" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="4" passed="2" failed="0" skipped="2" name="Test collection for System.Threading.Tasks.Tests.TaskFactoryTests" time="0.007">
+      <test name="System.Threading.Tasks.Tests.TaskFactoryTests.RunTaskFactoryFromAsyncExceptionTests" type="System.Threading.Tasks.Tests.TaskFactoryTests" method="RunTaskFactoryFromAsyncExceptionTests" time="0.0058" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskFactoryTests.RunTaskFactoryTests" type="System.Threading.Tasks.Tests.TaskFactoryTests" method="RunTaskFactoryTests" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskFactoryTests.RunTaskFactoryTests_Cancellation_Negative" type="System.Threading.Tasks.Tests.TaskFactoryTests" method="RunTaskFactoryTests_Cancellation_Negative" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskFactoryTests.RunTaskFactoryExceptionTests" type="System.Threading.Tasks.Tests.TaskFactoryTests" method="RunTaskFactoryExceptionTests" time="0.0013" result="Pass" />
+    </collection>
+    <collection total="7" passed="6" failed="0" skipped="1" name="Test collection for System.Threading.Tasks.Tests.TaskToAsyncResultTests" time="0.009">
+      <test name="System.Threading.Tasks.Tests.TaskToAsyncResultTests.WithFromAsync_Delegate_Roundtrips" type="System.Threading.Tasks.Tests.TaskToAsyncResultTests" method="WithFromAsync_Delegate_Roundtrips" time="0.0047" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskToAsyncResultTests.BeginFromTask_UnwrapTask_EndFromTask_Roundtrips" type="System.Threading.Tasks.Tests.TaskToAsyncResultTests" method="BeginFromTask_UnwrapTask_EndFromTask_Roundtrips" time="0.0008" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskToAsyncResultTests.InvalidArguments_ThrowExceptions" type="System.Threading.Tasks.Tests.TaskToAsyncResultTests" method="InvalidArguments_ThrowExceptions" time="0.0009" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskToAsyncResultTests.WithFromAsync_IAsyncResult_Roundtrips" type="System.Threading.Tasks.Tests.TaskToAsyncResultTests" method="WithFromAsync_IAsyncResult_Roundtrips" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Threading.Tasks.Tests.TaskToAsyncResultTests.BeginFromTask_CompletedSynchronously_CallbackInvokedSynchronously" type="System.Threading.Tasks.Tests.TaskToAsyncResultTests" method="BeginFromTask_CompletedSynchronously_CallbackInvokedSynchronously" time="0.0003" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskToAsyncResultTests.BeginFromTask_CompletedAsynchronously_CallbackInvokedAsynchronously" type="System.Threading.Tasks.Tests.TaskToAsyncResultTests" method="BeginFromTask_CompletedAsynchronously_CallbackInvokedAsynchronously" time="0.0021" result="Pass" />
+      <test name="System.Threading.Tasks.Tests.TaskToAsyncResultTests.EndFromTask_PropagatesExceptions" type="System.Threading.Tasks.Tests.TaskToAsyncResultTests" method="EndFromTask_PropagatesExceptions" time="0.0003" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

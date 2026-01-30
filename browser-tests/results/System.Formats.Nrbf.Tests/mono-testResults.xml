@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Formats.Nrbf.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:16:11" total="4" passed="4" failed="0" skipped="0" time="0.101" errors="0">
+    <errors />
+    <collection total="4" passed="4" failed="0" skipped="0" name="Test collection for System.Formats.Nrbf.Tests.StartsWithPayloadHeaderTests" time="0.011">
+      <test name="System.Formats.Nrbf.Tests.StartsWithPayloadHeaderTests.StartsWithPayloadHeader_ReturnsExpectedResult(bytes: [0, 11], expected: False)" type="System.Formats.Nrbf.Tests.StartsWithPayloadHeaderTests" method="StartsWithPayloadHeader_ReturnsExpectedResult" time="0.0103" result="Pass" />
+      <test name="System.Formats.Nrbf.Tests.StartsWithPayloadHeaderTests.StartsWithPayloadHeader_ReturnsExpectedResult(bytes: [0, 1, 0, 0, 0, ···], expected: True)" type="System.Formats.Nrbf.Tests.StartsWithPayloadHeaderTests" method="StartsWithPayloadHeader_ReturnsExpectedResult" time="0.0008999" result="Pass" />
+      <test name="System.Formats.Nrbf.Tests.StartsWithPayloadHeaderTests.StartsWithPayloadHeader_ReturnsExpectedResult(bytes: [1, 0, 0, 0, 2, ···], expected: False)" type="System.Formats.Nrbf.Tests.StartsWithPayloadHeaderTests" method="StartsWithPayloadHeader_ReturnsExpectedResult" time="0.0001" result="Pass" />
+      <test name="System.Formats.Nrbf.Tests.StartsWithPayloadHeaderTests.StartsWithPayloadHeader_ReturnsExpectedResult(bytes: [0, 1, 0, 0, 0, ···], expected: False)" type="System.Formats.Nrbf.Tests.StartsWithPayloadHeaderTests" method="StartsWithPayloadHeader_ReturnsExpectedResult" time="0.0001" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

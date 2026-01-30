@@ -1,0 +1,3 @@
+Console log: 'WasmTestOnChrome-ST-System.Text.Json.Tests' from job 9a0352ef-67fa-4a5f-b739-cf7767060906 (windows.amd64.server2022.open.rt) using docker image mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly on a00EQOO
+running %HELIX_CORRELATION_PAYLOAD%\scripts\78376a697575455ead4c2827a71a0b5d\execute.cmd in C:\h\w\AFDB0926\w\BBA709CB\e max 1800 seconds
+

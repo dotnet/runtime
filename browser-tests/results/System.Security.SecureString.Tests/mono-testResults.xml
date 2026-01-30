@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Security.SecureString.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:18:04" total="42" passed="42" failed="0" skipped="0" time="0.465" errors="0">
+    <errors />
+    <collection total="42" passed="42" failed="0" skipped="0" name="Test collection for System.Security.Tests.SecureStringTests" time="0.276">
+      <test name="System.Security.Tests.SecureStringTests.RemoveAt_Invalid_Throws" type="System.Security.Tests.SecureStringTests" method="RemoveAt_Invalid_Throws" time="0.016" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.InsertAt_LongString" type="System.Security.Tests.SecureStringTests" method="InsertAt_LongString" time="0.0319" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.Grow_Large" type="System.Security.Tests.SecureStringTests" method="Grow_Large" time="0.0752999" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.AppendChar_TooLong_Throws" type="System.Security.Tests.SecureStringTests" method="AppendChar_TooLong_Throws" time="0.0122" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 0, allocHGlobal: False)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Unicode_Roundtrip" time="0.0022" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 0, allocHGlobal: True)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Unicode_Roundtrip" time="0.0008" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 1, allocHGlobal: False)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Unicode_Roundtrip" time="0.0007" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 1, allocHGlobal: True)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Unicode_Roundtrip" time="0" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 2, allocHGlobal: False)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Unicode_Roundtrip" time="0.0001" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 2, allocHGlobal: True)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Unicode_Roundtrip" time="0.0000999" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 1000, allocHGlobal: False)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Unicode_Roundtrip" time="0.0008" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Unicode_Roundtrip(length: 1000, allocHGlobal: True)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Unicode_Roundtrip" time="0.0004" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.RepeatedCtorDispose" type="System.Security.Tests.SecureStringTests" method="RepeatedCtorDispose" time="0.0256" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.GrowAndContract_Small" type="System.Security.Tests.SecureStringTests" method="GrowAndContract_Small" time="0.0366999" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.RemoveAt_Largest" type="System.Security.Tests.SecureStringTests" method="RemoveAt_Largest" time="0.0119" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.InsertAt" type="System.Security.Tests.SecureStringTests" method="InsertAt" time="0.0005" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.Dispose_AllOtherOperationsThrow" type="System.Security.Tests.SecureStringTests" method="Dispose_AllOtherOperationsThrow" time="0.0021999" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 0, allocHGlobal: False)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Ansi_Roundtrip" time="0.0009" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 0, allocHGlobal: True)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Ansi_Roundtrip" time="0.0003999" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 1, allocHGlobal: False)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Ansi_Roundtrip" time="0.0001999" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 1, allocHGlobal: True)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Ansi_Roundtrip" time="0.0001" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 2, allocHGlobal: False)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Ansi_Roundtrip" time="0.0001999" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 2, allocHGlobal: True)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Ansi_Roundtrip" time="0.0002" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 1000, allocHGlobal: False)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Ansi_Roundtrip" time="0.0085999" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_Ansi_Roundtrip(length: 1000, allocHGlobal: True)" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_Ansi_Roundtrip" time="0.0012999" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.AppendChar" type="System.Security.Tests.SecureStringTests" method="AppendChar" time="0.0004" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SetAt" type="System.Security.Tests.SecureStringTests" method="SetAt" time="0.0127" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.Copy(length: 0)" type="System.Security.Tests.SecureStringTests" method="Copy" time="0.0010999" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.Copy(length: 1)" type="System.Security.Tests.SecureStringTests" method="Copy" time="0.0005" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.Copy(length: 4000)" type="System.Security.Tests.SecureStringTests" method="Copy" time="0.0012" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SetAt_Invalid_Throws" type="System.Security.Tests.SecureStringTests" method="SetAt_Invalid_Throws" time="0.0015" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.Ctor_CharInt_Invalid" type="System.Security.Tests.SecureStringTests" method="Ctor_CharInt_Invalid" time="0.0133" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.SecureStringMarshal_NullArgsAllowed_IntPtrZero" type="System.Security.Tests.SecureStringTests" method="SecureStringMarshal_NullArgsAllowed_IntPtrZero" time="0.0006999" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.Clear(initialValue: \&quot;\&quot;)" type="System.Security.Tests.SecureStringTests" method="Clear" time="0.0004" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.Clear(initialValue: \&quot;test\&quot;)" type="System.Security.Tests.SecureStringTests" method="Clear" time="0.0001999" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.MakeReadOnly_ReadingSucceeds_AllOtherModificationsThrow" type="System.Security.Tests.SecureStringTests" method="MakeReadOnly_ReadingSucceeds_AllOtherModificationsThrow" time="0.0038" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.Ctor(length: 0)" type="System.Security.Tests.SecureStringTests" method="Ctor" time="0.0002" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.Ctor(length: 1)" type="System.Security.Tests.SecureStringTests" method="Ctor" time="0.0001999" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.Ctor(length: 2)" type="System.Security.Tests.SecureStringTests" method="Ctor" time="0" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.Ctor(length: 65536)" type="System.Security.Tests.SecureStringTests" method="Ctor" time="0.0047" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.RemoveAt" type="System.Security.Tests.SecureStringTests" method="RemoveAt" time="0.0004" result="Pass" />
+      <test name="System.Security.Tests.SecureStringTests.InsertAt_Invalid_Throws" type="System.Security.Tests.SecureStringTests" method="InsertAt_Invalid_Throws" time="0.005" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

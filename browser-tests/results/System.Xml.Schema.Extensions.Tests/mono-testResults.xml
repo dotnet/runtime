@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Xml.Schema.Extensions.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:19:31" total="13" passed="13" failed="0" skipped="0" time="0.316" errors="0">
+    <errors />
+    <collection total="13" passed="13" failed="0" skipped="0" name="Test collection for CoreXml.Test.XLinq.SchemaExtensionsTests" time="0.209">
+      <test name="CoreXml.Test.XLinq.SchemaExtensionsTests.XDocumentAddSchemaInfoValidate" type="CoreXml.Test.XLinq.SchemaExtensionsTests" method="XDocumentAddSchemaInfoValidate" time="0.1177" result="Pass" />
+      <test name="CoreXml.Test.XLinq.SchemaExtensionsTests.XAttributeThrowExceptionValidate" type="CoreXml.Test.XLinq.SchemaExtensionsTests" method="XAttributeThrowExceptionValidate" time="0.0126" result="Pass" />
+      <test name="CoreXml.Test.XLinq.SchemaExtensionsTests.XDocumentFailValidate" type="CoreXml.Test.XLinq.SchemaExtensionsTests" method="XDocumentFailValidate" time="0.0065" result="Pass" />
+      <test name="CoreXml.Test.XLinq.SchemaExtensionsTests.XElementFailValidate" type="CoreXml.Test.XLinq.SchemaExtensionsTests" method="XElementFailValidate" time="0.0068" result="Pass" />
+      <test name="CoreXml.Test.XLinq.SchemaExtensionsTests.XAttributeFailValidate" type="CoreXml.Test.XLinq.SchemaExtensionsTests" method="XAttributeFailValidate" time="0.01" result="Pass" />
+      <test name="CoreXml.Test.XLinq.SchemaExtensionsTests.XAttributeGetSchemaInfo" type="CoreXml.Test.XLinq.SchemaExtensionsTests" method="XAttributeGetSchemaInfo" time="0.0032" result="Pass" />
+      <test name="CoreXml.Test.XLinq.SchemaExtensionsTests.XDocumentThrowExceptionValidate" type="CoreXml.Test.XLinq.SchemaExtensionsTests" method="XDocumentThrowExceptionValidate" time="0.0045" result="Pass" />
+      <test name="CoreXml.Test.XLinq.SchemaExtensionsTests.XDocumentSuccessValidate" type="CoreXml.Test.XLinq.SchemaExtensionsTests" method="XDocumentSuccessValidate" time="0.013" result="Pass" />
+      <test name="CoreXml.Test.XLinq.SchemaExtensionsTests.XDocumentNoSchemaInfoValidate" type="CoreXml.Test.XLinq.SchemaExtensionsTests" method="XDocumentNoSchemaInfoValidate" time="0.0087" result="Pass" />
+      <test name="CoreXml.Test.XLinq.SchemaExtensionsTests.XElementThrowExceptionValidate" type="CoreXml.Test.XLinq.SchemaExtensionsTests" method="XElementThrowExceptionValidate" time="0.0052" result="Pass" />
+      <test name="CoreXml.Test.XLinq.SchemaExtensionsTests.XElementSuccessValidate" type="CoreXml.Test.XLinq.SchemaExtensionsTests" method="XElementSuccessValidate" time="0.0043" result="Pass" />
+      <test name="CoreXml.Test.XLinq.SchemaExtensionsTests.XAttributeSuccessValidate" type="CoreXml.Test.XLinq.SchemaExtensionsTests" method="XAttributeSuccessValidate" time="0.0085" result="Pass" />
+      <test name="CoreXml.Test.XLinq.SchemaExtensionsTests.XElementGetSchemaInfo" type="CoreXml.Test.XLinq.SchemaExtensionsTests" method="XElementGetSchemaInfo" time="0.008" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Resources.Writer.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:17:50" total="7" passed="7" failed="0" skipped="0" time="0.121" errors="0">
+    <errors />
+    <collection total="7" passed="7" failed="0" skipped="0" name="Test collection for System.Resources.ResourceWriterTests.ResourceWriterTests" time="0.034">
+      <test name="System.Resources.ResourceWriterTests.ResourceWriterTests.ExceptionforResWriter03" type="System.Resources.ResourceWriterTests.ResourceWriterTests" method="ExceptionforResWriter03" time="0.023" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceWriterTests.GenerateResources" type="System.Resources.ResourceWriterTests.ResourceWriterTests" method="GenerateResources" time="0.0049" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceWriterTests.ExceptionforResWriter02" type="System.Resources.ResourceWriterTests.ResourceWriterTests" method="ExceptionforResWriter02" time="0.0016" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceWriterTests.ExceptionforResWriter05" type="System.Resources.ResourceWriterTests.ResourceWriterTests" method="ExceptionforResWriter05" time="0.0006" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceWriterTests.ExceptionforResWriter04" type="System.Resources.ResourceWriterTests.ResourceWriterTests" method="ExceptionforResWriter04" time="0.0005999" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceWriterTests.ExceptionforResWriter01" type="System.Resources.ResourceWriterTests.ResourceWriterTests" method="ExceptionforResWriter01" time="0.0002" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceWriterTests.TestEmptyResources" type="System.Resources.ResourceWriterTests.ResourceWriterTests" method="TestEmptyResources" time="0.0028" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

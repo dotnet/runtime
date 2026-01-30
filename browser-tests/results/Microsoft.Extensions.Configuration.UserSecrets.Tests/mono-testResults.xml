@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="Microsoft.Extensions.Configuration.UserSecrets.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:14:15" total="11" passed="9" failed="0" skipped="2" time="0.212" errors="0">
+    <errors />
+    <collection total="7" passed="7" failed="0" skipped="0" name="Test collection for Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest" time="0.097">
+      <test name="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_ThrowsIfAssemblyAttributeFromType" type="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest" method="AddUserSecrets_ThrowsIfAssemblyAttributeFromType" time="0.0118" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_FindsAssemblyAttributeFromType" type="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest" method="AddUserSecrets_FindsAssemblyAttributeFromType" time="0.0701999" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_Does_Not_Fail_On_Non_Existing_File" type="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest" method="AddUserSecrets_Does_Not_Fail_On_Non_Existing_File" time="0.0016" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_FindsAssemblyAttribute" type="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest" method="AddUserSecrets_FindsAssemblyAttribute" time="0.0034" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_With_SecretsId_Passed_Explicitly" type="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest" method="AddUserSecrets_With_SecretsId_Passed_Explicitly" time="0.0030999" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_DoesNotThrowsIfOptionalByDefault" type="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest" method="AddUserSecrets_DoesNotThrowsIfOptionalByDefault" time="0.0034" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest.AddUserSecrets_DoesThrowsIfNotOptionalAndSecretDoesNotExist" type="Microsoft.Extensions.Configuration.UserSecrets.Test.ConfigurationExtensionTest" method="AddUserSecrets_DoesThrowsIfNotOptionalAndSecretDoesNotExist" time="0.0031" result="Pass" />
+    </collection>
+    <collection total="2" passed="0" failed="0" skipped="2" name="Test collection for Microsoft.Extensions.Configuration.UserSecrets.MsBuildTargetTest" time="0.000">
+      <test name="Microsoft.Extensions.Configuration.UserSecrets.MsBuildTargetTest.GeneratesAssemblyAttributeFile(projectExt: \&quot;.csproj\&quot;, sourceExt: \&quot;.cs\&quot;)" type="Microsoft.Extensions.Configuration.UserSecrets.MsBuildTargetTest" method="GeneratesAssemblyAttributeFile" time="0" result="Skip">
+        <reason><![CDATA[https://github.com/dotnet/runtime/issues/33989]]></reason>
+      </test>
+      <test name="Microsoft.Extensions.Configuration.UserSecrets.MsBuildTargetTest.GeneratesAssemblyAttributeFile(projectExt: \&quot;.fsproj\&quot;, sourceExt: \&quot;.fs\&quot;)" type="Microsoft.Extensions.Configuration.UserSecrets.MsBuildTargetTest" method="GeneratesAssemblyAttributeFile" time="0" result="Skip">
+        <reason><![CDATA[https://github.com/dotnet/aspnetcore/issues/13303]]></reason>
+      </test>
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for Microsoft.Extensions.Configuration.UserSecrets.Test.PathHelperTest" time="0.002">
+      <test name="Microsoft.Extensions.Configuration.UserSecrets.Test.PathHelperTest.Gives_Correct_Secret_Path" type="Microsoft.Extensions.Configuration.UserSecrets.Test.PathHelperTest" method="Gives_Correct_Secret_Path" time="0.0007" result="Pass" />
+      <test name="Microsoft.Extensions.Configuration.UserSecrets.Test.PathHelperTest.Throws_If_UserSecretId_Contains_Invalid_Characters" type="Microsoft.Extensions.Configuration.UserSecrets.Test.PathHelperTest" method="Throws_If_UserSecretId_Contains_Invalid_Characters" time="0.0013999" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

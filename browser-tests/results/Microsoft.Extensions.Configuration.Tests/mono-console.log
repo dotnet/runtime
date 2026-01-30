@@ -1,0 +1,237 @@
+Console log: 'WasmTestOnChrome-ST-Microsoft.Extensions.Configuration.Tests' from job 9a0352ef-67fa-4a5f-b739-cf7767060906 (windows.amd64.server2022.open.rt) using docker image mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly on a00EQOG
+running %HELIX_CORRELATION_PAYLOAD%\scripts\343ba4edd5c840b78380c512e7fcc453\execute.cmd in C:\h\w\AFDB0926\w\C0510A99\e max 1800 seconds
+
+Output:
+[BEGIN EXECUTION]
+
+C:\Work>cd /d C:\helix\work\workitem\e 
+
+C:\helix\work\workitem\e>set "PYTHONPATH=" 
+
+C:\helix\work\workitem\e>python -m pip list --disable-pip-version-check   | findstr /r /c:"^helix-scripts " 
+helix-scripts          20260114.2
+
+C:\helix\work\workitem\e>if 0 EQU 0 python -m pip uninstall --disable-pip-version-check --yes helix-scripts 
+Found existing installation: helix-scripts 20260114.2
+Uninstalling helix-scripts-20260114.2:
+  Successfully uninstalled helix-scripts-20260114.2
+
+C:\helix\work\workitem\e>python -m pip install --disable-pip-version-check -r C:\helix\scripts\runtime_python_requirements.txt 
+Ignoring azure-core: markers 'python_version < "3.12"' don't match your environment
+Ignoring azure-identity: markers 'python_version < "3.12"' don't match your environment
+Ignoring azure-keyvault-secrets: markers 'python_version < "3.12"' don't match your environment
+Ignoring cffi: markers 'python_version < "3.8"' don't match your environment
+Ignoring importlib_metadata: markers 'python_version < "3.8"' don't match your environment
+Requirement already satisfied: asn1crypto==0.24.0 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 1)) (0.24.0)
+Requirement already satisfied: azure-core>=1.31 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 2)) (1.38.0)
+Requirement already satisfied: azure-devops==5.0.0b9 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 4)) (5.0.0b9)
+Requirement already satisfied: azure-identity>=1.16 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 5)) (1.25.1)
+Requirement already satisfied: azure-keyvault-secrets>=4.9 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 7)) (4.10.0)
+Requirement already satisfied: azure-storage-blob==12.5.0 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 9)) (12.5.0)
+Requirement already satisfied: certifi>=2023.7.22 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 10)) (2026.1.4)
+Requirement already satisfied: cffi>=1.16.0 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 12)) (2.0.0)
+Requirement already satisfied: cryptography>=39.0.1 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 13)) (46.0.3)
+Requirement already satisfied: docker-pycreds==0.4.0 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 14)) (0.4.0)
+Requirement already satisfied: docker==7.1.0 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 15)) (7.1.0)
+Requirement already satisfied: idna==2.8 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 16)) (2.8)
+Requirement already satisfied: isodate>=0.6.0 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 18)) (0.7.2)
+Requirement already satisfied: msrest>=0.6.10 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 19)) (0.6.21)
+Requirement already satisfied: ndg-httpsclient==0.5.1 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 20)) (0.5.1)
+Requirement already satisfied: oauthlib==3.1.0 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 21)) (3.1.0)
+Requirement already satisfied: packaging in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 22)) (25.0)
+Requirement already satisfied: psutil in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 23)) (7.2.1)
+Requirement already satisfied: pyasn1==0.4.5 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 24)) (0.4.5)
+Requirement already satisfied: pycparser==2.19 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 25)) (2.19)
+Requirement already satisfied: pyopenssl>=23.0.0 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 26)) (25.3.0)
+Requirement already satisfied: pyyaml>=3.11 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 27)) (6.0.3)
+Requirement already satisfied: requests-oauthlib==1.2.0 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 28)) (1.2.0)
+Requirement already satisfied: requests<=2.28.1,>=2.21.0 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 29)) (2.28.1)
+Requirement already satisfied: setuptools in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 30)) (80.9.0)
+Requirement already satisfied: six>=1.11.0 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 31)) (1.17.0)
+Requirement already satisfied: urllib3<1.27,>=1.24.3 in c:\python-env\lib\site-packages (from -r C:\helix\scripts\runtime_python_requirements.txt (line 32)) (1.26.20)
+Requirement already satisfied: pywin32>=304 in c:\python-env\lib\site-packages (from docker==7.1.0->-r C:\helix\scripts\runtime_python_requirements.txt (line 15)) (311)
+Requirement already satisfied: typing-extensions>=4.6.0 in c:\python-env\lib\site-packages (from azure-core>=1.31->-r C:\helix\scripts\runtime_python_requirements.txt (line 2)) (4.15.0)
+Requirement already satisfied: charset-normalizer<3,>=2 in c:\python-env\lib\site-packages (from requests<=2.28.1,>=2.21.0->-r C:\helix\scripts\runtime_python_requirements.txt (line 29)) (2.1.1)
+Requirement already satisfied: msal>=1.30.0 in c:\python-env\lib\site-packages (from azure-identity>=1.16->-r C:\helix\scripts\runtime_python_requirements.txt (line 5)) (1.34.0)
+Requirement already satisfied: msal-extensions>=1.2.0 in c:\python-env\lib\site-packages (from azure-identity>=1.16->-r C:\helix\scripts\runtime_python_requirements.txt (line 5)) (1.3.1)
+Requirement already satisfied: PyJWT<3,>=1.0.0 in c:\python-env\lib\site-packages (from PyJWT[crypto]<3,>=1.0.0->msal>=1.30.0->azure-identity>=1.16->-r C:\helix\scripts\runtime_python_requirements.txt (line 5)) (2.10.1)
+
+C:\helix\work\workitem\e>if 0 NEQ 0 exit /b 0 
+
+C:\helix\work\workitem\e>set "PYTHONPATH=C:\helix\scripts" 
+
+C:\helix\work\workitem\e>C:\helix\work\correlation\scripts\343ba4edd5c840b78380c512e7fcc453\execute.cmd
+
+C:\helix\work\workitem\e>set SCENARIO=WasmTestOnChrome 
+
+C:\helix\work\workitem\e>set XHARNESS_DISABLE_COLORED_OUTPUT=true 
+
+C:\helix\work\workitem\e>set XHARNESS_LOG_WITH_TIMESTAMPS=true 
+
+C:\helix\work\workitem\e>set PATH=C:\helix\work\correlation\chromedriver_win32;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Users\ContainerAdministrator\AppData\Local\Microsoft\WindowsApps;C:\Program Files\PowerShell\;C:\Python-env\Scripts;C:\Python;C:\python\scripts;;C:\Program Files\nodejs\;C:\7z;C:\git\cmd;C:\Users\ContainerAdministrator\AppData\Roaming\npm;C:\Users\ContainerAdministrator\.jsvu\bin; 
+
+C:\helix\work\workitem\e>set PATH=C:\helix\work\correlation\chrome-win;C:\helix\work\correlation\chromedriver_win32;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Users\ContainerAdministrator\AppData\Local\Microsoft\WindowsApps;C:\Program Files\PowerShell\;C:\Python-env\Scripts;C:\Python;C:\python\scripts;;C:\Program Files\nodejs\;C:\7z;C:\git\cmd;C:\Users\ContainerAdministrator\AppData\Roaming\npm;C:\Users\ContainerAdministrator\.jsvu\bin; 
+
+C:\helix\work\workitem\e>taskkill.exe /f /im corerun.exe 
+ERROR: The process "corerun.exe" not found.
+
+C:\helix\work\workitem\e>set __TestArchitecture=wasm 
+
+C:\helix\work\workitem\e>set PATH=C:\helix\work\correlation\dotnet-cli;C:\helix\work\correlation\chrome-win;C:\helix\work\correlation\chromedriver_win32;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Users\ContainerAdministrator\AppData\Local\Microsoft\WindowsApps;C:\Program Files\PowerShell\;C:\Python-env\Scripts;C:\Python;C:\python\scripts;;C:\Program Files\nodejs\;C:\7z;C:\git\cmd;C:\Users\ContainerAdministrator\AppData\Roaming\npm;C:\Users\ContainerAdministrator\.jsvu\bin; 
+
+C:\helix\work\workitem\e>set DOTNET_ROOT=C:\helix\work\correlation\dotnet-cli 
+
+C:\helix\work\workitem\e>set DOTNET_CLI_TELEMETRY_OPTOUT=1 
+
+C:\helix\work\workitem\e>set DOTNET_CLI_HOME=C:\helix\work\workitem\e\.dotnet 
+
+C:\helix\work\workitem\e>set NUGET_PACKAGES=C:\helix\work\workitem\e\.nuget 
+
+C:\helix\work\workitem\e>set PATH=C:\helix\work\correlation\xharness-cli;C:\helix\work\correlation\dotnet-cli;C:\helix\work\correlation\chrome-win;C:\helix\work\correlation\chromedriver_win32;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Users\ContainerAdministrator\AppData\Local\Microsoft\WindowsApps;C:\Program Files\PowerShell\;C:\Python-env\Scripts;C:\Python;C:\python\scripts;;C:\Program Files\nodejs\;C:\7z;C:\git\cmd;C:\Users\ContainerAdministrator\AppData\Roaming\npm;C:\Users\ContainerAdministrator\.jsvu\bin; 
+
+C:\helix\work\workitem\e>set XHARNESS_DISABLE_COLORED_OUTPUT=true 
+
+C:\helix\work\workitem\e>set XHARNESS_LOG_WITH_TIMESTAMPS=true 
+
+C:\helix\work\workitem\e>set XHARNESS_CLI_PATH=C:\helix\work\correlation\microsoft.dotnet.xharness.cli\11.0.0-prerelease.26064.3\tools\net8.0\any\Microsoft.DotNet.XHarness.CLI.dll 
+
+C:\helix\work\workitem\e>doskey xharness="dotnet exec C:\helix\work\correlation\microsoft.dotnet.xharness.cli\11.0.0-prerelease.26064.3\tools\net8.0\any\Microsoft.DotNet.XHarness.CLI.dll" 
+Invalid macro definition.
+
+C:\helix\work\workitem\e>set XHARNESS_DIAGNOSTICS_PATH=C:\helix\work\workitem\e\diagnostics.json 
+
+C:\helix\work\workitem\e>powershell -command "dotnet dev-certs https --export-path devcerts.pfx --password PLACEHOLDER ; $pw = ConvertTo-SecureString PLACEHOLDER -AsPlainText -Force ; Import-PfxCertificate -FilePath devcerts.pfx -Password $pw -CertStoreLocation Cert:\LocalMachine\Root "   && call RunTests.cmd 
+
+Welcome to .NET 11.0!
+---------------------
+SDK Version: 11.0.100-alpha.1.26060.102
+
+----------------
+Installed an ASP.NET Core HTTPS development certificate.
+To trust the certificate, run 'dotnet dev-certs https --trust'
+Learn about HTTPS: https://aka.ms/dotnet-https
+
+----------------
+Write your first app: https://aka.ms/dotnet-hello-world
+Find out what's new: https://aka.ms/dotnet-whats-new
+Explore documentation: https://aka.ms/dotnet-docs
+Report issues and find source on GitHub: https://github.com/dotnet/core
+Use 'dotnet --help' to see available commands or visit: https://aka.ms/dotnet-cli
+--------------------------------------------------------------------------------------
+An issue was encountered verifying workloads. For more information, run "dotnet workload update".
+A valid HTTPS certificate is already present.
+
+
+   PSParentPath: Microsoft.PowerShell.Security\Certificate::LocalMachine\Root
+
+Thumbprint                                Subject                              
+----------                                -------                              
+C57B2330164E88564B5905CFAEDF7A38516F7F70  CN=localhost                         
+
+
+set XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1
+set RuntimeIdentifier=browser-wasm
+The system cannot find the drive specified.
+EXECUTION_DIR=C:\helix\work\workitem\e\
+SCENARIO=WasmTestOnChrome
+XHARNESS_OUT=C:\helix\work\workitem\uploads\xharness-output
+XHARNESS_CLI_PATH=C:\helix\work\correlation\microsoft.dotnet.xharness.cli\11.0.0-prerelease.26064.3\tools\net8.0\any\Microsoft.DotNet.XHarness.CLI.dll
+HARNESS_RUNNER=dotnet.exe exec "C:\helix\work\correlation\microsoft.dotnet.xharness.cli\11.0.0-prerelease.26064.3\tools\net8.0\any\Microsoft.DotNet.XHarness.CLI.dll"
+XHARNESS_COMMAND=test-browser
+MAIN_JS=
+JS_ENGINE=
+JS_ENGINE_ARGS=--browser-arg=--js-flags=--stack-trace-limit=1000 --browser-arg=--disable-gpu --pageLoadStrategy=none
+XHARNESS_ARGS= --browser-arg=--js-flags=--stack-trace-limit=1000 --browser-arg=--disable-gpu --pageLoadStrategy=none --browser-path=C:\helix\work\correlation\chrome-win\chrome.exe 
+----- start Wed 01/28/2026  2:13:48.70 ===============  To repro directly: ===================================================== 
+pushd C:\helix\work\workitem\e\
+dotnet.exe exec "C:\helix\work\correlation\microsoft.dotnet.xharness.cli\11.0.0-prerelease.26064.3\tools\net8.0\any\Microsoft.DotNet.XHarness.CLI.dll" wasm test-browser --app=. --output-directory=C:\helix\work\workitem\uploads\xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness "--timeout=00:30:00"  --browser-arg=--js-flags=--stack-trace-limit=1000 --browser-arg=--disable-gpu --pageLoadStrategy=none --browser-path=C:\helix\work\correlation\chrome-win\chrome.exe    --   --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Tests.dll  -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing 
+popd
+===========================================================================================================
+
+C:\helix\work\workitem\e>dotnet.exe exec "C:\helix\work\correlation\microsoft.dotnet.xharness.cli\11.0.0-prerelease.26064.3\tools\net8.0\any\Microsoft.DotNet.XHarness.CLI.dll" wasm test-browser --app=. --output-directory=C:\helix\work\workitem\uploads\xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness "--timeout=00:30:00"  --browser-arg=--js-flags=--stack-trace-limit=1000 --browser-arg=--disable-gpu --pageLoadStrategy=none --browser-path=C:\helix\work\correlation\chrome-win\chrome.exe    --   --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Tests.dll  -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing  
+[11.0.0-prerelease.26064.3+31e0b8e08f57890f7b7004b93361d69cd4b21079] XHarness command issued: wasm test-browser --app=. --output-directory=C:\helix\work\workitem\uploads\xharness-output -s dotnet.native.js.symbols --symbol-patterns wasm-symbol-patterns.txt --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness --timeout=00:30:00 --browser-arg=--js-flags=--stack-trace-limit=1000 --browser-arg=--disable-gpu --pageLoadStrategy=none --browser-path=C:\helix\work\correlation\chrome-win\chrome.exe -- --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Tests.dll -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing
+[02:13:49] warn: Cannot find symbols file dotnet.native.js.symbols
+[02:13:49] info: Using Chrome from C:\helix\work\correlation\chrome-win\chrome.exe
+[02:13:49] info: Starting chromedriver with args: --js-flags=--stack-trace-limit=1000 --disable-gpu --headless --incognito --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --enable-features=NetworkService,NetworkServiceInProcess --allow-insecure-localhost --disable-breakpad --disable-component-extensions-with-background-pages --disable-dev-shm-usage --disable-extensions --disable-features=TranslateUI --disable-ipc-flooding-protection --force-color-profile=srgb --metrics-recording-only and load strategy: None
+Starting ChromeDriver 143.0.7499.0 (0000000000000000000000000000000000000000-0000000000000000000000000000000000000000) on port 49161
+Only local connections are allowed.
+Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+ChromeDriver was started successfully on port 49161.
+[02:14:12] info: Running in: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+[02:14:12] info: Running at: http://127.0.0.1:49170/index.html?arg=--run&arg=WasmTestRunner.dll&arg=Microsoft.Extensions.Configuration.Tests.dll&arg=-notrait&arg=category%3dIgnoreForCI&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+[02:14:12] info: could not load /runArgs.json: 404. Ignoring
+[02:14:12] info: Incoming arguments: --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Tests.dll -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing -verbosity Info
+[02:14:12] info: Application arguments: --run WasmTestRunner.dll Microsoft.Extensions.Configuration.Tests.dll -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing -verbosity Info
+[02:14:14] info: Initializing dotnet version 11.0.0-ci commit hash fc5adeb488feae35cd3437445b470f9c045d1588
+[02:14:14] info: Using threadless Xunit runner
+[02:14:14] info: Discovering: Microsoft.Extensions.Configuration.Tests.dll (method display = ClassAndMethod, method display options = None)
+[02:14:14] info: Discovered:  Microsoft.Extensions.Configuration.Tests.dll (found 115 of 115 test cases)
+[02:14:15] info: Starting:    Microsoft.Extensions.Configuration.Tests.dll
+[02:14:15] info: Finished:    Microsoft.Extensions.Configuration.Tests.dll
+[02:14:15] info: Stored C:\helix\work\workitem\uploads\xharness-output\testResults.xml results 35410 bytes
+[02:14:15] info: Finished uploading 35410 bytes of RESULTXML
+[02:14:15] info: Xml file was written to the provided writer.
+[02:14:15] info: 
+[02:14:15] info: === TEST EXECUTION SUMMARY ===
+[02:14:15] info: Tests run: 123 Passed: 121 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 2
+[02:14:15] info: 
+[02:14:15] info: test-main.js exiting WasmTestRunner.dll Microsoft.Extensions.Configuration.Tests.dll after 0.02825 minutes with result 0 and linear memory 69730304 bytes
+[02:14:15] info: MONO_WASM: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+[02:14:15] info: WASM EXIT 0
+[02:14:15] info: Waiting to flush log messages with a timeout of 120 secs ..
+[02:14:15] info: Closing 1 browser tabs before setting the main tab to config page and quitting.
+XHarness exit code: 0
+
+C:\helix\work\workitem\e>set EXIT_CODE=0 
+----- end Wed 01/28/2026  2:14:26.11 ----- exit code 0 ----------------------------------------------------------
+XHarness artifacts: C:\helix\work\workitem\uploads\xharness-output
+python: can't open file 'C:\\helix\\work\\workitem\\u\\xharness-event-processor.py': [Errno 2] No such file or directory
+C:\Python-env\Lib\site-packages\azure\__init__.py:5: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+2026-01-28T02:14:28.802Z	INFO   	run.py	managed_identity(151)	__init__	ManagedIdentityCredential will use IMDS with client_id: 3423231b-6b9e-4177-8817-76276b647404
+2026-01-28T02:14:28.802Z	INFO   	run.py	azure_utils(32)	get_credential_and_access_token	VMSSManagedIdentity VmssMIClientIdForUpload Auth type will be used
+2026-01-28T02:14:28.812Z	INFO   	run.py	_universal(511)	on_request	Request URL: 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=REDACTED&resource=REDACTED&client_id=REDACTED'
+Request method: 'GET'
+Request headers:
+    'Metadata': 'REDACTED'
+    'User-Agent': 'azsdk-python-identity/1.25.1 Python/3.14.0 (Windows-2022Server-10.0.20348-SP0)'
+No body was attached to the request
+2026-01-28T02:14:30.818Z	INFO   	run.py	_universal(511)	on_request	Request URL: 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=REDACTED&resource=REDACTED&client_id=REDACTED'
+Request method: 'GET'
+Request headers:
+    'Metadata': 'REDACTED'
+    'User-Agent': 'azsdk-python-identity/1.25.1 Python/3.14.0 (Windows-2022Server-10.0.20348-SP0)'
+No body was attached to the request
+2026-01-28T02:14:34.421Z	INFO   	run.py	_universal(511)	on_request	Request URL: 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=REDACTED&resource=REDACTED&client_id=REDACTED'
+Request method: 'GET'
+Request headers:
+    'Metadata': 'REDACTED'
+    'User-Agent': 'azsdk-python-identity/1.25.1 Python/3.14.0 (Windows-2022Server-10.0.20348-SP0)'
+No body was attached to the request
+2026-01-28T02:14:39.625Z	INFO   	run.py	_universal(511)	on_request	Request URL: 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=REDACTED&resource=REDACTED&client_id=REDACTED'
+Request method: 'GET'
+Request headers:
+    'Metadata': 'REDACTED'
+    'User-Agent': 'azsdk-python-identity/1.25.1 Python/3.14.0 (Windows-2022Server-10.0.20348-SP0)'
+No body was attached to the request
+2026-01-28T02:14:41.627Z	WARNING	run.py	msal_managed_identity_client(191)	_get_token_base	ImdsCredential.get_token failed: ManagedIdentityCredential authentication unavailable, no response from the IMDS endpoint.
+2026-01-28T02:14:41.627Z	WARNING	run.py	decorators(51)	wrapper	ManagedIdentityCredential.get_token failed: ManagedIdentityCredential authentication unavailable, no response from the IMDS endpoint.
+2026-01-28T02:14:41.627Z	WARNING	run.py	azure_utils(66)	get_credential_and_access_token	Token was not retrieved: ManagedIdentityCredential authentication unavailable, no response from the IMDS endpoint.
+Server failed to authenticate the request. Please refer to the information in the www-authenticate header.
+RequestId:5fccbc7a-c01e-009f-08fb-8f4e46000000
+Time:2026-01-28T02:14:42.0951542Z
+ErrorCode:NoAuthenticationInformation
+Error:None
+Content: <?xml version="1.0" encoding="utf-8"?><Error><Code>NoAuthenticationInformation</Code><Message>Server failed to authenticate the request. Please refer to the information in the www-authenticate header.
+RequestId:5fccbc7a-c01e-009f-08fb-8f4e46000000
+Time:2026-01-28T02:14:42.0951542Z</Message></Error>
+2026-01-28T02:14:42.127Z	INFO   	run.py	run(48)	main	Beginning reading of test results.
+2026-01-28T02:14:42.127Z	INFO   	run.py	__init__(42)	read_results	Searching 'C:\helix\work\workitem\e' for test results files
+2026-01-28T02:14:42.129Z	INFO   	run.py	__init__(42)	read_results	Searching 'C:\helix\work\workitem\uploads' for test results files
+2026-01-28T02:14:42.129Z	INFO   	run.py	__init__(48)	read_results	Found results file C:\helix\work\workitem\uploads\xharness-output\testResults.xml with format xunit
+2026-01-28T02:14:42.131Z	INFO   	run.py	packing_test_reporter(30)	report_results	Packing 123 test reports to 'C:\helix\work\workitem\e\__test_report.json'
+2026-01-28T02:14:42.132Z	INFO   	run.py	packing_test_reporter(33)	report_results	Packed 34974 bytes
+ERROR: The process "corerun.exe" not found.
+
+[END EXECUTION]
+Exit Code:0

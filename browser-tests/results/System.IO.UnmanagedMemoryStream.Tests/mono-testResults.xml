@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.IO.UnmanagedMemoryStream.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:16:10" total="32" passed="32" failed="0" skipped="0" time="0.217" errors="0">
+    <errors />
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for System.IO.Tests.UmsSafeBufferTests" time="0.034">
+      <test name="System.IO.Tests.UmsSafeBufferTests.ReadWriteByteSafeBuffer" type="System.IO.Tests.UmsSafeBufferTests" method="ReadWriteByteSafeBuffer" time="0.0329" result="Pass" />
+      <test name="System.IO.Tests.UmsSafeBufferTests.WriteSafeBuffer" type="System.IO.Tests.UmsSafeBufferTests" method="WriteSafeBuffer" time="0.0014" result="Pass" />
+    </collection>
+    <collection total="10" passed="10" failed="0" skipped="0" name="Test collection for System.IO.Tests.Uma_ReadWriteStruct" time="0.020">
+      <test name="System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteGenericIntStruct_Valid" type="System.IO.Tests.Uma_ReadWriteStruct" method="UmaReadWriteGenericIntStruct_Valid" time="0.0019" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteStruct_Closed" type="System.IO.Tests.Uma_ReadWriteStruct" method="UmaReadWriteStruct_Closed" time="0.001" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStruct.UmaWriteStruct_ReadMode" type="System.IO.Tests.Uma_ReadWriteStruct" method="UmaWriteStruct_ReadMode" time="0.0004" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteStruct_InsufficientSpace" type="System.IO.Tests.Uma_ReadWriteStruct" method="UmaReadWriteStruct_InsufficientSpace" time="0.0016999" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteStruct_Valid" type="System.IO.Tests.Uma_ReadWriteStruct" method="UmaReadWriteStruct_Valid" time="0.0021999" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStruct.UmaReadStruct_WriteMode" type="System.IO.Tests.Uma_ReadWriteStruct" method="UmaReadStruct_WriteMode" time="0.0004" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteStruct_PositionGreaterThanCapacity" type="System.IO.Tests.Uma_ReadWriteStruct" method="UmaReadWriteStruct_PositionGreaterThanCapacity" time="0.0008" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteGenericStringStruct_ThrowsArgumentException" type="System.IO.Tests.Uma_ReadWriteStruct" method="UmaReadWriteGenericStringStruct_ThrowsArgumentException" time="0.0014" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteStructWithReferenceType_ThrowsArgumentException" type="System.IO.Tests.Uma_ReadWriteStruct" method="UmaReadWriteStructWithReferenceType_ThrowsArgumentException" time="0.0007" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStruct.UmaReadWriteStruct_NegativePosition" type="System.IO.Tests.Uma_ReadWriteStruct" method="UmaReadWriteStruct_NegativePosition" time="0.0092" result="Pass" />
+    </collection>
+    <collection total="10" passed="10" failed="0" skipped="0" name="Test collection for System.IO.Tests.Uma_ReadWriteStructArray" time="0.010">
+      <test name="System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArray_OneItem" type="System.IO.Tests.Uma_ReadWriteStructArray" method="UmaReadWriteStructArray_OneItem" time="0.0011" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArray_Closed" type="System.IO.Tests.Uma_ReadWriteStructArray" method="UmaReadWriteStructArray_Closed" time="0.0007" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStructArray.UmaWriteStructArray_ReadMode" type="System.IO.Tests.Uma_ReadWriteStructArray" method="UmaWriteStructArray_ReadMode" time="0.0004" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArrayWithReferenceType_ThrowsArgumentException" type="System.IO.Tests.Uma_ReadWriteStructArray" method="UmaReadWriteStructArrayWithReferenceType_ThrowsArgumentException" time="0.0010999" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArray_TryToReadMoreThanAvailable" type="System.IO.Tests.Uma_ReadWriteStructArray" method="UmaReadWriteStructArray_TryToReadMoreThanAvailable" time="0.0006999" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStructArray.UmaReadStructArray_WriteMode" type="System.IO.Tests.Uma_ReadWriteStructArray" method="UmaReadStructArray_WriteMode" time="0.0003999" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArray_InsufficientSpace" type="System.IO.Tests.Uma_ReadWriteStructArray" method="UmaReadWriteStructArray_InsufficientSpace" time="0.0008" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArray_Multiples" type="System.IO.Tests.Uma_ReadWriteStructArray" method="UmaReadWriteStructArray_Multiples" time="0.0006" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArrayGenericIntStruct_Valid" type="System.IO.Tests.Uma_ReadWriteStructArray" method="UmaReadWriteStructArrayGenericIntStruct_Valid" time="0.001" result="Pass" />
+      <test name="System.IO.Tests.Uma_ReadWriteStructArray.UmaReadWriteStructArray_InvalidParameters" type="System.IO.Tests.Uma_ReadWriteStructArray" method="UmaReadWriteStructArray_InvalidParameters" time="0.0031" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.IO.Tests.UmaTests" time="0.016">
+      <test name="System.IO.Tests.UmaTests.UmaReadWrite" type="System.IO.Tests.UmaTests" method="UmaReadWrite" time="0.0139" result="Pass" />
+      <test name="System.IO.Tests.UmaTests.UmaInvalidReadWrite" type="System.IO.Tests.UmaTests" method="UmaInvalidReadWrite" time="0.0015999" result="Pass" />
+      <test name="System.IO.Tests.UmaTests.UmaInvalidReadDecimal" type="System.IO.Tests.UmaTests" method="UmaInvalidReadDecimal" time="0.0005" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for System.IO.Tests.UmaCtorTests" time="0.002">
+      <test name="System.IO.Tests.UmaCtorTests.UmaCtorsThatFail" type="System.IO.Tests.UmaCtorTests" method="UmaCtorsThatFail" time="0.0015" result="Pass" />
+      <test name="System.IO.Tests.UmaCtorTests.UmaCtors" type="System.IO.Tests.UmaCtorTests" method="UmaCtors" time="0.0006" result="Pass" />
+    </collection>
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for UmsSecurityTests" time="0.004">
+      <test name="UmsSecurityTests.OverflowPositionPointer" type="UmsSecurityTests" method="OverflowPositionPointer" time="0.0004" result="Pass" />
+      <test name="UmsSecurityTests.ChangePositionViaPointer" type="UmsSecurityTests" method="ChangePositionViaPointer" time="0.0031" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.IO.Tests.UmsCtorTests" time="0.005">
+      <test name="System.IO.Tests.UmsCtorTests.BufferCtor" type="System.IO.Tests.UmsCtorTests" method="BufferCtor" time="0.0010999" result="Pass" />
+      <test name="System.IO.Tests.UmsCtorTests.CtorsThatFail" type="System.IO.Tests.UmsCtorTests" method="CtorsThatFail" time="0.0014" result="Pass" />
+      <test name="System.IO.Tests.UmsCtorTests.PointerCtor" type="System.IO.Tests.UmsCtorTests" method="PointerCtor" time="0.0022999" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

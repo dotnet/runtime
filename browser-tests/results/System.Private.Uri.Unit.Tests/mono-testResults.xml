@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Private.Uri.Unit.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-28" run-time="02:17:16" total="19" passed="19" failed="0" skipped="0" time="17.820" errors="0">
+    <errors />
+    <collection total="18" passed="18" failed="0" skipped="0" name="Test collection for System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" time="0.065">
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_UnicodePlane14" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_UnicodePlane14" time="0.0241" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_ReservedCharacters" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_ReservedCharacters" time="0.0003999" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_UnicodePlane3_13" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_UnicodePlane3_13" time="0.0055999" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_InIriRange_AfterEscapingBufferInitialized" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_InIriRange_AfterEscapingBufferInitialized" time="0.0005998" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_FragmentInvalidCharacters" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_FragmentInvalidCharacters" time="0.0011" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_UnicodePlane2" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_UnicodePlane2" time="0.0025999" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_UnicodePlane1" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_UnicodePlane1" time="0.0022" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_UnicodePlane15_16" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_UnicodePlane15_16" time="0.0235999" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_EscapedAsciiFollowedByUnescaped" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_EscapedAsciiFollowedByUnescaped" time="0.0003999" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_IncompleteEscapedCharacter" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_IncompleteEscapedCharacter" time="0.0004999" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_BidiCharacter_AfterEscapingBufferInitialized" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_BidiCharacter_AfterEscapingBufferInitialized" time="0.0003" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_InvalidHexSequence" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_InvalidHexSequence" time="0.0002999" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_BidiCharacters" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_BidiCharacters" time="0.0004" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_InvalidUTF8Sequence" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_InvalidUTF8Sequence" time="0.0002999" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_EscapedAscii" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_EscapedAscii" time="0.0003" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_UnicodePlane0" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_UnicodePlane0" time="0.0012" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_IncompleteSurrogate" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_IncompleteSurrogate" time="0.0003" result="Pass" />
+      <test name="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest.Iri_EscapeUnescapeIri_EscapedReservedCharacters" type="System.Net.Test.Uri.IriTest.IriEscapeUnescapeTest" method="Iri_EscapeUnescapeIri_EscapedReservedCharacters" time="0.0005999" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.PrivateUri.Tests.PathCompressionTests" time="17.660">
+      <test name="System.PrivateUri.Tests.PathCompressionTests.TestCompressRegressions" type="System.PrivateUri.Tests.PathCompressionTests" method="TestCompressRegressions" time="17.6598999" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>
