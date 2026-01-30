@@ -52,7 +52,8 @@ namespace Microsoft.Interop.Analyzers
             context.RegisterCompilationStartAction(context =>
             {
                 // Nothing to do if the LibraryImportAttribute is not in the compilation
-                if (context.Compilation.GetBestTypeByMetadataName(TypeNames.LibraryImportAttribute) is null)
+                INamedTypeSymbol? libraryImportAttrType = context.Compilation.GetBestTypeByMetadataName(TypeNames.LibraryImportAttribute);
+                if (libraryImportAttrType is null)
                     return;
 
                 StubEnvironment env = new StubEnvironment(
@@ -65,7 +66,7 @@ namespace Microsoft.Interop.Analyzers
 
                 context.RegisterSymbolAction(symbolContext =>
                 {
-                    if (AnalyzeMethod(symbolContext, env))
+                    if (AnalyzeMethod(symbolContext, env, libraryImportAttrType))
                     {
                         foundLibraryImportMethod = true;
                     }
@@ -86,7 +87,7 @@ namespace Microsoft.Interop.Analyzers
         /// Analyzes a method for LibraryImport diagnostics.
         /// </summary>
         /// <returns>True if the method has LibraryImportAttribute, false otherwise.</returns>
-        private static bool AnalyzeMethod(SymbolAnalysisContext context, StubEnvironment env)
+        private static bool AnalyzeMethod(SymbolAnalysisContext context, StubEnvironment env, INamedTypeSymbol libraryImportAttrType)
         {
             IMethodSymbol method = (IMethodSymbol)context.Symbol;
 
@@ -94,7 +95,7 @@ namespace Microsoft.Interop.Analyzers
             AttributeData? libraryImportAttr = null;
             foreach (AttributeData attr in method.GetAttributes())
             {
-                if (attr.AttributeClass?.ToDisplayString() == TypeNames.LibraryImportAttribute)
+                if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, libraryImportAttrType))
                 {
                     libraryImportAttr = attr;
                     break;
@@ -164,9 +165,13 @@ namespace Microsoft.Interop.Analyzers
                 typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.SR));
 
             // Process the LibraryImport attribute
-            LibraryImportCompilationData libraryImportData =
-                ProcessLibraryImportAttribute(libraryImportAttr) ??
-                new LibraryImportCompilationData("INVALID_CSHARP_SYNTAX");
+            LibraryImportCompilationData? libraryImportData = ProcessLibraryImportAttribute(libraryImportAttr);
+
+            // If we can't parse the attribute, we have an invalid compilation - stop processing
+            if (libraryImportData is null)
+            {
+                return generatorDiagnostics.Diagnostics.ToImmutableArray();
+            }
 
             if (libraryImportData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
             {

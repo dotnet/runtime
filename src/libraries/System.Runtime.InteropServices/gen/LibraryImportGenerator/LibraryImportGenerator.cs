@@ -59,8 +59,8 @@ namespace Microsoft.Interop
                     : DiagnosticOr<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol)>.From((data.Syntax, data.Symbol));
             });
 
-            // Filter methods but don't report diagnostics - the analyzer will handle that
-            var methodsToGenerate = methodsWithDiagnostics.FilterWithoutReportingDiagnostics();
+            // Filter methods - diagnostics are reported by the analyzer, not the generator
+            var (methodsToGenerate, _) = methodsWithDiagnostics.Split();
 
             // Compute generator options
             IncrementalValueProvider<LibraryImportGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
