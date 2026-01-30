@@ -1,0 +1,39 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:45939/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Console.Manual.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Console.Manual.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Console.Manual.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Console.Manual.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Console.Manual.Tests.dll (found 19 of 19 test cases)
+Starting:    System.Console.Manual.Tests.dll
+[STRT] System.ConsoleManualTests.ReadKey_KeyChords
+[STRT] System.ConsoleManualTests.Beep
+[STRT] System.ConsoleManualTests.ReadLine
+[STRT] System.ConsoleManualTests.ReadKeyNoIntercept
+[STRT] System.ConsoleManualTests.ReadLineFromOpenStandardInput
+[STRT] System.ConsoleManualTests.ConsoleReadSupportsBackspace
+[STRT] System.ConsoleManualTests.KeyAvailable
+[STRT] System.ConsoleManualTests.CursorLeftFromLastColumn
+[STRT] System.ConsoleManualTests.ReadKey
+[STRT] System.ConsoleManualTests.EnterKeyIsEnterAfterKeyAvailableCheck
+[STRT] System.ConsoleManualTests.ConsoleOutWriteLine
+[STRT] System.ConsoleManualTests.ReadFromOpenStandardInput
+[STRT] System.ConsoleManualTests.Clear
+[STRT] System.ConsoleManualTests.InPeek
+[STRT] System.ConsoleManualTests.EchoWorksDuringAndAfterProcessThatUsesTerminal
+[STRT] System.ConsoleManualTests.EncodingTest
+[STRT] System.ConsoleManualTests.ReadLine_BackSpaceCanMoveAcrossWrappedLines
+[STRT] System.ConsoleManualTests.CursorPositionAndArrowKeys
+[STRT] System.ConsoleManualTests.Colors
+Finished:    System.Console.Manual.Tests.dll
+Finished uploading 5231 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 19 Passed: 0 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 19
+
+test-main.js exiting WasmTestRunner.dll System.Console.Manual.Tests.dll after 0.00675 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

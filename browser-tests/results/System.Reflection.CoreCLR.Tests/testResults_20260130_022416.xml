@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Reflection.CoreCLR.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:24:20" total="3" passed="2" failed="0" skipped="1" time="0.057" errors="0">
+    <errors />
+    <collection total="3" passed="2" failed="0" skipped="1" name="Test collection for System.Reflection.Tests.AssemblyTests" time="0.014">
+      <test name="System.Reflection.Tests.AssemblyTests.LoadFromStream_Location_IsEmpty" type="System.Reflection.Tests.AssemblyTests" method="LoadFromStream_Location_IsEmpty" time="0.0106999" result="Pass" />
+      <test name="System.Reflection.Tests.AssemblyTests.CurrentLocation_HasLocaton" type="System.Reflection.Tests.AssemblyTests" method="CurrentLocation_HasLocaton" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="System.Reflection.Tests.AssemblyTests.EntryPoint" type="System.Reflection.Tests.AssemblyTests" method="EntryPoint" time="0.0035" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

@@ -1,0 +1,9 @@
+Test Comparison: System.Reflection.CoreCLR.Tests
+Generated: 2026-01-30T02:24:22+01:00
+
+Mono tests:    5
+CoreCLR tests: 5
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

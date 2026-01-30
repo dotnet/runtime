@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Console.Manual.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:18:31" total="19" passed="0" failed="0" skipped="19" time="0.052" errors="0">
+    <errors />
+    <collection total="19" passed="0" failed="0" skipped="19" name="Test collection for System.ConsoleManualTests" time="0.000">
+      <test name="System.ConsoleManualTests.ReadKey_KeyChords" type="System.ConsoleManualTests" method="ReadKey_KeyChords" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.Beep" type="System.ConsoleManualTests" method="Beep" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.ReadLine" type="System.ConsoleManualTests" method="ReadLine" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.ReadKeyNoIntercept" type="System.ConsoleManualTests" method="ReadKeyNoIntercept" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.ReadLineFromOpenStandardInput" type="System.ConsoleManualTests" method="ReadLineFromOpenStandardInput" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.ConsoleReadSupportsBackspace" type="System.ConsoleManualTests" method="ConsoleReadSupportsBackspace" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.KeyAvailable" type="System.ConsoleManualTests" method="KeyAvailable" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.CursorLeftFromLastColumn" type="System.ConsoleManualTests" method="CursorLeftFromLastColumn" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.ReadKey" type="System.ConsoleManualTests" method="ReadKey" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.EnterKeyIsEnterAfterKeyAvailableCheck" type="System.ConsoleManualTests" method="EnterKeyIsEnterAfterKeyAvailableCheck" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.ConsoleOutWriteLine" type="System.ConsoleManualTests" method="ConsoleOutWriteLine" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.ReadFromOpenStandardInput" type="System.ConsoleManualTests" method="ReadFromOpenStandardInput" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.Clear" type="System.ConsoleManualTests" method="Clear" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.InPeek" type="System.ConsoleManualTests" method="InPeek" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.EchoWorksDuringAndAfterProcessThatUsesTerminal" type="System.ConsoleManualTests" method="EchoWorksDuringAndAfterProcessThatUsesTerminal" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.EncodingTest" type="System.ConsoleManualTests" method="EncodingTest" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.ReadLine_BackSpaceCanMoveAcrossWrappedLines" type="System.ConsoleManualTests" method="ReadLine_BackSpaceCanMoveAcrossWrappedLines" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.CursorPositionAndArrowKeys" type="System.ConsoleManualTests" method="CursorPositionAndArrowKeys" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+      <test name="System.ConsoleManualTests.Colors" type="System.ConsoleManualTests" method="Colors" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"ManualTestsEnabled\"]]></reason>
+      </test>
+    </collection>
+  </assembly>
+</assemblies>

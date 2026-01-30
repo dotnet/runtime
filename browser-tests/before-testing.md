@@ -21,6 +21,7 @@ export Scenario="WasmTestOnChrome"
 export InstallFirefoxForTests="false"
 export XunitShowProgress="true"
 export SSL_CERT_DIR="$HOME/.aspnet/dev-certs/trust:/usr/lib/ssl/certs"
+export PATH="$(pwd)/.dotnet:$PATH"
 ./build.sh -os browser -subset clr+libs+host -c Release
 ```
 

@@ -1,0 +1,32 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:36727/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Runtime.InteropServices.RuntimeInformation.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Runtime.InteropServices.RuntimeInformation.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Runtime.InteropServices.RuntimeInformation.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Runtime.InteropServices.RuntimeInformation.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Runtime.InteropServices.RuntimeInformation.Tests.dll (found 12 of 36 test cases)
+Starting:    System.Runtime.InteropServices.RuntimeInformation.Tests.dll
+[STRT] System.Runtime.InteropServices.RuntimeInformationTests.CheckArchitectureTests.VerifyArchitecture
+[STRT] System.Runtime.InteropServices.RuntimeInformationTests.CheckArchitectureTests.VerifyBrowserArchitecture
+[STRT] System.Runtime.InteropServices.RuntimeInformationTests.RuntimeIdentifierTests.VerifyOSRid
+[STRT] System.Runtime.InteropServices.RuntimeInformationTests.RuntimeIdentifierTests.VerifyAppContextVariable
+[STRT] System.Runtime.InteropServices.RuntimeInformationTests.RuntimeIdentifierTests.VerifyAppContextVariableUnknown
+[STRT] System.Runtime.InteropServices.RuntimeInformationTests.RuntimeIdentifierTests.VerifyEnvironmentVariable
+[STRT] System.Runtime.InteropServices.RuntimeInformationTests.DescriptionNameTests.VerifyRuntimeNameOnNetCoreApp
+[STRT] System.Runtime.InteropServices.RuntimeInformationTests.DescriptionNameTests.VerifyOSDescription
+[STRT] System.Runtime.InteropServices.RuntimeInformationTests.DescriptionNameTests.VerifyFrameworkDescriptionContainsCorrectVersion
+[STRT] System.Runtime.InteropServices.RuntimeInformationTests.CheckPlatformTests.CheckBrowser
+[STRT] System.Runtime.InteropServices.RuntimeInformationTests.CheckPlatformTests.StringComparisonOrdinalIgnoreCaseIsUsed
+[STRT] System.Runtime.InteropServices.RuntimeInformationTests.CheckPlatformTests.CheckOSPlatform
+Finished:    System.Runtime.InteropServices.RuntimeInformation.Tests.dll
+Finished uploading 4668 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 12 Passed: 9 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 3
+
+test-main.js exiting WasmTestRunner.dll System.Runtime.InteropServices.RuntimeInformation.Tests.dll after 0.008133333333333333 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

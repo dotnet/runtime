@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Runtime.Loader.DefaultContext.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:27:47" total="2" passed="1" failed="0" skipped="1" time="0.051" errors="0">
+    <errors />
+    <collection total="2" passed="1" failed="0" skipped="1" name="Test collection for System.Runtime.Loader.Tests.DefaultLoadContextTests" time="0.011">
+      <test name="System.Runtime.Loader.Tests.DefaultLoadContextTests.LoadInDefaultContext" type="System.Runtime.Loader.Tests.DefaultLoadContextTests" method="LoadInDefaultContext" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"HasAssemblyFiles\"]]></reason>
+      </test>
+      <test name="System.Runtime.Loader.Tests.DefaultLoadContextTests.LoadNonExistentInDefaultContext" type="System.Runtime.Loader.Tests.DefaultLoadContextTests" method="LoadNonExistentInDefaultContext" time="0.0112" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

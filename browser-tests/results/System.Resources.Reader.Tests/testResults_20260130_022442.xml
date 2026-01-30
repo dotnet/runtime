@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Resources.Reader.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:24:46" total="25" passed="25" failed="0" skipped="0" time="0.148" errors="0">
+    <errors />
+    <collection total="25" passed="25" failed="0" skipped="0" name="Test collection for System.Resources.ResourceWriterTests.ResourceReaderTests" time="0.054">
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource1" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ReadResource1" time="0.022" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ReadV1Resources" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ReadV1Resources" time="0.0022" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Enumerator_Value" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="Exception_Enumerator_Value" time="0.0098" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Corrupted_resources" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="Exception_Corrupted_resources" time="0.0008" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_incorrect_magic_number" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="Exception_incorrect_magic_number" time="0.0011" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Enumarator_Entry" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="Exception_Enumarator_Entry" time="0.0006" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.Read_resources_withobject" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="Read_resources_withobject" time="0.0087" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ExceptionforResourceReaderDispose01" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ExceptionforResourceReaderDispose01" time="0.0011" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_opening_opened_resources" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="Exception_opening_opened_resources" time="0.0003999" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 0)" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ReadResource" time="0.0006999" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 1)" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ReadResource" time="0.0006" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 2)" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ReadResource" time="0.0003" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 3)" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ReadResource" time="0.0004" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 4)" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ReadResource" time="0.0003" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 5)" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ReadResource" time="0.0003" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 6)" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ReadResource" time="0.0003" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 7)" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ReadResource" time="0.0001999" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 8)" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ReadResource" time="0.0004" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 100)" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ReadResource" time="0.0003" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_EOF" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="Exception_EOF" time="0.0011" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Enumarator_Current_Dispose" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="Exception_Enumarator_Current_Dispose" time="0.0005" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Enumerator_Key" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="Exception_Enumerator_Key" time="0.0003999" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.ExceptionforResourceReaderNull" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="ExceptionforResourceReaderNull" time="0.0005" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Corrupted_resources1" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="Exception_Corrupted_resources1" time="0.0009" result="Pass" />
+      <test name="System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Enumerator_Reset" type="System.Resources.ResourceWriterTests.ResourceReaderTests" method="Exception_Enumerator_Reset" time="0.0006" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

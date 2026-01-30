@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Diagnostics.TraceSource.Config.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-assembly, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:20:49" total="0" passed="0" failed="0" skipped="0" time="0.012" errors="0">
+    <errors />
+  </assembly>
+</assemblies>

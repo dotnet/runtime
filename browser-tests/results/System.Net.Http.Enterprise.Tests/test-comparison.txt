@@ -1,0 +1,9 @@
+Test Comparison: System.Net.Http.Enterprise.Tests
+Generated: 2026-01-30T02:23:01+01:00
+
+Mono tests:    1
+CoreCLR tests: 1
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

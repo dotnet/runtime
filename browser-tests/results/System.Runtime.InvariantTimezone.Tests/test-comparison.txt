@@ -1,0 +1,9 @@
+Test Comparison: System.Runtime.InvariantTimezone.Tests
+Generated: 2026-01-30T02:26:58+01:00
+
+Mono tests:    40
+CoreCLR tests: 40
+
+=== Extra in CoreCLR (0) ===
+
+=== Missing in CoreCLR (0) ===

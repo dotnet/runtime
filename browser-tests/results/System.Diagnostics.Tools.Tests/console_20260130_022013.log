@@ -1,0 +1,27 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:33065/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Diagnostics.Tools.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Diagnostics.Tools.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Diagnostics.Tools.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Diagnostics.Tools.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Diagnostics.Tools.Tests.dll (found 3 of 3 test cases)
+Starting:    System.Diagnostics.Tools.Tests.dll
+[STRT] System.CodeDom.Compiler.Tests.GeneratedCodeAttributeTests.TestConstructor(tool: null, version: null)
+[STRT] System.CodeDom.Compiler.Tests.GeneratedCodeAttributeTests.TestConstructor(tool: "Tool", version: "Version")
+[STRT] System.Diagnostics.CodeAnalysis.Tests.ExcludeFromCodeCoverageAttributeTests.ExcludeFromCodeCoverageAttribute_Instantiate
+[STRT] System.Diagnostics.CodeAnalysis.Tests.SuppressMessageAttributeTests.TestConstructor(category: "Category", id: "CheckId", justification: "Justification", messageId: "MessageId", scope: "Scope", target: "Target")
+[STRT] System.Diagnostics.CodeAnalysis.Tests.SuppressMessageAttributeTests.TestConstructor(category: "", id: "", justification: "", messageId: "", scope: "", target: "")
+[STRT] System.Diagnostics.CodeAnalysis.Tests.SuppressMessageAttributeTests.TestConstructor(category: null, id: null, justification: null, messageId: null, scope: null, target: null)
+[STRT] System.Diagnostics.CodeAnalysis.Tests.SuppressMessageAttributeTests.TestConstructor(category: "", id: null, justification: "Justification", messageId: null, scope: "Scope", target: "")
+Finished:    System.Diagnostics.Tools.Tests.dll
+Finished uploading 3280 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 7 Passed: 7 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Diagnostics.Tools.Tests.dll after 0.007533333333333334 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

@@ -1,0 +1,23 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:34893/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Reflection.CoreCLR.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Reflection.CoreCLR.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Reflection.CoreCLR.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Reflection.CoreCLR.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Reflection.CoreCLR.Tests.dll (found 3 of 3 test cases)
+Starting:    System.Reflection.CoreCLR.Tests.dll
+[STRT] System.Reflection.Tests.AssemblyTests.LoadFromStream_Location_IsEmpty
+[STRT] System.Reflection.Tests.AssemblyTests.CurrentLocation_HasLocaton
+[STRT] System.Reflection.Tests.AssemblyTests.EntryPoint
+Finished:    System.Reflection.CoreCLR.Tests.dll
+Finished uploading 1184 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 3 Passed: 2 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 1
+
+test-main.js exiting WasmTestRunner.dll System.Reflection.CoreCLR.Tests.dll after 0.007383333333333334 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

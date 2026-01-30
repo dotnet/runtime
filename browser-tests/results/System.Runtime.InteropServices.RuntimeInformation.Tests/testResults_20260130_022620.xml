@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Runtime.InteropServices.RuntimeInformation.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:26:24" total="12" passed="9" failed="0" skipped="3" time="0.079" errors="0">
+    <errors />
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for System.Runtime.InteropServices.RuntimeInformationTests.CheckArchitectureTests" time="0.005">
+      <test name="System.Runtime.InteropServices.RuntimeInformationTests.CheckArchitectureTests.VerifyArchitecture" type="System.Runtime.InteropServices.RuntimeInformationTests.CheckArchitectureTests" method="VerifyArchitecture" time="0.0044" result="Pass" />
+      <test name="System.Runtime.InteropServices.RuntimeInformationTests.CheckArchitectureTests.VerifyBrowserArchitecture" type="System.Runtime.InteropServices.RuntimeInformationTests.CheckArchitectureTests" method="VerifyBrowserArchitecture" time="0.0002" result="Pass" />
+    </collection>
+    <collection total="4" passed="1" failed="0" skipped="3" name="Test collection for System.Runtime.InteropServices.RuntimeInformationTests.RuntimeIdentifierTests" time="0.001">
+      <test name="System.Runtime.InteropServices.RuntimeInformationTests.RuntimeIdentifierTests.VerifyOSRid" type="System.Runtime.InteropServices.RuntimeInformationTests.RuntimeIdentifierTests" method="VerifyOSRid" time="0.0006" result="Pass" />
+      <test name="System.Runtime.InteropServices.RuntimeInformationTests.RuntimeIdentifierTests.VerifyAppContextVariable" type="System.Runtime.InteropServices.RuntimeInformationTests.RuntimeIdentifierTests" method="VerifyAppContextVariable" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Runtime.InteropServices.RuntimeInformationTests.RuntimeIdentifierTests.VerifyAppContextVariableUnknown" type="System.Runtime.InteropServices.RuntimeInformationTests.RuntimeIdentifierTests" method="VerifyAppContextVariableUnknown" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Runtime.InteropServices.RuntimeInformationTests.RuntimeIdentifierTests.VerifyEnvironmentVariable" type="System.Runtime.InteropServices.RuntimeInformationTests.RuntimeIdentifierTests" method="VerifyEnvironmentVariable" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.Runtime.InteropServices.RuntimeInformationTests.DescriptionNameTests" time="0.004">
+      <test name="System.Runtime.InteropServices.RuntimeInformationTests.DescriptionNameTests.VerifyRuntimeNameOnNetCoreApp" type="System.Runtime.InteropServices.RuntimeInformationTests.DescriptionNameTests" method="VerifyRuntimeNameOnNetCoreApp" time="0.0007" result="Pass" />
+      <test name="System.Runtime.InteropServices.RuntimeInformationTests.DescriptionNameTests.VerifyOSDescription" type="System.Runtime.InteropServices.RuntimeInformationTests.DescriptionNameTests" method="VerifyOSDescription" time="0.0002" result="Pass" />
+      <test name="System.Runtime.InteropServices.RuntimeInformationTests.DescriptionNameTests.VerifyFrameworkDescriptionContainsCorrectVersion" type="System.Runtime.InteropServices.RuntimeInformationTests.DescriptionNameTests" method="VerifyFrameworkDescriptionContainsCorrectVersion" time="0.0031" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.Runtime.InteropServices.RuntimeInformationTests.CheckPlatformTests" time="0.003">
+      <test name="System.Runtime.InteropServices.RuntimeInformationTests.CheckPlatformTests.CheckBrowser" type="System.Runtime.InteropServices.RuntimeInformationTests.CheckPlatformTests" method="CheckBrowser" time="0.0003" result="Pass" />
+      <test name="System.Runtime.InteropServices.RuntimeInformationTests.CheckPlatformTests.StringComparisonOrdinalIgnoreCaseIsUsed" type="System.Runtime.InteropServices.RuntimeInformationTests.CheckPlatformTests" method="StringComparisonOrdinalIgnoreCaseIsUsed" time="0.0015" result="Pass" />
+      <test name="System.Runtime.InteropServices.RuntimeInformationTests.CheckPlatformTests.CheckOSPlatform" type="System.Runtime.InteropServices.RuntimeInformationTests.CheckPlatformTests" method="CheckOSPlatform" time="0.0013" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

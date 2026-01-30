@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.IO.FileSystem.DriveInfo.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-assembly, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:21:44" total="5" passed="5" failed="0" skipped="0" time="0.052" errors="0">
+    <errors />
+    <collection total="5" passed="5" failed="0" skipped="0" name="Test collection for System.IO.FileSystem.DriveInfo.Tests.dll" time="0.011">
+      <test name="System.IO.FileSystem.Tests.DriveInfoUnixTests.TestGetDrives" type="System.IO.FileSystem.Tests.DriveInfoUnixTests" method="TestGetDrives" time="0.0069" result="Pass" />
+      <test name="System.IO.FileSystem.Tests.DriveInfoUnixTests.PropertiesOfValidDrive" type="System.IO.FileSystem.Tests.DriveInfoUnixTests" method="PropertiesOfValidDrive" time="0.0020999" result="Pass" />
+      <test name="System.IO.FileSystem.Tests.DriveInfoUnixTests.SetVolumeLabel_Throws_PlatformNotSupportedException" type="System.IO.FileSystem.Tests.DriveInfoUnixTests" method="SetVolumeLabel_Throws_PlatformNotSupportedException" time="0.0005" result="Pass" />
+      <test name="System.IO.FileSystem.Tests.DriveInfoUnixTests.CanGetTempPathDriveFormat" type="System.IO.FileSystem.Tests.DriveInfoUnixTests" method="CanGetTempPathDriveFormat" time="0.0002" result="Pass" />
+      <test name="System.IO.FileSystem.Tests.DriveInfoUnixTests.TestConstructor" type="System.IO.FileSystem.Tests.DriveInfoUnixTests" method="TestConstructor" time="0.0017" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

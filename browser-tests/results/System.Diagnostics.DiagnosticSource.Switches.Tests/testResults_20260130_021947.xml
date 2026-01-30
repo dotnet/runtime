@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Diagnostics.DiagnosticSource.Switches.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:19:52" total="4" passed="3" failed="0" skipped="1" time="0.059" errors="0">
+    <errors />
+    <collection total="4" passed="3" failed="0" skipped="1" name="Test collection for System.Diagnostics.Tests.ActivityTests" time="0.015">
+      <test name="System.Diagnostics.Tests.ActivityTests.ActivityIdNonHierarchicalOverflow" type="System.Diagnostics.Tests.ActivityTests" method="ActivityIdNonHierarchicalOverflow" time="0.0141997" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdFormat_HierarchicalIsDefault" type="System.Diagnostics.Tests.ActivityTests" method="IdFormat_HierarchicalIsDefault" time="0.001" result="Pass" />
+      <test name="System.Diagnostics.Tests.ActivityTests.IdGenerationInternalParent" type="System.Diagnostics.Tests.ActivityTests" method="IdGenerationInternalParent" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsThreadingSupported\"]]></reason>
+      </test>
+      <test name="System.Diagnostics.Tests.ActivityTests.IdFormat_ZeroTraceIdAndSpanIdWithHierarchicalFormat" type="System.Diagnostics.Tests.ActivityTests" method="IdFormat_ZeroTraceIdAndSpanIdWithHierarchicalFormat" time="0.0003" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

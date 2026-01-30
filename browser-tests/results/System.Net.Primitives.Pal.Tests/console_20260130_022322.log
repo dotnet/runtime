@@ -1,0 +1,80 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:36221/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Net.Primitives.Pal.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Net.Primitives.Pal.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Net.Primitives.Pal.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Net.Primitives.Pal.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Net.Primitives.Pal.Tests.dll (found 15 of 15 test cases)
+Starting:    System.Net.Primitives.Pal.Tests.dll
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4Address_Get_Set_Throws
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6Address_Get_Set(address: [0, 0, 0, 0, 0, ···], scope: 0)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6Address_Get_Set(address: [32, 1, 13, 184, 170, ···], scope: 4293844428)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6Address_Get_Set(address: [32, 1, 13, 184, 0, ···], scope: 3437096703)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6Address_Get_Set(address: [0, 0, 0, 0, 0, ···], scope: 0)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.Port_Get_Set_IPv4(port: 0)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.Port_Get_Set_IPv4(port: 42)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.Port_Get_Set_IPv4(port: 1024)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.Port_Get_Set_IPv4(port: 65535)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4Address_Get_Set(address: 0)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4Address_Get_Set(address: 67305985)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4Address_Get_Set(address: 16777343)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4Address_Get_Set(address: 4294967295)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6Address_Get_Set_Throws
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.AddressFamily_Get_Set_Throws
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.Port_Get_Set_IPv6(port: 0)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.Port_Get_Set_IPv6(port: 42)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.Port_Get_Set_IPv6(port: 1024)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.Port_Get_Set_IPv6(port: 65535)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 0, port: 0)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 0, port: 42)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 0, port: 1024)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 0, port: 65535)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 67305985, port: 0)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 67305985, port: 42)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 67305985, port: 1024)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 67305985, port: 65535)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 16777343, port: 0)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 16777343, port: 42)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 16777343, port: 1024)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 16777343, port: 65535)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 4294967295, port: 0)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 4294967295, port: 42)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 4294967295, port: 1024)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv4AddressAndPort_Get_Set(address: 4294967295, port: 65535)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.Port_Get_Set_Throws_IPv6
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.Port_Get_Set_Throws_IPv4
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [0, 0, 0, 0, 0, ···], scope: 0, port: 0)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [0, 0, 0, 0, 0, ···], scope: 0, port: 42)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [0, 0, 0, 0, 0, ···], scope: 0, port: 1024)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [0, 0, 0, 0, 0, ···], scope: 0, port: 65535)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [32, 1, 13, 184, 170, ···], scope: 4293844428, port: 0)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [32, 1, 13, 184, 170, ···], scope: 4293844428, port: 42)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [32, 1, 13, 184, 170, ···], scope: 4293844428, port: 1024)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [32, 1, 13, 184, 170, ···], scope: 4293844428, port: 65535)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [32, 1, 13, 184, 0, ···], scope: 3437096703, port: 0)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [32, 1, 13, 184, 0, ···], scope: 3437096703, port: 42)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [32, 1, 13, 184, 0, ···], scope: 3437096703, port: 1024)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [32, 1, 13, 184, 0, ···], scope: 3437096703, port: 65535)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [0, 0, 0, 0, 0, ···], scope: 0, port: 0)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [0, 0, 0, 0, 0, ···], scope: 0, port: 42)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [0, 0, 0, 0, 0, ···], scope: 0, port: 1024)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.IPv6AddressAndPort_Get_Set(address: [0, 0, 0, 0, 0, ···], scope: 0, port: 65535)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.AddressFamily_Get_Set(family: Unspecified)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.AddressFamily_Get_Set(family: Unix)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.AddressFamily_Get_Set(family: InterNetwork)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.AddressFamily_Get_Set(family: InterNetworkV6)
+[STRT] System.Net.Primitives.PalTests.SocketAddressPalTests.ToString_ValidSocketAddress_ExpectedFormat
+[STRT] System.Net.Primitives.PalTests.HostInformationPalTests.DomainName_NotNull
+[STRT] System.Net.Primitives.PalTests.HostInformationPalTests.HostName_NotNull
+Finished:    System.Net.Primitives.Pal.Tests.dll
+Finished uploading 15852 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 60 Passed: 60 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Net.Primitives.Pal.Tests.dll after 0.009366666666666667 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

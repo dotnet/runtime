@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Runtime.InvariantTimezone.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:26:56" total="36" passed="35" failed="0" skipped="1" time="0.157" errors="0">
+    <errors />
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.Tests.TimeZoneNotFoundExceptionTests" time="0.012">
+      <test name="System.Tests.TimeZoneNotFoundExceptionTests.Ctor_String_Exception" type="System.Tests.TimeZoneNotFoundExceptionTests" method="Ctor_String_Exception" time="0.0056" result="Pass" />
+      <test name="System.Tests.TimeZoneNotFoundExceptionTests.Ctor_String" type="System.Tests.TimeZoneNotFoundExceptionTests" method="Ctor_String" time="0.0001" result="Pass" />
+      <test name="System.Tests.TimeZoneNotFoundExceptionTests.Ctor_Empty" type="System.Tests.TimeZoneNotFoundExceptionTests" method="Ctor_Empty" time="0.0061" result="Pass" />
+    </collection>
+    <collection total="3" passed="3" failed="0" skipped="0" name="Test collection for System.Tests.TimeZoneTests" time="0.005">
+      <test name="System.Tests.TimeZoneTests.TestRoundTripping" type="System.Tests.TimeZoneTests" method="TestRoundTripping" time="0.0024" result="Pass" />
+      <test name="System.Tests.TimeZoneTests.TestOffsetsAndDaylight" type="System.Tests.TimeZoneTests" method="TestOffsetsAndDaylight" time="0.0021" result="Pass" />
+      <test name="System.Tests.TimeZoneTests.TestBasicTimeZoneProperties" type="System.Tests.TimeZoneTests" method="TestBasicTimeZoneProperties" time="0.0004" result="Pass" />
+    </collection>
+    <collection total="30" passed="29" failed="0" skipped="1" name="Test collection for System.Tests.TimeZoneInfoTests" time="0.047">
+      <test name="System.Tests.TimeZoneInfoTests.OnlyUtcWhenInvariant" type="System.Tests.TimeZoneInfoTests" method="OnlyUtcWhenInvariant" time="0.0037" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.AdjustmentRuleBaseUtcOffsetDeltaTest" type="System.Tests.TimeZoneInfoTests" method="AdjustmentRuleBaseUtcOffsetDeltaTest" time="0.0035" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.HasSameRules_NullAdjustmentRules" type="System.Tests.TimeZoneInfoTests" method="HasSameRules_NullAdjustmentRules" time="0.0002" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.TestGetSystemTimeZonesCollections" type="System.Tests.TimeZoneInfoTests" method="TestGetSystemTimeZonesCollections" time="0.0016" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.CaseInsensitiveLookupUtc" type="System.Tests.TimeZoneInfoTests" method="CaseInsensitiveLookupUtc" time="0.0021" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.Names" type="System.Tests.TimeZoneInfoTests" method="Names" time="0.0001" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.EnsureUtcObjectSingleton" type="System.Tests.TimeZoneInfoTests" method="EnsureUtcObjectSingleton" time="0.0005" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.ConvertTimeToUtc" type="System.Tests.TimeZoneInfoTests" method="ConvertTimeToUtc" time="0.0024" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.ConvertTime_DateTimeOffset_NullDestination_ArgumentNullException" type="System.Tests.TimeZoneInfoTests" method="ConvertTime_DateTimeOffset_NullDestination_ArgumentNullException" time="0.0004" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.ConvertTimeBySystemTimeZoneIdTests" type="System.Tests.TimeZoneInfoTests" method="ConvertTimeBySystemTimeZoneIdTests" time="0.0007" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.IsInvalidTime_Utc" type="System.Tests.TimeZoneInfoTests" method="IsInvalidTime_Utc" time="0.0151" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.ConvertTime_DateTime_MiscUtc_Utc" type="System.Tests.TimeZoneInfoTests" method="ConvertTime_DateTime_MiscUtc_Utc" time="0.003" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.Kind" type="System.Tests.TimeZoneInfoTests" method="Kind" time="0.0001" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.NoAlternateUTCIdsInvariant" type="System.Tests.TimeZoneInfoTests" method="NoAlternateUTCIdsInvariant" time="0.0008" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.TimeZoneInfo_DoesNotCreateAdjustmentRulesWithOffsetOutsideOfRange" type="System.Tests.TimeZoneInfoTests" method="TimeZoneInfo_DoesNotCreateAdjustmentRulesWithOffsetOutsideOfRange" time="0.0003" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.ConvertTimeFromToUtcUsingCustomZone" type="System.Tests.TimeZoneInfoTests" method="ConvertTimeFromToUtcUsingCustomZone" time="0.0024" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.ConvertTimeFromToUtc" type="System.Tests.TimeZoneInfoTests" method="ConvertTimeFromToUtc" time="0.0003" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.ConvertTime_NullTimeZone_ThrowsArgumentNullException_Utc" type="System.Tests.TimeZoneInfoTests" method="ConvertTime_NullTimeZone_ThrowsArgumentNullException_Utc" time="0.0007" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.TestGetSystemTimeZonesCollectionsCallsOrder" type="System.Tests.TimeZoneInfoTests" method="TestGetSystemTimeZonesCollectionsCallsOrder" time="0" result="Skip">
+        <reason><![CDATA[Condition(s) not met: \"IsSupported\"]]></reason>
+      </test>
+      <test name="System.Tests.TimeZoneInfoTests.ConvertTime_DateTime_UtcToUtc" type="System.Tests.TimeZoneInfoTests" method="ConvertTime_DateTime_UtcToUtc" time="0.0013" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.TestCustomTimeZonesWithNullNames" type="System.Tests.TimeZoneInfoTests" method="TestCustomTimeZonesWithNullNames" time="0.0002" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.ConvertTimeFromUtc" type="System.Tests.TimeZoneInfoTests" method="ConvertTimeFromUtc" time="0.0004" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.CreateCustomTimeZone_Invalid" type="System.Tests.TimeZoneInfoTests" method="CreateCustomTimeZone_Invalid" time="0.0012" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.CreateCustomTimeZone" type="System.Tests.TimeZoneInfoTests" method="CreateCustomTimeZone" time="0.0004" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.JustUtcInvariant" type="System.Tests.TimeZoneInfoTests" method="JustUtcInvariant" time="0.0002" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.CreateCustomTimeZone_InvalidTimeZone" type="System.Tests.TimeZoneInfoTests" method="CreateCustomTimeZone_InvalidTimeZone" time="0.0012" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.GetAmbiguousTimeOffsets_Invalid" type="System.Tests.TimeZoneInfoTests" method="GetAmbiguousTimeOffsets_Invalid" time="0.0022" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.ConvertTime" type="System.Tests.TimeZoneInfoTests" method="ConvertTime" time="0.0002" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.IsInvariant" type="System.Tests.TimeZoneInfoTests" method="IsInvariant" time="0.0009" result="Pass" />
+      <test name="System.Tests.TimeZoneInfoTests.IsDaylightSavingTime_Utc" type="System.Tests.TimeZoneInfoTests" method="IsDaylightSavingTime_Utc" time="0.0011" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

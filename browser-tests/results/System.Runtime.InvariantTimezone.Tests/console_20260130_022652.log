@@ -1,0 +1,56 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:39683/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Runtime.InvariantTimezone.Tests.dll&arg=-notrait&arg=category%3dAdditionalTimezoneChecks&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Runtime.InvariantTimezone.Tests.dll -notrait category=AdditionalTimezoneChecks -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Runtime.InvariantTimezone.Tests.dll -notrait category=AdditionalTimezoneChecks -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Runtime.InvariantTimezone.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Runtime.InvariantTimezone.Tests.dll (found 36 of 36 test cases)
+Starting:    System.Runtime.InvariantTimezone.Tests.dll
+[STRT] System.Tests.TimeZoneNotFoundExceptionTests.Ctor_String_Exception
+[STRT] System.Tests.TimeZoneNotFoundExceptionTests.Ctor_String
+[STRT] System.Tests.TimeZoneNotFoundExceptionTests.Ctor_Empty
+[STRT] System.Tests.TimeZoneTests.TestRoundTripping
+[STRT] System.Tests.TimeZoneTests.TestOffsetsAndDaylight
+[STRT] System.Tests.TimeZoneTests.TestBasicTimeZoneProperties
+[STRT] System.Tests.TimeZoneInfoTests.OnlyUtcWhenInvariant
+[STRT] System.Tests.TimeZoneInfoTests.AdjustmentRuleBaseUtcOffsetDeltaTest
+[STRT] System.Tests.TimeZoneInfoTests.HasSameRules_NullAdjustmentRules
+[STRT] System.Tests.TimeZoneInfoTests.TestGetSystemTimeZonesCollections
+[STRT] System.Tests.TimeZoneInfoTests.CaseInsensitiveLookupUtc
+[STRT] System.Tests.TimeZoneInfoTests.Names
+[STRT] System.Tests.TimeZoneInfoTests.EnsureUtcObjectSingleton
+[STRT] System.Tests.TimeZoneInfoTests.ConvertTimeToUtc
+[STRT] System.Tests.TimeZoneInfoTests.ConvertTime_DateTimeOffset_NullDestination_ArgumentNullException
+[STRT] System.Tests.TimeZoneInfoTests.ConvertTimeBySystemTimeZoneIdTests
+[STRT] System.Tests.TimeZoneInfoTests.IsInvalidTime_Utc
+[STRT] System.Tests.TimeZoneInfoTests.ConvertTime_DateTime_MiscUtc_Utc
+[STRT] System.Tests.TimeZoneInfoTests.Kind
+[STRT] System.Tests.TimeZoneInfoTests.NoAlternateUTCIdsInvariant
+[STRT] System.Tests.TimeZoneInfoTests.TimeZoneInfo_DoesNotCreateAdjustmentRulesWithOffsetOutsideOfRange
+[STRT] System.Tests.TimeZoneInfoTests.ConvertTimeFromToUtcUsingCustomZone
+[STRT] System.Tests.TimeZoneInfoTests.ConvertTimeFromToUtc
+[STRT] System.Tests.TimeZoneInfoTests.ConvertTime_NullTimeZone_ThrowsArgumentNullException_Utc
+[STRT] System.Tests.TimeZoneInfoTests.TestGetSystemTimeZonesCollectionsCallsOrder
+[STRT] System.Tests.TimeZoneInfoTests.ConvertTime_DateTime_UtcToUtc
+[STRT] System.Tests.TimeZoneInfoTests.TestCustomTimeZonesWithNullNames
+[STRT] System.Tests.TimeZoneInfoTests.ConvertTimeFromUtc
+[STRT] System.Tests.TimeZoneInfoTests.CreateCustomTimeZone_Invalid
+[STRT] System.Tests.TimeZoneInfoTests.CreateCustomTimeZone
+[STRT] System.Tests.TimeZoneInfoTests.JustUtcInvariant
+[STRT] System.Tests.TimeZoneInfoTests.CreateCustomTimeZone_InvalidTimeZone
+[STRT] System.Tests.TimeZoneInfoTests.GetAmbiguousTimeOffsets_Invalid
+[STRT] System.Tests.TimeZoneInfoTests.ConvertTime
+[STRT] System.Tests.TimeZoneInfoTests.IsInvariant
+[STRT] System.Tests.TimeZoneInfoTests.IsDaylightSavingTime_Utc
+Finished:    System.Runtime.InvariantTimezone.Tests.dll
+Finished uploading 7556 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 36 Passed: 35 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 1
+
+test-main.js exiting WasmTestRunner.dll System.Runtime.InvariantTimezone.Tests.dll after 0.009133333333333334 minutes with result 0 and linear memory 193331200 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

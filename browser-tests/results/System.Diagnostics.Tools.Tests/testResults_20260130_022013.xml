@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Diagnostics.Tools.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:20:17" total="7" passed="7" failed="0" skipped="0" time="0.091" errors="0">
+    <errors />
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for System.CodeDom.Compiler.Tests.GeneratedCodeAttributeTests" time="0.006">
+      <test name="System.CodeDom.Compiler.Tests.GeneratedCodeAttributeTests.TestConstructor(tool: null, version: null)" type="System.CodeDom.Compiler.Tests.GeneratedCodeAttributeTests" method="TestConstructor" time="0.0052999" result="Pass" />
+      <test name="System.CodeDom.Compiler.Tests.GeneratedCodeAttributeTests.TestConstructor(tool: \&quot;Tool\&quot;, version: \&quot;Version\&quot;)" type="System.CodeDom.Compiler.Tests.GeneratedCodeAttributeTests" method="TestConstructor" time="0.0006" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Diagnostics.CodeAnalysis.Tests.ExcludeFromCodeCoverageAttributeTests" time="0.000">
+      <test name="System.Diagnostics.CodeAnalysis.Tests.ExcludeFromCodeCoverageAttributeTests.ExcludeFromCodeCoverageAttribute_Instantiate" type="System.Diagnostics.CodeAnalysis.Tests.ExcludeFromCodeCoverageAttributeTests" method="ExcludeFromCodeCoverageAttribute_Instantiate" time="0.0002999" result="Pass" />
+    </collection>
+    <collection total="4" passed="4" failed="0" skipped="0" name="Test collection for System.Diagnostics.CodeAnalysis.Tests.SuppressMessageAttributeTests" time="0.001">
+      <test name="System.Diagnostics.CodeAnalysis.Tests.SuppressMessageAttributeTests.TestConstructor(category: \&quot;Category\&quot;, id: \&quot;CheckId\&quot;, justification: \&quot;Justification\&quot;, messageId: \&quot;MessageId\&quot;, scope: \&quot;Scope\&quot;, target: \&quot;Target\&quot;)" type="System.Diagnostics.CodeAnalysis.Tests.SuppressMessageAttributeTests" method="TestConstructor" time="0.0006" result="Pass" />
+      <test name="System.Diagnostics.CodeAnalysis.Tests.SuppressMessageAttributeTests.TestConstructor(category: \&quot;\&quot;, id: \&quot;\&quot;, justification: \&quot;\&quot;, messageId: \&quot;\&quot;, scope: \&quot;\&quot;, target: \&quot;\&quot;)" type="System.Diagnostics.CodeAnalysis.Tests.SuppressMessageAttributeTests" method="TestConstructor" time="0.0002999" result="Pass" />
+      <test name="System.Diagnostics.CodeAnalysis.Tests.SuppressMessageAttributeTests.TestConstructor(category: null, id: null, justification: null, messageId: null, scope: null, target: null)" type="System.Diagnostics.CodeAnalysis.Tests.SuppressMessageAttributeTests" method="TestConstructor" time="0" result="Pass" />
+      <test name="System.Diagnostics.CodeAnalysis.Tests.SuppressMessageAttributeTests.TestConstructor(category: \&quot;\&quot;, id: null, justification: \&quot;Justification\&quot;, messageId: null, scope: \&quot;Scope\&quot;, target: \&quot;\&quot;)" type="System.Diagnostics.CodeAnalysis.Tests.SuppressMessageAttributeTests" method="TestConstructor" time="0.0001" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>

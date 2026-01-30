@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Net.Security.Enterprise.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:23:53" total="0" passed="0" failed="0" skipped="0" time="0.007" errors="0">
+    <errors />
+  </assembly>
+</assemblies>

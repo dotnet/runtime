@@ -1,0 +1,45 @@
+Running in: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36
+Running at: http://127.0.0.1:36549/index.html?arg=--setenv%3dXHARNESS_LOG_TEST_START%3dtrue&arg=--run&arg=WasmTestRunner.dll&arg=System.Resources.Reader.Tests.dll&arg=-notrait&arg=category%3dOuterLoop&arg=-notrait&arg=category%3dfailing&arg=-verbosity&arg=Info
+could not load /runArgs.json: 404. Ignoring
+Incoming arguments: --setenv=XHARNESS_LOG_TEST_START=true --run WasmTestRunner.dll System.Resources.Reader.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Application arguments: --run WasmTestRunner.dll System.Resources.Reader.Tests.dll -notrait category=OuterLoop -notrait category=failing -verbosity Info
+Initializing dotnet version 11.0.0 commit hash e31907b0fbca908ed525247a1dc38cc5fba7b0ff
+Using threadless Xunit runner
+Discovering: System.Resources.Reader.Tests.dll (method display = ClassAndMethod, method display options = None)
+Discovered:  System.Resources.Reader.Tests.dll (found 16 of 16 test cases)
+Starting:    System.Resources.Reader.Tests.dll
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource1
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ReadV1Resources
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Enumerator_Value
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Corrupted_resources
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_incorrect_magic_number
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Enumarator_Entry
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.Read_resources_withobject
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ExceptionforResourceReaderDispose01
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_opening_opened_resources
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 0)
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 1)
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 2)
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 3)
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 4)
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 5)
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 6)
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 7)
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 8)
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ReadResource(numberOfLeadingBytes: 100)
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_EOF
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Enumarator_Current_Dispose
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Enumerator_Key
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.ExceptionforResourceReaderNull
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Corrupted_resources1
+[STRT] System.Resources.ResourceWriterTests.ResourceReaderTests.Exception_Enumerator_Reset
+Finished:    System.Resources.Reader.Tests.dll
+Finished uploading 6390 bytes of RESULTXML
+Xml file was written to the provided writer.
+
+=== TEST EXECUTION SUMMARY ===
+Tests run: 25 Passed: 25 Inconclusive: 0 Failed: 0 Ignored: 0 Skipped: 0
+
+test-main.js exiting WasmTestRunner.dll System.Resources.Reader.Tests.dll after 0.008183333333333334 minutes with result 0 and linear memory 161087488 bytes
+DOTNET: forceDisposeProxies done: 14 imports, 0 exports, 0 GCHandles, 0 JSHandles.
+WASM EXIT 0

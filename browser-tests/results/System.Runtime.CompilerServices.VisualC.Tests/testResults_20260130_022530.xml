@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assemblies>
+  <assembly name="System.Runtime.CompilerServices.VisualC.Tests.dll" environment="32-bit .NET .NET 11.0 [collection-per-class, non-parallel]" test-framework="xUnit.net 2.9.3.0" run-date="2026-01-30" run-time="01:25:34" total="3" passed="3" failed="0" skipped="0" time="0.066" errors="0">
+    <errors />
+    <collection total="2" passed="2" failed="0" skipped="0" name="Test collection for System.Runtime.CompilerServices.Tests.RequiredAttributeAttributeTests" time="0.006">
+      <test name="System.Runtime.CompilerServices.Tests.RequiredAttributeAttributeTests.Ctor_RequiredContract(requiredContract: null)" type="System.Runtime.CompilerServices.Tests.RequiredAttributeAttributeTests" method="Ctor_RequiredContract" time="0.005" result="Pass" />
+      <test name="System.Runtime.CompilerServices.Tests.RequiredAttributeAttributeTests.Ctor_RequiredContract(requiredContract: typeof(int))" type="System.Runtime.CompilerServices.Tests.RequiredAttributeAttributeTests" method="Ctor_RequiredContract" time="0.0009" result="Pass" />
+    </collection>
+    <collection total="1" passed="1" failed="0" skipped="0" name="Test collection for System.Runtime.CompilerServices.Tests.EmptyAttributeTests" time="0.000">
+      <test name="System.Runtime.CompilerServices.Tests.EmptyAttributeTests.EmptyAttributes_Ctor_Success" type="System.Runtime.CompilerServices.Tests.EmptyAttributeTests" method="EmptyAttributes_Ctor_Success" time="0.0003" result="Pass" />
+    </collection>
+  </assembly>
+</assemblies>
