@@ -3391,12 +3391,13 @@ Compiler::AddCodeDscMap* Compiler::fgGetAddCodeDscMap()
 //   srcBlk  - the block that needs an entry;
 //   kind    - the kind of exception;
 //
-// Notes:
-//   You can call this method after throw helpers have been created,
-//   but it will assert if this entails creation of a new helper.
+// Returns:
+//    newly added AddCodeDsc
 //
 Compiler::AddCodeDsc* Compiler::fgCreateAddCodeDsc(BasicBlock* srcBlk, SpecialCodeKind kind)
 {
+    // Cannot allow new demands once we have created throw helper blocks
+    //
     assert(!fgRngChkThrowAdded);
 
     // Fetch block data and designator
@@ -3627,11 +3628,11 @@ void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
     }
     else
     {
-        LIR::Range range = LIR::SeqTree(this, tree);
+        LIR::Range     range     = LIR::SeqTree(this, tree);
         GenTree* const firstNode = range.FirstNode();
         GenTree* const lastNode  = range.LastNode();
         LIR::AsRange(block).InsertAtEnd(std::move(range));
-        LIR::ReadOnlyRange blockRange(block, firstNode, lastNode);
+        LIR::ReadOnlyRange blockRange(firstNode, lastNode);
         m_pLowering->LowerRange(block, blockRange);
     }
 }
