@@ -334,11 +334,11 @@ namespace ILCompiler.ObjectWriter
         {
             // Calculate the required memory encodeSize based on the combined data section encodeSize
             ulong contentSize = (ulong)SectionByName(WasmObjectNodeSection.CombinedDataSection.Name).ContentSize;
-            ulong dataPages = (contentSize + (1<<16) - 1) >> 16;
-            int numPages = int.Max((int)dataPages, 1); // Ensure at least one page is allocated for the minimum
+            uint dataPages = checked((uint)((contentSize + (1<<16) - 1) >> 16));
+            uint numPages = Math.Max(dataPages, 1); // Ensure at least one page is allocated for the minimum
 
             _defaultImports[0] = new WasmImport("env", "memory", WasmExternalKind.Memory,
-                new WasmMemoryType(WasmLimitType.HasMin, (uint)numPages)); // memory limits: flags (0 = only minimum)
+                new WasmMemoryType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
 
             int[] assignedImportIndices = new int[(int)WasmExternalKind.Count];
             foreach (WasmImport import in _defaultImports)

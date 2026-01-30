@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Collections.Generic;
-using ILCompiler.ObjectWriter.WasmInstructions;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -281,11 +280,11 @@ namespace ILCompiler.ObjectWriter
 
     public class WasmImport : IWasmEncodable
     {
-        public string Module;
-        public string Name;
-        public WasmExternalKind Kind;
-        public int? Index;
-        WasmImportType Import;
+        public readonly string Module;
+        public readonly string Name;
+        public readonly WasmExternalKind Kind;
+        public readonly int? Index;
+        public readonly WasmImportType Import;
 
         public WasmImport(string module, string name, WasmExternalKind kind, WasmImportType import, int? index = null)
         {
