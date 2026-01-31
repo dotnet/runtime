@@ -10902,6 +10902,10 @@ public:
         // Amount to subtract from SP before saving (prolog) OR
         // to add to SP after restoring (epilog) callee saves
         int calleeSaveSpDelta = 0;
+
+        // For OSR: the final-SP-relative offset to callee-saves.
+        // This differs from calleeSaveSpOffset for frame types 3/4/5.
+        int osrCalleeSaveSpOffset = 0;
 #endif
     } compFrameInfo;
 #endif

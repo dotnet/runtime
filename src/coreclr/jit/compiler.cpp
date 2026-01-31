@@ -5695,8 +5695,8 @@ void Compiler::generatePatchpointInfo()
     regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
     rsPushRegs |= RBM_FP | RBM_LR;
     patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
-    // Compute FP-relative offset: calleeSaveSpOffset is SP-relative, offsetSpToSavedFp is where FP points
-    int calleeSaveFpOffset = compFrameInfo.calleeSaveSpOffset - compFrameInfo.offsetSpToSavedFp;
+    // Compute FP-relative offset using osrCalleeSaveSpOffset (which is correct for all frame types)
+    int calleeSaveFpOffset = compFrameInfo.osrCalleeSaveSpOffset - compFrameInfo.offsetSpToSavedFp;
     patchpointInfo->SetCalleeSaveFpOffset(calleeSaveFpOffset);
     JITDUMP("--OSR-- Tier0 callee saves: ");
     JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
