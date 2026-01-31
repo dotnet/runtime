@@ -649,8 +649,9 @@ namespace System.IO.Packaging.Tests
 
             // When the package is opened with FileAccess.Read, the underlying zip entry stream
             // does not support seeking but Length should still return the correct value.
+            // ReadablePartPieceEntry.bin has 4 pieces of 16 bytes each = 64 bytes total.
             Assert.False(stream.CanSeek);
-            Assert.NotEqual(0, stream.Length);
+            Assert.Equal(64, stream.Length);
         }
     }
 }
