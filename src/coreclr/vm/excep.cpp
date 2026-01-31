@@ -4312,16 +4312,9 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 
     LONG retVal = EXCEPTION_CONTINUE_SEARCH;
 
-    // Protect against access violations when accessing thread-local storage in case of heap corruption
-    Thread* pThread = NULL;
-    __try
+    if (NtCurrentTeb()->ThreadLocalStoragePointer == NULL)
     {
-        pThread = GetThreadNULLOk();
-    }
-    __except (EXCEPTION_EXECUTE_HANDLER)
-    {
-        // If we get an access violation while trying to access thread-local storage,
-        // just return and let the OS handle the exception
+        // Ignore exceptions when TLS is not available due to heap corruption or early thread initialization
         return retVal;
     }
 
@@ -4334,7 +4327,7 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
     // various runtimes again.
     //
     // Thus, check if this UEF has already been invoked in context of this thread and runtime and if so, dont invoke it again.
-    if (pThread && (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException)))
+    if (GetThreadNULLOk() && (GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException)))
     {
         LOG((LF_EH, LL_INFO10, "Exiting COMUnhandledExceptionFilter since we have already done UE processing for this thread!\n"));
         return retVal;
@@ -4344,10 +4337,10 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
     retVal = InternalUnhandledExceptionFilter(pExceptionInfo);
 
     // If thread object exists, mark that this thread has done unhandled exception processing
-    if (pThread)
+    if (GetThreadNULLOk())
     {
         LOG((LF_EH, LL_INFO100, "COMUnhandledExceptionFilter: setting TSNC_ProcessedUnhandledException\n"));
-        pThread->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+        GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
     }
 
     return retVal;
