@@ -599,7 +599,7 @@ namespace System.Collections.Tests
             
             // Create a simulated large list - we can't actually allocate int.MaxValue/2 + 2 bytes in tests
             // This class simulates a sorted array without allocating memory
-            var largeList = new LargeIList(int.MaxValue / 2 + 2);
+            var largeList = new FakeLargeIList(int.MaxValue / 2 + 2);
             ArrayList adapter = ArrayList.Adapter(largeList);
             
             // Perform binary search - with the old buggy code, this could produce incorrect results
@@ -3116,11 +3116,11 @@ namespace System.Collections.Tests
     }
 
     // Helper class that simulates a large IList without actually allocating memory
-    internal class LargeIList : IList
+    internal class FakeLargeIList : IList
     {
         private readonly int _count;
 
-        public LargeIList(int count)
+        public FakeLargeIList(int count)
         {
             _count = count;
         }
