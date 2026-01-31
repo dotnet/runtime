@@ -832,17 +832,17 @@ namespace System.StubHelpers
     internal static unsafe partial class MngdRefCustomMarshaler
     {
         [UnmanagedCallersOnly]
-        internal static void ConvertContentsToNative(ObjectHandleOnStack* marshaler, ObjectHandleOnStack* pManagedHome, IntPtr* pNativeHome, ObjectHandleOnStack* exception)
+        internal static void ConvertContentsToNative(ObjectHandleOnStack marshaler, ObjectHandleOnStack pManagedHome, IntPtr* pNativeHome, ObjectHandleOnStack exception)
         {
             try
             {
-                ICustomMarshaler customMarshaler = (ICustomMarshaler)marshaler->Value;
-                object managedHome = pManagedHome->Value;
+                ICustomMarshaler customMarshaler = (ICustomMarshaler)marshaler.Value!;
+                object managedHome = pManagedHome.Value!;
                 ConvertContentsToNative(customMarshaler, in managedHome, pNativeHome);
             }
             catch (Exception ex)
             {
-                exception->Value = ex;
+                exception.Value = ex;
             }
         }
 
@@ -859,18 +859,18 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        internal static void ConvertContentsToManaged(ObjectHandleOnStack* marshaler, ObjectHandleOnStack* pManagedHome, IntPtr* pNativeHome, ObjectHandleOnStack* exception)
+        internal static void ConvertContentsToManaged(ObjectHandleOnStack marshaler, ObjectHandleOnStack pManagedHome, IntPtr* pNativeHome, ObjectHandleOnStack exception)
         {
             try
             {
-                ICustomMarshaler customMarshaler = (ICustomMarshaler)marshaler->Value;
-                object? managedHome = pManagedHome->Value;
+                ICustomMarshaler customMarshaler = (ICustomMarshaler)marshaler.Value!;
+                object? managedHome = pManagedHome.Value;
                 ConvertContentsToManaged(customMarshaler, ref managedHome, pNativeHome);
-                pManagedHome->Value = managedHome!;
+                pManagedHome.Value = managedHome!;
             }
             catch (Exception ex)
             {
-                exception->Value = ex;
+                exception.Value = ex;
             }
         }
 
@@ -887,17 +887,17 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        internal static void ClearNative(ObjectHandleOnStack* marshaler, ObjectHandleOnStack* pManagedHome, IntPtr* pNativeHome, ObjectHandleOnStack* exception)
+        internal static void ClearNative(ObjectHandleOnStack marshaler, ObjectHandleOnStack pManagedHome, IntPtr* pNativeHome, ObjectHandleOnStack exception)
         {
             try
             {
-                ICustomMarshaler customMarshaler = (ICustomMarshaler)marshaler->Value;
-                object managedHome = pManagedHome->Value;
+                ICustomMarshaler customMarshaler = (ICustomMarshaler)marshaler.Value!;
+                object managedHome = pManagedHome.Value!;
                 ClearNative(customMarshaler, ref managedHome, pNativeHome);
             }
             catch (Exception ex)
             {
-                exception->Value = ex;
+                exception.Value = ex;
             }
         }
 
@@ -920,17 +920,17 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        internal static void ClearManaged(ObjectHandleOnStack* marshaler, ObjectHandleOnStack* pManagedHome, IntPtr* pNativeHome, ObjectHandleOnStack* exception)
+        internal static void ClearManaged(ObjectHandleOnStack marshaler, ObjectHandleOnStack pManagedHome, IntPtr* pNativeHome, ObjectHandleOnStack exception)
         {
             try
             {
-                ICustomMarshaler customMarshaler = (ICustomMarshaler)marshaler->Value;
-                object managedHome = pManagedHome->Value;
+                ICustomMarshaler customMarshaler = (ICustomMarshaler)marshaler.Value!;
+                object managedHome = pManagedHome.Value!;
                 ClearManaged(customMarshaler, in managedHome, pNativeHome);
             }
             catch (Exception ex)
             {
-                exception->Value = ex;
+                exception.Value = ex;
             }
         }
 

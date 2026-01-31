@@ -546,8 +546,7 @@ void DispParamCustomMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
     if (vt != VT_I4 && vt != VT_UI4 && vt != VT_UNKNOWN && vt != VT_DISPATCH)
         COMPlusThrow(kInvalidCastException, IDS_EE_INVALID_VT_FOR_CUSTOM_MARHALER);
 
-    UnmanagedCallersOnlyCaller<ObjectHandleOnStack*, ObjectHandleOnStack*, IUnknown**>
-        target(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_MANAGED_UCO);
+    UnmanagedCallersOnlyCaller target(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_MANAGED_UCO);
 
     struct
     {
@@ -560,8 +559,8 @@ void DispParamCustomMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
     IUnknown* pUnk = bByref ? *V_UNKNOWNREF(pSrcVar) : V_UNKNOWN(pSrcVar);
 
     target.InvokeThrowing(
-        &gc.CustomMarshaler,
-        pDestObj,
+        QCall::ObjectHandleOnStack{ &gc.CustomMarshaler },
+        QCall::ObjectHandleOnStack{ pDestObj },
         &pUnk);
 
     GCPROTECT_END();
@@ -584,8 +583,7 @@ void DispParamCustomMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIAN
     // Convert the object using the custom marshaler.
     SafeVariantClear(pDestVar);
 
-    UnmanagedCallersOnlyCaller<ObjectHandleOnStack*, ObjectHandleOnStack*, IUnknown**>
-        target(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_NATIVE_UCO);
+    UnmanagedCallersOnlyCaller target(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_NATIVE_UCO);
 
     struct
     {
@@ -596,14 +594,13 @@ void DispParamCustomMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIAN
 
     // Invoke the MarshalManagedToNative method.
     IUnknown* pUnkRaw = NULL;
-
     target.InvokeThrowing(
-        &gc.CustomMarshaler,
-        pSrcObj,
+        QCall::ObjectHandleOnStack{ &gc.CustomMarshaler },
+        QCall::ObjectHandleOnStack{ pSrcObj },
         &pUnkRaw);
 
-    GCPROTECT_END();
     pUnk = pUnkRaw;
+    GCPROTECT_END();
 
     if (!pUnk)
     {
@@ -657,8 +654,7 @@ void DispParamCustomMarshaler::MarshalManagedToNativeRef(OBJECTREF *pSrcObj, VAR
     OleVariant::ExtractContentsFromByrefVariant(pRefVar, &vtmp);
     SafeVariantClear(&vtmp);
 
-    UnmanagedCallersOnlyCaller<ObjectHandleOnStack*, ObjectHandleOnStack*, IUnknown**>
-        target(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_NATIVE_UCO);
+    UnmanagedCallersOnlyCaller target(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_NATIVE_UCO);
 
     struct
     {
@@ -671,8 +667,8 @@ void DispParamCustomMarshaler::MarshalManagedToNativeRef(OBJECTREF *pSrcObj, VAR
     IUnknown* pUnkResult = V_UNKNOWN(&vtmp);
 
     target.InvokeThrowing(
-        &gc.CustomMarshaler,
-        pSrcObj,
+        QCall::ObjectHandleOnStack{ &gc.CustomMarshaler },
+        QCall::ObjectHandleOnStack{ pSrcObj },
         &pUnkResult);
 
     V_UNKNOWN(&vtmp) = pUnkResult;
@@ -707,8 +703,7 @@ void DispParamCustomMarshaler::CleanUpManaged(OBJECTREF *pObj)
     }
     CONTRACTL_END;
 
-    UnmanagedCallersOnlyCaller<ObjectHandleOnStack*, ObjectHandleOnStack*, void**>
-        target(METHOD__MNGD_REF_CUSTOM_MARSHALER__CLEAR_MANAGED_UCO);
+    UnmanagedCallersOnlyCaller target(METHOD__MNGD_REF_CUSTOM_MARSHALER__CLEAR_MANAGED_UCO);
 
     struct
     {
@@ -719,8 +714,8 @@ void DispParamCustomMarshaler::CleanUpManaged(OBJECTREF *pObj)
 
     void* dummyNative = NULL;
     target.InvokeThrowing(
-        &gc.CustomMarshaler,
-        pObj,
+        QCall::ObjectHandleOnStack{ &gc.CustomMarshaler },
+        QCall::ObjectHandleOnStack{ pObj },
         &dummyNative);
 
     GCPROTECT_END();

@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -178,7 +179,7 @@ namespace System
         }
 #elif !NATIVEAOT
         [UnmanagedCallersOnly]
-        internal static unsafe void Setup(char** pNames, char** pValues, int count, Runtime.CompilerServices.ObjectHandleOnStack* pException)
+        internal static unsafe void Setup(char** pNames, char** pValues, int count, ObjectHandleOnStack pException)
         {
             try
             {
@@ -191,7 +192,7 @@ namespace System
             }
             catch (Exception ex)
             {
-                pException->Value = ex;
+                pException.Value = ex;
             }
         }
 #endif

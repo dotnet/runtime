@@ -33,7 +33,7 @@ namespace System.Runtime.CompilerServices
             return new ObjectHandleOnStack((object*)Unsafe.AsPointer(ref o));
         }
 
-        internal object Value { get => *_ptr; set => *_ptr = value; }
+        internal object? Value { get => *_ptr; set => *_ptr = value; }
     }
 
     internal ref struct ByteRef

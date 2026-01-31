@@ -571,9 +571,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     {
         GCX_COOP();
 
-        UnmanagedCallersOnlyCaller<LPCWSTR*, LPCWSTR*, int>
-            setup(METHOD__APPCONTEXT__SETUP);
-
+        UnmanagedCallersOnlyCaller setup(METHOD__APPCONTEXT__SETUP);
         setup.InvokeThrowing(pPropertyNames, pPropertyValues, nProperties);
     }
 
