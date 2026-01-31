@@ -110,7 +110,7 @@ namespace ILCompiler
                     // when the method is a generic virtual method
                     if (impl != null && originalDeclMethod.HasInstantiation)
                     {
-                        // We may end up with a method that has subsituted type parameters, so we need to instantiate
+                        // We may end up with a method that has substituted type parameters, so we need to instantiate
                         // on the method definition
                         impl = impl.GetMethodDefinition().MakeInstantiatedMethod(originalDeclMethod.Instantiation);
                     }
@@ -194,7 +194,7 @@ namespace ILCompiler
                 // when the method is a generic virtual method
                 if (impl != null && originalDeclMethod.HasInstantiation)
                 {
-                    // We may end up with a method that has subsituted type parameters, so we need to instantiate
+                    // We may end up with a method that has substituted type parameters, so we need to instantiate
                     // on the method definition
                     impl = impl.GetMethodDefinition().MakeInstantiatedMethod(originalDeclMethod.Instantiation);
                 }
@@ -219,7 +219,7 @@ namespace ILCompiler
                 }
             }
 
-            if (impl != null && impl.HasInstantiation && originalDeclMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsCanonicalMethod(CanonicalFormKind.Specific))
+            if (impl != null && impl.HasInstantiation && impl.GetCanonMethodTarget(CanonicalFormKind.Specific).IsCanonicalMethod(CanonicalFormKind.Specific))
             {
                 // We don't support devirtualization of shared generic virtual methods yet.
                 devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
