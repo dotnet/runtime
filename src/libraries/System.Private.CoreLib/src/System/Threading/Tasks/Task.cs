@@ -7628,15 +7628,17 @@ namespace System.Threading.Tasks
         public bool InvokeMayRunArbitraryCode => true;
     }
 
+#if !MONO
     internal sealed class RuntimeAsyncContinuationDebugInfo
     {
-        public long TickCount;
-        public int Id;
+        internal long TickCount;
+        internal int Id;
 
-        public RuntimeAsyncContinuationDebugInfo(long tickCount)
+        internal RuntimeAsyncContinuationDebugInfo(long tickCount)
         {
             TickCount = tickCount;
             Id = Task.NewId();
         }
     }
+#endif
 }

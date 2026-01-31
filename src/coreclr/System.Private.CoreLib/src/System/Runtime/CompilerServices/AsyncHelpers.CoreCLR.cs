@@ -186,6 +186,8 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(8)]
 #endif
         // The runtime async Task being dispatched.
+        // This is used by debuggers in the case of nested dispatcher info (multiple runtime-async Tasks on the same thread)
+        // to match an inflight Task to the corresponding Continuation chain.
         public Task Task;
 
         // Information about current task dispatching, to be used for async
@@ -500,9 +502,10 @@ namespace System.Runtime.CompilerServices
                         asyncDispatcherInfo.NextContinuation = nextContinuation;
 
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
+                        RuntimeAsyncContinuationDebugInfo? debugInfo = null;
                         if (Task.s_asyncDebuggingEnabled)
                         {
-                            RuntimeAsyncContinuationDebugInfo debugInfo = Task.GetRuntimeAsyncContinuationDebugInfo(curContinuation, out RuntimeAsyncContinuationDebugInfo? debugInfoVal) ? debugInfoVal : new RuntimeAsyncContinuationDebugInfo(Stopwatch.GetTimestamp());
+                            debugInfo = Task.GetRuntimeAsyncContinuationDebugInfo(curContinuation, out RuntimeAsyncContinuationDebugInfo? debugInfoVal) ? debugInfoVal : new RuntimeAsyncContinuationDebugInfo(Stopwatch.GetTimestamp());
                             // we have dequeued curContinuation; update task tick info so that we can track its start time from a debugger
                             Task.UpdateRuntimeAsyncTaskTicks(this, debugInfo.TickCount);
                         }
@@ -515,7 +518,7 @@ namespace System.Runtime.CompilerServices
                         {
                             // we have a new Continuation that belongs to the same logical invocation as the previous; propagate debug info from previous continuation
                             if (Task.s_asyncDebuggingEnabled)
-                                Task.UpdateRuntimeAsyncContinuationDebugInfo(newContinuation, debugInfo);
+                                Task.UpdateRuntimeAsyncContinuationDebugInfo(newContinuation, debugInfo!);
                             newContinuation.Next = nextContinuation;
                             HandleSuspended();
                             contexts.Pop();
@@ -551,7 +554,7 @@ namespace System.Runtime.CompilerServices
 
                     if (asyncDispatcherInfo.NextContinuation == null)
                     {
-                        if (TplEventSource.Log.IsEnabled())
+                        if (isTplEnabled)
                         {
                             TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
                         }
@@ -595,8 +598,8 @@ namespace System.Runtime.CompilerServices
                 {
                     if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
                         return continuation;
-
-                    RemoveRuntimeAsyncContinuationTicks(continuation);
+                    if (Task.s_asyncDebuggingEnabled)
+                        Task.RemoveRuntimeAsyncContinuationTicks(continuation);
                     continuation = continuation.Next;
                 }
             }
