@@ -156,7 +156,7 @@ namespace System.Net.Http.Functional.Tests
                     // RequestVersionExact means we won't downgrade to HTTP/1.1
                     requestMessage.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-                    using SocketsHttpHandler handler = new SocketsHttpHandler() { Credentials = s_testCredentialRight };
+                    SocketsHttpHandler handler = new SocketsHttpHandler() { Credentials = s_testCredentialRight };
                     using var client = new HttpClient(handler);
                     
                     // Should get 401 since we can't downgrade with RequestVersionExact
