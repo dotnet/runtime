@@ -3405,7 +3405,7 @@ Compiler::AddCodeDsc* Compiler::fgCreateAddCodeDsc(BasicBlock* srcBlk, SpecialCo
     AcdKeyDesignator dsg     = AcdKeyDesignator::KD_NONE;
     unsigned const   refData = (kind == SCK_FAIL_FAST) ? 0 : bbThrowIndex(srcBlk, &dsg);
 
-    // Allocate a new entry and prepend it to the list
+    // Allocate a new entry and add it to the AddCodeDscMap
     //
     AddCodeDsc* add  = new (this, CMK_BasicBlock) AddCodeDsc;
     add->acdDstBlk   = nullptr;
