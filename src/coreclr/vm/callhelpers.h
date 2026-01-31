@@ -81,8 +81,6 @@ void* DispatchCallSimple(
 void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info, bool handleGcRefs);
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
-bool IsCerRootMethod(MethodDesc *pMD);
-
 class MethodDescCallSite
 {
 private:
