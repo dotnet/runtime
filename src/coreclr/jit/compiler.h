@@ -8068,15 +8068,18 @@ public:
             return dsc;
         }
 
-        static AssertionDsc CreateConstantLclvarAssertion(
-            Compiler* comp, unsigned lclNum, ValueNum vn, int cns, ValueNum cnsVN, bool equals)
+        struct ZeroObj
         {
-            AssertionDsc dsc   = {};
-            dsc.assertionKind  = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
-            dsc.op1.kind       = O1K_LCLVAR;
-            dsc.op2.kind       = O2K_CONST_INT;
-            dsc.op2.u1.iconVal = cns;
-            dsc.op2.SetIconFlag(GTF_EMPTY);
+            static ZeroObj instance;
+        };
+
+        template <typename T>
+        static AssertionDsc CreateConstantLclvarAssertion(
+            Compiler* comp, unsigned lclNum, ValueNum vn, T cns, ValueNum cnsVN, bool equals)
+        {
+            AssertionDsc dsc  = {};
+            dsc.assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
+            dsc.op1.kind      = O1K_LCLVAR;
 
             if (comp->optLocalAssertionProp)
             {
@@ -8099,6 +8102,28 @@ public:
                 dsc.op1.lclNum = BAD_VAR_NUM;
                 dsc.op1.vn     = vn;
                 dsc.op2.vn     = cnsVN;
+            }
+
+            if constexpr (std::is_same<T, int>::value || std::is_same<T, ssize_t>::value)
+            {
+                dsc.op2.kind       = O2K_CONST_INT;
+                dsc.op2.u1.iconVal = static_cast<ssize_t>(cns);
+                dsc.op2.SetIconFlag(GTF_EMPTY);
+            }
+            else if constexpr (std::is_same<T, double>::value)
+            {
+                dsc.op2.kind    = O2K_CONST_DOUBLE;
+                dsc.op2.dconVal = static_cast<double>(cns);
+                dsc.op2.SetIconFlag(GTF_EMPTY);
+            }
+            else if constexpr (std::is_same<T, ZeroObj>::value)
+            {
+                dsc.op2.kind = O2K_ZEROOBJ;
+                dsc.op2.SetIconFlag(GTF_EMPTY);
+            }
+            else
+            {
+                static_assert(std::is_same<T, ssize_t>::value, "Unexpected type for cns");
             }
             return dsc;
         }
@@ -8269,7 +8294,7 @@ public:
     AssertionIndex optAssertionGenCast(GenTreeCast* cast);
     AssertionInfo  optCreateJTrueBoundsAssertion(GenTree* tree);
     AssertionInfo  optAssertionGenJtrue(GenTree* tree);
-    AssertionIndex optCreateJtrueAssertions(GenTree* op1, GenTree* op2, optAssertionKind assertionKind);
+    AssertionIndex optCreateJtrueAssertions(GenTree* op1, GenTree* op2, bool equals);
     AssertionIndex optFindComplementary(AssertionIndex assertionIndex);
     void           optMapComplementary(AssertionIndex assertionIndex, AssertionIndex index);
 
@@ -8278,7 +8303,7 @@ public:
     ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
 
     // Assertion creation functions.
-    AssertionIndex optCreateAssertion(GenTree* op1, GenTree* op2, optAssertionKind assertionKind);
+    AssertionIndex optCreateAssertion(GenTree* op1, GenTree* op2, bool equals);
 
     AssertionIndex optFinalizeCreatingAssertion(AssertionDsc* assertion);
 

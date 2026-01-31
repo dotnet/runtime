@@ -1138,29 +1138,14 @@ ssize_t Compiler::optCastConstantSmall(ssize_t iconVal, var_types smallType)
 //    Assertion creation may fail either because the provided assertion
 //    operands aren't supported or because the assertion table is full.
 //
-AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAssertionKind assertionKind)
+AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equals)
 {
     assert(op1 != nullptr);
 
-    if (op1->OperIs(GT_BOUNDS_CHECK) && (assertionKind == OAK_NO_THROW))
-    {
-        ValueNum idxVN = optConservativeNormalVN(op1->AsBoundsChk()->GetIndex());
-        ValueNum lenVN = optConservativeNormalVN(op1->AsBoundsChk()->GetArrayLength());
-        if ((idxVN == ValueNumStore::NoVN) || (lenVN == ValueNumStore::NoVN))
-        {
-            return NO_ASSERTION_INDEX;
-        }
-        AssertionDsc assertion = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
-        return optFinalizeCreatingAssertion(&assertion);
-    }
-    //
-    // Are we trying to make a non-null assertion?
-    // (note we now do this for all indirs, regardless of address type)
-    //
-    else if (op2 == nullptr)
+    if (op2 == nullptr)
     {
         // Must be an OAK_NOT_EQUAL assertion
-        assert(assertionKind == OAK_NOT_EQUAL);
+        assert(!equals);
 
         // Set op1 to the instance pointer of the indirection
         op1 = op1->gtEffectiveVal();
@@ -1221,83 +1206,68 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
 
             switch (op2->gtOper)
             {
-                optOp2Kind op2Kind;
-
                 //
                 //  Constant Assertions
                 //
-                case GT_CNS_INT:
-                    if (op1->TypeIs(TYP_STRUCT))
-                    {
-                        assert(op2->IsIntegralConst(0));
-                        op2Kind = O2K_ZEROOBJ;
-                    }
-                    else
-                    {
-                        op2Kind = O2K_CONST_INT;
-                    }
-                    goto CNS_COMMON;
-
                 case GT_CNS_DBL:
-                    op2Kind = O2K_CONST_DOUBLE;
-                    goto CNS_COMMON;
-
-                CNS_COMMON:
                 {
-                    //
-                    // Must either be an OAK_EQUAL or an OAK_NOT_EQUAL assertion
-                    //
-                    if ((assertionKind != OAK_EQUAL) && (assertionKind != OAK_NOT_EQUAL))
+                    if (FloatingPointUtils::isNaN(op2->AsDblCon()->DconValue()))
                     {
                         return NO_ASSERTION_INDEX;
                     }
 
-                    AssertionDsc assertion;
-                    assertion.assertionKind = assertionKind;
-                    assertion.op1.kind      = O1K_LCLVAR;
-                    assertion.op1.lclNum    = lclNum;
-                    assertion.op1.vn        = optConservativeNormalVN(op1);
-                    assertion.op2.kind      = op2Kind;
-                    assertion.op2.vn        = optConservativeNormalVN(op2);
-
-                    if (op2->OperIs(GT_CNS_INT))
+                    ValueNum op1VN = optConservativeNormalVN(op1);
+                    ValueNum op2VN = optConservativeNormalVN(op2);
+                    if (!optLocalAssertionProp && (op1VN == ValueNumStore::NoVN || op2VN == ValueNumStore::NoVN))
                     {
-                        ssize_t iconVal = op2->AsIntCon()->IconValue();
-                        if (varTypeIsSmall(lclVar))
-                        {
-                            ssize_t truncatedIconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
-                            if (!op1->OperIs(GT_STORE_LCL_VAR) && (truncatedIconVal != iconVal))
-                            {
-                                // This assertion would be saying that a small local is equal to a value
-                                // outside its range. It means this block is unreachable. Avoid creating
-                                // such impossible assertions which can hit assertions in other places.
-                                return NO_ASSERTION_INDEX;
-                            }
-
-                            iconVal = truncatedIconVal;
-                            if (!optLocalAssertionProp)
-                            {
-                                assertion.op2.vn = vnStore->VNForIntCon(static_cast<int>(iconVal));
-                            }
-                        }
-                        assertion.op2.u1.iconVal = iconVal;
-                        assertion.op2.SetIconFlag(op2->GetIconHandleFlag(), op2->AsIntCon()->gtFieldSeq);
+                        return NO_ASSERTION_INDEX;
                     }
-                    else
+                    AssertionDsc dsc =
+                        AssertionDsc::CreateConstantLclvarAssertion(this, lclNum, op1VN, op2->AsDblCon()->DconValue(),
+                                                                    op2VN, equals);
+                    return optFinalizeCreatingAssertion(&dsc);
+                }
+
+                case GT_CNS_INT:
+                {
+                    ValueNum op1VN = optConservativeNormalVN(op1);
+                    ValueNum op2VN = optConservativeNormalVN(op2);
+                    if (!optLocalAssertionProp && (op1VN == ValueNumStore::NoVN || op2VN == ValueNumStore::NoVN))
                     {
-                        noway_assert(op2->OperIs(GT_CNS_DBL));
-                        /* If we have an NaN value then don't record it */
-                        if (FloatingPointUtils::isNaN(op2->AsDblCon()->DconValue()))
+                        return NO_ASSERTION_INDEX;
+                    }
+
+                    if (op1->TypeIs(TYP_STRUCT))
+                    {
+                        AssertionDsc dsc =
+                            AssertionDsc::CreateConstantLclvarAssertion(this, lclNum, op1VN,
+                                                                        AssertionDsc::ZeroObj::instance, op2VN, equals);
+                        return optFinalizeCreatingAssertion(&dsc);
+                    }
+
+                    ssize_t iconVal = op2->AsIntCon()->IconValue();
+                    if (varTypeIsSmall(lclVar))
+                    {
+                        ssize_t truncatedIconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
+                        if (!op1->OperIs(GT_STORE_LCL_VAR) && (truncatedIconVal != iconVal))
                         {
+                            // This assertion would be saying that a small local is equal to a value
+                            // outside its range. It means this block is unreachable. Avoid creating
+                            // such impossible assertions which can hit assertions in other places.
                             return NO_ASSERTION_INDEX;
                         }
-                        assertion.op2.dconVal = op2->AsDblCon()->DconValue();
+
+                        iconVal = truncatedIconVal;
+                        if (!optLocalAssertionProp)
+                        {
+                            op2VN = vnStore->VNForIntCon(static_cast<int>(iconVal));
+                        }
                     }
 
-                    //
-                    // Ok everything has been set and the assertion looks good
-                    //
-                    return optFinalizeCreatingAssertion(&assertion);
+                    AssertionDsc dsc =
+                        AssertionDsc::CreateConstantLclvarAssertion(this, lclNum, op1VN, iconVal, op2VN, equals);
+                    dsc.op2.SetIconFlag(op2->GetIconHandleFlag(), op2->AsIntCon()->gtFieldSeq);
+                    return optFinalizeCreatingAssertion(&dsc);
                 }
 
                 case GT_LCL_VAR:
@@ -1305,12 +1275,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     if (!optLocalAssertionProp)
                     {
                         // O2K_LCLVAR_COPY is local assertion prop only
-                        return NO_ASSERTION_INDEX;
-                    }
-
-                    // Must either be an OAK_EQUAL or an OAK_NOT_EQUAL assertion
-                    if ((assertionKind != OAK_EQUAL) && (assertionKind != OAK_NOT_EQUAL))
-                    {
                         return NO_ASSERTION_INDEX;
                     }
 
@@ -1358,8 +1322,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     }
 
                     // Ok everything has been set and the assertion looks good
-                    AssertionDsc assertion =
-                        AssertionDsc::CreateLclvarCopy(this, lclNum, lclNum2, assertionKind == OAK_EQUAL);
+                    AssertionDsc assertion = AssertionDsc::CreateLclvarCopy(this, lclNum, lclNum2, equals);
                     return optFinalizeCreatingAssertion(&assertion);
                 }
 
@@ -1382,7 +1345,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
             }
 
             // Try and see if we can make a subrange assertion.
-            if (((assertionKind == OAK_SUBRANGE) || (assertionKind == OAK_EQUAL)) && varTypeIsIntegral(op2))
+            if (equals && varTypeIsIntegral(op2))
             {
                 IntegralRange nodeRange = IntegralRange::ForNode(op2, this);
                 IntegralRange typeRange = IntegralRange::ForType(genActualType(op2));
@@ -1409,9 +1372,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
             if (op1VN != ValueNumStore::NoVN && op2VN != ValueNumStore::NoVN && vnStore->IsVNInt32Constant(op2VN) &&
                 !vnStore->IsVNHandle(op2VN))
             {
-                assert(assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL);
-                AssertionDsc assertion =
-                    AssertionDsc::CreateInt32ConstantVNAssertion(this, op1VN, op2VN, assertionKind == OAK_EQUAL);
+                AssertionDsc assertion = AssertionDsc::CreateInt32ConstantVNAssertion(this, op1VN, op2VN, equals);
                 return optAddAssertion(&assertion);
             }
         }
@@ -1841,12 +1802,12 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex, Ge
             return;
         }
 
-        AssertionIndex index = optCreateAssertion(op1, op2, OAK_NOT_EQUAL);
+        AssertionIndex index = optCreateAssertion(op1, op2, /*equals*/ false);
         optMapComplementary(index, assertionIndex);
     }
     else if (candidateAssertion.assertionKind == OAK_NOT_EQUAL)
     {
-        AssertionIndex index = optCreateAssertion(op1, op2, OAK_EQUAL);
+        AssertionIndex index = optCreateAssertion(op1, op2, /*equals*/ true);
         optMapComplementary(index, assertionIndex);
     }
 }
@@ -1870,9 +1831,9 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex, Ge
 //    create a second, complementary assertion. This may too fail, for the
 //    same reasons as the first one.
 //
-AssertionIndex Compiler::optCreateJtrueAssertions(GenTree* op1, GenTree* op2, optAssertionKind assertionKind)
+AssertionIndex Compiler::optCreateJtrueAssertions(GenTree* op1, GenTree* op2, bool equals)
 {
-    AssertionIndex assertionIndex = optCreateAssertion(op1, op2, assertionKind);
+    AssertionIndex assertionIndex = optCreateAssertion(op1, op2, equals);
     // Don't bother if we don't have an assertion on the JTrue False path. Current implementation
     // allows for a complementary only if there is an assertion on the False path (tree->HasAssertion()).
     if (assertionIndex != NO_ASSERTION_INDEX)
@@ -1966,7 +1927,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
-    Compiler::optAssertionKind assertionKind = OAK_INVALID;
+    bool equals = true;
 
     AssertionInfo info = optCreateJTrueBoundsAssertion(tree);
     if (info.HasAssertion())
@@ -1983,10 +1944,10 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     switch (relop->gtOper)
     {
         case GT_EQ:
-            assertionKind = OAK_EQUAL;
+            equals = true;
             break;
         case GT_NE:
-            assertionKind = OAK_NOT_EQUAL;
+            equals = false;
             break;
         default:
             // TODO-CQ: add other relop operands. Disabled for now to measure perf
@@ -2057,7 +2018,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
             }
         }
 
-        return optCreateJtrueAssertions(op1, op2, assertionKind);
+        return optCreateJtrueAssertions(op1, op2, equals);
     }
     else if (!optLocalAssertionProp)
     {
@@ -2067,7 +2028,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         if (vnStore->IsVNCheckedBound(op1VN) && vnStore->IsVNInt32Constant(op2VN))
         {
             assert(relop->OperIs(GT_EQ, GT_NE));
-            return optCreateJtrueAssertions(op1, op2, assertionKind);
+            return optCreateJtrueAssertions(op1, op2, equals);
         }
     }
 
@@ -2080,7 +2041,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     // If op1 is ind, then extract op1's oper.
     if (op1->OperIs(GT_IND) && op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR))
     {
-        return optCreateJtrueAssertions(op1, op2, assertionKind);
+        return optCreateJtrueAssertions(op1, op2, equals);
     }
 
     // Look for a call to an IsInstanceOf helper compared to a nullptr
@@ -2176,7 +2137,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             // VN takes care of non local assertions for data flow.
             if (optLocalAssertionProp)
             {
-                assertionInfo = optCreateAssertion(tree, tree->AsLclVar()->Data(), OAK_EQUAL);
+                assertionInfo = optCreateAssertion(tree, tree->AsLclVar()->Data(), /*equals*/ true);
             }
             break;
 
@@ -2196,27 +2157,37 @@ void Compiler::optAssertionGen(GenTree* tree)
             // These indirs (esp. GT_IND and GT_STOREIND) are the most popular sources of assertions.
             if (tree->IndirMayFault(this))
             {
-                assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, OAK_NOT_EQUAL);
+                assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, /*equals*/ false);
             }
             break;
 
         case GT_INTRINSIC:
             if (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType)
             {
-                assertionInfo = optCreateAssertion(tree->AsIntrinsic()->gtGetOp1(), nullptr, OAK_NOT_EQUAL);
+                assertionInfo = optCreateAssertion(tree->AsIntrinsic()->gtGetOp1(), nullptr, /*equals*/ false);
             }
             break;
 
         case GT_BOUNDS_CHECK:
             if (!optLocalAssertionProp)
             {
-                assertionInfo = optCreateAssertion(tree, nullptr, OAK_NO_THROW);
+                ValueNum idxVN = optConservativeNormalVN(tree->AsBoundsChk()->GetIndex());
+                ValueNum lenVN = optConservativeNormalVN(tree->AsBoundsChk()->GetArrayLength());
+                if ((idxVN == ValueNumStore::NoVN) || (lenVN == ValueNumStore::NoVN))
+                {
+                    assertionInfo = NO_ASSERTION_INDEX;
+                }
+                else
+                {
+                    AssertionDsc assertion = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
+                    assertionInfo          = optFinalizeCreatingAssertion(&assertion);
+                }
             }
             break;
 
         case GT_ARR_ELEM:
             // An array element reference can create a non-null assertion
-            assertionInfo = optCreateAssertion(tree->AsArrElem()->gtArrObj, nullptr, OAK_NOT_EQUAL);
+            assertionInfo = optCreateAssertion(tree->AsArrElem()->gtArrObj, nullptr, /*equals*/ false);
             break;
 
         case GT_CALL:
@@ -2230,7 +2201,7 @@ void Compiler::optAssertionGen(GenTree* tree)
                 //  Retrieve the 'this' arg.
                 GenTree* thisArg = call->gtArgs.GetThisArg()->GetNode();
                 assert(thisArg != nullptr);
-                assertionInfo = optCreateAssertion(thisArg, nullptr, OAK_NOT_EQUAL);
+                assertionInfo = optCreateAssertion(thisArg, nullptr, /*equals*/ false);
             }
         }
         break;
