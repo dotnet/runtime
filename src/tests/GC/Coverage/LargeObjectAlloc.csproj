@@ -11,4 +11,7 @@
   <ItemGroup>
     <Compile Include="LargeObjectAlloc.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

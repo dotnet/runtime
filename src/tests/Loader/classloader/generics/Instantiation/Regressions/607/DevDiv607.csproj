@@ -7,6 +7,9 @@
     <Compile Include="DevDiv607.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="check2.ilproj" />
   </ItemGroup>
 </Project>

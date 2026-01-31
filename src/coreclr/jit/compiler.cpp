@@ -4898,10 +4898,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
-    // Create any throw helper blocks that might be needed
-    //
-    DoPhase(this, PHASE_CREATE_THROW_HELPERS, &Compiler::fgCreateThrowHelperBlocks);
-
     if (opts.OptimizationEnabled())
     {
         // Conditional to switch conversion, and switch peeling
@@ -7715,7 +7711,8 @@ START:
     result = param.result;
 
 if (!inlineInfo &&
-    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION ||
+     result == CORJIT_R2R_UNSUPPORTED) &&
     !jitFallbackCompile)
 {
     // If we failed the JIT, reattempt with debuggable code.
