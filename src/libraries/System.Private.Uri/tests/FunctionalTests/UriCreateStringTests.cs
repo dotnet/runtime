@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Xunit;
 
-namespace System.Tests
+namespace System.PrivateUri.Tests
 {
     public class UriCreateStringTests
     {
