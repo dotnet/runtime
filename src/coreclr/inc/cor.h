@@ -1577,9 +1577,30 @@ DECLARE_INTERFACE_(IMetaDataInfo, IUnknown)
 
 //**********************************************************************
 //
-// Predefined CustomAttribute
+// Predefined CustomAttribute and structures for these custom value
 //
 //**********************************************************************
+
+//
+// Native Link method custom value definitions. This is for P/Invoke support.
+//
+
+typedef enum
+{
+    nltNone         = 1,    // none of the keywords are specified
+    nltAnsi         = 2,    // ansi keyword specified
+    nltUnicode      = 3,    // unicode keyword specified
+    nltAuto         = 4,    // auto keyword specified
+    nltMaxValue     = 7,    // used so we can assert how many bits are required for this enum
+} CorNativeLinkType;
+
+typedef enum
+{
+    nlfNone         = 0x00,     // no flags
+    nlfLastError    = 0x01,     // setLastError keyword specified
+    nlfNoMangle     = 0x02,     // nomangle keyword specified
+    nlfMaxValue     = 0x03,     // used so we can assert how many bits are required for this enum
+} CorNativeLinkFlags;
 
 //
 // Base class for security custom attributes.
