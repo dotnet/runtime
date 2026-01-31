@@ -1171,15 +1171,19 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
 
         if (!fgIsBigOffset(offset) && op1->OperIs(GT_LCL_VAR) && !lvaVarAddrExposed(op1->AsLclVar()->GetLclNum()))
         {
-            ValueNum op1VN  = optConservativeNormalVN(op1);
-            unsigned lclNum = op1->AsLclVar()->GetLclNum();
-            if ((!optLocalAssertionProp && op1VN == ValueNumStore::NoVN) ||
-                (optLocalAssertionProp && lclNum == BAD_VAR_NUM))
+            if (optLocalAssertionProp)
+            {
+                AssertionDsc assertion = AssertionDsc::CreateLclNonNullAssertion(this, op1->AsLclVar()->GetLclNum());
+                return optAddAssertion(&assertion);
+            }
+
+            ValueNum op1VN = optConservativeNormalVN(op1);
+            if (op1VN == ValueNumStore::NoVN)
             {
                 return NO_ASSERTION_INDEX;
             }
-            AssertionDsc assertion = AssertionDsc::CreateNonNullAssertion(this, lclNum, op1VN);
-            return optFinalizeCreatingAssertion(&assertion);
+            AssertionDsc assertion = AssertionDsc::CreateVNNonNullAssertion(this, op1VN);
+            return optAddAssertion(&assertion);
         }
     }
     //
@@ -1225,7 +1229,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
                     AssertionDsc dsc =
                         AssertionDsc::CreateConstantLclvarAssertion(this, lclNum, op1VN, op2->AsDblCon()->DconValue(),
                                                                     op2VN, equals);
-                    return optFinalizeCreatingAssertion(&dsc);
+                    return optAddAssertion(&dsc);
                 }
 
                 case GT_CNS_INT:
@@ -1240,9 +1244,9 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
                     if (op1->TypeIs(TYP_STRUCT))
                     {
                         AssertionDsc dsc =
-                            AssertionDsc::CreateConstantLclvarAssertion(this, lclNum, op1VN,
-                                                                        AssertionDsc::ZeroObj::instance, op2VN, equals);
-                        return optFinalizeCreatingAssertion(&dsc);
+                            AssertionDsc::CreateConstantLclvarAssertion(this, lclNum, op1VN, 0, op2VN, equals);
+                        dsc.op2.kind = O2K_ZEROOBJ;
+                        return optAddAssertion(&dsc);
                     }
 
                     ssize_t iconVal = op2->AsIntCon()->IconValue();
@@ -1267,7 +1271,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
                     AssertionDsc dsc =
                         AssertionDsc::CreateConstantLclvarAssertion(this, lclNum, op1VN, iconVal, op2VN, equals);
                     dsc.op2.SetIconFlag(op2->GetIconHandleFlag(), op2->AsIntCon()->gtFieldSeq);
-                    return optFinalizeCreatingAssertion(&dsc);
+                    return optAddAssertion(&dsc);
                 }
 
                 case GT_LCL_VAR:
@@ -1323,7 +1327,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
 
                     // Ok everything has been set and the assertion looks good
                     AssertionDsc assertion = AssertionDsc::CreateLclvarCopy(this, lclNum, lclNum2, equals);
-                    return optFinalizeCreatingAssertion(&assertion);
+                    return optAddAssertion(&assertion);
                 }
 
                 case GT_CALL:
@@ -1333,8 +1337,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
                         GenTreeCall* const call = op2->AsCall();
                         if (call->IsHelperCall() && s_helperCallProperties.NonNullReturn(call->GetHelperNum()))
                         {
-                            AssertionDsc assertion = AssertionDsc::CreateNonNullAssertion(this, lclNum);
-                            return optFinalizeCreatingAssertion(&assertion);
+                            AssertionDsc assertion = AssertionDsc::CreateLclNonNullAssertion(this, lclNum);
+                            return optAddAssertion(&assertion);
                         }
                     }
                     break;
@@ -1354,7 +1358,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
                 if (!typeRange.Equals(nodeRange))
                 {
                     AssertionDsc assertion = AssertionDsc::CreateSubrange(this, lclNum, nodeRange);
-                    return optFinalizeCreatingAssertion(&assertion);
+                    return optAddAssertion(&assertion);
                 }
             }
         }
@@ -1378,41 +1382,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
         }
     }
     return NO_ASSERTION_INDEX;
-}
-
-//------------------------------------------------------------------------
-// optFinalizeCreatingAssertion: Add the assertion, if well-formed, to the table.
-//
-// Checks that in global assertion propagation assertions do not have missing
-// value and SSA numbers.
-//
-// Arguments:
-//    assertion - assertion to check and add to the table
-//
-// Return Value:
-//    Index of the assertion if it was successfully created, NO_ASSERTION_INDEX otherwise.
-//
-AssertionIndex Compiler::optFinalizeCreatingAssertion(AssertionDsc* assertion)
-{
-    if (assertion->assertionKind == OAK_INVALID)
-    {
-        return NO_ASSERTION_INDEX;
-    }
-
-    if (!optLocalAssertionProp)
-    {
-        if ((assertion->op1.vn == ValueNumStore::NoVN) || (assertion->op2.vn == ValueNumStore::NoVN) ||
-            (assertion->op1.vn == ValueNumStore::VNForVoid()) || (assertion->op2.vn == ValueNumStore::VNForVoid()))
-        {
-            return NO_ASSERTION_INDEX;
-        }
-    }
-
-    // Now add the assertion to our assertion table
-    noway_assert(assertion->op1.kind != O1K_INVALID);
-    noway_assert((assertion->op1.kind == O1K_ARR_BND) || (assertion->op2.kind != O2K_INVALID));
-
-    return optAddAssertion(assertion);
 }
 
 /*****************************************************************************
@@ -1866,7 +1835,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "i < bnd +/- k != 0"
     if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
     {
-        AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBoundArith(this, relopVN);
+        AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBoundArith(this, relopVN, /*withArith*/ true);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
@@ -1876,7 +1845,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "i < bnd != 0"
     else if (vnStore->IsVNCompareCheckedBound(relopVN))
     {
-        AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBound(this, relopVN);
+        AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBoundArith(this, relopVN, /*withArith*/ false);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
@@ -1885,7 +1854,10 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
     else if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
     {
-        AssertionDsc   dsc   = AssertionDsc::CreateUnsignedCompareCheckedBound(this, relopVN, unsignedCompareBnd);
+        ValueNum idxVN = vnStore->VNNormalValue(unsignedCompareBnd.vnIdx);
+        ValueNum lenVN = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
+
+        AssertionDsc   dsc   = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
         AssertionIndex index = optAddAssertion(&dsc);
         if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
         {
@@ -1900,14 +1872,14 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "i < 100 != 0"
     else if (vnStore->IsVNConstantBound(relopVN))
     {
-        AssertionDsc   dsc   = AssertionDsc::CreateConstantBound(this, relopVN);
+        AssertionDsc   dsc   = AssertionDsc::CreateConstantLoopBound(this, relopVN, /*isUnsigned*/ false);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
     else if (vnStore->IsVNConstantBoundUnsigned(relopVN))
     {
-        AssertionDsc   dsc   = AssertionDsc::CreateConstantBoundUnsigned(this, relopVN);
+        AssertionDsc   dsc   = AssertionDsc::CreateConstantLoopBound(this, relopVN, /*isUnsigned*/ true);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
@@ -2180,7 +2152,7 @@ void Compiler::optAssertionGen(GenTree* tree)
                 else
                 {
                     AssertionDsc assertion = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
-                    assertionInfo          = optFinalizeCreatingAssertion(&assertion);
+                    assertionInfo          = optAddAssertion(&assertion);
                 }
             }
             break;
@@ -5542,14 +5514,14 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
                 {
                     // Create "X >= value" assertion (both operands are never negative)
                     ValueNum     relop = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
-                    AssertionDsc dsc   = AssertionDsc::CreateConstantBound(this, relop);
+                    AssertionDsc dsc   = AssertionDsc::CreateConstantLoopBound(this, relop, /*isUnsigned*/ false);
                     newAssertIdx       = optAddAssertion(&dsc);
                 }
                 else
                 {
                     // Create "X u>= value" assertion
                     ValueNum     relop = vnStore->VNForFunc(TYP_INT, VNF_GE_UN, opVN, vnStore->VNForIntCon(value));
-                    AssertionDsc dsc   = AssertionDsc::CreateConstantBoundUnsigned(this, relop);
+                    AssertionDsc dsc   = AssertionDsc::CreateConstantLoopBound(this, relop, /*isUnsigned*/ true);
                     newAssertIdx       = optAddAssertion(&dsc);
                 }
             }

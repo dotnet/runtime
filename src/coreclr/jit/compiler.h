@@ -8002,77 +8002,11 @@ public:
             }
         }
 
-        static AssertionDsc CreateCompareCheckedBound(Compiler* comp, ValueNum relopVN)
-        {
-            assert(comp->vnStore->IsVNCompareCheckedBound(relopVN));
+        //
+        // Factory methods for common assertions
+        //
 
-            AssertionDsc dsc   = {};
-            dsc.assertionKind  = OAK_NOT_EQUAL;
-            dsc.op1.kind       = O1K_BOUND_LOOP_BND;
-            dsc.op1.vn         = relopVN;
-            dsc.op2.kind       = O2K_CONST_INT;
-            dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
-            dsc.op2.u1.iconVal = 0;
-            dsc.op2.SetIconFlag(GTF_EMPTY);
-            return dsc;
-        }
-
-        static AssertionDsc CreateCompareCheckedBoundArith(Compiler* comp, ValueNum relopVN)
-        {
-            assert(comp->vnStore->IsVNCompareCheckedBoundArith(relopVN));
-
-            AssertionDsc dsc   = {};
-            dsc.assertionKind  = OAK_NOT_EQUAL;
-            dsc.op1.kind       = O1K_BOUND_OPER_BND;
-            dsc.op1.vn         = relopVN;
-            dsc.op2.kind       = O2K_CONST_INT;
-            dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
-            dsc.op2.u1.iconVal = 0;
-            dsc.op2.SetIconFlag(GTF_EMPTY);
-            return dsc;
-        }
-
-        static AssertionDsc CreateUnsignedCompareCheckedBound(
-            Compiler* comp, ValueNum relopVN, const ValueNumStore::UnsignedCompareCheckedBoundInfo& unsignedCompareBnd)
-        {
-            ValueNumStore::UnsignedCompareCheckedBoundInfo tmp;
-            assert(comp->vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &tmp));
-            assert(unsignedCompareBnd.vnIdx != ValueNumStore::NoVN);
-            assert((unsignedCompareBnd.cmpOper == VNF_LT_UN) || (unsignedCompareBnd.cmpOper == VNF_GE_UN));
-            assert(comp->vnStore->IsVNCheckedBound(unsignedCompareBnd.vnBound));
-
-            AssertionDsc dsc  = {};
-            dsc.assertionKind = OAK_NO_THROW;
-            dsc.op1.kind      = O1K_ARR_BND;
-            dsc.op1.vn        = relopVN;
-            dsc.op1.bnd.vnIdx = unsignedCompareBnd.vnIdx;
-            dsc.op1.bnd.vnLen = comp->vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
-            dsc.op2.kind      = O2K_INVALID;
-            dsc.op2.vn        = ValueNumStore::NoVN;
-
-            return dsc;
-        }
-
-        static AssertionDsc CreateConstantBound(Compiler* comp, ValueNum relopVN)
-        {
-            assert(comp->vnStore->IsVNConstantBound(relopVN));
-
-            AssertionDsc dsc   = {};
-            dsc.assertionKind  = OAK_NOT_EQUAL;
-            dsc.op1.kind       = O1K_CONSTANT_LOOP_BND;
-            dsc.op1.vn         = relopVN;
-            dsc.op2.kind       = O2K_CONST_INT;
-            dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
-            dsc.op2.u1.iconVal = 0;
-            dsc.op2.SetIconFlag(GTF_EMPTY);
-            return dsc;
-        }
-
-        struct ZeroObj
-        {
-            static ZeroObj instance;
-        };
-
+        // Create a generic "lclNum ==/!= constant" or "vn ==/!= constant" assertion
         template <typename T>
         static AssertionDsc CreateConstantLclvarAssertion(
             Compiler* comp, unsigned lclNum, ValueNum vn, T cns, ValueNum cnsVN, bool equals)
@@ -8088,8 +8022,8 @@ public:
                 dsc.op2.vn     = ValueNumStore::NoVN;
                 dsc.op1.lclNum = lclNum;
 
-                // It seems like somewhere in local-AP we check op2.vn for being ValueNumStore::VNForNull
-                // while we shouldn't. TODO: remove this quirk.
+                // TODO-Quirk: Somewhere in local-AP we check op2.vn for being ValueNumStore::VNForNull
+                // while we shouldn't. Remove it.
                 if (cnsVN == ValueNumStore::VNForNull())
                 {
                     dsc.op2.vn = ValueNumStore::VNForNull();
@@ -8104,35 +8038,39 @@ public:
                 dsc.op2.vn     = cnsVN;
             }
 
-            if constexpr (std::is_same<T, int>::value || std::is_same<T, ssize_t>::value)
+            dsc.op2.SetIconFlag(GTF_EMPTY);
+            if constexpr (std::is_same_v<T, int> || std::is_same_v<T, ssize_t>)
             {
                 dsc.op2.kind       = O2K_CONST_INT;
                 dsc.op2.u1.iconVal = static_cast<ssize_t>(cns);
-                dsc.op2.SetIconFlag(GTF_EMPTY);
             }
-            else if constexpr (std::is_same<T, double>::value)
+            else if constexpr (std::is_same_v<T, double>)
             {
                 dsc.op2.kind    = O2K_CONST_DOUBLE;
                 dsc.op2.dconVal = static_cast<double>(cns);
-                dsc.op2.SetIconFlag(GTF_EMPTY);
-            }
-            else if constexpr (std::is_same<T, ZeroObj>::value)
-            {
-                dsc.op2.kind = O2K_ZEROOBJ;
-                dsc.op2.SetIconFlag(GTF_EMPTY);
             }
             else
             {
-                static_assert(std::is_same<T, ssize_t>::value, "Unexpected type for cns");
+                static_assert("Unexpected type for cns");
             }
             return dsc;
         }
 
-        static AssertionDsc CreateNonNullAssertion(Compiler* comp, unsigned lclNum, ValueNum vn = ValueNumStore::NoVN)
+        // Create "lclNum != null" assertion
+        static AssertionDsc CreateLclNonNullAssertion(Compiler* comp, unsigned lclNum)
         {
-            return CreateConstantLclvarAssertion(comp, lclNum, vn, 0, ValueNumStore::VNForNull(), false);
+            return CreateConstantLclvarAssertion(comp, lclNum, ValueNumStore::NoVN, 0, ValueNumStore::VNForNull(),
+                                                 /*equals*/ false);
         }
 
+        // Create "vn != null" assertion
+        static AssertionDsc CreateVNNonNullAssertion(Compiler* comp, ValueNum vn)
+        {
+            return CreateConstantLclvarAssertion(comp, BAD_VAR_NUM, vn, 0, ValueNumStore::VNForNull(),
+                                                 /*equals*/ false);
+        }
+
+        // Create "lclNum1 ==/!= lclNum2" copy assertion
         static AssertionDsc CreateLclvarCopy(Compiler* comp, unsigned lclNum1, unsigned lclNum2, bool equals)
         {
             assert(comp->optLocalAssertionProp);
@@ -8150,6 +8088,7 @@ public:
             return dsc;
         }
 
+        // Create "lclNum in range [lowerBound, upperBound]" assertion
         static AssertionDsc CreateSubrange(Compiler* comp, unsigned lclNum, const IntegralRange& range)
         {
             assert(comp->optLocalAssertionProp);
@@ -8166,6 +8105,7 @@ public:
             return dsc;
         }
 
+        // Create "VN ==/!= int32_constant" assertion
         static AssertionDsc CreateInt32ConstantVNAssertion(Compiler* comp, ValueNum op1VN, ValueNum op2VN, bool equals)
         {
             assert(op1VN != ValueNumStore::NoVN);
@@ -8186,21 +8126,7 @@ public:
             return dsc;
         }
 
-        static AssertionDsc CreateConstantBoundUnsigned(Compiler* comp, ValueNum relopVN)
-        {
-            assert(comp->vnStore->IsVNConstantBoundUnsigned(relopVN));
-
-            AssertionDsc dsc   = {};
-            dsc.assertionKind  = OAK_NOT_EQUAL;
-            dsc.op1.kind       = O1K_CONSTANT_LOOP_BND_UN;
-            dsc.op1.vn         = relopVN;
-            dsc.op2.kind       = O2K_CONST_INT;
-            dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
-            dsc.op2.u1.iconVal = 0;
-            dsc.op2.SetIconFlag(GTF_EMPTY);
-            return dsc;
-        }
-
+        // Create an exact-type or sub-type assertion: objVN is (exactly of | subtype of) typeHndVN
         static AssertionDsc CreateSubtype(Compiler* comp, ValueNum objVN, ValueNum typeHndVN, bool exact)
         {
             assert((objVN != ValueNumStore::NoVN) && comp->vnStore->IsVNTypeHandle(typeHndVN));
@@ -8216,6 +8142,7 @@ public:
             return dsc;
         }
 
+        // Create a no-throw bounds check assertion: idxVN u< lenVN
         static AssertionDsc CreateNoThrowArrBnd(Compiler* comp, ValueNum idxVN, ValueNum lenVN)
         {
             assert(idxVN != ValueNumStore::NoVN);
@@ -8226,6 +8153,63 @@ public:
             dsc.op1.kind      = O1K_ARR_BND;
             dsc.op1.bnd.vnIdx = idxVN;
             dsc.op1.bnd.vnLen = lenVN;
+            return dsc;
+        }
+
+        // Create "i < bnd +/- k != 0" or just "i < bnd != 0" assertion
+        static AssertionDsc CreateCompareCheckedBoundArith(Compiler* comp, ValueNum relopVN, bool withArith)
+        {
+            assert(relopVN != ValueNumStore::NoVN);
+
+            if (withArith)
+            {
+                assert(comp->vnStore->IsVNCompareCheckedBoundArith(relopVN));
+            }
+            else
+            {
+                assert(comp->vnStore->IsVNCompareCheckedBound(relopVN));
+            }
+
+            AssertionDsc dsc  = {};
+            dsc.assertionKind = OAK_NOT_EQUAL;
+            // TODO-Cleanup: Rename O1K_BOUND_OPER_BND and O1K_BOUND_LOOP_BND to something more meaningful
+            // Also, consider removing O1K_BOUND_LOOP_BND entirely and use O1K_BOUND_OPER_BND for both cases.
+            // O1K_BOUND_LOOP_BND is basically "i < bnd +/- 0 != 0". Unless it regresses TP.
+            dsc.op1.kind       = withArith ? O1K_BOUND_OPER_BND : O1K_BOUND_LOOP_BND;
+            dsc.op1.vn         = relopVN;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
+            dsc.op2.u1.iconVal = 0;
+            dsc.op2.SetIconFlag(GTF_EMPTY);
+            return dsc;
+        }
+
+        // Create "i < constant" or "i u< constant" assertion
+        // TODO-Cleanup: Rename it as it's not necessarily a loop bound
+        static AssertionDsc CreateConstantLoopBound(Compiler* comp, ValueNum relopVN, bool isUnsigned)
+        {
+            assert(relopVN != ValueNumStore::NoVN);
+            if (isUnsigned)
+            {
+                assert(comp->vnStore->IsVNConstantBoundUnsigned(relopVN));
+            }
+            else
+            {
+                assert(comp->vnStore->IsVNConstantBound(relopVN));
+            }
+
+            // We can guess the signedness of the loop bound from the VN and remove
+            // O1K_CONSTANT_LOOP_BND_UN entirely. However, it improves the TP a bit since we don't
+            // have to call GetVNFunc for each assertion during assertion matching.
+
+            AssertionDsc dsc   = {};
+            dsc.assertionKind  = OAK_NOT_EQUAL;
+            dsc.op1.kind       = isUnsigned ? O1K_CONSTANT_LOOP_BND_UN : O1K_CONSTANT_LOOP_BND;
+            dsc.op1.vn         = relopVN;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
+            dsc.op2.u1.iconVal = 0;
+            dsc.op2.SetIconFlag(GTF_EMPTY);
             return dsc;
         }
     };
@@ -8304,8 +8288,6 @@ public:
 
     // Assertion creation functions.
     AssertionIndex optCreateAssertion(GenTree* op1, GenTree* op2, bool equals);
-
-    AssertionIndex optFinalizeCreatingAssertion(AssertionDsc* assertion);
 
     bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
 

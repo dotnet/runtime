@@ -12791,13 +12791,11 @@ void Compiler::fgAssertionGen(GenTree* tree)
                 ssize_t iconVal = assertion->op2.u1.iconVal;
                 if ((iconVal == 0) || (iconVal == 1))
                 {
-                    AssertionDsc extraAssertion = {OAK_SUBRANGE};
-                    extraAssertion.op1.kind     = O1K_LCLVAR;
-                    extraAssertion.op1.lclNum   = assertion->op1.lclNum;
-                    extraAssertion.op2.kind     = O2K_SUBRANGE;
-                    extraAssertion.op2.u2       = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
-
-                    AssertionIndex extraIndex = optFinalizeCreatingAssertion(&extraAssertion);
+                    AssertionDsc extraAssertion =
+                        AssertionDsc::CreateSubrange(this, assertion->op1.lclNum,
+                                                     IntegralRange(SymbolicIntegerValue::Zero,
+                                                                   SymbolicIntegerValue::One));
+                    AssertionIndex extraIndex = optAddAssertion(&extraAssertion);
                     if (extraIndex != NO_ASSERTION_INDEX)
                     {
                         unsigned const bvIndex = extraIndex - 1;
