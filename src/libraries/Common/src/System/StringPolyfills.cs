@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !NETSTANDARD2_1
+
 namespace System
 {
     /// <summary>Provides downlevel polyfills for string extension methods.</summary>
@@ -16,3 +18,5 @@ namespace System
             s.IndexOf(value) >= 0;
     }
 }
+
+#endif
