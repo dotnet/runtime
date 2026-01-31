@@ -66,7 +66,8 @@ namespace System.Security.Cryptography
                                 return keyHandle.SignHash(hash, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, &pkcsPaddingInfo, estimatedSize);
 
                             case RSASignaturePaddingMode.Pss:
-                                var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO() { pszAlgId = namePtr, cbSalt = hash.Length };
+                                int saltLength = RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm);
+                                var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO() { pszAlgId = namePtr, cbSalt = saltLength };
                                 return keyHandle.SignHash(hash, AsymmetricPaddingMode.NCRYPT_PAD_PSS_FLAG, &pssPaddingInfo, estimatedSize);
 
                             default:
@@ -104,7 +105,11 @@ namespace System.Security.Cryptography
                             return keyHandle.TrySignHash(hash, destination, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, &pkcs1PaddingInfo, out bytesWritten);
 
                         case RSASignaturePaddingMode.Pss:
-                            var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO() { pszAlgId = namePtr, cbSalt = hash.Length };
+                            var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO()
+                            {
+                                pszAlgId = namePtr,
+                                cbSalt = RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm)
+                            };
                             return keyHandle.TrySignHash(hash, destination, AsymmetricPaddingMode.NCRYPT_PAD_PSS_FLAG, &pssPaddingInfo, out bytesWritten);
 
                         default:
@@ -152,7 +157,11 @@ namespace System.Security.Cryptography
                             return keyHandle.VerifyHash(hash, signature, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, &pkcs1PaddingInfo);
 
                         case RSASignaturePaddingMode.Pss:
-                            var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO() { pszAlgId = namePtr, cbSalt = hash.Length };
+                            var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO()
+                            {
+                                pszAlgId = namePtr,
+                                cbSalt = RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm)
+                            };
                             return keyHandle.VerifyHash(hash, signature, AsymmetricPaddingMode.NCRYPT_PAD_PSS_FLAG, &pssPaddingInfo);
 
                         default:

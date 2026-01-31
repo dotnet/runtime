@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Net;
 using Test.Cryptography;
@@ -374,22 +375,46 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
             }
         }
 
+        public static IEnumerable<object[]> AllRsaPssCustomSaltLength()
+        {
+            foreach (string hashAlgorithm in new[] { "SHA256", "SHA384", "SHA512", "SHA1" })
+            {
+                foreach (int saltLength in new[] { 0, 1, RSASignaturePadding.PssSaltLengthMax, RSASignaturePadding.PssSaltLengthIsHashLength })
+                {
+                    yield return new object[] { hashAlgorithm, saltLength };
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.AreCustomSaltLengthsSupportedWithPss))]
+        [MemberData(nameof(AllRsaPssCustomSaltLength))]
+        public static void VerifySignature_RSA_PSS_CustomSaltLength(string hashAlgorithm, int saltLength)
+        {
+            VerifySignature_RSA_PSSCore(hashAlgorithm, saltLength);
+        }
+
         [Theory]
         [InlineData("SHA256")]
         [InlineData("SHA384")]
         [InlineData("SHA512")]
         [InlineData("SHA1")]
-        public static void VerifySignature_RSA_PSS(string hashAlgorithm)
+        public static void VerifySignature_RSA_PSS_SaltLengthIsHashLength(string hashAlgorithm)
+        {
+            VerifySignature_RSA_PSSCore(hashAlgorithm, RSASignaturePadding.PssSaltLengthIsHashLength);
+        }
+
+        private static void VerifySignature_RSA_PSSCore(string hashAlgorithm, int saltLength)
         {
             HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
 
             using (RSA key = RSA.Create())
             {
+                RSASignaturePadding padding = RSASignaturePadding.CreatePss(saltLength);
                 CertificateRequest first = new CertificateRequest(
                     "CN=Test",
                     key,
                     hashAlgorithmName,
-                    RSASignaturePadding.Pss);
+                    padding);
 
                 byte[] pkcs10;
 
@@ -397,11 +422,11 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
                 {
                     if (SignatureSupport.SupportsX509Sha1Signatures)
                     {
-                        pkcs10 = first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key));
+                        pkcs10 = first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key, padding));
                     }
                     else
                     {
-                        Assert.ThrowsAny<CryptographicException>(() => first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key)));
+                        Assert.ThrowsAny<CryptographicException>(() => first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key, padding)));
                         return;
                     }
                 }
@@ -411,19 +436,19 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
                 }
 
                 // Assert.NoThrow
-                CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _);
+                CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _, signerSignaturePadding: padding);
 
                 pkcs10[^1] ^= 0xFF;
 
                 Assert.Throws<CryptographicException>(
-                    () => CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _));
+                    () => CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _, signerSignaturePadding: padding));
 
                 // Assert.NoThrow
                 CertificateRequest.LoadSigningRequest(
                     pkcs10,
                     hashAlgorithmName,
                     out _,
-                    CertificateRequestLoadOptions.SkipSignatureValidation);
+                    CertificateRequestLoadOptions.SkipSignatureValidation, signerSignaturePadding: padding);
             }
         }
 
@@ -824,8 +849,22 @@ BgkqhkiG9w0BAQsFAAMBAA==
             }
         }
 
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.AreCustomSaltLengthsSupportedWithPss))]
+        [InlineData(0)]
+        [InlineData(4)]
+        [InlineData(RSASignaturePadding.PssSaltLengthMax)]
+        public static void LoadCreate_MatchesCreate_RSAPss_CustomSaltLength(int saltLength)
+        {
+            LoadCreate_MatchesCreate_RSAPssCore(saltLength);
+        }
+
         [Fact]
-        public static void LoadCreate_MatchesCreate_RSAPss()
+        public static void LoadCreate_MatchesCreate_RSAPss_SaltLengthIsHashLength()
+        {
+            LoadCreate_MatchesCreate_RSAPssCore(RSASignaturePadding.PssSaltLengthIsHashLength);
+        }
+
+        private static void LoadCreate_MatchesCreate_RSAPssCore(int saltLength)
         {
             using (RSA key = RSA.Create(2048))
             {
@@ -834,9 +873,9 @@ BgkqhkiG9w0BAQsFAAMBAA==
                         "CN=Roundtrip, O=RSA, OU=PSS",
                         key,
                         HashAlgorithmName.SHA256,
-                        RSASignaturePadding.Pss),
-                    X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pss),
-                    deterministicSignature: false);
+                        RSASignaturePadding.CreatePss(saltLength)),
+                    X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.CreatePss(saltLength)),
+                    deterministicSignature: saltLength == 0);
             }
         }
 
