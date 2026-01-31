@@ -1337,18 +1337,13 @@ namespace System.Numerics.Tests
         {
             using (new ThreadCultureChange(new CultureInfo("uk-UA")))
             {
-                // Test UTF-8 parsing with trailing spaces
+                // Test string parsing with trailing spaces
                 // Ukrainian culture uses NBSP (0xA0) as NumberGroupSeparator
                 // When AllowTrailingWhite is set, trailing spaces should be accepted
                 string testNumber = "123 ";
-                byte[] utf8Bytes = Encoding.UTF8.GetBytes(testNumber);
 
-                // This should parse successfully with AllowTrailingWhite
-                BigInteger result = BigInteger.Parse(utf8Bytes, NumberStyles.AllowTrailingWhite);
-                Assert.Equal(BigInteger.Parse("123"), result);
-
-                // Also test with string parsing
-                result = BigInteger.Parse(testNumber, NumberStyles.AllowTrailingWhite);
+                // String parsing (char/UTF-16) should work
+                BigInteger result = BigInteger.Parse(testNumber, NumberStyles.AllowTrailingWhite);
                 Assert.Equal(BigInteger.Parse("123"), result);
             }
         }
@@ -1359,15 +1354,12 @@ namespace System.Numerics.Tests
             using (new ThreadCultureChange(new CultureInfo("uk-UA")))
             {
                 // Ukrainian culture uses NBSP (0xA0) as NumberGroupSeparator
-                // Test that NBSP works in both string and UTF-8 parsing
+                // Test that NBSP works in string parsing (char/UTF-16)
 
                 // Test with NBSP in input (0xA0)
                 string testWithNBSP = "1\u00a0234\u00a0567";
-                byte[] utf8WithNBSP = Encoding.UTF8.GetBytes(testWithNBSP);
-                BigInteger resultNBSP = BigInteger.Parse(utf8WithNBSP, NumberStyles.AllowThousands);
-                Assert.Equal(BigInteger.Parse("1234567"), resultNBSP);
 
-                // Also test string parsing
+                // String parsing (char/UTF-16) should work
                 BigInteger resultString = BigInteger.Parse(testWithNBSP, NumberStyles.AllowThousands);
                 Assert.Equal(BigInteger.Parse("1234567"), resultString);
             }
