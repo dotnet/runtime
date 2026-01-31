@@ -4312,11 +4312,13 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 
     LONG retVal = EXCEPTION_CONTINUE_SEARCH;
 
+#ifdef TARGET_WINDOWS
     if (NtCurrentTeb()->ThreadLocalStoragePointer == NULL)
     {
         // Early out when TLS is not available due to unhandled exception during early thread initialization
         return retVal;
     }
+#endif // TARGET_WINDOWS
 
     // Incase of unhandled exceptions on managed threads, we kick in our UE processing at the thread base and also invoke
     // UEF callbacks that various runtimes have registered with us. Once the callbacks return, we return back to the OS
