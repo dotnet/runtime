@@ -639,7 +639,7 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
-        public void InterleavedZipPackagePartStream_Length_ThrowsNotSupportedExceptionWhenCanSeekIsFalse()
+        public void InterleavedZipPackagePartStream_Length_ReturnsCorrectValueWhenCanSeekIsFalse()
         {
             using MemoryStream package = new(_partPieceSampleZipPackage);
 
@@ -648,9 +648,9 @@ namespace System.IO.Packaging.Tests
             using Stream stream = partEntry.GetStream(FileMode.Open);
 
             // When the package is opened with FileAccess.Read, the underlying zip entry stream
-            // does not support seeking, so Length should throw NotSupportedException.
+            // does not support seeking but Length should still return the correct value.
             Assert.False(stream.CanSeek);
-            Assert.Throws<NotSupportedException>(() => stream.Length);
+            Assert.NotEqual(0, stream.Length);
         }
     }
 }

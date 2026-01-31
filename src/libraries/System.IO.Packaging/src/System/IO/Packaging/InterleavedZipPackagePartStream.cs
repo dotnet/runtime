@@ -477,10 +477,6 @@ namespace System.IO.Packaging
             get
             {
                 CheckClosed();
-                if (!CanSeek)
-                {
-                    throw new NotSupportedException(SR.SeekNotSupported);
-                }
 
                 long length = 0;
                 for (int pieceNumber = 0; pieceNumber < _dir.GetNumberOfPieces(); ++pieceNumber)
