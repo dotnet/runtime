@@ -7986,19 +7986,25 @@ public:
 
         bool Equals(const AssertionDsc& that, bool vnBased) const
         {
-            if (assertionKind != that.assertionKind)
+            // op1.kind check is implied by HasSameOp1, but it improves performance to do it first.
+            if (op1.kind != that.op1.kind || assertionKind != that.assertionKind)
             {
                 return false;
             }
-            else if (assertionKind == OAK_NO_THROW)
+
+            if (!HasSameOp1(that, vnBased))
             {
-                assert(op2.kind == O2K_INVALID);
-                return HasSameOp1(that, vnBased);
+                return false;
             }
-            else
+
+            if (assertionKind != OAK_NO_THROW)
             {
-                return HasSameOp1(that, vnBased) && HasSameOp2(that, vnBased);
+                return HasSameOp2(that, vnBased);
             }
+
+            // OAK_NO_THROW is the only kind of assertion where op2 is unused.
+            assert(op2.kind == O2K_INVALID);
+            return true;
         }
 
         //
@@ -8007,8 +8013,8 @@ public:
 
         // Create a generic "lclNum ==/!= constant" or "vn ==/!= constant" assertion
         template <typename T>
-        static AssertionDsc CreateConstantLclvarAssertion(
-            Compiler* comp, unsigned lclNum, ValueNum vn, T cns, ValueNum cnsVN, bool equals)
+        static AssertionDsc CreateConstLclVarAssertion(
+            const Compiler* comp, unsigned lclNum, ValueNum vn, T cns, ValueNum cnsVN, bool equals)
         {
             AssertionDsc dsc  = {};
             dsc.assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
@@ -8056,21 +8062,23 @@ public:
         }
 
         // Create "lclNum != null" assertion
-        static AssertionDsc CreateLclNonNullAssertion(Compiler* comp, unsigned lclNum)
+        static AssertionDsc CreateLclNonNullAssertion(const Compiler* comp, unsigned lclNum)
         {
-            return CreateConstantLclvarAssertion(comp, lclNum, ValueNumStore::NoVN, 0, ValueNumStore::VNForNull(),
-                                                 /*equals*/ false);
+            assert(comp->optLocalAssertionProp);
+            return CreateConstLclVarAssertion(comp, lclNum, ValueNumStore::NoVN, 0, ValueNumStore::VNForNull(),
+                                              /*equals*/ false);
         }
 
         // Create "vn != null" assertion
-        static AssertionDsc CreateVNNonNullAssertion(Compiler* comp, ValueNum vn)
+        static AssertionDsc CreateVNNonNullAssertion(const Compiler* comp, ValueNum vn)
         {
-            return CreateConstantLclvarAssertion(comp, BAD_VAR_NUM, vn, 0, ValueNumStore::VNForNull(),
-                                                 /*equals*/ false);
+            assert(!comp->optLocalAssertionProp);
+            return CreateConstLclVarAssertion(comp, BAD_VAR_NUM, vn, 0, ValueNumStore::VNForNull(),
+                                              /*equals*/ false);
         }
 
         // Create "lclNum1 ==/!= lclNum2" copy assertion
-        static AssertionDsc CreateLclvarCopy(Compiler* comp, unsigned lclNum1, unsigned lclNum2, bool equals)
+        static AssertionDsc CreateLclvarCopy(const Compiler* comp, unsigned lclNum1, unsigned lclNum2, bool equals)
         {
             assert(comp->optLocalAssertionProp);
             assert(lclNum1 != BAD_VAR_NUM);
@@ -8088,7 +8096,7 @@ public:
         }
 
         // Create "lclNum in range [lowerBound, upperBound]" assertion
-        static AssertionDsc CreateSubrange(Compiler* comp, unsigned lclNum, const IntegralRange& range)
+        static AssertionDsc CreateSubrange(const Compiler* comp, unsigned lclNum, const IntegralRange& range)
         {
             assert(comp->optLocalAssertionProp);
             assert(lclNum != BAD_VAR_NUM);
@@ -8105,7 +8113,7 @@ public:
         }
 
         // Create "VN ==/!= int32_constant" assertion
-        static AssertionDsc CreateInt32ConstantVNAssertion(Compiler* comp, ValueNum op1VN, ValueNum op2VN, bool equals)
+        static AssertionDsc CreateInt32ConstantVNAssertion(const Compiler* comp, ValueNum op1VN, ValueNum op2VN, bool equals)
         {
             assert(op1VN != ValueNumStore::NoVN);
             assert(op2VN != ValueNumStore::NoVN);
@@ -8126,7 +8134,7 @@ public:
         }
 
         // Create an exact-type or sub-type assertion: objVN is (exactly of | subtype of) typeHndVN
-        static AssertionDsc CreateSubtype(Compiler* comp, ValueNum objVN, ValueNum typeHndVN, bool exact)
+        static AssertionDsc CreateSubtype(const Compiler* comp, ValueNum objVN, ValueNum typeHndVN, bool exact)
         {
             assert((objVN != ValueNumStore::NoVN) && comp->vnStore->IsVNTypeHandle(typeHndVN));
 
@@ -8142,7 +8150,7 @@ public:
         }
 
         // Create a no-throw bounds check assertion: idxVN u< lenVN
-        static AssertionDsc CreateNoThrowArrBnd(Compiler* comp, ValueNum idxVN, ValueNum lenVN)
+        static AssertionDsc CreateNoThrowArrBnd(const Compiler* comp, ValueNum idxVN, ValueNum lenVN)
         {
             assert(idxVN != ValueNumStore::NoVN);
             assert(lenVN != ValueNumStore::NoVN);
@@ -8152,11 +8160,12 @@ public:
             dsc.op1.kind      = O1K_ARR_BND;
             dsc.op1.bnd.vnIdx = idxVN;
             dsc.op1.bnd.vnLen = lenVN;
+            dsc.op2.kind      = O2K_INVALID;
             return dsc;
         }
 
         // Create "i < bnd +/- k != 0" or just "i < bnd != 0" assertion
-        static AssertionDsc CreateCompareCheckedBoundArith(Compiler* comp, ValueNum relopVN, bool withArith)
+        static AssertionDsc CreateCompareCheckedBoundArith(const Compiler* comp, ValueNum relopVN, bool withArith)
         {
             assert(relopVN != ValueNumStore::NoVN);
 
@@ -8185,7 +8194,7 @@ public:
 
         // Create "i < constant" or "i u< constant" assertion
         // TODO-Cleanup: Rename it as it's not necessarily a loop bound
-        static AssertionDsc CreateConstantLoopBound(Compiler* comp, ValueNum relopVN, bool isUnsigned)
+        static AssertionDsc CreateConstantLoopBound(const Compiler* comp, ValueNum relopVN, bool isUnsigned)
         {
             assert(relopVN != ValueNumStore::NoVN);
             if (isUnsigned)
@@ -8293,7 +8302,7 @@ public:
 
     bool           optAssertionVnInvolvesNan(const AssertionDsc& assertion) const;
     AssertionIndex optAddAssertion(const AssertionDsc& assertion);
-    void           optAddVnAssertionMapping(ValueNum vn, AssertionIndex index) const;
+    void           optAddVnAssertionMapping(ValueNum vn, AssertionIndex index);
 #ifdef DEBUG
     void optPrintVnAssertionMapping() const;
 #endif

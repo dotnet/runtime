@@ -1148,6 +1148,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
         // Set op1 to the instance pointer of the indirection
         op1 = op1->gtEffectiveVal();
 
+        // TODO-Cleanup: Replace with gtPeelOffset with proper fgBigOffset check
+        // It will produce a few regressions.
         ssize_t offset = 0;
         while (op1->OperIs(GT_ADD) && op1->TypeIs(TYP_BYREF))
         {
@@ -1199,165 +1201,166 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
             return NO_ASSERTION_INDEX;
         }
 
+        /* Skip over a GT_COMMA node(s), if necessary */
+        while (op2->OperIs(GT_COMMA))
         {
-            /* Skip over a GT_COMMA node(s), if necessary */
-            while (op2->OperIs(GT_COMMA))
+            op2 = op2->AsOp()->gtOp2;
+        }
+
+        switch (op2->OperGet())
+        {
+            //
+            //  Constant Assertions
+            //
+            case GT_CNS_DBL:
             {
-                op2 = op2->AsOp()->gtOp2;
+                double dblCns = op2->AsDblCon()->DconValue();
+                if (FloatingPointUtils::isNaN(dblCns))
+                {
+                    return NO_ASSERTION_INDEX;
+                }
+
+                ValueNum op1VN = optConservativeNormalVN(op1);
+                ValueNum op2VN = optConservativeNormalVN(op2);
+                if (!optLocalAssertionProp && (op1VN == ValueNumStore::NoVN || op2VN == ValueNumStore::NoVN))
+                {
+                    // GlobalAP requires valid VNs.
+                    return NO_ASSERTION_INDEX;
+                }
+
+                AssertionDsc dsc = AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, dblCns, op2VN, equals);
+                return optAddAssertion(dsc);
             }
 
-            switch (op2->gtOper)
+            case GT_CNS_INT:
             {
-                //
-                //  Constant Assertions
-                //
-                case GT_CNS_DBL:
+                ValueNum op1VN = optConservativeNormalVN(op1);
+                ValueNum op2VN = optConservativeNormalVN(op2);
+                if (!optLocalAssertionProp && (op1VN == ValueNumStore::NoVN || op2VN == ValueNumStore::NoVN))
                 {
-                    if (FloatingPointUtils::isNaN(op2->AsDblCon()->DconValue()))
-                    {
-                        return NO_ASSERTION_INDEX;
-                    }
+                    return NO_ASSERTION_INDEX;
+                }
 
-                    ValueNum op1VN = optConservativeNormalVN(op1);
-                    ValueNum op2VN = optConservativeNormalVN(op2);
-                    if (!optLocalAssertionProp && (op1VN == ValueNumStore::NoVN || op2VN == ValueNumStore::NoVN))
-                    {
-                        return NO_ASSERTION_INDEX;
-                    }
-                    AssertionDsc dsc =
-                        AssertionDsc::CreateConstantLclvarAssertion(this, lclNum, op1VN, op2->AsDblCon()->DconValue(),
-                                                                    op2VN, equals);
+                ssize_t iconVal = op2->AsIntCon()->IconValue();
+                if (op1->TypeIs(TYP_STRUCT))
+                {
+                    assert(iconVal == 0);
+                    AssertionDsc dsc = AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, 0, op2VN, equals);
+                    dsc.op2.kind     = O2K_ZEROOBJ;
                     return optAddAssertion(dsc);
                 }
 
-                case GT_CNS_INT:
+                if (varTypeIsSmall(lclVar))
                 {
-                    ValueNum op1VN = optConservativeNormalVN(op1);
-                    ValueNum op2VN = optConservativeNormalVN(op2);
-                    if (!optLocalAssertionProp && (op1VN == ValueNumStore::NoVN || op2VN == ValueNumStore::NoVN))
+                    ssize_t truncatedIconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
+                    if (!op1->OperIs(GT_STORE_LCL_VAR) && (truncatedIconVal != iconVal))
                     {
+                        // This assertion would be saying that a small local is equal to a value
+                        // outside its range. It means this block is unreachable. Avoid creating
+                        // such impossible assertions which can hit assertions in other places.
                         return NO_ASSERTION_INDEX;
                     }
 
-                    if (op1->TypeIs(TYP_STRUCT))
-                    {
-                        AssertionDsc dsc =
-                            AssertionDsc::CreateConstantLclvarAssertion(this, lclNum, op1VN, 0, op2VN, equals);
-                        dsc.op2.kind = O2K_ZEROOBJ;
-                        return optAddAssertion(dsc);
-                    }
-
-                    ssize_t iconVal = op2->AsIntCon()->IconValue();
-                    if (varTypeIsSmall(lclVar))
-                    {
-                        ssize_t truncatedIconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
-                        if (!op1->OperIs(GT_STORE_LCL_VAR) && (truncatedIconVal != iconVal))
-                        {
-                            // This assertion would be saying that a small local is equal to a value
-                            // outside its range. It means this block is unreachable. Avoid creating
-                            // such impossible assertions which can hit assertions in other places.
-                            return NO_ASSERTION_INDEX;
-                        }
-
-                        iconVal = truncatedIconVal;
-                        if (!optLocalAssertionProp)
-                        {
-                            op2VN = vnStore->VNForIntCon(static_cast<int>(iconVal));
-                        }
-                    }
-
-                    AssertionDsc dsc =
-                        AssertionDsc::CreateConstantLclvarAssertion(this, lclNum, op1VN, iconVal, op2VN, equals);
-                    dsc.op2.SetIconFlag(op2->GetIconHandleFlag(), op2->AsIntCon()->gtFieldSeq);
-                    return optAddAssertion(dsc);
-                }
-
-                case GT_LCL_VAR:
-                {
+                    iconVal = truncatedIconVal;
                     if (!optLocalAssertionProp)
                     {
-                        // O2K_LCLVAR_COPY is local assertion prop only
-                        return NO_ASSERTION_INDEX;
+                        op2VN = vnStore->VNForIntCon(static_cast<int>(iconVal));
                     }
-
-                    unsigned   lclNum2 = op2->AsLclVarCommon()->GetLclNum();
-                    LclVarDsc* lclVar2 = lvaGetDesc(lclNum2);
-
-                    // If the two locals are the same then bail
-                    if (lclNum == lclNum2)
-                    {
-                        return NO_ASSERTION_INDEX;
-                    }
-
-                    // If the types are different then bail */
-                    if (lclVar->lvType != lclVar2->lvType)
-                    {
-                        return NO_ASSERTION_INDEX;
-                    }
-
-                    // If we're making a copy of a "normalize on load" lclvar then the destination
-                    // has to be "normalize on load" as well, otherwise we risk skipping normalization.
-                    if (lclVar2->lvNormalizeOnLoad() && !lclVar->lvNormalizeOnLoad())
-                    {
-                        return NO_ASSERTION_INDEX;
-                    }
-
-                    //  If the local variable has its address exposed then bail
-                    if (lclVar2->IsAddressExposed())
-                    {
-                        return NO_ASSERTION_INDEX;
-                    }
-
-                    // We process locals when we see the LCL_VAR node instead
-                    // of at its actual use point (its parent). That opens us
-                    // up to problems in a case like the following, assuming we
-                    // allowed creating an assertion like V10 = V35:
-                    //
-                    // └──▌  ADD       int
-                    //    ├──▌  LCL_VAR   int    V10 tmp6        -> copy propagated to [V35 tmp31]
-                    //    └──▌  COMMA     int
-                    //       ├──▌  STORE_LCL_VAR int    V35 tmp31
-                    //       │  └──▌  LCL_FLD   int    V03 loc1         [+4]
-                    if (lclVar2->lvRedefinedInEmbeddedStatement)
-                    {
-                        return NO_ASSERTION_INDEX;
-                    }
-
-                    // Ok everything has been set and the assertion looks good
-                    AssertionDsc assertion = AssertionDsc::CreateLclvarCopy(this, lclNum, lclNum2, equals);
-                    return optAddAssertion(assertion);
                 }
 
-                case GT_CALL:
-                {
-                    if (optLocalAssertionProp)
-                    {
-                        GenTreeCall* const call = op2->AsCall();
-                        if (call->IsHelperCall() && s_helperCallProperties.NonNullReturn(call->GetHelperNum()))
-                        {
-                            AssertionDsc assertion = AssertionDsc::CreateLclNonNullAssertion(this, lclNum);
-                            return optAddAssertion(assertion);
-                        }
-                    }
-                    break;
-                }
+                AssertionDsc dsc =
+                    AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, iconVal, op2VN, equals);
 
-                default:
-                    break;
+                // Attach the handle flag with FieldSeq if any.
+                dsc.op2.SetIconFlag(op2->GetIconHandleFlag(), op2->AsIntCon()->gtFieldSeq);
+                return optAddAssertion(dsc);
             }
 
-            // Try and see if we can make a subrange assertion.
-            if (optLocalAssertionProp && equals && varTypeIsIntegral(op2))
+            case GT_LCL_VAR:
             {
-                IntegralRange nodeRange = IntegralRange::ForNode(op2, this);
-                IntegralRange typeRange = IntegralRange::ForType(genActualType(op2));
-                assert(typeRange.Contains(nodeRange));
-
-                if (!typeRange.Equals(nodeRange))
+                if (!optLocalAssertionProp)
                 {
-                    AssertionDsc assertion = AssertionDsc::CreateSubrange(this, lclNum, nodeRange);
-                    return optAddAssertion(assertion);
+                    // O2K_LCLVAR_COPY is local assertion prop only
+                    return NO_ASSERTION_INDEX;
                 }
+
+                unsigned   lclNum2 = op2->AsLclVarCommon()->GetLclNum();
+                LclVarDsc* lclVar2 = lvaGetDesc(lclNum2);
+
+                // If the two locals are the same then bail
+                if (lclNum == lclNum2)
+                {
+                    return NO_ASSERTION_INDEX;
+                }
+
+                // If the types are different then bail */
+                if (lclVar->lvType != lclVar2->lvType)
+                {
+                    return NO_ASSERTION_INDEX;
+                }
+
+                // If we're making a copy of a "normalize on load" lclvar then the destination
+                // has to be "normalize on load" as well, otherwise we risk skipping normalization.
+                if (lclVar2->lvNormalizeOnLoad() && !lclVar->lvNormalizeOnLoad())
+                {
+                    return NO_ASSERTION_INDEX;
+                }
+
+                //  If the local variable has its address exposed then bail
+                if (lclVar2->IsAddressExposed())
+                {
+                    return NO_ASSERTION_INDEX;
+                }
+
+                // We process locals when we see the LCL_VAR node instead
+                // of at its actual use point (its parent). That opens us
+                // up to problems in a case like the following, assuming we
+                // allowed creating an assertion like V10 = V35:
+                //
+                // └──▌  ADD       int
+                //    ├──▌  LCL_VAR   int    V10 tmp6        -> copy propagated to [V35 tmp31]
+                //    └──▌  COMMA     int
+                //       ├──▌  STORE_LCL_VAR int    V35 tmp31
+                //       │  └──▌  LCL_FLD   int    V03 loc1         [+4]
+                if (lclVar2->lvRedefinedInEmbeddedStatement)
+                {
+                    return NO_ASSERTION_INDEX;
+                }
+
+                // Ok everything has been set and the assertion looks good
+                AssertionDsc assertion = AssertionDsc::CreateLclvarCopy(this, lclNum, lclNum2, equals);
+                return optAddAssertion(assertion);
+            }
+
+            case GT_CALL:
+            {
+                if (optLocalAssertionProp)
+                {
+                    GenTreeCall* const call = op2->AsCall();
+                    if (call->IsHelperCall() && s_helperCallProperties.NonNullReturn(call->GetHelperNum()))
+                    {
+                        AssertionDsc assertion = AssertionDsc::CreateLclNonNullAssertion(this, lclNum);
+                        return optAddAssertion(assertion);
+                    }
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+
+        // Try and see if we can make a subrange assertion.
+        if (optLocalAssertionProp && equals && varTypeIsIntegral(op2))
+        {
+            IntegralRange nodeRange = IntegralRange::ForNode(op2, this);
+            IntegralRange typeRange = IntegralRange::ForType(genActualType(op2));
+            assert(typeRange.Contains(nodeRange));
+
+            if (!typeRange.Equals(nodeRange))
+            {
+                AssertionDsc assertion = AssertionDsc::CreateSubrange(this, lclNum, nodeRange);
+                return optAddAssertion(assertion);
             }
         }
     }
@@ -1454,7 +1457,7 @@ void Compiler::optPrintVnAssertionMapping() const
  * about that VN. Given "assertions" about a "vn" add it to the previously
  * mapped assertions about that "vn."
  */
-void Compiler::optAddVnAssertionMapping(ValueNum vn, AssertionIndex index) const
+void Compiler::optAddVnAssertionMapping(ValueNum vn, AssertionIndex index)
 {
     ASSERT_TP* cur = optValueNumToAsserts->LookupPointer(vn);
     if (cur == nullptr)
@@ -5533,7 +5536,7 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             // TODO-Cleanup: Should use O1K_VN instead of O1K_LCLVAR
             ValueNum valueVN = vnStore->VNForIntCon(value);
             newAssertIdx     = optAddAssertion(
-                AssertionDsc::CreateConstantLclvarAssertion(this, BAD_VAR_NUM, opVN, value, valueVN, true));
+                AssertionDsc::CreateConstLclVarAssertion(this, BAD_VAR_NUM, opVN, value, valueVN, true));
         }
 
         if (newAssertIdx.HasAssertion())
