@@ -1124,12 +1124,10 @@ ssize_t Compiler::optCastConstantSmall(ssize_t iconVal, var_types smallType)
 // optCreateAssertion: Create an (op1 assertionKind op2) assertion.
 //
 // Arguments:
-//    op1 - the first assertion operand
-//    op2 - the second assertion operand
-//    assertionKind - the assertion kind
-//    helperCallArgs - when true this indicates that the assertion operands
-//                     are the arguments of a type cast helper call such as
-//                     CORINFO_HELP_ISINSTANCEOFCLASS
+//    op1    - the first assertion operand
+//    op2    - the second assertion operand
+//    equals - the assertion kind (equals / not equals)
+
 // Return Value:
 //    The new assertion index or NO_ASSERTION_INDEX if a new assertion
 //    was not created.
@@ -1785,9 +1783,9 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex, Ge
 // optCreateJtrueAssertions: Create assertions about a JTRUE's relop operands.
 //
 // Arguments:
-//    op1 - the first assertion operand
-//    op2 - the second assertion operand
-//    assertionKind - the assertion kind
+//    op1    - the first assertion operand
+//    op2    - the second assertion operand
+//    equals - the assertion kind (equals / not equals)
 //
 // Return Value:
 //    The new assertion index or NO_ASSERTION_INDEX if a new assertion
