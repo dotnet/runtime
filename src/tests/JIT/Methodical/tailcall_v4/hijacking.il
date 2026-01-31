@@ -25,9 +25,11 @@
     .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A)
 }
 .assembly extern mscorlib { }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly hijacking
 {
-  .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
   .hash algorithm 0x00008004
@@ -35,7 +37,7 @@
 }
 .assembly extern xunit.core {}
 // MVID: {7A6D7819-76F7-4311-967C-7CC804775914}
-.custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
+.custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 )
 .imagebase 0x0000000000400000
 .file alignment 0x00000200
 .stackreserve 0x0000000000400000
@@ -63,7 +65,7 @@
   .field private bool failed
   .field private int64 counts
   .field private int64 gc
-  .method private hidebysig instance void 
+  .method private hidebysig instance void
           TailHelper1(valuetype Test_hijacking_il.ForceHelper h) cil managed
   {
     // Code size       123 (0x7b)
@@ -128,7 +130,7 @@
     IL_007b:  ret
   } // end of method Test_hijacking_il.Repro::TailHelper1
 
-  .method private hidebysig instance void 
+  .method private hidebysig instance void
           TailHelper2(valuetype Test_hijacking_il.ForceHelper h, valuetype Test_hijacking_il.ForceHelper h2) cil managed
   {
     // Code size       123 (0x7b)
@@ -192,7 +194,7 @@
     IL_007a:  ret
   } // end of method Test_hijacking_il.Repro::TailHelper2
 
-  .method private hidebysig instance void 
+  .method private hidebysig instance void
           TailCallThread() cil managed
   {
     // Code size       16 (0x10)
@@ -206,7 +208,7 @@
     IL_000f:  ret
   } // end of method Test_hijacking_il.Repro::TailCallThread
 
-  .method private hidebysig instance void 
+  .method private hidebysig instance void
           Collector() cil managed
   {
     // Code size       33 (0x21)
@@ -231,12 +233,55 @@
     IL_0020:  ret
   } // end of method Test_hijacking_il.Repro::Collector
 
-  .method public hidebysig static int32 
+  .method public hidebysig static bool
+          get_IsX86HeapVerifyOrGCStress() cil managed
+  {
+    // Code size       28 (0x1c)
+    .maxstack  1
+    IL_0000:  call       bool [TestLibrary]TestLibrary.Utilities::get_IsX86()
+    IL_0005:  brfalse.s  IL_001b
+
+    IL_0007:  call       bool [TestLibrary]TestLibrary.CoreClrConfigurationDetection::get_IsHeapVerify()
+    IL_000c:  brtrue.s   IL_0019
+
+    IL_000e:  call       bool [TestLibrary]TestLibrary.CoreClrConfigurationDetection::get_IsGCStress()
+    IL_0013:  brtrue.s   IL_0019
+
+    IL_0015:  ldc.i4.0
+    IL_0016:  br.s       IL_001a
+
+    IL_0018:  nop
+    IL_0019:  ldc.i4.1
+    IL_001a:  ret
+
+    IL_001b:  ldc.i4.0
+    IL_001c:  ret
+  } // end of method Test_hijacking_il.Repro::get_IsX86HeapVerifyOrGCStress
+
+  .method public hidebysig static int32
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('needs triage')
+        int32(0x2) // Mono
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('needs triage')
+        type([TestLibrary]TestLibrary.Utilities)
+        string[1] ('IsNativeAot')
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('needs triage')
+        type(Test_hijacking_il.Repro)
+        string[1] ('IsX86HeapVerifyOrGCStress')
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
+        string('needs triage')
+        int32(0x1E) // AnyJitStress
+    }
     .entrypoint
     // Code size       300 (0x12c)
     .maxstack  5
@@ -371,7 +416,12 @@
     IL_012b:  ret
   } // end of method Test_hijacking_il.Repro::Main
 
-  .method public hidebysig specialname rtspecialname 
+  .property bool IsX86HeapVerifyOrGCStress()
+  {
+    .get bool Test_hijacking_il.Repro::get_IsX86HeapVerifyOrGCStress()
+  }
+
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
