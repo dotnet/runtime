@@ -4314,7 +4314,7 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 
     if (NtCurrentTeb()->ThreadLocalStoragePointer == NULL)
     {
-        // Ignore exceptions when TLS is not available due to heap corruption or early thread initialization
+        // Early out when TLS is not available due to unhandled exception during early thread initialization
         return retVal;
     }
 
