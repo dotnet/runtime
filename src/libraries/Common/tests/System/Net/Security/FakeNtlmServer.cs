@@ -361,7 +361,7 @@ namespace System.Net.Security
             // Decrypt exportedSessionKey with sessionBaseKey
             Span<byte> exportedSessionKey = stackalloc byte[16];
             if (flags.HasFlag(Flags.NegotiateKeyExchange) &&
-                (flags.HasFlag(Flags.NegotiateSeal) || flags.HasFlag(Flags.NegotiateSign)))
+                (flags & (Flags.NegotiateSeal | Flags.NegotiateSign)) != 0)
             {
                 using (RC4 rc4 = new RC4(sessionBaseKey))
                 {

@@ -658,7 +658,7 @@ namespace System.Net
                 RandomNumberGenerator.Fill(exportedSessionKey);
 
                 // Both flags are necessary to exchange keys needed for MIC (!)
-                Debug.Assert(flags.HasFlag(Flags.NegotiateSign) && flags.HasFlag(Flags.NegotiateKeyExchange));
+                Debug.Assert((flags & (Flags.NegotiateSign | Flags.NegotiateKeyExchange)) == (Flags.NegotiateSign | Flags.NegotiateKeyExchange));
 
                 // Derive session base key
                 Span<byte> sessionBaseKey = stackalloc byte[HMACMD5.HashSizeInBytes];

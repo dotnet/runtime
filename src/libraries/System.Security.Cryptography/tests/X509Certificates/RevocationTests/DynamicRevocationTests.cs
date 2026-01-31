@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [MemberData(nameof(AllViableRevocation))]
         public static void NothingRevoked(PkiOptions pkiOptions)
         {
-            bool usingCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl) || pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
+            bool usingCrl = (pkiOptions & PkiOptions.CrlEverywhere) != 0;
             SimpleTest(
                 pkiOptions,
                 (root, intermediate, endEntity, holder, responder) =>
@@ -1012,7 +1012,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [MemberData(nameof(AllViableRevocation))]
         public static void CheckEndEntityWithExpiredRevocation(PkiOptions pkiOptions)
         {
-            bool usingCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl) || pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
+            bool usingCrl = (pkiOptions & PkiOptions.CrlEverywhere) != 0;
             SimpleTest(
                 pkiOptions,
                 (root, intermediate, endEntity, holder, responder) =>
@@ -1039,7 +1039,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", PlatformSupport.AppleCrypto)]
         public static void CheckIntermediateWithExpiredRevocation(PkiOptions pkiOptions)
         {
-            bool usingCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl) || pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
+            bool usingCrl = (pkiOptions & PkiOptions.CrlEverywhere) != 0;
             SimpleTest(
                 pkiOptions,
                 (root, intermediate, endEntity, holder, responder) =>

@@ -65,7 +65,7 @@ namespace System.Reflection.Emit.Tests
 
             void Verify(TypeBuilder type, TypeBuilder declaringType)
             {
-                bool allowsNullParent = attributes.HasFlag(TypeAttributes.Abstract) && attributes.HasFlag(TypeAttributes.ClassSemanticsMask);
+                bool allowsNullParent = (attributes & (TypeAttributes.Abstract | TypeAttributes.ClassSemanticsMask)) == (TypeAttributes.Abstract | TypeAttributes.ClassSemanticsMask);
                 Type baseType = allowsNullParent ? parent : (parent ?? typeof(object));
                 Helpers.VerifyType(type, declaringType.Module, declaringType, name, attributes, baseType, typesize, packingSize, implementedInterfaces);
             }
