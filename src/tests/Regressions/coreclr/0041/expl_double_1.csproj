@@ -9,4 +9,7 @@
     <Compile Include="body_double.cs" />
     <Compile Include="expl_double_1.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>
