@@ -178,7 +178,7 @@ namespace System
         }
 #elif !NATIVEAOT
         [UnmanagedCallersOnly]
-        internal static unsafe void Setup(char** pNames, char** pValues, int count, nint pException)
+        internal static unsafe void Setup(char** pNames, char** pValues, int count, Runtime.CompilerServices.ObjectHandleOnStack* pException)
         {
             try
             {
@@ -191,7 +191,7 @@ namespace System
             }
             catch (Exception ex)
             {
-                ((Runtime.CompilerServices.ObjectHandleOnStack*)pException)->Value = ex;
+                pException->Value = ex;
             }
         }
 #endif

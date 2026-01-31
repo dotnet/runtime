@@ -832,17 +832,17 @@ namespace System.StubHelpers
     internal static unsafe partial class MngdRefCustomMarshaler
     {
         [UnmanagedCallersOnly]
-        internal static void ConvertContentsToNative(IntPtr marshaler, IntPtr pManagedHome, IntPtr* pNativeHome, IntPtr exception)
+        internal static void ConvertContentsToNative(ObjectHandleOnStack* marshaler, ObjectHandleOnStack* pManagedHome, IntPtr* pNativeHome, ObjectHandleOnStack* exception)
         {
             try
             {
-                ICustomMarshaler customMarshaler = (ICustomMarshaler)((ObjectHandleOnStack*)marshaler)->Value;
-                object managedHome = ((ObjectHandleOnStack*)pManagedHome)->Value;
+                ICustomMarshaler customMarshaler = (ICustomMarshaler)marshaler->Value;
+                object managedHome = pManagedHome->Value;
                 ConvertContentsToNative(customMarshaler, in managedHome, pNativeHome);
             }
             catch (Exception ex)
             {
-                ((ObjectHandleOnStack*)exception)->Value = ex;
+                exception->Value = ex;
             }
         }
 
@@ -859,18 +859,18 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        internal static void ConvertContentsToManaged(IntPtr marshaler, IntPtr pManagedHome, IntPtr* pNativeHome, IntPtr exception)
+        internal static void ConvertContentsToManaged(ObjectHandleOnStack* marshaler, ObjectHandleOnStack* pManagedHome, IntPtr* pNativeHome, ObjectHandleOnStack* exception)
         {
             try
             {
-                ICustomMarshaler customMarshaler = (ICustomMarshaler)((ObjectHandleOnStack*)marshaler)->Value;
-                object? managedHome = ((ObjectHandleOnStack*)pManagedHome)->Value;
+                ICustomMarshaler customMarshaler = (ICustomMarshaler)marshaler->Value;
+                object? managedHome = pManagedHome->Value;
                 ConvertContentsToManaged(customMarshaler, ref managedHome, pNativeHome);
-                ((ObjectHandleOnStack*)pManagedHome)->Value = managedHome!;
+                pManagedHome->Value = managedHome!;
             }
             catch (Exception ex)
             {
-                ((ObjectHandleOnStack*)exception)->Value = ex;
+                exception->Value = ex;
             }
         }
 
@@ -887,17 +887,17 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        internal static void ClearNative(IntPtr marshaler, IntPtr pManagedHome, IntPtr* pNativeHome, IntPtr exception)
+        internal static void ClearNative(ObjectHandleOnStack* marshaler, ObjectHandleOnStack* pManagedHome, IntPtr* pNativeHome, ObjectHandleOnStack* exception)
         {
             try
             {
-                ICustomMarshaler customMarshaler = (ICustomMarshaler)((ObjectHandleOnStack*)marshaler)->Value;
-                object managedHome = ((ObjectHandleOnStack*)pManagedHome)->Value;
+                ICustomMarshaler customMarshaler = (ICustomMarshaler)marshaler->Value;
+                object managedHome = pManagedHome->Value;
                 ClearNative(customMarshaler, ref managedHome, pNativeHome);
             }
             catch (Exception ex)
             {
-                ((ObjectHandleOnStack*)exception)->Value = ex;
+                exception->Value = ex;
             }
         }
 
@@ -920,17 +920,17 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        internal static void ClearManaged(IntPtr marshaler, IntPtr pManagedHome, IntPtr* pNativeHome, IntPtr exception)
+        internal static void ClearManaged(ObjectHandleOnStack* marshaler, ObjectHandleOnStack* pManagedHome, IntPtr* pNativeHome, ObjectHandleOnStack* exception)
         {
             try
             {
-                ICustomMarshaler customMarshaler = (ICustomMarshaler)((ObjectHandleOnStack*)marshaler)->Value;
-                object managedHome = ((ObjectHandleOnStack*)pManagedHome)->Value;
+                ICustomMarshaler customMarshaler = (ICustomMarshaler)marshaler->Value;
+                object managedHome = pManagedHome->Value;
                 ClearManaged(customMarshaler, in managedHome, pNativeHome);
             }
             catch (Exception ex)
             {
-                ((ObjectHandleOnStack*)exception)->Value = ex;
+                exception->Value = ex;
             }
         }
 
