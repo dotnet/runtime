@@ -2067,7 +2067,7 @@ namespace System.Net.Http
                 // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
                 // We can only safely retry if there's no request content, as we cannot guarantee that we can
                 // rewind arbitrary content streams. Additionally, we only retry if the version policy allows downgrade.
-                if (AuthenticationHelper.IsSessionAuthenticationChallenge(response) && 
+                if (AuthenticationHelper.IsSessionAuthenticationChallenge(response) &&
                     request.Content == null && 
                     request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower)
                 {
