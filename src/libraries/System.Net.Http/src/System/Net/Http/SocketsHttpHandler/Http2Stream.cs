@@ -46,7 +46,7 @@ namespace System.Net.Http
             private StreamCompletionState _responseCompletionState;
             private ResponseProtocolState _responseProtocolState;
             private bool _responseHeadersReceived;
-            private bool _requestBodyStreamingStarted; // true if we've started copying request content to the stream
+            private bool _requestBodyStreamingStarted; // true once we start copying request content to the stream (used to determine retry eligibility)
 
             // If this is not null, then we have received a reset from the server
             // (i.e. RST_STREAM or general IO error processing the connection)

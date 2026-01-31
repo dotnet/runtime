@@ -2071,7 +2071,7 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Received session-based authentication challenge on HTTP/2. Request can be retried on HTTP/1.1. RequestBodyStreamingStarted={http2Stream.RequestBodyStreamingStarted}");
+                        Trace($"Received session-based authentication challenge on HTTP/2, request can be retried on HTTP/1.1. RequestBodyStreamingStarted={http2Stream.RequestBodyStreamingStarted}");
                     }
 
                     response.Dispose();
