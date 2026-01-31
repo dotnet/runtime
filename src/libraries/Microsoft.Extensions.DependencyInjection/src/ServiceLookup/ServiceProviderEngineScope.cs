@@ -229,21 +229,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
-        private static void CheckExceptionCache(object? exceptionsCache)
-        {
-            if (exceptionsCache is null)
-            {
-                return;
-            }
-
-            if (exceptionsCache is ExceptionDispatchInfo exceptionInfo)
-            {
-                exceptionInfo.Throw();
-            }
-
-            throw new AggregateException((List<Exception>)exceptionsCache);
-        }
-
         private static void AddExceptionToCache(ref object? exceptionsCache, Exception exception)
         {
             if (exceptionsCache is null)
@@ -258,6 +243,21 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 ((List<Exception>)exceptionsCache).Add(exception);
             }
+        }
+
+        private static void CheckExceptionCache(object? exceptionsCache)
+        {
+            if (exceptionsCache is null)
+            {
+                return;
+            }
+
+            if (exceptionsCache is ExceptionDispatchInfo exceptionInfo)
+            {
+                exceptionInfo.Throw();
+            }
+
+            throw new AggregateException((List<Exception>)exceptionsCache);
         }
 
         private List<object>? BeginDispose()
