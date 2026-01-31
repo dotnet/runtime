@@ -464,7 +464,7 @@ def main(main_args):
                 helix_queue = "azurelinux.3.amd64.open"
         elif platform_name == "osx":
             if arch == "arm64": # public osx_arm64
-                helix_queue = "osx.15.arm64.open"
+                helix_queue = "OSX.15.Arm64.Open"
             else: # public osx_x64
                 helix_queue = "OSX.15.Amd64.Open"
     else:
@@ -482,7 +482,7 @@ def main(main_args):
                 helix_queue = "azurelinux.3.amd64"
         elif platform_name == "osx":
             if arch == "arm64": # internal osx_arm64
-                helix_queue = "OSX.15.ARM64"
+                helix_queue = "OSX.15.Arm64"
             else: # internal osx_x64
                 helix_queue = "OSX.15.Amd64"
 
