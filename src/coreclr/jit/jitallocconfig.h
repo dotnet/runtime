@@ -7,7 +7,7 @@
 #include "../jitshared/allocconfig.h"
 
 // Forward declarations
-struct ICorJitHost;
+class ICorJitHost;
 extern ICorJitHost* g_jitHost;
 
 // JitAllocatorConfig implements IAllocatorConfig for the JIT compiler.
@@ -36,6 +36,13 @@ public:
 
     // Fills a memory block with the uninitialized pattern for DEBUG builds.
     virtual void fillWithUninitializedPattern(void* block, size_t size) override;
+
+    // Called when allocation fails - calls NOMEM() which does not return.
+    virtual void outOfMemory() override;
 };
+
+// Global JIT allocator configuration instance.
+// This is used by all ArenaAllocators created by the JIT.
+extern JitAllocatorConfig g_jitAllocatorConfig;
 
 #endif // _JITALLOCCONFIG_H_

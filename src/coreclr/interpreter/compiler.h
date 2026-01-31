@@ -38,6 +38,9 @@ struct InterpMemKindTraits
     static const char* const Names[];
 };
 
+// InterpArenaAllocator is the arena allocator type used for interpreter compilations.
+using InterpArenaAllocator = ArenaAllocator<InterpMemKindTraits>;
+
 // InterpAllocator is the allocator type used for interpreter compilations.
 // It wraps ArenaAllocator and tracks allocations by InterpMemKind.
 using InterpAllocator = CompAllocator<InterpMemKindTraits>;
@@ -640,7 +643,7 @@ private:
     // Arena allocator for compilation-phase memory.
     // All memory allocated via AllocMemPool is freed when the compiler is destroyed.
     InterpAllocatorConfig m_allocConfig;
-    ArenaAllocator m_arenaAllocator;
+    InterpArenaAllocator m_arenaAllocator;
 
     CORINFO_METHOD_HANDLE m_methodHnd;
     CORINFO_MODULE_HANDLE m_compScopeHnd;
@@ -808,17 +811,10 @@ private:
 public:
     // Returns an allocator for the specified memory kind. Use this for categorized
     // allocations to enable memory profiling when MEASURE_MEM_ALLOC is defined.
-#if MEASURE_MEM_ALLOC
-    InterpAllocator getAllocator(InterpMemKind imk = IMK_Generic)
-    {
-        return InterpAllocator(&m_arenaAllocator, imk, &m_stats);
-    }
-#else
     InterpAllocator getAllocator(InterpMemKind imk = IMK_Generic)
     {
         return InterpAllocator(&m_arenaAllocator, imk);
     }
-#endif
 
     // Convenience methods for common allocation kinds
     InterpAllocator getAllocatorGC() { return getAllocator(IMK_GC); }
@@ -1121,8 +1117,6 @@ public:
     // Histograms for memory distribution (in KB)
     static Histogram s_memAllocHist;
     static Histogram s_memUsedHist;
-
-    InterpMemStats m_stats;
 
     void finishMemStats();
     static void dumpAggregateMemStats(FILE* file);

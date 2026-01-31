@@ -4,6 +4,9 @@
 #include "jitpch.h"
 #include "jitallocconfig.h"
 
+// Global JIT allocator configuration instance
+JitAllocatorConfig g_jitAllocatorConfig;
+
 //------------------------------------------------------------------------
 // JitAllocatorConfig::bypassHostAllocator:
 //    Indicates whether or not the ArenaAllocator should bypass the JIT
@@ -108,4 +111,13 @@ void JitAllocatorConfig::fillWithUninitializedPattern(void* block, size_t size)
     (void)block;
     (void)size;
 #endif
+}
+
+//------------------------------------------------------------------------
+// JitAllocatorConfig::outOfMemory:
+//    Called when the allocator runs out of memory.
+//    This does not return.
+void JitAllocatorConfig::outOfMemory()
+{
+    NOMEM();
 }

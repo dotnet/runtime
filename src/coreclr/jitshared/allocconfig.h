@@ -23,7 +23,7 @@ public:
     // Allocates a block of memory from the host.
     // size: The requested size in bytes.
     // pActualSize: On return, contains the actual size allocated (may be larger than requested).
-    // Returns a pointer to the allocated memory, or calls NOMEM() on failure.
+    // Returns a pointer to the allocated memory, or calls outOfMemory() on failure.
     virtual void* allocateHostMemory(size_t size, size_t* pActualSize) = 0;
 
     // Frees a block of memory previously allocated by allocateHostMemory.
@@ -36,6 +36,10 @@ public:
     // block: Pointer to the memory to fill.
     // size: The size of the block in bytes.
     virtual void fillWithUninitializedPattern(void* block, size_t size) = 0;
+
+    // Called when the allocator runs out of memory.
+    // This should not return (either throws an exception or terminates).
+    virtual void outOfMemory() = 0;
 };
 
 #endif // _ALLOCCONFIG_H_

@@ -84,19 +84,19 @@ void InterpCompiler::initMemStats()
 
 void InterpCompiler::finishMemStats()
 {
-    m_stats.nraTotalSizeAlloc = m_arenaAllocator.getTotalBytesAllocated();
-    m_stats.nraTotalSizeUsed = m_arenaAllocator.getTotalBytesUsed();
+    m_arenaAllocator.finishMemStats();
+    const auto& stats = m_arenaAllocator.getStats();
 
     // Record histogram data (in KB, rounded up)
-    s_memAllocHist.record((unsigned)((m_stats.nraTotalSizeAlloc + 1023) / 1024));
-    s_memUsedHist.record((unsigned)((m_stats.nraTotalSizeUsed + 1023) / 1024));
+    s_memAllocHist.record((unsigned)((stats.nraTotalSizeAlloc + 1023) / 1024));
+    s_memUsedHist.record((unsigned)((stats.nraTotalSizeUsed + 1023) / 1024));
 
     minipal::MutexHolder lock(s_interpStatsMutex);
-    s_aggStats.Add(m_stats);
+    s_aggStats.Add(stats);
 
-    if (m_stats.allocSz > s_maxStats.allocSz)
+    if (stats.allocSz > s_maxStats.allocSz)
     {
-        s_maxStats = m_stats;
+        s_maxStats = stats;
     }
 }
 
@@ -136,13 +136,14 @@ void InterpCompiler::dumpMethodMemStats()
         if (InterpConfig.InterpDumpMemStats())
         {
             printf("\nMethod memory stats:\n");
-            m_stats.Print(stdout);
+            m_arenaAllocator.finishMemStats();
+            m_arenaAllocator.getStats().Print(stdout);
         }
         else
+#endif // MEASURE_MEM_ALLOC
         {
             printf("\n(Set DOTNET_InterpDumpMemStats=1 to see per-method memory stats)\n");
         }
-#endif // MEASURE_MEM_ALLOC
     }
 #endif // DEBUG
 }

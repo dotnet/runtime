@@ -135,6 +135,7 @@ set( JIT_SOURCES
   inline.cpp
   inlinepolicy.cpp
   instr.cpp
+  jitallocconfig.cpp
   jitconfig.cpp
   jiteh.cpp
   jithashtable.cpp
@@ -179,6 +180,7 @@ set( JIT_SOURCES
   treelifeupdater.cpp
   utils.cpp
   valuenum.cpp
+  ../jitshared/arenaallocator.cpp
   ../jitshared/histogram.cpp
 )
 

@@ -10,7 +10,6 @@
 
 #include "jitshared.h"
 #include "arenaallocator.h"
-#include "memstats.h"
 
 // Forward declaration for IAllocator interface (from coreclr/inc/iallocator.h)
 #ifndef _IALLOCATOR_DEFINED_
@@ -39,23 +38,22 @@ template <typename TMemKindTraits>
 class CompAllocator
 {
     using MemKind = typename TMemKindTraits::MemKind;
+    using Arena = ArenaAllocator<TMemKindTraits>;
 
-    ArenaAllocator* m_arena;
 #if MEASURE_MEM_ALLOC
-    MemKind m_kind;
-    MemStats<TMemKindTraits>* m_stats;
+    typename Arena::MemStatsAllocator* m_statsAllocator;
+#else
+    Arena* m_arena;
 #endif
 
 public:
 #if MEASURE_MEM_ALLOC
-    CompAllocator(ArenaAllocator* arena, MemKind kind, MemStats<TMemKindTraits>* stats = nullptr)
-        : m_arena(arena)
-        , m_kind(kind)
-        , m_stats(stats)
+    CompAllocator(Arena* arena, MemKind kind)
+        : m_statsAllocator(arena->getMemStatsAllocator(kind))
     {
     }
 #else
-    CompAllocator(ArenaAllocator* arena, MemKind kind)
+    CompAllocator(Arena* arena, MemKind kind)
         : m_arena(arena)
     {
         (void)kind; // Suppress unused parameter warning
@@ -70,20 +68,17 @@ public:
         // Ensure that count * sizeof(T) does not overflow.
         if (count > (SIZE_MAX / sizeof(T)))
         {
-            // This should call NOMEM() through the arena's config
+            // This should call outOfMemory() through the arena's config
             return nullptr;
         }
 
         size_t sz = count * sizeof(T);
 
 #if MEASURE_MEM_ALLOC
-        if (m_stats != nullptr)
-        {
-            m_stats->AddAlloc(sz, m_kind);
-        }
-#endif
-
+        void* p = m_statsAllocator->allocateMemory(sz);
+#else
         void* p = m_arena->allocateMemory(sz);
+#endif
 
         // Ensure that the allocator returned sizeof(size_t) aligned memory.
         assert((reinterpret_cast<size_t>(p) & (sizeof(size_t) - 1)) == 0);
@@ -155,7 +150,7 @@ public:
             // Ensure that elems * elemSize does not overflow.
             if (elems > (SIZE_MAX / elemSize))
             {
-                return nullptr; // Should call NOMEM()
+                return nullptr; // Should call outOfMemory()
             }
 
             return m_alloc.template allocate<char>(elems * elemSize);

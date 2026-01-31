@@ -69,6 +69,13 @@ public:
         (void)size;
 #endif
     }
+
+    // Called when the allocator runs out of memory.
+    // This does not return.
+    virtual void outOfMemory() override
+    {
+        NOMEM();
+    }
 };
 
 #endif // _INTERPALLOCCONFIG_H_
