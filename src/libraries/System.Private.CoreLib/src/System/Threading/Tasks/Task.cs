@@ -177,15 +177,17 @@ namespace System.Threading.Tasks
         // task. This is to be used by the debugger ONLY. Task in this dictionary represent current active tasks.
         private static Dictionary<int, Task>? s_currentActiveTasks;
 
-        // These methods are a way to access the dictionary both from this class and for other classes that also
-        // activate dummy tasks. Specifically the AsyncTaskMethodBuilder and AsyncTaskMethodBuilder<>
-
-        // Dictionary that relates Tasks to the tick count of the inflight task for debugging purposes
-        internal static System.Collections.Concurrent.ConcurrentDictionary<int, long>? s_runtimeAsyncTaskTicks;
 #if !MONO
-        // Dictionary that relates Continuations to their creation tick count for debugging purposes
+        // Dictionary that relates a runtime-async Task's ID to the QPC tick count when the current inflight invocation started.
+        // Needed because Continuations that are inflight have already been dequeued from the chain.
+        internal static System.Collections.Concurrent.ConcurrentDictionary<int, long>? s_runtimeAsyncTaskTicks;
+        // Dictionary to store debug info about runtime-async Continuations.
+        // The TickCount field stores the QPC tick count when the logical invocation to which the Continuation belongs started.
+        // The ID field stores a unique ID for the Continuation, similar to Task IDs.
         internal static System.Collections.Concurrent.ConcurrentDictionary<Continuation, RuntimeAsyncContinuationDebugInfo>? s_runtimeAsyncContinuationTicks;
 #endif
+        // These methods are a way to access the dictionary both from this class and for other classes that also
+        // activate dummy tasks. Specifically the AsyncTaskMethodBuilder and AsyncTaskMethodBuilder<>
         internal static bool AddToActiveTasks(Task task)
         {
             Debug.Assert(task != null, "Null Task objects can't be added to the ActiveTasks collection");
@@ -220,16 +222,13 @@ namespace System.Threading.Tasks
 #if !MONO
         internal static void SetRuntimeAsyncContinuationTicks(Continuation continuation, long tickCount)
         {
-            if (s_asyncDebuggingEnabled)
-            {
-                s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, RuntimeAsyncContinuationDebugInfo>(ContinuationEqualityComparer.Instance);
-                s_runtimeAsyncContinuationTicks.TryAdd(continuation, new RuntimeAsyncContinuationDebugInfo(tickCount));
-            }
+            s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, RuntimeAsyncContinuationDebugInfo>(ContinuationEqualityComparer.Instance);
+            s_runtimeAsyncContinuationTicks.TryAdd(continuation, new RuntimeAsyncContinuationDebugInfo(tickCount));
         }
 
-        internal static bool GetRuntimeAsyncContinuationDebugInfo(Continuation continuation, out RuntimeAsyncContinuationDebugInfo debugInfo)
+        internal static bool GetRuntimeAsyncContinuationDebugInfo(Continuation continuation, [NotNullWhen(true)] out RuntimeAsyncContinuationDebugInfo? debugInfo)
         {
-            if (s_asyncDebuggingEnabled && s_runtimeAsyncContinuationTicks != null && s_runtimeAsyncContinuationTicks.TryGetValue(continuation, out debugInfo))
+            if (s_runtimeAsyncContinuationTicks != null && s_runtimeAsyncContinuationTicks.TryGetValue(continuation, out debugInfo))
             {
                 return true;
             }
@@ -239,11 +238,8 @@ namespace System.Threading.Tasks
 
         internal static void UpdateRuntimeAsyncContinuationDebugInfo(Continuation continuation, RuntimeAsyncContinuationDebugInfo debugInfo)
         {
-            if (s_asyncDebuggingEnabled)
-            {
-                s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, RuntimeAsyncContinuationDebugInfo>(ContinuationEqualityComparer.Instance);
-                s_runtimeAsyncContinuationTicks[continuation] = debugInfo;
-            }
+            s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, RuntimeAsyncContinuationDebugInfo>(ContinuationEqualityComparer.Instance);
+            s_runtimeAsyncContinuationTicks[continuation] = debugInfo;
         }
 
         internal static void RemoveRuntimeAsyncContinuationTicks(Continuation continuation)
@@ -7632,7 +7628,7 @@ namespace System.Threading.Tasks
         public bool InvokeMayRunArbitraryCode => true;
     }
 
-    internal class RuntimeAsyncContinuationDebugInfo
+    internal sealed class RuntimeAsyncContinuationDebugInfo
     {
         public long TickCount;
         public int Id;

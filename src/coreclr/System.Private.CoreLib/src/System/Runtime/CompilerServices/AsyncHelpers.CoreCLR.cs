@@ -147,6 +147,8 @@ namespace System.Runtime.CompilerServices
         }
     }
 
+    // Equality comparer for Continuations. Needed because virtual methods do not work on Continuations
+    // So to use them as keys in dictionaries we need a comparer instead of using their GetHashCode/Equals.
     internal class ContinuationEqualityComparer : IEqualityComparer<Continuation>
     {
         internal static readonly ContinuationEqualityComparer Instance = new ContinuationEqualityComparer();
@@ -183,6 +185,7 @@ namespace System.Runtime.CompilerServices
 #else
         [FieldOffset(8)]
 #endif
+        // The runtime async Task being dispatched.
         public Task Task;
 
         // Information about current task dispatching, to be used for async
@@ -359,7 +362,6 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(m_stateObject == null);
                 m_stateObject = value;
-                Task.SetRuntimeAsyncContinuationTicks(value, Stopwatch.GetTimestamp());
             }
 
             internal void HandleSuspended()
@@ -395,11 +397,15 @@ namespace System.Runtime.CompilerServices
 
                 SetContinuationState(headContinuation);
 
-                Continuation? nc = headContinuation.Next;
-                while (nc != null)
+                Continuation? nc = headContinuation;
+                if (Task.s_asyncDebuggingEnabled)
                 {
-                    Task.SetRuntimeAsyncContinuationTicks(nc, Stopwatch.GetTimestamp());
-                    nc = nc.Next;
+                    while (nc != null)
+                    {
+                        // On suspension we set tick info for all continuations that have not yet had it set.
+                        Task.SetRuntimeAsyncContinuationTicks(nc, Stopwatch.GetTimestamp());
+                        nc = nc.Next;
+                    }
                 }
 
                 try
@@ -477,8 +483,9 @@ namespace System.Runtime.CompilerServices
                 asyncDispatcherInfo.NextContinuation = MoveContinuationState();
                 AsyncDispatcherInfo.t_current = &asyncDispatcherInfo;
                 asyncDispatcherInfo.Task = this;
+                bool isTplEnabled = TplEventSource.Log.IsEnabled();
 
-                if (TplEventSource.Log.IsEnabled())
+                if (isTplEnabled)
                 {
                     TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
                 }
@@ -493,15 +500,22 @@ namespace System.Runtime.CompilerServices
                         asyncDispatcherInfo.NextContinuation = nextContinuation;
 
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
-                        RuntimeAsyncContinuationDebugInfo debugInfo = Task.GetRuntimeAsyncContinuationDebugInfo(curContinuation, out RuntimeAsyncContinuationDebugInfo debugInfoVal) ? debugInfoVal : new RuntimeAsyncContinuationDebugInfo(Stopwatch.GetTimestamp());
-                        Task.UpdateRuntimeAsyncTaskTicks(this, debugInfo.TickCount);
+                        if (Task.s_asyncDebuggingEnabled)
+                        {
+                            RuntimeAsyncContinuationDebugInfo debugInfo = Task.GetRuntimeAsyncContinuationDebugInfo(curContinuation, out RuntimeAsyncContinuationDebugInfo? debugInfoVal) ? debugInfoVal : new RuntimeAsyncContinuationDebugInfo(Stopwatch.GetTimestamp());
+                            // we have dequeued curContinuation; update task tick info so that we can track its start time from a debugger
+                            Task.UpdateRuntimeAsyncTaskTicks(this, debugInfo.TickCount);
+                        }
                         Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
 
-                        Task.RemoveRuntimeAsyncContinuationTicks(curContinuation);
+                        if (Task.s_asyncDebuggingEnabled)
+                            Task.RemoveRuntimeAsyncContinuationTicks(curContinuation);
 
                         if (newContinuation != null)
                         {
-                            Task.UpdateRuntimeAsyncContinuationDebugInfo(newContinuation, debugInfo);
+                            // we have a new Continuation that belongs to the same logical invocation as the previous; propagate debug info from previous continuation
+                            if (Task.s_asyncDebuggingEnabled)
+                                Task.UpdateRuntimeAsyncContinuationDebugInfo(newContinuation, debugInfo);
                             newContinuation.Next = nextContinuation;
                             HandleSuspended();
                             contexts.Pop();
@@ -540,6 +554,9 @@ namespace System.Runtime.CompilerServices
                         if (TplEventSource.Log.IsEnabled())
                         {
                             TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
+                        }
+                        if (Task.s_asyncDebuggingEnabled)
+                        {
                             Task.RemoveFromActiveTasks(this);
                             Task.RemoveRuntimeAsyncTaskTicks(this);
                         }
@@ -564,7 +581,7 @@ namespace System.Runtime.CompilerServices
                         break;
                     }
                 }
-                if (TplEventSource.Log.IsEnabled())
+                if (isTplEnabled)
                 {
                     TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
                 }
