@@ -156,15 +156,15 @@ namespace System.Net.Http.Functional.Tests
                     // RequestVersionExact means we won't downgrade to HTTP/1.1
                     requestMessage.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-                    HttpMessageHandler handler = new SocketsHttpHandler() { Credentials = s_testCredentialRight };
-                    using (var client = new HttpClient(handler))
-                    {
-                        // Should get 401 since we can't downgrade with RequestVersionExact
-                        HttpResponseMessage response = await client.SendAsync(requestMessage);
-                        
-                        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-                        Assert.Equal(HttpVersion.Version20, response.Version);
-                    }
+                    using SocketsHttpHandler handler = new SocketsHttpHandler() { Credentials = s_testCredentialRight };
+                    using var client = new HttpClient(handler);
+                    
+                    // Should get 401 since we can't downgrade with RequestVersionExact
+                    HttpResponseMessage response = await client.SendAsync(requestMessage);
+                    
+                    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                    Assert.Equal(HttpVersion.Version20, response.Version);
+                    Assert.True(response.Headers.WwwAuthenticate.Count > 0, "Expected WWW-Authenticate header in 401 response");
                 },
                 async server =>
                 {
