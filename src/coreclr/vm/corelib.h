@@ -873,8 +873,6 @@ DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwi
 DEFINE_CLASS(SAFE_HANDLE,         Interop,                SafeHandle)
 DEFINE_FIELD(SAFE_HANDLE,           HANDLE,                 handle)
 
-DEFINE_CLASS(SECURITY_EXCEPTION,    Security,               SecurityException)
-
 DEFINE_CLASS_U(Diagnostics,                StackFrameHelper,   StackFrameHelper)
 DEFINE_FIELD_U(rgiOffset,                  StackFrameHelper,   rgiOffset)
 DEFINE_FIELD_U(rgiILOffset,                StackFrameHelper,   rgiILOffset)
@@ -980,9 +978,6 @@ DEFINE_CLASS(AUTORELEASEPOOL,       Threading,              AutoreleasePool)
 DEFINE_METHOD(AUTORELEASEPOOL,      CREATEAUTORELEASEPOOL,  CreateAutoreleasePool,  SM_RetVoid)
 DEFINE_METHOD(AUTORELEASEPOOL,      DRAINAUTORELEASEPOOL,   DrainAutoreleasePool,   SM_RetVoid)
 #endif // FEATURE_OBJCMARSHAL
-
-DEFINE_CLASS(TIMESPAN,              System,                 TimeSpan)
-
 
 DEFINE_CLASS(TYPE,                  System,                 Type)
 DEFINE_METHOD(TYPE,                 GET_TYPE_FROM_HANDLE,   GetTypeFromHandle,          SM_RuntimeTypeHandle_RetType)
