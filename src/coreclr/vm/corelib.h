@@ -199,9 +199,6 @@ DEFINE_CLASS(HANDLE_REF,            Interop,                HandleRef)
 DEFINE_FIELD(HANDLE_REF,            WRAPPER,                _wrapper)
 DEFINE_FIELD(HANDLE_REF,            HANDLE,                 _handle)
 
-DEFINE_CLASS(CRITICAL_FINALIZER_OBJECT, ConstrainedExecution, CriticalFinalizerObject)
-DEFINE_METHOD(CRITICAL_FINALIZER_OBJECT, FINALIZE,          Finalize,                   IM_RetVoid)
-
 DEFINE_CLASS_U(Reflection,             RuntimeConstructorInfo,  NoClass)
 DEFINE_FIELD_U(m_handle,                   ReflectMethodObject, m_pMD)
 DEFINE_CLASS(CONSTRUCTOR,           Reflection,             RuntimeConstructorInfo)
