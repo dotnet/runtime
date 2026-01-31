@@ -8051,7 +8051,7 @@ public:
             }
             else
             {
-                static_assert("Unexpected type for cns");
+                static_assert(!std::is_same_v<T, T>, "Unexpected type for cns");
             }
             return dsc;
         }
