@@ -458,7 +458,7 @@ namespace Microsoft.Interop
             ITypeSymbol? nativeType = null;
             if (ModeUsesManagedToUnmanagedShape(mode))
             {
-                if (!ModeOptionallyMatchesShape(mode) && !shape.HasFlag(MarshallerShape.CallerAllocatedBuffer) && !shape.HasFlag(MarshallerShape.ToUnmanaged))
+                if (!ModeOptionallyMatchesShape(mode) && (shape & (MarshallerShape.CallerAllocatedBuffer | MarshallerShape.ToUnmanaged)) == 0)
                     return null;
 
                 if (isLinearCollectionMarshaller && methods.ManagedValuesSource is not null)
@@ -481,7 +481,7 @@ namespace Microsoft.Interop
             if (ModeUsesUnmanagedToManagedShape(mode))
             {
                 // Unmanaged to managed requires ToManaged either with or without guaranteed unmarshal
-                if (!ModeOptionallyMatchesShape(mode) && !shape.HasFlag(MarshallerShape.GuaranteedUnmarshal) && !shape.HasFlag(MarshallerShape.ToManaged))
+                if (!ModeOptionallyMatchesShape(mode) && (shape & (MarshallerShape.GuaranteedUnmarshal | MarshallerShape.ToManaged)) == 0)
                     return null;
 
                 if (isLinearCollectionMarshaller)
@@ -559,7 +559,7 @@ namespace Microsoft.Interop
             if (ModeUsesManagedToUnmanagedShape(mode))
             {
                 // Managed to unmanaged requires ToUnmanaged either with or without the caller-allocated buffer
-                if (mode != MarshalMode.Default && !shape.HasFlag(MarshallerShape.CallerAllocatedBuffer) && !shape.HasFlag(MarshallerShape.ToUnmanaged))
+                if (mode != MarshalMode.Default && (shape & (MarshallerShape.CallerAllocatedBuffer | MarshallerShape.ToUnmanaged)) == 0)
                     return null;
 
                 if (methods.ToUnmanaged is not null)
@@ -577,7 +577,7 @@ namespace Microsoft.Interop
             if (ModeUsesUnmanagedToManagedShape(mode))
             {
                 // Unmanaged to managed requires ToManaged either with or without guaranteed unmarshal
-                if (mode != MarshalMode.Default && !shape.HasFlag(MarshallerShape.GuaranteedUnmarshal) && !shape.HasFlag(MarshallerShape.ToManaged))
+                if (mode != MarshalMode.Default && (shape & (MarshallerShape.GuaranteedUnmarshal | MarshallerShape.ToManaged)) == 0)
                     return null;
 
                 if (methods.FromUnmanaged is not null && nativeType is null)

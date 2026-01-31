@@ -265,7 +265,7 @@ namespace System.Speech.Internal.SrgsCompiler
             // - To maintain maximal backwards compatibility, if a rule is marked as Import, we will unmark TopLevel/Active/Root.
             // - This changes the behavior when application tries to activate this rule.  However, given that it is already
             //   broken/fragile, we believe it is better to change the behavior.
-            if ((attributes & SPCFGRULEATTRIBUTES.SPRAF_Import) != 0 && ((attributes & SPCFGRULEATTRIBUTES.SPRAF_TopLevel) != 0 || (attributes & SPCFGRULEATTRIBUTES.SPRAF_Active) != 0 || (attributes & SPCFGRULEATTRIBUTES.SPRAF_Root) != 0))
+            if ((attributes & SPCFGRULEATTRIBUTES.SPRAF_Import) != 0 && (attributes & (SPCFGRULEATTRIBUTES.SPRAF_TopLevel | SPCFGRULEATTRIBUTES.SPRAF_Active | SPCFGRULEATTRIBUTES.SPRAF_Root)) != 0)
             {
                 attributes &= ~(SPCFGRULEATTRIBUTES.SPRAF_TopLevel | SPCFGRULEATTRIBUTES.SPRAF_Active | SPCFGRULEATTRIBUTES.SPRAF_Root);
             }

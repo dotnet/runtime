@@ -50,7 +50,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(StubIdentifierContext context)
         {
-            if (!shape.HasFlag(MarshallerShape.ToUnmanaged) && !shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
+            if ((shape & (MarshallerShape.ToUnmanaged | MarshallerShape.CallerAllocatedBuffer)) == 0)
                 yield break;
 
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
@@ -384,7 +384,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(StubIdentifierContext context)
         {
-            if (!shape.HasFlag(MarshallerShape.ToUnmanaged) && !shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
+            if ((shape & (MarshallerShape.ToUnmanaged | MarshallerShape.CallerAllocatedBuffer)) == 0)
                 yield break;
 
             if (shape.HasFlag(MarshallerShape.ToUnmanaged)
@@ -672,7 +672,7 @@ namespace Microsoft.Interop
                 yield return statement;
             }
 
-            if (!shape.HasFlag(MarshallerShape.ToUnmanaged) && !shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
+            if ((shape & (MarshallerShape.ToUnmanaged | MarshallerShape.CallerAllocatedBuffer)) == 0)
                 yield break;
 
             yield return elementsMarshalling.GenerateMarshalStatement(context);

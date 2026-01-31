@@ -2638,7 +2638,7 @@ ISpGrammarResourceLoader
         {
             CompareOptions handledOptions = CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.Ordinal;
             SpeechEmulationCompareFlags flags = 0;
-            if ((compareOptions & CompareOptions.IgnoreCase) != 0 || (compareOptions & CompareOptions.OrdinalIgnoreCase) != 0)
+            if ((compareOptions & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0)
             {
                 flags |= SpeechEmulationCompareFlags.SECFIgnoreCase;
             }

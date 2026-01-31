@@ -526,7 +526,7 @@ namespace System.Net.Security
                     info.SupportedVersions |= versions;
                 }
                 else if (extensionType == ExtensionType.ApplicationProtocols && (options == ProcessingOptions.All ||
-                          (options.HasFlag(ProcessingOptions.ApplicationProtocol) || options.HasFlag(ProcessingOptions.RawApplicationProtocol))))
+                          options.HasFlag(ProcessingOptions.ApplicationProtocol | ProcessingOptions.RawApplicationProtocol)))
                 {
                     if (!TryGetApplicationProtocolsFromExtension(extensionData, out ApplicationProtocolInfo alpn))
                     {

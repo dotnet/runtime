@@ -3692,7 +3692,7 @@ namespace System
         private int CheckAuthorityHelper(ReadOnlySpan<char> str, int startOffset, out ParsingError err, ref Flags flags, UriSyntaxFlags syntaxFlags, ref string? newHost)
         {
             Debug.Assert((_flags & Flags.Debug_LeftConstructor) == 0 || (!_syntax.IsSimple && Monitor.IsEntered(_info)));
-            Debug.Assert((_flags & Flags.HasUserInfo) == 0 && (_flags & Flags.HostTypeMask) == 0);
+            Debug.Assert((_flags & (Flags.HasUserInfo | Flags.HostTypeMask)) == 0);
             Debug.Assert((uint)startOffset <= (uint)str.Length);
 
             err = ParsingError.None;

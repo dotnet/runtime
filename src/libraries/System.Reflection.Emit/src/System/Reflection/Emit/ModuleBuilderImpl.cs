@@ -801,7 +801,7 @@ namespace System.Reflection.Emit
             this, method.ParameterTypes, method.ReturnType, GetSignatureConvention(method.CallingConvention), isInstance: IsInstance(method.CallingConvention));
 
         private static bool IsInstance(CallingConventions callingConvention) =>
-            callingConvention.HasFlag(CallingConventions.HasThis) || callingConvention.HasFlag(CallingConventions.ExplicitThis) ? true : false;
+            callingConvention.HasFlag(CallingConventions.HasThis | CallingConventions.ExplicitThis);
 
         internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConventions)
         {
