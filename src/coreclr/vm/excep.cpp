@@ -11384,13 +11384,11 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
 
     // Read caller's LR from Tier0's stack frame (saved at [FP+8])
     // Note: We use managedFrameFP (Tier0's FP) for context, not callerFP
-    TADDR callerLR = *((TADDR*)(managedFrameFP + 8));
 
-    pContext->Fp = managedFrameFP;
-    pContext->Lr = callerLR;
+    pContext->Lr = *((TADDR*)(managedFrameFP + 8));
 
     *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
-    *pCurrentFP = managedFrameFP;
+    *pCurrentFP = *((TADDR*)managedFrameFP);
 
 #elif defined(TARGET_LOONGARCH64)
 
@@ -11429,13 +11427,11 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
 
     // Read caller's RA from Tier0's stack frame (saved at [FP+8])
     // Note: We use managedFrameFP (Tier0's FP) for context, not callerFP
-    TADDR callerRA = *((TADDR*)(managedFrameFP + 8));
 
-    pContext->Fp = managedFrameFP;
-    pContext->Ra = callerRA;
+    pContext->Ra = *((TADDR*)(managedFrameFP + 8));
 
     *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
-    *pCurrentFP = managedFrameFP;
+    *pCurrentFP = *((TADDR*)managedFrameFP);
 
 #elif defined(TARGET_RISCV64)
 
@@ -11482,13 +11478,11 @@ void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTra
 
     // Read caller's RA from Tier0's stack frame (saved at [FP+8])
     // Note: We use managedFrameFP (Tier0's FP) for context, not callerFP
-    TADDR callerRA = *((TADDR*)(managedFrameFP + 8));
 
-    pContext->Fp = managedFrameFP;
-    pContext->Ra = callerRA;
+    pContext->Ra = *((TADDR*)(managedFrameFP + 8));
 
     *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
-    *pCurrentFP = managedFrameFP;
+    *pCurrentFP = *((TADDR*)managedFrameFP);
 
 #endif // TARGET_AMD64 / TARGET_ARM64 / TARGET_LOONGARCH64 / TARGET_RISCV64
 }
