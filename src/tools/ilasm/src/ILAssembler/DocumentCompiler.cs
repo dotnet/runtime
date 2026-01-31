@@ -50,9 +50,12 @@ public sealed class DocumentCompiler
         var image = visitor.BuildImage();
 
         bool anyErrors = diagnostics.Any(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        anyErrors |= image.Diagnostics.Any(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
 
         diagnostics.AddRange(image.Diagnostics);
 
-        return (diagnostics.ToImmutable(), anyErrors ? null : image.Image);
+        // In error-tolerant mode, return image even with errors (like native ilasm /ERR)
+        bool returnImage = !anyErrors || options.ErrorTolerant;
+        return (diagnostics.ToImmutable(), returnImage ? image.Image : null);
     }
 }

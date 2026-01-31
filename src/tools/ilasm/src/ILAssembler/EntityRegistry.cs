@@ -505,8 +505,9 @@ namespace ILAssembler
                         return MetadataTokens.EntityHandle(tokenType, MetadataTokens.GetRowNumber(otherList[otherList.Count - 1].Handle) + 1);
                     }
                 }
-                // If all lists are empty, return a nil handle for the right table
-                return MetadataTokens.EntityHandle(tokenType, 0);
+                // If all lists are empty, return row 1 (first potential entry).
+                // ECMA-335 metadata rows are 1-indexed, so row 0 is invalid.
+                return MetadataTokens.EntityHandle(tokenType, 1);
             }
         }
 

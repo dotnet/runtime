@@ -9,8 +9,8 @@ namespace ILAssembler;
 
 internal sealed class IlasmRootCommand : RootCommand
 {
-    public Argument<string> InputFilePath { get; } =
-        new("input-file-path") { Description = "Input IL source file" };
+    public Argument<string[]> InputFilePaths { get; } =
+        new("input-file-paths") { Description = "Input IL source file(s)", Arity = ArgumentArity.OneOrMore };
 
     public Option<string> OutputFilePath { get; } =
         new("--output", "-o") { Description = "Compile to file with specified name (user must provide extension, if any)" };
@@ -51,6 +51,9 @@ internal sealed class IlasmRootCommand : RootCommand
     public Option<bool> Deterministic { get; } =
         new("--deterministic", "--det") { Description = "Produce deterministic outputs" };
 
+    public Option<bool> ErrorTolerant { get; } =
+        new("--error", "--err") { Description = "Try to create output file despite errors (results may be invalid)" };
+
     public Option<bool> Clock { get; } =
         new("--clock") { Description = "Measure and report compilation times" };
 
@@ -83,9 +86,6 @@ internal sealed class IlasmRootCommand : RootCommand
 
     public Option<string> MetadataVersion { get; } =
         new("--mdv") { Description = "Set Metadata version string" };
-
-    public Option<string> MetadataStreamVersion { get; } =
-        new("--msv") { Description = "Set Metadata stream version (format: major.minor)" };
 
     public Option<bool> Pe64 { get; } =
         new("--pe64") { Description = "Create a 64bit image (PE32+)" };
@@ -121,7 +121,7 @@ internal sealed class IlasmRootCommand : RootCommand
 
     public IlasmRootCommand() : base(ProductName)
     {
-        Arguments.Add(InputFilePath);
+        Arguments.Add(InputFilePaths);
         Options.Add(OutputFilePath);
         Options.Add(BuildDll);
         Options.Add(BuildExe);
@@ -135,6 +135,7 @@ internal sealed class IlasmRootCommand : RootCommand
         Options.Add(Pdb);
         Options.Add(AppContainer);
         Options.Add(Deterministic);
+        Options.Add(ErrorTolerant);
         Options.Add(Clock);
         Options.Add(KeyFile);
         Options.Add(AssemblyName);
@@ -146,7 +147,6 @@ internal sealed class IlasmRootCommand : RootCommand
         Options.Add(ImageBase);
         Options.Add(StackReserve);
         Options.Add(MetadataVersion);
-        Options.Add(MetadataStreamVersion);
         Options.Add(Pe64);
         Options.Add(HighEntropyVa);
         Options.Add(NoCorStub);

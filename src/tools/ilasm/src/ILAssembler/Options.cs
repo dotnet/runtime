@@ -113,8 +113,8 @@ namespace ILAssembler
         public bool Fold { get; set; }
 
         /// <summary>
-        /// Metadata stream version (major.minor).
+        /// Try to create output file despite errors (results may be invalid).
         /// </summary>
-        public (byte Major, byte Minor)? MetadataStreamVersion { get; set; }
+        public bool ErrorTolerant { get; set; }
     }
 }

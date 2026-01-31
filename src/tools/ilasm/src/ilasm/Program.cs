@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Text;
 
 namespace ILAssembler;
 
@@ -32,7 +33,7 @@ internal sealed class Program
             stopwatch = Stopwatch.StartNew();
         }
 
-        string? inputFile = Get(_command.InputFilePath);
+        string[]? inputFiles = _command.Result.GetValue(_command.InputFilePaths);
         bool quiet = Get(_command.Quiet);
 
         if (!Get(_command.NoLogo) && !quiet)
@@ -41,39 +42,56 @@ internal sealed class Program
             Console.WriteLine();
         }
 
-        if (string.IsNullOrEmpty(inputFile))
+        if (inputFiles is null || inputFiles.Length == 0)
         {
             Console.Error.WriteLine("Error: No input file specified");
             return 1;
         }
 
-        // Determine output file
+        // Validate all input files exist
+        foreach (string file in inputFiles)
+        {
+            if (!File.Exists(file))
+            {
+                Console.Error.WriteLine($"Error: Input file not found: {file}");
+                return 1;
+            }
+        }
+
+        // Determine output file (based on first input file)
         bool isDll = Get(_command.BuildDll);
         string? outputPath = Get(_command.OutputFilePath) ??
-            $"{Path.GetFileNameWithoutExtension(inputFile)}{(isDll ? ".dll" : ".exe")}";
-
-        // Validate input file exists
-        if (!File.Exists(inputFile))
-        {
-            Console.Error.WriteLine($"Error: Input file not found: {inputFile}");
-            return 1;
-        }
+            $"{Path.GetFileNameWithoutExtension(inputFiles[0])}{(isDll ? ".dll" : ".exe")}";
 
         int exitCode = 0;
         try
         {
-            if (!quiet)
+            // Report each file being assembled (like native ilasm)
+            foreach (string file in inputFiles)
             {
-                Console.WriteLine($"Assembling '{inputFile}' to {(isDll ? "DLL" : "EXE")} --> '{outputPath}'");
+                if (!quiet)
+                {
+                    Console.WriteLine($"Assembling '{file}' to {(isDll ? "DLL" : "EXE")} --> '{outputPath}'");
+                }
             }
 
-            string content = File.ReadAllText(inputFile);
-            var document = new SourceText(content, inputFile);
+            // Concatenate all input files (like native ilasm)
+            var contentBuilder = new StringBuilder();
+            foreach (string file in inputFiles)
+            {
+                contentBuilder.AppendLine(File.ReadAllText(file));
+            }
+            string content = contentBuilder.ToString();
+
+            // Use the first file as the primary document for source tracking
+            var document = new SourceText(content, inputFiles[0]);
 
             // Build options
+            bool errorTolerant = Get(_command.ErrorTolerant);
             var options = new Options
             {
                 NoAutoInherit = Get(_command.NoAutoInherit),
+                ErrorTolerant = errorTolerant,
             };
 
             // Apply PE header overrides from command line
@@ -152,24 +170,9 @@ internal sealed class Program
             options.Optimize = Get(_command.Optimize);
             options.Fold = Get(_command.Fold);
 
-            // Parse metadata stream version (format: major.minor)
-            string? msvString = Get(_command.MetadataStreamVersion);
-            if (msvString is not null)
-            {
-                string[] parts = msvString.Split('.');
-                if (parts.Length == 2 && byte.TryParse(parts[0], out byte msvMajor) && byte.TryParse(parts[1], out byte msvMinor))
-                {
-                    options.MetadataStreamVersion = (msvMajor, msvMinor);
-                }
-                else
-                {
-                    throw new ArgumentException($"Invalid metadata stream version format: '{msvString}'. Expected format: major.minor (e.g., 2.0)");
-                }
-            }
-
             // Set up include path for #include directive resolution
             string? includePath = Get(_command.IncludePath);
-            string baseDir = Path.GetDirectoryName(Path.GetFullPath(inputFile)) ?? ".";
+            string baseDir = Path.GetDirectoryName(Path.GetFullPath(inputFiles[0])) ?? ".";
 
             SourceText LoadIncludedDocument(string path)
             {
@@ -222,7 +225,14 @@ internal sealed class Program
                 }
             }
 
-            if (hasErrors || peBuilder is null)
+            // In error-tolerant mode, continue even with errors (like native ilasm /ERR)
+            if (peBuilder is null)
+            {
+                Console.Error.WriteLine("***** FAILURE *****");
+                return 1;
+            }
+
+            if (hasErrors && !errorTolerant)
             {
                 Console.Error.WriteLine("***** FAILURE *****");
                 return 1;
@@ -232,16 +242,16 @@ internal sealed class Program
             using var outputStream = File.Create(outputPath);
             var blobBuilder = new BlobBuilder();
             peBuilder.Serialize(blobBuilder);
-
-            // Post-process: patch metadata stream version if specified
-            if (options.MetadataStreamVersion is var (major, minor))
-            {
-                PatchMetadataStreamVersion(blobBuilder, major, minor);
-            }
-
             blobBuilder.WriteContentTo(outputStream);
 
-            if (!quiet)
+            if (hasErrors)
+            {
+                if (!quiet)
+                {
+                    Console.WriteLine("Output file contains errors");
+                }
+            }
+            else if (!quiet)
             {
                 Console.WriteLine("Operation completed successfully");
             }
@@ -259,80 +269,6 @@ internal sealed class Program
         }
 
         return exitCode;
-    }
-
-    /// <summary>
-    /// Patches the metadata stream version in the serialized PE.
-    /// The #~ or #- stream header contains MajorVersion and MinorVersion at offset 4-5 after Reserved.
-    /// </summary>
-    private static void PatchMetadataStreamVersion(BlobBuilder blobBuilder, byte majorVersion, byte minorVersion)
-    {
-        // Convert to byte array for patching
-        byte[] peBytes = blobBuilder.ToArray();
-
-        // Find the metadata signature "BSJB" (0x424A5342)
-        int metadataOffset = -1;
-        for (int i = 0; i < peBytes.Length - 4; i++)
-        {
-            if (peBytes[i] == 0x42 && peBytes[i + 1] == 0x53 && peBytes[i + 2] == 0x4A && peBytes[i + 3] == 0x42)
-            {
-                metadataOffset = i;
-                break;
-            }
-        }
-
-        if (metadataOffset < 0)
-        {
-            return; // No metadata found
-        }
-
-        // Parse STORAGESIGNATURE to find streams
-        // Structure: Signature(4) + MajorVersion(2) + MinorVersion(2) + ExtraData(4) + VersionLength(4) + VersionString(variable)
-        int pos = metadataOffset + 12; // Skip to VersionLength
-        int versionLength = BitConverter.ToInt32(peBytes, pos);
-        pos += 4 + versionLength;
-
-        // Align to 4-byte boundary
-        pos = (pos + 3) & ~3;
-
-        // Now at STORAGEHEADER: Flags(1) + Padding(1) + Streams(2)
-        int streamCount = BitConverter.ToInt16(peBytes, pos + 2);
-        pos += 4;
-
-        // Iterate through stream headers to find #~ or #-
-        for (int i = 0; i < streamCount; i++)
-        {
-            int streamOffset = BitConverter.ToInt32(peBytes, pos);
-            _ = BitConverter.ToInt32(peBytes, pos + 4); // streamSize - not used but must skip
-            pos += 8;
-
-            // Read stream name (null-terminated, 4-byte aligned)
-            int nameStart = pos;
-            while (peBytes[pos] != 0)
-            {
-                pos++;
-            }
-            string streamName = System.Text.Encoding.ASCII.GetString(peBytes, nameStart, pos - nameStart);
-            pos++; // Skip null terminator
-
-            // Align to 4-byte boundary
-            pos = (pos + 3) & ~3;
-
-            // Check if this is the #~ or #- stream
-            if (streamName == "#~" || streamName == "#-")
-            {
-                // The stream starts at metadataOffset + streamOffset
-                // Stream header: Reserved(4) + MajorVersion(1) + MinorVersion(1) + ...
-                int versionOffset = metadataOffset + streamOffset + 4;
-                peBytes[versionOffset] = majorVersion;
-                peBytes[versionOffset + 1] = minorVersion;
-                break;
-            }
-        }
-
-        // Clear and rewrite the blob builder with patched bytes
-        blobBuilder.Clear();
-        blobBuilder.WriteBytes(peBytes);
     }
 
     private static int Main(string[] args) =>

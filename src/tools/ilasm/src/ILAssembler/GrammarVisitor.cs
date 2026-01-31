@@ -14,6 +14,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
@@ -135,8 +136,9 @@ namespace ILAssembler
             // Return early if there are structural errors that prevent building valid metadata.
             // However, allow errors in method bodies (ILA0016-0019) to pass through so we can
             // emit the assembly with the errors reported.
+            // In error-tolerant mode (like native ilasm /ERR), continue despite errors.
             var structuralErrors = _diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && !IsRecoverableError(d.Id));
-            if (structuralErrors.Any())
+            if (structuralErrors.Any() && !_options.ErrorTolerant)
             {
                 return (_diagnostics.ToImmutable(), null);
             }
@@ -248,13 +250,12 @@ namespace ILAssembler
             Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = _options.Deterministic
                 ? content =>
                 {
-                    using var sha256 = System.Security.Cryptography.SHA256.Create();
+                    using var hash = IncrementalHash.CreateHash(System.Security.Cryptography.HashAlgorithmName.SHA256);
                     foreach (var blob in content)
                     {
-                        sha256.TransformBlock(blob.GetBytes().Array!, blob.GetBytes().Offset, blob.GetBytes().Count, null, 0);
+                        hash.AppendData(blob.GetBytes());
                     }
-                    sha256.TransformFinalBlock([], 0, 0);
-                    return BlobContentId.FromHash(sha256.Hash!);
+                    return BlobContentId.FromHash(hash.GetHashAndReset());
                 }
                 : null;
 
