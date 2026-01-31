@@ -79,8 +79,8 @@ namespace System.Speech.Internal.Synthesis
                 // Set the say-as if any
                 if (ssmlState.SayAs != null)
                 {
-                    string format = ssmlState.SayAs.Format;
-                    string interpretAs;
+                    string? format = ssmlState.SayAs.Format;
+                    string? interpretAs;
                     switch (interpretAs = ssmlState.SayAs.InterpretAs)
                     {
                         case "spellout":
@@ -113,17 +113,17 @@ namespace System.Speech.Internal.Synthesis
             return !fFirst;
         }
 
-        private static IntPtr SapiCategory(SPVTEXTFRAG sapiFrag, string interpretAs, string format)
+        private static IntPtr SapiCategory(SPVTEXTFRAG sapiFrag, string? interpretAs, string? format)
         {
-            int posSayAsFormat = Array.BinarySearch<string>(s_asSayAsFormat, interpretAs);
-            string sFormat = posSayAsFormat >= 0 ? s_asContextFormat[posSayAsFormat] : format;
+            int posSayAsFormat = Array.BinarySearch<string?>(s_asSayAsFormat, interpretAs);
+            string? sFormat = posSayAsFormat >= 0 ? s_asContextFormat[posSayAsFormat] : format;
             sapiFrag.gcSayAsCategory = GCHandle.Alloc(sFormat, GCHandleType.Pinned);
             return sapiFrag.gcSayAsCategory.AddrOfPinnedObject();
         }
 
         internal static void FreeTextSegment(ref GCHandle fragment)
         {
-            SPVTEXTFRAG sapiFrag = (SPVTEXTFRAG)fragment.Target;
+            SPVTEXTFRAG sapiFrag = (SPVTEXTFRAG)fragment.Target!;
             if (sapiFrag.gcNext.IsAllocated)
             {
                 FreeTextSegment(ref sapiFrag.gcNext);
