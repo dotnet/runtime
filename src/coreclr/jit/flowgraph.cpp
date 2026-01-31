@@ -1410,8 +1410,6 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
 
 void Compiler::fgAddSyncMethodEnterExit()
 {
-    assert(UsesFunclets());
-
     assert((info.compFlags & CORINFO_FLG_SYNCH) != 0);
 
     // We need to do this transformation before funclets are created.
@@ -1537,10 +1535,14 @@ void Compiler::fgAddSyncMethodEnterExit()
 
     lvaTable[lvaMonAcquired].lvType = typeMonAcquired;
 
-    // Create IR to initialize the 'acquired' boolean.
-    //
-    if (!opts.IsOSR())
+    if (opts.IsOSR())
     {
+        lvaTable[lvaMonAcquired].lvIsOSRLocal = true;
+    }
+    else
+    {
+        // Create IR to initialize the 'acquired' boolean.
+        //
         GenTree* zero     = gtNewZeroConNode(typeMonAcquired);
         GenTree* initNode = gtNewStoreLclVarNode(lvaMonAcquired, zero);
 
@@ -2391,7 +2393,7 @@ PhaseStatus Compiler::fgAddInternal()
     // BBJ_RETURN block gets placed at the top-level, not within an EH region. (Otherwise,
     // we'd have to be really careful when creating the synchronized method try/finally
     // not to include the BBJ_RETURN block.)
-    if (UsesFunclets() && (info.compFlags & CORINFO_FLG_SYNCH) != 0)
+    if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
     {
         fgAddSyncMethodEnterExit();
     }
@@ -2520,77 +2522,6 @@ PhaseStatus Compiler::fgAddInternal()
 
         madeChanges = true;
     }
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-
-    /* Is this a 'synchronized' method? */
-
-    if (!UsesFunclets() && (info.compFlags & CORINFO_FLG_SYNCH))
-    {
-        GenTree* tree = nullptr;
-
-        /* Insert the expression "enterCrit(this)" or "enterCrit(handle)" */
-
-        if (info.compIsStatic)
-        {
-            tree = fgGetCritSectOfStaticMethod();
-        }
-        else
-        {
-            noway_assert(lvaTable[info.compThisArg].lvType == TYP_REF);
-            tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-        }
-
-        tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
-
-        fgNewStmtAtBeg(fgFirstBB, tree);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nSynchronized method - Add enterCrit statement in first basic block %s\n",
-                   fgFirstBB->dspToString());
-            gtDispTree(tree);
-            printf("\n");
-        }
-#endif
-
-        /* We must be generating a single exit point for this to work */
-
-        noway_assert(genReturnBB != nullptr);
-
-        /* Create the expression "exitCrit(this)" or "exitCrit(handle)" */
-
-        if (info.compIsStatic)
-        {
-            tree = fgGetCritSectOfStaticMethod();
-        }
-        else
-        {
-            tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-        }
-
-        tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, tree);
-
-        fgNewStmtNearEnd(genReturnBB, tree);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nSynchronized method - Add exitCrit statement in single return block %s\n",
-                   genReturnBB->dspToString());
-            gtDispTree(tree);
-            printf("\n");
-        }
-#endif
-
-        // Reset cookies used to track start and end of the protected region in synchronized methods
-        syncStartEmitCookie = nullptr;
-        syncEndEmitCookie   = nullptr;
-        madeChanges         = true;
-    }
-
-#endif // FEATURE_EH_WINDOWS_X86
 
     if (opts.IsReversePInvoke())
     {
@@ -2955,7 +2886,6 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     }
 #endif
 
-    assert(UsesFunclets());
     assert(block->hasHndIndex());
     assert(fgFirstBlockOfHandler(block) == block); // this block is the first block of a handler
 
@@ -3025,7 +2955,6 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 //
 void Compiler::fgCreateFuncletPrologBlocks()
 {
-    assert(UsesFunclets());
     noway_assert(fgPredsComputed);
     assert(!fgFuncletsCreated);
 
@@ -3090,7 +3019,6 @@ void Compiler::fgCreateFuncletPrologBlocks()
 //
 PhaseStatus Compiler::fgCreateFunclets()
 {
-    assert(UsesFunclets());
     assert(!fgFuncletsCreated);
 
     fgCreateFuncletPrologBlocks();
@@ -3166,8 +3094,6 @@ PhaseStatus Compiler::fgCreateFunclets()
 //
 bool Compiler::fgFuncletsAreCold()
 {
-    assert(UsesFunclets());
-
     for (BasicBlock* block = fgFirstFuncletBB; block != nullptr; block = block->Next())
     {
         if (!block->isRunRarely())
@@ -3400,6 +3326,8 @@ unsigned Compiler::acdHelper(SpecialCodeKind codeKind)
             return CORINFO_HELP_OVERFLOW;
         case SCK_FAIL_FAST:
             return CORINFO_HELP_FAIL_FAST;
+        case SCK_NULL_CHECK:
+            return CORINFO_HELP_THROWNULLREF;
         default:
             assert(!"Bad codeKind");
             return 0;
@@ -3432,6 +3360,8 @@ const char* sckName(SpecialCodeKind codeKind)
             return "SCK_ARITH_EXCPN";
         case SCK_FAIL_FAST:
             return "SCK_FAIL_FAST";
+        case SCK_NULL_CHECK:
+            return "SCK_NULL_CHECK";
         default:
             return "SCK_UNKNOWN";
     }
@@ -3505,7 +3435,7 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     add->acdTryIndex = srcBlk->bbTryIndex;
 
     // For non-funclet EH we don't constrain ACD placement via handler regions
-    add->acdHndIndex = UsesFunclets() ? srcBlk->bbHndIndex : 0;
+    add->acdHndIndex = srcBlk->bbHndIndex;
 
     add->acdKeyDsg = dsg;
     add->acdKind   = kind;
@@ -3564,6 +3494,7 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
         BBJ_THROW,  // SCK_ARG_EXCPN
         BBJ_THROW,  // SCK_ARG_RNG_EXCPN
         BBJ_THROW,  // SCK_FAIL_FAST
+        BBJ_THROW,  // SCK_NULL_CHECK
     };
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
@@ -3628,6 +3559,9 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
                     break;
                 case SCK_FAIL_FAST:
                     msg = " for FAIL_FAST";
+                    break;
+                case SCK_NULL_CHECK:
+                    msg = " for NULL_CHECK";
                     break;
                 default:
                     msg = " for ??";
@@ -3750,7 +3684,13 @@ Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, BasicBl
         {
             JITDUMP(FMT_BB ": unexpected request for new throw helper: kind %d (%s), data 0x%08x\n", fromBlock->bbNum,
                     kind, sckName(kind), key.Data());
+
+            if (kind == SCK_NULL_CHECK)
+            {
+                NYI_WASM("Missing null check demand");
+            }
         }
+
         assert(!fgRngChkThrowAdded);
     }
 
@@ -3769,19 +3709,6 @@ Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, BasicBl
 //
 unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
 {
-    if (!UsesFunclets())
-    {
-        if (blk->hasTryIndex())
-        {
-            *dsg = AcdKeyDesignator::KD_TRY;
-        }
-        else
-        {
-            *dsg = AcdKeyDesignator::KD_NONE;
-        }
-        return blk->bbTryIndex;
-    }
-
     const unsigned tryIndex = blk->bbTryIndex;
     const unsigned hndIndex = blk->bbHndIndex;
     const bool     inTry    = tryIndex > 0;
@@ -3795,6 +3722,20 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
 
     assert(inTry || inHnd);
 
+#if defined(TARGET_WASM)
+    // The current plan for Wasm: method regions or funclets with
+    // trys will have a single Wasm try handle all
+    // resumption from catches via virtual IPs.
+    //
+    // So we do not need to consider the nesting of the throw
+    // in try regions, just in handlers.
+    //
+    if (!inHnd)
+    {
+        *dsg = AcdKeyDesignator::KD_NONE;
+        return 0;
+    }
+#else
     if (inTry && (!inHnd || (tryIndex < hndIndex)))
     {
         // The most enclosing region is a try body, use it
@@ -3802,6 +3743,7 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
         *dsg = AcdKeyDesignator::KD_TRY;
         return tryIndex;
     }
+#endif // !defined(TARGET_WASM)
 
     // The most enclosing region is a handler which will be a funclet
     // Now we have to figure out if blk is in the filter or handler
@@ -3818,7 +3760,7 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
 }
 
 //------------------------------------------------------------------------
-// AddCodedDscKey: construct from kind and block
+// AddCodeDscKey: construct from kind and block
 //
 // Arguments:
 //    kind - exception kind
@@ -3842,7 +3784,7 @@ Compiler::AddCodeDscKey::AddCodeDscKey(SpecialCodeKind kind, BasicBlock* block, 
 }
 
 //------------------------------------------------------------------------
-// AddCodedDscKey: construct from AddCodeDsc
+// AddCodeDscKey: construct from AddCodeDsc
 //
 // Arguments:
 //    add - add code dsc in querstion
@@ -3907,14 +3849,7 @@ bool Compiler::AddCodeDsc::UpdateKeyDesignator(Compiler* compiler)
 
     AcdKeyDesignator newDsg = AcdKeyDesignator::KD_NONE;
 
-    if (!compiler->UsesFunclets())
-    {
-        // Non-funclet case
-        //
-        assert(acdKeyDsg != AcdKeyDesignator::KD_FLT);
-        newDsg = inTry ? AcdKeyDesignator::KD_TRY : AcdKeyDesignator::KD_NONE;
-    }
-    else if (!inTry && !inHnd)
+    if (!inTry && !inHnd)
     {
         // Moved outside of all EH regions.
         //

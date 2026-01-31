@@ -162,6 +162,7 @@ set( JIT_SOURCES
   rangecheckcloning.cpp
   rationalize.cpp
   redundantbranchopts.cpp
+  regalloc.cpp
   regset.cpp
   scev.cpp
   scopeinfo.cpp
@@ -182,7 +183,6 @@ set( JIT_SOURCES
 set ( JIT_NATIVE_TARGET_SOURCES
   lsra.cpp
   lsrabuild.cpp
-  regalloc.cpp
   regMaskTPOps.cpp
   gcdecode.cpp
   gcencode.cpp
@@ -385,6 +385,7 @@ set( JIT_HEADERS
   rangecheckcloning.h
   rationalize.h
   regalloc.h
+  regallocimpl.h
   register.h
   regset.h
   scev.h
@@ -558,7 +559,7 @@ else()
 
   if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
     # This is required to force using our own PAL, not one that we are loaded with.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
+    add_link_options(LINKER:-Bsymbolic)
   endif()
 
   set_exports_linker_option(${JIT_EXPORTS_FILE})
@@ -596,7 +597,6 @@ else()
        shlwapi.lib
        bcrypt.lib
        crypt32.lib
-       RuntimeObject.lib
        coreclrminipal
     )
 endif(CLR_CMAKE_HOST_UNIX)

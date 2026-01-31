@@ -638,6 +638,9 @@ protected:
         bool              idCatchRet;    // Instruction is for a catch 'return'
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
         BasicBlock*       idTargetBlock; // Target block for branches
+#ifdef TARGET_WASM
+        int lclOffset; // Base index of the WASM locals being declared
+#endif
     };
 
 #ifdef TARGET_ARM
@@ -1295,6 +1298,13 @@ protected:
             _idReg1 = reg;
             assert(reg == _idReg1);
         }
+
+#ifdef TARGET_WASM
+        bool idIsLclVarDecl() const
+        {
+            return _idInsFmt == IF_LOCAL_DECL;
+        }
+#endif
 
 #ifdef TARGET_ARM64
         GCtype idGCrefReg2() const
@@ -2335,6 +2345,25 @@ protected:
     };
 #endif
 
+#if defined(TARGET_WASM)
+    struct instrDescLclVarDecl : instrDesc
+    {
+        instrDescLclVarDecl() = delete;
+        unsigned int  lclCnt;
+        WasmValueType lclType;
+
+        void idLclType(WasmValueType type)
+        {
+            lclType = type;
+        }
+
+        void idLclCnt(unsigned int cnt)
+        {
+            lclCnt = cnt;
+        }
+    };
+#endif // TARGET_WASM
+
 #ifdef TARGET_RISCV64
     struct instrDescLoadImm : instrDescCns
     {
@@ -2592,10 +2621,12 @@ public:
     bool emitIssuing;
 #endif
 
-    BYTE*  emitCodeBlock;     // Hot code block
-    BYTE*  emitColdCodeBlock; // Cold code block
-    BYTE*  emitConsBlock;     // Read-only (constant) data block
-    size_t writeableOffset;   // Offset applied to a code address to get memory location that can be written
+    BYTE*          emitCodeBlock;     // Hot code block
+    BYTE*          emitColdCodeBlock; // Cold code block
+    AllocMemChunk* emitDataChunks;
+    unsigned*      emitDataChunkOffsets;
+    unsigned       emitNumDataChunks;
+    size_t         writeableOffset; // Offset applied to a code address to get memory location that can be written
 
     UNATIVE_OFFSET emitTotalHotCodeSize;
     UNATIVE_OFFSET emitTotalColdCodeSize;
@@ -2633,11 +2664,7 @@ public:
         }
     }
 
-    BYTE* emitDataOffsetToPtr(UNATIVE_OFFSET offset)
-    {
-        assert(offset < emitDataSize());
-        return emitConsBlock + offset;
-    }
+    BYTE* emitDataOffsetToPtr(UNATIVE_OFFSET offset);
 
     bool emitJumpCrossHotColdBoundary(size_t srcOffset, size_t dstOffset)
     {
@@ -3293,6 +3320,7 @@ private:
     instrDesc* emitNewInstrCns(emitAttr attr, cnsval_ssize_t cns);
     instrDesc* emitNewInstrDsp(emitAttr attr, target_ssize_t dsp);
     instrDesc* emitNewInstrCnsDsp(emitAttr attr, target_ssize_t cns, int dsp);
+
 #ifdef TARGET_ARM
     instrDesc* emitNewInstrReloc(emitAttr attr, BYTE* addr);
 #endif // TARGET_ARM
@@ -3521,6 +3549,7 @@ public:
         };
 
         dataSection*   dsNext;
+        UNATIVE_OFFSET dsAlignment;
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
         var_types      dsDataType;
@@ -3538,13 +3567,11 @@ public:
         dataSection*   dsdList;
         dataSection*   dsdLast;
         UNATIVE_OFFSET dsdOffs;
-        UNATIVE_OFFSET alignment; // in bytes, defaults to 4
 
         dataSecDsc()
             : dsdList(nullptr)
             , dsdLast(nullptr)
             , dsdOffs(0)
-            , alignment(4)
         {
         }
     };
@@ -3553,8 +3580,8 @@ public:
 
     dataSection* emitDataSecCur;
 
-    void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
-    void emitDispDataSec(dataSecDsc* section, BYTE* dst);
+    void emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* dataChunks);
+    void emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks);
     void emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataOffset, dataSection** dataSection);
 
     /************************************************************************/

@@ -25,13 +25,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            // This table is always in the Windows UnwindInfo format.
-            // As a result, we can't put it in the PData section for non-PE formats.
-            return factory.Format switch
-            {
-                ReadyToRunContainerFormat.PE => ObjectNodeSection.PDataSection,
-                _ => ObjectNodeSection.ReadOnlyDataSection
-            };
+            return ObjectNodeSection.ReadOnlyDataSection;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -174,7 +168,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public override int ClassCode => -855231428;
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.RuntimeFunctionsTableNode;
 
         internal const int SentinelSizeAdjustment = -4;
     }

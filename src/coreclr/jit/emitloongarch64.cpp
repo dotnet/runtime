@@ -3411,7 +3411,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (id->idIsReloc())
             {
                 // get the addr-offset of the data.
-                imm = (ssize_t)emitConsBlock - (ssize_t)(dstRW - writeableOffset) + dataOffs;
+                imm = (ssize_t)emitDataOffsetToPtr(dataOffs) - (ssize_t)(dstRW - writeableOffset);
                 assert(imm > 0);
                 assert(!(imm & 3));
 
@@ -3453,7 +3453,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 // get the addr of the data.
-                imm = (ssize_t)emitConsBlock + dataOffs;
+                imm = (ssize_t)emitDataOffsetToPtr(dataOffs);
 
                 code = emitInsCode(INS_lu12i_w);
                 if (ins == INS_bl)
@@ -4925,7 +4925,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             if (ins == INS_addi_d || ins == INS_addi_w)
             {
                 // A = B + C
-                if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+                if (dst->IsUnsigned())
                 {
                     codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dst->GetRegNum(), nullptr, REG_R21);
                 }
@@ -4984,7 +4984,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             regNumber tmpReg1 = src1->GetRegNum();
             regNumber tmpReg2 = src2->GetRegNum();
 
-            bool        isUnsignd = (dst->gtFlags & GTF_UNSIGNED) != 0;
+            bool        isUnsignd = dst->IsUnsigned();
             instruction ins2;
             if (attr == EA_8BYTE)
             {
@@ -5083,7 +5083,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 }
             }
 
-            if ((dst->gtFlags & GTF_UNSIGNED) == 0)
+            if (!dst->IsUnsigned())
             {
                 saveOperReg2 = codeGen->internalRegisters.GetSingle(dst);
                 assert((saveOperReg2 != REG_RA) && (saveOperReg2 != REG_R21));
@@ -5105,7 +5105,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         {
             // ADD : A = B + C
             // SUB : A = B - C <=> B = A + C
-            if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+            if (dst->IsUnsigned())
             {
                 // ADD: if A < B, goto overflow
                 // SUB: if B < A, goto overflow

@@ -107,9 +107,13 @@ FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
     JITDUMP("Determining Wasm DFS entry points\n");
 
     // All funclets are entries. For now we assume finallys are funclets.
+    // We walk from outer->inner order, so that for mutual protect trys
+    // the "first" handler is visited last and ends up earlier in RPO.
     //
-    for (EHblkDsc* const ehDsc : EHClauses(comp))
+    for (int XTnum = comp->compHndBBtabCount - 1; XTnum >= 0; XTnum--)
     {
+        EHblkDsc* const ehDsc = &comp->compHndBBtab[XTnum];
+
         JITDUMP(FMT_BB " is handler entry\n", ehDsc->ebdHndBeg->bbNum);
         entryBlocks.push_back(ehDsc->ebdHndBeg);
         if (ehDsc->HasFilter())
@@ -632,12 +636,28 @@ public:
                         transferBlock = m_comp->fgSplitEdge(pred, header);
                     }
 
-                    GenTree* const   targetIndex     = m_comp->gtNewIconNode(headerNumber);
-                    GenTree* const   storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
-                    Statement* const assignStmt      = m_comp->fgNewStmtNearEnd(transferBlock, storeControlVar);
+                    GenTree* const targetIndex     = m_comp->gtNewIconNode(headerNumber);
+                    GenTree* const storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
 
-                    m_comp->gtSetStmtInfo(assignStmt);
-                    m_comp->fgSetStmtSeq(assignStmt);
+                    if (transferBlock->IsLIR())
+                    {
+                        LIR::Range range = LIR::SeqTree(m_comp, storeControlVar);
+
+                        if (transferBlock->isEmpty())
+                        {
+                            LIR::AsRange(transferBlock).InsertAtEnd(std::move(range));
+                        }
+                        else
+                        {
+                            LIR::InsertBeforeTerminator(transferBlock, std::move(range));
+                        }
+                    }
+                    else
+                    {
+                        Statement* const assignStmt = m_comp->fgNewStmtNearEnd(transferBlock, storeControlVar);
+                        m_comp->gtSetStmtInfo(assignStmt);
+                        m_comp->fgSetStmtSeq(assignStmt);
+                    }
 
                     m_comp->fgReplaceJumpTarget(transferBlock, header, dispatcher);
                 }
@@ -675,12 +695,23 @@ public:
                 new (m_comp, CMK_BasicBlock) BBswtDesc(succs, numHeaders, cases, numHeaders, true);
             dispatcher->SetSwitch(swtDesc);
 
-            GenTree* const   controlVar = m_comp->gtNewLclvNode(controlVarNum, TYP_INT);
-            GenTree* const   switchNode = m_comp->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
-            Statement* const switchStmt = m_comp->fgNewStmtAtEnd(dispatcher, switchNode);
+            GenTree* const controlVar = m_comp->gtNewLclvNode(controlVarNum, TYP_INT);
+            GenTree* const switchNode = m_comp->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
 
-            m_comp->gtSetStmtInfo(switchStmt);
-            m_comp->fgSetStmtSeq(switchStmt);
+            assert(dispatcher->isEmpty());
+
+            if (dispatcher->IsLIR())
+            {
+                LIR::Range range = LIR::SeqTree(m_comp, switchNode);
+                LIR::AsRange(dispatcher).InsertAtEnd(std::move(range));
+            }
+            else
+            {
+                Statement* const switchStmt = m_comp->fgNewStmtAtEnd(dispatcher, switchNode);
+
+                m_comp->gtSetStmtInfo(switchStmt);
+                m_comp->fgSetStmtSeq(switchStmt);
+            }
         }
 
         // Handle nested Sccs
@@ -1363,6 +1394,17 @@ PhaseStatus Compiler::fgWasmControlFlow()
         {
             fgUnlinkBlock(block);
             fgInsertBBafter(lastBlock, block);
+
+            // If the last block was the end of a handler, we may need
+            // to update the enclosing region endpoint.
+            //
+            // Because we are not keeping try regions contiguous,
+            // we can't and don't need to do the same for a try.
+            //
+            if (ehIsBlockHndLast(lastBlock) && block->hasHndIndex() && BasicBlock::sameHndRegion(lastBlock, block))
+            {
+                fgSetHndEnd(ehGetBlockHndDsc(block), block);
+            }
             lastBlock = block;
         }
 
@@ -1413,6 +1455,11 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
     JITDUMPEXEC(fgDumpWasmControlFlow());
     JITDUMPEXEC(fgDumpWasmControlFlowDot());
+
+    // By publishing the index to block map, we are also indicating
+    // that try regions may no longer be contiguous.
+    //
+    assert(fgTrysNotContiguous());
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

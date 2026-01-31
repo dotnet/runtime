@@ -224,3 +224,36 @@ extends:
                 parameters:
                   testGroup: innerloop
                   liveLibrariesBuildConfig: Release
+
+      #
+      # CoreCLR NativeAOT checked build and Pri0 tests
+      # Test windows_arm64 with CFG
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Checked
+          platforms:
+          - windows_arm64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
+          jobParameters:
+            timeoutInMinutes: 300 # doesn't normally take this long, but we have had Helix queues backed up for over an hour
+            nameSuffix: NativeAOT_Pri0_CFG
+            buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: 'nativeaot /p:IlcUseServerGc=false /p:ControlFlowGuard=Guard'
+                  liveLibrariesBuildConfig: Release
+            testRunNamePrefixSuffix: NativeAOT_Pri0_CFG_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
+                  liveLibrariesBuildConfig: Release

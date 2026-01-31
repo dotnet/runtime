@@ -988,6 +988,8 @@ public:
     bool isContainableMemoryOp(GenTree* node);
 
 private:
+    Compiler* GetCompiler() const;
+
     // Determine which locals are candidates for allocation
     template <bool localVarsEnregistered>
     void identifyCandidates();

@@ -29,6 +29,8 @@ namespace System
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
+        public static bool IsInterpreter => IsMonoInterpreter || IsCoreClrInterpreter;
+        public static bool IsNotInterpreter => !IsInterpreter;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsNotMonoInterpreter => !IsMonoInterpreter;
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
@@ -50,6 +52,7 @@ namespace System
         public static bool IsNotMacCatalyst => !IsMacCatalyst;
         public static bool Isillumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
+        public static bool IsSunOS => Isillumos || IsSolaris;
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsWasi => RuntimeInformation.IsOSPlatform(OSPlatform.Create("WASI"));
         public static bool IsWasm => IsBrowser || IsWasi;
@@ -187,7 +190,6 @@ namespace System
 
         public static bool IsAsyncFileIOSupported => !IsBrowser && !IsWasi;
 
-        public static bool IsLineNumbersSupported => !IsNativeAot;
         public static bool IsILOffsetsSupported => !IsNativeAot;
 
         public static bool IsInContainer => GetIsInContainer();
@@ -230,7 +232,8 @@ namespace System
         // heavily on Reflection.Emit
         public static bool IsXmlDsigXsltTransformSupported => !PlatformDetection.IsInAppContainer && IsReflectionEmitSupported;
 
-        public static bool IsPreciseGcSupported => !IsMonoRuntime;
+        public static bool IsPreciseGcSupported => !IsMonoRuntime 
+                                                    && !IsBrowser; // TODO-WASM: https://github.com/dotnet/runtime/issues/114096
 
         public static bool IsRareEnumsSupported => !IsNativeAot;
 
@@ -316,7 +319,7 @@ namespace System
         private static readonly Lazy<bool> s_supportsAlpn = new Lazy<bool>(GetAlpnSupport);
         private static bool GetAlpnSupport()
         {
-            if (IsWindows && !IsWindows7 && !IsNetFramework)
+            if (IsWindows && !IsNetFramework)
             {
                 return true;
             }
@@ -360,7 +363,7 @@ namespace System
         public static bool SupportsTls12 => s_supportsTls12.Value;
         public static bool SupportsTls13 => s_supportsTls13.Value;
         public static bool SendsCAListByDefault => s_sendsCAListByDefault.Value;
-        public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows8xOrLater && SendsCAListByDefault);
+        public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows && SendsCAListByDefault);
         public static bool SupportsSha3 => s_supportsSha3.Value;
         public static bool DoesNotSupportSha3 => !s_supportsSha3.Value;
 
@@ -598,12 +601,6 @@ namespace System
         {
             if (IsWindows)
             {
-                // TLS 1.1 can work on Windows 7 but it is disabled by default.
-                if (IsWindows7)
-                {
-                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: false, disabledByDefault: true);
-                }
-
                 // It is enabled on other versions unless explicitly disabled.
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
@@ -626,12 +623,6 @@ namespace System
         {
             if (IsWindows)
             {
-                // TLS 1.2 can work on Windows 7 but it is disabled by default.
-                if (IsWindows7)
-                {
-                    return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: false, disabledByDefault: true);
-                }
-
                 // It is enabled on other versions unless explicitly disabled.
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls12, defaultProtocolSupport: true);
             }
@@ -710,9 +701,9 @@ namespace System
         {
             if (IsWindows)
             {
-                // Sending TrustedIssuers is conditioned on the registry. Win7 sends trusted issuer list by default,
-                // newer Windows versions don't.
-                object val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL", "SendTrustedIssuerList", IsWindows7 ? 1 : 0);
+                // Sending TrustedIssuers is conditioned on the registry.
+                // Newer Windows versions don't send trusted issuer list by default.
+                object val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL", "SendTrustedIssuerList", 0);
                 if (val is int i)
                 {
                     return i == 1;

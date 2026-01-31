@@ -71,7 +71,7 @@ namespace ILCompiler.ObjectWriter
         /// <summary>
         /// Base symbol to use for <see cref="RelocType.IMAGE_REL_BASED_ADDR32NB"/> relocations.
         /// </summary>
-        private readonly string _baseSymbolName;
+        private readonly Utf8String? _baseSymbolName;
 
         public MachObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null)
             : base(factory, options, outputInfoBuilder)
@@ -102,7 +102,7 @@ namespace ILCompiler.ObjectWriter
         public MachObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder, string baseSymbolName)
             : this(factory, options, outputInfoBuilder)
         {
-            _baseSymbolName = baseSymbolName;
+            _baseSymbolName = baseSymbolName is not null ? new Utf8String(baseSymbolName) : null;
         }
 
         private protected override bool UsesSubsectionsViaSymbols => true;
@@ -121,7 +121,7 @@ namespace ILCompiler.ObjectWriter
             {
                 var machSymbol = new MachSymbol
                 {
-                    Name = $"lsection{sectionIndex}",
+                    Name = new Utf8StringBuilder().Append("lsection"u8).Append(sectionIndex).ToUtf8String(),
                     Section = section,
                     Value = section.VirtualAddress,
                     Descriptor = N_NO_DEAD_STRIP,
@@ -375,7 +375,7 @@ namespace ILCompiler.ObjectWriter
 
             _sections.Add(machSection);
 
-            base.CreateSection(section, comdatName, symbolName.IsNull ? $"lsection{sectionIndex}" : symbolName, sectionIndex, sectionStream);
+            base.CreateSection(section, comdatName, symbolName.IsNull ? new Utf8StringBuilder().Append("lsection"u8).Append(sectionIndex).ToUtf8String() : symbolName, sectionIndex, sectionStream);
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -547,7 +547,7 @@ namespace ILCompiler.ObjectWriter
             // Add the base symbol as an undefined symbol.
             if (_baseSymbolName is not null)
             {
-                undefinedSymbols.Add(_baseSymbolName);
+                undefinedSymbols.Add(_baseSymbolName.Value);
             }
 
             foreach (Utf8String externSymbol in undefinedSymbols)
@@ -686,14 +686,14 @@ namespace ILCompiler.ObjectWriter
                         throw new NotSupportedException("A base symbol name must be provided for IMAGE_REL_BASED_ADDR32NB relocations.");
                     }
 
-                    Debug.Assert(_symbolNameToIndex.ContainsKey(_baseSymbolName));
+                    Debug.Assert(_symbolNameToIndex.ContainsKey(_baseSymbolName.Value));
 
                     // Represent as X86_64_RELOC_SUBTRACTOR + X86_64_RELOC_UNSIGNED against the base symbol.
                     sectionRelocations.Add(
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = _symbolNameToIndex[_baseSymbolName],
+                            SymbolOrSectionIndex = _symbolNameToIndex[_baseSymbolName.Value],
                             Length = 4,
                             RelocationType = X86_64_RELOC_SUBTRACTOR,
                             IsExternal = true,
@@ -849,14 +849,14 @@ namespace ILCompiler.ObjectWriter
                         throw new NotSupportedException("A base symbol name must be provided for IMAGE_REL_BASED_ADDR32NB relocations.");
                     }
 
-                    Debug.Assert(_symbolNameToIndex.ContainsKey(_baseSymbolName));
+                    Debug.Assert(_symbolNameToIndex.ContainsKey(_baseSymbolName.Value));
 
                     // Represent as ARM64_RELOC_SUBTRACTOR + ARM64_RELOC_UNSIGNED against the base symbol.
                     sectionRelocations.Add(
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = _symbolNameToIndex[_baseSymbolName],
+                            SymbolOrSectionIndex = _symbolNameToIndex[_baseSymbolName.Value],
                             Length = 4,
                             RelocationType = ARM64_RELOC_SUBTRACTOR,
                             IsExternal = true,
@@ -1034,7 +1034,7 @@ namespace ILCompiler.ObjectWriter
 
         private sealed class MachSymbol
         {
-            public Utf8String Name { get; init; } = string.Empty;
+            public Utf8String Name { get; init; }
             public byte Type { get; init; }
             public MachSection Section { get; init; }
             public ushort Descriptor { get; init; }
@@ -1159,7 +1159,7 @@ namespace ILCompiler.ObjectWriter
             public MachStringTable()
             {
                 // Always start the table with empty string
-                GetStringOffset("");
+                GetStringOffset(Utf8String.Empty);
             }
         }
     }

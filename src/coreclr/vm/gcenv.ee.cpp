@@ -6,8 +6,6 @@
  *
  * GCToEEInterface implementation
  *
-
- *
  */
 
 #include "common.h"
@@ -141,7 +139,6 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
                 IsGCSpecialThread() ||
                 (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
 
-#if defined(FEATURE_CONSERVATIVE_GC) || defined(USE_FEF)
     Frame* pTopFrame = pThread->GetFrame();
     Object ** topStack = (Object **)pTopFrame;
     if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
@@ -150,19 +147,10 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
         InlinedCallFrame* pInlinedFrame = dac_cast<PTR_InlinedCallFrame>(pTopFrame);
         topStack = (Object **)pInlinedFrame->GetCallSiteSP();
     }
-#endif // FEATURE_CONSERVATIVE_GC || USE_FEF
 
-#ifdef USE_FEF
-    // We only set the stack_limit when FEF (FaultingExceptionFrame) is enabled, because without the
-    // FEF, the code above would have to check if hardware exception is being handled and get the limit
-    // from the exception frame. Since the stack_limit is strictly necessary only on Unix and FEF is
-    // not enabled on Window x86 only, it is sufficient to keep the stack_limit set to 0 in this case.
+    // We set the stack_limit when FEF (FaultingExceptionFrame) is enabled.
     // See the comment on the stack_limit usage in the PromoteCarefully function for more details.
     sc->stack_limit = (uintptr_t)topStack;
-#else // USE_FEF
-    // It should be set to 0 in the ScanContext constructor
-    _ASSERTE(sc->stack_limit == 0);
-#endif // USE_FEF
 
 #ifdef FEATURE_CONSERVATIVE_GC
     if (g_pConfig->GetGCConservative())
@@ -202,9 +190,9 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 #endif
     {
         unsigned flagsStackWalk = ALLOW_ASYNC_STACK_WALK | ALLOW_INVALID_OBJECTS;
-#if defined(FEATURE_EH_FUNCLETS)
+
         flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
-#endif // defined(FEATURE_EH_FUNCLETS)
+
         gcctx.pScannedSlots = NULL;
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);
         delete gcctx.pScannedSlots;
@@ -848,9 +836,13 @@ void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
         size_t context = 0;
 
-        // When we're walking objects allocated by class, then we don't want to walk the large
-        // object heap because then it would count things that may have been around for a while.
-        GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&AllocByClassHelper, (void *)&context, 0, false);
+        // ObjectsAllocatedByClass callback can lead to enormous overhead in the case of Server GC,
+        // so it was made skippable. See https://github.com/dotnet/runtime/issues/108230 for details.
+        if (!CORProfilerSkipAllocatedByClassStatistic()) {
+            // When we're walking objects allocated by class, then we don't want to walk the large
+            // object heap because then it would count things that may have been around for a while.
+            GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&AllocByClassHelper, (void *)&context, 0, false);
+        }
 
         // Notify that we've reached the end of the Gen 0 scan
         (&g_profControlBlock)->EndAllocByClass(&context);

@@ -58,11 +58,6 @@ void Compiler::fgPrintEdgeWeights()
 
 void Compiler::fgDebugCheckUpdate()
 {
-    if (!compStressCompile(STRESS_CHK_FLOW_UPDATE, 30))
-    {
-        return;
-    }
-
     /* We check for these conditions:
      * no unreachable blocks  -> no blocks have countOfInEdges() = 0
      * no empty blocks        -> !block->isEmpty(), unless non-removable or multiple in-edges
@@ -3109,7 +3104,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 //    try {
                 //        try {
                 //            LEAVE L_OUTER; // this becomes a branch to a BBJ_CALLFINALLY in an outer try region
-                //                           // (in the UsesCallFinallyThunks case)
                 //        } catch {
                 //        }
                 //    } finally {
@@ -3120,8 +3114,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 if (ehDsc->ebdTryBeg == succBlock)
                 {
                     // The BBJ_CALLFINALLY is the first block of it's `try` region. Don't check the predecessor.
-                    // Note that this case won't occur in the UsesCallFinallyThunks case, since the
-                    // BBJ_CALLFINALLY in that case won't exist in the `try` region of the `finallyIndex`.
+                    // Note that this case won't occur since the BBJ_CALLFINALLY in that case won't exist in the
+                    // `try` region of the `finallyIndex`.
                 }
                 else
                 {

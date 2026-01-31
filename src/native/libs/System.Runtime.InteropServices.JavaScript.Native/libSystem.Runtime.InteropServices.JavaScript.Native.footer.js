@@ -19,7 +19,14 @@
         const exports = {};
         libInteropJavaScriptNative(exports);
 
-        let commonDeps = ["$DOTNET"];
+        let commonDeps = ["$DOTNET",
+            "SystemInteropJS_GetManagedStackTrace",
+            "SystemInteropJS_CallDelegate",
+            "SystemInteropJS_CompleteTask",
+            "SystemInteropJS_ReleaseJSOwnedObjectByGCHandle",
+            "SystemInteropJS_BindAssemblyExports",
+            "SystemInteropJS_CallJSExport"
+        ];
         const lib = {
             $DOTNET_INTEROP: {
                 selfInitialize: () => {
@@ -29,6 +36,7 @@
                     }
                 },
                 dotnetInitializeModule: exports.dotnetInitializeModule,
+                gitHash: exports.gitHash,
             },
             $DOTNET_INTEROP__postset: "DOTNET_INTEROP.selfInitialize()",
             $DOTNET_INTEROP__deps: commonDeps,
@@ -36,7 +44,7 @@
 
         for (const exportName of Reflect.ownKeys(exports)) {
             const name = String(exportName);
-            if (name === "dotnetInitializeModule") continue;
+            if (name === "dotnetInitializeModule" || name === "gitHash") continue;
             lib[name] = exports[name];
         }
 
