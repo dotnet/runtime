@@ -1349,7 +1349,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
             }
 
             // Try and see if we can make a subrange assertion.
-            if (equals && varTypeIsIntegral(op2))
+            if (optLocalAssertionProp && equals && varTypeIsIntegral(op2))
             {
                 IntegralRange nodeRange = IntegralRange::ForNode(op2, this);
                 IntegralRange typeRange = IntegralRange::ForType(genActualType(op2));
