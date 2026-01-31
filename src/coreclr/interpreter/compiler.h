@@ -29,9 +29,17 @@ enum InterpMemKind
     IMK_Count
 };
 
+// InterpMemKindTraits provides the traits required by MemStats and CompAllocator templates.
+struct InterpMemKindTraits
+{
+    using MemKind = InterpMemKind;
+    static constexpr int Count = IMK_Count;
+    static const char* const Names[];
+};
+
 // InterpAllocator is the allocator type used for interpreter compilations.
 // It wraps ArenaAllocator and tracks allocations by InterpMemKind.
-using InterpAllocator = CompAllocator<InterpMemKind, IMK_Count>;
+using InterpAllocator = CompAllocator<InterpMemKindTraits>;
 
 struct InterpException
 {
@@ -1101,13 +1109,12 @@ public:
 
 #if MEASURE_MEM_ALLOC
     // Memory statistics for profiling.
-    using InterpMemStats = MemStats<InterpMemKind, IMK_Count>;
-    using InterpAggregateMemStats = AggregateMemStats<InterpMemKind, IMK_Count>;
+    using InterpMemStats = MemStats<InterpMemKindTraits>;
+    using InterpAggregateMemStats = AggregateMemStats<InterpMemKindTraits>;
 
     static InterpAggregateMemStats s_aggStats;
     static InterpMemStats s_maxStats;
     static bool s_dspMemStats;
-    static const char* s_memKindNames[];
 
     InterpMemStats m_stats;
 

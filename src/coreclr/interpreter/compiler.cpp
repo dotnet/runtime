@@ -45,6 +45,12 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 const char* CorInfoHelperToName(CorInfoHelpFunc helper);
 
 /*****************************************************************************/
+// Define the static Names array for InterpMemKindTraits
+const char* const InterpMemKindTraits::Names[] = {
+#define InterpMemKindMacro(kind) #kind,
+#include "interpmemkind.h"
+};
+
 #if MEASURE_MEM_ALLOC
 #include <minipal/mutex.h>
 
@@ -57,18 +63,11 @@ InterpCompiler::InterpAggregateMemStats InterpCompiler::s_aggStats;
 InterpCompiler::InterpMemStats InterpCompiler::s_maxStats;
 bool InterpCompiler::s_dspMemStats = false;
 
-const char* InterpCompiler::s_memKindNames[] = {
-#define InterpMemKindMacro(kind) #kind,
-#include "interpmemkind.h"
-};
-
 void InterpCompiler::initMemStats()
 {
     if (!s_interpStatsMutexInitialized)
     {
         minipal_mutex_init(&s_interpStatsMutex);
-        s_aggStats.Init(s_memKindNames);
-        s_maxStats.Init(s_memKindNames);
 
         // Check config value for displaying stats
         s_dspMemStats = (InterpConfig.DisplayMemStats() != 0);

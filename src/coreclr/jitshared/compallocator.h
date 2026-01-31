@@ -27,31 +27,35 @@ public:
 // by memory kind for profiling purposes.
 //
 // Template parameters:
-//   TMemKind - The enum type for memory kinds (e.g., CompMemKind, InterpMemKind)
-//   MemKindCount - The number of values in the TMemKind enum
+//   TMemKindTraits - A traits struct that must provide:
+//     - MemKind: The enum type for memory kinds
+//     - Count: A static constexpr int giving the number of enum values
+//     - Names: A static const char* const[] array of names for each kind
 //
 // When MEASURE_MEM_ALLOC is enabled, CompAllocator tracks allocation statistics
 // per memory kind. When disabled, it's a thin wrapper with no overhead.
 
-template <typename TMemKind, int MemKindCount = 1>
+template <typename TMemKindTraits>
 class CompAllocator
 {
+    using MemKind = typename TMemKindTraits::MemKind;
+
     ArenaAllocator* m_arena;
 #if MEASURE_MEM_ALLOC
-    TMemKind m_kind;
-    MemStats<TMemKind, MemKindCount>* m_stats;
+    MemKind m_kind;
+    MemStats<TMemKindTraits>* m_stats;
 #endif
 
 public:
 #if MEASURE_MEM_ALLOC
-    CompAllocator(ArenaAllocator* arena, TMemKind kind, MemStats<TMemKind, MemKindCount>* stats = nullptr)
+    CompAllocator(ArenaAllocator* arena, MemKind kind, MemStats<TMemKindTraits>* stats = nullptr)
         : m_arena(arena)
         , m_kind(kind)
         , m_stats(stats)
     {
     }
 #else
-    CompAllocator(ArenaAllocator* arena, TMemKind kind)
+    CompAllocator(ArenaAllocator* arena, MemKind kind)
         : m_arena(arena)
     {
         (void)kind; // Suppress unused parameter warning
@@ -97,14 +101,14 @@ public:
 
 // Global operator new overloads that work with CompAllocator
 
-template <typename TMemKind, int MemKindCount>
-inline void* __cdecl operator new(size_t n, CompAllocator<TMemKind, MemKindCount> alloc)
+template <typename TMemKindTraits>
+inline void* __cdecl operator new(size_t n, CompAllocator<TMemKindTraits> alloc)
 {
     return alloc.template allocate<char>(n);
 }
 
-template <typename TMemKind, int MemKindCount>
-inline void* __cdecl operator new[](size_t n, CompAllocator<TMemKind, MemKindCount> alloc)
+template <typename TMemKindTraits>
+inline void* __cdecl operator new[](size_t n, CompAllocator<TMemKindTraits> alloc)
 {
     return alloc.template allocate<char>(n);
 }
@@ -114,14 +118,14 @@ inline void* __cdecl operator new[](size_t n, CompAllocator<TMemKind, MemKindCou
 //
 // This is primarily used for GCInfoEncoder integration.
 
-template <typename TMemKind, int MemKindCount = 1>
+template <typename TMemKindTraits>
 class CompIAllocator : public IAllocator
 {
-    CompAllocator<TMemKind, MemKindCount> m_alloc;
+    CompAllocator<TMemKindTraits> m_alloc;
     char m_zeroLenAllocTarg;
 
 public:
-    CompIAllocator(CompAllocator<TMemKind, MemKindCount> alloc)
+    CompIAllocator(CompAllocator<TMemKindTraits> alloc)
         : m_alloc(alloc)
     {
     }
