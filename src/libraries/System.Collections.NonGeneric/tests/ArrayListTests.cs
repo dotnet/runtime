@@ -706,8 +706,7 @@ namespace System.Collections.Tests
             Helpers.PerformActionOnAllArrayListWrappers(arrList, arrList2 =>
             {
                 // Should complete without throwing - result is undefined for unsorted lists
-                int result = arrList2.BinarySearch(5);
-                // Just verify it doesn't throw an exception
+                arrList2.BinarySearch(5);
             });
         }
 
