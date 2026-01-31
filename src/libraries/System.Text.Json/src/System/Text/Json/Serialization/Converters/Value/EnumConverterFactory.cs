@@ -25,7 +25,13 @@ namespace System.Text.Json.Serialization.Converters
             return Create(type, EnumConverterOptions.AllowNumbers, namingPolicy: null, options);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2071:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage(
+            "ReflectionAnalysis",
+#if NET9_0_OR_GREATER
+            "IL2071:UnrecognizedReflectionPattern",
+#else
+            "IL2070:UnrecognizedReflectionPattern",
+#endif
             Justification = "'EnumConverter<T> where T : struct' implies 'T : new()', so the trimmer is warning calling MakeGenericType here because enumType's constructors are not annotated. " +
             "But EnumConverter doesn't call new T(), so this is safe.")]
         public static JsonConverter Create(Type enumType, EnumConverterOptions converterOptions, JsonNamingPolicy? namingPolicy, JsonSerializerOptions options)

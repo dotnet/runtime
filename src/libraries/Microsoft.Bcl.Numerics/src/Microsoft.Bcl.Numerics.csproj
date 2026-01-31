@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);netstandard2.1</TargetFrameworks>
+    <!-- Use live ILLink so that the shim assembly gets IsAotCompatible and IsTrimmable metadata despite
+         not targeting a TFM supported by the shipping trimming tooling. -->
+    <UseLiveILLink>true</UseLiveILLink>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
     <!-- This assembly should never be placed inbox as it is only for downlevel compatibility. -->
