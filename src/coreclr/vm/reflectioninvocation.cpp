@@ -1283,6 +1283,11 @@ static void PrepareMethodHelper(MethodDesc * pMD)
 
     pMD->EnsureActive();
 
+    if (pMD->IsAsyncThunkMethod())
+    {
+        pMD = pMD->GetAsyncVariant();
+    }
+
     if (pMD->ShouldCallPrestub())
         pMD->DoPrestub(NULL);
 
