@@ -348,81 +348,13 @@ namespace System
                     // This fix is for cultures that use NBSP (U+00A0) or narrow NBSP (U+202F) as group/decimal separators
                     // (e.g., French, Kazakh, Ukrainian). Since a user cannot easily type these characters,
                     // we accept regular space (U+0020) as equivalent.
+                    // We also need to handle the reverse case where the input has NBSP and the format string has space.
                     while (true)
                     {
                         uint cp = (p < pEnd) ? TChar.CastToUInt32(*p) : '\0';
                         uint val = TChar.CastToUInt32(*str);
 
-                        bool match = cp == val;
-
-                        if (!match)
-                        {
-                            // For char (UTF-16), check if either is a space-replacing char and the other is space
-                            if (typeof(TChar) == typeof(char))
-                            {
-                                match = (IsSpaceReplacingChar(val) && (cp == '\u0020')) || (IsSpaceReplacingChar(cp) && (val == '\u0020'));
-                            }
-                            // For byte (UTF-8), handle multi-byte sequences for NBSP characters
-                            else if (typeof(TChar) == typeof(byte))
-                            {
-                                // Check if val is start of UTF-8 NBSP (U+00A0: 0xC2 0xA0) and cp is space
-                                if (val == 0xC2 && (str + 1 < stringPointer + value.Length) && TChar.CastToUInt32(*(str + 1)) == 0xA0 && cp == 0x20)
-                                {
-                                    // Advance past the 2-byte NBSP in pattern and the space in input
-                                    str += 2;
-                                    p++;
-
-                                    if (TChar.CastToUInt32(*str) == '\0')
-                                    {
-                                        return p;
-                                    }
-                                    continue;
-                                }
-                                // Check if val is start of UTF-8 narrow NBSP (U+202F: 0xE2 0x80 0xAF) and cp is space
-                                else if (val == 0xE2 && (str + 2 < stringPointer + value.Length) &&
-                                         TChar.CastToUInt32(*(str + 1)) == 0x80 && TChar.CastToUInt32(*(str + 2)) == 0xAF && cp == 0x20)
-                                {
-                                    // Advance past the 3-byte narrow NBSP in pattern and the space in input
-                                    str += 3;
-                                    p++;
-
-                                    if (TChar.CastToUInt32(*str) == '\0')
-                                    {
-                                        return p;
-                                    }
-                                    continue;
-                                }
-                                // Check if cp is start of UTF-8 NBSP and val is space
-                                else if (cp == 0xC2 && (p + 1 < pEnd) && TChar.CastToUInt32(*(p + 1)) == 0xA0 && val == 0x20)
-                                {
-                                    // Advance past the 2-byte NBSP in input and the space in pattern
-                                    p += 2;
-                                    str++;
-
-                                    if (TChar.CastToUInt32(*str) == '\0')
-                                    {
-                                        return p;
-                                    }
-                                    continue;
-                                }
-                                // Check if cp is start of UTF-8 narrow NBSP and val is space
-                                else if (cp == 0xE2 && (p + 2 < pEnd) &&
-                                         TChar.CastToUInt32(*(p + 1)) == 0x80 && TChar.CastToUInt32(*(p + 2)) == 0xAF && val == 0x20)
-                                {
-                                    // Advance past the 3-byte narrow NBSP in input and the space in pattern
-                                    p += 3;
-                                    str++;
-
-                                    if (TChar.CastToUInt32(*str) == '\0')
-                                    {
-                                        return p;
-                                    }
-                                    continue;
-                                }
-                            }
-                        }
-
-                        if (!match)
+                        if ((cp != val) && !((IsSpaceReplacingChar(val) && (cp == '\u0020')) || (IsSpaceReplacingChar(cp) && (val == '\u0020'))))
                         {
                             break;
                         }
