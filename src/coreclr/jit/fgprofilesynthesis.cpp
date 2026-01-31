@@ -290,8 +290,17 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
             entryWeight -= predEdge->getLikelyWeight();
         }
 
-        m_comp->fgCalledCount = max(BB_ZERO_WEIGHT, entryWeight);
-        JITDUMP("fgCalledCount is " FMT_WT "\n", m_comp->fgCalledCount);
+        entryWeight = max(BB_ZERO_WEIGHT, entryWeight);
+
+        if (entryWeight == BB_ZERO_WEIGHT)
+        {
+            assert(m_hasInfiniteLoop);
+            JITDUMP("Entry block is the head of an infinite loop.\n");
+            entryWeight = 1.0;
+        }
+
+        JITDUMP("fgCalledCount is " FMT_WT "\n", entryWeight);
+        m_comp->fgCalledCount = entryWeight;
     }
 
 #ifdef DEBUG

@@ -860,6 +860,7 @@ public:
         // give a bonus to promoting remainders that may not have scalar uses
         // but will allow fully decomposing stores away.
 
+        // TODO: Don't divide by entry block's normalized weight, since we're already summing normalized weights
         weight_t cycleImprovementPerInvoc = (costWithout - costWith) / comp->fgFirstBB->getBBWeight(comp);
         weight_t sizeImprovement          = sizeWithout - sizeWith;
 

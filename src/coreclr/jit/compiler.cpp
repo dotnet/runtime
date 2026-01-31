@@ -5214,7 +5214,7 @@ bool Compiler::shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top)
     // Now we have an innerloop candidate that might need alignment
 
     weight_t topWeight     = top->getBBWeight(this);
-    weight_t compareWeight = opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT;
+    weight_t compareWeight = opts.compJitAlignLoopMinBlockWeight;
     if (topWeight < compareWeight)
     {
         JITDUMP("Skipping alignment for " FMT_LP " that starts at " FMT_BB ", weight=" FMT_WT " < " FMT_WT ".\n",

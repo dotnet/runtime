@@ -669,7 +669,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         // dependencies can cause significant stalls if if-converted.
         // Detect via the block weight as that will be high when inside a loop.
 
-        if (m_startBlock->getBBWeight(m_comp) > BB_UNITY_WEIGHT * 1.05)
+        if (m_startBlock->getBBWeight(m_comp) > 1.05)
         {
             JITDUMP("Skipping if-conversion inside loop (via weight)\n");
             return false;
