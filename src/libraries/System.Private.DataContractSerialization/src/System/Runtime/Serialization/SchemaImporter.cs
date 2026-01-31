@@ -470,7 +470,7 @@ namespace System.Runtime.Serialization
                                 if (baseTypeName == SchemaExporter.AnytypeQualifiedName)
                                     dataContract = ImportType(typeName, restriction.Particle, restriction.Attributes, restriction.AnyAttribute, null /* baseTypeName */, complexType.Annotation);
                                 else
-                                    ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.ComplexTypeRestrictionNotSupported));
+                                    ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.ComplexTypeRestrictionNotSupported);
                             }
                         }
                     }
