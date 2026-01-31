@@ -279,17 +279,6 @@ struct Range
         return lLimit.IsConstant() && uLimit.IsConstant() && IsValid();
     }
 
-    // Check if the range represents a single constant value. Example: [7..7]
-    bool IsSingleConstValue(int* pConstVal) const
-    {
-        if (lLimit.IsConstant() && lLimit.Equals(uLimit))
-        {
-            *pConstVal = lLimit.GetConstant();
-            return true;
-        }
-        return false;
-    }
-
     bool IsUndef() const
     {
         return lLimit.IsUndef() && uLimit.IsUndef();
@@ -380,15 +369,29 @@ struct RangeOps
 
     static Range ShiftRight(const Range& r1, const Range& r2, bool logical)
     {
-        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
-            // For now, we only support r1 >> positive_cns (to simplify)
-            // Hence, it doesn't matter if it's logical or arithmetic.
-            if (a.IsConstant() && b.IsConstant() && (a.GetConstant() >= 0) && ((unsigned)b.GetConstant() <= 31))
-            {
-                return Limit(Limit::keConstant, a.GetConstant() >> b.GetConstant());
-            }
-            return Limit(Limit::keUnknown);
-        });
+        Range result = Limit(Limit::keUnknown);
+
+        // For SHR we require the rhs to be a constant range within [0..31].
+        // We only perform the shift if the lhs is also a constant range (never-negative for now
+        // to handle both logical and arithmetic shifts uniformly).
+        if (!r2.IsConstantRange() || (static_cast<unsigned>(r2.LowerLimit().GetConstant()) > 31) ||
+            (static_cast<unsigned>(r2.UpperLimit().GetConstant()) > 31))
+        {
+            return result;
+        }
+
+        // We shift by r2.UpperLimit() for the lower limit and by r2.LowerLimit() for the upper limit.
+        // Example: [0..65535] >> [0..3] = [0 >> 3 .. 65535 >> 0] = [0..65535]
+        //          [0..65535] >> [2..2] = [0 >> 2 .. 65535 >> 2] = [0..16383]
+        if (r1.LowerLimit().IsConstant() && (r1.LowerLimit().GetConstant() >= 0))
+        {
+            result.lLimit = Limit(Limit::keConstant, r1.LowerLimit().GetConstant() >> r2.UpperLimit().GetConstant());
+        }
+        if (r1.UpperLimit().IsConstant() && (r1.UpperLimit().GetConstant() >= 0))
+        {
+            result.uLimit = Limit(Limit::keConstant, r1.UpperLimit().GetConstant() >> r2.LowerLimit().GetConstant());
+        }
+        return result;
     }
 
     static Range ShiftLeft(const Range& r1, const Range& r2)
@@ -421,8 +424,8 @@ struct RangeOps
         // The math gets too complicated otherwise (and rarely useful in practice).
         int  r1ConstVal;
         int  r2ConstVal;
-        bool r1IsConstVal = r1.IsSingleConstValue(&r1ConstVal);
-        bool r2IsConstVal = r2.IsSingleConstValue(&r2ConstVal);
+        bool r1IsConstVal = r1.IsSingleValueConstant(&r1ConstVal);
+        bool r2IsConstVal = r2.IsSingleValueConstant(&r2ConstVal);
 
         // Both ranges are single constant values.
         // Example: [7..7] & [3..3] = [3..3]
@@ -451,7 +454,7 @@ struct RangeOps
         // For X UMOD Y we only handle the case when Y is a fixed positive constant.
         // Example: X % 5 -> [0..4]
         int r2ConstVal;
-        if (r2.IsSingleConstValue(&r2ConstVal) && (r2ConstVal > 0))
+        if (r2.IsSingleValueConstant(&r2ConstVal) && (r2ConstVal > 0))
         {
             return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, r2ConstVal - 1));
         }
