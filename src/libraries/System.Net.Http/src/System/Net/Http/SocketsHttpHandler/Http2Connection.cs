@@ -2065,39 +2065,17 @@ namespace System.Net.Http
 
                 // Check if this is a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
                 // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
-                // We can only retry if the request body hasn't been sent yet (or is not being sent).
-                // To avoid race conditions, we check if the request body task is completed. If it's not completed
-                // and we haven't started sending yet, it's safe to cancel and retry on HTTP/1.1.
-                if (AuthenticationHelper.IsSessionAuthenticationChallenge(response))
+                // We can only safely retry if there's no request content, as we cannot guarantee that we can
+                // rewind arbitrary content streams.
+                if (AuthenticationHelper.IsSessionAuthenticationChallenge(response) && request.Content == null)
                 {
-                    // Determine if we can safely retry this request.
-                    // We can retry if:
-                    // 1. There's no request content, OR
-                    // 2. The request body task hasn't completed yet (meaning we haven't sent the body or haven't finished sending it)
-                    bool canRetry = request.Content == null || !requestBodyTask.IsCompleted;
-
-                    if (canRetry)
-                    {
-                        if (NetEventSource.Log.IsEnabled())
-                        {
-                            Trace($"Received session-based authentication challenge on HTTP/2, request can be retried on HTTP/1.1. RequestBodyCompleted={requestBodyTask.IsCompleted}");
-                        }
-
-                        // Cancel the request body task if it's still running
-                        if (!requestBodyTask.IsCompleted)
-                        {
-                            http2Stream.Cancel();
-                        }
-
-                        response.Dispose();
-                        throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure, null, RequestRetryType.RetryOnSessionAuthenticationChallenge);
-                    }
-
-                    // Can't retry - return the 401 response as-is
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Received session-based authentication challenge on HTTP/2, but cannot retry. RequestBodyCompleted={requestBodyTask.IsCompleted}");
+                        Trace($"Received session-based authentication challenge on HTTP/2, request will be retried on HTTP/1.1.");
                     }
+
+                    response.Dispose();
+                    throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure, null, RequestRetryType.RetryOnSessionAuthenticationChallenge);
                 }
 
                 return response;
