@@ -12667,7 +12667,7 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
                     printf("\nThe store ");
                     printTreeID(tree);
                     printf(" using V%02u removes: ", curAssertion->op1.lclNum);
-                    optPrintAssertion(curAssertion, index);
+                    optPrintAssertion(*curAssertion, index);
                 }
             }
 
@@ -12760,7 +12760,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
                     printf("GenTreeNode creates %sassertion:\n", condition);
                     gtDispTree(tree, nullptr, nullptr, true);
                     printf("In " FMT_BB " New Local ", compCurBB->bbNum);
-                    optPrintAssertion(optGetAssertion(apIndex), apIndex);
+                    optPrintAssertion(*optGetAssertion(apIndex), apIndex);
                 }
                 else
                 {
@@ -12791,11 +12791,9 @@ void Compiler::fgAssertionGen(GenTree* tree)
                 ssize_t iconVal = assertion->op2.u1.iconVal;
                 if ((iconVal == 0) || (iconVal == 1))
                 {
-                    AssertionDsc extraAssertion =
-                        AssertionDsc::CreateSubrange(this, assertion->op1.lclNum,
-                                                     IntegralRange(SymbolicIntegerValue::Zero,
-                                                                   SymbolicIntegerValue::One));
-                    AssertionIndex extraIndex = optAddAssertion(&extraAssertion);
+                    auto           range = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
+                    AssertionDsc   extraAssertion = AssertionDsc::CreateSubrange(this, assertion->op1.lclNum, range);
+                    AssertionIndex extraIndex     = optAddAssertion(extraAssertion);
                     if (extraIndex != NO_ASSERTION_INDEX)
                     {
                         unsigned const bvIndex = extraIndex - 1;

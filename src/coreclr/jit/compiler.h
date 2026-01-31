@@ -7812,12 +7812,12 @@ public:
                 IntegralRange u2;
             };
 
-            bool HasIconFlag()
+            bool HasIconFlag() const
             {
                 assert(m_encodedIconFlags <= 0xFF);
                 return m_encodedIconFlags != 0;
             }
-            GenTreeFlags GetIconFlag()
+            GenTreeFlags GetIconFlag() const
             {
                 // number of trailing zeros in GTF_ICON_HDL_MASK
                 const uint16_t iconMaskTzc = 24;
@@ -7836,61 +7836,61 @@ public:
             }
         } op2;
 
-        bool IsCheckedBoundArithBound()
+        bool IsCheckedBoundArithBound() const
         {
             return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_BOUND_OPER_BND);
         }
-        bool IsCheckedBoundBound()
+        bool IsCheckedBoundBound() const
         {
             return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_BOUND_LOOP_BND);
         }
-        bool IsConstantBound()
+        bool IsConstantBound() const
         {
             return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) &&
                     (op1.kind == O1K_CONSTANT_LOOP_BND));
         }
-        bool IsConstantBoundUnsigned()
+        bool IsConstantBoundUnsigned() const
         {
             return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) &&
                     (op1.kind == O1K_CONSTANT_LOOP_BND_UN));
         }
-        bool IsBoundsCheckNoThrow()
+        bool IsBoundsCheckNoThrow() const
         {
             return ((assertionKind == OAK_NO_THROW) && (op1.kind == O1K_ARR_BND));
         }
 
-        bool IsCopyAssertion()
+        bool IsCopyAssertion() const
         {
             return ((assertionKind == OAK_EQUAL) && (op1.kind == O1K_LCLVAR) && (op2.kind == O2K_LCLVAR_COPY));
         }
 
-        bool IsConstantInt32Assertion()
+        bool IsConstantInt32Assertion() const
         {
             return ((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL)) && (op2.kind == O2K_CONST_INT) &&
                    ((op1.kind == O1K_LCLVAR) || (op1.kind == O1K_VN));
         }
 
-        bool CanPropLclVar()
+        bool CanPropLclVar() const
         {
             return assertionKind == OAK_EQUAL && op1.kind == O1K_LCLVAR;
         }
 
-        bool CanPropEqualOrNotEqual()
+        bool CanPropEqualOrNotEqual() const
         {
             return assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL;
         }
 
-        bool CanPropNonNull()
+        bool CanPropNonNull() const
         {
             return assertionKind == OAK_NOT_EQUAL && op2.vn == ValueNumStore::VNForNull();
         }
 
-        bool CanPropBndsCheck()
+        bool CanPropBndsCheck() const
         {
             return (op1.kind == O1K_ARR_BND) || (op1.kind == O1K_VN);
         }
 
-        bool CanPropSubRange()
+        bool CanPropSubRange() const
         {
             return assertionKind == OAK_SUBRANGE && op1.kind == O1K_LCLVAR;
         }
@@ -7901,10 +7901,9 @@ public:
             assertionKind = assertionKind == OAK_EQUAL ? OAK_NOT_EQUAL : OAK_EQUAL;
         }
 
-        static bool SameKind(AssertionDsc* a1, AssertionDsc* a2)
+        static bool SameKind(const AssertionDsc& a1, const AssertionDsc& a2)
         {
-            return a1->assertionKind == a2->assertionKind && a1->op1.kind == a2->op1.kind &&
-                   a1->op2.kind == a2->op2.kind;
+            return a1.assertionKind == a2.assertionKind && a1.op1.kind == a2.op1.kind && a1.op2.kind == a2.op2.kind;
         }
 
         static bool ComplementaryKind(optAssertionKind kind, optAssertionKind kind2)
@@ -7920,31 +7919,31 @@ public:
             return false;
         }
 
-        bool HasSameOp1(AssertionDsc* that, bool vnBased)
+        bool HasSameOp1(const AssertionDsc& that, bool vnBased) const
         {
-            if (op1.kind != that->op1.kind)
+            if (op1.kind != that.op1.kind)
             {
                 return false;
             }
             else if (op1.kind == O1K_ARR_BND)
             {
                 assert(vnBased);
-                return (op1.bnd.vnIdx == that->op1.bnd.vnIdx) && (op1.bnd.vnLen == that->op1.bnd.vnLen);
+                return (op1.bnd.vnIdx == that.op1.bnd.vnIdx) && (op1.bnd.vnLen == that.op1.bnd.vnLen);
             }
             else if (op1.kind == O1K_VN)
             {
                 assert(vnBased);
-                return (op1.vn == that->op1.vn);
+                return (op1.vn == that.op1.vn);
             }
             else
             {
-                return ((vnBased && (op1.vn == that->op1.vn)) || (!vnBased && (op1.lclNum == that->op1.lclNum)));
+                return ((vnBased && (op1.vn == that.op1.vn)) || (!vnBased && (op1.lclNum == that.op1.lclNum)));
             }
         }
 
-        bool HasSameOp2(AssertionDsc* that, bool vnBased)
+        bool HasSameOp2(const AssertionDsc& that, bool vnBased) const
         {
-            if (op2.kind != that->op2.kind)
+            if (op2.kind != that.op2.kind)
             {
                 return false;
             }
@@ -7952,20 +7951,20 @@ public:
             switch (op2.kind)
             {
                 case O2K_CONST_INT:
-                    return ((op2.u1.iconVal == that->op2.u1.iconVal) && (op2.GetIconFlag() == that->op2.GetIconFlag()));
+                    return ((op2.u1.iconVal == that.op2.u1.iconVal) && (op2.GetIconFlag() == that.op2.GetIconFlag()));
 
                 case O2K_CONST_DOUBLE:
                     // exact match because of positive and negative zero.
-                    return (memcmp(&op2.dconVal, &that->op2.dconVal, sizeof(double)) == 0);
+                    return (memcmp(&op2.dconVal, &that.op2.dconVal, sizeof(double)) == 0);
 
                 case O2K_ZEROOBJ:
                     return true;
 
                 case O2K_LCLVAR_COPY:
-                    return op2.lclNum == that->op2.lclNum;
+                    return op2.lclNum == that.op2.lclNum;
 
                 case O2K_SUBRANGE:
-                    return op2.u2.Equals(that->op2.u2);
+                    return op2.u2.Equals(that.op2.u2);
 
                 case O2K_INVALID:
                     // we will return false
@@ -7979,15 +7978,15 @@ public:
             return false;
         }
 
-        bool Complementary(AssertionDsc* that, bool vnBased)
+        bool Complementary(const AssertionDsc& that, bool vnBased) const
         {
-            return ComplementaryKind(assertionKind, that->assertionKind) && HasSameOp1(that, vnBased) &&
+            return ComplementaryKind(assertionKind, that.assertionKind) && HasSameOp1(that, vnBased) &&
                    HasSameOp2(that, vnBased);
         }
 
-        bool Equals(AssertionDsc* that, bool vnBased)
+        bool Equals(const AssertionDsc& that, bool vnBased) const
         {
-            if (assertionKind != that->assertionKind)
+            if (assertionKind != that.assertionKind)
             {
                 return false;
             }
@@ -8260,7 +8259,7 @@ public:
 
     // Assertion prop helpers.
     ASSERT_TP&    GetAssertionDep(unsigned lclNum);
-    AssertionDsc* optGetAssertion(AssertionIndex assertIndex);
+    AssertionDsc* optGetAssertion(AssertionIndex assertIndex) const;
     void          optAssertionInit(bool isLocalProp);
     void          optAssertionTraitsInit(AssertionIndex assertionCount);
     void          optAssertionReset(AssertionIndex limit);
@@ -8293,11 +8292,11 @@ public:
 
     void optCreateComplementaryAssertion(AssertionIndex assertionIndex, GenTree* op1, GenTree* op2);
 
-    bool           optAssertionVnInvolvesNan(AssertionDsc* assertion);
-    AssertionIndex optAddAssertion(AssertionDsc* assertion);
-    void           optAddVnAssertionMapping(ValueNum vn, AssertionIndex index);
+    bool           optAssertionVnInvolvesNan(const AssertionDsc& assertion) const;
+    AssertionIndex optAddAssertion(const AssertionDsc& assertion);
+    void           optAddVnAssertionMapping(ValueNum vn, AssertionIndex index) const;
 #ifdef DEBUG
-    void optPrintVnAssertionMapping();
+    void optPrintVnAssertionMapping() const;
 #endif
     ASSERT_TP optGetVnMappedAssertions(ValueNum vn);
 
@@ -8314,10 +8313,10 @@ public:
 
     // Assertion prop for lcl var functions.
     bool     optAssertionProp_LclVarTypeCheck(GenTree* tree, LclVarDsc* lclVarDsc, LclVarDsc* copyVarDsc);
-    GenTree* optCopyAssertionProp(AssertionDsc*        curAssertion,
+    GenTree* optCopyAssertionProp(const AssertionDsc&  curAssertion,
                                   GenTreeLclVarCommon* tree,
                                   Statement* stmt      DEBUGARG(AssertionIndex index));
-    GenTree* optConstantAssertionProp(AssertionDsc*        curAssertion,
+    GenTree* optConstantAssertionProp(const AssertionDsc&  curAssertion,
                                       GenTreeLclVarCommon* tree,
                                       Statement* stmt      DEBUGARG(AssertionIndex index));
     bool     optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, GenTree* destParent, GenTree* value);
@@ -8367,13 +8366,13 @@ public:
     void optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions);
     void optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions);
     bool optCreateJumpTableImpliedAssertions(BasicBlock* switchBb);
-    void optImpliedByConstAssertion(AssertionDsc* curAssertion, ASSERT_TP& result);
+    void optImpliedByConstAssertion(const AssertionDsc& curAssertion, ASSERT_TP& result);
 
 #ifdef DEBUG
-    void optPrintAssertion(AssertionDsc* newAssertion, AssertionIndex assertionIndex = 0);
+    void optPrintAssertion(const AssertionDsc& newAssertion, AssertionIndex assertionIndex = 0);
     void optPrintAssertionIndex(AssertionIndex index);
     void optPrintAssertionIndices(ASSERT_TP assertions);
-    void optDebugCheckAssertion(AssertionDsc* assertion);
+    void optDebugCheckAssertion(const AssertionDsc& assertion) const;
     void optDebugCheckAssertions(AssertionIndex AssertionIndex);
 #endif
 

@@ -1107,7 +1107,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
 #ifdef DEBUG
         if (comp->verbose)
         {
-            comp->optPrintAssertion(curAssertion, assertionIndex);
+            comp->optPrintAssertion(*curAssertion, assertionIndex);
         }
 #endif
 
