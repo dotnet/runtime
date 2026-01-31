@@ -2,6 +2,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories("./jitstd")
 include_directories("../inc")
+include_directories("../jitshared")
 
 # gcc 10 and lower versions are too sensitive to bit fields width and warn from core compiler.
 # Since there is no better / specific suppression available for these core warnings, we disable
@@ -178,6 +179,7 @@ set( JIT_SOURCES
   treelifeupdater.cpp
   utils.cpp
   valuenum.cpp
+  ../jitshared/histogram.cpp
 )
 
 set ( JIT_NATIVE_TARGET_SOURCES

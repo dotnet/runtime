@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include "dumpable.h"
+
 // Maximum number of buckets in a histogram (including overflow bucket)
 #define HISTOGRAM_MAX_SIZE_COUNT 64
 
@@ -24,12 +26,12 @@
 //
 // Thread-safety: record() uses atomic operations for thread-safe counting.
 
-class Histogram
+class Histogram : public Dumpable
 {
 public:
     Histogram(const unsigned* const sizeTable);
 
-    void dump(FILE* output) const;
+    void dump(FILE* output) const override;
     void record(unsigned size);
 
 private:
