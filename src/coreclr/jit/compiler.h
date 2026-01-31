@@ -8042,7 +8042,6 @@ public:
                 dsc.op2.vn     = cnsVN;
             }
 
-            dsc.op2.SetIconFlag(GTF_EMPTY);
             if constexpr (std::is_same_v<T, int> || std::is_same_v<T, ssize_t>)
             {
                 dsc.op2.kind       = O2K_CONST_INT;
@@ -8112,7 +8111,10 @@ public:
         }
 
         // Create "VN ==/!= int32_constant" assertion
-        static AssertionDsc CreateInt32ConstantVNAssertion(const Compiler* comp, ValueNum op1VN, ValueNum op2VN, bool equals)
+        static AssertionDsc CreateInt32ConstantVNAssertion(const Compiler* comp,
+                                                           ValueNum        op1VN,
+                                                           ValueNum        op2VN,
+                                                           bool            equals)
         {
             assert(op1VN != ValueNumStore::NoVN);
             assert(op2VN != ValueNumStore::NoVN);
@@ -8128,7 +8130,6 @@ public:
             dsc.op1.kind       = O1K_VN;
             dsc.op2.kind       = O2K_CONST_INT;
             dsc.op2.u1.iconVal = comp->vnStore->ConstantValue<int>(op2VN);
-            dsc.op2.SetIconFlag(GTF_EMPTY);
             return dsc;
         }
 
@@ -8187,7 +8188,6 @@ public:
             dsc.op2.kind       = O2K_CONST_INT;
             dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
             dsc.op2.u1.iconVal = 0;
-            dsc.op2.SetIconFlag(GTF_EMPTY);
             return dsc;
         }
 
@@ -8216,7 +8216,6 @@ public:
             dsc.op2.kind       = O2K_CONST_INT;
             dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
             dsc.op2.u1.iconVal = 0;
-            dsc.op2.SetIconFlag(GTF_EMPTY);
             return dsc;
         }
     };
