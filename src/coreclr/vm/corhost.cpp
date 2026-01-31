@@ -571,14 +571,10 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     {
         GCX_COOP();
 
-        MethodDescCallSite setup(METHOD__APPCONTEXT__SETUP);
+        UnmanagedCallersOnlyCaller<LPCWSTR*, LPCWSTR*, int>
+            setup(METHOD__APPCONTEXT__SETUP);
 
-        ARG_SLOT args[3];
-        args[0] = PtrToArgSlot(pPropertyNames);
-        args[1] = PtrToArgSlot(pPropertyValues);
-        args[2] = PtrToArgSlot(nProperties);
-
-        setup.Call(args);
+        setup.InvokeThrowing(pPropertyNames, pPropertyValues, nProperties);
     }
 
     LPCWSTR pwzNativeDllSearchDirectories = NULL;

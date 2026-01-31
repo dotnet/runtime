@@ -746,7 +746,7 @@ public:
         _ASSERTE(_pMD != NULL);
         _ASSERTE(_pMD->HasUnmanagedCallersOnlyAttribute());
 
-        _fptr = _pMD->GetMultiCallableAddrOfCode();
+        _fptr = _pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
         _ASSERTE(_fptr != (PCODE)NULL);
     }
 
