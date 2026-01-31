@@ -455,7 +455,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 _accumulatedHits += Volatile.Read(ref current.Hits);
                 _accumulatedMisses += Volatile.Read(ref current.Misses);
 
-                _allStats.RemoveAll(static s => !s.Handle.TryGetTarget(out _));
+                _allStats.Remove(current);
                 _allStats.TrimExcess();
             }
         }
