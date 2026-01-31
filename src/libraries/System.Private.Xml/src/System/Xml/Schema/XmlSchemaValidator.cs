@@ -170,7 +170,7 @@ namespace System.Xml.Schema
             _validationFlags = validationFlags;
 
 
-            if (((validationFlags & XmlSchemaValidationFlags.ProcessInlineSchema) != 0) || ((validationFlags & XmlSchemaValidationFlags.ProcessSchemaLocation) != 0))
+            if ((validationFlags & (XmlSchemaValidationFlags.ProcessInlineSchema | XmlSchemaValidationFlags.ProcessSchemaLocation)) != 0)
             { //Process schema hints in xml document, hence user's set might change
                 _schemaSet = new XmlSchemaSet(nameTable);
                 _schemaSet.ValidationEventHandler += schemas.GetEventHandler();

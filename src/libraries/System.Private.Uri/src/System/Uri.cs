@@ -3302,8 +3302,7 @@ namespace System
                 // (This is very unfortunate that the original design has included that feature)
                 bool nonCanonical = false;
                 if ((cF & Flags.DosPath) != 0 || (((cF & Flags.AuthorityFound) != 0) &&
-                    (((syntaxFlags & (UriSyntaxFlags.CompressPath | UriSyntaxFlags.ConvertPathSlashes)) != 0) ||
-                    (syntaxFlags & UriSyntaxFlags.UnEscapeDotsAndSlashes) != 0)))
+                    ((syntaxFlags & (UriSyntaxFlags.CompressPath | UriSyntaxFlags.ConvertPathSlashes | UriSyntaxFlags.UnEscapeDotsAndSlashes)) != 0)))
                 {
                     if (((result & Check.DotSlashEscaped) != 0) && (syntaxFlags & UriSyntaxFlags.UnEscapeDotsAndSlashes) != 0)
                     {
