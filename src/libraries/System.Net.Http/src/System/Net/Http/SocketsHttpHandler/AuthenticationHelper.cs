@@ -77,6 +77,21 @@ namespace System.Net.Http
             return false;
         }
 
+        // Helper function to determine if a request can be retried for session authentication after receiving response headers.
+        // A request can be retried if it has no content, or if the content hasn't been sent yet.
+        internal static bool CanRetryForSessionAuthentication(HttpRequestMessage request, bool requestBodyStarted)
+        {
+            // If there's no content, we can always retry
+            if (request.Content == null)
+            {
+                return true;
+            }
+
+            // If we've started sending the request body, we can't retry
+            // because we can't rewind arbitrary streams
+            return !requestBodyStarted;
+        }
+
         private static bool TryGetValidAuthenticationChallengeForScheme(string scheme, AuthenticationType authenticationType, Uri uri, ICredentials credentials,
             HttpHeaderValueCollection<AuthenticationHeaderValue> authenticationHeaderValues, out AuthenticationChallenge challenge)
         {

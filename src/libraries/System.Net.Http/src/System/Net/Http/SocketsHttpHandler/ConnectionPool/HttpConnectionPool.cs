@@ -534,6 +534,24 @@ namespace System.Net.Http
                     // Eat exception and try again on a lower protocol version.
                     request.Version = HttpVersion.Version11;
                 }
+                catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnSessionAuthenticationChallenge)
+                {
+                    // Server sent a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
+                    // These authentication schemes don't work properly over HTTP/2, so we need to downgrade to HTTP/1.1.
+                    // Throw if fallback is not allowed by the version policy.
+                    if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                    {
+                        throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
+                    }
+
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        Trace($"Retrying request on HTTP/1.1 due to session-based authentication challenge on HTTP/2: {e}");
+                    }
+
+                    // Eat exception and try again on HTTP/1.1 for session-based authentication.
+                    request.Version = HttpVersion.Version11;
+                }
                 finally
                 {
                     // We never cancel both attempts at the same time. When downgrade happens, it's possible that both waiters are non-null,

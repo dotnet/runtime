@@ -2061,7 +2061,24 @@ namespace System.Net.Http
                 // Wait for the response headers to complete if they haven't already, propagating any exceptions.
                 await responseHeadersTask.ConfigureAwait(false);
 
-                return http2Stream.GetAndClearResponse();
+                HttpResponseMessage response = http2Stream.GetAndClearResponse();
+
+                // Check if this is a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
+                // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
+                // If we haven't started sending the request body yet, we can retry on HTTP/1.1.
+                if (AuthenticationHelper.IsSessionAuthenticationChallenge(response) &&
+                    AuthenticationHelper.CanRetryForSessionAuthentication(request, http2Stream.RequestBodyStreamingStarted))
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        Trace($"Received session-based authentication challenge on HTTP/2. Request can be retried on HTTP/1.1. RequestBodyStreamingStarted={http2Stream.RequestBodyStreamingStarted}");
+                    }
+
+                    response.Dispose();
+                    throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authenticationrequired, null, RequestRetryType.RetryOnSessionAuthenticationChallenge);
+                }
+
+                return response;
             }
             catch (HttpIOException e)
             {
