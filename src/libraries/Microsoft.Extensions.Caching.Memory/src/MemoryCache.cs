@@ -26,8 +26,11 @@ namespace Microsoft.Extensions.Caching.Memory
         internal readonly ILogger _logger;
 
         private readonly MemoryCacheOptions _options;
+
+        private readonly List<Stats>? _allStats;
         private long _accumulatedHits;
         private long _accumulatedMisses;
+        private readonly ThreadLocal<StatsHandle>? _stats;
         private CoherentState _coherentState;
         private bool _disposed;
         private DateTime _lastExpirationScan;
@@ -53,6 +56,12 @@ namespace Microsoft.Extensions.Caching.Memory
             _logger = loggerFactory.CreateLogger<MemoryCache>();
 
             _coherentState = new CoherentState();
+
+            if (_options.TrackStatistics)
+            {
+                _allStats = new List<Stats>();
+                _stats = new ThreadLocal<StatsHandle>(() => new StatsHandle(this));
+            }
 
             _lastExpirationScan = UtcNow;
             TrackLinkedCacheEntries = _options.TrackLinkedCacheEntries; // we store the setting now so it's consistent for entire MemoryCache lifetime
@@ -274,9 +283,12 @@ namespace Microsoft.Extensions.Caching.Memory
 
                     StartScanForExpiredItemsIfNeeded(utcNow);
                     // Hit
-                    if (_options.TrackStatistics)
+                    if (_stats is not null)
                     {
-                        Interlocked.Increment(ref _accumulatedHits);
+                        if (IntPtr.Size == 4)
+                            Interlocked.Increment(ref GetStats().Hits);
+                        else
+                            GetStats().Hits++;
                     }
 
                     return true;
@@ -292,9 +304,12 @@ namespace Microsoft.Extensions.Caching.Memory
 
             result = null;
             // Miss
-            if (_options.TrackStatistics)
+            if (_stats is not null)
             {
-                Interlocked.Increment(ref _accumulatedMisses);
+                if (IntPtr.Size == 4)
+                    Interlocked.Increment(ref GetStats().Misses);
+                else
+                    GetStats().Misses++;
             }
 
             return false;
@@ -344,12 +359,13 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>Returns <see langword="null"/> if statistics are not being tracked because <see cref="MemoryCacheOptions.TrackStatistics" /> is <see langword="false"/>.</returns>
         public MemoryCacheStatistics? GetCurrentStatistics()
         {
-            if (_options.TrackStatistics)
+            if (_allStats is not null)
             {
+                (long hit, long miss) sumTotal = Sum();
                 return new MemoryCacheStatistics()
                 {
-                    TotalMisses = _accumulatedMisses,
-                    TotalHits = _accumulatedHits,
+                    TotalMisses = sumTotal.miss,
+                    TotalHits = sumTotal.hit,
                     CurrentEntryCount = Count,
                     CurrentEstimatedSize = _options.HasSizeLimit ? Size : null
                 };
@@ -380,6 +396,75 @@ namespace Microsoft.Extensions.Caching.Memory
                 _lastExpirationScan = utcNow;
                 Task.Factory.StartNew(state => ((MemoryCache)state!).ScanForExpiredItems(), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            }
+        }
+
+        private (long, long) Sum()
+        {
+            lock (_allStats!)
+            {
+                long hits = _accumulatedHits;
+                long misses = _accumulatedMisses;
+
+                foreach (Stats stats in _allStats)
+                {
+                    hits += Volatile.Read(ref stats.Hits);
+                    misses += Volatile.Read(ref stats.Misses);
+                }
+
+                return (hits, misses);
+            }
+        }
+
+        private Stats GetStats() => _stats!.Value!.Stats;
+
+        internal class StatsHandle
+        {
+            public StatsHandle(MemoryCache memoryCache)
+            {
+                Stats = new Stats(memoryCache, this);
+            }
+
+            public Stats Stats { get; private set; }
+
+            ~StatsHandle() => Stats.RemoveFromStats();
+        }
+
+
+        internal sealed class Stats
+        {
+            private readonly MemoryCache _memoryCache;
+            public long Hits;
+            public long Misses;
+            public WeakReference<StatsHandle> Handle { get; private set; }
+
+            public Stats(MemoryCache memoryCache, StatsHandle statsHandle)
+            {
+                Handle = new WeakReference<StatsHandle>(statsHandle);
+                _memoryCache = memoryCache;
+                _memoryCache.AddToStats(this);
+            }
+
+            internal void RemoveFromStats() => _memoryCache.RemoveFromStats(this);
+        }
+
+        private void RemoveFromStats(Stats current)
+        {
+            lock (_allStats!)
+            {
+                _accumulatedHits += Volatile.Read(ref current.Hits);
+                _accumulatedMisses += Volatile.Read(ref current.Misses);
+
+                _allStats.RemoveAll(static s => !s.Handle.TryGetTarget(out _));
+                _allStats.TrimExcess();
+            }
+        }
+
+        private void AddToStats(Stats current)
+        {
+            lock (_allStats!)
+            {
+                _allStats.Add(current);
             }
         }
 
@@ -598,6 +683,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (disposing)
                 {
+                    _stats?.Dispose();
                     GC.SuppressFinalize(this);
                 }
 
