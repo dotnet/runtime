@@ -12,7 +12,7 @@ internal partial interface ITransaction
 {
     void Commit(
         [MarshalAs(UnmanagedType.Bool)] bool fRetaining,
-        OletxXacttc grfTC,
+        Interop.Xolehlp.OletxXacttc grfTC,
         uint grfRM);
 
     void Abort(
