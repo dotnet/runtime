@@ -231,6 +231,48 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [ConditionalTheory(nameof(IsNtlmAvailable))]
+        [InlineData(true)]
+        [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
+        public async Task Http2_FakeServer_SessionAuthChallenge_WithContent_ReturnsUnauthorized(bool useNtlm)
+        {
+            // This test verifies that when an HTTP/2 request with content receives a session-based auth challenge,
+            // we return the 401 response without retrying (since we can't safely retry with content).
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, uri);
+                    requestMessage.Version = HttpVersion.Version20;
+                    requestMessage.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+                    requestMessage.Content = new StringContent("test content");
+
+                    SocketsHttpHandler handler = new SocketsHttpHandler() { Credentials = s_testCredentialRight };
+                    using var client = new HttpClient(handler);
+                    
+                    // Should get 401 since we can't retry requests with content
+                    HttpResponseMessage response = await client.SendAsync(requestMessage);
+                    
+                    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                    Assert.Equal(HttpVersion.Version20, response.Version);
+                    Assert.True(response.Headers.WwwAuthenticate.Count > 0, "Expected WWW-Authenticate header in 401 response");
+                },
+                async server =>
+                {
+                    // Request over HTTP/2 - send auth challenge
+                    Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                    int streamId = await connection.ReadRequestHeaderAsync();
+                    
+                    // Read and discard the request body
+                    await connection.ReadBodyAsync();
+                    
+                    // Send 401 with NTLM or Negotiate challenge
+                    string authScheme = useNtlm ? "NTLM" : "Negotiate";
+                    await connection.SendResponseHeadersAsync(streamId, endStream: true, HttpStatusCode.Unauthorized,
+                        headers: new[] { new HttpHeaderData("WWW-Authenticate", authScheme) });
+                });
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Windows, "DefaultCredentials are unsupported for NTLM on Unix / Managed implementation")]
         public async Task DefaultHandler_FakeServer_DefaultCredentials()
