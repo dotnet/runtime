@@ -12659,15 +12659,15 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
         {
             if (BitVecOps::IsMember(apTraits, killed, index - 1))
             {
-                AssertionDsc* curAssertion = optGetAssertion(index);
-                noway_assert((curAssertion->op1.lclNum == lclNum) ||
-                             ((curAssertion->op2.kind == O2K_LCLVAR_COPY) && (curAssertion->op2.lclNum == lclNum)));
+                const AssertionDsc& curAssertion = optGetAssertion(index);
+                noway_assert((curAssertion.op1.lclNum == lclNum) ||
+                             ((curAssertion.op2.kind == O2K_LCLVAR_COPY) && (curAssertion.op2.lclNum == lclNum)));
                 if (verbose)
                 {
                     printf("\nThe store ");
                     printTreeID(tree);
-                    printf(" using V%02u removes: ", curAssertion->op1.lclNum);
-                    optPrintAssertion(*curAssertion, index);
+                    printf(" using V%02u removes: ", curAssertion.op1.lclNum);
+                    optPrintAssertion(curAssertion, index);
                 }
             }
 
@@ -12760,7 +12760,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
                     printf("GenTreeNode creates %sassertion:\n", condition);
                     gtDispTree(tree, nullptr, nullptr, true);
                     printf("In " FMT_BB " New Local ", compCurBB->bbNum);
-                    optPrintAssertion(*optGetAssertion(apIndex), apIndex);
+                    optPrintAssertion(optGetAssertion(apIndex), apIndex);
                 }
                 else
                 {
@@ -12780,19 +12780,19 @@ void Compiler::fgAssertionGen(GenTree* tree)
     // assertion for that local, in case this local is used as a bool.
     //
     auto addImpliedAssertions = [=](AssertionIndex index, ASSERT_TP& assertions) {
-        AssertionDsc* const assertion = optGetAssertion(index);
-        if ((assertion->assertionKind == OAK_EQUAL) && (assertion->op1.kind == O1K_LCLVAR) &&
-            (assertion->op2.kind == O2K_CONST_INT))
+        const AssertionDsc& assertion = optGetAssertion(index);
+        if ((assertion.assertionKind == OAK_EQUAL) && (assertion.op1.kind == O1K_LCLVAR) &&
+            (assertion.op2.kind == O2K_CONST_INT))
         {
-            LclVarDsc* const lclDsc = lvaGetDesc(assertion->op1.lclNum);
+            LclVarDsc* const lclDsc = lvaGetDesc(assertion.op1.lclNum);
 
             if (varTypeIsIntegral(lclDsc->TypeGet()))
             {
-                ssize_t iconVal = assertion->op2.u1.iconVal;
+                ssize_t iconVal = assertion.op2.u1.iconVal;
                 if ((iconVal == 0) || (iconVal == 1))
                 {
                     auto           range = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
-                    AssertionDsc   extraAssertion = AssertionDsc::CreateSubrange(this, assertion->op1.lclNum, range);
+                    AssertionDsc   extraAssertion = AssertionDsc::CreateSubrange(this, assertion.op1.lclNum, range);
                     AssertionIndex extraIndex     = optAddAssertion(extraAssertion);
                     if (extraIndex != NO_ASSERTION_INDEX)
                     {

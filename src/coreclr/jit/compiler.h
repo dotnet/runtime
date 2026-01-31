@@ -8258,12 +8258,11 @@ public:
     ValueNumToAssertsMap*                                                          optValueNumToAsserts;
 
     // Assertion prop helpers.
-    ASSERT_TP&    GetAssertionDep(unsigned lclNum);
-    AssertionDsc* optGetAssertion(AssertionIndex assertIndex) const;
-    void          optAssertionInit(bool isLocalProp);
-    void          optAssertionTraitsInit(AssertionIndex assertionCount);
-    void          optAssertionReset(AssertionIndex limit);
-    void          optAssertionRemove(AssertionIndex index);
+    ASSERT_TP&          GetAssertionDep(unsigned lclNum);
+    const AssertionDsc& optGetAssertion(AssertionIndex assertIndex) const;
+    void                optAssertionInit(bool isLocalProp);
+    void                optAssertionTraitsInit(AssertionIndex assertionCount);
+    void                optAssertionReset(AssertionIndex limit);
 
     // Assertion prop data flow functions.
     PhaseStatus optAssertionPropMain();
