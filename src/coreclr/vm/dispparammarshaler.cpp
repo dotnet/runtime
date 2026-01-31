@@ -546,22 +546,25 @@ void DispParamCustomMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
     if (vt != VT_I4 && vt != VT_UI4 && vt != VT_UNKNOWN && vt != VT_DISPATCH)
         COMPlusThrow(kInvalidCastException, IDS_EE_INVALID_VT_FOR_CUSTOM_MARHALER);
 
+    UnmanagedCallersOnlyCaller<ObjectHandleOnStack*, ObjectHandleOnStack*, IUnknown**>
+        target(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_MANAGED_UCO);
+
+    struct
+    {
+        OBJECTREF CustomMarshaler;
+    } gc;
+    gc.CustomMarshaler = m_pCMInfo->GetCustomMarshaler();
+    GCPROTECT_BEGIN(gc);
+
     // Retrieve the IUnknown pointer.
-    IUnknown *pUnk = bByref ? *V_UNKNOWNREF(pSrcVar) : V_UNKNOWN(pSrcVar);
+    IUnknown* pUnk = bByref ? *V_UNKNOWNREF(pSrcVar) : V_UNKNOWN(pSrcVar);
 
-    // Marshal the contents of the VARIANT using the custom marshaler.
-    OBJECTREF customMarshaler = m_pCMInfo->GetCustomMarshaler();
-    GCPROTECT_BEGIN (customMarshaler);
-    MethodDescCallSite marshalNativeToManaged(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_MANAGED);
+    target.InvokeThrowing(
+        &gc.CustomMarshaler,
+        pDestObj,
+        &pUnk);
 
-    ARG_SLOT Args[] = {
-        ObjToArgSlot(customMarshaler),
-        PtrToArgSlot(pDestObj),
-        PtrToArgSlot(&pUnk)
-    };
-
-    marshalNativeToManaged.Call(Args);
-    GCPROTECT_END ();
+    GCPROTECT_END();
 }
 
 void DispParamCustomMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT *pDestVar)
@@ -581,19 +584,24 @@ void DispParamCustomMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIAN
     // Convert the object using the custom marshaler.
     SafeVariantClear(pDestVar);
 
+    UnmanagedCallersOnlyCaller<ObjectHandleOnStack*, ObjectHandleOnStack*, IUnknown**>
+        target(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_NATIVE_UCO);
+
+    struct
+    {
+        OBJECTREF CustomMarshaler;
+    } gc;
+    gc.CustomMarshaler = m_pCMInfo->GetCustomMarshaler();
+    GCPROTECT_BEGIN(gc);
+
     // Invoke the MarshalManagedToNative method.
-    IUnknown* pUnkRaw = nullptr;
-    OBJECTREF customMarshaler = m_pCMInfo->GetCustomMarshaler();
-    GCPROTECT_BEGIN (customMarshaler);
-    MethodDescCallSite marshalManagedToNative(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_NATIVE);
+    IUnknown* pUnkRaw = NULL;
 
-    ARG_SLOT Args[] = {
-        ObjToArgSlot(customMarshaler),
-        PtrToArgSlot(pSrcObj),
-        PtrToArgSlot(&pUnkRaw)
-    };
+    target.InvokeThrowing(
+        &gc.CustomMarshaler,
+        pSrcObj,
+        &pUnkRaw);
 
-    marshalManagedToNative.Call(Args);
     GCPROTECT_END();
     pUnk = pUnkRaw;
 
@@ -649,18 +657,25 @@ void DispParamCustomMarshaler::MarshalManagedToNativeRef(OBJECTREF *pSrcObj, VAR
     OleVariant::ExtractContentsFromByrefVariant(pRefVar, &vtmp);
     SafeVariantClear(&vtmp);
 
+    UnmanagedCallersOnlyCaller<ObjectHandleOnStack*, ObjectHandleOnStack*, IUnknown**>
+        target(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_NATIVE_UCO);
+
+    struct
+    {
+        OBJECTREF CustomMarshaler;
+    } gc;
+    gc.CustomMarshaler = m_pCMInfo->GetCustomMarshaler();
+    GCPROTECT_BEGIN(gc);
+
     // Convert the object using the custom marshaler.
-    OBJECTREF customMarshaler = m_pCMInfo->GetCustomMarshaler();
-    GCPROTECT_BEGIN (customMarshaler);
-    MethodDescCallSite marshalManagedToNative(METHOD__MNGD_REF_CUSTOM_MARSHALER__CONVERT_CONTENTS_TO_NATIVE);
+    IUnknown* pUnkResult = V_UNKNOWN(&vtmp);
 
-    ARG_SLOT Args[] = {
-        ObjToArgSlot(customMarshaler),
-        PtrToArgSlot(pSrcObj),
-        PtrToArgSlot(V_UNKNOWN(&vtmp))
-    };
+    target.InvokeThrowing(
+        &gc.CustomMarshaler,
+        pSrcObj,
+        &pUnkResult);
 
-    marshalManagedToNative.Call(Args);
+    V_UNKNOWN(&vtmp) = pUnkResult;
     GCPROTECT_END();
     V_VT(&vtmp) = m_vt;
 
@@ -692,18 +707,21 @@ void DispParamCustomMarshaler::CleanUpManaged(OBJECTREF *pObj)
     }
     CONTRACTL_END;
 
-    OBJECTREF customMarshaler = m_pCMInfo->GetCustomMarshaler();
-    GCPROTECT_BEGIN (customMarshaler);
-    MethodDescCallSite clearManaged(METHOD__MNGD_REF_CUSTOM_MARSHALER__CLEAR_MANAGED);
+    UnmanagedCallersOnlyCaller<ObjectHandleOnStack*, ObjectHandleOnStack*, void**>
+        target(METHOD__MNGD_REF_CUSTOM_MARSHALER__CLEAR_MANAGED_UCO);
 
-    void* dummyNative = nullptr;
+    struct
+    {
+        OBJECTREF CustomMarshaler;
+    } gc;
+    gc.CustomMarshaler = m_pCMInfo->GetCustomMarshaler();
+    GCPROTECT_BEGIN(gc);
 
-    ARG_SLOT Args[] = {
-        ObjToArgSlot(customMarshaler),
-        PtrToArgSlot(pObj),
-        PtrToArgSlot(&dummyNative)
-    };
+    void* dummyNative = NULL;
+    target.InvokeThrowing(
+        &gc.CustomMarshaler,
+        pObj,
+        &dummyNative);
 
-    clearManaged.Call(Args);
-    GCPROTECT_END ();
+    GCPROTECT_END();
 }

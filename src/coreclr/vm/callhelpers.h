@@ -660,6 +660,136 @@ enum DispatchCallSimpleFlags
 
 void CallDefaultConstructor(OBJECTREF ref);
 
+//
+// Helper types for calling managed methods marked with [UnmanagedCallersOnly]
+// from native code.
+//
+
+// Base contract helper for CallerArgConverter
+// All converters must derive from this to ensure proper contracts.
+struct CallerArgConverterContract
+{
+    CallerArgConverterContract()
+    {
+        STANDARD_VM_CONTRACT;
+    }
+};
+
+// Template for converting arguments when calling UnmanagedCallersOnly methods.
+// The default implementation passes arguments through unchanged.
+template<typename T>
+struct CallerArgConverter final : public CallerArgConverterContract
+{
+    using IN_Type = T;
+    using OUT_Type = T;
+
+    OUT_Type _arg;
+    explicit CallerArgConverter(IN_Type arg) : _arg{ arg } { }
+    operator OUT_Type()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _arg;
+    }
+};
+
+// Specialization for OBJECTREF* - converts to QCall::ObjectHandleOnStack*
+template<>
+struct CallerArgConverter<OBJECTREF*> final : public CallerArgConverterContract
+{
+    using IN_Type = OBJECTREF*;
+    using OUT_Type = QCall::ObjectHandleOnStack*;
+
+    QCall::ObjectHandleOnStack _arg;
+    explicit CallerArgConverter(IN_Type arg) : _arg{ arg } { }
+    operator OUT_Type()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &_arg;
+    }
+};
+
+// Helper class for calling managed methods marked with [UnmanagedCallersOnly].
+// This provides a more efficient alternative to MethodDescCallSite for methods
+// that use the reverse P/Invoke infrastructure.
+// This class assumes the target method signature has a trailing argument for
+// returning the exception (QCall::ObjectHandleOnStack*). The C# signature should
+// have that argument, but the templated class parameters should not include it.
+//
+// Example usage:
+//   UnmanagedCallersOnlyCaller<int, QCall::ObjectHandleOnStack*> caller(BinderMethodID::MyMethod);
+//   ...
+//   caller.InvokeThrowing(arg1, arg2);
+//
+// The corresponding C# method would be declared as:
+//   [UnmanagedCallersOnly]
+//   public static void MyMethod(int arg1, IntPtr arg2, IntPtr exception);
+//
+template<typename... FnPtrArgs>
+class UnmanagedCallersOnlyCaller final
+{
+    MethodDesc* _pMD;
+    PCODE _fptr;
+public:
+    explicit UnmanagedCallersOnlyCaller(BinderMethodID id)
+        : _pMD{}
+        , _fptr{}
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        _pMD = CoreLibBinder::GetMethod(id);
+        _ASSERTE(_pMD != NULL);
+        _ASSERTE(_pMD->HasUnmanagedCallersOnlyAttribute());
+
+        _fptr = _pMD->GetMultiCallableAddrOfCode();
+        _ASSERTE(_fptr != (PCODE)NULL);
+    }
+
+    template<typename... Args>
+    void InvokeThrowing(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+            PRECONDITION(_fptr != (PCODE)NULL);
+        }
+        CONTRACTL_END;
+
+        struct
+        {
+            OBJECTREF Exception;
+        } gc;
+        gc.Exception = NULL;
+        GCPROTECT_BEGIN(gc);
+
+        QCall::ObjectHandleOnStack exceptHandle{ &gc.Exception };
+        {
+            GCX_PREEMP();
+
+            // Cast the function pointer to the appropriate type.
+            // Note that we append the exception handle argument.
+            auto fptr = reinterpret_cast<void(*)(FnPtrArgs..., QCall::ObjectHandleOnStack*)>(_fptr);
+
+            // Convert arguments and call.
+            // The last argument is the implied exception handle for any exceptions.
+            fptr(CallerArgConverter<Args>(args)..., &exceptHandle);
+        }
+
+        // If an exception was thrown, propagate it
+        if (gc.Exception != NULL)
+            COMPlusThrow(gc.Exception);
+
+        GCPROTECT_END();
+    }
+};
+
 #endif //!DACCESS_COMPILE
 
 #endif // __CALLHELPERS_H__

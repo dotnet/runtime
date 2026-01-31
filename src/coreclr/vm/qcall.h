@@ -190,9 +190,11 @@ public:
     //
     // ObjectHandleOnStack type is used for managed objects
     //
-    struct ObjectHandleOnStack
+    struct ObjectHandleOnStack final
     {
-        Object ** m_ppObject;
+        Object** m_ppObject;
+
+        ObjectHandleOnStack(OBJECTREF* o);
 
         OBJECTREF Get()
         {
