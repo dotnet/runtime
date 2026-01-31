@@ -46,7 +46,6 @@ namespace System.Net.Http
             private StreamCompletionState _responseCompletionState;
             private ResponseProtocolState _responseProtocolState;
             private bool _responseHeadersReceived;
-            private bool _requestBodyStreamingStarted; // true once we start copying request content to the stream (used to determine retry eligibility)
 
             // If this is not null, then we have received a reset from the server
             // (i.e. RST_STREAM or general IO error processing the connection)
@@ -156,8 +155,6 @@ namespace System.Net.Http
 
             public bool SendRequestFinished => _requestCompletionState != StreamCompletionState.InProgress;
 
-            public bool RequestBodyStreamingStarted => _requestBodyStreamingStarted;
-
             public bool ExpectResponseData => _responseProtocolState == ResponseProtocolState.ExpectingData;
 
             public Http2Connection Connection => _connection;
@@ -213,8 +210,6 @@ namespace System.Net.Http
                         using var writeStream = new Http2WriteStream(this, _request.Content.Headers.ContentLength.GetValueOrDefault(-1));
 
                         if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
-
-                        _requestBodyStreamingStarted = true;
 
                         ValueTask vt = _request.Content.InternalCopyToAsync(writeStream, context: null, _requestBodyCancellationSource.Token);
                         if (vt.IsCompleted)
