@@ -13,7 +13,8 @@ set(INTERPRETER_SOURCES
 
 # Add jitshared sources to the interpreter build
 list(APPEND INTERPRETER_SOURCES
-  ${CMAKE_CURRENT_SOURCE_DIR}/../jitshared/arenaallocator.cpp)
+  ${CMAKE_CURRENT_SOURCE_DIR}/../jitshared/arenaallocator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../jitshared/histogram.cpp)
 
 set(INTERPRETER_LINK_LIBRARIES
   gcinfo

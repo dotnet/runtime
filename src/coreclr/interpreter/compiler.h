@@ -16,6 +16,7 @@
 #include "../jitshared/arenaallocator.h"
 #include "../jitshared/compallocator.h"
 #include "../jitshared/memstats.h"
+#include "../jitshared/histogram.h"
 #include "interpallocconfig.h"
 
 // InterpMemKind values are used to tag memory allocations performed via
@@ -1116,11 +1117,16 @@ public:
     static InterpMemStats s_maxStats;
     static bool s_dspMemStats;
 
+    // Histograms for memory distribution (in KB)
+    static Histogram s_memAllocHist;
+    static Histogram s_memUsedHist;
+
     InterpMemStats m_stats;
 
     void finishMemStats();
     static void dumpAggregateMemStats(FILE* file);
     static void dumpMaxMemStats(FILE* file);
+    static void dumpMemStatsHistograms(FILE* file);
     static void initMemStats();
 #endif // MEASURE_MEM_ALLOC
 };

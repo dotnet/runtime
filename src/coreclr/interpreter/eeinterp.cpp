@@ -173,6 +173,7 @@ void CILInterp::ProcessShutdownWork(ICorStaticInfo* statInfo)
     {
         InterpCompiler::dumpAggregateMemStats(stdout);
         InterpCompiler::dumpMaxMemStats(stdout);
+        InterpCompiler::dumpMemStatsHistograms(stdout);
     }
 #endif
     g_interpInitialized = false;

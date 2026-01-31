@@ -63,6 +63,13 @@ InterpCompiler::InterpAggregateMemStats InterpCompiler::s_aggStats;
 InterpCompiler::InterpMemStats InterpCompiler::s_maxStats;
 bool InterpCompiler::s_dspMemStats = false;
 
+// Histogram bucket boundaries (in KB)
+static unsigned s_memAllocHistBuckets[] = {64, 128, 192, 256, 512, 1024, 4096, 8192, 0};
+static unsigned s_memUsedHistBuckets[] = {16, 32, 64, 128, 192, 256, 512, 1024, 4096, 8192, 0};
+
+Histogram InterpCompiler::s_memAllocHist(s_memAllocHistBuckets);
+Histogram InterpCompiler::s_memUsedHist(s_memUsedHistBuckets);
+
 void InterpCompiler::initMemStats()
 {
     if (!s_interpStatsMutexInitialized)
@@ -79,6 +86,10 @@ void InterpCompiler::finishMemStats()
 {
     m_stats.nraTotalSizeAlloc = m_arenaAllocator.getTotalBytesAllocated();
     m_stats.nraTotalSizeUsed = m_arenaAllocator.getTotalBytesUsed();
+
+    // Record histogram data (in KB, rounded up)
+    s_memAllocHist.record((unsigned)((m_stats.nraTotalSizeAlloc + 1023) / 1024));
+    s_memUsedHist.record((unsigned)((m_stats.nraTotalSizeUsed + 1023) / 1024));
 
     minipal::MutexHolder lock(s_interpStatsMutex);
     s_aggStats.Add(m_stats);
@@ -100,6 +111,19 @@ void InterpCompiler::dumpMaxMemStats(FILE* file)
 {
     fprintf(file, "\nLargest method allocation:\n");
     s_maxStats.Print(file);
+}
+
+void InterpCompiler::dumpMemStatsHistograms(FILE* file)
+{
+    fprintf(file, "\n");
+    fprintf(file, "---------------------------------------------------\n");
+    fprintf(file, "Distribution of total memory allocated per method (in KB):\n");
+    s_memAllocHist.dump(file);
+
+    fprintf(file, "\n");
+    fprintf(file, "---------------------------------------------------\n");
+    fprintf(file, "Distribution of total memory used      per method (in KB):\n");
+    s_memUsedHist.dump(file);
 }
 #endif // MEASURE_MEM_ALLOC
 
