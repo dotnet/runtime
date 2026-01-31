@@ -2075,7 +2075,7 @@ namespace System.Net.Http
                     }
 
                     response.Dispose();
-                    throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authenticationrequired, null, RequestRetryType.RetryOnSessionAuthenticationChallenge);
+                    throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure, null, RequestRetryType.RetryOnSessionAuthenticationChallenge);
                 }
 
                 return response;
