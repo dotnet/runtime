@@ -4312,29 +4312,38 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 
     LONG retVal = EXCEPTION_CONTINUE_SEARCH;
 
-    // Incase of unhandled exceptions on managed threads, we kick in our UE processing at the thread base and also invoke
-    // UEF callbacks that various runtimes have registered with us. Once the callbacks return, we return back to the OS
-    // to give other registered UEFs a chance to do their custom processing.
-    //
-    // If the topmost UEF registered with the OS belongs to mscoruef.dll (or someone chained back to its UEF callback),
-    // it will start invoking the UEF callbacks (which is this function, COMUnhandledExceptionFiler) registered by
-    // various runtimes again.
-    //
-    // Thus, check if this UEF has already been invoked in context of this thread and runtime and if so, dont invoke it again.
-    if (GetThreadNULLOk() && (GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException)))
+    // Protect against access violations when accessing thread-local storage in case of heap corruption
+    __try
     {
-        LOG((LF_EH, LL_INFO10, "Exiting COMUnhandledExceptionFilter since we have already done UE processing for this thread!\n"));
-        return retVal;
+        // Incase of unhandled exceptions on managed threads, we kick in our UE processing at the thread base and also invoke
+        // UEF callbacks that various runtimes have registered with us. Once the callbacks return, we return back to the OS
+        // to give other registered UEFs a chance to do their custom processing.
+        //
+        // If the topmost UEF registered with the OS belongs to mscoruef.dll (or someone chained back to its UEF callback),
+        // it will start invoking the UEF callbacks (which is this function, COMUnhandledExceptionFiler) registered by
+        // various runtimes again.
+        //
+        // Thus, check if this UEF has already been invoked in context of this thread and runtime and if so, dont invoke it again.
+        if (GetThreadNULLOk() && (GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException)))
+        {
+            LOG((LF_EH, LL_INFO10, "Exiting COMUnhandledExceptionFilter since we have already done UE processing for this thread!\n"));
+            return retVal;
+        }
+
+
+        retVal = InternalUnhandledExceptionFilter(pExceptionInfo);
+
+        // If thread object exists, mark that this thread has done unhandled exception processing
+        if (GetThreadNULLOk())
+        {
+            LOG((LF_EH, LL_INFO100, "COMUnhandledExceptionFilter: setting TSNC_ProcessedUnhandledException\n"));
+            GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+        }
     }
-
-
-    retVal = InternalUnhandledExceptionFilter(pExceptionInfo);
-
-    // If thread object exists, mark that this thread has done unhandled exception processing
-    if (GetThreadNULLOk())
+    __except (EXCEPTION_EXECUTE_HANDLER)
     {
-        LOG((LF_EH, LL_INFO100, "COMUnhandledExceptionFilter: setting TSNC_ProcessedUnhandledException\n"));
-        GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+        // If we get an access violation while trying to access thread-local storage,
+        // just return and let the OS handle the exception
     }
 
     return retVal;
