@@ -50,12 +50,46 @@ namespace ILLink.Shared.TrimAnalysis
             return GetAnnotations(typeDefinition).HasGenericParameterAnnotation();
         }
 
+        public bool HasGenericParameterNewConstraint(TypeReference type)
+        {
+            if (type.ResolveToTypeDefinition(_context) is not TypeDefinition typeDefinition)
+                return false;
+
+            if (typeDefinition.HasGenericParameters)
+            {
+                foreach (var genericParameter in typeDefinition.GenericParameters)
+                {
+                    if (genericParameter.HasDefaultConstructorConstraint)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         public bool HasGenericParameterAnnotation(MethodReference method)
         {
             if (_context.TryResolve(method) is not MethodDefinition methodDefinition)
                 return false;
 
             return GetAnnotations(methodDefinition.DeclaringType).TryGetAnnotation(methodDefinition, out var annotation) && annotation.GenericParameterAnnotations != null;
+        }
+
+        public bool HasGenericParameterNewConstraint(MethodReference method)
+        {
+            if (_context.TryResolve(method) is not MethodDefinition methodDefinition)
+                return false;
+
+            if (methodDefinition.HasGenericParameters)
+            {
+                foreach (var genericParameter in methodDefinition.GenericParameters)
+                {
+                    if (genericParameter.HasDefaultConstructorConstraint)
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         public bool RequiresGenericArgumentDataFlow(GenericParameter genericParameter) =>
