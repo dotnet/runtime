@@ -7,4 +7,7 @@
   <ItemGroup>
     <Compile Include="b434481_genericrecurinit.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

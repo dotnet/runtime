@@ -7,10 +7,15 @@
 
     <!-- This is an explicit crossgen test -->
     <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <!-- No crossgen folder under Core_Root -->
+     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicTest.cs" />
 
     <CLRTestEnvironmentVariable Include="DOTNET_TC_QuickJitForLoops" Value="1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

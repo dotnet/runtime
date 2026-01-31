@@ -1642,7 +1642,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - mangod9
+            - agocke
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 

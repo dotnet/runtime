@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="GenTypeItself.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

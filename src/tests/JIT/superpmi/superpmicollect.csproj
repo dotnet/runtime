@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <CrossGenTest>false</CrossGenTest> <!-- Not compatible with crossgen2 -->
     <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive, IlasmRoundTripIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
 
@@ -21,6 +22,10 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- https://github.com/dotnet/runtime/issues/53321 -->
     <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm64' And '$(TargetOS)' == 'osx'">true</JitOptimizationSensitive>
+
+    <!-- This test is very specific to RyuJIT tooling. -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' != 'coreclr'">true</DisableProjectBuild>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>
@@ -28,6 +33,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="superpmicollect.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,6 +46,9 @@
     <_SpmiTestProjects Update="@(_SpmiTestProjects)" TestProject="%(FileName)" />
 
     <_SpmiTestSupportProjects Include="..\Methodical\cctor\xassem\testlib_xassem.csproj" TestProject="xprecise1_cs_do" />
+    <_SpmiTestSupportProjects Include="$(TestLibraryProjectPath)" TestProject="xprecise1_cs_do" />
+    <_SpmiTestSupportProjects Include="$(TestLibraryProjectPath)" TestProject="CscBench" />
+    <_SpmiTestSupportProjects Include="$(TestLibraryProjectPath)" TestProject="Bytemark" />
 
     <ProjectReference Include="@(_SpmiTestProjects);@(_SpmiTestSupportProjects)">
       <Targets>Build</Targets>

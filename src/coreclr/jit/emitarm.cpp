@@ -7285,7 +7285,7 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg1(), attr, true);
             imm = emitGetInsSC(id);
             {
-                dataSection*  jdsc = 0;
+                dataSection*  jdsc = nullptr;
                 NATIVE_OFFSET offs = 0;
 
                 /* Find the appropriate entry in the data section list */
@@ -7305,22 +7305,29 @@ void emitter::emitDispInsHelp(
                     offs += size;
                 }
 
-                assert(jdsc != NULL);
-
                 if (id->idIsDspReloc())
                 {
                     printf("reloc ");
                 }
-                printf("%s ADDRESS J_M%03u_DS%02u", (id->idIns() == INS_movw) ? "LOW" : "HIGH", emitComp->compMethodID,
-                       imm);
 
-                // After the MOVT, dump the table
-                if (id->idIns() == INS_movt)
+                if (jdsc != nullptr)
+                {
+                    printf("%s ADDRESS J_M%03u_DS%02u", (id->idIns() == INS_movw) ? "LOW" : "HIGH",
+                           emitComp->compMethodID, imm);
+                }
+                else
+                {
+                    printf("%s ADDRESS RWD%02zu", (id->idIns() == INS_movw) ? "LOW" : "HIGH", (size_t)imm);
+                }
+
+                // After the MOVT, dump the table if jdsc is not null. jdsc is null for async resume info
+                // and non-null for block address tables.
+                if (jdsc != nullptr && id->idIns() == INS_movt)
                 {
                     unsigned     cnt = jdsc->dsSize / TARGET_POINTER_SIZE;
                     BasicBlock** bbp = (BasicBlock**)jdsc->dsCont;
 
-                    bool isBound = (emitCodeGetCookie(*bbp) != NULL);
+                    bool isBound = (emitCodeGetCookie(*bbp) != nullptr);
 
                     if (isBound)
                     {

@@ -4,6 +4,7 @@
 // C# adaptation of C implementation of Livermore Loops Fortran benchmark.
 
 /* Livermore Loops coded in C        Latest File Modification  20 Oct 92,
+using TestLibrary;
  *  by Tim Peters, Kendall Square Res. Corp. tim@ksr.com, ksr!tim@uunet.uu.net
  *     SUBROUTINE KERNEL( TK)  replaces the Fortran routine in LFK Test program.
  ************************************************************************
@@ -615,6 +616,7 @@ public class LLoops
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static int TestEntryPoint()
     {

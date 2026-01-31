@@ -5,11 +5,13 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace ExtendedLayoutTests;
 
 public static class CUnionTests
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void BlittablePrimitiveFieldsLayout()
     {
@@ -22,6 +24,7 @@ public static class CUnionTests
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CUnionBlittablePrimitiveFields, byte>(ref c), ref c.c));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void NonBlittableUnmanagedPrimitiveFields_TreatedAsBlittable()
     {
@@ -33,6 +36,7 @@ public static class CUnionTests
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CUnionNonBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<char, byte>(ref c.c)));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void ReferenceFields_ThrowTypeLoadException()
     {
@@ -41,6 +45,7 @@ public static class CUnionTests
         Assert.Throws<TypeLoadException>(() => typeof(CUnionWithMixedFields));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void NestedCUnion()
     {
@@ -50,6 +55,7 @@ public static class CUnionTests
         Assert.Equal(8, Unsafe.SizeOf<CUnionCustomCUnionField>());
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void NestedNonCUnionNonAuto()
     {
@@ -58,18 +64,21 @@ public static class CUnionTests
         Assert.Equal(4, Unsafe.SizeOf<CUnionCustomSeqStructField>());
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void NestedAutoLayout_ThrowTypeLoadException()
     {
         Assert.Throws<TypeLoadException>(() => typeof(CUnionCustomAutoStructField));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void EmptyUnion()
     {
         Assert.Throws<TypeLoadException>(() => typeof(EmptyCUnion));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void ExplicitOffsets_Ignored()
     {
@@ -79,6 +88,7 @@ public static class CUnionTests
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CUnionWithOffsets, byte>(ref c), ref Unsafe.As<int, byte>(ref c.a)));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void ExplicitSize_Ignored()
     {
@@ -86,6 +96,7 @@ public static class CUnionTests
         Assert.Equal(4, Unsafe.SizeOf<CUnionWithSize>());
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Pack_Ignored()
     {
@@ -99,6 +110,7 @@ public static class CUnionTests
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CUnionWithPack, byte>(ref c), ref Unsafe.As<int, byte>(ref c.b)));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void MixedSizes_SizeIsLargestField()
     {
@@ -114,6 +126,7 @@ public static class CUnionTests
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CUnionMixedSizes, byte>(ref c), ref Unsafe.As<long, byte>(ref c.longField)));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TwoInts_ShareSameMemory()
     {
@@ -134,6 +147,7 @@ public static class CUnionTests
         Assert.Equal(0x77778888, c.first);
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void ByRefLike_ThrowTypeLoadException()
     {

@@ -138,15 +138,6 @@ IF NOT "%RunningIlasmRoundTrip%"=="" (
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
 
-      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(SynthesizedPgoIncompatible)' == 'true'"><![CDATA[
-$(BatchCLRTestEnvironmentCompatibilityCheck)
-IF NOT "%CrossGen2SynthesizePgo%"=="" (
-  ECHO SKIPPING EXECUTION BECAUSE CrossGen2SynthesizePgo IS SET
-  popd
-  Exit /b 0
-)
-      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
-
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(SuperPmiCollectIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 IF NOT "%SuperPMIShimPath%"=="" (

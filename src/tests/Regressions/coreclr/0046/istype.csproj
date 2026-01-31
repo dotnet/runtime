@@ -8,4 +8,7 @@
   <ItemGroup>
     <Compile Include="istype.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

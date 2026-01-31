@@ -2978,13 +2978,6 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         indexAddr->Index() = fgMorphTree(indexAddr->Index());
         indexAddr->AddAllEffectsFlags(indexAddr->Arr(), indexAddr->Index());
 
-        // Mark the indirection node as needing a range check if necessary.
-        // Note this will always be true unless JitSkipArrayBoundCheck() is used
-        if (indexAddr->IsBoundsChecked())
-        {
-            fgAddCodeRef(compCurBB, SCK_RNGCHK_FAIL);
-        }
-
         return indexAddr;
     }
 
@@ -3213,7 +3206,6 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         addr->SetHasOrderingSideEffect();
 
         tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), boundsCheck, tree);
-        fgAddCodeRef(compCurBB, boundsCheck->gtThrowKind);
     }
 
     if (indexDefn != nullptr)
@@ -7799,10 +7791,6 @@ DONE_MORPHING_CHILDREN:
             {
                 return tree;
             }
-            if (tree->OperIs(GT_CAST) && tree->gtOverflow())
-            {
-                fgAddCodeRef(compCurBB, SCK_OVERFLOW);
-            }
 
             typ  = tree->TypeGet();
             oper = tree->OperGet();
@@ -8031,21 +8019,13 @@ DONE_MORPHING_CHILDREN:
 
                 if ((oper == GT_DIV) || (oper == GT_MOD))
                 {
-                    if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
-                    {
-                        fgAddCodeRef(compCurBB, SCK_OVERFLOW);
-                    }
-                    else
+                    if ((exSetFlags & ExceptionSetFlags::ArithmeticException) == ExceptionSetFlags::None)
                     {
                         tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
                     }
                 }
 
-                if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
-                {
-                    fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
-                }
-                else
+                if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) == ExceptionSetFlags::None)
                 {
                     tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
                 }
@@ -8110,12 +8090,7 @@ DONE_MORPHING_CHILDREN:
         CM_OVF_OP:
             if (tree->gtOverflow())
             {
-                // Add the excptn-throwing basic block to jump to on overflow
-
-                fgAddCodeRef(compCurBB, SCK_OVERFLOW);
-
                 // We can't do any commutative morphing for overflow instructions
-
                 break;
             }
 
@@ -8211,13 +8186,10 @@ DONE_MORPHING_CHILDREN:
         case GT_CKFINITE:
 
             noway_assert(varTypeIsFloating(op1->TypeGet()));
-
-            fgAddCodeRef(compCurBB, SCK_ARITH_EXCPN);
             break;
 
         case GT_BOUNDS_CHECK:
             setMethodHasBoundsChecks();
-            fgAddCodeRef(compCurBB, tree->AsBoundsChk()->gtThrowKind);
             break;
 
         case GT_IND:
@@ -11366,14 +11338,6 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         hasImmediateOperand = true;
     }
 
-#ifdef TARGET_XARCH
-    if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division)
-    {
-        fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
-        fgAddCodeRef(compCurBB, SCK_OVERFLOW);
-    }
-#endif // TARGET_XARCH
-
     // ------------------------------------------------------------------------
     // Process the operands, if any
     //
@@ -12575,11 +12539,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)
             {
                 tree->gtFlags |= tree->AsArrElem()->gtArrInds[dim]->gtFlags & GTF_ALL_EFFECT;
-            }
-
-            if (fgGlobalMorph)
-            {
-                fgAddCodeRef(compCurBB, SCK_RNGCHK_FAIL);
             }
             break;
 
