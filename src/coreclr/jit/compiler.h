@@ -7895,6 +7895,12 @@ public:
             return assertionKind == OAK_SUBRANGE && op1.kind == O1K_LCLVAR;
         }
 
+        void ReverseEquality()
+        {
+            assert((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL));
+            assertionKind = assertionKind == OAK_EQUAL ? OAK_NOT_EQUAL : OAK_EQUAL;
+        }
+
         static bool SameKind(AssertionDsc* a1, AssertionDsc* a2)
         {
             return a1->assertionKind == a2->assertionKind && a1->op1.kind == a2->op1.kind &&
@@ -8097,9 +8103,42 @@ public:
             return dsc;
         }
 
-        static AssertionDsc CreateNonNullAssertion(Compiler* comp, unsigned lclNum, ValueNum vn)
+        static AssertionDsc CreateNonNullAssertion(Compiler* comp, unsigned lclNum, ValueNum vn = ValueNumStore::NoVN)
         {
             return CreateConstantLclvarAssertion(comp, lclNum, vn, 0, ValueNumStore::VNForNull(), false);
+        }
+
+        static AssertionDsc CreateLclvarCopy(Compiler* comp, unsigned lclNum1, unsigned lclNum2, bool equals)
+        {
+            assert(comp->optLocalAssertionProp);
+            assert(lclNum1 != BAD_VAR_NUM);
+            assert(lclNum2 != BAD_VAR_NUM);
+
+            AssertionDsc dsc  = {};
+            dsc.assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
+            dsc.op1.kind      = O1K_LCLVAR;
+            dsc.op1.vn        = ValueNumStore::NoVN;
+            dsc.op1.lclNum    = lclNum1;
+            dsc.op2.vn        = ValueNumStore::NoVN;
+            dsc.op2.lclNum    = lclNum2;
+            dsc.op2.kind      = O2K_LCLVAR_COPY;
+            return dsc;
+        }
+
+        static AssertionDsc CreateSubrange(Compiler* comp, unsigned lclNum, const IntegralRange& range)
+        {
+            assert(comp->optLocalAssertionProp);
+            assert(lclNum != BAD_VAR_NUM);
+
+            AssertionDsc dsc  = {};
+            dsc.assertionKind = OAK_SUBRANGE;
+            dsc.op1.kind      = O1K_LCLVAR;
+            dsc.op1.vn        = ValueNumStore::NoVN;
+            dsc.op1.lclNum    = lclNum;
+            dsc.op2.vn        = ValueNumStore::NoVN;
+            dsc.op2.kind      = O2K_SUBRANGE;
+            dsc.op2.u2        = range;
+            return dsc;
         }
 
         static AssertionDsc CreateInt32ConstantVNAssertion(Compiler* comp, ValueNum op1VN, ValueNum op2VN, bool equals)

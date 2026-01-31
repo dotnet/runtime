@@ -1142,9 +1142,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
 {
     assert(op1 != nullptr);
 
-    AssertionDsc assertion = {OAK_INVALID};
-    assert(assertion.assertionKind == OAK_INVALID);
-
     if (op1->OperIs(GT_BOUNDS_CHECK) && (assertionKind == OAK_NO_THROW))
     {
         ValueNum idxVN = optConservativeNormalVN(op1->AsBoundsChk()->GetIndex());
@@ -1153,7 +1150,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
         {
             return NO_ASSERTION_INDEX;
         }
-        assertion = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
+        AssertionDsc assertion = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
         return optFinalizeCreatingAssertion(&assertion);
     }
     //
@@ -1196,7 +1193,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
             {
                 return NO_ASSERTION_INDEX;
             }
-            assertion = AssertionDsc::CreateNonNullAssertion(this, lclNum, op1VN);
+            AssertionDsc assertion = AssertionDsc::CreateNonNullAssertion(this, lclNum, op1VN);
+            return optFinalizeCreatingAssertion(&assertion);
         }
     }
     //
@@ -1211,7 +1209,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
         //
         if (lclVar->IsAddressExposed())
         {
-            goto DONE_ASSERTION; // Don't make an assertion
+            return NO_ASSERTION_INDEX;
         }
 
         {
@@ -1220,10 +1218,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
             {
                 op2 = op2->AsOp()->gtOp2;
             }
-
-            assertion.op1.kind   = O1K_LCLVAR;
-            assertion.op1.lclNum = lclNum;
-            assertion.op1.vn     = optConservativeNormalVN(op1);
 
             switch (op2->gtOper)
             {
@@ -1255,11 +1249,16 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     //
                     if ((assertionKind != OAK_EQUAL) && (assertionKind != OAK_NOT_EQUAL))
                     {
-                        goto DONE_ASSERTION; // Don't make an assertion
+                        return NO_ASSERTION_INDEX;
                     }
 
-                    assertion.op2.kind = op2Kind;
-                    assertion.op2.vn   = optConservativeNormalVN(op2);
+                    AssertionDsc assertion;
+                    assertion.assertionKind = assertionKind;
+                    assertion.op1.kind      = O1K_LCLVAR;
+                    assertion.op1.lclNum    = lclNum;
+                    assertion.op1.vn        = optConservativeNormalVN(op1);
+                    assertion.op2.kind      = op2Kind;
+                    assertion.op2.vn        = optConservativeNormalVN(op2);
 
                     if (op2->OperIs(GT_CNS_INT))
                     {
@@ -1272,7 +1271,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                                 // This assertion would be saying that a small local is equal to a value
                                 // outside its range. It means this block is unreachable. Avoid creating
                                 // such impossible assertions which can hit assertions in other places.
-                                goto DONE_ASSERTION;
+                                return NO_ASSERTION_INDEX;
                             }
 
                             iconVal = truncatedIconVal;
@@ -1290,7 +1289,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                         /* If we have an NaN value then don't record it */
                         if (FloatingPointUtils::isNaN(op2->AsDblCon()->DconValue()))
                         {
-                            goto DONE_ASSERTION; // Don't make an assertion
+                            return NO_ASSERTION_INDEX;
                         }
                         assertion.op2.dconVal = op2->AsDblCon()->DconValue();
                     }
@@ -1298,9 +1297,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     //
                     // Ok everything has been set and the assertion looks good
                     //
-                    assertion.assertionKind = assertionKind;
-
-                    goto DONE_ASSERTION;
+                    return optFinalizeCreatingAssertion(&assertion);
                 }
 
                 case GT_LCL_VAR:
@@ -1308,13 +1305,13 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     if (!optLocalAssertionProp)
                     {
                         // O2K_LCLVAR_COPY is local assertion prop only
-                        goto DONE_ASSERTION;
+                        return NO_ASSERTION_INDEX;
                     }
 
                     // Must either be an OAK_EQUAL or an OAK_NOT_EQUAL assertion
                     if ((assertionKind != OAK_EQUAL) && (assertionKind != OAK_NOT_EQUAL))
                     {
-                        goto DONE_ASSERTION; // Don't make an assertion
+                        return NO_ASSERTION_INDEX;
                     }
 
                     unsigned   lclNum2 = op2->AsLclVarCommon()->GetLclNum();
@@ -1323,26 +1320,26 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     // If the two locals are the same then bail
                     if (lclNum == lclNum2)
                     {
-                        goto DONE_ASSERTION; // Don't make an assertion
+                        return NO_ASSERTION_INDEX;
                     }
 
                     // If the types are different then bail */
                     if (lclVar->lvType != lclVar2->lvType)
                     {
-                        goto DONE_ASSERTION; // Don't make an assertion
+                        return NO_ASSERTION_INDEX;
                     }
 
                     // If we're making a copy of a "normalize on load" lclvar then the destination
                     // has to be "normalize on load" as well, otherwise we risk skipping normalization.
                     if (lclVar2->lvNormalizeOnLoad() && !lclVar->lvNormalizeOnLoad())
                     {
-                        goto DONE_ASSERTION; // Don't make an assertion
+                        return NO_ASSERTION_INDEX;
                     }
 
                     //  If the local variable has its address exposed then bail
                     if (lclVar2->IsAddressExposed())
                     {
-                        goto DONE_ASSERTION; // Don't make an assertion
+                        return NO_ASSERTION_INDEX;
                     }
 
                     // We process locals when we see the LCL_VAR node instead
@@ -1357,17 +1354,13 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     //       │  └──▌  LCL_FLD   int    V03 loc1         [+4]
                     if (lclVar2->lvRedefinedInEmbeddedStatement)
                     {
-                        goto DONE_ASSERTION; // Don't make an assertion
+                        return NO_ASSERTION_INDEX;
                     }
 
-                    assertion.op2.kind   = O2K_LCLVAR_COPY;
-                    assertion.op2.vn     = optConservativeNormalVN(op2);
-                    assertion.op2.lclNum = lclNum2;
-
                     // Ok everything has been set and the assertion looks good
-                    assertion.assertionKind = assertionKind;
-
-                    goto DONE_ASSERTION;
+                    AssertionDsc assertion =
+                        AssertionDsc::CreateLclvarCopy(this, lclNum, lclNum2, assertionKind == OAK_EQUAL);
+                    return optFinalizeCreatingAssertion(&assertion);
                 }
 
                 case GT_CALL:
@@ -1377,10 +1370,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                         GenTreeCall* const call = op2->AsCall();
                         if (call->IsHelperCall() && s_helperCallProperties.NonNullReturn(call->GetHelperNum()))
                         {
-                            assertion.assertionKind  = OAK_NOT_EQUAL;
-                            assertion.op2.kind       = O2K_CONST_INT;
-                            assertion.op2.u1.iconVal = 0;
-                            goto DONE_ASSERTION;
+                            AssertionDsc assertion = AssertionDsc::CreateNonNullAssertion(this, lclNum);
+                            return optFinalizeCreatingAssertion(&assertion);
                         }
                     }
                     break;
@@ -1399,9 +1390,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
 
                 if (!typeRange.Equals(nodeRange))
                 {
-                    assertion.op2.kind      = O2K_SUBRANGE;
-                    assertion.assertionKind = OAK_SUBRANGE;
-                    assertion.op2.u2        = nodeRange;
+                    AssertionDsc assertion = AssertionDsc::CreateSubrange(this, lclNum, nodeRange);
+                    return optFinalizeCreatingAssertion(&assertion);
                 }
             }
         }
@@ -1420,15 +1410,13 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                 !vnStore->IsVNHandle(op2VN))
             {
                 assert(assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL);
-                assertion =
+                AssertionDsc assertion =
                     AssertionDsc::CreateInt32ConstantVNAssertion(this, op1VN, op2VN, assertionKind == OAK_EQUAL);
                 return optAddAssertion(&assertion);
             }
         }
     }
-
-DONE_ASSERTION:
-    return optFinalizeCreatingAssertion(&assertion);
+    return NO_ASSERTION_INDEX;
 }
 
 //------------------------------------------------------------------------
@@ -1821,8 +1809,8 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex, Ge
         (candidateAssertion.op1.kind == O1K_CONSTANT_LOOP_BND) ||
         (candidateAssertion.op1.kind == O1K_CONSTANT_LOOP_BND_UN))
     {
-        AssertionDsc dsc  = candidateAssertion;
-        dsc.assertionKind = dsc.assertionKind == OAK_EQUAL ? OAK_NOT_EQUAL : OAK_EQUAL;
+        AssertionDsc dsc = candidateAssertion;
+        dsc.ReverseEquality();
         optAddAssertion(&dsc);
         return;
     }
