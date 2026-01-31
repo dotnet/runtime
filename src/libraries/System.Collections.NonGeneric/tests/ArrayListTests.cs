@@ -587,6 +587,31 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public static void BinarySearch_LargeList_NoIntegerOverflow()
+        {
+            // This test verifies that BinarySearch doesn't overflow when searching large lists.
+            // The old implementation computed mid = (lo + hi) / 2, which can overflow
+            // when both lo and hi are very large (near int.MaxValue).
+            // Example: if lo = 2,000,000,000 and hi = 2,000,000,010
+            // then (lo + hi) = 4,000,000,010 which overflows int.MaxValue (2,147,483,647)
+            // and wraps to a large negative number, causing mid to be negative.
+            // The fixed implementation uses mid = lo + ((hi - lo) >> 1) which is overflow-safe.
+            
+            // Create a simulated large list - we can't actually allocate int.MaxValue/2 + 2 bytes in tests
+            // This class simulates a sorted array without allocating memory
+            var largeList = new LargeIList(int.MaxValue / 2 + 2);
+            ArrayList adapter = ArrayList.Adapter(largeList);
+            
+            // Perform binary search - with the old buggy code, this could produce incorrect results
+            // due to integer overflow in the midpoint calculation
+            int result = adapter.BinarySearch((byte)1);
+            
+            // We're searching for 1, but all elements are 0, so result should be negative
+            // The key is that the search completes without error
+            Assert.True(result < 0);
+        }
+
+        [Fact]
         public static void Capacity_Get()
         {
             var arrList = Helpers.CreateIntArrayList(10);
@@ -2967,5 +2992,45 @@ namespace System.Collections.Tests
                 _iList.Remove(Prefix + i);
             }
         }
+    }
+
+    // Helper class that simulates a large IList without actually allocating memory
+    internal class LargeIList : IList
+    {
+        private readonly int _count;
+
+        public LargeIList(int count)
+        {
+            _count = count;
+        }
+
+        public int Count => _count;
+        public bool IsFixedSize => true;
+        public bool IsReadOnly => true;
+        public bool IsSynchronized => false;
+        public object SyncRoot => this;
+
+        // For BinarySearch to work, we need to return comparable values
+        // Return 0 for all valid indices to simulate a sorted array of zeros
+        public object? this[int index]
+        {
+            get
+            {
+                if (index < 0 || index >= _count)
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                return (byte)0;
+            }
+            set => throw new NotSupportedException();
+        }
+
+        public int Add(object? value) => throw new NotSupportedException();
+        public void Clear() => throw new NotSupportedException();
+        public bool Contains(object? value) => false;
+        public int IndexOf(object? value) => -1;
+        public void Insert(int index, object? value) => throw new NotSupportedException();
+        public void Remove(object? value) => throw new NotSupportedException();
+        public void RemoveAt(int index) => throw new NotSupportedException();
+        public void CopyTo(Array array, int index) => throw new NotSupportedException();
+        public IEnumerator GetEnumerator() => throw new NotSupportedException();
     }
 }
