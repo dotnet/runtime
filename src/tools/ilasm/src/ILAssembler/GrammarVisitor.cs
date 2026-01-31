@@ -1811,7 +1811,10 @@ namespace ILAssembler
                 if (implementation is null)
                 {
                     offset = (uint)_manifestResources.Count;
-                    _manifestResources.WriteBytes(_resourceLocator(alias));
+                    byte[] resourceData = _resourceLocator(alias);
+                    // ECMA-335: Each resource is prefixed with a 4-byte length
+                    _manifestResources.WriteInt32(resourceData.Length);
+                    _manifestResources.WriteBytes(resourceData);
                 }
                 var res = _entityRegistry.CreateManifestResource(name, offset);
                 res.Attributes = flags;

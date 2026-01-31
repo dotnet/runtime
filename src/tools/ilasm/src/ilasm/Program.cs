@@ -199,6 +199,24 @@ internal sealed class Program
                 throw new FileNotFoundException($"Include file not found: {path}");
             }
 
+            byte[] LoadResource(string path)
+            {
+                // Try the path as-is first
+                if (File.Exists(path))
+                {
+                    return File.ReadAllBytes(path);
+                }
+
+                // Try relative to the base directory
+                string fullPath = Path.Combine(baseDir, path);
+                if (File.Exists(fullPath))
+                {
+                    return File.ReadAllBytes(fullPath);
+                }
+
+                throw new FileNotFoundException($"Resource file not found: {path}");
+            }
+
             // Compile
             var compiler = new DocumentCompiler();
             var (diagnostics, peBuilder) = compiler.Compile(
@@ -271,24 +289,6 @@ internal sealed class Program
     private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument)!;
 
     private T Get<T>(Option<T> option) => _command.Result.GetValue(option)!;
-
-    private static byte[] LoadResource(string path)
-    {
-        // Try the path as-is first
-        if (File.Exists(path))
-        {
-            return File.ReadAllBytes(path);
-        }
-
-        // Try relative to the base directory
-        string fullPath = Path.Combine(baseDir, path);
-        if (File.Exists(fullPath))
-        {
-            return File.ReadAllBytes(fullPath);
-        }
-
-        throw new FileNotFoundException($"Resource file not found: {path}");
-    }
 
     private static int Main(string[] args) =>
         new IlasmRootCommand()
