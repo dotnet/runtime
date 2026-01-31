@@ -46,7 +46,6 @@
     <Compile Include="BigInteger\op_rightshift.cs" />
     <Compile Include="BigInteger\op_xor.cs" />
     <Compile Include="BigInteger\parse.cs" />
-    <Compile Include="BigInteger\parse.ukUA.cs" />
     <Compile Include="BigInteger\pow.cs" />
     <Compile Include="BigInteger\properties.cs" />
     <Compile Include="BigInteger\remainder.cs" />
