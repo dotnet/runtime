@@ -299,7 +299,7 @@ namespace System.Text.RegularExpressions.Generator
             // If the options include IgnoreCase and don't specify CultureInvariant then we will have to calculate the user's current culture in order to pass
             // it in as a parameter. If the user specified IgnoreCase, but also selected CultureInvariant, then we skip as the default is to use Invariant culture.
             SyntaxNode? cultureNameValue = null;
-            if ((regexOptions & RegexOptions.IgnoreCase) != 0 && (regexOptions & RegexOptions.CultureInvariant) == 0)
+            if ((regexOptions & (RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)) == RegexOptions.IgnoreCase)
             {
                 // If CultureInvariant wasn't specified as options, we default to the current culture.
                 cultureNameValue = generator.LiteralExpression(CultureInfo.CurrentCulture.Name);

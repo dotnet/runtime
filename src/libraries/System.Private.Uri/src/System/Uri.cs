@@ -2195,7 +2195,7 @@ namespace System
                         return ParsingError.BadAuthorityTerminator;
                     }
                     // When the hostTerminator is '/' on Unix, use the UnixFile syntax (preserve backslashes)
-                    else if (!OperatingSystem.IsWindows() && hostTerminator == '/' && NotAny(Flags.ImplicitFile) && InFact(Flags.UncPath) && _syntax == UriParser.FileUri)
+                    else if (!OperatingSystem.IsWindows() && hostTerminator == '/' && (_flags & (Flags.ImplicitFile | Flags.UncPath)) == Flags.UncPath && _syntax == UriParser.FileUri)
                     {
                         _syntax = UriParser.UnixFileUri;
                     }
@@ -4233,7 +4233,7 @@ namespace System
                 else
                 {
                     //Note: we may produce non escaped Uri characters on the wire
-                    if (InFact(Flags.E_PathNotCanonical) && NotAny(Flags.UserEscaped))
+                    if ((_flags & (Flags.E_PathNotCanonical | Flags.UserEscaped)) == Flags.E_PathNotCanonical)
                     {
                         ReadOnlySpan<char> str = _string;
 
@@ -4256,7 +4256,7 @@ namespace System
                 }
 
                 // On Unix, escape '\\' in path of file uris to '%5C' canonical form.
-                if (!OperatingSystem.IsWindows() && InFact(Flags.BackslashInPath) && _syntax.NotAny(UriSyntaxFlags.ConvertPathSlashes) && _syntax.InFact(UriSyntaxFlags.FileLikeUri) && !IsImplicitFile)
+                if (!OperatingSystem.IsWindows() && InFact(Flags.BackslashInPath) && (_syntax.Flags & (UriSyntaxFlags.ConvertPathSlashes | UriSyntaxFlags.FileLikeUri)) == UriSyntaxFlags.FileLikeUri && !IsImplicitFile)
                 {
                     // We can't do an in-place escape, create a copy
                     var copy = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
@@ -4310,7 +4310,7 @@ namespace System
                 }
 
                 // Escape path if requested and found as not fully escaped
-                if (formatAs == UriFormat.UriEscaped && NotAny(Flags.UserEscaped) && InFact(Flags.E_PathNotCanonical))
+                if (formatAs == UriFormat.UriEscaped && (_flags & (Flags.UserEscaped | Flags.E_PathNotCanonical)) == Flags.E_PathNotCanonical)
                 {
                     //Note: Flags.UserEscaped check is solely based on trusting the user
 
