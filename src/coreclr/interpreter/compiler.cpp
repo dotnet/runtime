@@ -127,6 +127,26 @@ void InterpCompiler::dumpMemStatsHistograms(FILE* file)
 }
 #endif // MEASURE_MEM_ALLOC
 
+void InterpCompiler::dumpMethodMemStats()
+{
+#ifdef DEBUG
+    if (IsInterpDumpActive())
+    {
+#if MEASURE_MEM_ALLOC
+        if (InterpConfig.InterpDumpMemStats())
+        {
+            printf("\nMethod memory stats:\n");
+            m_stats.Print(stdout);
+        }
+        else
+        {
+            printf("\n(Set DOTNET_InterpDumpMemStats=1 to see per-method memory stats)\n");
+        }
+#endif // MEASURE_MEM_ALLOC
+    }
+#endif // DEBUG
+}
+
 /*****************************************************************************/
 #ifdef DEBUG
 thread_local bool t_interpDump;

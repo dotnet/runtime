@@ -155,6 +155,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
             // We can't do this until we've called allocMem
             compiler.BuildGCInfo(pMethod);
             compiler.BuildEHInfo();
+            compiler.dumpMethodMemStats();
             break;
         }
     }

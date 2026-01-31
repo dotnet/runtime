@@ -24,6 +24,7 @@ CONFIG_METHODSET(InterpHaltOnCall, "InterpHaltOnCall"); // Assert in the compile
 CONFIG_METHODSET(InterpHalt, "InterpHalt");
 CONFIG_METHODSET(InterpBreak, "InterpBreak"); // Break into the debugger when compiling this method
 CONFIG_METHODSET(InterpDump, "InterpDump");
+CONFIG_INTEGER(InterpDumpMemStats, "InterpDumpMemStats", 0); // Dump per-method memory stats when InterpDump is active
 CONFIG_INTEGER(InterpList, "InterpList", 0); // List the methods which are compiled by the interpreter JIT
 CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1); // Enable optimizations for async/await state machines
 RELEASE_CONFIG_INTEGER(InterpMode, "InterpMode", 0); // Interpreter mode, one of the following:

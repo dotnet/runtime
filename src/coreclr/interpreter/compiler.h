@@ -1105,6 +1105,7 @@ public:
     void BuildGCInfo(InterpMethod *pInterpMethod);
     void BuildEHInfo();
     void UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *pByteCodeStart);
+    void dumpMethodMemStats();
 
     int32_t* GetCode(int32_t *pCodeSize);
 
