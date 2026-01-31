@@ -70,8 +70,6 @@
     <CoreRootDirectory>$([MSBuild]::NormalizeDirectory($(CoreRootDirectory)))</CoreRootDirectory>
     <XUnitLogCheckerDirectory>$(TestBinDir)XUnitLogChecker\</XUnitLogCheckerDirectory>
     <XUnitLogCheckerDirectory>$([MSBuild]::NormalizeDirectory($(XUnitLogCheckerDirectory)))</XUnitLogCheckerDirectory>
-    <LegacyPayloadsRootDirectory>$(TestBinDir)LegacyPayloads\</LegacyPayloadsRootDirectory>
-    <LegacyPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(LegacyPayloadsRootDirectory)))</LegacyPayloadsRootDirectory>
     <MergedPayloadsRootDirectory>$(TestBinDir)MergedPayloads\</MergedPayloadsRootDirectory>
     <MergedPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(MergedPayloadsRootDirectory)))</MergedPayloadsRootDirectory>
     <MobileAppBundleDirName Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">AppBundle</MobileAppBundleDirName>
@@ -128,7 +126,6 @@
     <Error Condition="'$(_Scenarios)' == ''" Text="_Scenarios not set" />
 
     <ItemGroup>
-      <CleanPreexistingPayloads Include="$(LegacyPayloadsRootDirectory)**" />
       <CleanPreexistingPayloads Include="$(MergedPayloadsRootDirectory)**" />
     </ItemGroup>
 
@@ -208,68 +205,6 @@
 
   <Import Project="testgrouping.proj" />
 
-  <Target Name="DiscoverLegacyXUnitWrappers">
-    <ItemGroup>
-      <_XUnitWrapperDll Include="@(XUnitWrapperGrouping)" />
-
-      <!-- This adds the remaining *.XUnitWrapper.dll files in TestBinDir unless
-           1) they are in LegacyPayloadsRootDirectory or
-           2) they are grouped by XUnitWrapperGrouping. -->
-      <_XUnitWrapperDll Include="$(TestBinDir)**\*.XUnitWrapper.dll" Exclude="$(LegacyPayloadsRootDirectory)**\*.XUnitWrapper.dll;@(XUnitWrapperGrouping->Metadata('FullPath'))">
-         <!-- Set PayloadGroup to empty string, so we can update _XUnitWrapperDll items with no PayloadGroup to default value. Unfortunately, we can't do this right here. -->
-         <PayloadGroup></PayloadGroup>
-      </_XUnitWrapperDll>
-
-      <!-- Assign "default" value of PayloadGroup metadata. -->
-      <_XUnitWrapperDll Update="@(_XUnitWrapperDll)">
-         <PayloadGroup Condition="'%(PayloadGroup)' == ''">$([MSBuild]::ValueOrDefault(%(FileName),'').Replace('.XUnitWrapper',''))</PayloadGroup>
-      </_XUnitWrapperDll>
-    </ItemGroup>
-  </Target>
-
-  <Target Name="PrepareLegacyPayloadDirectory"
-      Outputs="%(_XUnitWrapperDll.FileName)%(PayloadGroup)"
-      DependsOnTargets="DiscoverLegacyXUnitWrappers">
-    <PropertyGroup>
-      <_FileDirectory>%(_XUnitWrapperDll.RootDir)%(Directory)</_FileDirectory>
-      <_PayloadGroup>%(_XUnitWrapperDll.PayloadGroup)</_PayloadGroup>
-      <_XUnitWrapperDll>%(_XUnitWrapperDll.FullPath)</_XUnitWrapperDll>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(_FileDirectory)' != ''">
-      <_LegacyPayloadFiles Include="$(_FileDirectory)**" />
-      <_LegacyPayloadFiles Update="@(_LegacyPayloadFiles)">
-        <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
-             MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
-        <FileRelativeToPayloadsRootDirectory>$(_PayloadGroup)\$([System.IO.Path]::GetRelativePath($(TestBinDir), %(FullPath)))</FileRelativeToPayloadsRootDirectory>
-      </_LegacyPayloadFiles>
-    </ItemGroup>
-
-    <ItemGroup>
-      <!-- Remove the managed pdbs from our payloads.
-           This is for performance reasons to reduce our helix payload size
-           Note: for Native AOT the pdb is the native PDB. !analyze wouldn't work without it at all so we keep it -->
-      <ReducedLegacyPayloadFiles Include="@(_LegacyPayloadFiles)" Condition=" '%(Extension)' != '.pdb' or '$(_NativeAotTest)' == 'true'" />
-
-      <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TestWrapperTargetsWindows)' == 'true' "/>
-      <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TestWrapperTargetsWindows)' != 'true' "/>
-      <!-- Don't include the new merged wrappers in the legacy builds -->
-      <ReducedLegacyPayloadFilesFinal Remove="@(_MergedWrapperRunScript)" />
-    </ItemGroup>
-
-    <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-      <!-- When targeting mobile or browser runs, we publish self-contained builds and build mobile/wasm apps, so we want to exclude these files from the legacy payloads as well -->
-      <PublishedMergedPayloadsToExclude>@(_MergedWrapperRunScript->'%(RootDir)%(Directory)publish/*')</PublishedMergedPayloadsToExclude>
-      <PublishedMergedPayloadsToExclude>$(PublishedMergedPayloadsToExclude);@(_MergedWrapperRunScript->'%(RootDir)%(Directory)$(MobileAppBundleDirName)/**')</PublishedMergedPayloadsToExclude>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <ReducedLegacyPayloadFilesFinal Remove="$(PublishedMergedPayloadsToExclude)" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(ReducedLegacyPayloadFilesFinal)" DestinationFiles="@(ReducedLegacyPayloadFilesFinal->'$(LegacyPayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
-  </Target>
-
   <Target Name="PrepareCorrelationPayloadDirectory">
     <MSBuild Projects="$(RepoRoot)src\tests\Common\xunitconsolerunner.depproj" Targets="Restore" />
 
@@ -298,10 +233,7 @@
 
     <ItemGroup>
       <_PayloadGroups Include="$(PayloadGroups)" />
-      <_ProjectsToBuild Include="testenvironment.proj" Condition="!$(IsMergedTestWrapper)">
-        <Properties>Scenario=$(Scenario);TestEnvFileName=$(LegacyPayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows);RuntimeVariant=$(_RuntimeVariant)</Properties>
-      </_ProjectsToBuild>
-      <_ProjectsToBuild Include="testenvironment.proj" Condition="$(IsMergedTestWrapper)">
+      <_ProjectsToBuild Include="testenvironment.proj">
         <Properties>Scenario=$(Scenario);TestEnvFileName=$(MergedPayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows);RuntimeVariant=$(_RuntimeVariant)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
@@ -309,25 +241,17 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFile" StopOnFirstFailure="true" />
   </Target>
 
-  <Target Name="PreparePayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectories;PrepareLegacyPayloadDirectories" />
-
-  <Target Name="PrepareLegacyPayloadDirectories" DependsOnTargets="PrepareLegacyPayloadDirectory">
-    <ItemGroup>
-      <_LegacyPayloadGroups Include="@(_XUnitWrapperDll->Metadata('PayloadGroup')->DistinctWithCase())" />
-      <_Scenario Include="$(_Scenarios.Split(','))" />
-      <_ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_LegacyPayloadGroups);IsMergedTestWrapper=false</AdditionalProperties>
-      </_ProjectsToBuild>
-    </ItemGroup>
-
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
-  </Target>
-
-  <Target Name="PrepareMergedTestPayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectory">
+  <Target Name="PreparePayloadDirectories"
+          DependsOnTargets="DiscoverMergedTestWrappers;
+                            PrepareMergedTestPayloadDirectoryForDesktop;
+                            PrepareMergedTestPayloadDirectoryForAndroid;
+                            PrepareMergedTestPayloadDirectoryForWasm;
+                            PrepareMergedTestPayloadDirectoryForAppleMobile;
+                            PrepareMergedTestPayloadDirectoryForAppleMobileBuildOnHelix">
     <ItemGroup>
       <_Scenario Include="$(_Scenarios.Split(','))" />
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedPayloadGroups);IsMergedTestWrapper=true</AdditionalProperties>
+        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedPayloadGroups)</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -639,29 +563,6 @@
       Condition="'@(_TestExclusionListPlaceholder)' != ''" />
   </Target>
 
-  <Target Name="PrepareMergedTestPayloadDirectory"
-          DependsOnTargets="DiscoverMergedTestWrappers;
-                            PrepareMergedTestPayloadDirectoryForDesktop;
-                            PrepareMergedTestPayloadDirectoryForAndroid;
-                            PrepareMergedTestPayloadDirectoryForWasm;
-                            PrepareMergedTestPayloadDirectoryForAppleMobile;
-                            PrepareMergedTestPayloadDirectoryForAppleMobileBuildOnHelix" />
-
-  <Target Name="ZipLegacyPayloadDirectory" AfterTargets="PrepareLegacyPayloadDirectories" Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
-    <ItemGroup>
-      <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
-      <LegacyPayloads>
-        <PayloadGroup>$([MSBuild]::MakeRelative($(LegacyPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
-        <PayloadDirectory>%(FullPath)</PayloadDirectory>
-      </LegacyPayloads>
-    </ItemGroup>
-
-    <ZipDirectory
-      Condition="'@(LegacyPayloads)' != ''"
-      SourceDirectory="@(LegacyPayloads->Metadata('PayloadDirectory'))"
-      DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
-  </Target>
-
   <Target Name="ZipMergedPayloadDirectory"
           AfterTargets="PrepareMergedTestPayloadDirectories"
           Condition="'$(TargetsBrowser)' == 'true' or ('$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true')">
@@ -843,20 +744,6 @@
       <Destination>sos</Destination>
       <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>
     </HelixCorrelationPayload>
-
-    <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
-    <LegacyPayloads Update="@(LegacyPayloads)">
-      <PayloadGroup>$([MSBuild]::MakeRelative($(LegacyPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
-      <PayloadDirectory>%(FullPath)</PayloadDirectory>
-      <XUnitWrapperDlls>$([System.String]::Join(' ', $([System.IO.Directory]::GetFiles(%(FullPath), '*.XUnitWrapper.dll', SearchOption.AllDirectories))).Replace($([MSBuild]::EnsureTrailingSlash(%(FullPath))),''))</XUnitWrapperDlls>
-    </LegacyPayloads>
-    <LegacyPayloads Update="@(LegacyPayloads)">
-      <!--
-        PayloadGroup0 is just a synthesized name for a bundle of multiple test assemblies that we send as one payload.
-        Normally the condition above catches this case; however, when we're only sending one assembly, passing PayloadGroup0 to Helix means that no tests will be run.
-      -->
-      <PayloadZipFile>$(LegacyPayloadsRootDirectory)\%(PayloadGroup).zip</PayloadZipFile>
-    </LegacyPayloads>
   </ItemGroup>
 
   <ItemGroup>
@@ -1020,30 +907,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
-      <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
-      <Command>$(_WorkaroundForNuGetMigrationsForPrepending) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
-      <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
-      <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
-    </HelixWorkItem>
-    
-    <XHarnessApkToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAndroid)' == 'true'">
-      <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
-      <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
-    </XHarnessApkToTest>
-
     <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAndroid)' == 'true'">
       <Arguments>--arg=env:TestExclusionListPath=TestExclusionList.txt</Arguments>
       <AndroidPackageName>net.dot.%(ApkFileName)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
     </XHarnessApkToTest>
-
-    <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAppleMobile)' == 'true'">
-      <TestTarget>$(AppleTestTarget)</TestTarget>
-      <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
-      <CustomCommands> $(SigningCommand) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
-    </XHarnessAppBundleToTest>
 
     <XHarnessAppBundleToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAppleMobile)' == 'true'">
       <Arguments>--set-env=TestExclusionListPath=TestExclusionList.txt</Arguments>

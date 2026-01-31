@@ -558,12 +558,12 @@ classAttr:
 	| 'private'
 	| VALUE
 	| ENUM
-	| 'interface'
+	| INTERFACE
 	| 'sealed'
 	| 'abstract'
 	| 'auto'
 	| 'sequential'
-	| 'explicit'
+	| EXPLICIT
 	| 'extended'
 	| ANSI
 	| 'unicode'

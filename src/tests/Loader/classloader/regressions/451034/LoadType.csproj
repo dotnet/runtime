@@ -9,6 +9,9 @@
     <Compile Include="LoadType.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="Type.ilproj" />
   </ItemGroup>
 </Project>

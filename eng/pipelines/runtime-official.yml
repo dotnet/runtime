@@ -19,7 +19,7 @@ trigger:
 
 schedules:
 - cron: "0 9 * * *"
-  displayName: Daily OneLocBuild and SourceIndex
+  displayName: Daily SourceIndex
   branches:
     include:
     - main
@@ -41,7 +41,7 @@ extends:
   parameters:
     isOfficialBuild: true
     stages:
-    - ${{ if and(eq(variables['Build.SourceBranch'], 'refs/heads/main'), or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['Build.Reason'], 'Manual'))) }}:
+    - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
       - stage: Localization
         dependsOn: []
         jobs:
@@ -54,16 +54,18 @@ extends:
             MirrorBranch: main
             LclSource: lclFilesfromPackage
             LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
-      - stage: Source_Index
-        dependsOn: []
-        displayName: Source Index
-        jobs:
-        #
-        # Source Index Build
-        #
-          - template: /eng/common/templates-official/job/source-index-stage1.yml
-            parameters:
-              sourceIndexBuildCommand: build.cmd -subset libs.sfx+libs.oob -binarylog -os linux -ci /p:SkipLibrariesNativeRuntimePackages=true
+
+      - ${{ if or(eq(variables['Build.Reason'], 'Schedule'), eq(variables['Build.Reason'], 'Manual')) }}:
+        - stage: Source_Index
+          dependsOn: []
+          displayName: Source Index
+          jobs:
+          #
+          # Source Index Build
+          #
+            - template: /eng/common/templates-official/job/source-index-stage1.yml
+              parameters:
+                sourceIndexBuildCommand: build.cmd -subset libs.sfx+libs.oob -binarylog -os linux -ci /p:SkipLibrariesNativeRuntimePackages=true
 
     - stage: Publish
       dependsOn: []

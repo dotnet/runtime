@@ -3,6 +3,8 @@
 
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 // blittable, absurdly large field offset, expect TypeLoadException
 .assembly test3{}
 .assembly extern mscorlib{}
@@ -24,6 +26,7 @@
 	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 	    01 00 00 00
 	)
+	.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('Won\'t fix https://github.com/dotnet/corert/issues/2396') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
 	.entrypoint
 
     .locals init (class [mscorlib]System.Exception e2)
@@ -33,18 +36,18 @@
         ldstr "FAIL: expected TypeLoadException, but no exception was caught"
         call void [System.Console]System.Console::WriteLine(string)
         leave NOT_CAUGHT
-    }    
+    }
     catch [mscorlib]System.TypeLoadException{
         pop // throw away the exception object
         ldstr "PASS"
-        call void [System.Console]System.Console::WriteLine(string)            
+        call void [System.Console]System.Console::WriteLine(string)
         leave CAUGHT_EXPECTED
     }
     catch [mscorlib]System.Exception{
         stloc e2
         ldstr "FAIL: expected TypeLoadException, but instead caught the following:\n{0}"
         ldloc e2
-        call void [System.Console]System.Console::WriteLine(string,object)            
+        call void [System.Console]System.Console::WriteLine(string,object)
         leave CAUGHT_UNEXPECTED
     }
 

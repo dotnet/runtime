@@ -207,6 +207,7 @@ namespace ComWrappersTests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateComInterfaceCreation()
         {
@@ -242,6 +243,7 @@ namespace ComWrappersTests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateComInterfaceCreationRoundTrip()
         {
@@ -269,6 +271,7 @@ namespace ComWrappersTests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateComInterfaceUnwrapWrapperSpecific()
         {
@@ -337,6 +340,7 @@ namespace ComWrappersTests
             }
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateComObjectExtendsManagedLifetime()
         {
@@ -375,6 +379,7 @@ namespace ComWrappersTests
         // hits zero ref count does not mean future calls to GetOrCreateComInterfaceForObject
         // should return an unusable object.
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateCreatingAComInterfaceForObjectAfterTheFirstIsFree()
         {
@@ -411,6 +416,7 @@ namespace ComWrappersTests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateResurrection()
         {
@@ -466,6 +472,7 @@ namespace ComWrappersTests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateFallbackQueryInterface()
         {
@@ -500,6 +507,7 @@ namespace ComWrappersTests
             Assert.Equal(0, count);
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateCreateObjectCachingScenario()
         {
@@ -523,6 +531,7 @@ namespace ComWrappersTests
 
         // Verify that if a GC nulls the contents of a weak GCHandle but has not yet
         // run finializers to remove that GCHandle from the cache, the state of the system is valid.
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateCreateObjectWeakHandleCacheCleanUp()
         {
@@ -558,6 +567,7 @@ namespace ComWrappersTests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateMappingAPIs()
         {
@@ -612,6 +622,7 @@ namespace ComWrappersTests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateWrappersInstanceIsolation()
         {
@@ -657,6 +668,7 @@ namespace ComWrappersTests
             Marshal.Release(trackerObjRaw);
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidatePrecreatedExternalWrapper()
         {
@@ -697,6 +709,7 @@ namespace ComWrappersTests
                 });
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateExternalWrapperCacheCleanUp()
         {
@@ -747,6 +760,7 @@ namespace ComWrappersTests
             }
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateSuppliedInnerNotAggregation()
         {
@@ -765,6 +779,7 @@ namespace ComWrappersTests
                 });
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateIUnknownImpls()
             => TestComWrappers.ValidateIUnknownImpls();
@@ -819,6 +834,7 @@ namespace ComWrappersTests
             }
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateBadComWrapperImpl()
         {
@@ -908,6 +924,7 @@ namespace ComWrappersTests
             ForceGC();
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateRuntimeTrackerScenario()
         {
@@ -921,6 +938,7 @@ namespace ComWrappersTests
             });
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateRuntimeTrackerScenarioUserStateOverload()
         {
@@ -934,6 +952,7 @@ namespace ComWrappersTests
             });
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateQueryInterfaceAfterManagedObjectCollected()
         {
@@ -1018,6 +1037,7 @@ namespace ComWrappersTests
             }
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateAggregationWithComObject()
         {
@@ -1034,6 +1054,7 @@ namespace ComWrappersTests
             Assert.Equal(0, allocTracker.GetCount());
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ValidateAggregationWithReferenceTrackerObject()
         {
@@ -1055,6 +1076,7 @@ namespace ComWrappersTests
             Assert.Equal(0, allocTracker.GetCount());
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void ComWrappersNoLockAroundQueryInterface()
         {
@@ -1123,6 +1145,7 @@ namespace ComWrappersTests
             }
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // COM apartments are Windows-specific
         [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
@@ -1216,6 +1239,7 @@ namespace ComWrappersTests
             }
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void UserStateOverloadNotCalledWhenNoUserStatePassed()
         {
@@ -1236,6 +1260,7 @@ namespace ComWrappersTests
             testObjFromNative.FinalRelease();
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Theory]
         [InlineData(null)]
         [InlineData(1)]
@@ -1260,6 +1285,7 @@ namespace ComWrappersTests
             Assert.False(ComWrappers.TryGetComInstance(testObjFromNative, out _));
         }
 
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public void UserStateBaseImplementationThrows()
         {

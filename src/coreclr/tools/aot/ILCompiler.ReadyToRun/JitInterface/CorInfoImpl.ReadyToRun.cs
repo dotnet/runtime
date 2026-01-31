@@ -1291,6 +1291,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
                 // For x86 tailcall where helper is required we need runtime JIT.
                 case CorInfoHelpFunc.CORINFO_HELP_TAILCALL:
+                // DirectOnThreadLocalData helper is used at runtime during R2R fixup resolution, not during R2R compilation
+                case CorInfoHelpFunc.CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE:
                     throw new RequiresRuntimeJitException(ftnNum.ToString());
 
                 default:
