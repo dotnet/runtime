@@ -8108,7 +8108,7 @@ public:
         static AssertionDsc CreateInt32ConstantVNAssertion(Compiler* comp, ValueNum op1VN, ValueNum op2VN, bool equals)
         {
             assert(op1VN != ValueNumStore::NoVN);
-            assert(op1VN != ValueNumStore::NoVN);
+            assert(op2VN != ValueNumStore::NoVN);
             assert(comp->vnStore->IsVNInt32Constant(op2VN));
             assert(!comp->vnStore->IsVNHandle(op2VN));
             assert(!comp->optLocalAssertionProp);
