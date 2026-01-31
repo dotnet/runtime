@@ -612,6 +612,120 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public static void BinarySearch_EmptyList()
+        {
+            var arrList = new ArrayList();
+            Helpers.PerformActionOnAllArrayListWrappers(arrList, arrList2 =>
+            {
+                // Searching in empty list should return -1 (bitwise complement of 0)
+                Assert.Equal(-1, arrList2.BinarySearch(0));
+                Assert.Equal(-1, arrList2.BinarySearch(0, null));
+                Assert.Equal(-1, arrList2.BinarySearch(0, 0, 0, null));
+            });
+        }
+
+        [Fact]
+        public static void BinarySearch_SingleElement()
+        {
+            var arrList = new ArrayList { 5 };
+            Helpers.PerformActionOnAllArrayListWrappers(arrList, arrList2 =>
+            {
+                // Find the single element
+                Assert.Equal(0, arrList2.BinarySearch(5));
+                
+                // Value less than element
+                Assert.Equal(-1, arrList2.BinarySearch(3));
+                
+                // Value greater than element
+                Assert.Equal(-2, arrList2.BinarySearch(7));
+            });
+        }
+
+        [Fact]
+        public static void BinarySearch_BoundaryConditions()
+        {
+            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
+            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
+            {
+                // Search at the very beginning
+                int result = arrList2.BinarySearch(0, arrList2.Count, 0, null);
+                Assert.Equal(0, result);
+                
+                // Search at the very end
+                result = arrList2.BinarySearch(0, arrList2.Count, 9, null);
+                Assert.Equal(9, result);
+                
+                // Search in a range that includes only the first element
+                result = arrList2.BinarySearch(0, 1, 0, null);
+                Assert.Equal(0, result);
+                
+                // Search in a range that includes only the last element
+                result = arrList2.BinarySearch(9, 1, 9, null);
+                Assert.Equal(9, result);
+            });
+        }
+
+        [Fact]
+        public static void BinarySearch_PartialRangeSearch()
+        {
+            ArrayList arrList1 = Helpers.CreateIntArrayList(20); // 0 to 19
+            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
+            {
+                // Search in the middle range [5, 15)
+                int result = arrList2.BinarySearch(5, 10, 10, null);
+                Assert.Equal(10, result);
+                
+                // Value before the range should not be found
+                result = arrList2.BinarySearch(5, 10, 3, null);
+                Assert.True(result < 0);
+                
+                // Value after the range should not be found
+                result = arrList2.BinarySearch(5, 10, 17, null);
+                Assert.True(result < 0);
+            });
+        }
+
+        [Fact]
+        public static void BinarySearch_ComparerThrowsException()
+        {
+            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
+            var throwingComparer = new ThrowingComparer();
+            
+            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
+            {
+                // Should propagate the exception from the comparer
+                Assert.Throws<InvalidOperationException>(() => arrList2.BinarySearch(5, throwingComparer));
+            });
+        }
+
+        [Fact]
+        public static void BinarySearch_UnsortedList()
+        {
+            // BinarySearch on unsorted list has undefined results but should not crash
+            var arrList = new ArrayList { 5, 1, 9, 3, 7 };
+            Helpers.PerformActionOnAllArrayListWrappers(arrList, arrList2 =>
+            {
+                // Should complete without throwing - result is undefined for unsorted lists
+                int result = arrList2.BinarySearch(5);
+                // Just verify it doesn't throw an exception
+            });
+        }
+
+        [Fact]
+        public static void BinarySearch_TwoElementList()
+        {
+            var arrList = new ArrayList { 1, 5 };
+            Helpers.PerformActionOnAllArrayListWrappers(arrList, arrList2 =>
+            {
+                Assert.Equal(0, arrList2.BinarySearch(1));
+                Assert.Equal(1, arrList2.BinarySearch(5));
+                Assert.Equal(-1, arrList2.BinarySearch(0));
+                Assert.Equal(-2, arrList2.BinarySearch(3));
+                Assert.Equal(-3, arrList2.BinarySearch(7));
+            });
+        }
+
+        [Fact]
         public static void Capacity_Get()
         {
             var arrList = Helpers.CreateIntArrayList(10);
@@ -2530,6 +2644,14 @@ namespace System.Collections.Tests
                 }
 
                 return -1;
+            }
+        }
+
+        private class ThrowingComparer : IComparer
+        {
+            public int Compare(object x, object y)
+            {
+                throw new InvalidOperationException("Comparer intentionally throws");
             }
         }
 
