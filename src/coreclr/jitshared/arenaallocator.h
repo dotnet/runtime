@@ -28,15 +28,15 @@
 //     - Names: A static const char* const[] array of names for each kind
 
 template <typename TMemKindTraits>
-class ArenaAllocator
+class ArenaAllocatorT
 {
 public:
     using MemKind = typename TMemKindTraits::MemKind;
 
 private:
-    ArenaAllocator(const ArenaAllocator& other) = delete;
-    ArenaAllocator& operator=(const ArenaAllocator& other) = delete;
-    ArenaAllocator& operator=(ArenaAllocator&& other) = delete;
+    ArenaAllocatorT(const ArenaAllocatorT& other) = delete;
+    ArenaAllocatorT& operator=(const ArenaAllocatorT& other) = delete;
+    ArenaAllocatorT& operator=(ArenaAllocatorT&& other) = delete;
 
     struct PageDescriptor
     {
@@ -44,7 +44,7 @@ private:
 
         size_t m_pageBytes; // # of bytes allocated
         size_t m_usedBytes; // # of bytes actually used. (This is only valid when we've allocated a new page.)
-                            // See ArenaAllocator::allocateNewPage.
+                            // See ArenaAllocatorT::allocateNewPage.
 
         uint8_t m_contents[];
     };
@@ -68,12 +68,12 @@ private:
 
 #if MEASURE_MEM_ALLOC
 public:
-    // MemStatsAllocator is a helper that wraps an ArenaAllocator and tracks
+    // MemStatsAllocator is a helper that wraps an ArenaAllocatorT and tracks
     // allocations of a specific memory kind.
     struct MemStatsAllocator
     {
-        ArenaAllocator* m_arena;
-        MemKind         m_kind;
+        ArenaAllocatorT* m_arena;
+        MemKind          m_kind;
 
         void* allocateMemory(size_t sz)
         {
@@ -117,7 +117,7 @@ public:
 #endif // MEASURE_MEM_ALLOC
 
 public:
-    ArenaAllocator(IAllocatorConfig* config)
+    ArenaAllocatorT(IAllocatorConfig* config)
         : m_firstPage(nullptr)
         , m_lastPage(nullptr)
         , m_nextFreeByte(nullptr)
@@ -155,8 +155,8 @@ public:
 };
 
 //------------------------------------------------------------------------
-// ArenaAllocator::allocateMemory:
-//    Allocates memory using an `ArenaAllocator`.
+// ArenaAllocatorT::allocateMemory:
+//    Allocates memory using an `ArenaAllocatorT`.
 //
 // Arguments:
 //    size - The number of bytes to allocate.
@@ -171,7 +171,7 @@ public:
 //    use-before-init problems.
 //
 template <typename TMemKindTraits>
-inline void* ArenaAllocator<TMemKindTraits>::allocateMemory(size_t size)
+inline void* ArenaAllocatorT<TMemKindTraits>::allocateMemory(size_t size)
 {
     assert(size != 0);
 
@@ -205,7 +205,7 @@ inline void* ArenaAllocator<TMemKindTraits>::allocateMemory(size_t size)
 }
 
 //------------------------------------------------------------------------
-// ArenaAllocator::allocateNewPage:
+// ArenaAllocatorT::allocateNewPage:
 //    Allocates a new arena page.
 //
 // Arguments:
@@ -215,7 +215,7 @@ inline void* ArenaAllocator<TMemKindTraits>::allocateMemory(size_t size)
 // Return Value:
 //    A pointer to the first usable byte of the newly allocated page.
 template <typename TMemKindTraits>
-void* ArenaAllocator<TMemKindTraits>::allocateNewPage(size_t size)
+void* ArenaAllocatorT<TMemKindTraits>::allocateNewPage(size_t size)
 {
     size_t pageSize = sizeof(PageDescriptor) + size;
 
@@ -271,10 +271,10 @@ void* ArenaAllocator<TMemKindTraits>::allocateNewPage(size_t size)
 }
 
 //------------------------------------------------------------------------
-// ArenaAllocator::destroy:
-//    Performs any necessary teardown for an `ArenaAllocator`.
+// ArenaAllocatorT::destroy:
+//    Performs any necessary teardown for an `ArenaAllocatorT`.
 template <typename TMemKindTraits>
-void ArenaAllocator<TMemKindTraits>::destroy()
+void ArenaAllocatorT<TMemKindTraits>::destroy()
 {
     PageDescriptor* page = m_firstPage;
 
@@ -293,14 +293,14 @@ void ArenaAllocator<TMemKindTraits>::destroy()
 }
 
 //------------------------------------------------------------------------
-// ArenaAllocator::getTotalBytesAllocated:
+// ArenaAllocatorT::getTotalBytesAllocated:
 //    Gets the total number of bytes allocated for all of the arena pages
-//    for an `ArenaAllocator`.
+//    for an `ArenaAllocatorT`.
 //
 // Return Value:
 //    See above.
 template <typename TMemKindTraits>
-size_t ArenaAllocator<TMemKindTraits>::getTotalBytesAllocated()
+size_t ArenaAllocatorT<TMemKindTraits>::getTotalBytesAllocated()
 {
     size_t bytes = 0;
     for (PageDescriptor* page = m_firstPage; page != nullptr; page = page->m_next)
@@ -312,9 +312,9 @@ size_t ArenaAllocator<TMemKindTraits>::getTotalBytesAllocated()
 }
 
 //------------------------------------------------------------------------
-// ArenaAllocator::getTotalBytesUsed:
+// ArenaAllocatorT::getTotalBytesUsed:
 //    Gets the total number of bytes used in all of the arena pages for
-//    an `ArenaAllocator`.
+//    an `ArenaAllocatorT`.
 //
 // Return Value:
 //    See above.
@@ -327,7 +327,7 @@ size_t ArenaAllocator<TMemKindTraits>::getTotalBytesAllocated()
 //    number of bytes allocated for arena pages minus the number of bytes
 //    that are unused across all area pages.
 template <typename TMemKindTraits>
-size_t ArenaAllocator<TMemKindTraits>::getTotalBytesUsed()
+size_t ArenaAllocatorT<TMemKindTraits>::getTotalBytesUsed()
 {
     if (m_lastPage != nullptr)
     {

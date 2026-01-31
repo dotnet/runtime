@@ -39,11 +39,11 @@ struct InterpMemKindTraits
 };
 
 // InterpArenaAllocator is the arena allocator type used for interpreter compilations.
-using InterpArenaAllocator = ArenaAllocator<InterpMemKindTraits>;
+using InterpArenaAllocator = ArenaAllocatorT<InterpMemKindTraits>;
 
 // InterpAllocator is the allocator type used for interpreter compilations.
 // It wraps ArenaAllocator and tracks allocations by InterpMemKind.
-using InterpAllocator = CompAllocator<InterpMemKindTraits>;
+using InterpAllocator = CompAllocatorT<InterpMemKindTraits>;
 
 struct InterpException
 {

@@ -22,7 +22,7 @@ public:
 };
 #endif
 
-// CompAllocator is a wrapper around ArenaAllocator that tracks allocations
+// CompAllocatorT is a wrapper around ArenaAllocatorT that tracks allocations
 // by memory kind for profiling purposes.
 //
 // Template parameters:
@@ -31,14 +31,14 @@ public:
 //     - Count: A static constexpr int giving the number of enum values
 //     - Names: A static const char* const[] array of names for each kind
 //
-// When MEASURE_MEM_ALLOC is enabled, CompAllocator tracks allocation statistics
+// When MEASURE_MEM_ALLOC is enabled, CompAllocatorT tracks allocation statistics
 // per memory kind. When disabled, it's a thin wrapper with no overhead.
 
 template <typename TMemKindTraits>
-class CompAllocator
+class CompAllocatorT
 {
     using MemKind = typename TMemKindTraits::MemKind;
-    using Arena = ArenaAllocator<TMemKindTraits>;
+    using Arena = ArenaAllocatorT<TMemKindTraits>;
 
 #if MEASURE_MEM_ALLOC
     typename Arena::MemStatsAllocator* m_statsAllocator;
@@ -48,12 +48,12 @@ class CompAllocator
 
 public:
 #if MEASURE_MEM_ALLOC
-    CompAllocator(Arena* arena, MemKind kind)
+    CompAllocatorT(Arena* arena, MemKind kind)
         : m_statsAllocator(arena->getMemStatsAllocator(kind))
     {
     }
 #else
-    CompAllocator(Arena* arena, MemKind kind)
+    CompAllocatorT(Arena* arena, MemKind kind)
         : m_arena(arena)
     {
         (void)kind; // Suppress unused parameter warning
@@ -94,33 +94,33 @@ public:
     }
 };
 
-// Global operator new overloads that work with CompAllocator
+// Global operator new overloads that work with CompAllocatorT
 
 template <typename TMemKindTraits>
-inline void* __cdecl operator new(size_t n, CompAllocator<TMemKindTraits> alloc)
+inline void* __cdecl operator new(size_t n, CompAllocatorT<TMemKindTraits> alloc)
 {
     return alloc.template allocate<char>(n);
 }
 
 template <typename TMemKindTraits>
-inline void* __cdecl operator new[](size_t n, CompAllocator<TMemKindTraits> alloc)
+inline void* __cdecl operator new[](size_t n, CompAllocatorT<TMemKindTraits> alloc)
 {
     return alloc.template allocate<char>(n);
 }
 
-// CompIAllocator is a CompAllocator wrapper that implements the IAllocator interface.
+// CompIAllocatorT is a CompAllocatorT wrapper that implements the IAllocator interface.
 // It allows zero-length memory allocations (which the arena allocator does not support).
 //
 // This is primarily used for GCInfoEncoder integration.
 
 template <typename TMemKindTraits>
-class CompIAllocator : public IAllocator
+class CompIAllocatorT : public IAllocator
 {
-    CompAllocator<TMemKindTraits> m_alloc;
+    CompAllocatorT<TMemKindTraits> m_alloc;
     char m_zeroLenAllocTarg;
 
 public:
-    CompIAllocator(CompAllocator<TMemKindTraits> alloc)
+    CompIAllocatorT(CompAllocatorT<TMemKindTraits> alloc)
         : m_alloc(alloc)
     {
     }
