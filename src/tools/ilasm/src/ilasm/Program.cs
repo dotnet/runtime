@@ -22,9 +22,6 @@ internal sealed class Program
         _command = command;
     }
 
-    private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument)!;
-    private T Get<T>(Option<T> option) => _command.Result.GetValue(option)!;
-
     public int Run()
     {
         Stopwatch? stopwatch = null;
@@ -207,7 +204,7 @@ internal sealed class Program
             var (diagnostics, peBuilder) = compiler.Compile(
                 document,
                 LoadIncludedDocument,
-                _ => default!,
+                LoadResource,
                 options);
 
             // Report diagnostics
@@ -269,6 +266,28 @@ internal sealed class Program
         }
 
         return exitCode;
+    }
+
+    private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument)!;
+
+    private T Get<T>(Option<T> option) => _command.Result.GetValue(option)!;
+
+    private static byte[] LoadResource(string path)
+    {
+        // Try the path as-is first
+        if (File.Exists(path))
+        {
+            return File.ReadAllBytes(path);
+        }
+
+        // Try relative to the base directory
+        string fullPath = Path.Combine(baseDir, path);
+        if (File.Exists(fullPath))
+        {
+            return File.ReadAllBytes(fullPath);
+        }
+
+        throw new FileNotFoundException($"Resource file not found: {path}");
     }
 
     private static int Main(string[] args) =>
