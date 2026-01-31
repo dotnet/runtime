@@ -4576,5 +4576,10 @@ namespace Internal.JitInterface
         {
             throw new NotImplementedException("getSpecialCopyHelper");
         }
+
+        private CorInfoHelpFunc getSpecialIndirectLoadStoreHelper(CORINFO_CLASS_STRUCT_* type)
+        {
+            return CorInfoHelpFunc.CORINFO_HELP_UNDEF;
+        }
     }
 }

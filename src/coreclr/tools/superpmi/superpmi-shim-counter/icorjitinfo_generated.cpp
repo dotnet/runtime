@@ -1454,3 +1454,10 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(
     return original_ICorJitInfo->getSpecialCopyHelper(type);
 }
 
+CorInfoHelpFunc interceptor_ICJI::getSpecialIndirectLoadStoreHelper(
+          CORINFO_CLASS_HANDLE type)
+{
+    mcs->AddCall("getSpecialIndirectLoadStoreHelper");
+    return original_ICorJitInfo->getSpecialIndirectLoadStoreHelper(type);
+}
+

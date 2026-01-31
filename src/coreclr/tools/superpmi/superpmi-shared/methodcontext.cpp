@@ -7336,6 +7336,30 @@ CORINFO_METHOD_HANDLE MethodContext::repGetSpecialCopyHelper(CORINFO_CLASS_HANDL
     return (CORINFO_METHOD_HANDLE)value;
 }
 
+void MethodContext::recGetSpecialIndirectLoadStoreHelper(CORINFO_CLASS_HANDLE type, CorInfoHelpFunc result)
+{
+    if (GetSpecialIndirectLoadStoreHelper == nullptr)
+        GetSpecialIndirectLoadStoreHelper = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(type);
+    DWORD value = (DWORD)result;
+    GetSpecialIndirectLoadStoreHelper->Add(key, value);
+    DEBUG_REC(dmpGetSpecialIndirectLoadStoreHelper(key, value));
+}
+
+void MethodContext::dmpGetSpecialIndirectLoadStoreHelper(DWORDLONG key, DWORD value)
+{
+    printf("GetSpecialIndirectLoadStoreHelper key %016" PRIX64 ", value %u", key, value);
+}
+
+CorInfoHelpFunc MethodContext::repGetSpecialIndirectLoadStoreHelper(CORINFO_CLASS_HANDLE type)
+{
+    DWORDLONG key = CastHandle(type);
+    DWORD value = LookupByKeyOrMiss(GetSpecialIndirectLoadStoreHelper, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetSpecialIndirectLoadStoreHelper(key, value));
+    return (CorInfoHelpFunc)value;
+}
+
 void MethodContext::dmpSigInstHandleMap(DWORD key, DWORDLONG value)
 {
     printf("SigInstHandleMap key %u, value %016" PRIX64 "", key, value);

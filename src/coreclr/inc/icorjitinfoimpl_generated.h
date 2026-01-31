@@ -755,6 +755,9 @@ uint32_t getJitFlags(
 CORINFO_METHOD_HANDLE getSpecialCopyHelper(
           CORINFO_CLASS_HANDLE type) override;
 
+CorInfoHelpFunc getSpecialIndirectLoadStoreHelper(
+          CORINFO_CLASS_HANDLE type) override;
+
 /**********************************************************************************/
 // clang-format on
 /**********************************************************************************/

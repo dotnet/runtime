@@ -1853,3 +1853,9 @@ CORINFO_METHOD_HANDLE MyICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
     CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetSpecialCopyHelper(type);
     return result;
 }
+
+CorInfoHelpFunc MyICJI::getSpecialIndirectLoadStoreHelper(CORINFO_CLASS_HANDLE type)
+{
+    jitInstance->mc->cr->AddCall("getSpecialIndirectLoadStoreHelper");
+    return jitInstance->mc->repGetSpecialIndirectLoadStoreHelper(type);
+}

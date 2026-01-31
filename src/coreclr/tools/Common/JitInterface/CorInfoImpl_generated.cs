@@ -197,6 +197,7 @@ namespace Internal.JitInterface
                 s_callbacks.getExpectedTargetArchitecture = &_getExpectedTargetArchitecture;
                 s_callbacks.getJitFlags = &_getJitFlags;
                 s_callbacks.getSpecialCopyHelper = &_getSpecialCopyHelper;
+                s_callbacks.getSpecialIndirectLoadStoreHelper = &_getSpecialIndirectLoadStoreHelper;
             }
 
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte> isIntrinsic;
@@ -376,6 +377,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, uint> getExpectedTargetArchitecture;
             public delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint> getJitFlags;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*> getSpecialCopyHelper;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoHelpFunc> getSpecialIndirectLoadStoreHelper;
         }
 
         private static IntPtr GetUnmanagedCallbacks()
@@ -2980,6 +2982,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.getSpecialCopyHelper(type);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static CorInfoHelpFunc _getSpecialIndirectLoadStoreHelper(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* type)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getSpecialIndirectLoadStoreHelper(type);
             }
             catch (Exception ex)
             {
