@@ -13,8 +13,10 @@
   .ver 4:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 // TODO: use the contract once this is exposed from contracts
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
 .assembly svm_diamondshape
 {
@@ -1526,6 +1528,7 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtime/issues/72589') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
     .entrypoint
     // Code size       23 (0x17)
     .maxstack  1
