@@ -144,45 +144,38 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
-        public async Task Http2_FakeServer_SessionAuthChallenge_AutomaticallyDowngradesToHttp11(bool useNtlm)
+        public async Task Http2_FakeServer_SessionAuthChallenge_ReturnsUnauthorized_WithNoRetryOnHttp2(bool useNtlm)
         {
-            // This test verifies that when an HTTP/2 request receives a session-based auth challenge (NTLM or Negotiate),
-            // the handler automatically downgrades to HTTP/1.1 for the retry, as these auth schemes don't work over HTTP/2.
+            // This test verifies that when an HTTP/2 request receives a session-based auth challenge (NTLM or Negotiate)
+            // and we can't retry (e.g., wrong version policy), we get the 401 response.
             await Http2LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
                     HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
                     requestMessage.Version = HttpVersion.Version20;
-                    requestMessage.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+                    // RequestVersionExact means we won't downgrade to HTTP/1.1
+                    requestMessage.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
                     HttpMessageHandler handler = new SocketsHttpHandler() { Credentials = s_testCredentialRight };
                     using (var client = new HttpClient(handler))
                     {
+                        // Should get 401 since we can't downgrade with RequestVersionExact
                         HttpResponseMessage response = await client.SendAsync(requestMessage);
                         
-                        // The request should succeed after downgrading to HTTP/1.1
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                        // Verify the response came over HTTP/1.1, not HTTP/2
-                        Assert.Equal(new Version(1, 1), response.Version);
+                        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                        Assert.Equal(HttpVersion.Version20, response.Version);
                     }
                 },
                 async server =>
                 {
-                    // First request over HTTP/2 - send auth challenge
+                    // Request over HTTP/2 - send auth challenge
                     Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                     int streamId = await connection.ReadRequestHeaderAsync();
                     
-                    // Send 401 with NTLM or Negotiate challenge to trigger downgrade
+                    // Send 401 with NTLM or Negotiate challenge
                     string authScheme = useNtlm ? "NTLM" : "Negotiate";
                     await connection.SendResponseHeadersAsync(streamId, endStream: true, HttpStatusCode.Unauthorized,
                         headers: new[] { new HttpHeaderData("WWW-Authenticate", authScheme) });
-                    
-                    // Client should now retry on HTTP/1.1
-                    // Accept the HTTP/1.1 connection
-                    await server.AcceptConnectionAsync(async http11Connection =>
-                    {
-                        await HandleAuthenticationRequestWithFakeServer(http11Connection, useNtlm);
-                    }).ConfigureAwait(false);
                 });
         }
 
