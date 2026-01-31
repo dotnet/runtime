@@ -7986,8 +7986,7 @@ public:
 
         bool Equals(const AssertionDsc& that, bool vnBased) const
         {
-            // op1.kind check is implied by HasSameOp1, but it improves performance to do it first.
-            if (op1.kind != that.op1.kind || assertionKind != that.assertionKind)
+            if (assertionKind != that.assertionKind)
             {
                 return false;
             }
