@@ -7,8 +7,13 @@
 
     <!-- This is an explicit crossgen test -->
     <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <!-- No crossgen folder under Core_Root -->
+     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>
