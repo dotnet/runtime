@@ -1147,11 +1147,14 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
 
     if (op1->OperIs(GT_BOUNDS_CHECK) && (assertionKind == OAK_NO_THROW))
     {
-        GenTreeBoundsChk* arrBndsChk = op1->AsBoundsChk();
-        assertion.assertionKind      = assertionKind;
-        assertion.op1.kind           = O1K_ARR_BND;
-        assertion.op1.bnd.vnIdx      = optConservativeNormalVN(arrBndsChk->GetIndex());
-        assertion.op1.bnd.vnLen      = optConservativeNormalVN(arrBndsChk->GetArrayLength());
+        ValueNum idxVN = optConservativeNormalVN(op1->AsBoundsChk()->GetIndex());
+        ValueNum lenVN = optConservativeNormalVN(op1->AsBoundsChk()->GetArrayLength());
+        if ((idxVN == ValueNumStore::NoVN) || (lenVN == ValueNumStore::NoVN))
+        {
+            return NO_ASSERTION_INDEX;
+        }
+        assertion = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
+        return optFinalizeCreatingAssertion(&assertion);
     }
     //
     // Are we trying to make a non-null assertion?
@@ -1186,14 +1189,14 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
 
         if (!fgIsBigOffset(offset) && op1->OperIs(GT_LCL_VAR) && !lvaVarAddrExposed(op1->AsLclVar()->GetLclNum()))
         {
-            assertion.op1.kind       = O1K_LCLVAR;
-            assertion.op1.lclNum     = op1->AsLclVarCommon()->GetLclNum();
-            assertion.op1.vn         = optConservativeNormalVN(op1);
-            assertion.assertionKind  = assertionKind;
-            assertion.op2.kind       = O2K_CONST_INT;
-            assertion.op2.vn         = ValueNumStore::VNForNull();
-            assertion.op2.u1.iconVal = 0;
-            assertion.op2.SetIconFlag(GTF_EMPTY);
+            ValueNum op1VN  = optConservativeNormalVN(op1);
+            unsigned lclNum = op1->AsLclVar()->GetLclNum();
+            if ((!optLocalAssertionProp && op1VN == ValueNumStore::NoVN) ||
+                (optLocalAssertionProp && lclNum == BAD_VAR_NUM))
+            {
+                return NO_ASSERTION_INDEX;
+            }
+            assertion = AssertionDsc::CreateNonNullAssertion(this, lclNum, op1VN);
         }
     }
     //
@@ -1413,16 +1416,12 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
             ValueNum op2VN = optConservativeNormalVN(op2);
 
             // For TP reasons, limited to 32-bit constants on the op2 side.
-            if (vnStore->IsVNInt32Constant(op2VN) && !vnStore->IsVNHandle(op2VN))
+            if (op1VN != ValueNumStore::NoVN && op2VN != ValueNumStore::NoVN && vnStore->IsVNInt32Constant(op2VN) &&
+                !vnStore->IsVNHandle(op2VN))
             {
                 assert(assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL);
-                assertion.assertionKind  = assertionKind;
-                assertion.op1.vn         = op1VN;
-                assertion.op1.kind       = O1K_VN;
-                assertion.op2.vn         = op2VN;
-                assertion.op2.kind       = O2K_CONST_INT;
-                assertion.op2.u1.iconVal = vnStore->ConstantValue<int>(op2VN);
-                assertion.op2.SetIconFlag(GTF_EMPTY);
+                assertion =
+                    AssertionDsc::CreateInt32ConstantVNAssertion(this, op1VN, op2VN, assertionKind == OAK_EQUAL);
                 return optAddAssertion(&assertion);
             }
         }
@@ -1909,7 +1908,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         return NO_ASSERTION_INDEX;
     }
-    GenTree* op2     = relop->gtGetOp2();
     ValueNum relopVN = vnStore->VNConservativeNormalValue(relop->gtVNPair);
 
     ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
@@ -1919,14 +1917,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "i < bnd +/- k != 0"
     if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
     {
-        AssertionDsc dsc;
-        dsc.assertionKind  = OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_BOUND_OPER_BND;
-        dsc.op1.vn         = relopVN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
+        AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBoundArith(this, relopVN);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
@@ -1936,14 +1927,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "i < bnd != 0"
     else if (vnStore->IsVNCompareCheckedBound(relopVN))
     {
-        AssertionDsc dsc;
-        dsc.assertionKind  = OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_BOUND_LOOP_BND;
-        dsc.op1.vn         = relopVN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
+        AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBound(this, relopVN);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
@@ -1952,25 +1936,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
     else if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
     {
-        assert(unsignedCompareBnd.vnIdx != ValueNumStore::NoVN);
-        assert((unsignedCompareBnd.cmpOper == VNF_LT_UN) || (unsignedCompareBnd.cmpOper == VNF_GE_UN));
-        assert(vnStore->IsVNCheckedBound(unsignedCompareBnd.vnBound));
-
-        AssertionDsc dsc;
-        dsc.assertionKind = OAK_NO_THROW;
-        dsc.op1.kind      = O1K_ARR_BND;
-        dsc.op1.vn        = relopVN;
-        dsc.op1.bnd.vnIdx = unsignedCompareBnd.vnIdx;
-        dsc.op1.bnd.vnLen = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
-        dsc.op2.kind      = O2K_INVALID;
-        dsc.op2.vn        = ValueNumStore::NoVN;
-
-        if ((dsc.op1.bnd.vnIdx == ValueNumStore::NoVN) || (dsc.op1.bnd.vnLen == ValueNumStore::NoVN))
-        {
-            // Don't make an assertion if one of the operands has no VN
-            return NO_ASSERTION_INDEX;
-        }
-
+        AssertionDsc   dsc   = AssertionDsc::CreateUnsignedCompareCheckedBound(this, relopVN, unsignedCompareBnd);
         AssertionIndex index = optAddAssertion(&dsc);
         if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
         {
@@ -1985,28 +1951,14 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // Assertion: "i < 100 != 0"
     else if (vnStore->IsVNConstantBound(relopVN))
     {
-        AssertionDsc dsc;
-        dsc.assertionKind  = OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_CONSTANT_LOOP_BND;
-        dsc.op1.vn         = relopVN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
+        AssertionDsc   dsc   = AssertionDsc::CreateConstantBound(this, relopVN);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
     else if (vnStore->IsVNConstantBoundUnsigned(relopVN))
     {
-        AssertionDsc dsc;
-        dsc.assertionKind  = OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_CONSTANT_LOOP_BND_UN;
-        dsc.op1.vn         = relopVN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
+        AssertionDsc   dsc   = AssertionDsc::CreateConstantBoundUnsigned(this, relopVN);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
@@ -2076,15 +2028,8 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
 
         if ((objVN != ValueNumStore::NoVN) && vnStore->IsVNTypeHandle(typeHndVN))
         {
-            AssertionDsc assertion;
-            assertion.assertionKind  = OAK_EQUAL;
-            assertion.op1.kind       = O1K_EXACT_TYPE;
-            assertion.op1.vn         = objVN;
-            assertion.op2.kind       = O2K_CONST_INT;
-            assertion.op2.u1.iconVal = vnStore->CoercedConstantValue<ssize_t>(typeHndVN);
-            assertion.op2.vn         = typeHndVN;
-            assertion.op2.SetIconFlag(GTF_ICON_CLASS_HDL);
-            AssertionIndex index = optAddAssertion(&assertion);
+            AssertionDsc   dsc   = AssertionDsc::CreateSubtype(this, objVN, typeHndVN, /*exact*/ true);
+            AssertionIndex index = optAddAssertion(&dsc);
 
             // We don't need to create a complementary assertion here. We're only interested
             // in the assertion that the object is of a certain type. The opposite assertion
@@ -2195,15 +2140,8 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
 
         if ((objVN != ValueNumStore::NoVN) && vnStore->IsVNTypeHandle(typeHndVN))
         {
-            AssertionDsc assertion;
-            assertion.op1.kind       = O1K_SUBTYPE;
-            assertion.op1.vn         = objVN;
-            assertion.op2.kind       = O2K_CONST_INT;
-            assertion.op2.u1.iconVal = vnStore->CoercedConstantValue<ssize_t>(typeHndVN);
-            assertion.op2.vn         = typeHndVN;
-            assertion.op2.SetIconFlag(GTF_ICON_CLASS_HDL);
-            assertion.assertionKind = OAK_EQUAL;
-            AssertionIndex index    = optAddAssertion(&assertion);
+            AssertionDsc   dsc   = AssertionDsc::CreateSubtype(this, objVN, typeHndVN, /*exact*/ false);
+            AssertionIndex index = optAddAssertion(&dsc);
 
             // We don't need to create a complementary assertion here. We're only interested
             // in the assertion that the object is of a certain type. The opposite assertion
@@ -5641,27 +5579,20 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             // NOTE: if offset != 0, we only know that "X + offset >= maxJumpIdx", which is not very useful.
             if ((offset == 0) && (value > 0) && !vnStore->IsVNConstant(opVN))
             {
-                AssertionDsc dsc   = {};
-                dsc.assertionKind  = OAK_NOT_EQUAL;
-                dsc.op2.kind       = O2K_CONST_INT;
-                dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
-                dsc.op2.u1.iconVal = 0;
-                dsc.op2.SetIconFlag(GTF_EMPTY);
                 if (vnStore->IsVNNeverNegative(opVN))
                 {
                     // Create "X >= value" assertion (both operands are never negative)
-                    dsc.op1.kind = O1K_CONSTANT_LOOP_BND;
-                    dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
-                    assert(vnStore->IsVNConstantBound(dsc.op1.vn));
+                    ValueNum     relop = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
+                    AssertionDsc dsc   = AssertionDsc::CreateConstantBound(this, relop);
+                    newAssertIdx       = optAddAssertion(&dsc);
                 }
                 else
                 {
                     // Create "X u>= value" assertion
-                    dsc.op1.kind = O1K_CONSTANT_LOOP_BND_UN;
-                    dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE_UN, opVN, vnStore->VNForIntCon(value));
-                    assert(vnStore->IsVNConstantBoundUnsigned(dsc.op1.vn));
+                    ValueNum     relop = vnStore->VNForFunc(TYP_INT, VNF_GE_UN, opVN, vnStore->VNForIntCon(value));
+                    AssertionDsc dsc   = AssertionDsc::CreateConstantBoundUnsigned(this, relop);
+                    newAssertIdx       = optAddAssertion(&dsc);
                 }
-                newAssertIdx = optAddAssertion(&dsc);
             }
             else
             {
@@ -5671,15 +5602,10 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
         else
         {
             // Create "VN == value" assertion.
-            AssertionDsc dsc   = {};
-            dsc.assertionKind  = OAK_EQUAL;
-            dsc.op1.lclNum     = BAD_VAR_NUM; // O1K_LCLVAR relies only on op1.vn in Global Assertion Prop
-            dsc.op1.vn         = opVN;
-            dsc.op1.kind       = O1K_LCLVAR;
-            dsc.op2.vn         = vnStore->VNForIntCon(value);
-            dsc.op2.u1.iconVal = value;
-            dsc.op2.kind       = O2K_CONST_INT;
-            dsc.op2.SetIconFlag(GTF_EMPTY);
+            // TODO-Cleanup: Should use O1K_VN instead of O1K_LCLVAR
+            ValueNum     valueVN = vnStore->VNForIntCon(value);
+            AssertionDsc dsc =
+                AssertionDsc::CreateConstantLclvarAssertion(this, BAD_VAR_NUM, opVN, value, valueVN, true);
             newAssertIdx = optAddAssertion(&dsc);
         }
 

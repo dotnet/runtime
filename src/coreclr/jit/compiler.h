@@ -7995,6 +7995,175 @@ public:
                 return HasSameOp1(that, vnBased) && HasSameOp2(that, vnBased);
             }
         }
+
+        static AssertionDsc CreateCompareCheckedBound(Compiler* comp, ValueNum relopVN)
+        {
+            assert(comp->vnStore->IsVNCompareCheckedBound(relopVN));
+
+            AssertionDsc dsc   = {};
+            dsc.assertionKind  = OAK_NOT_EQUAL;
+            dsc.op1.kind       = O1K_BOUND_LOOP_BND;
+            dsc.op1.vn         = relopVN;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
+            dsc.op2.u1.iconVal = 0;
+            dsc.op2.SetIconFlag(GTF_EMPTY);
+            return dsc;
+        }
+
+        static AssertionDsc CreateCompareCheckedBoundArith(Compiler* comp, ValueNum relopVN)
+        {
+            assert(comp->vnStore->IsVNCompareCheckedBoundArith(relopVN));
+
+            AssertionDsc dsc   = {};
+            dsc.assertionKind  = OAK_NOT_EQUAL;
+            dsc.op1.kind       = O1K_BOUND_OPER_BND;
+            dsc.op1.vn         = relopVN;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
+            dsc.op2.u1.iconVal = 0;
+            dsc.op2.SetIconFlag(GTF_EMPTY);
+            return dsc;
+        }
+
+        static AssertionDsc CreateUnsignedCompareCheckedBound(
+            Compiler* comp, ValueNum relopVN, const ValueNumStore::UnsignedCompareCheckedBoundInfo& unsignedCompareBnd)
+        {
+            ValueNumStore::UnsignedCompareCheckedBoundInfo tmp;
+            assert(comp->vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &tmp));
+            assert(unsignedCompareBnd.vnIdx != ValueNumStore::NoVN);
+            assert((unsignedCompareBnd.cmpOper == VNF_LT_UN) || (unsignedCompareBnd.cmpOper == VNF_GE_UN));
+            assert(comp->vnStore->IsVNCheckedBound(unsignedCompareBnd.vnBound));
+
+            AssertionDsc dsc  = {};
+            dsc.assertionKind = OAK_NO_THROW;
+            dsc.op1.kind      = O1K_ARR_BND;
+            dsc.op1.vn        = relopVN;
+            dsc.op1.bnd.vnIdx = unsignedCompareBnd.vnIdx;
+            dsc.op1.bnd.vnLen = comp->vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
+            dsc.op2.kind      = O2K_INVALID;
+            dsc.op2.vn        = ValueNumStore::NoVN;
+
+            return dsc;
+        }
+
+        static AssertionDsc CreateConstantBound(Compiler* comp, ValueNum relopVN)
+        {
+            assert(comp->vnStore->IsVNConstantBound(relopVN));
+
+            AssertionDsc dsc   = {};
+            dsc.assertionKind  = OAK_NOT_EQUAL;
+            dsc.op1.kind       = O1K_CONSTANT_LOOP_BND;
+            dsc.op1.vn         = relopVN;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
+            dsc.op2.u1.iconVal = 0;
+            dsc.op2.SetIconFlag(GTF_EMPTY);
+            return dsc;
+        }
+
+        static AssertionDsc CreateConstantLclvarAssertion(
+            Compiler* comp, unsigned lclNum, ValueNum vn, int cns, ValueNum cnsVN, bool equals)
+        {
+            AssertionDsc dsc   = {};
+            dsc.assertionKind  = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
+            dsc.op1.kind       = O1K_LCLVAR;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.u1.iconVal = cns;
+            dsc.op2.SetIconFlag(GTF_EMPTY);
+
+            if (comp->optLocalAssertionProp)
+            {
+                assert(lclNum != BAD_VAR_NUM);
+                dsc.op1.vn     = ValueNumStore::NoVN;
+                dsc.op2.vn     = ValueNumStore::NoVN;
+                dsc.op1.lclNum = lclNum;
+
+                // It seems like somewhere in local-AP we check op2.vn for being ValueNumStore::VNForNull
+                // while we shouldn't. TODO: remove this quirk.
+                if (cnsVN == ValueNumStore::VNForNull())
+                {
+                    dsc.op2.vn = ValueNumStore::VNForNull();
+                }
+            }
+            else
+            {
+                assert(vn != ValueNumStore::NoVN);
+                assert(cnsVN != ValueNumStore::NoVN);
+                dsc.op1.lclNum = BAD_VAR_NUM;
+                dsc.op1.vn     = vn;
+                dsc.op2.vn     = cnsVN;
+            }
+            return dsc;
+        }
+
+        static AssertionDsc CreateNonNullAssertion(Compiler* comp, unsigned lclNum, ValueNum vn)
+        {
+            return CreateConstantLclvarAssertion(comp, lclNum, vn, 0, ValueNumStore::VNForNull(), false);
+        }
+
+        static AssertionDsc CreateInt32ConstantVNAssertion(Compiler* comp, ValueNum op1VN, ValueNum op2VN, bool equals)
+        {
+            assert(op1VN != ValueNumStore::NoVN);
+            assert(op1VN != ValueNumStore::NoVN);
+            assert(comp->vnStore->IsVNInt32Constant(op2VN));
+            assert(!comp->vnStore->IsVNHandle(op2VN));
+            assert(!comp->optLocalAssertionProp);
+
+            AssertionDsc dsc   = {};
+            dsc.assertionKind  = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
+            dsc.op1.lclNum     = BAD_VAR_NUM;
+            dsc.op1.vn         = op1VN;
+            dsc.op2.vn         = op2VN;
+            dsc.op1.kind       = O1K_VN;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.u1.iconVal = comp->vnStore->ConstantValue<int>(op2VN);
+            dsc.op2.SetIconFlag(GTF_EMPTY);
+            return dsc;
+        }
+
+        static AssertionDsc CreateConstantBoundUnsigned(Compiler* comp, ValueNum relopVN)
+        {
+            assert(comp->vnStore->IsVNConstantBoundUnsigned(relopVN));
+
+            AssertionDsc dsc   = {};
+            dsc.assertionKind  = OAK_NOT_EQUAL;
+            dsc.op1.kind       = O1K_CONSTANT_LOOP_BND_UN;
+            dsc.op1.vn         = relopVN;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.vn         = comp->vnStore->VNZeroForType(TYP_INT);
+            dsc.op2.u1.iconVal = 0;
+            dsc.op2.SetIconFlag(GTF_EMPTY);
+            return dsc;
+        }
+
+        static AssertionDsc CreateSubtype(Compiler* comp, ValueNum objVN, ValueNum typeHndVN, bool exact)
+        {
+            assert((objVN != ValueNumStore::NoVN) && comp->vnStore->IsVNTypeHandle(typeHndVN));
+
+            AssertionDsc dsc   = {};
+            dsc.op1.kind       = exact ? O1K_EXACT_TYPE : O1K_SUBTYPE;
+            dsc.op1.vn         = objVN;
+            dsc.op2.kind       = O2K_CONST_INT;
+            dsc.op2.u1.iconVal = comp->vnStore->CoercedConstantValue<ssize_t>(typeHndVN);
+            dsc.op2.vn         = typeHndVN;
+            dsc.op2.SetIconFlag(GTF_ICON_CLASS_HDL);
+            dsc.assertionKind = OAK_EQUAL;
+            return dsc;
+        }
+
+        static AssertionDsc CreateNoThrowArrBnd(Compiler* comp, ValueNum idxVN, ValueNum lenVN)
+        {
+            assert(idxVN != ValueNumStore::NoVN);
+            assert(lenVN != ValueNumStore::NoVN);
+
+            AssertionDsc dsc  = {};
+            dsc.assertionKind = OAK_NO_THROW;
+            dsc.op1.kind      = O1K_ARR_BND;
+            dsc.op1.bnd.vnIdx = idxVN;
+            dsc.op1.bnd.vnLen = lenVN;
+            return dsc;
+        }
     };
 
 protected:
