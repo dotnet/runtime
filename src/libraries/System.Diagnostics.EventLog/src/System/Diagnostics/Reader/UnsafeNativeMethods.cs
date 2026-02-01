@@ -473,7 +473,7 @@ namespace Microsoft.Win32
         internal static partial bool EvtNext(
                             EventLogHandle queryHandle,
                             int eventSize,
-                            [MarshalAs(UnmanagedType.LPArray)] IntPtr[] events,
+                            [Out, MarshalAs(UnmanagedType.LPArray)] IntPtr[] events,
                             int timeout,
                             int flags,
                             ref int returned);
@@ -669,7 +669,7 @@ namespace Microsoft.Win32
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]
         internal static partial EventLogHandle EvtCreateRenderContext(
                             int valuePathsCount,
-                            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)]
+                            [In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)]
                                 string[] valuePaths,
                             EvtRenderContextFlags flags);
 
@@ -759,7 +759,7 @@ namespace Microsoft.Win32
                              EventLogHandle eventHandle,
                              uint messageId,
                              int valueCount,
-                             EvtStringVariant[] values,
+                             [In] EvtStringVariant[] values,
                              EvtFormatMessageFlags flags,
                              int bufferSize,
                              Span<char> buffer,

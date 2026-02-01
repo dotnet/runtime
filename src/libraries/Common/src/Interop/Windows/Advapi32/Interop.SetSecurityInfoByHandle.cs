@@ -13,9 +13,9 @@ internal static partial class Interop
             SafeHandle handle,
             /*DWORD*/ uint objectType,
             /*DWORD*/ uint securityInformation,
-            byte[]? owner,
-            byte[]? group,
-            byte[]? dacl,
-            byte[]? sacl);
+            [In] byte[]? owner,
+            [In] byte[]? group,
+            [In] byte[]? dacl,
+            [In] byte[]? sacl);
     }
 }

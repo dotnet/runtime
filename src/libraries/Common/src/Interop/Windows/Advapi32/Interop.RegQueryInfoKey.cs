@@ -18,15 +18,15 @@ internal static partial class Interop
         internal static partial int RegQueryInfoKey(
             SafeRegistryHandle hKey,
             [Out] char[]? lpClass,
-            int[]? lpcbClass,
+            [In, Out] int[]? lpcbClass,
             IntPtr lpReserved_MustBeZero,
             ref int lpcSubKeys,
-            int[]? lpcbMaxSubKeyLen,
-            int[]? lpcbMaxClassLen,
+            [Out] int[]? lpcbMaxSubKeyLen,
+            [Out] int[]? lpcbMaxClassLen,
             ref int lpcValues,
-            int[]? lpcbMaxValueNameLen,
-            int[]? lpcbMaxValueLen,
-            int[]? lpcbSecurityDescriptor,
-            int[]? lpftLastWriteTime);
+            [Out] int[]? lpcbMaxValueNameLen,
+            [Out] int[]? lpcbMaxValueLen,
+            [Out] int[]? lpcbSecurityDescriptor,
+            [Out] int[]? lpftLastWriteTime);
     }
 }

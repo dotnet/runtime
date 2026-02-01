@@ -9,6 +9,6 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, EntryPoint = "K32EnumProcesses", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EnumProcesses(int[] processIds, int size, out int needed);
+        internal static partial bool EnumProcesses([Out] int[] processIds, int size, out int needed);
     }
 }

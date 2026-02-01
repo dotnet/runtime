@@ -26,9 +26,9 @@ internal static partial class Interop
         internal static partial SocketError WSAIoctl_Blocking(
             SafeSocketHandle socketHandle,
             int ioControlCode,
-            byte[]? inBuffer,
+            [In] byte[]? inBuffer,
             int inBufferSize,
-            byte[]? outBuffer,
+            [Out] byte[]? outBuffer,
             int outBufferSize,
             out int bytesTransferred,
             IntPtr overlapped,

@@ -415,7 +415,7 @@ internal static partial class Interop
         internal static partial int SetContextAttributesW(
             ref CredHandle contextHandle,
             ContextAttribute attribute,
-            byte[] buffer,
+            [In] byte[] buffer,
             int bufferSize);
 
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]

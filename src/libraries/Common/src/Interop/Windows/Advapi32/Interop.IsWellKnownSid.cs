@@ -10,7 +10,7 @@ internal static partial class Interop
     {
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "IsWellKnownSid", SetLastError = true)]
         internal static partial int IsWellKnownSid(
-            byte[] sid,
+            [In] byte[] sid,
             int type);
     }
 }
