@@ -3834,103 +3834,45 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
 
     while (optAssertionCount > limit)
     {
-        AssertionIndex index        = optAssertionCount;
-        AssertionDsc*  curAssertion = optGetAssertion(index);
+        AssertionIndex      index        = optAssertionCount;
+        const AssertionDsc& curAssertion = optGetAssertion(index);
         optAssertionCount--;
-        unsigned lclNum = curAssertion->op1.lclNum;
+        unsigned lclNum = curAssertion.op1.lclNum;
         assert(lclNum < lvaCount);
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
         //
         // Find the Copy assertions
         //
-        if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
-            (curAssertion->op2.kind == O2K_LCLVAR_COPY))
+        if ((curAssertion.assertionKind == OAK_EQUAL) && (curAssertion.op1.kind == O1K_LCLVAR) &&
+            (curAssertion.op2.kind == O2K_LCLVAR_COPY))
         {
             //
             //  op2.lclNum no longer depends upon this assertion
             //
-            lclNum = curAssertion->op2.lclNum;
+            lclNum = curAssertion.op2.lclNum;
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
     }
     while (optAssertionCount < limit)
     {
-        AssertionIndex index        = ++optAssertionCount;
-        AssertionDsc*  curAssertion = optGetAssertion(index);
-        unsigned       lclNum       = curAssertion->op1.lclNum;
+        AssertionIndex      index        = ++optAssertionCount;
+        const AssertionDsc& curAssertion = optGetAssertion(index);
+        unsigned            lclNum       = curAssertion.op1.lclNum;
         BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
         //
         // Check for Copy assertions
         //
-        if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
-            (curAssertion->op2.kind == O2K_LCLVAR_COPY))
+        if ((curAssertion.assertionKind == OAK_EQUAL) && (curAssertion.op1.kind == O1K_LCLVAR) &&
+            (curAssertion.op2.kind == O2K_LCLVAR_COPY))
         {
             //
             //  op2.lclNum now depends upon this assertion
             //
-            lclNum = curAssertion->op2.lclNum;
+            lclNum = curAssertion.op2.lclNum;
             BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
-    }
-}
-
-/*****************************************************************************
- *
- *  The following removes the i-th entry in the assertions table
- *  used only during local assertion prop
- */
-
-inline void Compiler::optAssertionRemove(AssertionIndex index)
-{
-    assert(index > 0);
-    assert(index <= optAssertionCount);
-    assert(optAssertionCount <= optMaxAssertionCount);
-
-    AssertionDsc* curAssertion = optGetAssertion(index);
-
-    //  Two cases to consider if (index == optAssertionCount) then the last
-    //  entry in the table is to be removed and that happens automatically when
-    //  optAssertionCount is decremented and we can just clear the optAssertionDep bits
-    //  The other case is when index < optAssertionCount and here we overwrite the
-    //  index-th entry in the table with the data found at the end of the table
-    //  Since we are reordering the rable the optAssertionDep bits need to be recreated
-    //  using optAssertionReset(0) and optAssertionReset(newAssertionCount) will
-    //  correctly update the optAssertionDep bits
-    //
-    if (index == optAssertionCount)
-    {
-        unsigned lclNum = curAssertion->op1.lclNum;
-        BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
-
-        //
-        // Check for Copy assertions
-        //
-        if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
-            (curAssertion->op2.kind == O2K_LCLVAR_COPY))
-        {
-            //
-            //  op2.lclNum no longer depends upon this assertion
-            //
-            lclNum = curAssertion->op2.lclNum;
-            BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
-        }
-
-        optAssertionCount--;
-    }
-    else
-    {
-        AssertionDsc*  lastAssertion     = optGetAssertion(optAssertionCount);
-        AssertionIndex newAssertionCount = optAssertionCount - 1;
-
-        optAssertionReset(0); // This make optAssertionCount equal 0
-
-        memcpy(curAssertion,  // the entry to be removed
-               lastAssertion, // last entry in the table
-               sizeof(AssertionDsc));
-
-        optAssertionReset(newAssertionCount);
     }
 }
 
