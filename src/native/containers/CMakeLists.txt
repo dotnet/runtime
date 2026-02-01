@@ -1,5 +1,6 @@
 set(SOURCES
     dn-allocator.c
+    dn-ebr.c
     dn-fwd-list.c
     dn-list.c
     dn-queue.c
@@ -23,11 +24,24 @@ configure_file(dn-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/dn-config.h)
 
 target_include_directories(dn-containers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(dn-containers PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(dn-containers PUBLIC minipal)
 set_target_properties(dn-containers PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
 
 target_include_directories(dn-containers-no-lto PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(dn-containers-no-lto PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(dn-containers-no-lto PUBLIC minipal)
 set_target_properties(dn-containers-no-lto
     PROPERTIES
     CLR_CONTROL_FLOW_GUARD ON
     INTERPROCEDURAL_OPTIMIZATION OFF)
+
+# Tests
+add_executable(dn-ebr-stress tests/ebr-stress.c)
+target_sources(dn-ebr-stress PRIVATE $<TARGET_OBJECTS:dn-containers>)
+target_link_libraries(dn-ebr-stress PRIVATE minipal)
+target_include_directories(dn-ebr-stress PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_executable(dn-ebr-bench tests/ebr-bench.c)
+target_sources(dn-ebr-bench PRIVATE $<TARGET_OBJECTS:dn-containers>)
+target_link_libraries(dn-ebr-bench PRIVATE minipal)
+target_include_directories(dn-ebr-bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
