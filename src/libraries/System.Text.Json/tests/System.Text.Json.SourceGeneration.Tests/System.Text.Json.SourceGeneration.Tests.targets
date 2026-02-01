@@ -58,6 +58,7 @@
     <Compile Include="SerializationLogicTests.cs" />
     <Compile Include="TestClasses.cs" />
     <Compile Include="TestClasses.CustomConverters.cs" />
+    <Compile Include="InvalidTypesWithConvertersTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestedRoslynVersion)' >= '4.0'">

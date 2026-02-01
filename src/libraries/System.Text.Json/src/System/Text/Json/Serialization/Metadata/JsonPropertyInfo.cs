@@ -427,10 +427,27 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
-                _jsonTypeInfo.EnsureConfigured();
+                // Try to expand any custom converter first to avoid
+                // eagerly resolving JsonTypeInfo for types that have custom converters.
+                // This prevents failures for types with properties that cannot be serialized
+                // (e.g., ref properties) when they have a custom converter that handles serialization.
+                JsonConverter? expandedCustomConverter = null;
+                if (CustomConverter is not null)
+                {
+                    expandedCustomConverter = Options.ExpandConverterFactory(CustomConverter, PropertyType);
+                }
 
-                DetermineEffectiveConverter(_jsonTypeInfo);
+                if (expandedCustomConverter is null)
+                {
+                    // If expandedCustomConverter is null, it means either:
+                    // (1) no custom converter was specified, or
+                    // (2) a custom converter was specified but the factory returned null after expansion.
+                    // In either case, we need to get the JsonTypeInfo.
+                    _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
+                    _jsonTypeInfo.EnsureConfigured();
+                }
+
+                DetermineEffectiveConverter(_jsonTypeInfo, expandedCustomConverter);
                 DetermineNumberHandlingForProperty();
                 DetermineEffectiveObjectCreationHandlingForProperty();
                 DetermineSerializationCapabilities();
@@ -466,7 +483,7 @@ namespace System.Text.Json.Serialization.Metadata
             IsConfigured = true;
         }
 
-        private protected abstract void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo);
+        private protected abstract void DetermineEffectiveConverter(JsonTypeInfo? jsonTypeInfo, JsonConverter? expandedCustomConverter);
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
@@ -592,14 +609,14 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(DeclaringTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
             Debug.Assert(!IsConfigured, "Should not be called post-configuration.");
-            Debug.Assert(_jsonTypeInfo != null, "Must have already been determined on configuration.");
 
             bool numberHandlingIsApplicable = NumberHandingIsApplicable();
 
             if (numberHandlingIsApplicable)
             {
                 // Priority 1: Get handling from attribute on property/field, its parent class type or property type.
-                JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeInfo.NumberHandling ?? _jsonTypeInfo.NumberHandling;
+                // _jsonTypeInfo may be null if using a custom converter that doesn't need type metadata.
+                JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeInfo.NumberHandling ?? _jsonTypeInfo?.NumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
                 if (!handling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
@@ -659,9 +676,12 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyValueTypeMustHaveASetter(this);
                 }
 
-                Debug.Assert(_jsonTypeInfo != null);
-                Debug.Assert(_jsonTypeInfo.IsConfigurationStarted);
-                if (JsonTypeInfo.SupportsPolymorphicDeserialization)
+                // _jsonTypeInfo may be null if using a custom converter that doesn't need type metadata.
+                if (_jsonTypeInfo is not null)
+                {
+                    Debug.Assert(_jsonTypeInfo.IsConfigurationStarted);
+                }
+                if (JsonTypeInfo?.SupportsPolymorphicDeserialization == true)
                 {
                     ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowPolymorphicDeserialization(this);
                 }

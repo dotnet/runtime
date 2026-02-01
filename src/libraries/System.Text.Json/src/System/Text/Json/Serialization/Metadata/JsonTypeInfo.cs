@@ -763,16 +763,21 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
 
-            if (ElementType != null)
+            // Only resolve element and key types if using built-in converters.
+            // Custom converters should handle their element/key types themselves.
+            if (Converter.IsInternalConverter)
             {
-                _elementTypeInfo ??= Options.GetTypeInfoInternal(ElementType);
-                _elementTypeInfo.EnsureConfigured();
-            }
+                if (ElementType != null)
+                {
+                    _elementTypeInfo ??= Options.GetTypeInfoInternal(ElementType);
+                    _elementTypeInfo.EnsureConfigured();
+                }
 
-            if (KeyType != null)
-            {
-                _keyTypeInfo ??= Options.GetTypeInfoInternal(KeyType);
-                _keyTypeInfo.EnsureConfigured();
+                if (KeyType != null)
+                {
+                    _keyTypeInfo ??= Options.GetTypeInfoInternal(KeyType);
+                    _keyTypeInfo.EnsureConfigured();
+                }
             }
 
             DetermineIsCompatibleWithCurrentOptions();
