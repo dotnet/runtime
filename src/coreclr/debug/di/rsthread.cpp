@@ -5221,7 +5221,7 @@ BOOL CordbInternalFrame::ConvertInternalFrameForILMethodWithoutMetadata(
     }
 
     // Retrieve the type of the method associated with the STUBFRAME_JIT_COMPILATION.
-    IDacDbiInterface::DynamicMethodType type = GetProcess()->GetDAC()->IsILStubOrLCGMethod(m_vmMethodDesc);
+    IDacDbiInterface::DynamicMethodType type = GetProcess()->GetDAC()->IsDiagnosticsHiddenOrLCGMethod(m_vmMethodDesc);
 
     // Here are the conversion rules:
     // 1)  For a normal managed method, we don't convert, and we return FALSE.
@@ -5231,7 +5231,7 @@ BOOL CordbInternalFrame::ConvertInternalFrameForILMethodWithoutMetadata(
     {
         return FALSE;
     }
-    else if (type == IDacDbiInterface::kILStub)
+    else if (type == IDacDbiInterface::kDiagnosticHidden)
     {
         return TRUE;
     }
@@ -7300,7 +7300,7 @@ BOOL CordbNativeFrame::ConvertNativeFrameForILMethodWithoutMetadata(
 
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
     IDacDbiInterface::DynamicMethodType type =
-        pDAC->IsILStubOrLCGMethod(GetNativeCode()->GetVMNativeCodeMethodDescToken());
+        pDAC->IsDiagnosticsHiddenOrLCGMethod(GetNativeCode()->GetVMNativeCodeMethodDescToken());
 
     // Here are the conversion rules:
     // 1)  For a normal managed method, we don't convert, and we return FALSE.
@@ -7310,7 +7310,7 @@ BOOL CordbNativeFrame::ConvertNativeFrameForILMethodWithoutMetadata(
     {
         return FALSE;
     }
-    else if (type == IDacDbiInterface::kILStub)
+    else if (type == IDacDbiInterface::kDiagnosticHidden)
     {
         return TRUE;
     }
@@ -8523,23 +8523,23 @@ HRESULT CordbJITILFrame::EnumerateArguments(ICorDebugValueEnum **ppValueEnum)
         // Get arg count
         ULONG argCount;
         IfFailThrow(GetFunction()->GetSig(NULL, &argCount, NULL));
-        
+
         // Handle varargs
         if (m_fVarArgFnx && !m_sigParserCached.IsNull())
         {
             argCount = m_allArgsCount;
         }
-        
+
         // Create the lambda that captures 'this'
         CordbJITILFrame* pThis = this;
         ValueGetter getter = [pThis](DWORD index, ICorDebugValue** ppValue) -> HRESULT {
             return pThis->GetArgument(index, ppValue);
         };
-        
+
         RSInitHolder<CordbValueEnum> cdVE(
             new CordbValueEnum(
-                GetProcess(), 
-                argCount, 
+                GetProcess(),
+                argCount,
                 getter,
                 m_nativeFrame->m_pThread->GetRefreshStackNeuterList()));
 
@@ -8901,18 +8901,18 @@ HRESULT CordbJITILFrame::EnumerateLocalVariablesEx(ILCodeKind flags, ICorDebugVa
             IfFailThrow(m_ilCode->GetLocalVarSig(NULL, &localsCount));
         }
 #endif // FEATURE_CODE_VERSIONING
-        
+
         // Capture both 'this' and the flags
         CordbJITILFrame* pThis = this;
         ILCodeKind codeKind = flags;
         ValueGetter getter = [pThis, codeKind](DWORD index, ICorDebugValue** ppValue) -> HRESULT {
             return pThis->GetLocalVariableEx(codeKind, index, ppValue);
         };
-        
+
         RSInitHolder<CordbValueEnum> cdVE(
             new CordbValueEnum(
-                GetProcess(), 
-                localsCount, 
+                GetProcess(),
+                localsCount,
                 getter,
                 m_nativeFrame->m_pThread->GetRefreshStackNeuterList()));
 
@@ -11189,17 +11189,17 @@ HRESULT CordbAsyncFrame::EnumerateArguments(ICorDebugValueEnum **ppValueEnum)
     {
         ULONG argCount;
         IfFailThrow(m_pFunction->GetSig(NULL, &argCount, NULL));
-        
+
         // Capture 'this' in the lambda
         CordbAsyncFrame* pThis = this;
         ValueGetter getter = [pThis](DWORD index, ICorDebugValue** ppValue) -> HRESULT {
             return pThis->GetArgument(index, ppValue);
         };
-    
+
         RSInitHolder<CordbValueEnum> cdVE(
             new CordbValueEnum(
-                GetProcess(), 
-                argCount, 
+                GetProcess(),
+                argCount,
                 getter,
                 GetProcess()->GetContinueNeuterList()));
 
@@ -11346,17 +11346,17 @@ HRESULT CordbAsyncFrame::EnumerateLocalVariablesEx(ILCodeKind flags, ICorDebugVa
             IfFailThrow(m_pILCode->GetLocalVarSig(NULL, &localsCount));
         }
 #endif // FEATURE_CODE_VERSIONING
-        
+
         CordbAsyncFrame* pThis = this;
         ILCodeKind codeKind = flags;
         ValueGetter getter = [pThis, codeKind](DWORD index, ICorDebugValue** ppValue) -> HRESULT {
             return pThis->GetLocalVariableEx(codeKind, index, ppValue);
         };
-        
+
         RSInitHolder<CordbValueEnum> cdVE(
             new CordbValueEnum(
-                GetProcess(), 
-                localsCount, 
+                GetProcess(),
+                localsCount,
                 getter,
                 GetProcess()->GetContinueNeuterList()));
         cdVE.TransferOwnershipExternal(ppValueEnum);
