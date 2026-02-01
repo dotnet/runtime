@@ -2914,8 +2914,6 @@ ErrExit:
     return hr;
 } // HRESULT MDInfo::GetOneElementType()
 
-// Display the fields of the PInvoke custom value structure.
-
 // Fills given varaint with value given in pValue and of type in bCPlusTypeFlag
 //
 // Taken from MetaInternal.cpp
