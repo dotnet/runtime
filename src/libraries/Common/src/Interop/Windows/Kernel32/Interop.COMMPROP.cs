@@ -16,6 +16,8 @@ internal static partial class Interop
         // https://msdn.microsoft.com/en-us/library/windows/desktop/aa363189.aspx
         internal struct COMMPROP
         {
+            public const int PCF_DTRDSR = 0x1;
+
             public ushort wPacketLength;
             public ushort wPacketVersion;
             public int dwServiceMask;
