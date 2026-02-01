@@ -97,7 +97,7 @@ DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, TARGET,            _target)
 DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, ACCESSTYPE,        _accessType)
 
 DEFINE_CLASS(APPCONTEXT,            System,                 AppContext)
-DEFINE_METHOD(APPCONTEXT,   SETUP,              Setup,          SM_PtrPtrChar_PtrPtrChar_Int_ObjectHandleOnStack_RetVoid)
+DEFINE_METHOD(APPCONTEXT,   SETUP,              Setup,          SM_PtrPtrChar_PtrPtrChar_Int_PtrException_RetVoid)
 DEFINE_METHOD(APPCONTEXT,   ON_PROCESS_EXIT,    OnProcessExit,  SM_RetVoid)
 DEFINE_METHOD(APPCONTEXT,   ON_UNHANDLED_EXCEPTION,     OnUnhandledException,  SM_Obj_RetVoid)
 DEFINE_FIELD(APPCONTEXT, FIRST_CHANCE_EXCEPTION,        FirstChanceException)
@@ -701,8 +701,6 @@ DEFINE_CLASS(EXECUTIONANDSYNCBLOCKSTORE, CompilerServices, ExecutionAndSyncBlock
 DEFINE_METHOD(EXECUTIONANDSYNCBLOCKSTORE, PUSH, Push, NoSig)
 DEFINE_METHOD(EXECUTIONANDSYNCBLOCKSTORE, POP, Pop, NoSig)
 
-DEFINE_CLASS(OBJECT_HANDLE_ON_STACK, CompilerServices, ObjectHandleOnStack)
-
 DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_DATA,            GetRawData,         NoSig)
@@ -1189,10 +1187,10 @@ DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,  ConvertCon
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED, ConvertContentsToManaged,   SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_NATIVE,                ClearNative,                SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED,               ClearManaged,               SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE_UCO,  ConvertContentsToNative,    SM_ObjectHandleOnStack_ObjectHandleOnStack_PtrIntPtr_ObjectHandleOnStack_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED_UCO, ConvertContentsToManaged,   SM_ObjectHandleOnStack_ObjectHandleOnStack_PtrIntPtr_ObjectHandleOnStack_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_NATIVE_UCO,                ClearNative,                SM_ObjectHandleOnStack_ObjectHandleOnStack_PtrIntPtr_ObjectHandleOnStack_RetVoid)
-DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED_UCO,               ClearManaged,               SM_ObjectHandleOnStack_ObjectHandleOnStack_PtrIntPtr_ObjectHandleOnStack_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE_UCO,  ConvertContentsToNative,    SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED_UCO, ConvertContentsToManaged,   SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_NATIVE_UCO,                ClearNative,                SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED_UCO,               ClearManaged,               SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
 
 DEFINE_CLASS(ASANY_MARSHALER,            StubHelpers,                 AsAnyMarshaler)
 DEFINE_METHOD(ASANY_MARSHALER,           CTOR,                        .ctor,                      IM_IntPtr_RetVoid)

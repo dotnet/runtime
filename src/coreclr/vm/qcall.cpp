@@ -42,13 +42,6 @@ void QCall::StringHandleOnStack::Set(LPCUTF8 pszValue)
 // Helpers for returning common managed types from QCall
 //
 
-QCall::ObjectHandleOnStack::ObjectHandleOnStack(OBJECTREF* o)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(IsProtectedByGCFrame(o));
-    m_ppObject = (Object**)o;
-}
-
 void QCall::ObjectHandleOnStack::SetByteArray(const BYTE * p, COUNT_T length)
 {
     STANDARD_VM_CONTRACT;

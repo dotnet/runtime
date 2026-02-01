@@ -194,8 +194,6 @@ public:
     {
         Object** m_ppObject;
 
-        ObjectHandleOnStack(OBJECTREF* o);
-
         OBJECTREF Get()
         {
             LIMITED_METHOD_CONTRACT;

@@ -559,8 +559,8 @@ void DispParamCustomMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
     IUnknown* pUnk = bByref ? *V_UNKNOWNREF(pSrcVar) : V_UNKNOWN(pSrcVar);
 
     target.InvokeThrowing(
-        QCall::ObjectHandleOnStack{ &gc.CustomMarshaler },
-        QCall::ObjectHandleOnStack{ pDestObj },
+        &gc.CustomMarshaler,
+        pDestObj,
         &pUnk);
 
     GCPROTECT_END();
@@ -595,8 +595,8 @@ void DispParamCustomMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIAN
     // Invoke the MarshalManagedToNative method.
     IUnknown* pUnkRaw = NULL;
     target.InvokeThrowing(
-        QCall::ObjectHandleOnStack{ &gc.CustomMarshaler },
-        QCall::ObjectHandleOnStack{ pSrcObj },
+        &gc.CustomMarshaler,
+        pSrcObj,
         &pUnkRaw);
 
     pUnk = pUnkRaw;
@@ -667,8 +667,8 @@ void DispParamCustomMarshaler::MarshalManagedToNativeRef(OBJECTREF *pSrcObj, VAR
     IUnknown* pUnkResult = V_UNKNOWN(&vtmp);
 
     target.InvokeThrowing(
-        QCall::ObjectHandleOnStack{ &gc.CustomMarshaler },
-        QCall::ObjectHandleOnStack{ pSrcObj },
+        &gc.CustomMarshaler,
+        pSrcObj,
         &pUnkResult);
 
     V_UNKNOWN(&vtmp) = pUnkResult;
@@ -714,8 +714,8 @@ void DispParamCustomMarshaler::CleanUpManaged(OBJECTREF *pObj)
 
     void* dummyNative = NULL;
     target.InvokeThrowing(
-        QCall::ObjectHandleOnStack{ &gc.CustomMarshaler },
-        QCall::ObjectHandleOnStack{ pObj },
+        &gc.CustomMarshaler,
+        pObj,
         &dummyNative);
 
     GCPROTECT_END();

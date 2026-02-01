@@ -679,16 +679,14 @@ void CallDefaultConstructor(OBJECTREF ref);
 //
 // The corresponding C# method would be declared as:
 //   [UnmanagedCallersOnly]
-//   public static void MyMethod(int arg1, ObjectHandleOnStack arg2, ObjectHandleOnStack exception);
+//   public static void MyMethod(int arg1, object* arg2, Exception* pException);
 //
 class UnmanagedCallersOnlyCaller final
 {
     MethodDesc* _pMD;
-    PCODE _fptr;
 public:
     explicit UnmanagedCallersOnlyCaller(BinderMethodID id)
         : _pMD{}
-        , _fptr{}
     {
         CONTRACTL
         {
@@ -701,9 +699,6 @@ public:
         _pMD = CoreLibBinder::GetMethod(id);
         _ASSERTE(_pMD != NULL);
         _ASSERTE(_pMD->HasUnmanagedCallersOnlyAttribute());
-
-        _fptr = _pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
-        _ASSERTE(_fptr != (PCODE)NULL);
     }
 
     template<typename... Args>
@@ -714,7 +709,6 @@ public:
             THROWS;
             GC_TRIGGERS;
             MODE_COOPERATIVE;
-            PRECONDITION(_fptr != (PCODE)NULL);
         }
         CONTRACTL_END;
 
@@ -725,16 +719,18 @@ public:
         gc.Exception = NULL;
         GCPROTECT_BEGIN(gc);
 
-        QCall::ObjectHandleOnStack exceptHandle{ &gc.Exception };
         {
             GCX_PREEMP();
 
+            PCODE methodEntry = _pMD->GetSingleCallableAddrOfCode();
+            _ASSERTE(methodEntry != (PCODE)NULL);
+
             // Cast the function pointer to the appropriate type.
             // Note that we append the exception handle argument.
-            auto fptr = reinterpret_cast<void(*)(Args..., QCall::ObjectHandleOnStack)>(_fptr);
+            auto fptr = reinterpret_cast<void(*)(Args..., OBJECTREF*)>(methodEntry);
 
             // The last argument is the implied exception handle for any exceptions.
-            fptr(args..., exceptHandle);
+            fptr(args..., &gc.Exception);
         }
 
         // If an exception was thrown, propagate it
