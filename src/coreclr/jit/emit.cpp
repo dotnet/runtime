@@ -3566,6 +3566,8 @@ void emitter::emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr secondRetSiz
 }
 #endif // MULTIREG_HAS_SECOND_GC_RET
 
+#ifndef TARGET_WASM
+
 /*****************************************************************************
  *
  *  Allocate an instruction descriptor for an indirect call.
@@ -3730,6 +3732,8 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
         return id;
     }
 }
+
+#endif // TARGET_WASM
 
 /*****************************************************************************
  *

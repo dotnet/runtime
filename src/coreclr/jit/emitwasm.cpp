@@ -117,6 +117,71 @@ bool emitter::emitInsIsStore(instruction ins)
     return false;
 }
 
+/*****************************************************************************
+ *
+ *  Add a call instruction (direct or indirect).
+ *
+ * Unless callType is EC_FUNC_TOKEN, addr needs to be null.
+ *
+ */
+
+void emitter::emitIns_Call(const EmitCallParams& params)
+{
+    /* Sanity check the arguments depending on callType */
+
+    assert(params.callType < EC_COUNT);
+    assert((params.callType == EC_FUNC_TOKEN) || (params.addr == nullptr));
+
+    /* Managed RetVal: emit sequence point for the call */
+    if (emitComp->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
+    {
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
+    }
+
+    /*
+        We need to allocate the appropriate instruction descriptor based
+        on whether this is a direct/indirect call, and whether we need to
+        record an updated set of live GC variables.
+     */
+    instrDesc* id = nullptr;
+
+    instruction ins;
+
+    // FIXME-WASM: Currently while we're loading SP onto the stack we're not loading PEP, so generate one here.
+    emitIns_I(INS_i32_const, EA_4BYTE, 0);
+
+    switch (params.callType)
+    {
+        case EC_FUNC_TOKEN:
+            ins = params.isJump ? INS_return_call : INS_call;
+            id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: function index reloc */);
+            id->idIns(ins);
+            id->idInsFmt(IF_ULEB128);
+            break;
+        case EC_INDIR_R:
+            // Indirect load of actual ftn ptr from indirection cell (on the stack)
+            // TODO-WASM: temporary, move this into higher layers (lowering).
+            emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
+            ins = params.isJump ? INS_return_call_indirect : INS_call_indirect;
+            id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: type index reloc */);
+            id->idIns(ins);
+            id->idInsFmt(IF_CALL_INDIRECT);
+            break;
+        default:
+            unreached();
+    }
+
+    if (m_debugInfoSize > 0)
+    {
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
+    }
+
+    dispIns(id);
+    appendToCurIG(id);
+    // emitLastMemBarrier = nullptr; // Cannot optimize away future memory barriers
+}
+
 //-----------------------------------------------------------------------------
 // emitNewInstrLclVarDecl: Construct an instrDesc corresponding to a wasm local
 // declaration.
@@ -305,6 +370,12 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_SLEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfSLEB128(emitGetInsSC(this));
             break;
+        case IF_CALL_INDIRECT:
+        {
+            size += SizeOfULEB128(emitGetInsSC(this));
+            size += SizeOfULEB128(0);
+            break;
+        }
         case IF_F32:
             size += 4;
             break;
@@ -431,6 +502,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputOpcode(dst, ins);
             cnsval_ssize_t constant = emitGetInsSC(id);
             dst += emitOutputSLEB128(dst, (int64_t)constant);
+            break;
+        }
+        case IF_CALL_INDIRECT:
+        {
+            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputULEB128(dst, (uint64_t)emitGetInsSC(id));
+            dst += emitOutputULEB128(dst, 0);
             break;
         }
         case IF_F32:
@@ -603,6 +681,13 @@ void emitter::emitDispIns(
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
             dispJumpTargetIfAny();
+        }
+        break;
+
+        case IF_CALL_INDIRECT:
+        {
+            cnsval_ssize_t imm = emitGetInsSC(id);
+            printf(" %llu 0", (uint64_t)imm);
         }
         break;
 
