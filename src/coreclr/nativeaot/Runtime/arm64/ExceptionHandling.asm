@@ -252,6 +252,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;; RhpThrowExact
+;;
+;; SUMMARY:  Similar to RhpThrowEx, except that it sets the rethrow flag
+;;
+;; INPUT:  X0:  exception object
+;;
+;; OUTPUT:
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    LEAF_ENTRY RhpThrowExact
+
+        mov         w4, #4                                          ;; w4 = ExKind.RethrowFlag
+        b           RhpThrowExImpl
+
+    LEAF_END RhpThrowExact
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; RhpThrowEx
 ;;
 ;; INPUT:  X0:  exception object
@@ -260,6 +278,10 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     NESTED_ENTRY RhpThrowEx
+
+        mov         w4, #1                                          ;; w4 = ExKind.Throw
+
+RhpThrowExImpl
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
@@ -317,8 +339,7 @@ NotHijacked
         strb        w3, [x1, #OFFSETOF__ExInfo__m_passNumber]       ;; pExInfo->m_passNumber = 1
         mov         w3, #0xFFFFFFFF
         str         w3, [x1, #OFFSETOF__ExInfo__m_idxCurClause]     ;; pExInfo->m_idxCurClause = MaxTryRegionIdx
-        mov         w3, #1
-        strb        w3, [x1, #OFFSETOF__ExInfo__m_kind]             ;; pExInfo->m_kind = ExKind.Throw
+        strb        w4, [x1, #OFFSETOF__ExInfo__m_kind]             ;; pExInfo->m_kind = ExKind (from w4)
 
         ;; link the ExInfo into the thread's ExInfo chain
         ldr         x3, [x2, #OFFSETOF__Thread__m_pExInfoStackHead]

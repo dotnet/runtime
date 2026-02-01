@@ -55,6 +55,7 @@
 #include "patchpointinfo.h"
 
 #include "exinfo.h"
+#include "exkind.h"
 #include "arraynative.inl"
 
 using std::isfinite;
@@ -835,7 +836,6 @@ EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transi
     ResetCurrentContext();
 
     OBJECTREF oref = ObjectToOBJECTREF(obj);
-    GetThread()->GetExceptionState()->SetRaisingForeignException();
 
     Thread *pThread = GetThread();
 
@@ -845,7 +845,7 @@ EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transi
 
     FC_CAN_TRIGGER_GC();
 
-    DispatchManagedException(oref, exceptionFrame.GetContext());
+    DispatchManagedException(oref, exceptionFrame.GetContext(), NULL, ExKind::RethrowFlag);
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();

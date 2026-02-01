@@ -81,6 +81,24 @@ NESTED_END RhpThrowHwEx
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
+// RhpThrowExact
+//
+// SUMMARY:  Similar to RhpThrowEx, except that it sets the rethrow flag
+//
+// INPUT:  R0:  exception object
+//
+// OUTPUT:
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+LEAF_ENTRY RhpThrowExact, _TEXT
+
+        mov         r2, #4                                          // r2 = ExKind.RethrowFlag
+        b           RhpThrowExImpl
+
+LEAF_END RhpThrowExact, _TEXT
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 // RhpThrowEx
 //
 // INPUT:  R0:  exception object
@@ -89,6 +107,10 @@ NESTED_END RhpThrowHwEx
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+
+        mov         r2, #1                                          // r2 = ExKind.Throw
+
+ALTERNATE_ENTRY RhpThrowExImpl
 
         // Setup a PAL_LIMITED_CONTEXT on the stack {
         PROLOG_VPUSH {d8-d15}
@@ -105,8 +127,6 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
         mov         r4, r0 // Save exception object
         // r0 = GetThread()
         INLINE_GETTHREAD
-
-        add         r2, sp, #(rsp_offsetof_Context + SIZEOF__PAL_LIMITED_CONTEXT + 0x8) 	// r2 <- addr of return address
 
         // There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic. So  the return
         // address could have been hijacked when we were in that C# code and we must remove the hijack and
@@ -158,9 +178,9 @@ LOCAL_LABEL(NotHiJacked):
         str         r3, [r1, #OFFSETOF__ExInfo__m_exception] 	      // init the exception object to null
         mov         r3, #1
         strb        r3, [r1, #OFFSETOF__ExInfo__m_passNumber]       // init to the first pass
-        strb        r3, [r1, #OFFSETOF__ExInfo__m_kind]
+        strb        r2, [r1, #OFFSETOF__ExInfo__m_kind]             // ExKind (from r2)
         mov         r3, #0xFFFFFFFF
-        str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]     // ExKind.Throw
+        str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]
 
         // link the ExInfo into the thread's ExInfo chain
         ldr         r3, [r0, #OFFSETOF__Thread__m_pExInfoStackHead]
