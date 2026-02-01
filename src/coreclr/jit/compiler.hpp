@@ -832,14 +832,7 @@ inline bool BasicBlock::HasPotentialEHSuccs(Compiler* comp)
  */
 inline FuncInfoDsc* Compiler::funCurrentFunc()
 {
-    if (UsesFunclets())
-    {
-        return funGetFunc(compCurrFuncIdx);
-    }
-    else
-    {
-        return &compFuncInfoRoot;
-    }
+    return funGetFunc(compCurrFuncIdx);
 }
 
 /*****************************************************************************
@@ -849,17 +842,10 @@ inline FuncInfoDsc* Compiler::funCurrentFunc()
  */
 inline void Compiler::funSetCurrentFunc(unsigned funcIdx)
 {
-    if (UsesFunclets())
-    {
-        assert(fgFuncletsCreated);
-        assert(FitsIn<unsigned short>(funcIdx));
-        noway_assert(funcIdx < compFuncInfoCount);
-        compCurrFuncIdx = (unsigned short)funcIdx;
-    }
-    else
-    {
-        assert(funcIdx == 0);
-    }
+    assert(fgFuncletsCreated);
+    assert(FitsIn<unsigned short>(funcIdx));
+    noway_assert(funcIdx < compFuncInfoCount);
+    compCurrFuncIdx = (unsigned short)funcIdx;
 }
 
 /*****************************************************************************
@@ -869,17 +855,9 @@ inline void Compiler::funSetCurrentFunc(unsigned funcIdx)
  */
 inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
 {
-    if (UsesFunclets())
-    {
-        assert(fgFuncletsCreated);
-        assert(funcIdx < compFuncInfoCount);
-        return &compFuncInfos[funcIdx];
-    }
-    else
-    {
-        assert(funcIdx == 0);
-        return &compFuncInfoRoot;
-    }
+    assert(fgFuncletsCreated);
+    assert(funcIdx < compFuncInfoCount);
+    return &compFuncInfos[funcIdx];
 }
 
 /*****************************************************************************
@@ -892,32 +870,26 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
  */
 inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 {
-    if (UsesFunclets())
-    {
-        assert(bbIsFuncletBeg(block));
+    assert(bbIsFuncletBeg(block));
 
-        EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
-        unsigned int funcIdx = eh->ebdFuncIndex;
-        if (eh->ebdHndBeg != block)
-        {
-            // If this is a filter EH clause, but we want the funclet
-            // for the filter (not the filter handler), it is the previous one
-            noway_assert(eh->HasFilter());
-            noway_assert(eh->ebdFilter == block);
-            assert(funGetFunc(funcIdx)->funKind == FUNC_HANDLER);
-            assert(funGetFunc(funcIdx)->funEHIndex == funGetFunc(funcIdx - 1)->funEHIndex);
-            assert(funGetFunc(funcIdx - 1)->funKind == FUNC_FILTER);
-            funcIdx--;
-        }
-
-        return funcIdx;
-    }
-    else
+    EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
+    unsigned int funcIdx = eh->ebdFuncIndex;
+    if (eh->ebdHndBeg != block)
     {
-        return 0;
+        // If this is a filter EH clause, but we want the funclet
+        // for the filter (not the filter handler), it is the previous one
+        noway_assert(eh->HasFilter());
+        noway_assert(eh->ebdFilter == block);
+        assert(funGetFunc(funcIdx)->funKind == FUNC_HANDLER);
+        assert(funGetFunc(funcIdx)->funEHIndex == funGetFunc(funcIdx - 1)->funEHIndex);
+        assert(funGetFunc(funcIdx - 1)->funKind == FUNC_FILTER);
+        funcIdx--;
     }
+
+    return funcIdx;
 }
 
+#if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------------
 // genRegNumFromMask : Maps a single register mask to a register number.
 //
@@ -1131,6 +1103,7 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
 
     return regNum;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 /*****************************************************************************
  *
@@ -1606,7 +1579,7 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 /*****************************************************************************/
 
 //------------------------------------------------------------------------------
-// gtNewHelperCallNode : Helper to create a call helper node.
+// gtNewVirtualFunctionLookupHelperCallNode : Helper to create a virtual function lookup helper node.
 //
 //
 // Arguments:
@@ -3023,6 +2996,14 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
 {
     assert(ILargNum < info.compILargsCount);
 
+#if defined(TARGET_WASM)
+    if (ILargNum >= lvaWasmSpArg)
+    {
+        ILargNum++;
+        assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
+    }
+#endif
+
     // Note that this works because if compRetBuffArg/compTypeCtxtArg/lvVarargsHandleArg are not present
     // they will be BAD_VAR_NUM (MAX_UINT), which is larger than any variable number.
     if (ILargNum >= info.compRetBuffArg)
@@ -3570,6 +3551,7 @@ inline int getJitStressLevel()
 
 #endif // DEBUG
 
+#if HAS_FIXED_REGISTER_SET
 /*****************************************************************************/
 /* Map a register argument number ("RegArgNum") to a register number ("RegNum").
  * A RegArgNum is in this range:
@@ -3605,7 +3587,7 @@ inline regNumber genMapFloatRegArgNumToRegNum(unsigned argNum)
 #endif
 }
 
-__forceinline regNumber genMapRegArgNumToRegNum(unsigned argNum, var_types type, CorInfoCallConvExtension callConv)
+FORCEINLINE regNumber genMapRegArgNumToRegNum(unsigned argNum, var_types type, CorInfoCallConvExtension callConv)
 {
     if (varTypeUsesFloatArgReg(type))
     {
@@ -3642,7 +3624,7 @@ inline regMaskTP genMapFloatRegArgNumToRegMask(unsigned argNum)
 #endif
 }
 
-__forceinline regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
+FORCEINLINE regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
 {
     regMaskTP result;
     if (varTypeUsesFloatArgReg(type))
@@ -3777,6 +3759,7 @@ inline unsigned genMapRegNumToRegArgNum(regNumber regNum, var_types type, CorInf
         return genMapIntRegNumToRegArgNum(regNum, callConv);
     }
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -4053,7 +4036,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
     bool result1 =
         // More helpers being added to IsSharedStaticHelper (that have similar behaviors but are not true
         // ShareStaticHelpers)
-        helper == CORINFO_HELP_STRCNS || helper == CORINFO_HELP_BOX ||
+        helper == CORINFO_HELP_BOX ||
 
         // helpers being added to IsSharedStaticHelper
         helper == CORINFO_HELP_GETSTATICFIELDADDR_TLS ||
@@ -4491,6 +4474,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
+        case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -4512,9 +4496,6 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_START_NONGC:
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
-#if defined(FEATURE_EH_WINDOWS_X86)
-        case GT_END_LFIN:
-#endif // FEATURE_EH_WINDOWS_X86
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
@@ -4522,6 +4503,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -4703,20 +4685,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeCall* call = AsCall();
-        if (call->IsAsync())
-        {
-            GenTreeLclVarCommon* suspendedArg = comp->gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(call);
-            if (suspendedArg != nullptr)
-            {
-                bool isEntire = comp->lvaLclExactSize(suspendedArg->GetLclNum()) == 1;
-                if (visitor(LocalDef(suspendedArg, isEntire, suspendedArg->GetLclOffs(), 1)) == VisitResult::Abort)
-                {
-                    return VisitResult::Abort;
-                }
-            }
-        }
-
+        GenTreeCall*         call    = AsCall();
         GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
         if (lclAddr != nullptr)
         {
@@ -4759,16 +4728,7 @@ GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visito
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeCall* call = AsCall();
-        if (call->IsAsync())
-        {
-            GenTreeLclVarCommon* suspendedArg = comp->gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(call);
-            if ((suspendedArg != nullptr) && (visitor(suspendedArg) == VisitResult::Abort))
-            {
-                return VisitResult::Abort;
-            }
-        }
-
+        GenTreeCall*         call    = AsCall();
         GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
         if (lclAddr != nullptr)
         {
@@ -5121,22 +5081,31 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 // fgRunDfs: Run DFS over the flow graph.
 //
 // Type parameters:
-//   VisitPreorder  - Functor type that takes a BasicBlock* and its preorder number
-//   VisitPostorder - Functor type that takes a BasicBlock* and its postorder number
-//   VisitEdge      - Functor type that takes two BasicBlock*.
-//   useProfile     - If true, determines order of successors visited using profile data
+//   SuccessorEnumerator - Functor type to enumerate successors of a block
+//   VisitPreorder       - Functor type that takes a BasicBlock* and its preorder number
+//   VisitPostorder      - Functor type that takes a BasicBlock* and its postorder number
+//   VisitEdge           - Functor type that takes two BasicBlock*.
+//   useProfile          - If true, determines order of successors visited using profile data
 //
 // Parameters:
 //   visitPreorder  - Functor to visit block in its preorder
 //   visitPostorder - Functor to visit block in its postorder
 //   visitEdge      - Functor to visit an edge. Called after visitPreorder (if
 //                    this is the first time the successor is seen).
+//   entryBlocks    - vector of entry blocks for the flow graph
 //
 // Returns:
 //   Number of blocks visited.
 //
-template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile /* = false */>
-unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder, VisitEdge visitEdge)
+template <typename SuccessorEnumerator,
+          typename VisitPreorder,
+          typename VisitPostorder,
+          typename VisitEdge,
+          const bool useProfile /* = false */>
+unsigned Compiler::fgRunDfs(VisitPreorder                visitPreorder,
+                            VisitPostorder               visitPostorder,
+                            VisitEdge                    visitEdge,
+                            jitstd::vector<BasicBlock*>& entryBlocks)
 {
     BitVecTraits traits(fgBBNumMax + 1, this);
     BitVec       visited(BitVecOps::MakeEmpty(&traits));
@@ -5144,7 +5113,7 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
     unsigned preOrderIndex  = 0;
     unsigned postOrderIndex = 0;
 
-    ArrayStack<AllSuccessorEnumerator> blocks(getAllocator(CMK_DepthFirstSearch));
+    ArrayStack<SuccessorEnumerator> blocks(getAllocator(CMK_DepthFirstSearch));
 
     auto dfsFrom = [&](BasicBlock* firstBB) {
         BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
@@ -5174,23 +5143,14 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
         }
     };
 
-    dfsFrom(fgFirstBB);
+    assert(!entryBlocks.empty());
 
-    if ((fgEntryBB != nullptr) && !BitVecOps::IsMember(&traits, visited, fgEntryBB->bbNum))
+    for (BasicBlock* const entryBlock : entryBlocks)
     {
-        // OSR methods will early on create flow that looks like it goes to the
-        // patchpoint, but during morph we may transform to something that
-        // requires the original entry (fgEntryBB).
-        assert(opts.IsOSR());
-        dfsFrom(fgEntryBB);
-    }
-
-    if ((genReturnBB != nullptr) && !BitVecOps::IsMember(&traits, visited, genReturnBB->bbNum))
-    {
-        assert(!fgGlobalMorphDone);
-        // We introduce the merged return BB before morph and will redirect
-        // other returns to it as part of morph; keep it reachable.
-        dfsFrom(genReturnBB);
+        if (!BitVecOps::IsMember(&traits, visited, entryBlock->bbNum))
+        {
+            dfsFrom(entryBlock);
+        }
     }
 
     assert(preOrderIndex == postOrderIndex);
@@ -5564,6 +5524,68 @@ bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned lim
     });
 
     return (result == BasicBlockVisit::Abort);
+}
+
+//--------------------------------------------------------------------------------
+// optVisitReachingAssertions: given a vn, call the specified callback function on all
+//    the assertions that reach it via PHI definitions if any.
+//
+// Arguments:
+//    vn         - The vn to visit all the reaching assertions for
+//    argVisitor - The callback function to call on the vn and its reaching assertions
+//
+// Return Value:
+//    AssertVisit::Aborted  - an argVisitor returned AssertVisit::Abort, we stop the walk and return
+//    AssertVisit::Continue - all argVisitor returned AssertVisit::Continue
+//
+template <typename TAssertVisitor>
+Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertVisitor argVisitor)
+{
+    VNPhiDef phiDef;
+    if (!vnStore->GetPhiDef(vn, &phiDef))
+    {
+        // We assume that the caller already checked assertions for the current block, so we're
+        // interested only in assertions for PHI definitions.
+        return AssertVisit::Abort;
+    }
+
+    LclSsaVarDsc*        ssaDef = lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaDef);
+    GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
+    assert(node->IsPhiDefn());
+
+    // Keep track of the set of phi-preds
+    //
+    BitVecTraits traits(fgBBNumMax + 1, this);
+    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
+
+    for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
+    {
+        GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
+        const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
+        ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
+        if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
+        {
+            // The visitor wants to abort the walk.
+            return AssertVisit::Abort;
+        }
+        BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
+    }
+
+    // Verify the set of phi-preds covers the set of block preds
+    //
+    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
+    {
+        if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": pred " FMT_BB " not a phi-pred\n",
+                    ssaDef->GetBlock()->bbNum, pred->bbNum);
+
+            // We missed examining a block pred. Fail the phi inference.
+            //
+            return AssertVisit::Abort;
+        }
+    }
+    return AssertVisit::Continue;
 }
 
 /*****************************************************************************/

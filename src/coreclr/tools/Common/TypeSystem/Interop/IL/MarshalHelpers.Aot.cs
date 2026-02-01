@@ -123,7 +123,7 @@ namespace Internal.TypeSystem.Interop
             TypeSystemContext context = method.Context;
             MethodSignature ctorSignature = new MethodSignature(0, 0, context.GetWellKnownType(WellKnownType.Void),
                 new TypeDesc[] { context.GetWellKnownType(WellKnownType.String) });
-            MethodDesc exceptionCtor = InteropTypes.GetMarshalDirectiveException(context).GetKnownMethod(".ctor", ctorSignature);
+            MethodDesc exceptionCtor = InteropTypes.GetMarshalDirectiveException(context).GetKnownMethod(".ctor"u8, ctorSignature);
 
             ILCodeStream codeStream = emitter.NewCodeStream();
             codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(message));

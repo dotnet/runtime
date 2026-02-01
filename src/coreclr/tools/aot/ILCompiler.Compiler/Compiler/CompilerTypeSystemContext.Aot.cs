@@ -39,6 +39,8 @@ namespace ILCompiler
         private readonly Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
         private readonly TypeWithRepeatedFieldsFieldLayoutAlgorithm _typeWithRepeatedFieldsFieldLayoutAlgorithm;
 
+        private readonly AsyncAwareVirtualMethodResolutionAlgorithm _virtualMethodAlgorithm;
+
         private TypeDesc[] _arrayOfTInterfaces;
         private TypeDesc[] _arrayEnumeratorOfTInterfaces;
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
@@ -53,12 +55,15 @@ namespace ILCompiler
         {
             _genericsMode = genericsMode;
 
+            _virtualMethodAlgorithm = new AsyncAwareVirtualMethodResolutionAlgorithm(this);
+
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _typeWithRepeatedFieldsFieldLayoutAlgorithm = new TypeWithRepeatedFieldsFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
 
             _delegateInfoHashtable = new DelegateInfoHashtable(delegateFeatures);
+            _continuationTypeHashtable = new ContinuationTypeHashtable(this);
 
             _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(genericCycleDepthCutoff, genericCycleBreadthCutoff);
 
@@ -71,7 +76,7 @@ namespace ILCompiler
             {
                 // This type is optional, but it's fine for this cache to be ineffective if that happens.
                 // Those scenarios are rare and typically deal with small compilations.
-                return _arrayOfTEnumeratorType ??= SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
+                return _arrayOfTEnumeratorType ??= SystemModule.GetType("System"u8, "SZGenericArrayEnumerator`1"u8, throwIfNotFound: false);
             }
         }
 
@@ -99,7 +104,7 @@ namespace ILCompiler
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
-            _arrayOfTRuntimeInterfacesAlgorithm ??= new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetKnownType("System", "Array`1"));
+            _arrayOfTRuntimeInterfacesAlgorithm ??= new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetKnownType("System"u8, "Array`1"u8));
             return _arrayOfTRuntimeInterfacesAlgorithm;
         }
 
@@ -144,7 +149,7 @@ namespace ILCompiler
 
             if (_arrayOfTInterfaces == null)
             {
-                DefType[] implementedInterfaces = SystemModule.GetKnownType("System", "Array`1").ExplicitlyImplementedInterfaces;
+                DefType[] implementedInterfaces = SystemModule.GetKnownType("System"u8, "Array`1"u8).ExplicitlyImplementedInterfaces;
                 TypeDesc[] interfaceDefinitions = new TypeDesc[implementedInterfaces.Length];
                 for (int i = 0; i < interfaceDefinitions.Length; i++)
                     interfaceDefinitions[i] = implementedInterfaces[i].GetTypeDefinition();
@@ -201,15 +206,11 @@ namespace ILCompiler
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private IEnumerable<MethodDesc> GetAllMethods(TypeDesc type, bool virtualOnly)
         {
-            MetadataType attributeType = _attributeType ??= SystemModule.GetType("System", "Attribute");
+            MetadataType attributeType = _attributeType ??= SystemModule.GetType("System"u8, "Attribute"u8);
 
             if (type.IsDelegate)
             {
                 return GetAllMethodsForDelegate(type, virtualOnly);
-            }
-            else if (type.IsEnum)
-            {
-                return GetAllMethodsForEnum(type, virtualOnly);
             }
             else if (type.IsValueType)
             {
@@ -258,7 +259,7 @@ namespace ILCompiler
             {
                 if (!type.IsArrayTypeWithoutGenericInterfaces())
                 {
-                    MetadataType arrayShadowType = _arrayOfTType ??= SystemModule.GetType("System", "Array`1");
+                    MetadataType arrayShadowType = _arrayOfTType ??= SystemModule.GetType("System"u8, "Array`1"u8);
                     return arrayShadowType.MakeInstantiatedType(((ArrayType)type).ElementType);
                 }
 

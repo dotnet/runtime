@@ -18,12 +18,19 @@ internal static class EcmaMetadataUtils
     // Metadata table index is the most significant byte of the 4-byte token
     public enum TokenType : uint
     {
-        mdtMethodDef = 0x06 << 24
+        mdtMethodDef = 0x06 << 24,
+        mdtFieldDef = 0x04 << 24
     }
 
     public static uint CreateMethodDef(uint tokenParts)
     {
         Debug.Assert((tokenParts & 0xff000000) == 0, $"Token type should not be set in {nameof(tokenParts)}");
         return (uint)TokenType.mdtMethodDef | tokenParts;
+    }
+
+    public static uint CreateFieldDef(uint tokenParts)
+    {
+        Debug.Assert((tokenParts & 0xff000000) == 0, $"Token type should not be set in {nameof(tokenParts)}");
+        return (uint)TokenType.mdtFieldDef | tokenParts;
     }
 }

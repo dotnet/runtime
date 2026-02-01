@@ -332,6 +332,7 @@ namespace pal
         s390X,
         x64,
         x86,
+        wasm,
 
         __last // Sentinel value
     };

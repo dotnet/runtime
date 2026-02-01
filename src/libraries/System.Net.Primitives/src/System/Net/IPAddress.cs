@@ -230,6 +230,7 @@ namespace System.Net
 
         /// <summary>Determines whether the provided span contains a valid <see cref="IPAddress"/>.</summary>
         /// <param name="utf8Text">The text to parse.</param>
+        /// <returns><see langword="true"/> if <paramref name="utf8Text"/> contains a valid IP address; otherwise, <see langword="false"/>.</returns>
         public static bool IsValidUtf8(ReadOnlySpan<byte> utf8Text) => IPAddressParser.IsValid(utf8Text);
 
         /// <devdoc>
@@ -718,7 +719,7 @@ namespace System.Net
                 // For IPv6 addresses, we also factor in scope ID.
                 if (IsIPv6)
                 {
-                    ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes<ushort>(_numbers);
+                    ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes<ushort>(_numbers).Slice(0, 16);
                     _hashCode = HashCode.Combine(
                         MemoryMarshal.Read<uint>(numbers),
                         MemoryMarshal.Read<uint>(numbers.Slice(4)),

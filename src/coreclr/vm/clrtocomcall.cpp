@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: CLRtoCOMCall.cpp
 //
-
-//
 // CLR to COM call support.
 //
-
 
 #include "common.h"
 
@@ -38,15 +36,12 @@ void CreateCLRToDispatchCOMStub(
             DWORD        dwStubFlags             // PInvokeStubFlags
             );
 
-
 PCODE TheGenericCLRToCOMCallStub()
 {
     LIMITED_METHOD_CONTRACT;
 
     return GetEEFuncEntryPoint(GenericCLRToCOMCallStub);
 }
-
-
 
 CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags)
 {
@@ -69,7 +64,9 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
             LoaderHeap *pHeap = pMD->GetLoaderAllocator()->GetHighFrequencyHeap();
             CLRToCOMCallInfo *pTemp = (CLRToCOMCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(CLRToCOMCallInfo)));
 
+#ifdef TARGET_X86
             pTemp->InitStackArgumentSize();
+#endif // TARGET_X86
 
             InterlockedCompareExchangeT(&pCMD->m_pCLRToCOMCallInfo, pTemp, NULL);
         }
@@ -162,8 +159,6 @@ MethodDesc* CLRToCOMCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags
                     dwStubFlags);
 }
 
-
-
 PCODE CLRToCOMCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
 {
     STANDARD_VM_CONTRACT;
@@ -202,7 +197,6 @@ PCODE CLRToCOMCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
     return pStub;
 }
 
-
 I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
 {
     CONTRACTL
@@ -212,6 +206,7 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(!pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
@@ -229,13 +224,6 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
         WrapperTypeArr = (I4ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_I4, numArgs);
 
         GCX_PREEMP();
-        
-        
-        // TODO: (async) revisit and examine if this needs to be supported somehow
-        if (pMD->IsAsyncMethod())
-        {
-            ThrowHR(COR_E_NOTSUPPORTED);
-        }
 
         // Collects ParamDef information in an indexed array where element 0 represents
         // the return type.
@@ -511,11 +499,9 @@ UINT32 CLRToCOMLateBoundWorker(
     LPCUTF8 strMemberName;
     ULONG uSemantic;
 
-    // TODO: (async) revisit and examine if this needs to be supported somehow
-    if (pItfMD->IsAsyncMethod())
-    {
-        ThrowHR(COR_E_NOTSUPPORTED);
-    }
+    // We should never see an async method here, as the async variant should go down
+    // the async stub path and call the non-async variant (which ends up here).
+    _ASSERTE(!pItfMD->IsAsyncMethod());
 
     // See if there is property information for this member.
     hr = pItfMT->GetMDImport()->GetPropertyInfoForMethodDef(pItfMD->GetMemberDef(), &propToken, &strMemberName, &uSemantic);

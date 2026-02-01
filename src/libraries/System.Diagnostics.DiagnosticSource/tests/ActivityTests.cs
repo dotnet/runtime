@@ -2548,5 +2548,65 @@ namespace System.Diagnostics.Tests
         }
 
         private const int MaxClockErrorMSec = 20;
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
+        public void TestActivityDebuggerDisplay()
+        {
+            Activity activity = new Activity("TestOperation");
+            activity.Start();
+
+            string debuggerDisplay = DebuggerAttributes.ValidateDebuggerDisplayReferences(activity);
+            Assert.Contains("OperationName = TestOperation", debuggerDisplay);
+            Assert.Contains("Id =", debuggerDisplay);
+
+            activity.Stop();
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
+        public void TestActivityDebuggerProxy()
+        {
+            Activity activity = new Activity("TestOperation");
+            activity.SetTag("key1", "value1");
+            activity.SetTag("key2", 42);
+            activity.SetBaggage("baggage1", "baggageValue1");
+            activity.AddEvent(new ActivityEvent("TestEvent"));
+            activity.Start();
+
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(activity);
+
+            activity.Stop();
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
+        public void TestActivityContextDebuggerDisplay()
+        {
+            ActivityTraceId traceId = ActivityTraceId.CreateRandom();
+            ActivitySpanId spanId = ActivitySpanId.CreateRandom();
+            ActivityContext context = new ActivityContext(traceId, spanId, ActivityTraceFlags.Recorded);
+
+            string debuggerDisplay = DebuggerAttributes.ValidateDebuggerDisplayReferences(context);
+            Assert.NotNull(debuggerDisplay);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
+        public void TestActivityLinkDebuggerDisplay()
+        {
+            ActivityTraceId traceId = ActivityTraceId.CreateRandom();
+            ActivitySpanId spanId = ActivitySpanId.CreateRandom();
+            ActivityContext context = new ActivityContext(traceId, spanId, ActivityTraceFlags.Recorded);
+            ActivityLink link = new ActivityLink(context);
+
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(link);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
+        public void TestActivityEventDebuggerDisplay()
+        {
+            ActivityEvent activityEvent = new ActivityEvent("TestEvent");
+
+            string debuggerDisplay = DebuggerAttributes.ValidateDebuggerDisplayReferences(activityEvent);
+            Assert.Contains("Name = \"TestEvent\"", debuggerDisplay);
+            Assert.Contains("Timestamp =", debuggerDisplay);
+        }
     }
 }

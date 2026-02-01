@@ -93,7 +93,7 @@ namespace ILCompiler.Dataflow
                     var genericParameterValue = reflectionMarker.Annotations.GetGenericParameterValue(genericParameter);
                     Debug.Assert(genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None);
                     MultiValue genericArgumentValue = reflectionMarker.Annotations.GetTypeValueFromGenericArgument(genericArgument);
-                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, genericParameter.GetDisplayName());
+                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, genericParameter);
                     requireDynamicallyAccessedMembersAction.Invoke(genericArgumentValue, genericParameterValue);
                 }
 

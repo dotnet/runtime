@@ -23,7 +23,7 @@ namespace System.Threading.Tasks
         /// <returns>The configured enumerable.</returns>
         public static ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(
             this IAsyncEnumerable<T> source, bool continueOnCapturedContext)
-#if NET10_0_OR_GREATER
+#if NET
             where T : allows ref struct
 #endif
             => new ConfiguredCancelableAsyncEnumerable<T>(source, continueOnCapturedContext, cancellationToken: default);
@@ -35,7 +35,7 @@ namespace System.Threading.Tasks
         /// <returns>The configured enumerable.</returns>
         public static ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(
             this IAsyncEnumerable<T> source, CancellationToken cancellationToken)
-#if NET10_0_OR_GREATER
+#if NET
             where T : allows ref struct
 #endif
             => new ConfiguredCancelableAsyncEnumerable<T>(source, continueOnCapturedContext: true, cancellationToken);

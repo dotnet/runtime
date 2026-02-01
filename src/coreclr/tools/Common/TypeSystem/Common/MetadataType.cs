@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -12,9 +13,9 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class MetadataType : DefType
     {
-        public abstract override string Name { get; }
+        public abstract override ReadOnlySpan<byte> Name { get; }
 
-        public abstract override string Namespace { get; }
+        public abstract override ReadOnlySpan<byte> Namespace { get; }
 
         /// <summary>
         /// Gets metadata that controls instance layout of this type.
@@ -68,13 +69,8 @@ namespace Internal.TypeSystem
         /// </summary>
         public abstract ModuleDesc Module { get; }
 
-        /// <summary>
-        /// Same as <see cref="TypeDesc.BaseType"/>, but the result is a MetadataType (avoids casting).
-        /// </summary>
-        public abstract MetadataType MetadataBaseType { get; }
-
-        // Make sure children remember to override both MetadataBaseType and BaseType.
-        public abstract override DefType BaseType { get; }
+        /// <inheritdoc />
+        public abstract override MetadataType BaseType { get; }
 
         /// <summary>
         /// If true, the type cannot be used as a base type of any other type.
@@ -91,7 +87,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
 
-        public abstract override DefType ContainingType { get; }
+        public abstract override MetadataType ContainingType { get; }
 
         /// <summary>
         /// Get all of the types nested in this type.
@@ -102,7 +98,7 @@ namespace Internal.TypeSystem
         /// Get a specific type nested in this type. Returns null if the type
         /// doesn't exist.
         /// </summary>
-        public abstract MetadataType GetNestedType(string name);
+        public abstract MetadataType GetNestedType(ReadOnlySpan<byte> name);
 
         /// <summary>
         /// Gets a value indicating whether this is an inline array type
@@ -129,6 +125,7 @@ namespace Internal.TypeSystem
         Auto,
         Sequential,
         Explicit,
-        CStruct
+        CStruct,
+        CUnion
     }
 }

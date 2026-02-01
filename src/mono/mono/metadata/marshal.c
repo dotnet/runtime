@@ -4860,11 +4860,8 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 
 	/* Compressed interface bitmaps require code that is quite complex, so don't optimize for it. */
 	if (MONO_CLASS_IS_INTERFACE_INTERNAL (element_class) && !mono_class_has_variant_generic_params (element_class))
-#ifdef COMPRESSED_INTERFACE_BITMAP
-		return STELEMREF_COMPLEX;
-#else
-		return STELEMREF_INTERFACE;
-#endif
+		return mono_opt_compressed_interface_bitmap ? STELEMREF_COMPLEX : STELEMREF_INTERFACE;
+
 	/*Arrays are sealed but are covariant on their element type, We can't use any of the fast paths.*/
 	if (m_class_get_rank (element_class) || mono_class_has_variant_generic_params (element_class))
 		return STELEMREF_COMPLEX;
@@ -6025,7 +6022,7 @@ mono_marshal_load_standard_layout_type_info(MonoClass* klass, MonoMarshalType* i
 					if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
 						break;
 					else
-						size = initial_size; // failure occured during AOT compilation, continue execution
+						size = initial_size; // failure occurred during AOT compilation, continue execution
 				} else {
 					mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds, abnormally large.");
 					break;

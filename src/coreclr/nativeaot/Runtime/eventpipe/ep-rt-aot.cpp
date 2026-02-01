@@ -519,10 +519,7 @@ int64_t
 ep_rt_aot_system_timestamp_get (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    FILETIME value;
-    PalGetSystemTimeAsFileTime (&value);
-    return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+    return minipal_get_system_time();
 }
 
 int32_t
@@ -887,7 +884,7 @@ ep_rt_thread_handle_t ep_rt_aot_setup_thread (void)
 
 ep_rt_thread_id_t ep_rt_aot_thread_get_id (ep_rt_thread_handle_t thread_handle)
 {
-    return (ep_rt_thread_id_t)thread_handle->GetPalThreadIdForLogging();
+    return (ep_rt_thread_id_t)thread_handle->GetOSThreadId();
 }
 
 #ifdef EP_CHECKED_BUILD

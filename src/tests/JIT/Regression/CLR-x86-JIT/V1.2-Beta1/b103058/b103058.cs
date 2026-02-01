@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 internal struct VT
 {
@@ -40,7 +41,9 @@ public unsafe class test
         }
     }
 
+    [OuterLoop]
     [Fact]
+    [SkipOnCoreClr("JIT optimization sensitive test", RuntimeTestModes.AnyJitOptimizationStress)]
     public static int TestEntryPoint()
     {
         VT vt1 = new VT();

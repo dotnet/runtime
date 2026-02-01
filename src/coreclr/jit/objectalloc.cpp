@@ -56,6 +56,7 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_regionsToClone(0)
     , m_trackFields(false)
     , m_StoreAddressToIndexMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_initialMaxBlockID(comp->compBasicBlockID)
 {
     m_EscapingPointers                = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
@@ -1106,6 +1107,13 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
             return false;
         }
 
+        // Bail out if the array is definitely too large - we don't want to even start building its layout.
+        if (ClassLayoutBuilder::IsArrayTooLarge(comp, clsHnd, (unsigned)length, m_StackAllocMaxSize))
+        {
+            *reason = "[array is too large]";
+            return false;
+        }
+
         ClassLayout* const layout = comp->typGetArrayLayout(clsHnd, (unsigned)length);
         classSize                 = layout->GetSize();
     }
@@ -1365,6 +1373,18 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
     if (candidate.m_block->HasFlag(BBF_BACKWARD_JUMP))
     {
         candidate.m_onHeapReason = "[alloc in loop]";
+        return false;
+    }
+
+    // Don't stack allocate at sites that were cloned or are clones. These sites now violate
+    // the single assignment assumption used by the escape analysis.
+    //
+    // This is something we can fix by keeping track of which allocation sites are clones
+    // of other sites, and just allocating one var to cover them all.
+    //
+    if (BlockIsCloneOrWasCloned(candidate.m_block))
+    {
+        candidate.m_onHeapReason = "[allocation was cloned]";
         return false;
     }
 
@@ -2190,10 +2210,18 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     switch (comp->lookupNamedIntrinsic(call->gtCallMethHnd))
                     {
                         case NI_System_SpanHelpers_ClearWithoutReferences:
-                        case NI_System_SpanHelpers_Fill:
                         case NI_System_SpanHelpers_Memmove:
                         case NI_System_SpanHelpers_SequenceEqual:
                             canLclVarEscapeViaParentStack = false;
+                            break;
+
+                        case NI_System_SpanHelpers_Fill:
+                            // For Fill only the first (byref span) arg does not escape
+                            //
+                            if (tree == call->gtArgs.GetUserArgByIndex(0)->GetNode())
+                            {
+                                canLclVarEscapeViaParentStack = false;
+                            }
                             break;
 
                         default:
@@ -2621,6 +2649,14 @@ void ObjectAllocator::RewriteUses()
             }
             else if (newType == TYP_STRUCT)
             {
+                // For struct stores there is no upwards type propagation.
+                // These nodes and any ancestors will remain TYP_STRUCT.
+                //
+                if (tree->OperIs(GT_STORE_LCL_VAR, GT_STORE_LCL_FLD))
+                {
+                    return Compiler::fgWalkResult::WALK_CONTINUE;
+                }
+
                 newLayout    = lclVarDsc->GetLayout();
                 newType      = newLayout->HasGCPtr() ? TYP_BYREF : TYP_I_IMPL;
                 retypeFields = true;
@@ -3636,7 +3672,7 @@ void ObjectAllocator::RecordAppearance(unsigned lclNum, BasicBlock* block, State
 bool ObjectAllocator::CloneOverlaps(CloneInfo* info)
 {
     bool         overlaps = false;
-    BitVecTraits traits(comp->compBasicBlockID, comp);
+    BitVecTraits traits(m_initialMaxBlockID, comp);
 
     for (CloneInfo* const c : CloneMap::ValueIteration(&m_CloneMap))
     {
@@ -3666,6 +3702,56 @@ bool ObjectAllocator::CloneOverlaps(CloneInfo* info)
     }
 
     return overlaps;
+}
+
+//------------------------------------------------------------------------------
+// BlockIsCloneOrWasCloned: check if this block is a clone or was cloned as
+//    part of an conditional escape optimization
+//
+// Arguments:
+//   block -- block in question
+//
+// Returns:
+//   true if block was cloned
+//
+// Notes:
+//   Such blocks are interesting when they contain ALLCOBJs that we can prove
+//   won't escape.
+//
+bool ObjectAllocator::BlockIsCloneOrWasCloned(BasicBlock* block)
+{
+    if (block->bbID >= m_initialMaxBlockID)
+    {
+        JITDUMP("Block " FMT_BB " was cloned as part of conditional escape processing\n", block->bbNum);
+        return true;
+    }
+
+    BitVecTraits traits(m_initialMaxBlockID, comp);
+
+    for (CloneInfo* const c : CloneMap::ValueIteration(&m_CloneMap))
+    {
+        // Ignore regions that we did not clone
+        //
+        if (!c->m_willClone)
+        {
+            continue;
+        }
+
+        // We don't actually clone the alloc blocks, despite them being
+        // in the block set for the clone.
+        //
+        if (block == c->m_allocBlock)
+        {
+            continue;
+        }
+
+        if (BitVecOps::IsMember(&traits, c->m_blocks, block->bbID))
+        {
+            JITDUMP("Block " FMT_BB " was cloned as part of conditional escape processing\n", block->bbNum);
+            return true;
+        }
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -3862,7 +3948,7 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     jitstd::vector<BasicBlock*>* visited         = new (alloc) jitstd::vector<BasicBlock*>(alloc);
     jitstd::vector<BasicBlock*>* toVisitTryEntry = new (alloc) jitstd::vector<BasicBlock*>(alloc);
 
-    BitVecTraits traits(comp->compBasicBlockID, comp);
+    BitVecTraits traits(m_initialMaxBlockID, comp);
     BitVec       visitedBlocks(BitVecOps::MakeEmpty(&traits));
     toVisit.Push(allocBlock);
     BitVecOps::AddElemD(&traits, visitedBlocks, allocBlock->bbID);
@@ -4057,6 +4143,22 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
 
     // The allocation block must dominate all T appearances, save for the final T use.
     //
+    // If we have an empty static case, we generalized slightly, and allow T appearances
+    // to be dominated by the allocation block's (unique) pred.
+    //
+    BasicBlock* domCheckBlock     = allocBlock;
+    const char* domCheckBlockName = "alloc";
+    if ((info->m_allocTree->gtFlags & GTF_ALLOCOBJ_EMPTY_STATIC) != 0)
+    {
+        BasicBlock* const uniquePred = domCheckBlock->GetUniquePred(comp);
+
+        if (uniquePred != nullptr)
+        {
+            domCheckBlock     = uniquePred;
+            domCheckBlockName = "alloc-pred";
+        }
+    }
+
     for (unsigned lclNum : EnumeratorVarMap::KeyIteration(info->m_appearanceMap))
     {
         EnumeratorVar* ev = nullptr;
@@ -4075,10 +4177,10 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
                 continue;
             }
 
-            if (!comp->m_domTree->Dominates(allocBlock, a->m_block))
+            if (!comp->m_domTree->Dominates(domCheckBlock, a->m_block))
             {
-                JITDUMP("Alloc temp V%02u %s in " FMT_BB " not dominated by alloc " FMT_BB "\n", a->m_lclNum,
-                        a->m_isDef ? "def" : "use", a->m_block->bbNum, allocBlock->bbNum);
+                JITDUMP("Alloc temp V%02u %s in " FMT_BB " not dominated by %s " FMT_BB "\n", a->m_lclNum,
+                        a->m_isDef ? "def" : "use", a->m_block->bbNum, domCheckBlockName, domCheckBlock->bbNum);
                 return false;
             }
         }

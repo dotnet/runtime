@@ -33,30 +33,12 @@
         pthread_once(&g_evpFetchInit##export, EnsureFetchEvpMd##export); \
         return g_evpFetch##export; \
     }
-#define BUILD_MD_FETCH_LIGHTUP_SHA3(...) BUILD_MD_FETCH(__VA_ARGS__)
 #else
 #define BUILD_MD_FETCH(export, fn, name, query) \
     const EVP_MD* export(void) \
     { \
         return fn(); \
     }
-#if HAVE_OPENSSL_SHA3
-#define BUILD_MD_FETCH_LIGHTUP_SHA3(export, fn, name, query) \
-    const EVP_MD* export(void) \
-    { \
-        if (API_EXISTS(fn)) \
-        { \
-            return fn(); \
-        } \
-        \
-        return NULL; \
-    }
-#else
-    const EVP_MD* export(void) \
-    { \
-        return NULL; \
-    }
-#endif
 #endif
 
 
@@ -128,43 +110,31 @@ int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
 
 int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t len)
 {
-    #if HAVE_OPENSSL_SHA3
-        if (API_EXISTS(EVP_DigestFinalXOF))
-        {
-            ERR_clear_error();
+    ERR_clear_error();
 
-            // https://github.com/openssl/openssl/issues/9431
-            // EVP_DigestFinalXOF has a bug in some arch-optimized code paths where it cannot tolerate a zero length
-            // digest.
-            // If the caller asked for no bytes, use a temporary buffer to ask for 1 byte, then throw away the result.
-            // We don't want to skip calling FinalXOF entirely because we want to make sure the EVP_MD_CTX is in a
-            // finalized state regardless of the length of the digest.
-            // We can remove this work around when OpenSSL 3.0 is the minimum OpenSSL requirement.
-            if (len == 0)
-            {
-                uint8_t single[1] = { 0 };
-                int result = EVP_DigestFinalXOF(ctx, single, 1);
-                OPENSSL_cleanse(single, sizeof(single));
-                return result;
-            }
-            else if (!md)
-            {
-                // Length is not zero but we don't have a buffer to write to.
-                return -1;
-            }
-            else
-            {
-                return EVP_DigestFinalXOF(ctx, md, len);
-            }
-        }
-    #else
-        // Use each parameter to avoid unused parameter warnings.
-        (void)(ctx);
-        (void)(md);
-        (void)(len);
-    #endif
-
-    return 0;
+    // https://github.com/openssl/openssl/issues/9431
+    // EVP_DigestFinalXOF has a bug in some arch-optimized code paths where it cannot tolerate a zero length
+    // digest.
+    // If the caller asked for no bytes, use a temporary buffer to ask for 1 byte, then throw away the result.
+    // We don't want to skip calling FinalXOF entirely because we want to make sure the EVP_MD_CTX is in a
+    // finalized state regardless of the length of the digest.
+    // We can remove this work around when OpenSSL 3.0 is the minimum OpenSSL requirement.
+    if (len == 0)
+    {
+        uint8_t single[1] = { 0 };
+        int result = EVP_DigestFinalXOF(ctx, single, 1);
+        OPENSSL_cleanse(single, sizeof(single));
+        return result;
+    }
+    else if (!md)
+    {
+        // Length is not zero but we don't have a buffer to write to.
+        return -1;
+    }
+    else
+    {
+        return EVP_DigestFinalXOF(ctx, md, len);
+    }
 }
 
 EVP_MD_CTX* CryptoNative_EvpMdCtxCopyEx(const EVP_MD_CTX* ctx)
@@ -322,11 +292,11 @@ BUILD_MD_FETCH(CryptoNative_EvpSha1, EVP_sha1, "SHA1", NULL)
 BUILD_MD_FETCH(CryptoNative_EvpSha256, EVP_sha256, "SHA256", NULL)
 BUILD_MD_FETCH(CryptoNative_EvpSha384, EVP_sha384, "SHA384", NULL)
 BUILD_MD_FETCH(CryptoNative_EvpSha512, EVP_sha512, "SHA512", NULL)
-BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpSha3_256, EVP_sha3_256, "SHA3-256", NULL)
-BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpSha3_384, EVP_sha3_384, "SHA3-384", NULL)
-BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpSha3_512, EVP_sha3_512, "SHA3-512", NULL)
-BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpShake128, EVP_shake128, "SHAKE-128", NULL)
-BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpShake256, EVP_shake256, "SHAKE-256", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha3_256, EVP_sha3_256, "SHA3-256", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha3_384, EVP_sha3_384, "SHA3-384", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha3_512, EVP_sha3_512, "SHA3-512", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpShake128, EVP_shake128, "SHAKE-128", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpShake256, EVP_shake256, "SHAKE-256", NULL)
 
 int32_t CryptoNative_GetMaxMdSize(void)
 {

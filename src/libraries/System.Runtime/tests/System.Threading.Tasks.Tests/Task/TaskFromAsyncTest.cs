@@ -71,7 +71,7 @@ namespace System.Threading.Tasks.Tests.FromAsync
                     //In case of error conditions we except the method to throw exception
                     RunAPMTest();
 
-                    Assert.Fail(string.Format("Failed to catch ArgumentNullException"));
+                    Assert.Fail("Failed to catch ArgumentNullException");
                 }
                 catch (ArgumentNullException)
                 {
@@ -96,7 +96,7 @@ namespace System.Threading.Tasks.Tests.FromAsync
                 }
                 else
                 {
-                    Assert.Fail(string.Format("Failed to catch AggregateException"));
+                    Assert.Fail("Failed to catch AggregateException");
                 }
             }
             else
@@ -106,9 +106,9 @@ namespace System.Threading.Tasks.Tests.FromAsync
                 _task.Wait(); //block for the task to run to completion.
 
                 if (_sourceType == TaskType.Task)
-                    SequenceEquals(_expectedInputs, work.Inputs);
+                    SequenceEqual(_expectedInputs, work.Inputs);
                 else
-                    SequenceEquals(_expectedInputs, ((Task<ReadOnlyCollection<object>>)_task).Result);
+                    SequenceEqual(_expectedInputs, ((Task<ReadOnlyCollection<object>>)_task).Result);
 
                 //verify Overload / State
 
@@ -117,24 +117,24 @@ namespace System.Threading.Tasks.Tests.FromAsync
                     expectedOption = TestOption;
 
                 if (_task.CreationOptions != expectedOption)
-                    Assert.Fail(string.Format("task is not created with expected TestOption"));
+                    Assert.Fail("task is not created with expected TestOption");
 
                 if (((TaskOptionAndScheduler)(work.ObservedState)).Option != expectedOption)
-                    Assert.Fail(string.Format("state verification failed on Option"));
+                    Assert.Fail("state verification failed on Option");
 
                 TaskScheduler expectedScheduler = TaskScheduler.Default;
 
                 if (work.ObservedTaskScheduler != expectedScheduler)
-                    Assert.Fail(string.Format("task is not running under expected TestOption"));
+                    Assert.Fail("task is not running under expected TestOption");
 
                 if (((TaskOptionAndScheduler)(work.ObservedState)).Scheduler != expectedScheduler)
-                    Assert.Fail(string.Format("state verification failed on Scheduler"));
+                    Assert.Fail("state verification failed on Scheduler");
             }
         }
 
         #region Private Helpers
 
-        private static void SequenceEquals(List<object> expectedItems, ReadOnlyCollection<object> actualItems)
+        private static void SequenceEqual(List<object> expectedItems, ReadOnlyCollection<object> actualItems)
         {
             Assert.Equal(expectedItems.Count, actualItems.Count);
             for (int i = 0; i < expectedItems.Count; i++)

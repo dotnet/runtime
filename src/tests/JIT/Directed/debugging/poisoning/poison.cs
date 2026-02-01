@@ -6,11 +6,12 @@ using Xunit;
 public class Program
 {
     [SkipLocalsInit]
+    [ActiveIssue("Tests coreclr JIT's debug poisoning of address taken variables", TestRuntimes.Mono)]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/118965", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static unsafe int TestEntryPoint()
     {
-#pragma warning disable CS8500 // takes address of managed type
         bool result = true;
 
         int poisoned;
@@ -42,7 +43,6 @@ public class Program
         result &= VerifyZero(&zeroed2, sizeof(GCRef));
 
         return result ? 100 : 101;
-#pragma warning restore CS8500
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

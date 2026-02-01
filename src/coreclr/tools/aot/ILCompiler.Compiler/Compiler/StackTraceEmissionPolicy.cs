@@ -28,9 +28,16 @@ namespace ILCompiler
     /// </summary>
     public class EcmaMethodStackTraceEmissionPolicy : StackTraceEmissionPolicy
     {
+        private readonly MethodStackTraceVisibilityFlags _flags;
+
+        public EcmaMethodStackTraceEmissionPolicy(bool includeLineNumbers)
+        {
+            _flags = includeLineNumbers ? MethodStackTraceVisibilityFlags.HasLineNumbers : 0;
+        }
+
         public override MethodStackTraceVisibilityFlags GetMethodVisibility(MethodDesc method)
         {
-            MethodStackTraceVisibilityFlags result = 0;
+            MethodStackTraceVisibilityFlags result = _flags;
 
             if (method.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute")
                 || (method.OwningType is MetadataType mdType && mdType.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute")))
@@ -49,5 +56,6 @@ namespace ILCompiler
     {
         HasMetadata = 0x1,
         IsHidden = 0x2,
+        HasLineNumbers = 0x4,
     }
 }

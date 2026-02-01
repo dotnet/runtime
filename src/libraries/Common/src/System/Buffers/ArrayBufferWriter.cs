@@ -199,7 +199,7 @@ namespace System.Buffers
         private void CheckAndResizeBuffer(int sizeHint)
         {
             if (sizeHint < 0)
-                throw new ArgumentException(nameof(sizeHint));
+                throw new ArgumentException(null, nameof(sizeHint));
 
             if (sizeHint == 0)
             {

@@ -41,7 +41,7 @@ fi
 
 dumpssharepath="$projectdir/dumps"
 
-while [[ $# > 0 ]]; do
+while [[ $# -gt 0 ]]; do
   opt="$(printf "%s" "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
   case "$opt" in
     -dumpssharepath|-d)

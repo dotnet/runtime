@@ -60,10 +60,7 @@ namespace System.Net.Http
                 Ascii.FromUtf16(method, bytes, out _);
                 bytes[^1] = (byte)' ';
 
-                if (knownMethod is not null)
-                {
-                    knownMethod._http1EncodedBytes = bytes;
-                }
+                knownMethod?._http1EncodedBytes = bytes;
             }
 
             _http1EncodedBytes = bytes;
@@ -84,10 +81,7 @@ namespace System.Net.Http
                     _ => HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.MethodGet, knownMethod?.Method ?? Method)
                 };
 
-                if (knownMethod is not null)
-                {
-                    knownMethod._http2EncodedBytes = bytes;
-                }
+                knownMethod?._http2EncodedBytes = bytes;
             }
 
             _http2EncodedBytes = bytes;
@@ -105,10 +99,7 @@ namespace System.Net.Http
                     ? QPackEncoder.EncodeStaticIndexedHeaderFieldToArray(_http3Index)
                     : QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.MethodGet, knownMethod?.Method ?? Method);
 
-                if (knownMethod is not null)
-                {
-                    knownMethod._http3EncodedBytes = bytes;
-                }
+                knownMethod?._http3EncodedBytes = bytes;
             }
 
             _http3EncodedBytes = bytes;

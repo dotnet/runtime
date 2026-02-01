@@ -9,6 +9,9 @@
     <Compile Include="csgen.1.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <NoWarn Include="162" />
   </ItemGroup>
 </Project>

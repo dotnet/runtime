@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Versioning;
 
 namespace System.Threading.Tasks
 {
@@ -129,6 +130,15 @@ namespace System.Threading.Tasks
     /// </remarks>
     public static partial class Parallel
     {
+
+        [SupportedOSPlatformGuard("browser")]
+        [SupportedOSPlatformGuard("wasi")]
+#if FEATURE_SINGLE_THREADED
+        internal static bool IsSingleThreaded => true;
+#else
+        internal static bool IsSingleThreaded => false;
+#endif
+
         // static counter for generating unique Fork/Join Context IDs to be used in ETW events
         internal static int s_forkJoinContextID;
 
@@ -238,12 +248,7 @@ namespace System.Threading.Tasks
             {
                 // If we've gotten this far, it's time to process the actions.
 
-#if !FEATURE_WASM_MANAGED_THREADS
-                // Web browsers need special treatment that is implemented in TaskReplicator
-                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi() ||
-#else
-                if (
-#endif
+                if (IsSingleThreaded ||
                     // This is more efficient for a large number of actions, or for enforcing MaxDegreeOfParallelism:
                     (actionsCopy.Length > SMALL_ACTIONCOUNT_LIMIT) ||
                     (parallelOptions.MaxDegreeOfParallelism != -1 && parallelOptions.MaxDegreeOfParallelism < actionsCopy.Length)
@@ -997,7 +1002,7 @@ namespace System.Threading.Tasks
                             TInt nFromInclusiveLocal;
                             TInt nToExclusiveLocal;
 
-                            if (currentWorker.FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal) == false ||
+                            if (!currentWorker.FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal) ||
                                 sharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal))
                             {
                                 return; // no need to run
@@ -2649,7 +2654,7 @@ namespace System.Threading.Tasks
                                         TSource value = kvp.Value;
 
                                         // Update our iteration index
-                                        if (state != null) state.CurrentIteration = index;
+                                        state?.CurrentIteration = index;
 
                                         if (simpleBody != null)
                                             simpleBody(value);
@@ -2689,8 +2694,7 @@ namespace System.Threading.Tasks
                                         throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
 
                                     // I'm not going to try to maintain this
-                                    if (state != null)
-                                        state.CurrentIteration = 0;
+                                    state?.CurrentIteration = 0;
 
                                     while (myPartition.MoveNext())
                                     {

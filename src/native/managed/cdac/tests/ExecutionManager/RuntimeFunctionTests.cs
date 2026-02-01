@@ -44,7 +44,7 @@ public class RuntimeFunctionTests
                 : MockDescriptors.RuntimeFunctions.DefaultFunctionLength;
 
             Data.RuntimeFunction function = lookup.GetRuntimeFunction(addr, i);
-            uint functionLength = lookup.GetFunctionLength(function);
+            uint functionLength = lookup.GetFunctionLength(new(0), function);
             Assert.Equal(expectedFunctionLength, functionLength);
         }
     }

@@ -236,12 +236,6 @@ jobs:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg)
       displayName: Copy native test components to test output folder
 
-
-    # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(logRootNameArg)Wrappers $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg)
-      displayName: Generate test wrappers
-
-
     # Compose the Core_Root folder containing all artifacts needed for running
     # CoreCLR tests. This step also compiles the framework using Crossgen2
     # in ReadyToRun jobs.
@@ -332,7 +326,23 @@ jobs:
           msbuildParallelism: '/maxcpucount:55'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
-          ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+          ${{ if and(eq(parameters.runInterpreter, 'true'),eq(variables['Build.Reason'], 'PullRequest')) }}:
+            scenarios:
+            - interpmode3_no_tiered_compilation
+            - interpmode2_no_tiered_compilation
+            - interpmode1_no_tiered_compilation
+            - no_tiered_compilation
+          ${{ elseif eq(parameters.runInterpreter, 'true') }}:
+            scenarios:
+            - interpmode3_no_tiered_compilation
+            - interpmode3
+            - interpmode2_no_tiered_compilation
+            - interpmode2
+            - normal
+            - no_tiered_compilation
+            - interpmode1_no_tiered_compilation
+            - interpmode1
+          ${{ elseif eq(parameters.runtimeFlavor, 'mono') }}:
             # tiered compilation isn't done on mono yet
             scenarios:
             - normal
@@ -474,6 +484,7 @@ jobs:
             - fullpgo_methodprofiling_always_optimized
             - syntheticpgo
             - syntheticpgo_blend
+            - instrument_if_optimizing
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:
@@ -575,7 +586,7 @@ jobs:
           condition: always()
 
         # Ensure the Python azure-storage-blob package is installed before doing the upload.
-        - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
+        - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.27.0 --force-reinstall && $(PipScript) install azure.identity==1.25.1 --force-reinstall
           displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
           condition: always()
 

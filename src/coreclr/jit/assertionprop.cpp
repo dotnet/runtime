@@ -156,6 +156,27 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_GT:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
+        case GT_AND:
+        {
+            IntegralRange leftRange  = IntegralRange::ForNode(node->gtGetOp1(), compiler);
+            IntegralRange rightRange = IntegralRange::ForNode(node->gtGetOp2(), compiler);
+            if (leftRange.IsNonNegative() && rightRange.IsNonNegative())
+            {
+                // If both sides are known to be non-negative, the result is non-negative.
+                // Further, the top end of the range cannot exceed the min of the two upper bounds.
+                return {SymbolicIntegerValue::Zero, min(leftRange.GetUpperBound(), rightRange.GetUpperBound())};
+            }
+
+            if (leftRange.IsNonNegative() || rightRange.IsNonNegative())
+            {
+                // If only one side is known to be non-negative, however it is harder to
+                // reason about the upper bound.
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+
+            break;
+        }
+
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
@@ -215,11 +236,20 @@ bool IntegralRange::Contains(int64_t value) const
         }
 
         case GT_CNS_INT:
+        {
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
             {
                 return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
             }
+
+            int64_t constValue = node->AsIntCon()->IntegralValue();
+            if (constValue >= 0)
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+
             break;
+        }
 
         case GT_QMARK:
             return Union(ForNode(node->AsQmark()->ThenNode(), compiler),
@@ -3940,63 +3970,14 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     // Let's see if MergeEdgeAssertions can help us:
     if (tree->TypeIs(TYP_INT))
     {
-        // See if (X + CNS) is known to be non-negative
-        if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
+        Range rng = RangeCheck::GetRangeFromAssertions(this, treeVN, assertions);
+        if (rng.LowerLimit().GetConstant() >= 0)
         {
-            Range    rng = Range(Limit(Limit::keDependent));
-            ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
-            if (!RangeCheck::TryGetRangeFromAssertions(this, vn, assertions, &rng))
-            {
-                return;
-            }
-
-            int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
-            rng.LowerLimit().AddConstant(cns);
-
-            if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
-                (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
-            {
-                // Add cns to both bounds if they are constants. Make sure the addition doesn't overflow.
-                return;
-            }
-
-            if (rng.LowerLimit().IsConstant())
-            {
-                // E.g. "X + -8" when X's range is [8..unknown]
-                // it's safe to say "X + -8" is non-negative
-                if ((rng.LowerLimit().GetConstant() == 0))
-                {
-                    *isKnownNonNegative = true;
-                }
-
-                // E.g. "X + 8" when X's range is [0..CNS]
-                // Here we have to check the upper bound as well to avoid overflow
-                if ((rng.LowerLimit().GetConstant() > 0) && rng.UpperLimit().IsConstant() &&
-                    rng.UpperLimit().GetConstant() > rng.LowerLimit().GetConstant())
-                {
-                    *isKnownNonNegative = true;
-                    *isKnownNonZero     = true;
-                }
-            }
+            *isKnownNonNegative = true;
         }
-        else
+        if (rng.LowerLimit().GetConstant() > 0)
         {
-            Range rng = Range(Limit(Limit::keUnknown));
-            if (RangeCheck::TryGetRangeFromAssertions(this, treeVN, assertions, &rng))
-            {
-                Limit lowerBound = rng.LowerLimit();
-                if (lowerBound.IsConstant())
-                {
-                    if (lowerBound.GetConstant() >= 0)
-                    {
-                        *isKnownNonNegative = true;
-                    }
-                    if (lowerBound.GetConstant() > 0)
-                    {
-                        *isKnownNonZero = true;
-                    }
-                }
-            }
+            *isKnownNonZero = true;
         }
     }
 }
@@ -4264,68 +4245,6 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions,
     return optAssertionPropLocal_RelOp(assertions, tree, stmt);
 }
 
-//--------------------------------------------------------------------------------
-// optVisitReachingAssertions: given a vn, call the specified callback function on all
-//    the assertions that reach it via PHI definitions if any.
-//
-// Arguments:
-//    vn         - The vn to visit all the reaching assertions for
-//    argVisitor - The callback function to call on the vn and its reaching assertions
-//
-// Return Value:
-//    AssertVisit::Aborted  - an argVisitor returned AssertVisit::Abort, we stop the walk and return
-//    AssertVisit::Continue - all argVisitor returned AssertVisit::Continue
-//
-template <typename TAssertVisitor>
-Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertVisitor argVisitor)
-{
-    VNPhiDef phiDef;
-    if (!vnStore->GetPhiDef(vn, &phiDef))
-    {
-        // We assume that the caller already checked assertions for the current block, so we're
-        // interested only in assertions for PHI definitions.
-        return AssertVisit::Abort;
-    }
-
-    LclSsaVarDsc*        ssaDef = lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaDef);
-    GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
-    assert(node->IsPhiDefn());
-
-    // Keep track of the set of phi-preds
-    //
-    BitVecTraits traits(fgBBNumMax + 1, this);
-    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
-
-    for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
-    {
-        GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
-        const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
-        ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
-        if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
-        {
-            // The visitor wants to abort the walk.
-            return AssertVisit::Abort;
-        }
-        BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
-    }
-
-    // Verify the set of phi-preds covers the set of block preds
-    //
-    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
-    {
-        if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
-        {
-            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": pred " FMT_BB " not a phi-pred\n",
-                    ssaDef->GetBlock()->bbNum, pred->bbNum);
-
-            // We missed examining a block pred. Fail the phi inference.
-            //
-            return AssertVisit::Abort;
-        }
-    }
-    return AssertVisit::Continue;
-}
-
 //------------------------------------------------------------------------
 // optAssertionProp: try and optimize a relop via assertion propagation
 //
@@ -4411,29 +4330,19 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         return optAssertionProp_Update(newTree, tree, stmt);
     }
 
-    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
-    ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
-
-    // See if we can fold "X relop CNS" using TryGetRangeFromAssertions.
-    int op2cns;
-    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) &&
-        vnStore->IsVNIntegralConstant(op2VN, &op2cns)
-        // "op2cns != 0" is purely a TP quirk (such relops are handled by the code above):
-        && (op2cns != 0))
+    // See if we can fold the relop based on range information.
+    // We don't need the op1->TypeIs(TYP_INT) check, but it seems to improve the TP quite a bit.
+    if (op1->TypeIs(TYP_INT))
     {
-        // NOTE: we can call TryGetRangeFromAssertions for op2 as well if we want, but it's not cheap.
-        Range rng1 = Range(Limit(Limit::keUndef));
-        Range rng2 = Range(Limit(Limit::keConstant, op2cns));
+        ValueNum relopVN    = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+        Range    relopRange = RangeCheck::GetRangeFromAssertions(this, relopVN, assertions);
 
-        if (RangeCheck::TryGetRangeFromAssertions(this, op1VN, assertions, &rng1))
+        int relopResult;
+        if (relopRange.IsSingleValueConstant(&relopResult))
         {
-            RangeOps::RelationKind kind = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), rng1, rng2);
-            if ((kind != RangeOps::RelationKind::Unknown))
-            {
-                newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
-                newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
-                return optAssertionProp_Update(newTree, tree, stmt);
-            }
+            assert((relopResult == 0) || (relopResult == 1));
+            newTree = gtWrapWithSideEffects(relopResult == 1 ? gtNewTrue() : gtNewFalse(), tree, GTF_ALL_EFFECT);
+            return optAssertionProp_Update(newTree, tree, stmt);
         }
     }
 
@@ -4702,6 +4611,13 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 
     // Find an equal or not equal assertion about op1 var.
     unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
+
+    // Make sure the local is not truncated.
+    if (!op1->TypeIs(lvaGetRealType(lclNum)))
+    {
+        return nullptr;
+    }
+
     noway_assert(lclNum < lvaCount);
     AssertionIndex index = optLocalAssertionIsEqualOrNotEqual(op1Kind, lclNum, op2Kind, cnsVal, assertions);
 
@@ -5356,10 +5272,9 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             std::swap(funcApp.m_args[0], funcApp.m_args[1]);
         }
 
-        Range rng = Range(Limit(Limit::keUnknown));
-        if ((funcApp.m_args[0] == vnCurLen) && vnStore->IsVNInt32Constant(funcApp.m_args[1]) &&
-            RangeCheck::TryGetRangeFromAssertions(this, vnCurLen, assertions, &rng) && rng.LowerLimit().IsConstant())
+        if ((funcApp.m_args[0] == vnCurLen) && vnStore->IsVNInt32Constant(funcApp.m_args[1]))
         {
+            Range rng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
             // Lower known limit of ArrLen:
             const int lenLowerLimit = rng.LowerLimit().GetConstant();
 
@@ -5404,21 +5319,38 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             {
                 return dropBoundsCheck(INDEBUG("a[*] followed by a[0]"));
             }
-            // Do we have two constant indexes?
-            else if (vnStore->IsVNConstant(curAssertion->op1.bnd.vnIdx) && vnStore->IsVNConstant(vnCurIdx))
+            else
             {
-                // Make sure the types match.
-                var_types type1 = vnStore->TypeOfVN(curAssertion->op1.bnd.vnIdx);
-                var_types type2 = vnStore->TypeOfVN(vnCurIdx);
+                // index1 doesn't have to be a constant, it can be a Phi each predecessor of which is a constant.
+                // The smallest of those is what we can rely on. Example:
+                //
+                //  arr[cond ? 10 : 5] = 0;  // arr is at least 6 elements long
+                //  arr[2] = 0;              // arr must be at least 3 elements long
+                //
+                // or even:
+                //
+                //  arr[cond ? 10 : 5] = 0; // arr is at least 6 elements long
+                //  arr[cond ? 1 : 2] = 0;  // arr must be at least 3 elements long
+                //
+                auto tryGetMaxOrMinConst = [this](ValueNum vn, bool getMin, int* index) -> bool {
+                    *index = getMin ? INT_MAX : INT_MIN;
+                    return vnStore->VNVisitReachingVNs(vn,
+                                                       [this, index, getMin](ValueNum vn) -> ValueNumStore::VNVisit {
+                        int cns = 0;
+                        if (vnStore->IsVNIntegralConstant(vn, &cns))
+                        {
+                            *index = getMin ? min(*index, cns) : max(*index, cns);
+                            return ValueNumStore::VNVisit::Continue;
+                        }
+                        return ValueNumStore::VNVisit::Abort;
+                    }) == ValueNumStore::VNVisit::Continue;
+                };
 
-                if (type1 == type2 && type1 == TYP_INT)
+                int index1;
+                int index2;
+                if (tryGetMaxOrMinConst(curAssertion->op1.bnd.vnIdx, /*min*/ true, &index1) &&
+                    tryGetMaxOrMinConst(vnCurIdx, /*max*/ false, &index2))
                 {
-                    int index1 = vnStore->ConstantValue<int>(curAssertion->op1.bnd.vnIdx);
-                    int index2 = vnStore->ConstantValue<int>(vnCurIdx);
-
-                    // the case where index1 == index2 should have been handled above
-                    assert(index1 != index2);
-
                     // It can always be considered as redundant with any previous higher constant value
                     //       a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2
                     if (index2 >= 0 && index1 >= index2)
@@ -5706,7 +5638,8 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             //           default: %name.Length is >= 8 here%
             //       }
             //
-            if ((value > 0) && !vnStore->IsVNConstant(opVN))
+            // NOTE: if offset != 0, we only know that "X + offset >= maxJumpIdx", which is not very useful.
+            if ((offset == 0) && (value > 0) && !vnStore->IsVNConstant(opVN))
             {
                 AssertionDsc dsc   = {};
                 dsc.assertionKind  = OAK_NOT_EQUAL;
@@ -5773,6 +5706,8 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 
 void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
 {
+    assert(!optLocalAssertionProp);
+
     if (BitVecOps::IsEmpty(apTraits, activeAssertions))
     {
         return;
@@ -5801,31 +5736,25 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
         {
             AssertionDsc* impAssertion = optGetAssertion(impIndex);
 
-            //  The impAssertion must be different from the chkAssertion
+            // The impAssertion must be different from the chkAssertion
             if (impIndex == chkAssertionIndex)
             {
                 continue;
             }
 
-            // impAssertion must be a Non Null assertion on lclNum
-            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || (impAssertion->op1.kind != O1K_LCLVAR) ||
-                (impAssertion->op2.kind != O2K_CONST_INT) || (impAssertion->op1.vn != chkAssertion->op1.vn))
+            // impAssertion must be a Non Null assertion on op1.vn
+            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || !impAssertion->CanPropNonNull() ||
+                (impAssertion->op1.vn != chkAssertion->op1.vn))
             {
                 continue;
             }
 
             // The bit may already be in the result set
-            if (!BitVecOps::IsMember(apTraits, activeAssertions, impIndex - 1))
+            if (BitVecOps::TryAddElemD(apTraits, activeAssertions, impIndex - 1))
             {
-                BitVecOps::AddElemD(apTraits, activeAssertions, impIndex - 1);
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
-                           (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
-                           impIndex);
-                }
-#endif
+                JITDUMP("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
+                        (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
+                        impIndex);
             }
 
             // There is at most one non-null assertion that is implied by the current chkIndex assertion

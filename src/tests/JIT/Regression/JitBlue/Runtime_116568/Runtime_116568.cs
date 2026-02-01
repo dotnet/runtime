@@ -6,6 +6,9 @@
 //     File: C:\repos\runtime1\src\coreclr\jit\lir.cpp:1687
 //     Image: c:\repos\runtime1\artifacts\tests\coreclr\windows.x64.Checked\tests\core_root\corerun.exe
 
+
+namespace Runtime_116568;
+
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
