@@ -5591,8 +5591,6 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         CORINFO_LOOKUP*         pLookup,
                                         void*                   compileTimeHandle)
 {
-    assert(!compIsForInlining());
-
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
 
     // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be

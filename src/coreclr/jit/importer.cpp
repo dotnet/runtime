@@ -1406,6 +1406,13 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         return nullptr;
     }
 
+    // If importation has finished, we cannot rely on importer helpers that may append
+    // statements (e.g. impRuntimeLookupToTree spills helper calls to temps via impAppendTree).
+    if (fgImportDone)
+    {
+        return getLookupTree(pResolvedToken, pLookup, handleFlags, compileTimeHandle);
+    }
+
     // Need to use dictionary-based access which depends on the typeContext
     // which is only available at runtime, not at compile-time.
     return impRuntimeLookupToTree(pResolvedToken, pLookup, compileTimeHandle);

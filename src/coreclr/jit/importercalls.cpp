@@ -8855,13 +8855,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         assert((derivedMethod == NO_METHOD_HANDLE) || (instantiatingStub != NO_METHOD_HANDLE));
     }
 
-    if (call->IsGenericVirtual(this) && dvInfo.needsRuntimeLookup)
-    {
-        // If we need a runtime lookup, we can't devirtualize yet because we don't have the right generic context.
-        // TODO-CQ: resolve this later when we have the right context.
-        JITDUMP("Generic virtual method devirt: runtime lookup present, sorry.\n");
-        return;
-    }
+    const bool gvmNeedsInstParamRuntimeLookup = call->IsGenericVirtual(this) && dvInfo.needsRuntimeLookup;
 
     // If we failed to get a method handle, we can't directly devirtualize.
     //
@@ -8941,6 +8935,28 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
+    // If we are devirtualizing a generic virtual method and the target requires a runtime lookup,
+    // materialize the correct instantiation argument for the implementing method.
+    if (gvmNeedsInstParamRuntimeLookup)
+    {
+        if ((pDerivedResolvedToken == nullptr) || (pDerivedResolvedToken->tokenScope == nullptr))
+        {
+            JITDUMP("Generic virtual method devirt: missing derived token for runtime lookup, sorry.\n");
+            return;
+        }
+
+        GenTree* instParam = impTokenToHandle(pDerivedResolvedToken, nullptr, true /* mustRestoreHandle */);
+
+        if (instParam == nullptr)
+        {
+            // If we're inlining, impTokenToHandle can return nullptr after recording a fatal observation.
+            JITDUMP("Generic virtual method devirt: failed to create instantiation argument, sorry.\n");
+            return;
+        }
+
+        call->gtArgs.InsertInstParam(this, instParam);
+    }
+
     // All checks done. Time to transform the call.
     //
     assert(canDevirtualize);
@@ -8948,7 +8964,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     JITDUMP("    %s; can devirtualize\n", note);
 
-    if (dvInfo.isInstantiatingStub)
+    if (!gvmNeedsInstParamRuntimeLookup && dvInfo.isInstantiatingStub)
     {
         // Pass the instantiating stub method desc as the inst param arg.
         //
