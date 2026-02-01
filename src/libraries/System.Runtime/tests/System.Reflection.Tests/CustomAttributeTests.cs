@@ -284,5 +284,27 @@ namespace System.Reflection.Tests
             object[] attributesWithInherit = objectType.GetCustomAttributes(inherit: true);
             Assert.Equal(attributesWithoutInherit.Length, attributesWithInherit.Length);
         }
+
+        // Test for generic enum argument with function pointer array - related to https://github.com/dotnet/runtime/pull/123439
+        private class GenericEnumAttributeWithFunctionPointer : Attribute
+        {
+            public unsafe GenericEnumAttributeWithFunctionPointer(GenericClassForEnum<delegate*<void>[]>.E e) { }
+        }
+
+        private class GenericClassForEnum<T>
+        {
+            public enum E { }
+        }
+
+        [GenericEnumAttributeWithFunctionPointer(default)]
+        private unsafe class ClassWithGenericEnumAttribute { }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        public void CustomAttributeCtor_WithGenericEnumArgument_DecodesCorrectly()
+        {
+            var attr = typeof(ClassWithGenericEnumAttribute).CustomAttributes.Single(d => d.AttributeType == typeof(GenericEnumAttributeWithFunctionPointer));
+            var arg = attr.ConstructorArguments.Single();
+            Assert.Equal(typeof(CustomAttributeTypedArgument), arg.GetType());
+        }
     }
 }
