@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -252,6 +252,42 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
 
             Assert.Null(reader.GetNextEntry());
+        }
+
+        [Theory]
+        [MemberData(nameof(GetTarEntryFormats))]
+        public void CreateFromDirectory_WithFormat(TarEntryFormat format)
+        {
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+
+            string fileName = "file.txt";
+            File.Create(Path.Join(source.Path, fileName)).Dispose();
+
+            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+            TarFile.CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format);
+
+            using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
+            using TarReader reader = new TarReader(fileStream);
+
+            TarEntry entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal(format, entry.Format);
+            Assert.Equal(fileName, entry.Name);
+
+            Assert.Null(reader.GetNextEntry());
+        }
+
+        [Theory]
+        [MemberData(nameof(GetInvalidTarEntryFormats))]
+        public void CreateFromDirectory_InvalidFormat_Throws(TarEntryFormat format)
+        {
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+
+            Assert.Throws<ArgumentOutOfRangeException>("format", () =>
+                TarFile.CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format));
         }
     }
 }
