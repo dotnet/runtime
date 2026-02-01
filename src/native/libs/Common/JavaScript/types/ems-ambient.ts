@@ -69,7 +69,6 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     HEAPF64: Float64Array;
 
     ExitStatus: (exitCode: number) => number;
-    _emscripten_force_exit: (exitCode: number) => void;
     _exit: (exitCode: number, implicit?: boolean) => void;
     abort: (reason: any) => void;
     ___trap: () => void;

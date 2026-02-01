@@ -97,12 +97,12 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
             _ems_.stackRestore(sp);
         }
     } catch (error: any) {
-        // if the error is an ExitStatus, use its status code
-        if (error && typeof error.status === "number") {
-            return error.status;
+        // do not propagate ExitStatus exception
+        if (!error || typeof error.status !== "number") {
+            _ems_.dotnetApi.exit(1, error);
+            throw error;
         }
-        _ems_.dotnetApi.exit(1, error);
-        throw error;
+        return error.status;
     }
 }
 
@@ -112,10 +112,11 @@ export async function runMainAndExit(mainAssemblyName?: string, args?: string[])
         _ems_.dotnetApi.exit(0, null);
     } catch (error: any) {
         // do not propagate ExitStatus exception
-        if (error.status === undefined) {
+        if (!error || typeof error.status !== "number") {
             _ems_.dotnetApi.exit(1, error);
             throw error;
         }
+        return error.status;
     }
     return res;
 }

@@ -606,7 +606,9 @@ static int run(const configuration& config)
     }
 
 #ifdef TARGET_BROWSER
-    // In browser we don't shutdown the runtime here as we want to keep it alive
+    // In browser we don't shutdown the CoreCLR VM here as we want to keep it alive
+    // the actual exit code would be set by SystemJS_ResolveMainPromise
+    // the process is kept alive by pending async work via safeSetTimeout() -> runtimeKeepalivePush()
     return 0;
 #else // TARGET_BROWSER
 

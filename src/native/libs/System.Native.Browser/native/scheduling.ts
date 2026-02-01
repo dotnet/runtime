@@ -15,8 +15,12 @@ export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
         try {
             _ems_.DOTNET.lastScheduledTimerId = undefined;
             _ems_._SystemJS_ExecuteTimerCallback();
-        } catch (err) {
-            _ems_.dotnetApi.exit(1, err);
+        } catch (error: any) {
+            // do not propagate ExitStatus exception
+            if (!error || typeof error.status !== "number") {
+                _ems_.dotnetApi.exit(1, error);
+                throw error;
+            }
         }
     }
 }
@@ -33,8 +37,12 @@ export function SystemJS_ScheduleBackgroundJob(): void {
         try {
             _ems_.DOTNET.lastScheduledThreadPoolId = undefined;
             _ems_._SystemJS_ExecuteBackgroundJobCallback();
-        } catch (err) {
-            _ems_.dotnetApi.exit(1, err);
+        } catch (error: any) {
+            // do not propagate ExitStatus exception
+            if (!error || typeof error.status !== "number") {
+                _ems_.dotnetApi.exit(1, error);
+                throw error;
+            }
         }
     }
 }

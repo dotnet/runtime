@@ -17,8 +17,12 @@ export function runBackgroundTimers(): void {
     try {
         _ems_._SystemJS_ExecuteTimerCallback();
         _ems_._SystemJS_ExecuteBackgroundJobCallback();
-    } catch (err) {
-        _ems_.dotnetApi.exit(1, err);
+    } catch (error: any) {
+        // do not propagate ExitStatus exception
+        if (!error || typeof error.status !== "number") {
+            _ems_.dotnetApi.exit(1, error);
+            throw error;
+        }
     }
 }
 

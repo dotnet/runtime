@@ -7,69 +7,65 @@
  */
 
 /* eslint-disable no-undef */
-/* eslint-disable space-before-function-paren */
-(function () {
-    function libFactory() {
-        // this executes the function at link time in order to capture exports
-        // this is what Emscripten does for linking JS libraries
-        // https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#javascript-limits-in-library-files
-        // it would execute the code at link time and call .toString() on functions to move it to the final output
-        // this process would loose any closure references, unless they are passed to `__deps` and also explicitly given to the linker
-        // JS name mangling and minification also applies, see src\native\rollup.config.defines.js and `reserved` there
-        const exports = {};
-        libBrowserHost(exports);
+function libFactory() {
+    // this executes the function at link time in order to capture exports
+    // this is what Emscripten does for linking JS libraries
+    // https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#javascript-limits-in-library-files
+    // it would execute the code at link time and call .toString() on functions to move it to the final output
+    // this process would loose any closure references, unless they are passed to `__deps` and also explicitly given to the linker
+    // JS name mangling and minification also applies, see src\native\rollup.config.defines.js and `reserved` there
+    const exports = {};
+    libBrowserHost(exports);
 
-        // libBrowserHostFn is too complex for acorn-optimizer.mjs to find the dependencies
-        let explicitDeps = [
-            "wasm_load_icu_data",
-            "BrowserHost_CreateHostContract",
-            "BrowserHost_InitializeCoreCLR",
-            "BrowserHost_ExecuteAssembly"
-        ];
-        let commonDeps = [
-            "$DOTNET",
-            "$DOTNET_INTEROP",
-            "$ENV",
-            "$FS",
-            "$libBrowserHostFn",
-            ...explicitDeps
-        ];
-        const lib = {
-            $BROWSER_HOST: {
-                selfInitialize: () => {
-                    if (typeof dotnetInternals !== "undefined") {
-                        BROWSER_HOST.dotnetInternals = dotnetInternals;
+    // libBrowserHostFn is too complex for acorn-optimizer.mjs to find the dependencies
+    let explicitDeps = [
+        "wasm_load_icu_data",
+        "BrowserHost_CreateHostContract",
+        "BrowserHost_InitializeCoreCLR",
+        "BrowserHost_ExecuteAssembly"
+    ];
+    let commonDeps = [
+        "$DOTNET",
+        "$DOTNET_INTEROP",
+        "$ENV",
+        "$FS",
+        "$libBrowserHostFn",
+        ...explicitDeps
+    ];
+    const libBROWSERHOST = {
+        $BROWSER_HOST: {
+            selfInitialize: () => {
+                if (typeof dotnetInternals !== "undefined") {
+                    BROWSER_HOST.dotnetInternals = dotnetInternals;
 
-                        const exports = {};
-                        libBrowserHostFn(exports);
-                        exports.dotnetInitializeModule(dotnetInternals);
-                        BROWSER_HOST.assignExports(exports, BROWSER_HOST);
-                    }
-                },
+                    const exports = {};
+                    libBrowserHostFn(exports);
+                    exports.dotnetInitializeModule(dotnetInternals);
+                    BROWSER_HOST.assignExports(exports, BROWSER_HOST);
+                }
             },
-            $libBrowserHostFn: libBrowserHost,
-            $BROWSER_HOST__postset: "BROWSER_HOST.selfInitialize()",
-            $BROWSER_HOST__deps: commonDeps,
-        };
+        },
+        $libBrowserHostFn: libBrowserHost,
+        $BROWSER_HOST__postset: "BROWSER_HOST.selfInitialize()",
+        $BROWSER_HOST__deps: commonDeps,
+    };
 
-        let assignExportsBuilder = "";
-        let explicitImportsBuilder = "";
-        for (const exportName of Reflect.ownKeys(exports)) {
-            const name = String(exportName);
-            if (name === "dotnetInitializeModule") continue;
-            lib[name] = () => "dummy";
-            assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
-        }
-        for (const importName of explicitDeps) {
-            explicitImportsBuilder += `_${importName}();\n`;
-        }
-        lib.$BROWSER_HOST.assignExports = new Function("exports", assignExportsBuilder);
-        lib.$BROWSER_HOST.explicitImports = new Function(explicitImportsBuilder);
-
-        autoAddDeps(lib, "$BROWSER_HOST");
-        addToLibrary(lib);
+    let assignExportsBuilder = "";
+    let explicitImportsBuilder = "";
+    for (const exportName of Reflect.ownKeys(exports)) {
+        const name = String(exportName);
+        if (name === "dotnetInitializeModule") continue;
+        libBROWSERHOST[name] = () => "dummy";
+        assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
     }
-    libFactory();
+    for (const importName of explicitDeps) {
+        explicitImportsBuilder += `_${importName}();\n`;
+    }
+    libBROWSERHOST.$BROWSER_HOST.assignExports = new Function("exports", assignExportsBuilder);
+    libBROWSERHOST.$BROWSER_HOST.explicitImports = new Function(explicitImportsBuilder);
+
+    autoAddDeps(libBROWSERHOST, "$BROWSER_HOST");
+    addToLibrary(libBROWSERHOST);
 
     function trim() {
         return 138; // EOPNOTSUPP;
@@ -87,4 +83,6 @@
 
     LibraryManager.library.__syscall_socket = trim;
     delete LibraryManager.library.__syscall_socket__deps;
-})();
+}
+
+libFactory();
