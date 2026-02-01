@@ -86,7 +86,7 @@ enum class AsyncMethodFlags
     //
     // When we see a Task/ValueTask-returning method in metadata we create 2 method variants that logically
     // match the same method definition. One variant has the same signature/callconv as the defining method
-    // and another is a matching AsyncCall variant. 
+    // and another is a matching AsyncCall variant.
     // Depending on whether the definition was marked with `MethodImpl.Async` or not,
     // the IL body belongs to one of the variants and another variant is a synthetic thunk.
     //
@@ -748,7 +748,7 @@ public:
     inline bool IsLCGMethod();
 
     inline bool IsDiagnosticsHidden();
-    
+
     inline DWORD IsPInvoke()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1547,13 +1547,14 @@ public:
     // necessary, or if you can guarantee that it has already happened. For instance, the frame of a
     // stackwalk has obviously been virtualized as much as it will be.
     //
-    PCODE GetSingleCallableAddrOfCode()
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(!IsGenericMethodDefinition());
-        return GetMethodEntryPoint();
-    }
-#endif
+    PCODE GetSingleCallableAddrOfCode();
+
+    // Returns address of code to call for a MethodDesc marked with UnmanagedCallersOnlyAttribute.
+    // The address is good for one immediate invocation only. Use GetMultiCallableAddrOfCode()
+    // passing CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE to get address that can be invoked multiple times.
+    //
+    PCODE GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+#endif // !DACCESS_COMPILE
 
     // This one is used to implement "ldftn".
     PCODE GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags = CORINFO_ACCESS_LDFTN);
@@ -2926,7 +2927,7 @@ public:
         m_dwExtendedFlags = (m_dwExtendedFlags & ~StackArgSizeMask) | ((DWORD)cbArgSize << 16);
     }
 #endif // TARGET_X86 || FEATURE_COMINTEROP
-    
+
     bool IsReversePInvokeStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
