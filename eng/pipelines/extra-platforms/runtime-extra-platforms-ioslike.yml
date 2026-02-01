@@ -196,7 +196,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_CoreCLR_RuntimeTests
       buildArgs: -s clr+libs -c $(_BuildConfig)
-      timeoutInMinutes: 240
+      timeoutInMinutes: 480
       # extra steps, run tests
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
@@ -206,9 +206,9 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
-            testBuildArgs: tree baseservices /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=false
+            testBuildArgs: /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=true
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=false
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
 # Build the whole product using CoreCLR R2R and run library tests
@@ -234,12 +234,13 @@ jobs:
         value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_CoreCLR_Smoke
-      buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:BuildTestsOnHelix=false /p:UseNativeAOTRuntime=false /p:RunSmokeTestsOnly=true
-      timeoutInMinutes: 120
+      nameSuffix: AllSubsets_CoreCLR
+      buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:UseNativeAOTRuntime=false $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false
+      timeoutInMinutes: 480
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
