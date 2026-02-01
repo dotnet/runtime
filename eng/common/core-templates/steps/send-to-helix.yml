@@ -60,6 +60,7 @@ steps:
       $(Build.SourcesDirectory)\eng\common\msbuild.ps1
       $(Build.SourcesDirectory)/${{ parameters.HelixProjectPath }}
       /restore
+      /p:HelixBaseUri=https://helix.int-dot.net/
       /p:TreatWarningsAsErrors=false
       /p:EnableHelixJobMonitor=${{ parameters.UseHelixMonitor }}
       /p:HelixUseEntraAuthentication=${{ parameters.HelixUseEntraAuthentication }}
@@ -96,6 +97,7 @@ steps:
       DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
       WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
       HelixBaseUri: "https://helix.int-dot.net/"
+      SYSTEM_HELIX_URI: "https://helix.int-dot.net/"
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     condition: and(${{ parameters.condition }}, eq(variables['Agent.Os'], 'Windows_NT'))
@@ -104,6 +106,7 @@ steps:
       $(Build.SourcesDirectory)/eng/common/msbuild.sh
       $(Build.SourcesDirectory)/${{ parameters.HelixProjectPath }}
       /restore
+      /p:HelixBaseUri=https://helix.int-dot.net/
       /p:TreatWarningsAsErrors=false
       /p:EnableHelixJobMonitor=${{ parameters.UseHelixMonitor }}
       /p:HelixUseEntraAuthentication=${{ parameters.HelixUseEntraAuthentication }}
