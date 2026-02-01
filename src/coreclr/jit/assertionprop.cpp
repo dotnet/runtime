@@ -2211,14 +2211,17 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
         return index;
     }
 
-    for (AssertionIndex index = 1; index <= optAssertionCount; ++index)
+    if (!optLocalAssertionProp) // Seems to be not profitable for Local-AP
     {
-        // Make sure assertion kinds are complementary and op1, op2 kinds match.
-        const AssertionDsc& curAssertion = optGetAssertion(index);
-        if (curAssertion.Complementary(inputAssertion, !optLocalAssertionProp))
+        for (AssertionIndex index = 1; index <= optAssertionCount; ++index)
         {
-            optMapComplementary(assertIndex, index);
-            return index;
+            // Make sure assertion kinds are complementary and op1, op2 kinds match.
+            const AssertionDsc& curAssertion = optGetAssertion(index);
+            if (curAssertion.Complementary(inputAssertion, !optLocalAssertionProp))
+            {
+                optMapComplementary(assertIndex, index);
+                return index;
+            }
         }
     }
     return NO_ASSERTION_INDEX;

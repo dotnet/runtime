@@ -7784,8 +7784,8 @@ public:
         };
         struct AssertionDscOp1
         {
-            optOp1Kind kind; // a normal LclVar, or Exact-type or Subtype
-            ValueNum   vn;
+            optOp1Kind kind;
+            ValueNum   vn; // TODO-Cleanup: move this field to the union below as they are not used together
             union
             {
                 unsigned lclNum;
@@ -7794,14 +7794,14 @@ public:
         } op1;
         struct AssertionDscOp2
         {
-            optOp2Kind kind; // a const or copy assertion
+            optOp2Kind kind;
         private:
             uint16_t m_encodedIconFlags; // encoded icon gtFlags, don't use directly
         public:
             ValueNum vn;
             struct IntVal
             {
-                ssize_t   iconVal; // integer
+                ssize_t   iconVal;
                 FieldSeq* fieldSeq;
             };
             union
@@ -7814,11 +7814,13 @@ public:
 
             bool HasIconFlag() const
             {
+                assert(kind == O2K_CONST_INT);
                 assert(m_encodedIconFlags <= 0xFF);
                 return m_encodedIconFlags != 0;
             }
             GenTreeFlags GetIconFlag() const
             {
+                assert(kind == O2K_CONST_INT);
                 // number of trailing zeros in GTF_ICON_HDL_MASK
                 const uint16_t iconMaskTzc = 24;
                 static_assert((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> iconMaskTzc) == 0xFF);
@@ -7829,6 +7831,7 @@ public:
             }
             void SetIconFlag(GenTreeFlags flags, FieldSeq* fieldSeq = nullptr)
             {
+                assert(kind == O2K_CONST_INT);
                 const uint16_t iconMaskTzc = 24;
                 assert((flags & ~GTF_ICON_HDL_MASK) == 0);
                 m_encodedIconFlags = flags >> iconMaskTzc;
@@ -7901,11 +7904,6 @@ public:
             assertionKind = assertionKind == OAK_EQUAL ? OAK_NOT_EQUAL : OAK_EQUAL;
         }
 
-        static bool SameKind(const AssertionDsc& a1, const AssertionDsc& a2)
-        {
-            return a1.assertionKind == a2.assertionKind && a1.op1.kind == a2.op1.kind && a1.op2.kind == a2.op2.kind;
-        }
-
         static bool ComplementaryKind(optAssertionKind kind, optAssertionKind kind2)
         {
             if (kind == OAK_EQUAL)
@@ -7967,9 +7965,6 @@ public:
                     return op2.u2.Equals(that.op2.u2);
 
                 case O2K_INVALID:
-                    // we will return false
-                    break;
-
                 default:
                     assert(!"Unexpected value for op2.kind in AssertionDsc.");
                     break;
@@ -8148,8 +8143,7 @@ public:
             dsc.op2.kind       = O2K_CONST_INT;
             dsc.op2.u1.iconVal = comp->vnStore->CoercedConstantValue<ssize_t>(typeHndVN);
             dsc.op2.vn         = typeHndVN;
-            dsc.op2.SetIconFlag(GTF_ICON_CLASS_HDL);
-            dsc.assertionKind = OAK_EQUAL;
+            dsc.assertionKind  = OAK_EQUAL;
             return dsc;
         }
 
