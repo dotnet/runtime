@@ -5,8 +5,6 @@
 
     TEXTAREA
 
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-
     EXTERN RhpCidResolve
     EXTERN RhpUniversalTransitionReturnResult
 
@@ -54,7 +52,5 @@ RhpResolveInterfaceMethodFast_SlowPath
         b       RhpUniversalTransitionReturnResult
 
     NESTED_END RhpResolveInterfaceMethodFast
-
-#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
     END
