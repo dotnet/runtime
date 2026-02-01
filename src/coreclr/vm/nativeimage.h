@@ -111,8 +111,7 @@ public:
         LPCUTF8 nativeImageFileName,
         AssemblyBinder *pAssemblyBinder,
         LoaderAllocator *pLoaderAllocator,
-        bool isPlatformNative,
-        /* out */ bool *isNewNativeImage);
+        bool isPlatformNative);
 
     Crst *EagerFixupsLock() { return &m_eagerFixupsLock; }
     bool EagerFixupsHaveRun() const { return m_eagerFixupsHaveRun; }
