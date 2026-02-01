@@ -40,7 +40,7 @@ namespace System.Collections.Immutable
         /// </summary>
 #pragma warning disable CA1825
         // Avoid the extra generic instantiation for Array.Empty<T>();
-        // switching to Array.Empty also has a non-negligible impact on the working set memory
+        // Switching to Array.Empty also has a non-negligible impact on the working set memory
         public static readonly ImmutableArray<T> Empty = new ImmutableArray<T>(new T[0]);
 #pragma warning restore CA1825
 
