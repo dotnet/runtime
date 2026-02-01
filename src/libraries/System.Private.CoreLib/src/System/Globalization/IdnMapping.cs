@@ -26,6 +26,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Globalization
@@ -88,15 +89,44 @@ namespace System.Globalization
                 return GetAsciiInvariant(unicode, index, count);
             }
 
-            unsafe
+            return GlobalizationMode.UseNls ?
+                NlsGetAsciiCore(unicode, index, count) :
+                IcuGetAsciiCore(unicode, index, count);
+        }
+
+        /// <summary>
+        /// Encodes a Unicode domain name to its ASCII (Punycode) equivalent.
+        /// </summary>
+        /// <param name="unicode">The Unicode domain name to convert.</param>
+        /// <param name="destination">The buffer to write the ASCII result to. This buffer must not overlap with <paramref name="unicode"/>.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of characters that were written to <paramref name="destination"/>.</param>
+        /// <returns><see langword="true"/> if the conversion was successful and the result was written to <paramref name="destination"/>; otherwise, <see langword="false"/> if <paramref name="destination"/> is too small to contain the result.</returns>
+        /// <exception cref="ArgumentException"><paramref name="unicode"/> is invalid based on the <see cref="AllowUnassigned"/> and <see cref="UseStd3AsciiRules"/> properties, and the IDNA standard, or the source and destination buffers overlap.</exception>
+        public bool TryGetAscii(ReadOnlySpan<char> unicode, Span<char> destination, out int charsWritten)
+        {
+            if (unicode.Length == 0)
             {
-                fixed (char* pUnicode = unicode)
-                {
-                    return GlobalizationMode.UseNls ?
-                        NlsGetAsciiCore(unicode, pUnicode + index, count) :
-                        IcuGetAsciiCore(unicode, pUnicode + index, count);
-                }
+                throw new ArgumentException(SR.Argument_IdnBadLabelSize, nameof(unicode));
             }
+
+            if (unicode[^1] == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, unicode.Length - 1), nameof(unicode));
+            }
+
+            if (unicode.Overlaps(destination))
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
+            }
+
+            if (GlobalizationMode.Invariant)
+            {
+                return TryGetAsciiInvariant(unicode, destination, out charsWritten);
+            }
+
+            return GlobalizationMode.UseNls ?
+                NlsTryGetAsciiCore(unicode, destination, out charsWritten) :
+                IcuTryGetAsciiCore(unicode, destination, out charsWritten);
         }
 
         // Gets Unicode version of the string.  Normalized and limited to IDNA characters.
@@ -132,15 +162,42 @@ namespace System.Globalization
                 return GetUnicodeInvariant(ascii, index, count);
             }
 
-            unsafe
+            return GlobalizationMode.UseNls ?
+                NlsGetUnicodeCore(ascii, index, count) :
+                IcuGetUnicodeCore(ascii, index, count);
+        }
+
+        /// <summary>
+        /// Decodes one or more encoded domain name labels to a string of Unicode characters.
+        /// </summary>
+        /// <param name="ascii">The ASCII domain name to convert. The string may contain one or more labels, where each label is prefixed by "xn--".</param>
+        /// <param name="destination">The buffer to write the Unicode result to. This buffer must not overlap with <paramref name="ascii"/>.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of characters that were written to <paramref name="destination"/>.</param>
+        /// <returns><see langword="true"/> if the conversion was successful and the result was written to <paramref name="destination"/>; otherwise, <see langword="false"/> if <paramref name="destination"/> is too small to contain the result.</returns>
+        /// <exception cref="ArgumentException"><paramref name="ascii"/> is invalid based on the <see cref="AllowUnassigned"/> and <see cref="UseStd3AsciiRules"/> properties, and the IDNA standard, or the source and destination buffers overlap.</exception>
+        public bool TryGetUnicode(ReadOnlySpan<char> ascii, Span<char> destination, out int charsWritten)
+        {
+            // This is a case (i.e. explicitly null-terminated input) where behavior in .NET and Win32 intentionally differ.
+            // The .NET APIs should (and did in v4.0 and earlier) throw an ArgumentException on input that includes a terminating null.
+            // The Win32 APIs fail on an embedded null, but not on a terminating null.
+            if (ascii.Length > 0 && ascii[^1] == (char)0)
             {
-                fixed (char* pAscii = ascii)
-                {
-                    return GlobalizationMode.UseNls ?
-                        NlsGetUnicodeCore(ascii, pAscii + index, count) :
-                        IcuGetUnicodeCore(ascii, pAscii + index, count);
-                }
+                throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(ascii));
             }
+
+            if (ascii.Overlaps(destination))
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
+            }
+
+            if (GlobalizationMode.Invariant)
+            {
+                return TryGetUnicodeInvariant(ascii, destination, out charsWritten);
+            }
+
+            return GlobalizationMode.UseNls ?
+                NlsTryGetUnicodeCore(ascii, destination, out charsWritten) :
+                IcuTryGetUnicodeCore(ascii, destination, out charsWritten);
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj) =>
@@ -152,18 +209,19 @@ namespace System.Globalization
             (_allowUnassigned ? 100 : 200) + (_useStd3AsciiRules ? 1000 : 2000);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe string GetStringForOutput(string originalString, char* input, int inputLength, char* output, int outputLength)
+        private static string GetStringForOutput(string? originalString, ReadOnlySpan<char> input, ReadOnlySpan<char> output)
         {
-            Debug.Assert(inputLength > 0);
+            Debug.Assert(input.Length > 0);
 
-            if (originalString.Length == inputLength &&
-                inputLength == outputLength &&
-                Ordinal.EqualsIgnoreCase(ref *input, ref *output, inputLength))
+            if (originalString is not null &&
+                originalString.Length == input.Length &&
+                input.Length == output.Length &&
+                Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(input), ref MemoryMarshal.GetReference(output), input.Length))
             {
                 return originalString;
             }
 
-            return new string(output, 0, outputLength);
+            return output.ToString();
         }
 
         //
@@ -183,22 +241,25 @@ namespace System.Globalization
         private const int c_skew = 38;
         private const int c_damp = 700;
 
-        private string GetAsciiInvariant(string unicode, int index, int count)
+        private string GetAsciiInvariant(string unicodeString, int index, int count)
         {
-            if (index > 0 || count < unicode.Length)
-            {
-                unicode = unicode.Substring(index, count);
-            }
+            ReadOnlySpan<char> unicode = unicodeString.AsSpan(index, count);
 
             // Check for ASCII only string, which will be unchanged
             if (ValidateStd3AndAscii(unicode, UseStd3AsciiRules, true))
             {
-                return unicode;
+                // Return original string if the entire string was requested and it doesn't need modification
+                if (index == 0 && count == unicodeString.Length)
+                {
+                    return unicodeString;
+                }
+
+                return unicode.ToString();
             }
 
             // Cannot be null terminated (normalization won't help us with this one, and
             // may have returned false before checking the whole string above)
-            Debug.Assert(count >= 1, "[IdnMapping.GetAscii] Expected 0 length strings to fail before now.");
+            Debug.Assert(unicode.Length >= 1, "[IdnMapping.GetAscii] Expected 0 length strings to fail before now.");
             if (unicode[^1] <= 0x1f)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, unicode.Length - 1), nameof(unicode));
@@ -214,8 +275,51 @@ namespace System.Globalization
             return PunycodeEncode(unicode);
         }
 
+        private bool TryGetAsciiInvariant(ReadOnlySpan<char> unicode, Span<char> destination, out int charsWritten)
+        {
+            // Check for ASCII only string, which will be unchanged
+            if (ValidateStd3AndAscii(unicode, UseStd3AsciiRules, true))
+            {
+                if (unicode.Length <= destination.Length)
+                {
+                    unicode.CopyTo(destination);
+                    charsWritten = unicode.Length;
+                    return true;
+                }
+
+                charsWritten = 0;
+                return false;
+            }
+
+            // Cannot be null terminated (normalization won't help us with this one, and
+            // may have returned false before checking the whole string above)
+            Debug.Assert(unicode.Length >= 1, "[IdnMapping.GetAscii] Expected 0 length strings to fail before now.");
+            if (unicode[^1] <= 0x1f)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, unicode.Length - 1), nameof(unicode));
+            }
+
+            // May need to check Std3 rules again for non-ascii
+            if (UseStd3AsciiRules)
+            {
+                ValidateStd3AndAscii(unicode, true, false);
+            }
+
+            // Go ahead and encode it
+            string result = PunycodeEncode(unicode);
+            if (result.Length <= destination.Length)
+            {
+                result.CopyTo(destination);
+                charsWritten = result.Length;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
+        }
+
         // See if we're only ASCII
-        private static bool ValidateStd3AndAscii(string unicode, bool bUseStd3, bool bCheckAscii)
+        private static bool ValidateStd3AndAscii(ReadOnlySpan<char> unicode, bool bUseStd3, bool bCheckAscii)
         {
             // If its empty, then its too small
             if (unicode.Length == 0)
@@ -304,7 +408,7 @@ namespace System.Globalization
         /* value can be any of the punycode_status values defined above   */
         /* except punycode_bad_input; if not punycode_success, then       */
         /* output_size and output might contain garbage.                  */
-        private static string PunycodeEncode(string unicode)
+        private static string PunycodeEncode(ReadOnlySpan<char> unicode)
         {
             // 0 length strings aren't allowed
             if (unicode.Length == 0)
@@ -322,7 +426,7 @@ namespace System.Globalization
                 const string DotSeparators = ".\u3002\uFF0E\uFF61";
 
                 // Find end of this segment
-                iNextDot = unicode.AsSpan(iAfterLastDot).IndexOfAny(DotSeparators);
+                iNextDot = unicode.Slice(iAfterLastDot).IndexOfAny(DotSeparators);
                 iNextDot = iNextDot < 0 ? unicode.Length : iNextDot + iAfterLastDot;
 
                 // Only allowed to have empty . section at end (www.microsoft.com.)
@@ -350,7 +454,7 @@ namespace System.Globalization
 
                     // Check last char
                     int iTest = iNextDot - 1;
-                    if (char.IsLowSurrogate(unicode, iTest))
+                    if (char.IsLowSurrogate(unicode[iTest]))
                     {
                         iTest--;
                     }
@@ -369,7 +473,7 @@ namespace System.Globalization
                 for (basicCount = iAfterLastDot; basicCount < iNextDot; basicCount++)
                 {
                     // Can't be lonely surrogate because it would've thrown in normalization
-                    Debug.Assert(!char.IsLowSurrogate(unicode, basicCount), "[IdnMapping.punycode_encode]Unexpected low surrogate");
+                    Debug.Assert(!char.IsLowSurrogate(unicode[basicCount]), "[IdnMapping.punycode_encode]Unexpected low surrogate");
 
                     // Double check our bidi rules
                     StrongBidiCategory testBidi = CharUnicodeInfo.GetBidiCategory(unicode, basicCount);
@@ -395,7 +499,7 @@ namespace System.Globalization
                         numProcessed++;
                     }
                     // If its a surrogate, skip the next since our bidi category tester doesn't handle it.
-                    else if (char.IsSurrogatePair(unicode, basicCount))
+                    else if (basicCount + 1 < iNextDot && char.IsSurrogatePair(unicode[basicCount], unicode[basicCount + 1]))
                         basicCount++;
                 }
 
@@ -410,7 +514,7 @@ namespace System.Globalization
                 else
                 {
                     // If it has some non-basic code points the input cannot start with xn--
-                    if (unicode.AsSpan(iAfterLastDot).StartsWith(c_strAcePrefix, StringComparison.OrdinalIgnoreCase))
+                    if (unicode.Slice(iAfterLastDot).StartsWith(c_strAcePrefix, StringComparison.OrdinalIgnoreCase))
                         throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(unicode));
 
                     // Need to do ACE encoding
@@ -439,7 +543,7 @@ namespace System.Globalization
                              j < iNextDot;
                              j += IsSupplementary(test) ? 2 : 1)
                         {
-                            test = char.ConvertToUtf32(unicode, j);
+                            test = GetCodePoint(unicode, j);
                             if (test >= n && test < m) m = test;
                         }
 
@@ -452,7 +556,7 @@ namespace System.Globalization
                         for (j = iAfterLastDot; j < iNextDot; j += IsSupplementary(test) ? 2 : 1)
                         {
                             // Make sure we're aware of surrogates
-                            test = char.ConvertToUtf32(unicode, j);
+                            test = GetCodePoint(unicode, j);
 
                             // Adjust for character position (only the chars in our string already, some
                             // haven't been processed.
@@ -528,6 +632,17 @@ namespace System.Globalization
             // Is it in ASCII range?
             cp < 0x80;
 
+        private static int GetCodePoint(ReadOnlySpan<char> s, int index)
+        {
+            // Check if the character at index is a high surrogate.
+            if (char.IsHighSurrogate(s[index]) && index + 1 < s.Length && char.IsLowSurrogate(s[index + 1]))
+            {
+                return char.ConvertToUtf32(s[index], s[index + 1]);
+            }
+
+            return s[index];
+        }
+
         // Validate Std3 rules for a character
         private static void ValidateStd3(char c, bool bNextToDot)
         {
@@ -540,19 +655,49 @@ namespace System.Globalization
 
         private string GetUnicodeInvariant(string ascii, int index, int count)
         {
-            if (index > 0 || count < ascii.Length)
-            {
-                // We're only using part of the string
-                ascii = ascii.Substring(index, count);
-            }
             // Convert Punycode to Unicode
-            string strUnicode = PunycodeDecode(ascii);
+            string asciiSlice = ascii.Substring(index, count);
+            string strUnicode = PunycodeDecode(asciiSlice);
 
             // Output name MUST obey IDNA rules & round trip (casing differences are allowed)
-            if (!ascii.Equals(GetAscii(strUnicode), StringComparison.OrdinalIgnoreCase))
+            string asciiRoundtrip = GetAscii(strUnicode);
+            if (!asciiRoundtrip.Equals(asciiSlice, StringComparison.OrdinalIgnoreCase))
+            {
                 throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
+            }
+
+            // If the ASCII round-trip equals the original string, return it as-is (no allocation)
+            if (index == 0 && count == ascii.Length && strUnicode.Equals(ascii, StringComparison.OrdinalIgnoreCase))
+            {
+                return ascii;
+            }
 
             return strUnicode;
+        }
+
+        private bool TryGetUnicodeInvariant(ReadOnlySpan<char> ascii, Span<char> destination, out int charsWritten)
+        {
+            // Convert the span to a string for PunycodeDecode since it uses string operations extensively
+            string asciiString = ascii.ToString();
+
+            // Convert Punycode to Unicode
+            string strUnicode = PunycodeDecode(asciiString);
+
+            // Output name MUST obey IDNA rules & round trip (casing differences are allowed)
+            if (!asciiString.Equals(GetAscii(strUnicode), StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
+            }
+
+            if (strUnicode.Length <= destination.Length)
+            {
+                strUnicode.CopyTo(destination);
+                charsWritten = strUnicode.Length;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
         }
 
         /* PunycodeDecode() converts Punycode to Unicode.  The input is  */
