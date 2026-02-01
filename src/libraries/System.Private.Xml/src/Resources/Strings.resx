@@ -2584,7 +2584,7 @@
     <value>Value of {0} mismatches the type of {1}; you need to set it to {2}.</value>
   </data>
   <data name="XmlArrayItemAmbiguousTypes" xml:space="preserve">
-    <value>Ambiguous types specified for member '{0}'.  Items '{1}' and '{2}' have the same type.  Please consider using {3} with {4} instead. Member: '{5}'.</value>
+    <value>Ambiguous types specified for member '{0}'.  Items '{1}' and '{2}' have the same type.  Please consider using {3} with {4} instead.</value>
   </data>
   <data name="XmlUnsupportedInterface" xml:space="preserve">
     <value>Cannot serialize interface {0}.</value>
