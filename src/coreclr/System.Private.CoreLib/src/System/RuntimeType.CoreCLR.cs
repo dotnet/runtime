@@ -3729,6 +3729,15 @@ namespace System
             return new RuntimeTypeHandle(this).MakeArray(rank);
         }
 
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            parameterTypes ??= [];
+            foreach (Type t in parameterTypes)
+                ArgumentNullException.ThrowIfNull(t, nameof(parameterTypes));
+
+            return new RuntimeTypeHandle(this).MakeFunctionPointer(parameterTypes, isUnmanaged);
+        }
+
         public override StructLayoutAttribute? StructLayoutAttribute => PseudoCustomAttribute.GetStructLayoutCustomAttribute(this);
 
         #endregion

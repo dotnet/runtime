@@ -662,6 +662,24 @@ namespace System
             return new SignatureFunctionPointerType(returnType, parameterTypes, isUnmanaged, callingConventions);
         }
 
+        /// <summary>
+        /// Creates a <see cref="Type"/> object that represents a function pointer type
+        /// with the specified parameter types. The return type is represented by the
+        /// current <see cref="Type"/> instance.
+        /// </summary>
+        /// <param name="parameterTypes">An array of <see cref="Type"/> objects that represent the parameter types of
+        /// the function pointer. If <see langword="null"/>, an empty parameter list
+        /// is assumed.
+        /// </param>
+        /// <param name="isUnmanaged">
+        /// <see langword="true"/> to create an unmanaged function pointer type; otherwise,
+        /// <see langword="false"/> to create a managed function pointer type.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Type"/> object that represents the function pointer type whose
+        /// return type is the current <see cref="Type"/> and whose parameter types are
+        /// specified by <paramref name="parameterTypes"/>.
+        /// </returns>
         public virtual Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]

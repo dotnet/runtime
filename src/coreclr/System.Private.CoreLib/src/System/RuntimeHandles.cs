@@ -813,6 +813,25 @@ namespace System
             return type!;
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakeFunctionPointer")]
+        private static partial void MakeFunctionPointer(nint* retAndParamTypes, int numArgs, [MarshalAs(UnmanagedType.Bool)] bool isUnmanaged, ObjectHandleOnStack type);
+
+        internal RuntimeType MakeFunctionPointer(Type[] parameterTypes, bool isUnmanaged)
+        {
+            int count = 1 + parameterTypes.Length;
+            nint* retAndParamTypeHandles = stackalloc nint[count];
+
+            retAndParamTypeHandles[0] = GetNativeHandle().Value;
+            for (int i = 0; i < parameterTypes.Length; i++)
+                retAndParamTypeHandles[i + 1] = parameterTypes[i].TypeHandle.Value;
+
+            RuntimeType? type = null;
+            MakeFunctionPointer(retAndParamTypeHandles, parameterTypes.Length, isUnmanaged, ObjectHandleOnStack.Create(ref type));
+            GC.KeepAlive(m_type);
+            GC.KeepAlive(parameterTypes);
+            return type!;
+        }
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakePointer")]
         private static partial void MakePointer(QCallTypeHandle handle, ObjectHandleOnStack type);
 
