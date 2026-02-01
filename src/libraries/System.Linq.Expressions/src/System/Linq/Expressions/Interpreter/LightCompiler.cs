@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Threading;
 using static System.Linq.Expressions.CachedReflectionInfo;
 
 using AstUtils = System.Linq.Expressions.Utils;
