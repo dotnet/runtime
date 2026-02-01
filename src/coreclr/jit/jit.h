@@ -454,6 +454,7 @@ typedef double weight_t;
 #define FLD_GLOBAL_DS ((CORINFO_FIELD_HANDLE)-4)
 #define FLD_GLOBAL_FS ((CORINFO_FIELD_HANDLE)-8)
 #define FLD_GLOBAL_GS ((CORINFO_FIELD_HANDLE)-12)
+#define FLD_FTN_ENTRY ((CORINFO_FIELD_HANDLE)-16)
 
 class GlobalJitOptions
 {

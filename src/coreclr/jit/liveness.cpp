@@ -1489,6 +1489,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_JTRUE:
             case GT_RETURN:
             case GT_RETURN_SUSPEND:
+            case GT_NONLOCAL_JMP:
             case GT_SWITCH:
             case GT_RETFILT:
             case GT_START_NONGC:

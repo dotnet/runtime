@@ -11986,6 +11986,12 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
         return;
     }
 
+    if (fldHnd == FLD_FTN_ENTRY)
+    {
+        emitPrintLabel(emitPrologIG);
+        return;
+    }
+
     printf("[");
 
     doffs = Compiler::eeGetJitDataOffs(fldHnd);
@@ -12668,86 +12674,6 @@ void emitter::emitDispIns(
 #endif
 
 #define ID_INFO_DSP_RELOC ((bool)(id->idIsDspReloc()))
-
-    /* Display a constant value if the instruction references one */
-
-    if (!isNew && id->idHasMemGen())
-    {
-        /* Is this actually a reference to a data section? */
-        int offs = Compiler::eeGetJitDataOffs(id->idAddr()->iiaFieldHnd);
-
-        if (offs >= 0)
-        {
-            void* addr;
-
-            /* Display a data section reference */
-
-            assert((unsigned)offs < emitConsDsc.dsdOffs);
-            addr = emitDataOffsetToPtr((UNATIVE_OFFSET)offs);
-
-#if 0
-            // TODO-XArch-Cleanup: Fix or remove this code.
-            /* Is the operand an integer or floating-point value? */
-
-            bool isFP = false;
-
-            if  (CodeGen::instIsFP(id->idIns()))
-            {
-                switch (id->idIns())
-                {
-                case INS_fild:
-                case INS_fildl:
-                    break;
-
-                default:
-                    isFP = true;
-                    break;
-                }
-            }
-
-            if (offs & 1)
-                printf("@CNS%02u", offs);
-            else
-                printf("@RWD%02u", offs);
-
-            printf("      ");
-
-            if  (addr)
-            {
-                addr = 0;
-                // TODO-XArch-Bug?:
-                //          This was busted by switching the order
-                //          in which we output the code block vs.
-                //          the data blocks -- when we get here,
-                //          the data block has not been filled in
-                //          yet, so we'll display garbage.
-
-                if  (isFP)
-                {
-                    if  (id->idOpSize() == EA_4BYTE)
-                        printf("DF      %f \n", addr ? *(float   *)addr : 0);
-                    else
-                        printf("DQ      %lf\n", addr ? *(double  *)addr : 0);
-                }
-                else
-                {
-                    if  (id->idOpSize() <= EA_4BYTE)
-                        printf("DD      %d \n", addr ? *(int     *)addr : 0);
-                    else
-                        printf("DQ      %D \n", addr ? *(int64_t *)addr : 0);
-                }
-            }
-#endif
-        }
-    }
-
-    // printf("[F=%s] "   , emitIfName(id->idInsFmt()));
-    // printf("INS#%03u: ", id->idDebugOnlyInfo()->idNum);
-    // printf("[S=%02u] " , emitCurStackLvl); if (isNew) printf("[M=%02u] ", emitMaxStackDepth);
-    // printf("[S=%02u] " , emitCurStackLvl/sizeof(INT32));
-    // printf("[A=%08X] " , emitSimpleStkMask);
-    // printf("[A=%08X] " , emitSimpleByrefStkMask);
-    // printf("[L=%02u] " , id->idCodeSize());
 
     if (!isNew && !asmfm)
     {
@@ -16096,8 +16022,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         else
         {
-            assert(jitStaticFldIsGlobAddr(fldh));
-            addr = nullptr;
+            assert(fldh == FLD_FTN_ENTRY);
+            addr = emitCodeBlock;
         }
     }
 

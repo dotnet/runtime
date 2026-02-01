@@ -22,7 +22,7 @@ struct LiveLocalInfo
 struct ContinuationLayout
 {
     unsigned                             Size                      = 0;
-    unsigned                             OSRILOffset               = UINT_MAX;
+    unsigned                             OSRAddress                = UINT_MAX;
     unsigned                             ExceptionOffset           = UINT_MAX;
     unsigned                             ContinuationContextOffset = UINT_MAX;
     unsigned                             KeepAliveOffset           = UINT_MAX;

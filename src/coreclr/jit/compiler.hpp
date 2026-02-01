@@ -4477,6 +4477,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
+        case GT_FTN_ENTRY:
         case GT_RET_EXPR:
         case GT_CNS_INT:
         case GT_CNS_LNG:
@@ -4551,6 +4552,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
         case GT_RETURN_SUSPEND:
+        case GT_NONLOCAL_JMP:
             return visitor(this->AsUnOp()->gtOp1);
 
 // Variadic nodes
