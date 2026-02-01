@@ -2465,8 +2465,8 @@ public:
     static MethodDesc *GetMethodDescForInterfaceMethodAndServer(TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer);
 
 #ifdef FEATURE_COMINTEROP
-    // get the method desc given the interface method desc on a COM implemented server (if fNullOk is set then NULL is an allowable return value)
-    MethodDesc *GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, bool fNullOk);
+    // get the method desc given the interface method desc on a COM implemented server
+    MethodDesc *GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD);
 #endif // FEATURE_COMINTEROP
 
     // Resolve virtual static interface method pInterfaceMD on this type.
