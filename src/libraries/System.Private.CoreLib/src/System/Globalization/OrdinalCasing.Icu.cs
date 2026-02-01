@@ -142,17 +142,6 @@ namespace System.Globalization
             return (char)casingTable[((int)c) & 0xFF];
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static char ToUpperInvariantMode(char c) => c <= '\u00FF' ? (char)s_basicLatin[(int)c] : c;
-
-        public static void ToUpperInvariantMode(this ReadOnlySpan<char> source, Span<char> destination)
-        {
-            for (int i = 0; i < source.Length; i++)
-            {
-                destination[i] = ToUpperInvariantMode(source[i]);
-            }
-        }
-
         internal static void ToUpperOrdinal(ReadOnlySpan<char> source, Span<char> destination)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
