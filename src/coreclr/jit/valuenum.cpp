@@ -1679,6 +1679,9 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
                 case TYP_INT:
                     m_defs = new (alloc) Alloc<TYP_INT>::Type[ChunkSize];
                     break;
+                case TYP_HALF:
+                    m_defs = new (alloc) Alloc<TYP_HALF>::Type[ChunkSize];
+                    break;
                 case TYP_FLOAT:
                     m_defs = new (alloc) Alloc<TYP_FLOAT>::Type[ChunkSize];
                     break;
@@ -1860,6 +1863,12 @@ ValueNum ValueNumStore::VNForIntPtrCon(ssize_t cnsVal)
 ValueNum ValueNumStore::VNForLongCon(INT64 cnsVal)
 {
     return VnForConst(cnsVal, GetLongCnsMap(), TYP_LONG);
+}
+
+// todo-half: we need to make this work properly
+ValueNum ValueNumStore::VNForHalfCon(float cnsVal)
+{
+    return VnForConst(cnsVal, GetFloatCnsMap(), TYP_HALF);
 }
 
 ValueNum ValueNumStore::VNForFloatCon(float cnsVal)
@@ -2097,6 +2106,8 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         case TYP_LONG:
         case TYP_ULONG:
             return VNForLongCon(0);
+        case TYP_HALF:
+            return VNForHalfCon(0.0f);
         case TYP_FLOAT:
             return VNForFloatCon(0.0f);
         case TYP_DOUBLE:
@@ -3821,7 +3832,7 @@ ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_ty
         size = m_pComp->info.compCompHnd->getClassSize(structHnd);
 
         // We have to normalize here since there is no CorInfoType for vectors...
-        if (m_pComp->structSizeMightRepresentSIMDType(size))
+        if (m_pComp->structSizeMightRepresentAcceleratedType(size))
         {
             fieldType = m_pComp->impNormStructType(structHnd);
         }
