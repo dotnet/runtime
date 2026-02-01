@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Xunit;
@@ -54,7 +53,7 @@ namespace HostActivation.Tests
                 // * Unix: The apphost will look next to the resolved apphost for the app dll and find the real thing
                 result
                     .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                     .HaveStdOutContaining("Hello World");
             }
             finally
             {
@@ -121,14 +120,14 @@ namespace HostActivation.Tests
                     // On Windows, the apphost will look next to the symlink for the app dll and find the symlinks
                     result
                         .Should().Pass()
-                        .And.HaveStdOutContaining("Hello World");
+                         .HaveStdOutContaining("Hello World");
                 }
                 else
                 {
                     // On Unix, the apphost will not find the app files next to the symlink
                     result
                         .Should().Fail()
-                        .And.HaveStdErrContaining("The application to execute does not exist");
+                         .HaveStdErrContaining("The application to execute does not exist");
                 }
             }
             finally
@@ -171,7 +170,7 @@ namespace HostActivation.Tests
                 // * Unix: The apphost will look next to the resolved apphost for the files and find the real thing
                 result
                     .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                     .HaveStdOutContaining("Hello World");
             }
             finally
             {
@@ -203,13 +202,13 @@ namespace HostActivation.Tests
                 {
                     result
                         .Should().Fail()
-                        .And.HaveStdErrContaining("The application to execute does not exist");
+                         .HaveStdErrContaining("The application to execute does not exist");
                 }
                 else
                 {
                     result
                         .Should().Pass()
-                        .And.HaveStdOutContaining("Hello World");
+                         .HaveStdOutContaining("Hello World");
                 }
             }
         }
@@ -244,13 +243,13 @@ namespace HostActivation.Tests
                 {
                     result
                         .Should().Fail()
-                        .And.HaveStdErrContaining("The application to execute does not exist");
+                         .HaveStdErrContaining("The application to execute does not exist");
                 }
                 else
                 {
                     result
                         .Should().Pass()
-                        .And.HaveStdOutContaining("Hello World");
+                         .HaveStdOutContaining("Hello World");
                 }
             }
         }
@@ -279,13 +278,13 @@ namespace HostActivation.Tests
                 {
                     result
                         .Should().Fail()
-                        .And.HaveStdErrContaining("The application to execute does not exist");
+                         .HaveStdErrContaining("The application to execute does not exist");
                 }
                 else
                 {
                     result
                         .Should().Pass()
-                        .And.HaveStdOutContaining("Hello World");
+                         .HaveStdOutContaining("Hello World");
                 }
             }
         }
@@ -306,7 +305,7 @@ namespace HostActivation.Tests
                     .CaptureStdOut()
                     .Execute()
                     .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                     .HaveStdOutContaining("Hello World");
             }
         }
 
@@ -326,7 +325,7 @@ namespace HostActivation.Tests
                     .CaptureStdOut()
                     .Execute()
                     .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                     .HaveStdOutContaining("Hello World");
             }
         }
 
@@ -347,13 +346,13 @@ namespace HostActivation.Tests
                 {
                     result
                         .Should().Fail()
-                        .And.HaveStdErrContaining($"[{Path.Combine(testDir.Location, "host", "fxr")}] does not exist");
+                         .HaveStdErrContaining($"[{Path.Combine(testDir.Location, "host", "fxr")}] does not exist");
                 }
                 else
                 {
                     result
                         .Should().Pass()
-                        .And.HaveStdOutContaining("Hello World");
+                         .HaveStdOutContaining("Hello World");
                 }
             }
         }
@@ -374,7 +373,7 @@ namespace HostActivation.Tests
                     .CaptureStdOut()
                     .Execute()
                     .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                     .HaveStdOutContaining("Hello World");
             }
         }
 
@@ -400,7 +399,7 @@ namespace HostActivation.Tests
                     .CaptureStdOut()
                     .Execute()
                     .Should().Pass()
-                    .And.HaveStdOutContaining("[kn-IN]! [ta-IN]! [default]!");
+                     .HaveStdOutContaining("[kn-IN]! [ta-IN]! [default]!");
             }
         }
 
