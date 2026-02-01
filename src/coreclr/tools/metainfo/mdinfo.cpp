@@ -2914,7 +2914,7 @@ ErrExit:
     return hr;
 } // HRESULT MDInfo::GetOneElementType()
 
-// Fills given varaint with value given in pValue and of type in bCPlusTypeFlag
+// Fills given variant with value given in pValue and of type in bCPlusTypeFlag
 //
 // Taken from MetaInternal.cpp
 #ifdef FEATURE_COMINTEROP
