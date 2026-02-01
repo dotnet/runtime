@@ -166,6 +166,7 @@ namespace System.Text.Json.SourceGeneration
                     Namespace = contextTypeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
                     ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
                     GeneratedOptionsSpec = options,
+                    SupportsUnsafeAccessor = _knownSymbols.UnsafeAccessorAttributeType is not null,
                 };
 
                 // Clear the caches of generated metadata between the processing of context classes.
@@ -1627,10 +1628,17 @@ namespace System.Text.Json.SourceGeneration
                         }
 
                         ParameterGenerationSpec? matchingConstructorParameter = GetMatchingConstructorParameter(property, constructorParameters);
+                        bool isRequired = property.IsRequired && !constructorSetsRequiredMembers;
 
-                        if (property.IsRequired || matchingConstructorParameter is null)
+                        // Only use ParameterizedConstructor strategy for required properties.
+                        // Init-only non-required properties can be set via the setter delegate
+                        // using reflection, which preserves their default values when not specified in JSON.
+                        if (isRequired || matchingConstructorParameter is not null)
                         {
-                            constructionStrategy = ObjectConstructionStrategy.ParameterizedConstructor;
+                            if (isRequired)
+                            {
+                                constructionStrategy = ObjectConstructionStrategy.ParameterizedConstructor;
+                            }
 
                             var propertyInitializer = new PropertyInitializerGenerationSpec
                             {
@@ -1639,6 +1647,7 @@ namespace System.Text.Json.SourceGeneration
                                 MatchesConstructorParameter = matchingConstructorParameter is not null,
                                 ParameterIndex = matchingConstructorParameter?.ParameterIndex ?? paramCount++,
                                 IsNullable = property.PropertyType.CanBeNull && !property.IsSetterNonNullableAnnotation,
+                                IsRequired = isRequired,
                             };
 
                             (propertyInitializers ??= new()).Add(propertyInitializer);
