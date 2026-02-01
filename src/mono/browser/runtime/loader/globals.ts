@@ -31,7 +31,7 @@ export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnet
 export const ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR; // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
 export const ENVIRONMENT_IS_WEB = typeof window == "object" || (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_NODE);
 export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
-export const browserVirtualAppBase = "/managed"; // keep in sync other places that define browserVirtualAppBase
+export const browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
 
 export let runtimeHelpers: RuntimeHelpers = {} as any;
 export let loaderHelpers: LoaderHelpers = {} as any;
@@ -57,7 +57,7 @@ export const globalObjectsRoot: GlobalObjects = {
 
 setLoaderGlobals(globalObjectsRoot);
 
-export function setLoaderGlobals (
+export function setLoaderGlobals(
     globalObjects: GlobalObjects,
 ) {
     if (_loaderModuleLoaded) {
@@ -142,7 +142,7 @@ export function setLoaderGlobals (
 // this will abort the program if the condition is false
 // see src\mono\browser\runtime\rollup.config.js
 // we inline the condition, because the lambda could allocate closure on hot path otherwise
-export function mono_assert (condition: unknown, messageFactory: string | (() => string)): asserts condition {
+export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (condition) return;
     const message = "Assert failed: " + (typeof messageFactory === "function"
         ? messageFactory()

@@ -23,7 +23,7 @@ export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnet
 export const ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR; // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
 export const ENVIRONMENT_IS_WEB = typeof window == "object" || (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_NODE);
 export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
-export const browserVirtualAppBase = "/managed"; // keep in sync other places that define browserVirtualAppBase
+export const browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
 
 // these are imported and re-exported from emscripten internals
 export let ENVIRONMENT_IS_PTHREAD: boolean;
@@ -35,7 +35,7 @@ export let globalObjectsRoot: GlobalObjects = null as any;
 
 export let _runtimeModuleLoaded = false; // please keep it in place also as rollup guard
 
-export function passEmscriptenInternals (internals: EmscriptenInternals, emscriptenBuildOptions: EmscriptenBuildOptions): void {
+export function passEmscriptenInternals(internals: EmscriptenInternals, emscriptenBuildOptions: EmscriptenBuildOptions): void {
     runtimeHelpers.emscriptenBuildOptions = emscriptenBuildOptions;
 
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
@@ -47,7 +47,7 @@ export function passEmscriptenInternals (internals: EmscriptenInternals, emscrip
 }
 
 // NOTE: this is called AFTER the config is loaded
-export function setRuntimeGlobals (globalObjects: GlobalObjects) {
+export function setRuntimeGlobals(globalObjects: GlobalObjects) {
     if (_runtimeModuleLoaded) {
         throw new Error("Runtime module already loaded");
     }
@@ -91,14 +91,14 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects) {
     });
 }
 
-export function createPromiseController<T> (afterResolve?: () => void, afterReject?: () => void): PromiseAndController<T> {
+export function createPromiseController<T>(afterResolve?: () => void, afterReject?: () => void): PromiseAndController<T> {
     return loaderHelpers.createPromiseController<T>(afterResolve, afterReject);
 }
 
 // this will abort the program if the condition is false
 // see src\mono\browser\runtime\rollup.config.js
 // we inline the condition, because the lambda could allocate closure on hot path otherwise
-export function mono_assert (condition: unknown, messageFactory: string | (() => string)): asserts condition {
+export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (condition) return;
     const message = "Assert failed: " + (typeof messageFactory === "function"
         ? messageFactory()

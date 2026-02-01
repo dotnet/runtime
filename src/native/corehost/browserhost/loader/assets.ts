@@ -98,7 +98,7 @@ export async function fetchDll(asset: AssemblyAsset): Promise<void> {
     assetInternal.behavior = "assembly";
     assetInternal.virtualPath = assetInternal.virtualPath.startsWith("/")
         ? assetInternal.virtualPath
-        : browserVirtualAppBase + "/" + assetInternal.virtualPath;
+        : browserVirtualAppBase + assetInternal.virtualPath;
 
     const bytes = await fetchBytes(assetInternal);
     await nativeModulePromiseController.promise;
@@ -120,7 +120,7 @@ export async function fetchPdb(asset: AssemblyAsset): Promise<void> {
     assetInternal.isOptional = assetInternal.isOptional || loaderConfig.ignorePdbLoadErrors;
     assetInternal.virtualPath = assetInternal.virtualPath.startsWith("/")
         ? assetInternal.virtualPath
-        : browserVirtualAppBase + "/" + assetInternal.virtualPath;
+        : browserVirtualAppBase + assetInternal.virtualPath;
     const bytes = await fetchBytes(assetInternal);
     await nativeModulePromiseController.promise;
 

@@ -13,7 +13,7 @@ function libFactory() {
     const libCoreRun = {
         $CORERUN: {
             selfInitialize: () => {
-                const browserVirtualAppBase = "managed";// keep in sync other places that define browserVirtualAppBase
+                const browserVirtualAppBase = "/";// keep in sync other places that define browserVirtualAppBase
                 FS.createPath("/", browserVirtualAppBase, true, true);
 
                 // copy all node/shell env variables to emscripten env

@@ -84,8 +84,8 @@ static inline char* minipal_getexepath(void)
 
     return strdup(path);
 #elif defined(TARGET_WASM)
-    // keep in sync other places that define browserVirtualAppBase
-    return strdup("/managed");
+	const char *browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
+    return strdup(browserVirtualAppBase);
 #else
 #ifdef __linux__
     const char* symlinkEntrypointExecutable = "/proc/self/exe";

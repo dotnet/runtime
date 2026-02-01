@@ -93,7 +93,7 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
         fileName = fileName.substring(1);
     }
     if (!parentDirectory.startsWith("/")) {
-        parentDirectory = browserVirtualAppBase + "/" + parentDirectory;
+        parentDirectory = browserVirtualAppBase + parentDirectory;
     }
 
     _ems_.dotnetLogger.debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);

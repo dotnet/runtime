@@ -204,7 +204,7 @@ int initialize_runtime()
 	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
 	appctx_keys [1] = "RUNTIME_IDENTIFIER";
 
-	const char *browserVirtualAppBase = "/managed"; // keep in sync other places that define browserVirtualAppBase
+	const char *browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
 	const char *appctx_values[2];
 	appctx_values [0] = browserVirtualAppBase;
 	appctx_values [1] = "browser-wasm";
