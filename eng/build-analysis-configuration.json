@@ -29,6 +29,10 @@
       "PipelineName": "runtime-coreclr outerloop"
     },
     {
+      "PipelineId": 113,
+      "PipelineName": "runtime-coreclr gcstress-extra"
+    },
+    {
       "PipelineId": 324,
       "PipelineName": "runtime-report-green"
     }
