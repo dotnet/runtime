@@ -721,7 +721,7 @@ public:
         {
             GCX_PREEMP();
 
-            PCODE methodEntry = _pMD->GetSingleCallableAddrOfCode();
+            PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
             _ASSERTE(methodEntry != (PCODE)NULL);
 
             // Cast the function pointer to the appropriate type.

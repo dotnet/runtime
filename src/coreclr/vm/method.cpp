@@ -1962,6 +1962,39 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
         FALSE /* no allowInstParam */ ));
 }
 
+PCODE MethodDesc::GetSingleCallableAddrOfCode()
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(!IsGenericMethodDefinition());
+    return GetMethodEntryPoint();
+}
+
+PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    // HasUnmanagedCallersOnlyAttribute() must be true for this API.
+    // We only validate this on non portable entrypoints because HasUnmanagedCallersOnlyAttribute()
+    // is an unnecessary cost, even in non-Release builds, on portable entrypoint platforms.
+    _ASSERTE(HasUnmanagedCallersOnlyAttribute());
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+    PCODE entryPoint = GetSingleCallableAddrOfCode();
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    return entryPoint;
+}
+
 //*******************************************************************************
 PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH)
 {
