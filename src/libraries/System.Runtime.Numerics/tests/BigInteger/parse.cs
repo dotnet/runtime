@@ -1331,6 +1331,39 @@ namespace System.Numerics.Tests
             }
             Assert.Equal(expected, actual);
         }
+
+        [Fact]
+        public static void ParseUkrainianCultureWithTrailingSpaces()
+        {
+            using (new ThreadCultureChange(new CultureInfo("uk-UA")))
+            {
+                // Test string parsing with trailing spaces
+                // Ukrainian culture uses NBSP (0xA0) as NumberGroupSeparator
+                // When AllowTrailingWhite is set, trailing spaces should be accepted
+                string testNumber = "123 ";
+
+                // String parsing (char/UTF-16) should work
+                BigInteger result = BigInteger.Parse(testNumber, NumberStyles.AllowTrailingWhite);
+                Assert.Equal(BigInteger.Parse("123"), result);
+            }
+        }
+
+        [Fact]
+        public static void ParseUkrainianCultureWithNBSP()
+        {
+            using (new ThreadCultureChange(new CultureInfo("uk-UA")))
+            {
+                // Ukrainian culture uses NBSP (0xA0) as NumberGroupSeparator
+                // Test that NBSP works in string parsing (char/UTF-16)
+
+                // Test with NBSP in input (0xA0)
+                string testWithNBSP = "1\u00a0234\u00a0567";
+
+                // String parsing (char/UTF-16) should work
+                BigInteger resultString = BigInteger.Parse(testWithNBSP, NumberStyles.AllowThousands);
+                Assert.Equal(BigInteger.Parse("1234567"), resultString);
+            }
+        }
     }
 
     [Collection(nameof(DisableParallelization))]
