@@ -7,12 +7,13 @@ using System.Diagnostics;
 using System.Text;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
     /// <summary>
     /// An async continuation type. The code generator will request this to store local state
-    /// through an async suspension/resumption. We only identify these using a <see cref="GCPointerMap"/>
+    /// through an async suspension/resumption. We only identify these using a <see cref="GCPointerMap"/>,
     /// since that's all the code generator cares about - size of the type, and where the GC pointers are.
     /// </summary>
     public sealed partial class AsyncContinuationType : MetadataType
