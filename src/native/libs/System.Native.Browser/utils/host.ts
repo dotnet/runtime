@@ -13,8 +13,13 @@ export function getExitStatus(): new (exitCode: number) => any {
 }
 
 export function runBackgroundTimers(): void {
-    _ems_._SystemJS_ExecuteTimerCallback();
-    _ems_._SystemJS_ExecuteBackgroundJobCallback();
+    try {
+        _ems_._SystemJS_ExecuteTimerCallback();
+        _ems_._SystemJS_ExecuteBackgroundJobCallback();
+        _ems_._SystemJS_ExecuteFinalizationCallback();
+    } catch (err) {
+        _ems_.dotnetApi.exit(1, err);
+    }
 }
 
 export function abortBackgroundTimers(): void {
@@ -27,6 +32,11 @@ export function abortBackgroundTimers(): void {
         globalThis.clearTimeout(_ems_.DOTNET.lastScheduledThreadPoolId);
         _ems_.runtimeKeepalivePop();
         _ems_.DOTNET.lastScheduledThreadPoolId = undefined;
+    }
+    if (_ems_.DOTNET.lastScheduledFinalizationId) {
+        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledFinalizationId);
+        _ems_.runtimeKeepalivePop();
+        _ems_.DOTNET.lastScheduledFinalizationId = undefined;
     }
 }
 

@@ -27,6 +27,7 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _GetDotNetRuntimeContractDescriptor: () => void;
     _SystemJS_ExecuteTimerCallback: () => void;
     _SystemJS_ExecuteBackgroundJobCallback: () => void;
+    _SystemJS_ExecuteFinalizationCallback: () => void;
     _BrowserHost_CreateHostContract: () => VoidPtr;
     _BrowserHost_InitializeCoreCLR: (propertiesCount: number, propertyKeys: CharPtrPtr, propertyValues: CharPtrPtr) => number;
     _BrowserHost_ExecuteAssembly: (mainAssemblyNamePtr: number, argsLength: number, argsPtr: number) => number;
