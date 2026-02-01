@@ -11,8 +11,14 @@ set(INTERPRETER_SOURCES
   methodset.cpp
   intrinsics.cpp)
 
+# Add jitshared sources to the interpreter build
+list(APPEND INTERPRETER_SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/../jitshared/arenaallocator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../jitshared/histogram.cpp)
+
 set(INTERPRETER_LINK_LIBRARIES
   gcinfo
+  minipal
 )
 
 if(CLR_CMAKE_HOST_WIN32)

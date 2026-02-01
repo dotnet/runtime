@@ -45,6 +45,110 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 const char* CorInfoHelperToName(CorInfoHelpFunc helper);
 
 /*****************************************************************************/
+// Define the static Names array for InterpMemKindTraits
+const char* const InterpMemKindTraits::Names[] = {
+#define InterpMemKindMacro(kind) #kind,
+#include "interpmemkind.h"
+};
+
+#if MEASURE_MEM_ALLOC
+#include <minipal/mutex.h>
+
+// Memory statistics infrastructure
+// Uses a minipal_mutex for thread-safe access to aggregate statistics
+static minipal_mutex s_interpStatsMutex;
+static bool s_interpStatsMutexInitialized = false;
+
+InterpCompiler::InterpAggregateMemStats InterpCompiler::s_aggStats;
+InterpCompiler::InterpMemStats InterpCompiler::s_maxStats;
+bool InterpCompiler::s_dspMemStats = false;
+
+// Histogram bucket boundaries (in KB)
+static unsigned s_memAllocHistBuckets[] = {64, 128, 192, 256, 512, 1024, 4096, 8192, 0};
+static unsigned s_memUsedHistBuckets[] = {16, 32, 64, 128, 192, 256, 512, 1024, 4096, 8192, 0};
+
+Histogram InterpCompiler::s_memAllocHist(s_memAllocHistBuckets);
+Histogram InterpCompiler::s_memUsedHist(s_memUsedHistBuckets);
+
+void InterpCompiler::initMemStats()
+{
+    if (!s_interpStatsMutexInitialized)
+    {
+        minipal_mutex_init(&s_interpStatsMutex);
+
+        // Check config value for displaying stats
+        s_dspMemStats = (InterpConfig.DisplayMemStats() != 0);
+        s_interpStatsMutexInitialized = true;
+    }
+}
+
+void InterpCompiler::finishMemStats()
+{
+    m_arenaAllocator.finishMemStats();
+    const auto& stats = m_arenaAllocator.getStats();
+
+    // Record histogram data (in KB, rounded up)
+    s_memAllocHist.record((unsigned)((stats.nraTotalSizeAlloc + 1023) / 1024));
+    s_memUsedHist.record((unsigned)((stats.nraTotalSizeUsed + 1023) / 1024));
+
+    minipal::MutexHolder lock(s_interpStatsMutex);
+    s_aggStats.Add(stats);
+
+    if (stats.allocSz > s_maxStats.allocSz)
+    {
+        s_maxStats = stats;
+    }
+}
+
+void InterpCompiler::dumpAggregateMemStats(FILE* file)
+{
+    fprintf(file, "\nInterpreter Memory Statistics:\n");
+    fprintf(file, "==============================\n");
+    s_aggStats.Print(file);
+}
+
+void InterpCompiler::dumpMaxMemStats(FILE* file)
+{
+    fprintf(file, "\nLargest method allocation:\n");
+    s_maxStats.Print(file);
+}
+
+void InterpCompiler::dumpMemStatsHistograms(FILE* file)
+{
+    fprintf(file, "\n");
+    fprintf(file, "---------------------------------------------------\n");
+    fprintf(file, "Distribution of total memory allocated per method (in KB):\n");
+    s_memAllocHist.dump(file);
+
+    fprintf(file, "\n");
+    fprintf(file, "---------------------------------------------------\n");
+    fprintf(file, "Distribution of total memory used      per method (in KB):\n");
+    s_memUsedHist.dump(file);
+}
+#endif // MEASURE_MEM_ALLOC
+
+void InterpCompiler::dumpMethodMemStats()
+{
+#ifdef DEBUG
+    if (IsInterpDumpActive())
+    {
+#if MEASURE_MEM_ALLOC
+        if (InterpConfig.InterpDumpMemStats())
+        {
+            printf("\nMethod memory stats:\n");
+            m_arenaAllocator.finishMemStats();
+            m_arenaAllocator.getStats().Print(stdout);
+        }
+        else
+#endif // MEASURE_MEM_ALLOC
+        {
+            printf("\n(Set DOTNET_InterpDumpMemStats=1 to see per-method memory stats)\n");
+        }
+    }
+#endif // DEBUG
+}
+
+/*****************************************************************************/
 #ifdef DEBUG
 thread_local bool t_interpDump;
 #endif // DEBUG
@@ -106,7 +210,10 @@ public:
 };
 
 
-void* MemPoolAllocator::Alloc(size_t sz) const { return m_compiler->AllocMemPool(sz); }
+void* MemPoolAllocator::Alloc(size_t sz) const
+{
+    return m_compiler->getAllocator(m_memKind).allocate<char>(sz);
+}
 void MemPoolAllocator::Free(void* ptr) const { /* no-op */ }
 
 void* MallocAllocator::Alloc(size_t sz) const
@@ -198,10 +305,11 @@ void* InterpCompiler::AllocMethodData(size_t numBytes)
 }
 
 // Fast allocator for small chunks of memory that can be freed together when the
-// method compilation is finished.
+// method compilation is finished. Uses the arena allocator for efficient allocation.
+// Note: For new code, prefer using getAllocator(IMK_*) for categorized allocations.
 void* InterpCompiler::AllocMemPool(size_t numBytes)
 {
-    return malloc(numBytes);
+    return getAllocator(IMK_Generic).allocate<char>(numBytes == 0 ? 1 : numBytes);
 }
 
 void* InterpCompiler::AllocMemPool0(size_t numBytes)
@@ -264,7 +372,7 @@ InterpInst* InterpCompiler::AddInsExplicit(int opcode, int dataLen)
 InterpInst* InterpCompiler::NewIns(int opcode, int dataLen)
 {
     int insSize = sizeof(InterpInst) + sizeof(uint32_t) * dataLen;
-    InterpInst *ins = (InterpInst*)AllocMemPool(insSize);
+    InterpInst *ins = (InterpInst*)getAllocator(IMK_Instruction).allocate<char>(insSize);
     memset(ins, 0, insSize);
     ins->opcode = opcode;
     ins->ilOffset = m_currentILOffset;
@@ -392,9 +500,7 @@ void InterpCompiler::ForEachInsVar(InterpInst *ins, void *pData, void (InterpCom
 
 InterpBasicBlock* InterpCompiler::AllocBB(int32_t ilOffset)
 {
-    InterpBasicBlock *bb = (InterpBasicBlock*)AllocMemPool(sizeof(InterpBasicBlock));
-
-    new (bb) InterpBasicBlock (m_BBCount, ilOffset);
+    InterpBasicBlock *bb = new (getAllocator(IMK_BasicBlock)) InterpBasicBlock(m_BBCount, ilOffset);
     m_BBCount++;
 
     return bb;
@@ -415,7 +521,7 @@ InterpBasicBlock* InterpCompiler::GetBB(int32_t ilOffset)
         if (m_pRetryData->GetOverrideILMergePointStackType(ilOffset, &stackHeight, &stack))
         {
             bb->stackHeight = stackHeight;
-            bb->pStackState = (StackInfo*)AllocMemPool(sizeof(StackInfo) * stackHeight);
+            bb->pStackState = getAllocator(IMK_StackInfo).allocate<StackInfo>(stackHeight);
             memcpy(bb->pStackState, stack, sizeof(StackInfo) * stackHeight);
             for (uint32_t i = 0; i < stackHeight; i++)
             {
@@ -487,7 +593,7 @@ void InterpCompiler::LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
         int newCapacity = GetBBLinksCapacity(from->outCount + 1);
         if (newCapacity > prevCapacity)
         {
-            InterpBasicBlock **newa = (InterpBasicBlock**)AllocMemPool(newCapacity * sizeof(InterpBasicBlock*));
+            InterpBasicBlock **newa = getAllocator(IMK_BasicBlock).allocate<InterpBasicBlock*>(newCapacity);
             if (from->outCount != 0)
             {
                 memcpy(newa, from->ppOutBBs, from->outCount * sizeof(InterpBasicBlock*));
@@ -512,7 +618,7 @@ void InterpCompiler::LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
         int prevCapacity = GetBBLinksCapacity(to->inCount);
         int newCapacity = GetBBLinksCapacity(to->inCount + 1);
         if (newCapacity > prevCapacity) {
-            InterpBasicBlock **newa = (InterpBasicBlock**)AllocMemPool(newCapacity * sizeof(InterpBasicBlock*));
+            InterpBasicBlock **newa = getAllocator(IMK_BasicBlock).allocate<InterpBasicBlock*>(newCapacity);
             if (to->inCount != 0) {
                 memcpy(newa, to->ppInBBs, to->inCount * sizeof(InterpBasicBlock*));
             }
@@ -688,9 +794,8 @@ void InterpCompiler::InitBBStackState(InterpBasicBlock *pBB)
         pBB->stackHeight = (int32_t)(m_pStackPointer - m_pStackBase);
         if (pBB->stackHeight > 0)
         {
-            int size = pBB->stackHeight * sizeof (StackInfo);
-            pBB->pStackState = (StackInfo*)AllocMemPool(size);
-            memcpy (pBB->pStackState, m_pStackBase, size);
+            pBB->pStackState = getAllocator(IMK_StackInfo).allocate<StackInfo>(pBB->stackHeight);
+            memcpy(pBB->pStackState, m_pStackBase, pBB->stackHeight * sizeof(StackInfo));
         }
     }
 }
@@ -859,8 +964,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         // Add relocation for each label
         for (int32_t i = 0; i < numLabels; i++)
         {
-            Reloc *reloc = (Reloc*)AllocMemPool(sizeof(Reloc));
-            new (reloc) Reloc(RelocSwitch, (int32_t)(ip - m_pMethodCode), ins->info.ppTargetBBTable[i], 0);
+            Reloc *reloc = new (getAllocator(IMK_Reloc)) Reloc(RelocSwitch, (int32_t)(ip - m_pMethodCode), ins->info.ppTargetBBTable[i], 0);
             relocs->Add(reloc);
             *ip++ = (int32_t)0xdeadbeef;
         }
@@ -884,8 +988,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         else
         {
             // We don't know yet the IR offset of the target, add a reloc instead
-            Reloc *reloc = (Reloc*)AllocMemPool(sizeof(Reloc));
-            new (reloc) Reloc(RelocLongBranch, brBaseOffset, ins->info.pTargetBB, g_interpOpSVars[opcode]);
+            Reloc *reloc = new (getAllocator(IMK_Reloc)) Reloc(RelocLongBranch, brBaseOffset, ins->info.pTargetBB, g_interpOpSVars[opcode]);
             relocs->Add(reloc);
             *ip++ = (int32_t)0xdeadbeef;
         }
@@ -1822,17 +1925,19 @@ static void InterpreterCompilerBreak()
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData* pRetryData)
-    : m_stackmapsByClass(FreeInterpreterStackMap)
+    : m_allocConfig()
+    , m_arenaAllocator(&m_allocConfig)
+    , m_stackmapsByClass(FreeInterpreterStackMap)
     , m_pRetryData(pRetryData)
     , m_pInitLocalsIns(nullptr)
     , m_hiddenArgumentVar(-1)
     , m_nextCallGenericContextVar(-1)
     , m_nextCallAsyncContinuationVar(-1)
-    , m_leavesTable(this)
-    , m_dataItems(this)
-    , m_asyncSuspendDataItems(this)
+    , m_leavesTable(GetMemPoolAllocator(IMK_EHClause))
+    , m_dataItems(GetMemPoolAllocator(IMK_DataItem))
+    , m_asyncSuspendDataItems(GetMemPoolAllocator(IMK_DataItem))
     , m_globalVarsWithRefsStackTop(0)
-    , m_varIntervalMaps(this)
+    , m_varIntervalMaps(GetMemPoolAllocator(IMK_IntervalMap))
 #ifdef DEBUG
     , m_dumpScope(InterpConfig.InterpDump().contains(compHnd, methodInfo->ftn, compHnd->getMethodClass(methodInfo->ftn), &methodInfo->args))
     , m_methodName(GetMallocAllocator())
@@ -1861,6 +1966,16 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                             /* includeReturnType */ false,
                             /* includeThis */ false);
 #endif
+}
+
+InterpCompiler::~InterpCompiler()
+{
+#if MEASURE_MEM_ALLOC
+    finishMemStats();
+#endif
+
+    // Free all memory allocated via the arena allocator
+    m_arenaAllocator.destroy();
 }
 
 InterpMethod* InterpCompiler::CompileMethod()
@@ -2327,7 +2442,8 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
     const uint8_t *codeEnd = codeStart + codeSize;
     const uint8_t *ip = codeStart;
 
-    m_ppOffsetToBB = (InterpBasicBlock**)AllocMemPool0(sizeof(InterpBasicBlock*) * (codeSize + 1));
+    m_ppOffsetToBB = getAllocator(IMK_BasicBlock).allocate<InterpBasicBlock*>(codeSize + 1);
+    memset(m_ppOffsetToBB, 0, sizeof(InterpBasicBlock*) * (codeSize + 1));
     GetBB(0);
 
     while (ip < codeEnd)
@@ -2484,7 +2600,7 @@ void InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
 
             // Initialize the filter stack state. It initially contains the exception object.
             pFilterBB->stackHeight = 1;
-            pFilterBB->pStackState = (StackInfo*)AllocMemPool(sizeof (StackInfo));
+            pFilterBB->pStackState = getAllocator(IMK_StackInfo).allocate<StackInfo>(1);
             new (pFilterBB->pStackState) StackInfo(StackTypeO, NULL, pFilterBB->clauseVarIndex);
 
             // Find and mark all basic blocks that are part of the filter region.
@@ -2513,7 +2629,7 @@ void InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
 
             // Initialize the catch / filtered handler stack state. It initially contains the exception object.
             pCatchBB->stackHeight = 1;
-            pCatchBB->pStackState = (StackInfo*)AllocMemPool(sizeof (StackInfo));
+            pCatchBB->pStackState = getAllocator(IMK_StackInfo).allocate<StackInfo>(1);
             new (pCatchBB->pStackState) StackInfo(StackTypeO, NULL, pCatchBB->clauseVarIndex);
         }
     }
@@ -4018,7 +4134,7 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     PushInterpType(InterpTypeI, NULL);
     int32_t dVar = m_pStackPointer[-1].var;
 
-    int *callArgs = (int*) AllocMemPool((3 + 1) * sizeof(int));
+    int *callArgs = getAllocator(IMK_CallInfo).allocate<int>(3 + 1);
     callArgs[0] = thisVar;
     callArgs[1] = typeVar;
     callArgs[2] = methodVar;
@@ -4029,7 +4145,7 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     m_pLastNewIns->SetDVar(dVar);
     m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
-    m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
+    m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 }
 
@@ -4505,9 +4621,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
 
         m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
-        m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
+        m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
         int32_t numArgs = 3;
-        int *callArgs = (int*) AllocMemPool((numArgs + 1) * sizeof(int));
+        int *callArgs = getAllocator(IMK_CallInfo).allocate<int>(numArgs + 1);
         callArgs[0] = isStartedArg;
         callArgs[1] = execContextAddressVar;
         callArgs[2] = syncContextAddressVar;
@@ -4727,7 +4843,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         numArgs++;
     }
 
-    int *callArgs = (int*) AllocMemPool((numArgs + 1) * sizeof(int));
+    int *callArgs = getAllocator(IMK_CallInfo).allocate<int>(numArgs + 1);
     CORINFO_ARG_LIST_HANDLE args;
     args = callInfo.sig.args;
 
@@ -5234,7 +5350,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
 
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
-    m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
+    m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
     if (injectRet)
@@ -5877,7 +5993,8 @@ void InterpCompiler::AllocateIntervalMapData_ForVars(InterpIntervalMapEntry** pp
     nextIndex = 0;
 
     size_t size = sizeof(InterpIntervalMapEntry) * intervalCount;
-    *ppIntervalMap = (InterpIntervalMapEntry*)AllocMemPool0(size);
+    *ppIntervalMap = getAllocator(IMK_IntervalMap).allocate<InterpIntervalMapEntry>(intervalCount);
+    memset(*ppIntervalMap, 0, size);
     for (int32_t intervalMapIndex = 0; intervalMapIndex < intervalCount; intervalMapIndex++)
     {
         (*ppIntervalMap)[intervalMapIndex] = ComputeNextIntervalMapEntry_ForVars(vars, &nextIndex);
@@ -6636,7 +6753,7 @@ bool InterpCompiler::IsLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElemen
         return false;
     }
 
-    LdftnDelegateCtorPeepInfo *pPeepInfo = (LdftnDelegateCtorPeepInfo*)AllocMemPool(sizeof(LdftnDelegateCtorPeepInfo));
+    LdftnDelegateCtorPeepInfo *pPeepInfo = new (getAllocator(IMK_Generic)) LdftnDelegateCtorPeepInfo();
     *pPeepInfo = peepInfo;
     *ppComputedInfo = pPeepInfo;
     return true;
@@ -6682,7 +6799,7 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
     EmitCallsiteCallout(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
     // Setup the arguments for the call
-    int *callArgs = (int*) AllocMemPool((3 + extraArgCount + 1) * sizeof(int));
+    int *callArgs = getAllocator(IMK_CallInfo).allocate<int>(3 + extraArgCount + 1);
     callArgs[3 + extraArgCount] = CALL_ARGS_TERMINATOR;
     for (int i = 0; i < 2 + extraArgCount; i++)
     {
@@ -6725,7 +6842,7 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
     m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
 
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
-    m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
+    m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
     return -1;
@@ -7683,7 +7800,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         int32_t newILCodeSize = m_ILCodeSize + sizeof(opCodesForSynchronizedMethodFinally) + sizeof(opCodesForSynchronizedMethodEpilog);
         // We need to realloc the IL code buffer to hold the extra opcodes
 
-        uint8_t* newILCode = (uint8_t*)AllocMemPool(newILCodeSize);
+        uint8_t* newILCode = getAllocator(IMK_ILCode).allocate<uint8_t>(newILCodeSize);
         if (m_ILCodeSize != 0)
         {
             memcpy(newILCode, m_pILCode, m_ILCodeSize);
@@ -7725,7 +7842,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         int32_t newILCodeSize = m_ILCodeSize + sizeof(opCodesForAsyncMethodFinally) + sizeof(opCodesForAsyncMethodEpilog);
         // We need to realloc the IL code buffer to hold the extra opcodes
 
-        uint8_t* newILCode = (uint8_t*)AllocMemPool(newILCodeSize);
+        uint8_t* newILCode = getAllocator(IMK_ILCode).allocate<uint8_t>(newILCodeSize);
         if (m_ILCodeSize != 0)
         {
             memcpy(newILCode, m_pILCode, m_ILCodeSize);
@@ -7907,9 +8024,9 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
 
         m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
-        m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
+        m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
         int32_t numArgs = 2;
-        int *callArgs = (int*) AllocMemPool((numArgs + 1) * sizeof(int));
+        int *callArgs = getAllocator(IMK_CallInfo).allocate<int>(numArgs + 1);
         callArgs[0] = execContextAddressVar;
         callArgs[1] = syncContextAddressVar;
         callArgs[2] = CALL_ARGS_TERMINATOR;
@@ -9151,8 +9268,8 @@ retry_emit:
                 m_ip += 4;
                 const uint8_t *nextIp = m_ip + n * 4;
                 m_pStackPointer--;
-                InterpBasicBlock **targetBBTable = (InterpBasicBlock**)AllocMemPool(sizeof (InterpBasicBlock*) * n);
-                uint32_t *targetOffsets = (uint32_t*)AllocMemPool(sizeof (uint32_t) * n);
+                InterpBasicBlock **targetBBTable = getAllocator(IMK_SwitchTable).allocate<InterpBasicBlock*>(n);
+                uint32_t *targetOffsets = getAllocator(IMK_SwitchTable).allocate<uint32_t>(n);
 
                 for (uint32_t i = 0; i < n; i++)
                 {
@@ -9857,7 +9974,7 @@ retry_emit:
                 PushInterpType(InterpTypeByRef, NULL);
                 int32_t dVar = m_pStackPointer[-1].var;
 
-                int *callArgs = (int*) AllocMemPool((2 + 1) * sizeof(int));
+                int *callArgs = getAllocator(IMK_CallInfo).allocate<int>(2 + 1);
                 callArgs[0] = typeVar;
                 callArgs[1] = typedRefVar;
                 callArgs[2] = CALL_ARGS_TERMINATOR;
@@ -9867,7 +9984,7 @@ retry_emit:
                 m_pLastNewIns->SetDVar(dVar);
                 m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
                 m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
-                m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
+                m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
                 m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
                 m_ip += 5;

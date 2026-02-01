@@ -4,6 +4,7 @@
 #include "corjit.h"
 
 #include "interpreter.h"
+#include "compiler.h"
 #include "eeinterp.h"
 
 #include <string.h>
@@ -23,6 +24,10 @@ extern "C" INTERP_API void jitStartup(ICorJitHost* jitHost)
 
     assert(!InterpConfig.IsInitialized());
     InterpConfig.Initialize(jitHost);
+
+#if MEASURE_MEM_ALLOC
+    InterpCompiler::initMemStats();
+#endif
 
     g_interpInitialized = true;
 }
@@ -150,6 +155,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
             // We can't do this until we've called allocMem
             compiler.BuildGCInfo(pMethod);
             compiler.BuildEHInfo();
+            compiler.dumpMethodMemStats();
             break;
         }
     }
@@ -163,6 +169,14 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
 void CILInterp::ProcessShutdownWork(ICorStaticInfo* statInfo)
 {
+#if MEASURE_MEM_ALLOC
+    if (InterpCompiler::s_dspMemStats)
+    {
+        InterpCompiler::dumpAggregateMemStats(stdout);
+        InterpCompiler::dumpMaxMemStats(stdout);
+        InterpCompiler::dumpMemStatsHistograms(stdout);
+    }
+#endif
     g_interpInitialized = false;
 }
 

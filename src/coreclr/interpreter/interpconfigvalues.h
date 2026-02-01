@@ -24,6 +24,7 @@ CONFIG_METHODSET(InterpHaltOnCall, "InterpHaltOnCall"); // Assert in the compile
 CONFIG_METHODSET(InterpHalt, "InterpHalt");
 CONFIG_METHODSET(InterpBreak, "InterpBreak"); // Break into the debugger when compiling this method
 CONFIG_METHODSET(InterpDump, "InterpDump");
+CONFIG_INTEGER(InterpDumpMemStats, "InterpDumpMemStats", 0); // Dump per-method memory stats when InterpDump is active
 CONFIG_INTEGER(InterpList, "InterpList", 0); // List the methods which are compiled by the interpreter JIT
 CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1); // Enable optimizations for async/await state machines
 RELEASE_CONFIG_INTEGER(InterpMode, "InterpMode", 0); // Interpreter mode, one of the following:
@@ -31,6 +32,8 @@ RELEASE_CONFIG_INTEGER(InterpMode, "InterpMode", 0); // Interpreter mode, one of
 // 1: use interpreter for everything except (1) methods that have R2R compiled code and (2) all code in System.Private.CoreLib. All code in System.Private.CoreLib falls back to JIT if there is no R2R available for it.
 // 2: use interpreter for everything except intrinsics. All intrinsics fallback to JIT. Implies DOTNET_ReadyToRun=0.
 // 3: use interpreter for everything, the full interpreter-only mode, no fallbacks to R2R or JIT whatsoever. Implies DOTNET_ReadyToRun=0, DOTNET_EnableHWIntrinsic=0
+
+RELEASE_CONFIG_INTEGER(DisplayMemStats, "JitMemStats", 0) // Display interpreter memory usage statistics
 
 #undef CONFIG_STRING
 #undef RELEASE_CONFIG_STRING
