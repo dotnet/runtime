@@ -59,7 +59,7 @@ namespace System.Text.RegularExpressions
         private static int s_maxCacheSize = DefaultMaxCacheSize;
 
         /// <summary>Lock used to protect shared state on mutations.</summary>
-        private static object SyncObj => s_cacheDictionary;
+        private static Lock SyncObj { get; } = new();
 
         /// <summary>Gets or sets the maximum size of the cache.</summary>
         public static int MaxCacheSize
