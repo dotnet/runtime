@@ -237,7 +237,7 @@ namespace System.Buffers
             SequenceReader<T> copy = this;
             ReadOnlySpan<T> remaining = UnreadSpan;
 
-            while (_moreData)
+            while (_moreData && !delimiter.IsEmpty)
             {
                 int index = remaining.IndexOf(delimiter[0]);
 
