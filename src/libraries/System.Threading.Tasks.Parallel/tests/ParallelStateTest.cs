@@ -628,7 +628,7 @@ namespace System.Threading.Tasks.Test
             Assert.False(_isExceptional != state.IsExceptional, string.Format("IsExceptional is expected to be {0} while getting {1}", _isExceptional, state.IsExceptional));
 
             // Previous iteration throws exception, the Parallel should stop it's work
-            Assert.False(_isExceptional && !state.ShouldExitCurrentIteration, string.Format("Expecting ShouldExitCurrentIteration to be true, since Exception was thrown on previous iterations"));
+            Assert.False(_isExceptional && !state.ShouldExitCurrentIteration, "Expecting ShouldExitCurrentIteration to be true, since Exception was thrown on previous iterations");
 
             try
             {
@@ -672,7 +672,7 @@ namespace System.Threading.Tasks.Test
 
                 // Previous iteration throws exception, the Parallel should stop it's work
                 Assert.False(state.IsExceptional && !state.ShouldExitCurrentIteration,
-                    string.Format("Expecting ShouldExitCurrentIteration to be true, since Exception was thrown on previous iterations"));
+                    "Expecting ShouldExitCurrentIteration to be true, since Exception was thrown on previous iterations");
             }
         }
         #endregion

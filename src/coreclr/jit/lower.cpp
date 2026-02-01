@@ -12115,7 +12115,9 @@ void Lowering::FinalizeOutgoingArgSpace()
     // Finish computing the outgoing args area size
     //
     // Need to make sure the MIN_ARG_AREA_FOR_CALL space is added to the frame if:
-    // 1. there are calls to THROW_HELPER methods.
+    // 1. there may be calls to THROW_HELPER methods. Note when opts.compDbgCode is true,
+    //    we simply assume we may be making throw helper calls. Typically we've already
+    //    added an explicit just my code call so this doesn't increase the frame size.
     // 2. we are generating profiling Enter/Leave/TailCall hooks. This will ensure
     //    that even methods without any calls will have outgoing arg area space allocated.
     // 3. We will be generating calls to PInvoke helpers. TODO: This shouldn't be required because
@@ -12128,7 +12130,7 @@ void Lowering::FinalizeOutgoingArgSpace()
     // the outgoing arg space if the method makes any calls.
     if (m_outgoingArgSpaceSize < MIN_ARG_AREA_FOR_CALL)
     {
-        if (comp->compUsesThrowHelper || comp->compIsProfilerHookNeeded() ||
+        if (comp->opts.compDbgCode || comp->compUsesThrowHelper || comp->compIsProfilerHookNeeded() ||
             (comp->compMethodRequiresPInvokeFrame() && !comp->opts.ShouldUsePInvokeHelpers()) ||
             comp->getNeedsGSSecurityCookie())
         {
