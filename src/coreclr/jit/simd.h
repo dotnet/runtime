@@ -2068,10 +2068,20 @@ SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
     }
 }
 
+//------------------------------------------------------------------------
+// NarrowAndDuplicateSimdLong: Narrow each ULONG element in arg0 to size
+//    TSimd. Each element is then duplicated to the number of TSimd values
+//    that fit into a ULONG.
+//    For example, [1, 2] with TBase of UINT becomes [1, 1, 2, 2]
+//
+// Arguments:
+//    result -  Returns the narrowed and duplicated simd value
+//    arg0   -  The simd value to narrow and duplicate
+//
 template <typename TSimd, typename TBase>
-void NarrowSimdLong(TSimd* result, const TSimd& arg0)
+void NarrowAndDuplicateSimdLong(TSimd* result, const TSimd& arg0)
 {
-    uint32_t count = sizeof(TSimd) / sizeof(uint64_t);
+    uint32_t count = sizeof(TSimd) / sizeof(TBase);
 
     for (uint32_t i = 0; i < count; i++)
     {
@@ -2089,7 +2099,7 @@ void NarrowSimdLong(TSimd* result, const TSimd& arg0)
 }
 
 template <typename TSimd>
-void NarrowSimdLong(var_types baseType, TSimd* result, const TSimd& arg0)
+void NarrowAndDuplicateSimdLong(var_types baseType, TSimd* result, const TSimd& arg0)
 {
     switch (baseType)
     {
@@ -2097,7 +2107,7 @@ void NarrowSimdLong(var_types baseType, TSimd* result, const TSimd& arg0)
         case TYP_INT:
         case TYP_UINT:
         {
-            NarrowSimdLong<TSimd, uint32_t>(result, arg0);
+            NarrowAndDuplicateSimdLong<TSimd, uint32_t>(result, arg0);
             break;
         }
 
@@ -2105,21 +2115,21 @@ void NarrowSimdLong(var_types baseType, TSimd* result, const TSimd& arg0)
         case TYP_LONG:
         case TYP_ULONG:
         {
-            NarrowSimdLong<TSimd, uint64_t>(result, arg0);
+            NarrowAndDuplicateSimdLong<TSimd, uint64_t>(result, arg0);
             break;
         }
 
         case TYP_BYTE:
         case TYP_UBYTE:
         {
-            NarrowSimdLong<TSimd, uint8_t>(result, arg0);
+            NarrowAndDuplicateSimdLong<TSimd, uint8_t>(result, arg0);
             break;
         }
 
         case TYP_SHORT:
         case TYP_USHORT:
         {
-            NarrowSimdLong<TSimd, uint16_t>(result, arg0);
+            NarrowAndDuplicateSimdLong<TSimd, uint16_t>(result, arg0);
             break;
         }
 
