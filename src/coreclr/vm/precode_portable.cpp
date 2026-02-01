@@ -134,7 +134,7 @@ namespace
 // Forward declaration
 void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD);
 
-bool PortableEntryPoint::HasUnmanagedCallersOnlyAttribute()
+bool PortableEntryPoint::EnsureUnmanagedCallersOnlyAttribute()
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(IsValid());

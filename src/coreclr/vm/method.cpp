@@ -1979,20 +1979,20 @@ PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    PCODE entryPoint = GetPortableEntryPoint();
+    if (!PortableEntryPoint::ToPortableEntryPoint(entryPoint)->EnsureUnmanagedCallersOnlyAttribute())
+        COMPlusThrow(kInvalidOperationException);
+    return (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     // HasUnmanagedCallersOnlyAttribute() must be true for this API.
     // We only validate this on non portable entrypoints because HasUnmanagedCallersOnlyAttribute()
     // is an unnecessary cost, even in non-Release builds, on portable entrypoint platforms.
     _ASSERTE(HasUnmanagedCallersOnlyAttribute());
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+    return GetSingleCallableAddrOfCode();
 
-    PCODE entryPoint = GetSingleCallableAddrOfCode();
-
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
-
-    return entryPoint;
 }
 
 //*******************************************************************************
@@ -2175,7 +2175,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     PCODE entryPoint = GetPortableEntryPoint();
     if (accessFlags & CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE
-        && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->HasUnmanagedCallersOnlyAttribute())
+        && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->EnsureUnmanagedCallersOnlyAttribute())
     {
         entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
     }
