@@ -25,6 +25,10 @@
   </Target> -->
 
   <PropertyGroup>
+    <HelixBaseUri>https://helix.int-dot.net/</HelixBaseUri>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <Python>%HELIX_PYTHONPATH%</Python>
     <ProductDirectory>%HELIX_CORRELATION_PAYLOAD%</ProductDirectory>
     <SuperpmiLogsLocation>%HELIX_WORKITEM_UPLOAD_ROOT%</SuperpmiLogsLocation>
