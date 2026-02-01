@@ -263,7 +263,6 @@ namespace ILCompiler.DependencyAnalysis
             var sequencePoints = new (string Document, int LineNumber, bool IsBackedSequencePoint)[_debugLocInfos.Length * 4 /* chosen empirically */];
             try
             {
-                int maxOffset = 0;
                 foreach (var sequencePoint in _debugInfo.GetSequencePoints())
                 {
                     int offset = sequencePoint.Offset;
@@ -273,11 +272,10 @@ namespace ILCompiler.DependencyAnalysis
                         Array.Resize(ref sequencePoints, newLength);
                     }
                     sequencePoints[offset] = (sequencePoint.Document, sequencePoint.LineNumber, true);
-                    maxOffset = Math.Max(maxOffset, offset);
                 }
 
                 // Propagate last known document/line number forward to enable correct mapping when IL offsets decrease at higher native offsets
-                for (int i = 1; i <= maxOffset; i++)
+                for (int i = 1; i < sequencePoints.Length; i++)
                 {
                     if (sequencePoints[i].Document == null && sequencePoints[i - 1].Document != null)
                     {
@@ -294,7 +292,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             int previousNativeOffset = -1;
-            int previousIlOffset = -1;
+            int maxIlOffset = -1;
             foreach (var nativeMapping in _debugLocInfos)
             {
                 if (nativeMapping.NativeOffset == previousNativeOffset)
@@ -306,7 +304,7 @@ namespace ILCompiler.DependencyAnalysis
                     // Emit sequence point if we have it from _debugInfo or if ILOffset decreases.
                     // This handles the case of IL offsets decreasing at higher native offsets.
                     // See WalkILOffsetsCallback in src/coreclr/vm/debugdebugger.cpp for more details.
-                    if ((sequencePoint.IsBackedSequencePoint || nativeMapping.ILOffset < previousIlOffset) &&
+                    if ((sequencePoint.IsBackedSequencePoint || nativeMapping.ILOffset <= maxIlOffset) &&
                         sequencePoint.Document != null)
                     {
                         yield return new NativeSequencePoint(
@@ -314,8 +312,8 @@ namespace ILCompiler.DependencyAnalysis
                             sequencePoint.Document,
                             sequencePoint.LineNumber);
                         previousNativeOffset = nativeMapping.NativeOffset;
-                        previousIlOffset = nativeMapping.ILOffset;
                     }
+                    maxIlOffset = Math.Max(maxIlOffset, nativeMapping.ILOffset);
                 }
             }
         }
