@@ -15,7 +15,7 @@
 #if defined(NATIVE_LIBS_EMBEDDED)
 extern "C"
 {
-#include "pal_zlib.h"
+#include <zstd.h>
 }
 #endif
 
@@ -126,49 +126,64 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
     if (entry.compressedSize() != 0)
     {
 #if defined(NATIVE_LIBS_EMBEDDED)
-        PAL_ZStream zStream;
-        zStream.nextIn = (uint8_t*)(const void*)reader;
-        zStream.availIn = static_cast<uint32_t>(entry.compressedSize());
-
-        const int Deflate_DefaultWindowBits = -15; // Legal values are 8..15 and -8..-15. 15 is the window size,
-                                                   // negative val causes deflate to produce raw deflate data (no zlib header).
-
-        int ret = CompressionNative_InflateInit2_(&zStream, Deflate_DefaultWindowBits);
-        if (ret != PAL_Z_OK)
+        ZSTD_DCtx* dctx = ZSTD_createDCtx();
+        if (dctx == nullptr)
         {
-            trace::error(_X("Failure initializing zLib stream."));
+            trace::error(_X("Failure initializing Zstandard stream."));
             throw StatusCode::BundleExtractionIOError;
         }
 
         const int bufSize = 4096;
         uint8_t* buf = (uint8_t*)alloca(bufSize);
 
-        do
+        ZSTD_inBuffer_s input;
+        input.src = (const void*)reader;
+        input.size = to_size_t_dbgchecked(entry.compressedSize());
+        input.pos = 0;
+
+        while (true)
         {
-            zStream.nextOut = buf;
-            zStream.availOut = bufSize;
+            ZSTD_outBuffer_s output;
+            output.dst = buf;
+            output.size = bufSize;
+            output.pos = 0;
 
-            ret = CompressionNative_Inflate(&zStream, PAL_Z_NOFLUSH);
-            if (ret < 0)
+            size_t ret = ZSTD_decompressStream(dctx, &output, &input);
+            if (ZSTD_isError(ret) != 0)
             {
-                CompressionNative_InflateEnd(&zStream);
-                trace::error(_X("Failure inflating zLib stream. %s"), zStream.msg);
+                const char* error_name = ZSTD_getErrorName(ret);
+                ZSTD_freeDCtx(dctx);
+                trace::error(_X("Failure decompressing Zstandard stream. %hs"), error_name);
                 throw StatusCode::BundleExtractionIOError;
             }
 
-            int produced = bufSize - zStream.availOut;
-            if (fwrite(buf, 1, produced, file) != (size_t)produced)
+            if (output.pos != 0)
             {
-                int error_code = errno;
-                CompressionNative_InflateEnd(&zStream);
-                trace::error(_X("I/O failure when writing decompressed file. %s (%d)"), pal::strerror(error_code).c_str(), error_code);
-                throw StatusCode::BundleExtractionIOError;
+                if (fwrite(buf, 1, output.pos, file) != output.pos)
+                {
+                    int error_code = errno;
+                    ZSTD_freeDCtx(dctx);
+                    trace::error(_X("I/O failure when writing decompressed file. %s (%d)"), pal::strerror(error_code).c_str(), error_code);
+                    throw StatusCode::BundleExtractionIOError;
+                }
+
+                extracted_size += output.pos;
             }
 
-            extracted_size += produced;
-        } while (zStream.availOut == 0);
+            if (ret == 0)
+            {
+                break;
+            }
 
-        CompressionNative_InflateEnd(&zStream);
+            if (output.pos == 0 && input.pos == input.size)
+            {
+                ZSTD_freeDCtx(dctx);
+                trace::error(_X("Failure decompressing Zstandard stream; truncated input."));
+                throw StatusCode::BundleExtractionIOError;
+            }
+        }
+
+        ZSTD_freeDCtx(dctx);
 #else
         trace::error(_X("Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost."));
         throw StatusCode::BundleExtractionIOError;
