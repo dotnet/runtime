@@ -740,6 +740,8 @@ CONFIG_STRING(JitEnableOsrRange, "JitEnableOsrRange")
 // outside the enabled range.
 CONFIG_STRING(JitEnablePatchpointRange, "JitEnablePatchpointRange")
 
+CONFIG_STRING(JitAsyncMinOptsLivenessRange, "JitAsyncMinOptsLivenessRange")
+
 // Profile instrumentation options
 RELEASE_CONFIG_INTEGER(JitInterlockedProfiling, "JitInterlockedProfiling", 0)
 RELEASE_CONFIG_INTEGER(JitScalableProfiling, "JitScalableProfiling", 1)

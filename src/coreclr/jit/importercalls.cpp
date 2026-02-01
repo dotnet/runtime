@@ -403,7 +403,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (sig->isAsyncCall())
                 {
-                    impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+                    impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, sig->totalILArgs(), di);
                 }
 
                 impPopCallArgs(sig, call->AsCall());
@@ -715,7 +715,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+        impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, sig->totalILArgs(), di);
 
         if (lvaNextCallAsyncContinuation != BAD_VAR_NUM)
         {
@@ -6864,9 +6864,11 @@ void Compiler::impCheckForPInvokeCall(
 //    call        - The call
 //    opcode      - The IL opcode for the call
 //    prefixFlags - Flags containing context handling information from IL
+//    numILArgs   - The number of IL arguments for the call
 //    callDI      - Debug info for the async call
 //
-void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
+void Compiler::impSetupAsyncCall(
+    GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, unsigned numILArgs, const DebugInfo& callDI)
 {
     AsyncCallInfo asyncInfo;
 
@@ -6901,6 +6903,25 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
     }
 
     call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
+
+    if (opts.OptimizationDisabled())
+    {
+        // When not optimizing we take care to spill all IL entries that are
+        // live across the async call to locals that are marked specially. When
+        // we do not have liveness the async transformation will only preserve
+        // IL locals and these specifically marked temps; we rely on the fact
+        // that unoptimized codegen does not produce other long-lived temps.
+        assert(impStackHeight() >= numILArgs);
+        unsigned liveEntries = impStackHeight() - numILArgs;
+
+        for (unsigned i = 0; i < liveEntries; i++)
+        {
+            impSpillStackEntry(i, BAD_VAR_NUM DEBUGARG(false) DEBUGARG("Spill IL stack entries around async call"));
+            GenTree* node = stackState.esStack[i].val;
+            assert(node->OperIs(GT_LCL_VAR));
+            lvaGetDesc(node->AsLclVar())->lvLiveAcrossAsync = true;
+        }
+    }
 }
 
 //------------------------------------------------------------------------

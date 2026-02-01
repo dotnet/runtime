@@ -67,11 +67,13 @@ PhaseStatus Compiler::SaveAsyncContexts()
     }
 
     // Create locals for ExecutionContext and SynchronizationContext
-    lvaAsyncExecutionContextVar                     = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
-    lvaGetDesc(lvaAsyncExecutionContextVar)->lvType = TYP_REF;
+    lvaAsyncExecutionContextVar                                = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
+    lvaGetDesc(lvaAsyncExecutionContextVar)->lvType            = TYP_REF;
+    lvaGetDesc(lvaAsyncExecutionContextVar)->lvLiveAcrossAsync = true;
 
     lvaAsyncSynchronizationContextVar                     = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
     lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
+    lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvLiveAcrossAsync = true;
 
     if (opts.IsOSR())
     {
@@ -541,7 +543,15 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
 
     if (!m_hasLiveness)
     {
-        return true;
+#ifdef DEBUG
+        static ConfigMethodRange s_jitAsyncMinOptsLivenessRange;
+        s_jitAsyncMinOptsLivenessRange.EnsureInit(JitConfig.JitAsyncMinOptsLivenessRange());
+        if (!s_jitAsyncMinOptsLivenessRange.Contains(m_comp->info.compMethodHash()))
+        {
+            return true;
+        }
+#endif
+        return (lclNum < m_comp->info.compLocalsCount) || dsc->lvLiveAcrossAsync;
     }
 
     if (dsc->lvRefCnt(RCS_NORMAL) == 0)
@@ -702,20 +712,21 @@ PhaseStatus AsyncTransformation::Run()
 
     // Compute liveness to be used for determining what must be captured on
     // suspension. In unoptimized codegen we capture everything.
-    if (m_comp->opts.OptimizationEnabled())
+    if (true)//m_comp->opts.OptimizationEnabled())
     {
         if (m_comp->m_dfsTree == nullptr)
         {
             m_comp->m_dfsTree = m_comp->fgComputeDfs<false>();
         }
 
+        m_comp->m_asyncLiveness = true;
         m_comp->lvaComputeRefCounts(true, false);
         m_comp->fgLocalVarLiveness();
         INDEBUG(m_comp->mostRecentlyActivePhase = PHASE_ASYNC);
         VarSetOps::AssignNoCopy(m_comp, m_comp->compCurLife, VarSetOps::MakeEmpty(m_comp));
     }
 
-    AsyncLiveness liveness(m_comp, m_comp->opts.OptimizationEnabled());
+    AsyncLiveness liveness(m_comp, true); // m_comp->opts.OptimizationEnabled());
 
     // Now walk the IR for all the blocks that contain async calls. Keep track
     // of liveness and outstanding LIR edges as we go; the LIR edges that cross

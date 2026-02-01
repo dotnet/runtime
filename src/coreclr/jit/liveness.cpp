@@ -1300,7 +1300,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_CALL:
             {
                 GenTreeCall* const call = node->AsCall();
-                if ((call->TypeIs(TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(this))
+                if (opts.OptimizationEnabled() && (call->TypeIs(TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(this))
                 {
                     JITDUMP("Removing dead call:\n");
                     DISPNODE(call);
@@ -1326,7 +1326,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
                     // Removing a call does not affect liveness unless it is a tail call in a method with P/Invokes or
                     // is itself a P/Invoke, in which case it may affect the liveness of the frame root variable.
-                    if (!opts.MinOpts() && !opts.ShouldUsePInvokeHelpers() &&
+                    if (!opts.ShouldUsePInvokeHelpers() &&
                         ((call->IsTailCall() && compMethodRequiresPInvokeFrame()) ||
                          (call->IsUnmanaged() && !call->IsSuppressGCTransition())) &&
                         lvaTable[info.compLvFrameListRoot].lvTracked)
@@ -1347,7 +1347,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 GenTreeLclVarCommon* const lclVarNode = node->AsLclVarCommon();
                 LclVarDsc&                 varDsc     = lvaTable[lclVarNode->GetLclNum()];
 
-                if (node->IsUnusedValue())
+                if (opts.OptimizationEnabled() && node->IsUnusedValue())
                 {
                     JITDUMP("Removing dead LclVar use:\n");
                     DISPNODE(lclVarNode);
@@ -1370,7 +1370,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             }
 
             case GT_LCL_ADDR:
-                if (node->IsUnusedValue())
+                if (opts.OptimizationEnabled() && node->IsUnusedValue())
                 {
                     JITDUMP("Removing dead LclVar address:\n");
                     DISPNODE(node);
@@ -1395,7 +1395,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     }
 
                     isDeadStore = fgComputeLifeLocal(life, keepAliveVars, node);
-                    if (isDeadStore)
+                    if (opts.OptimizationEnabled() && isDeadStore)
                     {
                         LIR::Use addrUse;
                         if (blockRange.TryGetUse(node, &addrUse) && addrUse.User()->OperIs(GT_STOREIND, GT_STORE_BLK))
@@ -1463,7 +1463,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 #endif // FEATURE_MASKED_HW_INTRINSICS
             case GT_PHYSREG:
                 // These are all side-effect-free leaf nodes.
-                if (node->IsUnusedValue())
+                if (opts.OptimizationEnabled() && node->IsUnusedValue())
                 {
                     JITDUMP("Removing dead node:\n");
                     DISPNODE(node);
@@ -1626,6 +1626,9 @@ bool Compiler::fgIsTrackedRetBufferAddress(LIR::Range& range, GenTree* node)
 //
 bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
 {
+    if (opts.OptimizationDisabled())
+        return false;
+
     assert(!node->OperIsLocal());
     if (!node->IsValue() || node->IsUnusedValue())
     {
@@ -1668,7 +1671,10 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
 //
 bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block)
 {
-    assert(!opts.MinOpts());
+    if (opts.OptimizationDisabled())
+    {
+        return false;
+    }
 
     // We cannot remove stores to (tracked) TYP_STRUCT locals with GC pointers marked as "explicit init",
     // as said locals will be reported to the GC untracked, and deleting the explicit initializer risks
