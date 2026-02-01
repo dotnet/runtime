@@ -12,7 +12,7 @@ namespace System.Globalization
     internal static partial class OrdinalCasing
     {
         // NoCasingPage means the Unicode page doesn't support any casing and no case translation is needed.
-        private static ushort[] NoCasingPage => Array.Empty<ushort>();
+        private static ushort[] NoCasingPage => [];
 
         // s_basicLatin is covering the casing for the Basic Latin & C0 Controls range.
         // we are not lazy initializing this range because it is the most common used range and we'll cache it anyway very early.
