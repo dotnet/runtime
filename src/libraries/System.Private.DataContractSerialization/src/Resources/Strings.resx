@@ -130,7 +130,7 @@
     <value>Cannot deserialize since root element references unrecognized object with id '{0}'.</value>
   </data>
   <data name="CannotLoadMemberType" xml:space="preserve">
-    <value>Cannot load member type '{0}' for '{1}.{2}'.</value>
+    <value>Cannot load member type '{0}'.</value>
   </data>
   <data name="CannotSerializeObjectWithCycles" xml:space="preserve">
     <value>Object graph for type '{0}' contains cycles and cannot be serialized if references are not tracked. Consider using the DataContractAttribute with the IsReference property set to true.</value>

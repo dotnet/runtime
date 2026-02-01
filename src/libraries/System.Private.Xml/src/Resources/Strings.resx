@@ -2728,7 +2728,7 @@
     <value>You must implement public static {0}({1}) method on {2}.</value>
   </data>
   <data name="XmlGetSchemaMethodReturnType" xml:space="preserve">
-    <value>Method {0}.{1}() specified by {2} has invalid signature: return type must be compatible with {3} or {4}.</value>
+    <value>Method {0}.{1}() specified by {2} has invalid signature: return type must be compatible with {3}.</value>
   </data>
   <data name="XmlGetSchemaEmptyTypeName" xml:space="preserve">
     <value>{0}.{1}() must return a valid type name.</value>
