@@ -168,7 +168,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 async Task DisposeAsyncInternal()
                 {
-                    await Task.Delay(100);
+                    await Task.Yield();
                     Dispose();
                 }
             }
