@@ -123,7 +123,6 @@ namespace System.Threading.Tasks
         // The delegate to invoke for a delegate-backed Task.
         // This field also may be used by async state machines to cache an Action.
         internal Delegate? m_action;
-
         private protected object? m_stateObject; // A state object that can be optionally supplied, passed to action.
         internal TaskScheduler? m_taskScheduler; // The task scheduler this task runs under.
 
@@ -178,6 +177,15 @@ namespace System.Threading.Tasks
         // task. This is to be used by the debugger ONLY. Task in this dictionary represent current active tasks.
         private static Dictionary<int, Task>? s_currentActiveTasks;
 
+#if !MONO
+        // Dictionary that relates a runtime-async Task's ID to the QPC tick count when the current inflight invocation started.
+        // Needed because Continuations that are inflight have already been dequeued from the chain.
+        internal static System.Collections.Concurrent.ConcurrentDictionary<int, long>? s_runtimeAsyncTaskTicks;
+        // Dictionary to store debug info about runtime-async Continuations.
+        // The TickCount field stores the QPC tick count when the logical invocation to which the Continuation belongs started.
+        // The ID field stores a unique ID for the Continuation, similar to Task IDs.
+        internal static System.Collections.Concurrent.ConcurrentDictionary<Continuation, RuntimeAsyncContinuationDebugInfo>? s_runtimeAsyncContinuationTicks;
+#endif
         // These methods are a way to access the dictionary both from this class and for other classes that also
         // activate dummy tasks. Specifically the AsyncTaskMethodBuilder and AsyncTaskMethodBuilder<>
         internal static bool AddToActiveTasks(Task task)
@@ -210,6 +218,49 @@ namespace System.Threading.Tasks
                 activeTasks.Remove(taskId);
             }
         }
+
+#if !MONO
+        internal static void SetRuntimeAsyncContinuationTicks(Continuation continuation, long tickCount)
+        {
+            s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, RuntimeAsyncContinuationDebugInfo>(ContinuationEqualityComparer.Instance);
+            s_runtimeAsyncContinuationTicks.TryAdd(continuation, new RuntimeAsyncContinuationDebugInfo(tickCount));
+        }
+
+        internal static bool GetRuntimeAsyncContinuationDebugInfo(Continuation continuation, [NotNullWhen(true)] out RuntimeAsyncContinuationDebugInfo? debugInfo)
+        {
+            if (s_runtimeAsyncContinuationTicks != null && s_runtimeAsyncContinuationTicks.TryGetValue(continuation, out debugInfo))
+            {
+                return true;
+            }
+            debugInfo = null;
+            return false;
+        }
+
+        internal static void UpdateRuntimeAsyncContinuationDebugInfo(Continuation continuation, RuntimeAsyncContinuationDebugInfo debugInfo)
+        {
+            s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, RuntimeAsyncContinuationDebugInfo>(ContinuationEqualityComparer.Instance);
+            s_runtimeAsyncContinuationTicks[continuation] = debugInfo;
+        }
+
+        internal static void RemoveRuntimeAsyncContinuationTicks(Continuation continuation)
+        {
+            s_runtimeAsyncContinuationTicks?.Remove(continuation, out _);
+        }
+
+        internal static void UpdateRuntimeAsyncTaskTicks(Task task, long inflightTickCount)
+        {
+            if (s_asyncDebuggingEnabled)
+            {
+                s_runtimeAsyncTaskTicks ??= [];
+                s_runtimeAsyncTaskTicks[task.Id] = inflightTickCount;
+            }
+        }
+
+        internal static void RemoveRuntimeAsyncTaskTicks(Task task)
+        {
+            s_runtimeAsyncTaskTicks?.Remove(task.Id, out _);
+        }
+#endif
 
         // We moved a number of Task properties into this class.  The idea is that in most cases, these properties never
         // need to be accessed during the life cycle of a Task, so we don't want to instantiate them every time.  Once
@@ -7576,4 +7627,18 @@ namespace System.Threading.Tasks
 
         public bool InvokeMayRunArbitraryCode => true;
     }
+
+#if !MONO
+    internal sealed class RuntimeAsyncContinuationDebugInfo
+    {
+        internal long TickCount;
+        internal int Id;
+
+        internal RuntimeAsyncContinuationDebugInfo(long tickCount)
+        {
+            TickCount = tickCount;
+            Id = Task.NewId();
+        }
+    }
+#endif
 }
