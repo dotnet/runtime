@@ -12,6 +12,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
+using ILCompiler.ReadyToRun.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -22,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly MethodWithToken _method;
 
         public MethodFixupSignature(
-            ReadyToRunFixupKind fixupKind, 
+            ReadyToRunFixupKind fixupKind,
             MethodWithToken method,
             bool isInstantiatingStub)
         {
@@ -83,14 +84,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ObjectData(data: Array.Empty<byte>(), relocs: null, alignment: 0, definedSymbols: null);
             }
 
-            ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
+            ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder(factory, relocsOnly);
             dataBuilder.AddSymbol(this);
 
             // Optimize some of the fixups into a more compact form
             ReadyToRunFixupKind fixupKind = _fixupKind;
             bool optimized = false;
-            if (!_method.Unboxing && !IsInstantiatingStub && _method.ConstrainedType == null &&
-                fixupKind == ReadyToRunFixupKind.MethodEntry)
+            if (_method.Method.IsPrimaryMethodDesc() && !IsInstantiatingStub
+                && _method.ConstrainedType == null && fixupKind == ReadyToRunFixupKind.MethodEntry)
             {
                 if (!_method.Method.HasInstantiation && !_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
                 {
@@ -111,8 +112,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             MethodWithToken method = _method;
-            
-            if (factory.CompilationModuleGroup.VersionsWithMethodBody(method.Method))
+
+            if (factory.CompilationModuleGroup.VersionsWithMethodBody(method.Method) && !method.Method.IsAsyncVariant())
             {
                 if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
                 {
@@ -153,6 +154,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (IsInstantiatingStub)
             {
                 sb.Append(" [INST]"u8);
+            }
+            if (_method.Method.IsAsyncVariant())
+            {
+                sb.Append(" [ASYNC]"u8);
             }
             sb.Append(": "u8);
             _method.AppendMangledName(nameMangler, sb);

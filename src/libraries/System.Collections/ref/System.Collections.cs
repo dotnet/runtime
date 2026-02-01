@@ -581,6 +581,7 @@ namespace System.Collections
         public System.Collections.BitArray LeftShift(int count) { throw null; }
         public System.Collections.BitArray Not() { throw null; }
         public System.Collections.BitArray Or(System.Collections.BitArray value) { throw null; }
+        public int PopCount() { throw null; }
         public System.Collections.BitArray RightShift(int count) { throw null; }
         public void Set(int index, bool value) { }
         public void SetAll(bool value) { }

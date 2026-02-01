@@ -834,14 +834,25 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
     else
     {
         // Get the TypeDef token and attributes
-        IMDInternalImport *pImport = ty.GetMethodTable()->GetMDImport();
         mdTypeDef td = ty.GetCl();
-        if (IsNilToken(td)) {
-            // This type does not exist in metadata. Simply append "dynamicClass".
-            tnb.AddName(W("(dynamicClass)"));
+        if (IsNilToken(td))
+        {
+            if (ty.IsContinuation())
+            {
+                AsyncContinuationsManager::PrintContinuationName(
+                    ty.AsMethodTable(),
+                    [&](LPCSTR str, LPCWSTR wstr) { tnb.Append(wstr); },
+                    [&](unsigned num) { tnb.AppendNum(num); });
+            }
+            else
+            {
+                // This type does not exist in metadata. Simply append "dynamicClass".
+                tnb.AddName(W("(dynamicClass)"));
+            }
         }
         else
         {
+            IMDInternalImport *pImport = ty.GetMethodTable()->GetMDImport();
 #ifdef _DEBUG
             if (format & FormatDebug)
             {

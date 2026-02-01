@@ -756,7 +756,7 @@ namespace System.Net.Http
 
                 if (!nextAuthorityPersist)
                 {
-#if !ILLUMOS && !SOLARIS
+#if !ILLUMOS && !SOLARIS && !HAIKU
                     _poolManager.StartMonitoringNetworkChanges();
 #endif
                 }

@@ -2,13 +2,15 @@ project(corerun)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(CORERUN_IN_BROWSER 0)
+
 if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=corerun.exe)
-else(CLR_CMAKE_HOST_WIN32)
+else()
     include(configure.cmake)
-endif(CLR_CMAKE_HOST_WIN32)
+endif()
 
-#Required to expose symbols for global symbol discovery.
+# Required to expose symbols for global symbol discovery.
 set(CLR_CMAKE_KEEP_NATIVE_SYMBOLS TRUE)
 
 add_executable_clr(corerun
@@ -33,50 +35,84 @@ if(CLR_CMAKE_HOST_WIN32)
     if (CLR_CMAKE_HOST_ARCH_AMD64)
         target_link_options(corerun PRIVATE "/CETCOMPAT")
     endif()
-else(CLR_CMAKE_HOST_WIN32)
+else()
     target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
     # Required to expose symbols for global symbol discovery
     target_link_libraries(corerun PRIVATE -rdynamic)
 
-    # Android implements pthread natively
+    # Android implements pthread natively.
+    # WASM, linking against pthreads indicates Node.js workers are
+    # enabled and not suitable for the browser.
     if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
         target_link_libraries(corerun PRIVATE pthread)
     endif()
     # Static linking
     if (CLR_CMAKE_TARGET_ARCH_WASM)
-        target_sources(corerun PRIVATE corerun.wasm.cpp)
+        target_sources(corerun PRIVATE ./wasm/pinvoke_override.cpp)
+        target_include_directories(corerun PRIVATE ./wasm/)
         target_link_libraries(corerun PRIVATE
-        coreclr_static
-        System.Native-Static
-        System.Native.TimeZoneData)
+            coreclr_static
+            System.IO.Compression.Native-Static
+            System.Native-Static
+            System.Native.TimeZoneData.Invariant)
+
+        # additional requirements for System.IO.Compression.Native
+        include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
+        append_extra_compression_libs(NATIVE_LIBS)
+
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
-            target_compile_options(corerun PRIVATE 
-                -fwasm-exceptions
-                -msimd128
-                )
-            target_link_libraries(corerun PRIVATE 
+            target_link_libraries(corerun PRIVATE
                 System.Native.Browser-Static)
             set(JS_SYSTEM_NATIVE_BROWSER
-                "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js")
+                "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js")
             set(JS_SYSTEM_BROWSER_UTILS
-                "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Browser.Utils.js")
-            set(JS_CORE_RUN_PRE
-                "${CMAKE_CURRENT_SOURCE_DIR}/libCorerun.pre.js")
+                "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.Utils.js")
+            set(JS_CORE_RUN
+                "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.extpost.js")
             set_target_properties(corerun PROPERTIES
-                LINK_DEPENDS "${JS_CORE_RUN_PRE};${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};"
-                LINK_FLAGS "--pre-js ${JS_CORE_RUN_PRE} --js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS}"
+                LINK_DEPENDS "${JS_CORE_RUN};${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};"
+                LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --extern-post-js ${JS_CORE_RUN}"
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             target_link_options(corerun PRIVATE
-                -fwasm-exceptions
-                -msimd128
-                -sEXIT_RUNTIME=1
                 -sINITIAL_MEMORY=134217728
-                -sENVIRONMENT=node,shell
+                -sMAXIMUM_MEMORY=2147483648
+                -sALLOW_MEMORY_GROWTH=1
                 -sSTACK_SIZE=5MB
-                -lnoderawfs.js
-                -lnodefs.js
+                -sMODULARIZE=1
+                -sEXPORT_ES6=1
+                -sEXIT_RUNTIME=1
+                -sEXPORTED_RUNTIME_METHODS=ENV,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+                -sEXPORTED_FUNCTIONS=_main,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
+                -sEXPORT_NAME=createDotnetRuntime
+                -sENVIRONMENT=node,shell,web
                 -Wl,-error-limit=0)
+
+            if (CORERUN_IN_BROWSER)
+                # Node.js doesn't have good support for WASM_BIGINT
+                # so it only is added when running in the browser.
+                target_link_options(corerun PRIVATE
+                    -sWASM_BIGINT=1)
+
+                # Include the virtual file system data for the
+                # browser scenario.
+                set(WASM_PRELOAD_DIR "${CMAKE_INSTALL_PREFIX}/IL")
+                if (EXISTS "${WASM_PRELOAD_DIR}")
+                    target_link_options(corerun PRIVATE
+                        --preload-file ${WASM_PRELOAD_DIR}@/)
+                endif()
+            else()
+                # If not running in the browser, add
+                # Node.js file system support.
+                target_link_options(corerun PRIVATE
+                    -sNODERAWFS=1
+                    -lnodefs.js)
+            endif()
+        endif()
+
+        if (CORERUN_IN_BROWSER)
+            # Install the HTML file for running in the browser.
+            install(FILES "./wasm/corerun.html" DESTINATION . COMPONENT hosts)
         endif()
     endif()
 endif(CLR_CMAKE_HOST_WIN32)

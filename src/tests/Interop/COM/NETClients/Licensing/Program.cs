@@ -23,13 +23,13 @@ namespace NetClient
             Console.WriteLine($"Calling {nameof(ActivateLicensedObject)}...");
 
             // Validate activation
-            var licenseTesting = (LicenseTesting)new LicenseTestingClass();
+            var licenseTesting = new LicenseTesting();
 
             // Validate license denial
             licenseTesting.SetNextDenyLicense(true);
             try
             {
-                var tmp = (LicenseTesting)new LicenseTestingClass();
+                var tmp = new LicenseTesting();
                 Assert.Fail("Activation of licensed class should fail");
             }
             catch (COMException e)
@@ -86,7 +86,7 @@ namespace NetClient
                 LicenseManager.CurrentContext = new MockLicenseContext(typeof(LicenseTestingClass), LicenseUsageMode.Designtime);
                 LicenseManager.CurrentContext.SetSavedLicenseKey(typeof(LicenseTestingClass), licKey);
 
-                var licenseTesting = (LicenseTesting)new LicenseTestingClass();
+                var licenseTesting = new LicenseTesting();
 
                 // During design time the IClassFactory::CreateInstance will be called - no license
                 Assert.Null(licenseTesting.GetLicense());
@@ -111,7 +111,7 @@ namespace NetClient
                 LicenseManager.CurrentContext = new MockLicenseContext(typeof(LicenseTestingClass), LicenseUsageMode.Runtime);
                 LicenseManager.CurrentContext.SetSavedLicenseKey(typeof(LicenseTestingClass), licKey);
 
-                var licenseTesting = (LicenseTesting)new LicenseTestingClass();
+                var licenseTesting = new LicenseTesting();
 
                 // During runtime the IClassFactory::CreateInstance2 will be called with license from context
                 Assert.Equal(licKey, licenseTesting.GetLicense());

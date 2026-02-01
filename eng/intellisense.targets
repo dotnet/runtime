@@ -6,7 +6,8 @@
 
   <PropertyGroup Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true'">
     <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
-    <IntellisensePackageXmlFilePathFromNetVersionFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net-$(NetCoreAppCurrentVersion)', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetVersionFolder>
+    <!-- Replace net10.0 with 'net-$(NetCoreAppCurrentVersion)' once we have a intellisense package with updated docs -->
+    <IntellisensePackageXmlFilePathFromNetVersionFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net-10.0', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetVersionFolder>
     <IntellisensePackageXmlFilePathFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetFolder>
     <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetVersionFolder))">$(IntellisensePackageXmlFilePathFromNetVersionFolder)</IntellisensePackageXmlFilePath>
     <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetFolder))">$(IntellisensePackageXmlFilePathFromNetFolder)</IntellisensePackageXmlFilePath>

@@ -473,7 +473,8 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock,
     FlowEdge** const jmpTab =
         new (this, CMK_FlowEdge) FlowEdge*[2 + jumpCount + 1 /* true/false edges | cases | default case */];
 
-    firstBlock->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc(jmpTab, 2, jmpTab + 2, jumpCount + 1, true));
+    unsigned numSuccs = blockIfTrue == blockIfFalse ? 1 : 2;
+    firstBlock->SetSwitch(new (this, CMK_BasicBlock) BBswtDesc(jmpTab, numSuccs, jmpTab + 2, jumpCount + 1, true));
     firstBlock->bbCodeOffsEnd = lastBlock->bbCodeOffsEnd;
     firstBlock->lastStmt()->GetRootNode()->ChangeOper(GT_SWITCH);
 

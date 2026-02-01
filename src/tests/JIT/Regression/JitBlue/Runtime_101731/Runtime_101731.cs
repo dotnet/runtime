@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_101731;
+
 using System;
 using Xunit;
 
@@ -35,6 +38,7 @@ public static class Runtime_101731
 
     [Theory]
     [InlineData(float.MaxValue)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/112557", TestRuntimes.Mono)]
     public static void TestConvertToInt64NativeSingle(float value)
     {
         Func<float, long> func = float.ConvertToIntegerNative<long>;
@@ -44,6 +48,7 @@ public static class Runtime_101731
 
     [Theory]
     [InlineData(double.MaxValue)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/112557", TestRuntimes.Mono)]
     public static void TestConvertToUInt32NativeDouble(double value)
     {
         Func<double, uint> func = double.ConvertToIntegerNative<uint>;
@@ -53,6 +58,7 @@ public static class Runtime_101731
 
     [Theory]
     [InlineData(float.MaxValue)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/112557", TestRuntimes.Mono)]
     public static void TestConvertToUInt32NativeSingle(float value)
     {
         Func<float, uint> func = float.ConvertToIntegerNative<uint>;
@@ -62,6 +68,7 @@ public static class Runtime_101731
 
     [Theory]
     [InlineData(double.MaxValue)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/112557", TestRuntimes.Mono)]
     public static void TestConvertToUInt64NativeDouble(double value)
     {
         Func<double, ulong> func = double.ConvertToIntegerNative<ulong>;
@@ -71,6 +78,7 @@ public static class Runtime_101731
 
     [Theory]
     [InlineData(float.MaxValue)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/112557", TestRuntimes.Mono)]
     public static void TestConvertToUInt64NativeSingle(float value)
     {
         Func<float, ulong> func = float.ConvertToIntegerNative<ulong>;

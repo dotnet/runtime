@@ -108,8 +108,8 @@ If rerunning the check doesn't pick up the known issue and you feel it should, f
 After you do this, if the failure is occurring frequently as per the data captured in the recently opened issue, please disable the failing test(s) with the corresponding tracking issue link in a follow-up Pull Request.
 
 * Update the tracking issue with the `disabled-test` label and remove the blocking tags.
-* For libraries tests add a [`[ActiveIssue(link)]`](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/Attributes/ActiveIssueAttribute.cs) attribute on the test method. You can narrow the disabling down to runtime variant, flavor, and platform. For an example see [File_AppendAllLinesAsync_Encoded](https://github.com/dotnet/runtime/blob/cf49643711ad8aa4685a8054286c1348cef6e1d8/src/libraries/System.IO.FileSystem/tests/File/AppendAsync.cs#L74)
-* For runtime tests found under `src/tests`, please edit [`issues.targets`](https://github.com/dotnet/runtime/blob/main/src/tests/issues.targets). There are several groups for different types of disable (mono vs. coreclr, different platforms, different scenarios). Add the folder containing the test and issue mimicking any of the samples in the file.
+* Add a [`[ActiveIssue(link)]`](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/Attributes/ActiveIssueAttribute.cs) attribute on the test method. You can narrow the disabling down to runtime variant, flavor, and platform. For an example see [File_AppendAllLinesAsync_Encoded](https://github.com/dotnet/runtime/blob/cf49643711ad8aa4685a8054286c1348cef6e1d8/src/libraries/System.IO.FileSystem/tests/File/AppendAsync.cs#L74)
+* For runtime tests found under `src/tests` that cannot use `[ActiveIssue]` attributes, set the `CLRTestTargetUnsupported` property conditionally for the scenario that fails..
 
 There are plenty of intermittent failures that won't manifest again on a retry. Therefore these steps should be followed for every iteration of the PR build, e.g. before retrying/rebuilding.
 
@@ -127,7 +127,6 @@ The `Build Analysis` requests are sent to a queue. In certain scenarios, this qu
 
 While most failures can be matched via known issues, a few failures modes cannot be matched currently and it is valid to suppress them manually. Suggested wording to use in these situations (this list is not exhaustive):
 
-- `/ba-g doc changes only` - Build analysis won't turn green for PRs that contain documentation .md file changes only.
 - `/ba-g deadletter` - Helix infrastructure failed with "This is a helix work item crash with status: DeadLetter." error message. Validate that the coverage provided by the dead-lettered leg is not relevant to the PR first. Rerun the leg instead if the coverage is relevant.
 - `/ba-g missing logs` - Logs are completely missing.
 - `/ba-g insufficient info in logs` - No good unique pattern in the logs to open a known issue.

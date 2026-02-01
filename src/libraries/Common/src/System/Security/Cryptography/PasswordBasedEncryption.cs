@@ -7,6 +7,7 @@ using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
+using System.Text;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography

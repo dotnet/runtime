@@ -1883,7 +1883,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
                     if (op1->OperIsLong())
                     {
-                        node->SetSimdBaseJitType(CORINFO_TYPE_INT);
+                        node->SetSimdBaseType(TYP_INT);
 
                         bool     canCombineLoad = false;
                         GenTree* loPart         = op1->gtGetOp1();

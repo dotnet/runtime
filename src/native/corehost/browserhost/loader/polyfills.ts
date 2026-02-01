@@ -4,20 +4,6 @@
 import { ENVIRONMENT_IS_NODE } from "./per-module";
 
 export function initPolyfills(): void {
-    if (typeof globalThis.WeakRef !== "function") {
-        class WeakRefPolyfill<T> {
-            private _value: T | undefined;
-
-            constructor(value: T) {
-                this._value = value;
-            }
-
-            deref(): T | undefined {
-                return this._value;
-            }
-        }
-        globalThis.WeakRef = WeakRefPolyfill as any;
-    }
     if (typeof globalThis.fetch !== "function") {
         globalThis.fetch = fetchLike as any;
     }
@@ -62,10 +48,31 @@ export async function initPolyfillsAsync(): Promise<void> {
     // WASM-TODO: performance polyfill for V8
 }
 
-export async function fetchLike(url: string, init?: RequestInit): Promise<Response> {
-    let node_fs: any | undefined = undefined;
-    let node_url: any | undefined = undefined;
+let _nodeFs: any | undefined = undefined;
+let _nodeUrl: any | undefined = undefined;
+
+export async function nodeFs(): Promise<any> {
+    if (ENVIRONMENT_IS_NODE && !_nodeFs) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore:
+        _nodeFs = await import(/*! webpackIgnore: true */"fs");
+    }
+    return _nodeFs;
+}
+
+export async function nodeUrl(): Promise<any> {
+    if (ENVIRONMENT_IS_NODE && !_nodeUrl) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore:
+        _nodeUrl = await import(/*! webpackIgnore: true */"node:url");
+    }
+    return _nodeUrl;
+}
+
+export async function fetchLike(url: string, init?: RequestInit, expectedContentType?: string): Promise<Response> {
     try {
+        await nodeFs();
+        await nodeUrl();
         // this need to be detected only after we import node modules in onConfigLoaded
         const hasFetch = typeof (globalThis.fetch) === "function";
         if (ENVIRONMENT_IS_NODE) {
@@ -73,73 +80,71 @@ export async function fetchLike(url: string, init?: RequestInit): Promise<Respon
             if (!isFileUrl && hasFetch) {
                 return globalThis.fetch(url, init || { credentials: "same-origin" });
             }
-            if (!node_fs) {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore:
-                node_url = await import(/*! webpackIgnore: true */"url");
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore:
-                node_fs = await import(/*! webpackIgnore: true */"fs");
-            }
             if (isFileUrl) {
-                url = node_url.fileURLToPath(url);
+                url = _nodeUrl.fileURLToPath(url);
             }
 
-            const arrayBuffer = await node_fs.promises.readFile(url);
-            return <Response><any>{
-                ok: true,
+            const arrayBuffer = await _nodeFs.promises.readFile(url);
+            return responseLike(url, arrayBuffer, {
+                status: 200,
+                statusText: "OK",
                 headers: {
-                    length: 0,
-                    get: () => null
-                },
-                url,
-                arrayBuffer: () => arrayBuffer,
-                json: () => JSON.parse(arrayBuffer),
-                text: () => {
-                    throw new Error("NotImplementedException");
+                    "Content-Length": arrayBuffer.byteLength.toString(),
+                    "Content-Type": expectedContentType || "application/octet-stream"
                 }
-            };
+            });
         } else if (hasFetch) {
             return globalThis.fetch(url, init || { credentials: "same-origin" });
         } else if (typeof (read) === "function") {
-            // note that it can't open files with unicode names, like Stra<unicode char - Latin Small Letter Sharp S>e.xml
-            // https://bugs.chromium.org/p/v8/issues/detail?id=12541
-            return <Response><any>{
-                ok: true,
-                url,
+            const arrayBuffer = read(url, "binary");
+            return responseLike(url, arrayBuffer, {
+                status: 200,
+                statusText: "OK",
                 headers: {
-                    length: 0,
-                    get: () => null
-                },
-                arrayBuffer: () => {
-                    return new Uint8Array(read(url, "binary"));
-                },
-                json: () => {
-                    return JSON.parse(read(url, "utf8"));
-                },
-                text: () => read(url, "utf8")
-            };
+                    "Content-Length": arrayBuffer.byteLength.toString(),
+                    "Content-Type": expectedContentType || "application/octet-stream"
+                }
+            });
         }
     } catch (e: any) {
-        return <Response><any>{
-            ok: false,
-            url,
+        return responseLike(url, null, {
             status: 500,
-            headers: {
-                length: 0,
-                get: () => null
-            },
             statusText: "ERR28: " + e,
-            arrayBuffer: () => {
-                throw e;
-            },
-            json: () => {
-                throw e;
-            },
-            text: () => {
-                throw e;
-            }
-        };
+            headers: {},
+        });
     }
     throw new Error("No fetch implementation available");
+}
+
+export function responseLike(url: string, body: ArrayBuffer | null, options: ResponseInit): Response {
+    if (typeof globalThis.Response === "function") {
+        const response = new Response(body, options);
+
+        // Best-effort alignment with the fallback object shape:
+        // only define `url` if it does not already exist on the response.
+        if (typeof (response as any).url === "undefined") {
+            try {
+                Object.defineProperty(response, "url", { value: url });
+            } catch {
+                // Ignore if the implementation does not allow redefining `url`
+            }
+        }
+
+        return response;
+    }
+    return <Response><any>{
+        ok: body !== null && options.status === 200,
+        headers: {
+            ...options.headers,
+            get: (name: string) => (options.headers as any)[name] || null
+        },
+        url,
+        arrayBuffer: () => Promise.resolve(body),
+        json: () => {
+            throw new Error("NotImplementedException");
+        },
+        text: () => {
+            throw new Error("NotImplementedException");
+        }
+    };
 }

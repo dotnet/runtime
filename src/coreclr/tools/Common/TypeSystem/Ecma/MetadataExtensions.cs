@@ -23,7 +23,7 @@ namespace Internal.TypeSystem.Ecma
             if (attributeHandle.IsNil)
                 return null;
 
-            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.EcmaModule));
+            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
         }
 
         public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this EcmaType This,
@@ -35,7 +35,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 if (IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
                 {
-                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.EcmaModule));
+                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
                 }
             }
         }

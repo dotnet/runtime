@@ -73,8 +73,15 @@ public class WasmTemplateTestsBase : BuildTestBase
         (string projectName, string logPath, string nugetDir) =
             InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI);
 
-        if (addFrameworkArg)
-            extraArgs += $" -f {DefaultTargetFramework}";
+        if (addFrameworkArg) {
+            var defaultTarget = template switch
+            {
+                Template.BlazorWasm => DefaultTargetFrameworkForBlazorTemplate,
+                _ => DefaultTargetFramework,
+            };
+
+            extraArgs += $" -f {defaultTarget}";
+        }
 
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
         CommandResult result = cmd.WithWorkingDirectory(_projectDir)
@@ -114,6 +121,36 @@ public class WasmTemplateTestsBase : BuildTestBase
                 <WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>
                 <WasmFingerprintAssets>false</WasmFingerprintAssets>
                 <CompressionEnabled>false</CompressionEnabled>
+            """;
+        }
+
+        if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+        {
+            // TODO-WASM: https://github.com/dotnet/sdk/issues/51213
+            string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
+
+            extraProperties +=
+            """
+                <UseMonoRuntime>false</UseMonoRuntime>
+            """;
+            extraItems +=
+            $$"""
+                <KnownFrameworkReference Update="Microsoft.NETCore.App">
+                  <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
+                  <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
+                  <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
+                  <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+                </KnownFrameworkReference>
+            """;
+            insertAtEnd +=
+            $$"""
+                <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
+                    <ItemGroup>
+                    <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
+                        <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
+                    </KnownWebAssemblySdkPack>
+                    </ItemGroup>
+                </Target>
             """;
         }
 
@@ -273,7 +310,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
     }
 
-    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
+    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath, bool forwardConsole = false)
     {
         targetFramework ??= DefaultTargetFramework;
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
@@ -284,13 +321,20 @@ public class WasmTemplateTestsBase : BuildTestBase
             mainJsContent,
             ".create()",
             (targetFrameworkVersion.Major >= 8)
-                    ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
-                    : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()"
+                    ? $".withConfig({{ forwardConsole: {forwardConsole.ToString().ToLowerInvariant()}, appendElementOnExit: true, logExitCode: true, exitOnUnhandledError: true }}).create()"
+                    : ".withConfig({ appendElementOnExit: true, logExitCode: true }).create()"
             );
 
-        // dotnet.run() is used instead of runMain() in net9.0+
-        if (targetFrameworkVersion.Major >= 9)
+        if (targetFrameworkVersion.Major >= 11)
+        {
+            // runMainAndExit() is used instead of runMain() in net11.0+
+            updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "runMainAndExit()");
+        }
+        else if (targetFrameworkVersion.Major >= 9)
+        {
+            // dotnet.run() is used instead of runMain() in net9.0+
             updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "dotnet.run()");
+        }
 
         updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
 
@@ -342,6 +386,11 @@ public class WasmTemplateTestsBase : BuildTestBase
         using RunCommand runCommand = new RunCommand(s_buildEnv, _testOutput);
         ToolCommand cmd = runCommand.WithWorkingDirectory(workingDirectory);
 
+        return await BrowserRun(cmd, runArgs, runOptions);
+    }
+
+    protected async Task<RunResult> BrowserRun(ToolCommand cmd, string runArgs, RunOptions runOptions)
+    {
         var query = runOptions.BrowserQueryString ?? new NameValueCollection();
         if (runOptions.AOT)
         {
@@ -368,7 +417,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + queryString).ToString());
 
         _testOutput.WriteLine("Waiting for page to load");
-        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new() { Timeout = 1 * 60 * 1000 });
 
         if (runOptions.ExecuteAfterLoaded is not null)
         {
@@ -429,8 +478,8 @@ public class WasmTemplateTestsBase : BuildTestBase
     public string GetObjDir(Configuration config, string? framework = null, string? projectDir = null) =>
         _provider.GetObjDir(config, framework ?? DefaultTargetFramework, projectDir);
 
-    public BuildPaths GetBuildPaths(Configuration config, bool forPublish) =>
-        _provider.GetBuildPaths(config, forPublish);
+    public BuildPaths GetBuildPaths(Configuration config, bool forPublish, string? projectDir = null) =>
+        _provider.GetBuildPaths(config, forPublish, projectDir);
 
     public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged) =>
         _provider.GetFilesTable(projectName, isAOT, paths, unchanged);

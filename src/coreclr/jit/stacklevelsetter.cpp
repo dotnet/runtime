@@ -14,7 +14,7 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
     , maxStackLevel(0)
     , memAllocator(compiler->getAllocator(CMK_CallArgs))
     , putArgNumSlots(memAllocator)
-    , throwHelperBlocksUsed(comp->fgUseThrowHelperBlocks() && comp->compUsesThrowHelper)
+    , throwHelperBlocksUsed(comp->fgUseThrowHelperBlocks())
 #if !FEATURE_FIXED_OUT_ARGS
     , framePointerRequired(compiler->codeGen->isFramePointerRequired())
 #endif // !FEATURE_FIXED_OUT_ARGS
@@ -50,11 +50,12 @@ PhaseStatus StackLevelSetter::DoPhase()
     //
     bool madeChanges = false;
 
+    comp->compUsesThrowHelper = false;
+
     if (comp->fgHasAddCodeDscMap())
     {
         if (comp->opts.OptimizationEnabled())
         {
-            comp->compUsesThrowHelper = false;
             for (Compiler::AddCodeDsc* const add : Compiler::AddCodeDscMap::ValueIteration(comp->fgGetAddCodeDscMap()))
             {
                 if (add->acdUsed)
@@ -84,12 +85,16 @@ PhaseStatus StackLevelSetter::DoPhase()
             //
             for (Compiler::AddCodeDsc* const add : Compiler::AddCodeDscMap::ValueIteration(comp->fgGetAddCodeDscMap()))
             {
-                add->acdUsed = true;
+                comp->compUsesThrowHelper = true;
+                add->acdUsed              = true;
                 comp->fgCreateThrowHelperBlockCode(add);
                 madeChanges = true;
             }
         }
     }
+
+    // We have added whatever throw helpers are needed, so set this flag
+    comp->fgRngChkThrowAdded = true;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -101,9 +106,10 @@ void StackLevelSetter::ProcessBlocks()
 {
 #ifndef TARGET_X86
     // Outside x86 we do not need to compute pushed/popped stack slots.
-    // However, we do optimize throw-helpers and need to process the blocks for
-    // that, but only when optimizing.
-    if (!throwHelperBlocksUsed || comp->opts.OptimizationDisabled())
+    // However, if we are using throw helpers, we also need to process the blocks
+    // to find where the helpers are needed and create the blocks and calls.
+    //
+    if (!throwHelperBlocksUsed)
     {
         return;
     }
@@ -169,7 +175,7 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
         // morph are likely still accurate, so we don't bother checking
         // if helpers are indeed used.
         //
-        bool checkForHelpers = comp->opts.OptimizationEnabled();
+        bool checkForHelpers = true;
 
 #if !FEATURE_FIXED_OUT_ARGS
         // Even if not optimizing, if we have a moving SP frame, a shared helper may
@@ -273,6 +279,13 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         break;
 #endif
 
+#if defined(TARGET_WASM)
+        // TODO-WASM: add other opers that imply null checks
+        case GT_NULLCHECK:
+            SetThrowHelperBlock(SCK_NULL_CHECK, block);
+            break;
+#endif // defined(TARGET_WASM)
+
         default: // Other opers can target throw only due to overflow.
             break;
     }
@@ -296,7 +309,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 //
 void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* block)
 {
-    Compiler::AddCodeDsc* add = comp->fgFindExcptnTarget(kind, block);
+    Compiler::AddCodeDsc* add = comp->fgGetExcptnTarget(kind, block, /* createIfNeeded */ true);
     assert(add != nullptr);
 
     // We expect we'll actually need this helper.
@@ -319,15 +332,9 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
         // For Linux/x86, we possibly need to insert stack alignment adjustment
         // before the first stack argument pushed for every call. But we
         // don't know what the stack alignment adjustment will be when
-        // we morph a tree that calls fgAddCodeRef(), so the stack depth
+        // we morph a tree that calls a throw helper, so the stack depth
         // number will be incorrect. For now, simply force all functions with
-        // these helpers to have EBP frames. It might be possible to make
-        // this less conservative. E.g., for top-level (not nested) calls
-        // without stack args, the stack pointer hasn't changed and stack
-        // depth will be known to be zero. Or, figure out a way to update
-        // or generate all required helpers after all stack alignment
-        // has been added, and the stack level at each call to fgAddCodeRef()
-        // is known, or can be recalculated.
+        // these helpers to have EBP frames.
 #if defined(UNIX_X86_ABI)
         framePointerRequired = true;
 #else  // !defined(UNIX_X86_ABI)

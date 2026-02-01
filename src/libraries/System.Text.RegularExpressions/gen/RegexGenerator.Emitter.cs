@@ -524,7 +524,7 @@ namespace System.Text.RegularExpressions.Generator
             // - There are more than 5 characters in the needle, or
             // - There are only 4 or 5 characters in the needle and they're all ASCII.
 
-            return chars.Length > 5 || RegexCharClass.IsAscii(chars)
+            return chars.Length > 5 || Ascii.IsValid(chars)
                 ? EmitSearchValues(chars, requiredHelpers)
                 : Literal(chars.ToString());
         }
@@ -538,7 +538,7 @@ namespace System.Text.RegularExpressions.Generator
 
             if (fieldName is null)
             {
-                if (RegexCharClass.IsAscii(chars))
+                if (Ascii.IsValid(chars))
                 {
                     // The set of ASCII characters can be represented as a 128-bit bitmap. Use the 16-byte hex string as the key.
                     var bitmap = new byte[16];
@@ -954,6 +954,20 @@ namespace System.Text.RegularExpressions.Generator
                 switch (regexTree.FindOptimizations.FindMode)
                 {
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
+                        // If we also have a trailing End anchor with fixed length, we can check for exact length match.
+                        // Compute this lazily to avoid overhead in the interpreter.
+                        if (RegexPrefixAnalyzer.FindTrailingAnchor(regexTree.Root) == RegexNodeKind.End &&
+                            regexTree.Root.ComputeMaxLength() == regexTree.FindOptimizations.MinRequiredLength)
+                        {
+                            int minRequiredLength = regexTree.FindOptimizations.MinRequiredLength;
+                            writer.WriteLine($"// The pattern leads with a beginning (\\A) anchor and has a trailing end (\\z) anchor, and any possible match is exactly {minRequiredLength} characters.");
+                            using (EmitBlock(writer, $"if (pos == 0 && inputSpan.Length == {minRequiredLength})"))
+                            {
+                                writer.WriteLine("return true;");
+                            }
+                            return true;
+                        }
+
                         writer.WriteLine("// The pattern leads with a beginning (\\A) anchor.");
                         using (EmitBlock(writer, "if (pos == 0)"))
                         {
@@ -1808,94 +1822,39 @@ namespace System.Text.RegularExpressions.Generator
                 // the whole alternation can be treated as a simple switch, so we special-case that. However,
                 // we can't goto _into_ switch cases, which means we can't use this approach if there's any
                 // possibility of backtracking into the alternation.
-                bool useSwitchedBranches = false;
-                if ((node.Options & RegexOptions.RightToLeft) == 0)
+                if ((node.Options & RegexOptions.RightToLeft) != 0 ||
+                    !TryEmitAlternationAsSwitch())
                 {
-                    useSwitchedBranches = isAtomic;
-                    if (!useSwitchedBranches)
+                    EmitAllBranches();
+                }
+
+                return;
+
+                // Tries to emit an alternation as a switch on the first character of each branch.
+                // Returns true if the optimization was applied, false otherwise.
+                bool TryEmitAlternationAsSwitch()
+                {
+                    // We can't use switched branches if there's any possibility of backtracking into the alternation.
+                    if (!isAtomic)
                     {
-                        useSwitchedBranches = true;
                         for (int i = 0; i < childCount; i++)
                         {
                             if (rm.Analysis.MayBacktrack(node.Child(i)))
                             {
-                                useSwitchedBranches = false;
-                                break;
+                                return false;
                             }
                         }
                     }
-                }
 
-                // Detect whether every branch begins with one or more unique characters.
-                const int SetCharsSize = 64; // arbitrary limit; we want it to be large enough to handle ignore-case of common sets, like hex, the latin alphabet, etc.
-                Span<char> setChars = stackalloc char[SetCharsSize];
-                if (useSwitchedBranches)
-                {
-                    // Iterate through every branch, seeing if we can easily find a starting One, Multi, or small Set.
-                    // If we can, extract its starting char (or multiple in the case of a set), validate that all such
-                    // starting characters are unique relative to all the branches.
-                    var seenChars = new HashSet<char>();
-                    for (int i = 0; i < childCount && useSwitchedBranches; i++)
+                    // Detect whether every branch begins with one or more unique characters.
+                    if (!node.TryGetAlternationStartingChars(out _))
                     {
-                        // Look for the guaranteed starting node that's a one, multi, set,
-                        // or loop of one of those with at least one minimum iteration. We need to exclude notones.
-                        if (node.Child(i).FindStartingLiteralNode(allowZeroWidth: false) is not RegexNode startingLiteralNode ||
-                            startingLiteralNode.IsNotoneFamily)
-                        {
-                            useSwitchedBranches = false;
-                            break;
-                        }
-
-                        // If it's a One or a Multi, get the first character and add it to the set.
-                        // If it was already in the set, we can't apply this optimization.
-                        if (startingLiteralNode.IsOneFamily || startingLiteralNode.Kind is RegexNodeKind.Multi)
-                        {
-                            if (!seenChars.Add(startingLiteralNode.FirstCharOfOneOrMulti()))
-                            {
-                                useSwitchedBranches = false;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            // The branch begins with a set.  Make sure it's a set of only a few characters
-                            // and get them.  If we can't, we can't apply this optimization.
-                            Debug.Assert(startingLiteralNode.IsSetFamily);
-                            int numChars;
-                            if (RegexCharClass.IsNegated(startingLiteralNode.Str!) ||
-                                (numChars = RegexCharClass.GetSetChars(startingLiteralNode.Str!, setChars)) == 0)
-                            {
-                                useSwitchedBranches = false;
-                                break;
-                            }
-
-                            // Check to make sure each of the chars is unique relative to all other branches examined.
-                            foreach (char c in setChars.Slice(0, numChars))
-                            {
-                                if (!seenChars.Add(c))
-                                {
-                                    useSwitchedBranches = false;
-                                    break;
-                                }
-                            }
-                        }
+                        return false;
                     }
-                }
 
-                if (useSwitchedBranches)
-                {
-                    // Note: This optimization does not exist with RegexOptions.Compiled.  Here we rely on the
-                    // C# compiler to lower the C# switch statement with appropriate optimizations. In some
-                    // cases there are enough branches that the compiler will emit a jump table.  In others
-                    // it'll optimize the order of checks in order to minimize the total number in the worst
-                    // case.  In any case, we get easier to read and reason about C#.
                     EmitSwitchedBranches();
+                    return true;
                 }
-                else
-                {
-                    EmitAllBranches();
-                }
-                return;
 
                 // Emits the code for a switch-based alternation of non-overlapping branches.
                 void EmitSwitchedBranches()
@@ -1907,7 +1866,8 @@ namespace System.Text.RegularExpressions.Generator
                     // Emit a switch statement on the first char of each branch.
                     using (EmitBlock(writer, $"switch ({sliceSpan}[{sliceStaticPos}])"))
                     {
-                        Span<char> setChars = stackalloc char[SetCharsSize]; // needs to be same size as detection check in caller
+                        const int SetCharsSize = 64; // arbitrary limit; we want it to be large enough to handle ignore-case of common sets, like hex, the latin alphabet, etc.
+                        Span<char> setChars = stackalloc char[SetCharsSize];
                         int startingSliceStaticPos = sliceStaticPos;
 
                         // Emit a case for each branch.
@@ -1987,9 +1947,11 @@ namespace System.Text.RegularExpressions.Generator
                                     break;
                             }
 
-                            // This is only ever used for atomic alternations, so we can simply reset the doneLabel
-                            // after emitting the child, as nothing will backtrack here (and we need to reset it
-                            // so that all branches see the original).
+                            // This is only ever used for alternations where no branch may backtrack
+                            // (whether due to being atomic or simply because nothing in the branch
+                            // can backtrack), so we can simply reset the doneLabel after emitting the
+                            // child, as nothing will backtrack here (and we need to reset it so that
+                            // all branches see the original).
                             doneLabel = originalDoneLabel;
 
                             // If we get here in the generated code, the branch completed successfully.
@@ -2543,16 +2505,9 @@ namespace System.Text.RegularExpressions.Generator
                 // Emit the condition. The condition expression is a zero-width assertion, which is atomic,
                 // so prevent backtracking into it.
                 writer.WriteLine("// Condition:");
-                if (rm.Analysis.MayBacktrack(condition))
-                {
-                    // Condition expressions are treated like positive lookarounds and thus are implicitly atomic,
-                    // so we need to emit the node as atomic if it might backtrack.
-                    EmitAtomic(node, null);
-                }
-                else
-                {
-                    EmitNode(condition);
-                }
+                // Condition expressions are treated like positive lookarounds and thus are implicitly atomic,
+                // so we always emit them via EmitAtomic to ensure proper isolation of backtracking state (e.g., doneLabel).
+                EmitAtomic(node, null);
                 writer.WriteLine();
                 doneLabel = originalDoneLabel;
 
@@ -2784,16 +2739,9 @@ namespace System.Text.RegularExpressions.Generator
                 EmitTimeoutCheckIfNeeded(writer, rm);
 
                 // Emit the child.
-                RegexNode child = node.Child(0);
-                if (rm.Analysis.MayBacktrack(child))
-                {
-                    // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
-                    EmitAtomic(node, null);
-                }
-                else
-                {
-                    EmitNode(child);
-                }
+                // Lookarounds are implicitly atomic, so we always emit them via EmitAtomic to ensure
+                // proper isolation of backtracking state (e.g., doneLabel) from subsequent code.
+                EmitAtomic(node, null);
 
                 // After the child completes successfully, reset the text positions.
                 // Do not reset captures, which persist beyond the lookaround.
@@ -2861,15 +2809,9 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // Emit the child.
-                if (rm.Analysis.MayBacktrack(child))
-                {
-                    // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
-                    EmitAtomic(node, null);
-                }
-                else
-                {
-                    EmitNode(child);
-                }
+                // Lookarounds are implicitly atomic, so we always emit them via EmitAtomic to ensure
+                // proper isolation of backtracking state (e.g., doneLabel) from subsequent code.
+                EmitAtomic(node, null);
 
                 // If the generated code ends up here, it matched the lookaround, which actually
                 // means failure for a _negative_ lookaround, so we need to jump to the original done.
@@ -3084,7 +3026,8 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or RegexNodeKind.ExpressionConditional, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.Kind is RegexNodeKind.ExpressionConditional ? node.ChildCount() >= 1 : node.ChildCount() == 1, $"Unexpected number of children: {node.ChildCount()}");
-                Debug.Assert(rm.Analysis.MayBacktrack(node.Child(0)), "Expected child to potentially backtrack");
+                // Note: Lookarounds and conditional expressions always use EmitAtomic for isolation even if their child doesn't backtrack
+                Debug.Assert(node.Kind is RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or RegexNodeKind.ExpressionConditional || rm.Analysis.MayBacktrack(node.Child(0)), "Expected lookaround/conditional or a child that may backtrack");
 
                 // Grab the current done label and the current backtracking position.  The purpose of the atomic node
                 // is to ensure that nodes after it that might backtrack skip over the atomic, which means after

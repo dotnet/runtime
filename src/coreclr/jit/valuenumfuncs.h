@@ -151,6 +151,10 @@ ValueNumFuncDef(ReadyToRunGenericHandle, 2, false, true, false)
 
 ValueNumFuncDef(GetStaticAddrTLS, 1, false, true, false)
 
+ValueNumFuncDef(VirtualFuncPtr, 3, false, true, false)
+ValueNumFuncDef(GVMLookupForSlot, 2, false, true, false)
+ValueNumFuncDef(ReadyToRunVirtualFuncPtr, 2, false, true, false)
+
 ValueNumFuncDef(JitNew, 2, false, true, false)
 ValueNumFuncDef(JitNewArr, 3, false, true, false)
 ValueNumFuncDef(JitNewLclArr, 3, false, true, false)
@@ -161,7 +165,6 @@ ValueNumFuncDef(JitReadyToRunNewLclArr, 3, false, true, false)
 ValueNumFuncDef(Box, 3, false, true, false)
 ValueNumFuncDef(BoxNullable, 3, false, false, false)
 
-ValueNumFuncDef(LazyStrCns, 2, false, true, false)            // Lazy-initialized string literal (helper)
 ValueNumFuncDef(InvariantLoad, 1, false, false, false)        // Args: 0: (VN of) the address.
 ValueNumFuncDef(InvariantNonNullLoad, 1, false, true, false)  // Args: 0: (VN of) the address.
 ValueNumFuncDef(Unbox, 2, false, false, false)
@@ -193,17 +196,17 @@ ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((
 #define VNF_HWI_FIRST VNF_HWI_Vector128_Abs
 #define VNF_HWI_LAST  VNF_HWI_AVX512_XnorMask
 
-#elif defined (TARGET_ARM64)
+#elif defined(TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((flag) & HW_Flag_Commutative) >> 0, false, false)   // All of the HARDWARE_INTRINSICS for arm64
 #include "hwintrinsiclistarm64.h"
 #define VNF_HWI_FIRST VNF_HWI_Vector64_Abs
 #define VNF_HWI_LAST  VNF_HWI_Sve_ReverseElement_Predicates
 
-#elif defined (TARGET_ARM)
+#elif defined(TARGET_ARM)
 // No Hardware Intrinsics on ARM32
 
-#elif defined (TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64)
     //TODO-LOONGARCH64-CQ: add LoongArch64's Hardware Intrinsics Instructions if supported.
 
 #elif defined (TARGET_RISCV64)
@@ -212,6 +215,10 @@ ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((
     ValueNumFuncDef(MaxInt, 2, true, false, false)
     ValueNumFuncDef(MinInt_UN, 2, true, false, false)
     ValueNumFuncDef(MaxInt_UN, 2, true, false, false)
+
+#elif defined(TARGET_WASM)
+// No hardware intrinsics on WASM yet.
+
 #else
 #error Unsupported platform
 #endif

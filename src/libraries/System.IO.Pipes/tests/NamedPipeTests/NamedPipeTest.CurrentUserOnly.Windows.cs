@@ -123,7 +123,6 @@ namespace System.IO.Pipes.Tests
     {
         public static bool IsSupportedWindowsVersionAndPrivilegedProcess => PlatformDetection.IsPrivilegedProcess
             && PlatformDetection.IsWindows
-            && !PlatformDetection.IsWindows7
             && !PlatformDetection.IsWindowsNanoServer
             && !PlatformDetection.IsWindowsServerCore;
 

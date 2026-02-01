@@ -128,24 +128,19 @@ namespace System
         internal bool NotAny(UriSyntaxFlags flags)
         {
             // Return true if none of the flags specified in 'flags' are set.
-            return IsFullMatch(flags, UriSyntaxFlags.None);
+            return (_flags & flags) == 0;
         }
 
         internal bool InFact(UriSyntaxFlags flags)
         {
             // Return true if at least one of the flags in 'flags' is set.
-            return !IsFullMatch(flags, UriSyntaxFlags.None);
+            return (_flags & flags) != 0;
         }
 
         internal bool IsAllSet(UriSyntaxFlags flags)
         {
             // Return true if all flags in 'flags' are set.
-            return IsFullMatch(flags, flags);
-        }
-
-        private bool IsFullMatch(UriSyntaxFlags flags, UriSyntaxFlags expected)
-        {
-            return (_flags & flags) == expected;
+            return (_flags & flags) == flags;
         }
 
         //
@@ -269,7 +264,7 @@ namespace System
 
             // InitializeAndValidate should not be called outside of the constructor
             Debug.Assert(sizeof(Uri.Flags) == sizeof(ulong));
-            Interlocked.Or(ref Unsafe.As<Uri.Flags, ulong>(ref thisUri._flags), (ulong)Uri.Flags.CustomParser_ParseMinimalAlreadyCalled);
+            Interlocked.Or(ref thisUri._flags, Uri.Flags.CustomParser_ParseMinimalAlreadyCalled);
         }
 
         internal string? InternalResolve(Uri thisBaseUri, Uri uriLink, out UriFormatException? parsingError)

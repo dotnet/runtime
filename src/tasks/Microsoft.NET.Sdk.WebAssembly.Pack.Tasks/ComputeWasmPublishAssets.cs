@@ -420,6 +420,16 @@ public class ComputeWasmPublishAssets : Task
         }
     }
 
+    private string GetItemSpecWithoutFingerprint(ITaskItem asset)
+        => FingerprintAssets ? asset.GetMetadata("OriginalItemSpec") : asset.ItemSpec;
+
+    private static string GetNonFingerprintedAssetItemSpec(ITaskItem asset)
+    {
+        var fileName = Path.GetFileName(asset.GetMetadata("OriginalItemSpec"));
+        var assetToUpdateItemSpec = Path.Combine(Path.GetDirectoryName(asset.ItemSpec), fileName);
+        return assetToUpdateItemSpec;
+    }
+
     private void ComputeUpdatedAssemblies(
         IDictionary<(string, string assemblyName), ITaskItem> satelliteAssemblies,
         List<ITaskItem> filesToRemove,
@@ -440,14 +450,15 @@ public class ComputeWasmPublishAssets : Task
         foreach (var kvp in assemblyAssets)
         {
             var asset = kvp.Value;
-            var fileName = Path.GetFileName(asset.ItemSpec);
+            var fileName = Path.GetFileName(GetItemSpecWithoutFingerprint(asset));
+            var assetToUpdateItemSpec = FingerprintAssets ? GetNonFingerprintedAssetItemSpec(asset) : asset.ItemSpec;
             if (IsWebCilEnabled)
                 fileName = Path.ChangeExtension(fileName, ".dll");
 
             if (resolvedAssembliesToPublish.TryGetValue(fileName, out var existing))
             {
                 // We found the assembly, so it'll have to be updated.
-                assetsToUpdate.Add(asset.ItemSpec, asset);
+                assetsToUpdate.Add(assetToUpdateItemSpec, asset);
                 filesToRemove.Add(existing);
                 if (!string.Equals(asset.ItemSpec, existing.GetMetadata("FullPath"), StringComparison.Ordinal))
                 {
@@ -465,11 +476,12 @@ public class ComputeWasmPublishAssets : Task
         {
             var satelliteAssembly = kvp.Value;
             var relatedAsset = satelliteAssembly.GetMetadata("RelatedAsset");
+
             if (assetsToUpdate.ContainsKey(relatedAsset))
             {
                 assetsToUpdate.Add(satelliteAssembly.ItemSpec, satelliteAssembly);
                 var culture = satelliteAssembly.GetMetadata("AssetTraitValue");
-                var fileName = Path.GetFileName(satelliteAssembly.ItemSpec);
+                var fileName = Path.GetFileName(GetItemSpecWithoutFingerprint(satelliteAssembly));
                 if (IsWebCilEnabled)
                     fileName = Path.ChangeExtension(fileName, ".dll");
 
@@ -517,7 +529,8 @@ public class ComputeWasmPublishAssets : Task
                     ApplyPublishProperties(newAsemblyAsset);
 
                     newAssets.Add(newAsemblyAsset);
-                    updatedAssetsMap.Add(asset.ItemSpec, newAsemblyAsset);
+                    var assetToUpdateItemSpec = FingerprintAssets ? GetNonFingerprintedAssetItemSpec(asset) : asset.ItemSpec;
+                    updatedAssetsMap.Add(assetToUpdateItemSpec, newAsemblyAsset);
                     break;
                 default:
                     // Satellite assembliess and compressed assets

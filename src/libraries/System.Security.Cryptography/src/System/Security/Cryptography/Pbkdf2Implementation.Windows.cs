@@ -14,10 +14,6 @@ namespace System.Security.Cryptography
 {
     internal static partial class Pbkdf2Implementation
     {
-        // For Windows 7 we will use BCryptDeriveKeyPBKDF2. For Windows 8+ (seen as version 6.2.0) we will
-        // use BCryptKeyDerivation since it has better performance.
-        private static readonly bool s_useKeyDerivation = OperatingSystem.IsWindowsVersionAtLeast(6, 2);
-
         // A cached instance of PBKDF2 for Windows 8, where pseudo handles are not supported.
         private static SafeBCryptAlgorithmHandle? s_pbkdf2AlgorithmHandle;
 
@@ -31,14 +27,7 @@ namespace System.Security.Cryptography
             Debug.Assert(!destination.IsEmpty);
             Debug.Assert(iterations >= 0);
 
-            if (s_useKeyDerivation)
-            {
-                FillKeyDerivation(password, salt, iterations, hashAlgorithmName, destination);
-            }
-            else
-            {
-                FillDeriveKeyPBKDF2(password, salt, iterations, hashAlgorithmName, destination);
-            }
+            FillKeyDerivation(password, salt, iterations, hashAlgorithmName, destination);
         }
 
         private static unsafe void FillKeyDerivation(
@@ -204,44 +193,6 @@ namespace System.Security.Cryptography
                         Debug.Fail("PBKDF2 resultLength != destination.Length");
                         throw new CryptographicException();
                     }
-                }
-            }
-        }
-
-        private static unsafe void FillDeriveKeyPBKDF2(
-            ReadOnlySpan<byte> password,
-            ReadOnlySpan<byte> salt,
-            int iterations,
-            HashAlgorithmName hashAlgorithm,
-            Span<byte> destination)
-        {
-            Debug.Assert(hashAlgorithm.Name is not null);
-            string hashAlgorithmName = hashAlgorithm.Name;
-            const BCryptOpenAlgorithmProviderFlags OpenAlgorithmFlags = BCryptOpenAlgorithmProviderFlags.BCRYPT_ALG_HANDLE_HMAC_FLAG;
-
-            // This code path will only be taken on Windows 7, so we can assume pseudo handles are not supported.
-            // Do not dispose handle since it is shared and cached.
-            SafeBCryptAlgorithmHandle handle =
-                Interop.BCrypt.BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(hashAlgorithmName, OpenAlgorithmFlags, out _);
-
-            fixed (byte* pPassword = password)
-            fixed (byte* pSalt = salt)
-            fixed (byte* pDestination = destination)
-            {
-                NTSTATUS status = Interop.BCrypt.BCryptDeriveKeyPBKDF2(
-                    handle,
-                    pPassword,
-                    password.Length,
-                    pSalt,
-                    salt.Length,
-                    (ulong)iterations,
-                    pDestination,
-                    destination.Length,
-                    dwFlags: 0);
-
-                if (status != NTSTATUS.STATUS_SUCCESS)
-                {
-                    throw Interop.BCrypt.CreateCryptographicException(status);
                 }
             }
         }

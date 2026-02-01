@@ -970,10 +970,9 @@ private:
             CORINFO_CONTEXT_HANDLE context   = inlineInfo->exactContextHandle;
             if (clsHnd != NO_CLASS_HANDLE)
             {
-                // If we devirtualized an array interface call,
-                // pass the original method handle and original context handle to the devirtualizer.
+                // Pass the original method handle and original context handle to the devirtualizer if needed.
                 //
-                if (inlineInfo->arrayInterface)
+                if (inlineInfo->needsMethodContext)
                 {
                     methodHnd = inlineInfo->originalMethodHandle;
                     context   = inlineInfo->originalContextHandle;

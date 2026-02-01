@@ -31,6 +31,7 @@ struct EventStructTypeData;
 void InitializeEventTracing();
 
 class PrepareCodeConfig;
+class CodeHeapIterator;
 
 // !!!!!!! NOTE !!!!!!!!
 // The flags must match those in the ETW manifest exactly
@@ -121,15 +122,12 @@ enum EtwGCSettingFlags
 
 #define ETW_TRACING_INITIALIZED(RegHandle) (TRUE)
 #define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword) || \
-        (XplatEventLogger::IsKeywordEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)) || \
-        (UserEventsHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)))
+        (XplatEventLogger::IsKeywordEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword)))
 #define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
-        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)) || \
-        (UserEventsHelper::IsEnabled(Context, Level, Keyword)))
+        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)))
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
-        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)) || \
-        (UserEventsHelper::IsEnabled(Context, Level, Keyword)))
+        (XplatEventLogger::IsKeywordEnabled(Context, Level, Keyword)))
 #define ETW_PROVIDER_ENABLED(ProviderSymbol) (TRUE)
 #else //defined(FEATURE_PERFTRACING)
 #define ETW_INLINE
@@ -663,13 +661,6 @@ public:
     static bool Enabled();
     static bool IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword);
 };
-
-class UserEventsHelper
-{
-public:
-    static bool Enabled();
-    static bool IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword);
-};
 #endif // defined(FEATURE_PERFTRACING)
 
 #endif // FEATURE_EVENT_TRACE
@@ -912,6 +903,16 @@ namespace ETW
         static VOID SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions);
         static VOID SendEventsForJitMethodsHelper(
             LoaderAllocator *pLoaderAllocatorFilter,
+            DWORD dwEventOptions,
+            BOOL fLoadOrDCStart,
+            BOOL fUnloadOrDCEnd,
+            BOOL fSendMethodEvent,
+            BOOL fSendILToNativeMapEvent,
+            BOOL fSendRichDebugInfoEvent,
+            BOOL fGetCodeIds);
+
+        static VOID SendEventsForJitMethodsHelper2(
+            CodeHeapIterator codeHeapIterator,
             DWORD dwEventOptions,
             BOOL fLoadOrDCStart,
             BOOL fUnloadOrDCEnd,

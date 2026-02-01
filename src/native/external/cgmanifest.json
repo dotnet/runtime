@@ -6,6 +6,16 @@
       "component": {
         "type": "git",
         "git": {
+          "repositoryUrl": "https://github.com/facebook/zstd",
+          "commitHash": "f8745da6ff1ad1e7bab384bd1f9d742439278e99"
+        }
+      },
+      "developmentDependency": false
+    },
+    {
+      "component": {
+        "type": "git",
+        "git": {
           "repositoryUrl": "https://github.com/google/brotli",
           "commitHash": "ed738e842d2fbdf2d6459e39267a633c4a9b2f5d"
         }
@@ -48,16 +58,6 @@
         "git": {
           "repositoryUrl": "https://github.com/zlib-ng/zlib-ng",
           "commitHash": "d54e3769be0c522015b784eca2af258b1c026107"
-        }
-      },
-      "developmentDependency": false
-    },
-    {
-      "component": {
-        "type": "git",
-        "git": {
-          "repositoryUrl": "https://github.com/microsoft/LinuxTracepoints",
-          "commitHash": "a817b91dfb08b2929ec6d48a211644e3394bf1c7"
         }
       },
       "developmentDependency": false

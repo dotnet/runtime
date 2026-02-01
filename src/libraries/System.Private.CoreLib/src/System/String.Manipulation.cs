@@ -459,14 +459,12 @@ namespace System
 
         public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
-            TwoObjects two = new TwoObjects(arg0, arg1);
-            return FormatHelper(null, format, two);
+            return FormatHelper(null, format, [arg0, arg1]);
         }
 
         public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
-            ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-            return FormatHelper(null, format, three);
+            return FormatHelper(null, format, [arg0, arg1, arg2]);
         }
 
         public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
@@ -499,14 +497,12 @@ namespace System
 
         public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
-            TwoObjects two = new TwoObjects(arg0, arg1);
-            return FormatHelper(provider, format, two);
+            return FormatHelper(provider, format, [arg0, arg1]);
         }
 
         public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
-            ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-            return FormatHelper(provider, format, three);
+            return FormatHelper(provider, format, [arg0, arg1, arg2]);
         }
 
         public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
@@ -2365,7 +2361,7 @@ namespace System
         // Creates a copy of this string in lower case based on invariant culture.
         public string ToLowerInvariant()
         {
-            return TextInfo.Invariant.ToLower(this);
+            return TextInfo.ToLowerInvariant(this);
         }
 
         public string ToUpper() => ToUpper(null);
@@ -2380,7 +2376,7 @@ namespace System
         // Creates a copy of this string in upper case based on invariant culture.
         public string ToUpperInvariant()
         {
-            return TextInfo.Invariant.ToUpper(this);
+            return TextInfo.ToUpperInvariant(this);
         }
 
         // Trims the whitespace from both ends of the string.  Whitespace is defined by

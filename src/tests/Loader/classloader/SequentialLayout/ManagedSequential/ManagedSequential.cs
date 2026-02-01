@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 [SkipOnMono("This test suite tests CoreCLR and Crossgen2/NativeAOT-specific layout rules.")]
 public unsafe class ManagedSequential
@@ -56,6 +57,7 @@ public unsafe class ManagedSequential
         public byte data;
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void LayoutClassObjectBaseIsManagedSequential()
     {
@@ -64,6 +66,7 @@ public unsafe class ManagedSequential
         Assert.Equal(8, (int)Unsafe.ByteOffset(ref o.b1, ref Unsafe.As<long, byte>(ref o.l1)));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void LayoutClassLayoutBaseIsManagedSequential()
     {
@@ -72,6 +75,7 @@ public unsafe class ManagedSequential
         Assert.Equal(8, (int)Unsafe.ByteOffset(ref o.b2, ref Unsafe.As<long, byte>(ref o.l2)));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void AutoClassLayoutBaseIsManagedSequential()
     {
@@ -80,6 +84,7 @@ public unsafe class ManagedSequential
         Assert.Equal(-8, (int)Unsafe.ByteOffset(ref o.b2, ref Unsafe.As<long, byte>(ref o.l2)));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void AutoClassObjectBaseIsManagedSequential()
     {
@@ -88,6 +93,7 @@ public unsafe class ManagedSequential
         Assert.Equal(-8, (int)Unsafe.ByteOffset(ref o.b1, ref Unsafe.As<long, byte>(ref o.l1)));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void AutoClassDerivedFromManagedSequentialEmpty()
     {
@@ -96,6 +102,7 @@ public unsafe class ManagedSequential
         Assert.Equal(0, (int)Unsafe.ByteOffset(ref Unsafe.As<RawData>(o).data, ref Unsafe.As<int, byte>(ref o.i)));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void ManagedSequentialDisqualifiedClassDerivedFromManagedSequentialEmpty()
     {

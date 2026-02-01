@@ -12,7 +12,15 @@
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
 
     <IlcOrderFile>order.txt</IlcOrderFile>
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
   </PropertyGroup>
+
+  <!-- Enable runtime async; delete this block once it's on by default -->
+  <!-- Conditioned to x64 only due to https://github.com/dotnet/runtime/issues/121871 -->
+  <PropertyGroup Condition="'$(TargetArchitecture)' == 'x64'">
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="BasicThreading.cs" />
     <Compile Include="Delegates.cs" />

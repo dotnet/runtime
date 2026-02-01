@@ -15,7 +15,6 @@
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
     <IsBrowserWasmProject>true</IsBrowserWasmProject>
-    <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
 
     <WasmAppBuilderTasksAssemblyPath>$(CORE_ROOT)\WasmAppBuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$(CORE_ROOT)\MonoAOTCompiler\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
@@ -34,8 +33,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmExtraFilesToDeploy Include="$(CORE_ROOT)\runtime-test\index.html" />
-      <WasmExtraFilesToDeploy Include="$(CORE_ROOT)\runtime-test\test-main.js" />
       <WasmAssembliesToBundle Include="$(TestBinDir)\*.dll" />
       <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Runtime.InteropServices.JavaScript.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native"/>
