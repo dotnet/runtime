@@ -664,7 +664,7 @@ void DispParamCustomMarshaler::MarshalManagedToNativeRef(OBJECTREF *pSrcObj, VAR
     GCPROTECT_BEGIN(gc);
 
     // Convert the object using the custom marshaler.
-    IUnknown* pUnkResult = V_UNKNOWN(&vtmp);
+    IUnknown* pUnkResult = NULL;
 
     target.InvokeThrowing(
         &gc.CustomMarshaler,
