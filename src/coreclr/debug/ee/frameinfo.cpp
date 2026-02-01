@@ -1539,15 +1539,22 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         LOG((LF_CORDB, LL_INFO100000, "DWSP: Skipping to parent method frame at 0x%p.\n", d->fpParent.GetSPValue()));
     }
     else
-    // We ignore most IL stubs with no frames in our stackwalking. As exceptions
-    // we will always report multicast stubs and the tailcall call target stubs
-    // since we treat them specially in the debugger.
-    if ((md != NULL) && md->IsILStub() && pCF->IsFrameless())
+    // Most frameless IsDebuggerHidden methods can be eagerly filtered from the stacktrace so
+    // that the remaining debugger code doesn't have to reason about them. There are a few
+    // special cases below where the runtime debugger code does need to reason about them and
+    // then we filter them out at a later stage.
+    if ((md != NULL) && md->IsDiagnosticsHidden() && pCF->IsFrameless())
     {
-        _ASSERTE(md->IsDynamicMethod());
-        DynamicMethodDesc* dMD = md->AsDynamicMethodDesc();
-        use |= dMD->IsMulticastStub();
-        use |= dMD->GetILStubType() == DynamicMethodDesc::StubTailCallCallTarget;
+        if (md->IsILStub())
+        {
+            // We ignore most IL stubs with no frames in our stackwalking. As exceptions
+            // we will always report multicast stubs and the tailcall call target stubs
+            // since we treat them specially in the debugger.
+            _ASSERTE(md->IsDynamicMethod());
+            DynamicMethodDesc* dMD = md->AsDynamicMethodDesc();
+            use |= dMD->IsMulticastStub();
+            use |= dMD->GetILStubType() == DynamicMethodDesc::StubTailCallCallTarget;
+        }
 
         if (use)
         {
@@ -1556,7 +1563,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         }
         else
         {
-            LOG((LF_CORDB, LL_INFO100000, "DWSP: Skip frameless IL stub.\n"));
+            LOG((LF_CORDB, LL_INFO100000, "DWSP: Skip IsDiagnosticsHidden method.\n"));
         }
     }
     else

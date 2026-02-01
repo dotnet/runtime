@@ -2138,8 +2138,19 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
             {
                 DebuggerJitInfo *dji = it.Current();
                 _ASSERTE(dji->m_jitComplete);
+
+                // Skip async thunk methods - they have no sequence points and cannot bind IL breakpoints.
+                // The breakpoint should bind to the async variant method instead.
+                MethodDesc *pMD = dji->m_nativeCodeVersion.GetMethodDesc();
+                if (pMD->IsAsyncThunkMethod())
+                {
+                    LOG((LF_CORDB, LL_INFO10000, "DC::AILP: Skipping async thunk method\n"));
+                    it.Next();
+                    continue;
+                }
+
                 if (dji->m_encVersion == encVersion &&
-                   (pMethodDescFilter == NULL || pMethodDescFilter == dji->m_nativeCodeVersion.GetMethodDesc()))
+                   (pMethodDescFilter == NULL || pMethodDescFilter == pMD))
                 {
                     fVersionMatch = TRUE;
 
