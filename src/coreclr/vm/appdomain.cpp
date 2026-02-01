@@ -727,6 +727,7 @@ void SystemDomain::Attach()
 #endif // FEATURE_JIT
     RangeSectionStubManager::Init();
     ILStubManager::Init();
+    PInvokeStubManager::Init();
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
     TailCallStubManager::Init();
