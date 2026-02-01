@@ -3764,6 +3764,125 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_Span_Slice:
+            case NI_System_ReadOnlySpan_Slice:
+            {
+                assert(sig->sigInst.classInstCount == 1);
+                assert(sig->numArgs == 2);
+
+                if (compCurBB->isRunRarely())
+                {
+                    return nullptr;
+                }
+
+                GenTree* lenArg   = impStackTop(0).val;
+                GenTree* startArg = impStackTop(1).val;
+                GenTree* spanArg  = impStackTop(2).val;
+
+                // When we have span.Slice(X, span.Length - X), we can optimize this to just span.Slice(X).
+                // Example arguments:
+                //
+                // spanArg:
+                //   * LCL_VAR   byref  V01 loc0
+                //
+                // startArg:
+                //   * CNS_INT   int    8
+                //
+                // lenArg:
+                //   * SUB       int
+                //   |-- * IND       int
+                //   |   |-- * FIELD_ADDR byref  System.Span`1[int]:_length
+                //   |       |-- * LCL_VAR   byref  V01 loc0
+                //   |-- * CNS_INT   int    8
+                //
+                if (lenArg->OperIs(GT_SUB) && ((startArg->gtFlags & GTF_ALL_EFFECT) == 0) &&
+                    ((spanArg->gtFlags & GTF_ALL_EFFECT) == 0))
+                {
+                    GenTree* subOp1 = lenArg->gtGetOp1();
+                    GenTree* subOp2 = lenArg->gtGetOp2();
+
+                    if (GenTree::Compare(subOp2, startArg) && subOp1->OperIs(GT_IND) && subOp1->TypeIs(TYP_INT) &&
+                        subOp1->gtGetOp1()->OperIs(GT_FIELD_ADDR) &&
+                        GenTree::Compare(subOp1->gtGetOp1()->gtGetOp1(), spanArg))
+                    {
+                        CORINFO_FIELD_HANDLE refHnd       = info.compCompHnd->getFieldInClass(clsHnd, 0);
+                        CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
+                        unsigned             refOffset    = OFFSETOF__CORINFO_Span__reference;
+                        unsigned             lengthOffset = OFFSETOF__CORINFO_Span__length;
+
+                        // It's unlikely to be anything other than the _length field, but just to be sure.
+                        if (subOp1->gtGetOp1()->AsFieldAddr()->gtFldHnd != lengthHnd)
+                        {
+                            return nullptr;
+                        }
+
+                        // Clone spanArg for multiple uses:
+                        GenTree* spanArgClone = nullptr;
+                        if (impIsAddressInLocal(spanArg))
+                        {
+                            spanArgClone = gtCloneExpr(spanArg);
+                        }
+                        else
+                        {
+                            spanArg = impCloneExpr(spanArg, &spanArgClone, CHECK_SPILL_ALL,
+                                                   nullptr DEBUGARG("Span.Slice spanArg"));
+                        }
+
+                        GenTreeFieldAddr* refFieldAddr    = gtNewFieldAddrNode(refHnd, spanArg, refOffset);
+                        GenTreeFieldAddr* lengthFieldAddr = gtNewFieldAddrNode(lengthHnd, spanArgClone, lengthOffset);
+
+                        GenTree* oldRef    = gtNewIndir(TYP_BYREF, refFieldAddr);
+                        GenTree* oldLength = gtNewIndir(TYP_INT, lengthFieldAddr);
+                        lengthFieldAddr->SetIsSpanLength(true);
+
+                        CORINFO_CLASS_HANDLE spanHnd     = sig->retTypeClass;
+                        unsigned             spanTempNum = lvaGrabTemp(true DEBUGARG("(ReadOnly)Span<T> for Slice"));
+                        lvaSetStruct(spanTempNum, spanHnd, false);
+
+                        // Emit the bounds check:
+                        //
+                        // if ((uint)start > (uint)oldLength)
+                        //     ThrowHelper.ThrowArgumentOutOfRangeException();
+                        //
+                        GenTree* oobCheck = gtNewOperNode(GT_LE, TYP_INT, startArg, oldLength);
+                        oobCheck->SetUnsigned();
+                        GenTreeCall* throwAOORE =
+                            gtNewHelperCallNode(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, TYP_VOID);
+                        GenTreeColon* oobCheckColon = gtNewColonNode(TYP_VOID, gtNewNothingNode(), throwAOORE);
+                        GenTreeQmark* oobCheckQmark = gtNewQmarkNode(TYP_VOID, oobCheck, oobCheckColon);
+                        impAppendTree(oobCheckQmark, CHECK_SPILL_ALL, impCurStmtDI);
+
+                        // Create the new Span:
+                        //
+                        //   _reference = oldRef + (nint)(start * sizeof(T))
+                        //   _length    = oldLength - start
+                        //
+                        CORINFO_CLASS_HANDLE spanElemHnd = sig->sigInst.classInst[0];
+                        const unsigned       elemSize    = info.compCompHnd->getClassSize(spanElemHnd);
+                        assert(elemSize > 0);
+
+                        // _reference:
+                        GenTree* bytesOffset = gtFoldExpr(
+                            gtNewOperNode(GT_MUL, TYP_INT, gtCloneExpr(startArg), gtNewIconNode(elemSize, TYP_INT)));
+                        GenTree* bytesOffsetI  = gtFoldExpr(impImplicitIorI4Cast(bytesOffset, TYP_I_IMPL));
+                        GenTree* newRef        = gtNewOperNode(GT_ADD, TYP_BYREF, oldRef, bytesOffsetI);
+                        GenTree* refFieldStore = gtNewStoreLclFldNode(spanTempNum, TYP_BYREF, refOffset, newRef);
+
+                        // _length:
+                        GenTree* lenSubStart =
+                            gtNewOperNode(GT_SUB, TYP_INT, gtCloneExpr(oldLength), gtCloneExpr(startArg));
+                        GenTree* lengthFieldStore =
+                            gtNewStoreLclFldNode(spanTempNum, TYP_INT, lengthOffset, gtFoldExpr(lenSubStart));
+
+                        impPopStack(3);
+                        impAppendTree(refFieldStore, CHECK_SPILL_ALL, impCurStmtDI);
+                        impAppendTree(lengthFieldStore, CHECK_SPILL_ALL, impCurStmtDI);
+                        return impCreateLocalNode(spanTempNum DEBUGARG(0));
+                    }
+                }
+                break;
+            }
+
             case NI_System_Span_get_Item:
             case NI_System_ReadOnlySpan_get_Item:
             {
@@ -10460,6 +10579,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_ReadOnlySpan_get_Length;
                         }
+                        else if (strcmp(methodName, "Slice") == 0)
+                        {
+                            result = NI_System_ReadOnlySpan_Slice;
+                        }
                     }
                     else if (strcmp(className, "RuntimeType") == 0)
                     {
@@ -10497,6 +10620,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "get_Length") == 0)
                         {
                             result = NI_System_Span_get_Length;
+                        }
+                        else if (strcmp(methodName, "Slice") == 0)
+                        {
+                            result = NI_System_Span_Slice;
                         }
                     }
                     else if (strcmp(className, "SpanHelpers") == 0)
