@@ -193,7 +193,7 @@ namespace System.Reflection
                             *dst++ = (byte)c;
                             src++;
                         }
-                        else if (c < 0x7FF)
+                        else if (c < 0x800)
                         {
                             if (dstEnd - dst < 2)
                             {
@@ -208,7 +208,7 @@ namespace System.Reflection
                             if (char.IsSurrogate(c))
                             {
                                 // surrogate pair
-                                if (char.IsHighSurrogate(c) && src - srcEnd < 2 && src[1] is char cLow && char.IsLowSurrogate(cLow))
+                                if (char.IsHighSurrogate(c) && srcEnd - src >= 2 && src[1] is char cLow && char.IsLowSurrogate(cLow))
                                 {
                                     if (dstEnd - dst < 4)
                                     {
