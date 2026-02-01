@@ -297,7 +297,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [InlineData(false)]
+        // [InlineData(false)] https://github.com/dotnet/runtime/issues/123477
         [InlineData(true)]
         public async Task LibraryModeBuild(bool useWasmSdk)
         {
