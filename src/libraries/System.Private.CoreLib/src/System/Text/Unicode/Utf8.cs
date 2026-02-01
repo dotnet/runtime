@@ -827,9 +827,9 @@ namespace System.Text.Unicode
             Utf8Utility.GetIndexOfFirstInvalidUtf8Sequence(value, out _) < 0;
 
         /// <summary>
-        /// Find the index of the first invalid UTF-8 subsequence.
+        /// Finds the index of the first invalid UTF-8 subsequence.
         /// </summary>
-        /// <param name="value">The <see cref="ReadOnlySpan{T}"/> string.</param>
+        /// <param name="value">The <see cref="ReadOnlySpan{T}"/> containing the UTF-8 input text to examine.</param>
         /// <returns>The index of the first invalid UTF-8 subsequence, or <c>-1</c> if the entire input is valid.</returns>
         public static int IndexOfInvalidSubsequence(ReadOnlySpan<byte> value) =>
             Utf8Utility.GetIndexOfFirstInvalidUtf8Sequence(value, out _);
