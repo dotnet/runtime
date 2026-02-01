@@ -610,9 +610,13 @@ private:
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
 
+                CORINFO_RESOLVED_TOKEN resolvedToken{};
+                resolvedToken.cbMethodSpec = call->gtLateDevirtualizationInfo->methodSpecSize;
+                resolvedToken.pMethodSpec  = call->gtLateDevirtualizationInfo->methodSpec;
+
                 CORINFO_CONTEXT_HANDLE contextInput = context;
                 context                             = nullptr;
-                m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
+                m_compiler->impDevirtualizeCall(call, &resolvedToken, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
 
                 if (!call->IsDevirtualizationCandidate(m_compiler))

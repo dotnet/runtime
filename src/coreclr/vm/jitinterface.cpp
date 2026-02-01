@@ -3223,14 +3223,9 @@ NoSpecialCase:
             mdMethodDef methodToken               = pTemplateMD->GetMemberDef();
             DWORD       methodFlags               = 0;
 
-            // Check for non-NULL method spec first. We can normally encode the method instantiation only if we have one in method spec to start with.
-            //
-            // However, for tokens synthesized by devirtualization we may not have a MethodSpec available.
-            // In that case, we can encode the method instantiation directly from the MethodDesc.
-            const BOOL haveMethodSpec                 = (pResolvedToken->pMethodSpec != NULL);
-            const BOOL allowNoMethodSpecInstantiation = (pResolvedToken->tokenType == CORINFO_TOKENKIND_DevirtualizedMethod);
-            BOOL fMethodNeedsInstantiation = pTemplateMD->HasMethodInstantiation() && !pTemplateMD->IsGenericMethodDefinition() &&
-                                             (haveMethodSpec || allowNoMethodSpecInstantiation);
+            // Check for non-NULL method spec first. We can encode the method instantiation only if we have one in method spec to start with. Note that there are weird cases
+            // like instantiating stub for generic method definition that do not have method spec but that won't be caught by the later conditions either.
+            BOOL fMethodNeedsInstantiation = (pResolvedToken->pMethodSpec != NULL) && pTemplateMD->HasMethodInstantiation() && !pTemplateMD->IsGenericMethodDefinition();
 
             if (pTemplateMD->IsUnboxingStub())
                 methodFlags |= ENCODE_METHOD_SIG_UnboxingStub;
@@ -3276,43 +3271,23 @@ NoSpecialCase:
 
             if (fMethodNeedsInstantiation)
             {
-                if (haveMethodSpec)
+                SigPointer sigptr(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
+
+                BYTE etype;
+                IfFailThrow(sigptr.GetByte(&etype));
+
+                // Load the generic method instantiation
+                THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, pModule);
+
+                uint32_t nGenericMethodArgs;
+                IfFailThrow(sigptr.GetData(&nGenericMethodArgs));
+                sigBuilder.AppendData(nGenericMethodArgs);
+
+                _ASSERTE(nGenericMethodArgs == pTemplateMD->GetNumGenericMethodArgs());
+
+                for (DWORD i = 0; i < nGenericMethodArgs; i++)
                 {
-                    SigPointer sigptr(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
-
-                    BYTE etype;
-                    IfFailThrow(sigptr.GetByte(&etype));
-
-                    // Load the generic method instantiation
-                    THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, pModule);
-
-                    uint32_t nGenericMethodArgs;
-                    IfFailThrow(sigptr.GetData(&nGenericMethodArgs));
-                    sigBuilder.AppendData(nGenericMethodArgs);
-
-                    _ASSERTE(nGenericMethodArgs == pTemplateMD->GetNumGenericMethodArgs());
-
-                    for (DWORD i = 0; i < nGenericMethodArgs; i++)
-                    {
-                        sigptr.ConvertToInternalExactlyOne(pModule, NULL, &sigBuilder);
-                    }
-                }
-                else
-                {
-                    // Devirtualization synthesized token without MethodSpec: encode method instantiation
-                    // directly from the instantiated MethodDesc.
-                    Instantiation methodInst = pTemplateMD->GetMethodInstantiation();
-                    uint32_t      nGenericMethodArgs = methodInst.GetNumArgs();
-
-                    sigBuilder.AppendData(nGenericMethodArgs);
-                    _ASSERTE(nGenericMethodArgs == pTemplateMD->GetNumGenericMethodArgs());
-
-                    for (DWORD i = 0; i < nGenericMethodArgs; i++)
-                    {
-                        TypeHandle instArg = methodInst[i];
-                        sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
-                        sigBuilder.AppendPointer(instArg.AsPtr());
-                    }
+                    sigptr.ConvertToInternalExactlyOne(pModule, NULL, &sigBuilder);
                 }
             }
         }
@@ -8870,6 +8845,14 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     //
     if (isGenericVirtual && needsMethodContext)
     {
+        if (info->pResolvedTokenVirtualMethod == nullptr)
+        {
+            // We don't have enough information to synthesize the token.
+            // Just bail.
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
+
         CORINFO_RESOLVED_TOKEN* const pTok = &info->resolvedTokenDevirtualizedMethod;
 
         pTok->tokenContext = info->context;
@@ -8881,13 +8864,11 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         pTok->hMethod = (CORINFO_METHOD_HANDLE)pDevirtMD;
         pTok->hField  = NULL;
 
-        // Devirtualization-synthesized tokens are handled in ComputeRuntimeLookupForSharedGenericToken
-        // when a runtime lookup needs to encode method the instantiation, so we don't need to provide
-        // the MethodSpec here.
         pTok->pTypeSpec    = NULL;
         pTok->cbTypeSpec   = 0;
-        pTok->pMethodSpec  = NULL;
-        pTok->cbMethodSpec = 0;
+        
+        pTok->pMethodSpec  = info->pResolvedTokenVirtualMethod->pMethodSpec;
+        pTok->cbMethodSpec = info->pResolvedTokenVirtualMethod->cbMethodSpec;
     }
 
     // Success! Pass back the results.

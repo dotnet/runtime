@@ -1295,6 +1295,8 @@ DONE:
             info->methodHnd                            = callInfo->hMethod;
             info->exactContextHnd                      = exactContextHnd;
             info->inlinersContext                      = compInlineContext;
+            info->methodSpec                           = pResolvedToken->pMethodSpec;
+            info->methodSpecSize                       = pResolvedToken->cbMethodSpec;
             call->AsCall()->gtLateDevirtualizationInfo = info;
         }
     }
