@@ -13599,7 +13599,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachable
         {
             // Each block starts with an empty table, and no available assertions
             //
-            optAssertionReset(0);
+            optAssertionReset();
             BitVecOps::ClearD(apTraits, apLocal);
             BitVecOps::ClearD(apTraits, apLocalPostorder);
         }

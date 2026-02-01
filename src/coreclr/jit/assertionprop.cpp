@@ -598,18 +598,23 @@ bool IntegralRange::Contains(int64_t value) const
 // GetAssertionDep: Retrieve the assertions on this local variable
 //
 // Arguments:
-//    lclNum - The local var id.
+//    lclNum    - The local var id.
+//    mustExist - If true, assert that the dependent assertions must exist.
 //
 // Return Value:
 //    The dependent assertions (assertions using the value of the local var)
 //    of the local var.
 //
 
-ASSERT_TP& Compiler::GetAssertionDep(unsigned lclNum)
+ASSERT_TP& Compiler::GetAssertionDep(unsigned lclNum, bool mustExist)
 {
     JitExpandArray<ASSERT_TP>& dep = *optAssertionDep;
     if (dep[lclNum] == nullptr)
     {
+        if (mustExist)
+        {
+            assert(!"No dependent assertions for local var");
+        }
         dep[lclNum] = BitVecOps::MakeEmpty(apTraits);
     }
     return dep[lclNum];
@@ -1705,15 +1710,6 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex, Ge
     }
 
     const AssertionDsc& candidateAssertion = optGetAssertion(assertionIndex);
-    if ((candidateAssertion.op1.kind == O1K_BOUND_OPER_BND) || (candidateAssertion.op1.kind == O1K_BOUND_LOOP_BND) ||
-        (candidateAssertion.op1.kind == O1K_CONSTANT_LOOP_BND) ||
-        (candidateAssertion.op1.kind == O1K_CONSTANT_LOOP_BND_UN))
-    {
-        AssertionDsc dsc = candidateAssertion;
-        dsc.ReverseEquality();
-        optAddAssertion(dsc);
-        return;
-    }
 
     if (candidateAssertion.assertionKind == OAK_EQUAL)
     {
@@ -1741,13 +1737,15 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex, Ge
             return;
         }
 
-        AssertionIndex index = optCreateAssertion(op1, op2, /*equals*/ false);
-        optMapComplementary(index, assertionIndex);
+        AssertionDsc reversed = candidateAssertion.ReverseEquality();
+        optMapComplementary(optAddAssertion(reversed), assertionIndex);
     }
     else if (candidateAssertion.assertionKind == OAK_NOT_EQUAL)
     {
-        AssertionIndex index = optCreateAssertion(op1, op2, /*equals*/ true);
-        optMapComplementary(index, assertionIndex);
+        // All OAK_EQUAL assertions are potentially useful
+
+        AssertionDsc reversed = candidateAssertion.ReverseEquality();
+        optMapComplementary(optAddAssertion(reversed), assertionIndex);
     }
 }
 
@@ -2211,17 +2209,14 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
         return index;
     }
 
-    if (!optLocalAssertionProp) // Seems to be not profitable for Local-AP
+    for (AssertionIndex index = 1; index <= optAssertionCount; ++index)
     {
-        for (AssertionIndex index = 1; index <= optAssertionCount; ++index)
+        // Make sure assertion kinds are complementary and op1, op2 kinds match.
+        const AssertionDsc& curAssertion = optGetAssertion(index);
+        if (curAssertion.Complementary(inputAssertion, !optLocalAssertionProp))
         {
-            // Make sure assertion kinds are complementary and op1, op2 kinds match.
-            const AssertionDsc& curAssertion = optGetAssertion(index);
-            if (curAssertion.Complementary(inputAssertion, !optLocalAssertionProp))
-            {
-                optMapComplementary(assertIndex, index);
-                return index;
-            }
+            optMapComplementary(assertIndex, index);
+            return index;
         }
     }
     return NO_ASSERTION_INDEX;
@@ -2244,7 +2239,8 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 //
 AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions)
 {
-    if (!optCanPropSubRange || !optLocalAssertionProp)
+    assert(optLocalAssertionProp); // Subrange assertions are local only.
+    if (!optCanPropSubRange)
     {
         return NO_ASSERTION_INDEX;
     }
@@ -4561,6 +4557,12 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
     // If we don't have a cast of a LCL_VAR then bail.
     if (!lcl->OperIs(GT_LCL_VAR))
     {
+        return nullptr;
+    }
+
+    if (!optLocalAssertionProp)
+    {
+        // optAssertionIsSubrange is only for local assertion prop.
         return nullptr;
     }
 

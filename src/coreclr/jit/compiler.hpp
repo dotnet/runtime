@@ -3828,50 +3828,34 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *  The following resets the assertions table used only during local assertion prop
  */
 
-inline void Compiler::optAssertionReset(AssertionIndex limit)
+inline void Compiler::optAssertionReset()
 {
+    assert(optLocalAssertionProp);
     assert(optAssertionCount <= optMaxAssertionCount);
-
-    while (optAssertionCount > limit)
+    while (optAssertionCount > 0)
     {
+        // We intentionally don't reset optAssertionDep here to reuse the allocated bitvectors.
+        // We just remove all elements from them.
+        //
         AssertionIndex      index        = optAssertionCount;
         const AssertionDsc& curAssertion = optGetAssertion(index);
         optAssertionCount--;
         unsigned lclNum = curAssertion.op1.lclNum;
         assert(lclNum < lvaCount);
-        BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
+        BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum, /*mustExist*/ true), index - 1);
 
         //
         // Find the Copy assertions
         //
-        if ((curAssertion.assertionKind == OAK_EQUAL) && (curAssertion.op1.kind == O1K_LCLVAR) &&
-            (curAssertion.op2.kind == O2K_LCLVAR_COPY))
+        if ((curAssertion.assertionKind == OAK_EQUAL) && (curAssertion.op2.kind == O2K_LCLVAR_COPY))
         {
+            assert(curAssertion.op1.kind == O1K_LCLVAR);
+
             //
             //  op2.lclNum no longer depends upon this assertion
             //
             lclNum = curAssertion.op2.lclNum;
-            BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
-        }
-    }
-    while (optAssertionCount < limit)
-    {
-        AssertionIndex      index        = ++optAssertionCount;
-        const AssertionDsc& curAssertion = optGetAssertion(index);
-        unsigned            lclNum       = curAssertion.op1.lclNum;
-        BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
-
-        //
-        // Check for Copy assertions
-        //
-        if ((curAssertion.assertionKind == OAK_EQUAL) && (curAssertion.op1.kind == O1K_LCLVAR) &&
-            (curAssertion.op2.kind == O2K_LCLVAR_COPY))
-        {
-            //
-            //  op2.lclNum now depends upon this assertion
-            //
-            lclNum = curAssertion.op2.lclNum;
-            BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
+            BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum, /*mustExist*/ true), index - 1);
         }
     }
 }

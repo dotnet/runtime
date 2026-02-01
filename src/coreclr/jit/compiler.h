@@ -7898,10 +7898,13 @@ public:
             return assertionKind == OAK_SUBRANGE && op1.kind == O1K_LCLVAR;
         }
 
-        void ReverseEquality()
+        AssertionDsc ReverseEquality() const
         {
             assert((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL));
-            assertionKind = assertionKind == OAK_EQUAL ? OAK_NOT_EQUAL : OAK_EQUAL;
+
+            AssertionDsc copy  = *this;
+            copy.assertionKind = assertionKind == OAK_EQUAL ? OAK_NOT_EQUAL : OAK_EQUAL;
+            return copy;
         }
 
         static bool ComplementaryKind(optAssertionKind kind, optAssertionKind kind2)
@@ -8263,11 +8266,11 @@ public:
     ValueNumToAssertsMap*                                                          optValueNumToAsserts;
 
     // Assertion prop helpers.
-    ASSERT_TP&          GetAssertionDep(unsigned lclNum);
+    ASSERT_TP&          GetAssertionDep(unsigned lclNum, bool mustExist = false);
     const AssertionDsc& optGetAssertion(AssertionIndex assertIndex) const;
     void                optAssertionInit(bool isLocalProp);
     void                optAssertionTraitsInit(AssertionIndex assertionCount);
-    void                optAssertionReset(AssertionIndex limit);
+    void                optAssertionReset();
 
     // Assertion prop data flow functions.
     PhaseStatus optAssertionPropMain();
