@@ -45,18 +45,34 @@ namespace System
 
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read,
+            return new UnixConsoleStream(OpenStandardInputHandle(), FileAccess.Read,
                                          useReadLine: !Console.IsInputRedirected);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDOUT_FILENO)), FileAccess.Write);
+            return new UnixConsoleStream(OpenStandardOutputHandle(), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)), FileAccess.Write);
+            return new UnixConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
+        }
+
+        public static SafeFileHandle OpenStandardInputHandle(bool verifyFd = true) => OpenStandardHandle(0, FileAccess.Read, verifyFd);
+
+        public static SafeFileHandle OpenStandardOutputHandle(bool verifyFd = true) => OpenStandardHandle(1, FileAccess.Write, verifyFd);
+
+        public static SafeFileHandle OpenStandardErrorHandle(bool verifyFd = true) => OpenStandardHandle(2, FileAccess.Write, verifyFd);
+
+        private static SafeFileHandle OpenStandardHandle(IntPtr fd, FileAccess access, bool verifyFd)
+        {
+            if (verifyFd && Interop.Sys.Fcntl.CheckAccess(fd, (int)access) == -1)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_InvalidHandle);
+            }
+
+            return new SafeFileHandle(fd, ownsHandle: false);
         }
 
         public static Encoding InputEncoding
@@ -671,7 +687,7 @@ namespace System
         /// </summary>
         public static bool IsInputRedirectedCore()
         {
-            return IsHandleRedirected(Interop.Sys.FileDescriptors.STDIN_FILENO);
+            return IsHandleRedirected(OpenStandardInputHandle(verifyFd: false));
         }
 
         /// <summary>Gets whether Console.Out is redirected.
@@ -679,7 +695,7 @@ namespace System
         /// </summary>
         public static bool IsOutputRedirectedCore()
         {
-            return IsHandleRedirected(Interop.Sys.FileDescriptors.STDOUT_FILENO);
+            return IsHandleRedirected(OpenStandardOutputHandle(verifyFd: false));
         }
 
         /// <summary>Gets whether Console.Error is redirected.
@@ -687,7 +703,7 @@ namespace System
         /// </summary>
         public static bool IsErrorRedirectedCore()
         {
-            return IsHandleRedirected(Interop.Sys.FileDescriptors.STDERR_FILENO);
+            return IsHandleRedirected(OpenStandardErrorHandle(verifyFd: false));
         }
 
         /// <summary>Creates an encoding from the current environment.</summary>
@@ -889,8 +905,8 @@ namespace System
                     // This also resets it for termination due to an unhandled exception.
                     AppDomain.CurrentDomain.UnhandledException += (_, _) => { Interop.Sys.UninitializeTerminal(); };
 
-                    s_terminalHandle = !Console.IsOutputRedirected ? Interop.Sys.FileDescriptors.STDOUT_FILENO :
-                                       !Console.IsInputRedirected  ? Interop.Sys.FileDescriptors.STDIN_FILENO :
+                    s_terminalHandle = !Console.IsOutputRedirected ? OpenStandardOutputHandle(verifyFd: false) :
+                                       !Console.IsInputRedirected  ? OpenStandardInputHandle(verifyFd: false) :
                                        null;
 
                     // Provide the native lib with the correct code from the terminfo to transition us into
@@ -1108,7 +1124,7 @@ namespace System
         // DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is set.
         // In both cases, they are written to stdout.
         internal static void WriteTerminalAnsiColorString(string? value)
-            => WriteTerminalAnsiString(value, Interop.Sys.FileDescriptors.STDOUT_FILENO, mayChangeCursorPosition: false);
+            => WriteTerminalAnsiString(value, OpenStandardOutputHandle(verifyFd: false), mayChangeCursorPosition: false);
 
         /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
         /// <param name="value">The string to write.</param>

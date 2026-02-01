@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -88,6 +89,41 @@ namespace System
             byte junkByte = 0x41;
             int r = Interop.Kernel32.WriteFile(outErrHandle, &junkByte, 0, out _, IntPtr.Zero);
             return r != 0; // In Win32 apps w/ no console, bResult should be 0 for failure.
+        }
+
+        // Checks whether stdin is readable.  Do NOT pass
+        // stdout or stderr here!
+        private static unsafe bool ConsoleHandleIsReadable(IntPtr inHandle)
+        {
+            // Windows apps may have non-null valid looking handle values for
+            // stdin, stdout and stderr, but they may not be readable or
+            // writable.  Verify this by calling ReadFile in the
+            // appropriate modes. This must handle console-less Windows apps.
+            int r = Interop.Kernel32.ReadFile(inHandle, null, 0, out _, IntPtr.Zero);
+            return r != 0; // In Win32 apps w/ no console, bResult should be 0 for failure.
+        }
+
+        public static SafeFileHandle OpenStandardInputHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE);
+
+        public static SafeFileHandle OpenStandardOutputHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_OUTPUT_HANDLE);
+
+        public static SafeFileHandle OpenStandardErrorHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_ERROR_HANDLE);
+
+        private static SafeFileHandle OpenStandardHandle(int handleType)
+        {
+            IntPtr handle = Interop.Kernel32.GetStdHandle(handleType);
+            bool isReadable = handleType == Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE;
+
+            // If someone launches a managed process via CreateProcess, stdin/stdout/stderr
+            // could be set to INVALID_HANDLE_VALUE or they might use 0 as an invalid handle.
+            // We also need to ensure that the handle is readable (for stdin) or writable (for stdout/stderr).
+            if (handle == IntPtr.Zero || handle == InvalidHandleValue
+                || (isReadable ? !ConsoleHandleIsReadable(handle) : !ConsoleHandleIsWritable(handle)))
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_InvalidHandle);
+            }
+
+            return new SafeFileHandle(handle, ownsHandle: false);
         }
 
         public static Encoding InputEncoding
