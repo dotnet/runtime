@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+    <IlasmFlags>$(IlasmFlags) -ERR</IlasmFlags>
   </PropertyGroup>
 
   <ItemGroup>
