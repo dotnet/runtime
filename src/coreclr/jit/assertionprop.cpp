@@ -1520,37 +1520,6 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
         return NO_ASSERTION_INDEX;
     }
 
-    if (!optLocalAssertionProp)
-    {
-        // Ignore VN-based assertions with NoVN
-        switch (newAssertion.op1.kind)
-        {
-            case O1K_LCLVAR:
-            case O1K_VN:
-            case O1K_BOUND_OPER_BND:
-            case O1K_BOUND_LOOP_BND:
-            case O1K_CONSTANT_LOOP_BND:
-            case O1K_CONSTANT_LOOP_BND_UN:
-            case O1K_EXACT_TYPE:
-            case O1K_SUBTYPE:
-                if (newAssertion.op1.vn == ValueNumStore::NoVN)
-                {
-                    return NO_ASSERTION_INDEX;
-                }
-                break;
-            case O1K_ARR_BND:
-                if ((newAssertion.op1.bnd.vnIdx == ValueNumStore::NoVN) ||
-                    (newAssertion.op1.bnd.vnLen == ValueNumStore::NoVN))
-                {
-                    return NO_ASSERTION_INDEX;
-                }
-                break;
-
-            default:
-                break;
-        }
-    }
-
     // See if we already have this assertion in the table.
     //
     // For local assertion prop we can speed things up by checking the dep vector.
@@ -2272,9 +2241,8 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 //
 AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions)
 {
-    if (!optCanPropSubRange)
+    if (!optCanPropSubRange || !optLocalAssertionProp)
     {
-        // (don't early out in checked, verify above)
         return NO_ASSERTION_INDEX;
     }
 
@@ -2286,11 +2254,7 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
         const AssertionDsc&  curAssertion = optGetAssertion(index);
         if (curAssertion.CanPropSubRange())
         {
-            // For local assertion prop use comparison on locals, and use comparison on vns for global prop.
-            bool isEqual = optLocalAssertionProp
-                               ? (curAssertion.op1.lclNum == tree->AsLclVarCommon()->GetLclNum())
-                               : (curAssertion.op1.vn == vnStore->VNConservativeNormalValue(tree->gtVNPair));
-            if (!isEqual)
+            if (curAssertion.op1.lclNum != tree->AsLclVarCommon()->GetLclNum())
             {
                 continue;
             }

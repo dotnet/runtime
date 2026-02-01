@@ -8022,12 +8022,15 @@ public:
             if (comp->optLocalAssertionProp)
             {
                 assert(lclNum != BAD_VAR_NUM);
+
+                // TODO-Cleanup: We need to introduce getters for op1.vn and op2.vn that validate that we don't use
+                // these outside of their intended context (only certain kinds of assertions and only in global-AP).
                 dsc.op1.vn     = ValueNumStore::NoVN;
                 dsc.op2.vn     = ValueNumStore::NoVN;
                 dsc.op1.lclNum = lclNum;
 
                 // TODO-Quirk: Somewhere in local-AP we check op2.vn for being ValueNumStore::VNForNull
-                // while we shouldn't. Remove it.
+                // while we shouldn't. It is left here for zero-diff with previous behavior.
                 if (cnsVN == ValueNumStore::VNForNull())
                 {
                     dsc.op2.vn = ValueNumStore::VNForNull();
@@ -8037,7 +8040,7 @@ public:
             {
                 assert(vn != ValueNumStore::NoVN);
                 assert(cnsVN != ValueNumStore::NoVN);
-                dsc.op1.lclNum = BAD_VAR_NUM;
+                dsc.op1.lclNum = BAD_VAR_NUM; // same as above
                 dsc.op1.vn     = vn;
                 dsc.op2.vn     = cnsVN;
             }
@@ -8090,6 +8093,10 @@ public:
             dsc.op2.vn        = ValueNumStore::NoVN;
             dsc.op2.lclNum    = lclNum2;
             dsc.op2.kind      = O2K_LCLVAR_COPY;
+
+            // TODO-Cleanup: We need to introduce getters for op1.vn and op2.vn that validate that we don't use these
+            // outside of their intended context (only certain kinds of assertions and only in global-AP).
+
             return dsc;
         }
 
@@ -8102,9 +8109,7 @@ public:
             AssertionDsc dsc  = {};
             dsc.assertionKind = OAK_SUBRANGE;
             dsc.op1.kind      = O1K_LCLVAR;
-            dsc.op1.vn        = ValueNumStore::NoVN;
             dsc.op1.lclNum    = lclNum;
-            dsc.op2.vn        = ValueNumStore::NoVN;
             dsc.op2.kind      = O2K_SUBRANGE;
             dsc.op2.u2        = range;
             return dsc;
@@ -8124,7 +8129,6 @@ public:
 
             AssertionDsc dsc   = {};
             dsc.assertionKind  = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
-            dsc.op1.lclNum     = BAD_VAR_NUM;
             dsc.op1.vn         = op1VN;
             dsc.op2.vn         = op2VN;
             dsc.op1.kind       = O1K_VN;
