@@ -73,6 +73,29 @@ namespace System.IO.Compression
             ExtractToFileFinalize(source, destinationFileName);
         }
 
+
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, string password) =>
+            ExtractToFile(source, destinationFileName, false, password);
+
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite, string password)
+        {
+            ExtractToFileInitialize(source, destinationFileName, overwrite, out FileStreamOptions fileStreamOptions);
+
+            using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
+            {
+                if (!string.IsNullOrEmpty(password))
+                {
+                    using (Stream es = source.Open(password))
+                        es.CopyTo(fs);
+                }
+                else
+                    using (Stream es = source.Open())
+                        es.CopyTo(fs);
+            }
+
+            ExtractToFileFinalize(source, destinationFileName);
+        }
+
         private static void ExtractToFileInitialize(ZipArchiveEntry source, string destinationFileName, bool overwrite, out FileStreamOptions fileStreamOptions)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -137,14 +160,17 @@ namespace System.IO.Compression
             return true; // It is a file
         }
 
-        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite)
+        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, string? password = null)
         {
             if (ExtractRelativeToDirectoryCheckIfFile(source, destinationDirectoryName, out string fileDestinationPath))
             {
                 // If it is a file:
                 // Create containing directory:
                 Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
-                source.ExtractToFile(fileDestinationPath, overwrite: overwrite);
+                if (!string.IsNullOrEmpty(password))
+                    source.ExtractToFile(fileDestinationPath, overwrite: overwrite, password: password);
+                else
+                    source.ExtractToFile(fileDestinationPath, overwrite: overwrite);
             }
         }
     }
