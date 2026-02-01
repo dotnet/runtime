@@ -133,7 +133,7 @@
     <value>Invalid member reference.</value>
   </data>
   <data name="Serialization_InvalidTypeName" xml:space="preserve">
-    <value>Invalid type name '{0}'.</value>
+    <value>Invalid type name.</value>
   </data>
   <data name="Serialization_TypeMismatch" xml:space="preserve">
     <value>Expected the array to be of type {0}, but its element type was {1}.</value>

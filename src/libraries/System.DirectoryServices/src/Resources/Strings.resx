@@ -348,7 +348,7 @@
         <value>The specified name is not a forest, Active Directory domain controller, ADAM instance, or ADAM configuration set.</value>
     </data>
     <data name="ServerNotAReplica" xml:space="preserve">
-        <value>The directory server does not host the specified application partition '{0}'.</value>
+        <value>The directory server does not host the specified application partition.</value>
     </data>
     <data name="AppNCNotFound" xml:space="preserve">
         <value>The specified application partition does not exist.</value>

@@ -1018,7 +1018,7 @@
     <value>Resolved assembly's simple name must be the same as of the requested assembly.</value>
   </data>
   <data name="Argument_CustomCultureCannotBePassedByNumber" xml:space="preserve">
-    <value>Customized cultures cannot be passed by LCID, only by name. Value: {0}.</value>
+    <value>Customized cultures cannot be passed by LCID, only by name.</value>
   </data>
   <data name="Argument_CustomModifierLengthInvalidLength" xml:space="preserve">
     <value>Custom modifiers length '{0}' does not match the size of the arguments.</value>

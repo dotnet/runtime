@@ -121,6 +121,9 @@
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>
   <data name="Argument_AddingDuplicate" xml:space="preserve">
+    <value>An item with the same key has already been added.</value>
+  </data>
+  <data name="Argument_AddingDuplicateWithKey" xml:space="preserve">
     <value>An item with the same key has already been added. Key: {0}</value>
   </data>
   <data name="FileNotFound_AssemblyNotFound" xml:space="preserve">

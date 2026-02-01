@@ -160,7 +160,7 @@
     <value>'{0}' must be specified to accept the connection.</value>
   </data>
   <data name="net_quic_timeout_use_gt_zero" xml:space="preserve">
-    <value>{0} can only be set to 'System.Threading.Timeout.Infinite' or a value &gt; 0.</value>
+    <value>Timeout can only be set to 'System.Threading.Timeout.Infinite' or a value &gt; 0.</value>
   </data>
   <data name="net_quic_unsupported_endpoint_type" xml:space="preserve">
     <value>'{0}' in not supported remote endpoint type, expected IP or DNS endpoint."</value>

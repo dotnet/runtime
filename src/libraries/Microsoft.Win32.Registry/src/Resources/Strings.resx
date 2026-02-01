@@ -74,7 +74,7 @@
     <value>Registry HKEY was out of the legal range.</value>
   </data>
   <data name="Arg_RegKeyNotFound" xml:space="preserve">
-    <value>The specified registry key does not exist. Error: {0}.</value>
+    <value>The specified registry key does not exist.</value>
   </data>
   <data name="Arg_RegKeyStrLenBug" xml:space="preserve">
     <value>Registry key names should not be greater than 255 characters.</value>

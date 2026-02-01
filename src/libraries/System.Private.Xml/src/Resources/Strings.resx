@@ -2815,7 +2815,7 @@
     <value>The '{0}' element has an invalid value according to its data type.</value>
   </data>
   <data name="XmlInternalError" xml:space="preserve">
-    <value>Internal error: {0}.</value>
+    <value>Internal error.</value>
   </data>
   <data name="XmlInternalErrorDetails" xml:space="preserve">
     <value>Internal error: {0}.</value>
