@@ -2739,13 +2739,22 @@ Parameters:
 --*/
 #ifdef HOST_ANDROID
 #include <minipal/log.h>
+extern "C" void LogCallstackForAndroidNativeCrash() __attribute__((weak));
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
     // Preserve context pointer to prevent optimization
     DoNotOptimize(&context);
 
-    // TODO: Dump all managed threads callstacks into logcat and/or file?
+    if (LogCallstackForAndroidNativeCrash != nullptr)
+    {
+        minipal_log_write_fatal("\n=================================================================\n");
+        minipal_log_write_fatal("\tManaged Stacktrace:\n");
+        minipal_log_write_fatal("=================================================================\n");
+        LogCallstackForAndroidNativeCrash();
+        minipal_log_write_fatal("=================================================================\n");
+    }
+
     // TODO: Dump stress log into logcat and/or file when enabled?
     minipal_log_write_fatal("Aborting process.\n");
 }
