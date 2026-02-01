@@ -1827,9 +1827,8 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         return NO_ASSERTION_INDEX;
     }
-    ValueNum relopVN = vnStore->VNConservativeNormalValue(relop->gtVNPair);
 
-    ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
+    ValueNum relopVN = vnStore->VNConservativeNormalValue(relop->gtVNPair);
 
     // Cases where op1 holds the lhs of the condition and op2 holds the bound arithmetic.
     // Loop condition like: "i < bnd +/-k"
@@ -1841,19 +1840,22 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
+
     // Cases where op1 holds the lhs of the condition op2 holds the bound.
     // Loop condition like "i < bnd"
     // Assertion: "i < bnd != 0"
-    else if (vnStore->IsVNCompareCheckedBound(relopVN))
+    if (vnStore->IsVNCompareCheckedBound(relopVN))
     {
         AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBoundArith(this, relopVN, /*withArith*/ false);
         AssertionIndex index = optAddAssertion(dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
+
     // Loop condition like "(uint)i < (uint)bnd" or equivalent
     // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
-    else if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
+    ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
+    if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
     {
         ValueNum idxVN = vnStore->VNNormalValue(unsignedCompareBnd.vnIdx);
         ValueNum lenVN = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
@@ -1868,23 +1870,28 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         }
         return index;
     }
+
     // Cases where op1 holds the lhs of the condition op2 holds rhs.
     // Loop condition like "i < 100"
     // Assertion: "i < 100 != 0"
-    else if (vnStore->IsVNConstantBound(relopVN))
+    if (vnStore->IsVNConstantBound(relopVN))
     {
         AssertionDsc   dsc   = AssertionDsc::CreateConstantLoopBound(this, relopVN, /*isUnsigned*/ false);
         AssertionIndex index = optAddAssertion(dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
-    else if (vnStore->IsVNConstantBoundUnsigned(relopVN))
+
+    // Same as above but for unsigned comparisons.
+    // Assertion: "i u< 100 != 0"
+    if (vnStore->IsVNConstantBoundUnsigned(relopVN))
     {
         AssertionDsc   dsc   = AssertionDsc::CreateConstantLoopBound(this, relopVN, /*isUnsigned*/ true);
         AssertionIndex index = optAddAssertion(dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
+
     return NO_ASSERTION_INDEX;
 }
 
@@ -1900,8 +1907,6 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
-    bool equals = true;
-
     AssertionInfo info = optCreateJTrueBoundsAssertion(tree);
     if (info.HasAssertion())
     {
@@ -1914,6 +1919,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     // Find assertion kind.
+    bool equals;
     switch (relop->gtOper)
     {
         case GT_EQ:
@@ -2043,10 +2049,9 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     // Also note The CASTCLASS helpers won't appear in predicates as they throw on failure.
     // So the helper list here is smaller than the one in optAssertionProp_Call.
     //
-    if ((call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFINTERFACE)) ||
-        (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFARRAY)) ||
-        (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFCLASS)) ||
-        (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFANY)))
+    CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+    if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
+        (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY))
     {
         GenTree* objectNode      = call->gtArgs.GetUserArgByIndex(1)->GetNode();
         GenTree* methodTableNode = call->gtArgs.GetUserArgByIndex(0)->GetNode();
