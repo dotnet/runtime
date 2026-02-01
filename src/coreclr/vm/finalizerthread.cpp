@@ -57,7 +57,8 @@ extern "C" void SystemJS_ExecuteFinalizationCallback()
     INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
     {
         GCX_COOP();
-        ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
+        // TODO-WASM https://github.com/dotnet/runtime/issues/123712
+        // ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
     }
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 }
