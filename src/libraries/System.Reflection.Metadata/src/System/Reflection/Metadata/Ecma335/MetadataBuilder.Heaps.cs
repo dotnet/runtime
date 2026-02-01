@@ -129,7 +129,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             _createBlobBuilderFunc = createBlobBuilderFunc ?? (capacity => new BlobBuilder(capacity));
             _userStringBuilder = _createBlobBuilderFunc(4 * 1024);
-            _guidBuilder = _createBlobBuilderFunc(16); // full metadata has just a single guid
+            _guidBuilder = _createBlobBuilderFunc(BlobUtilities.SizeOfGuid); // full metadata has just a single guid
 
             // Add zero-th entry to all heaps, even in EnC delta.
             // We don't want generation-relative handles to ever be IsNil.
