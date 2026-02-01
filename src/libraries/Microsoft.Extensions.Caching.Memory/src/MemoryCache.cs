@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private readonly List<Stats>? _allStats;
         private long _accumulatedHits;
         private long _accumulatedMisses;
-        private readonly ThreadLocal<StatsHandle>? _stats;
+        private readonly ThreadLocal<StatsHandler>? _stats;
         private CoherentState _coherentState;
         private bool _disposed;
         private DateTime _lastExpirationScan;
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Caching.Memory
             if (_options.TrackStatistics)
             {
                 _allStats = new List<Stats>();
-                _stats = new ThreadLocal<StatsHandle>(() => new StatsHandle(this));
+                _stats = new ThreadLocal<StatsHandler>(() => new StatsHandler(this));
             }
 
             _lastExpirationScan = UtcNow;
@@ -418,16 +418,16 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private Stats GetStats() => _stats!.Value!.Stats;
 
-        internal class StatsHandle
+        internal sealed class StatsHandler
         {
-            public StatsHandle(MemoryCache memoryCache)
+            public StatsHandler(MemoryCache memoryCache)
             {
-                Stats = new Stats(memoryCache, this);
+                Stats = new Stats(memoryCache);
             }
 
             public Stats Stats { get; private set; }
 
-            ~StatsHandle() => Stats.RemoveFromStats();
+            ~StatsHandler() => Stats.RemoveFromStats();
         }
 
 
@@ -436,11 +436,9 @@ namespace Microsoft.Extensions.Caching.Memory
             private readonly MemoryCache _memoryCache;
             public long Hits;
             public long Misses;
-            public WeakReference<StatsHandle> Handle { get; private set; }
 
-            public Stats(MemoryCache memoryCache, StatsHandle statsHandle)
+            public Stats(MemoryCache memoryCache)
             {
-                Handle = new WeakReference<StatsHandle>(statsHandle);
                 _memoryCache = memoryCache;
                 _memoryCache.AddToStats(this);
             }
