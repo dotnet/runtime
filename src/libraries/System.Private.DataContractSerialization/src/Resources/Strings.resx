@@ -130,7 +130,7 @@
     <value>Cannot deserialize since root element references unrecognized object with id '{0}'.</value>
   </data>
   <data name="CannotLoadMemberType" xml:space="preserve">
-    <value>Cannot load member type '{0}'.</value>
+    <value>Cannot load member type '{0}' for '{1}.{2}'.</value>
   </data>
   <data name="CannotSerializeObjectWithCycles" xml:space="preserve">
     <value>Object graph for type '{0}' contains cycles and cannot be serialized if references are not tracked. Consider using the DataContractAttribute with the IsReference property set to true.</value>
@@ -343,7 +343,7 @@
     <value>Type '{0}' is not a valid serializable type.</value>
   </data>
   <data name="InvalidReturnTypeOnGetSchemaMethod" xml:space="preserve">
-    <value>Method '{0}.{1}()' returns '{2}'. The return type must be compatible with '{3}'.</value>
+    <value>Method '{0}.{1}()' returns '{2}'. The return type must be compatible with '{3}' or '{4}'.</value>
   </data>
   <data name="InvalidSizeDefinition" xml:space="preserve">
     <value>Invalid Size '{0}'. Must be non-negative integer.</value>
@@ -1201,7 +1201,7 @@
     <value>Using surrogates with get-only collection properties is not supported.  Consider removing the surrogate associated with '{0}' or adding a setter to '{1}.{2}'.</value>
   </data>
   <data name="AbstractElementNotSupported" xml:space="preserve">
-    <value>The element cannot have 'abstract' set to 'true'.</value>
+    <value>The element '{0}' cannot have 'abstract' set to 'true'.</value>
   </data>
   <data name="AbstractTypeNotSupported" xml:space="preserve">
     <value>The type cannot have 'abstract' set to 'true'.</value>

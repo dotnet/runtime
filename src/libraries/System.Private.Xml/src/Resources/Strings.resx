@@ -685,7 +685,7 @@
     <value>line-feed (#xA) or tab (#x9) characters, leading or trailing spaces and sequences of one or more spaces (#x20) are not allowed in 'xs:token'.</value>
   </data>
   <data name="Sch_InvalidDateTimeOption" xml:space="preserve">
-    <value>The '{0}' value for the 'dateTimeOption' parameter is not an allowed value for the 'XmlDateTimeSerializationMode' enumeration.</value>
+    <value>The '{0}' value for the '{1}' parameter is not an allowed value for the 'XmlDateTimeSerializationMode' enumeration.</value>
   </data>
   <data name="Sch_StandAloneNormalization" xml:space="preserve">
     <value>StandAlone is 'yes' and the value of the attribute '{0}' contains a definition in an external document that changes on normalization.</value>
@@ -2299,7 +2299,7 @@
     <value>Cannot serialize member '{0}' of type {1}. XmlAttribute/XmlText cannot be used to encode types implementing {2}.</value>
   </data>
   <data name="XmlIllegalAttributeFlagsArray" xml:space="preserve">
-    <value>XmlAttribute cannot be used to encode array of {1}, because it is marked with FlagsAttribute.</value>
+    <value>XmlAttribute cannot be used to encode array of {0}, because it is marked with FlagsAttribute.</value>
   </data>
   <data name="XmlIllegalAnyElement" xml:space="preserve">
     <value>Cannot serialize member of type {0}: XmlAnyElement can only be used with classes of type XmlNode or a type deriving from XmlNode.</value>
@@ -2422,7 +2422,7 @@
     <value>SOAP-ENC:arrayType has mismatched brackets.</value>
   </data>
   <data name="XmlInvalidArrayLength" xml:space="preserve">
-    <value>SOAP-ENC:arrayType could not handle '{1}' as the length of the array.</value>
+    <value>SOAP-ENC:arrayType could not handle '{0}' as the length of the array.</value>
   </data>
   <data name="XmlMissingHref" xml:space="preserve">
     <value>The referenced element with ID '{0}' is located outside the current document and cannot be retrieved.</value>
@@ -2584,7 +2584,7 @@
     <value>Value of {0} mismatches the type of {1}; you need to set it to {2}.</value>
   </data>
   <data name="XmlArrayItemAmbiguousTypes" xml:space="preserve">
-    <value>Ambiguous types specified for member '{0}'.  Items '{1}' and '{2}' have the same type.  Please consider using {3} with {4} instead.</value>
+    <value>Ambiguous types specified for member '{0}'.  Items '{1}' and '{2}' have the same type.  Please consider using {3} with {4} instead. Member: '{5}'.</value>
   </data>
   <data name="XmlUnsupportedInterface" xml:space="preserve">
     <value>Cannot serialize interface {0}.</value>
@@ -2623,7 +2623,7 @@
     <value>Invalid reference id='{0}'. Object of type {1} cannot be stored in an array of this type. Details: array index={2}.</value>
   </data>
   <data name="XmlInvalidNullCast" xml:space="preserve">
-    <value>Cannot assign null value to an object of type {1}.</value>
+    <value>Cannot assign null value to an object of type {0}.</value>
   </data>
   <data name="XmlMultipleXmlns" xml:space="preserve">
     <value>Cannot serialize object of type '{0}' because it has multiple XmlNamespaceDeclarations attributes.</value>
@@ -2728,7 +2728,7 @@
     <value>You must implement public static {0}({1}) method on {2}.</value>
   </data>
   <data name="XmlGetSchemaMethodReturnType" xml:space="preserve">
-    <value>Method {0}.{1}() specified by {2} has invalid signature: return type must be compatible with {3}.</value>
+    <value>Method {0}.{1}() specified by {2} has invalid signature: return type must be compatible with {3} or {4}.</value>
   </data>
   <data name="XmlGetSchemaEmptyTypeName" xml:space="preserve">
     <value>{0}.{1}() must return a valid type name.</value>
@@ -2815,7 +2815,7 @@
     <value>The '{0}' element has an invalid value according to its data type.</value>
   </data>
   <data name="XmlInternalError" xml:space="preserve">
-    <value>Internal error.</value>
+    <value>Internal error: {0}.</value>
   </data>
   <data name="XmlInternalErrorDetails" xml:space="preserve">
     <value>Internal error: {0}.</value>

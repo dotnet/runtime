@@ -316,7 +316,7 @@
     <value>The JSON value of length {0} is too large and not supported.</value>
   </data>
   <data name="ZeroDepthAtEnd" xml:space="preserve">
-    <value>Expected depth to be zero at the end of the JSON payload. There is an open JSON object or array that should be closed.</value>
+    <value>Expected depth to be zero at the end of the JSON payload. There is an open JSON object or array that should be closed. Current depth: {0}.</value>
   </data>
   <data name="DeserializeUnableToConvertValue" xml:space="preserve">
     <value>The JSON value could not be converted to {0}.</value>

@@ -130,7 +130,7 @@
     <value>{0} is not a valid value for {1}.</value>
   </data>
   <data name="ConvertToException" xml:space="preserve">
-    <value>'{0}' is unable to convert '{1}' to '{2}'.</value>
+    <value>'{0}' is unable to convert '{1}'.</value>
   </data>
   <data name="EnumConverterInvalidValue" xml:space="preserve">
     <value>The value '{0}' is not a valid value for the enum '{1}'.</value>
