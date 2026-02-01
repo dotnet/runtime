@@ -8941,7 +8941,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // materialize the correct instantiation argument for the implementing method.
     if (gvmNeedsInstParamRuntimeLookup)
     {
-        if ((pDerivedResolvedToken == nullptr) || (pDerivedResolvedToken->tokenScope == nullptr))
+        if (pDerivedResolvedToken->tokenScope == nullptr)
         {
             JITDUMP("Generic virtual method devirt: missing derived token for runtime lookup, sorry.\n");
             return;
