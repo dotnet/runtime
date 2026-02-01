@@ -267,7 +267,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             nameof(LocalDataFlow) + "." + nameof(GetWithPublicFields) + "()")]
         // ILLink produces extraneous warnings
         [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicFields) + "(String)",
-            nameof(LocalDataFlow) + "." + nameof(GetWithPublicMethods) + "()", Tool.Trimmer, "")]
+            nameof(LocalDataFlow) + "." + nameof(GetWithPublicMethods) + "()", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119110")]
         public static void TestBranchMergeFinally()
         {
             string str = GetWithPublicMethods();
@@ -288,7 +288,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         // Analyzer gets this right (no warning), but trimmer merges all branches going forward.
-        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicFields) + "(String)", Tool.Trimmer, "")]
+        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicFields) + "(String)", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119110")]
         public static void TestBranchGoto()
         {
             string str = GetWithPublicMethods();
@@ -301,7 +301,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         // Analyzer gets this right (no warning), but trimmer merges all branches going forward.
-        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicFields), Tool.Trimmer, "")]
+        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicFields), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119110")]
         public static void TestBranchIf()
         {
             string str = GetWithPublicMethods();
@@ -313,7 +313,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         // Analyzer gets this right (no warning), but trimmer merges all branches going forward.
-        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicFields), Tool.Trimmer, "")]
+        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicFields), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119110")]
         public static void TestBranchIfElse()
         {
             string str;
@@ -332,12 +332,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         // Analyzer gets this right (no warning), but trimmer merges all branches going forward.
-        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresNonPublicMethods) + "(String)", Tool.Trimmer, "")]
-        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicMethods) + "(String)", Tool.Trimmer, "")]
-        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicMethods) + "(String)", Tool.Trimmer, "")]
-        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicConstructors) + "(String)", Tool.Trimmer, "")]
-        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicConstructors) + "(String)", Tool.Trimmer, "")]
-        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicConstructors) + "(String)", Tool.Trimmer, "")]
+        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresNonPublicMethods) + "(String)", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119110")]
+        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicMethods) + "(String)", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119110")]
+        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicMethods) + "(String)", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119110")]
+        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicConstructors) + "(String)", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119110")]
+        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicConstructors) + "(String)", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119110")]
+        [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicConstructors) + "(String)", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119110")]
         public static void TestBranchSwitch()
         {
             string str = null;
@@ -364,7 +364,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         // Analyzer gets this right (no warning), but trimmer merges all branches going forward.
         [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicFields),
-            nameof(LocalDataFlow) + "." + nameof(GetWithPublicMethods) + "()", Tool.Trimmer, "")]
+            nameof(LocalDataFlow) + "." + nameof(GetWithPublicMethods) + "()", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119110")]
         public static void TestBranchTry()
         {
             string str = GetWithPublicMethods();
@@ -383,7 +383,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         // Analyzer gets this right (no warning), but trimmer merges all branches going forward.
         [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicFields),
-            nameof(LocalDataFlow) + "." + nameof(GetWithPublicMethods) + "()", Tool.Trimmer, "")]
+            nameof(LocalDataFlow) + "." + nameof(GetWithPublicMethods) + "()", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119110")]
         public static void TestBranchCatch()
         {
             string str = GetWithPublicMethods();
@@ -401,7 +401,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         // Analyzer gets this right (no warning), but trimmer merges all branches going forward.
         [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicFields),
-            nameof(LocalDataFlow) + "." + nameof(GetWithPublicMethods) + "()", Tool.Trimmer, "")]
+            nameof(LocalDataFlow) + "." + nameof(GetWithPublicMethods) + "()", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119110")]
         public static void TestBranchFinally()
         {
             string str = GetWithPublicMethods();
@@ -422,7 +422,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         // Analyzer gets this right, but ILLink doesn't consider backwards branches.
         [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
-            nameof(LocalDataFlow) + "." + nameof(GetWithPublicFields) + "()", Tool.Analyzer, "")]
+            nameof(LocalDataFlow) + "." + nameof(GetWithPublicFields) + "()", Tool.Analyzer, "Analyzer limitation in extension method analysis")]
         public static void TestBackwardsEdgeLoop()
         {
             string str = GetWithPublicMethods();
@@ -439,7 +439,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         // Analyzer gets this right, but ILLink doesn't consider backwards branches.
         [ExpectedWarning("IL2072", nameof(DataFlowStringExtensions) + "." + nameof(DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
-            nameof(LocalDataFlow) + "." + nameof(GetWithPublicFields) + "()", Tool.Analyzer, "")]
+            nameof(LocalDataFlow) + "." + nameof(GetWithPublicFields) + "()", Tool.Analyzer, "Analyzer limitation in extension method analysis")]
         public static void TestBackwardsEdgeGoto()
         {
             string str = null;
