@@ -14,7 +14,7 @@ using Microsoft.Interop.UnitTests;
 using Xunit;
 
 using StringMarshalling = Microsoft.Interop.StringMarshalling;
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.LibraryImportDiagnosticsAnalyzer>;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -41,7 +41,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupported)
                     .WithLocation(0)
                     .WithArguments("NS.MyClass", "c"),
@@ -71,7 +71,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupported)
                     .WithLocation(0)
                     .WithArguments("NS.MyClass", "Method1"),
@@ -93,7 +93,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
                     .WithArguments("Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.", "c"),
@@ -118,7 +118,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
                     .WithLocation(0)
                     .WithArguments("Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.", "Method1"),
@@ -143,7 +143,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsParameterConfigurationNotSupported)
                     .WithLocation(0)
                     .WithArguments(nameof(MarshalAsAttribute), "i1"),
@@ -170,7 +170,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsReturnConfigurationNotSupported)
                     .WithLocation(0)
                     .WithArguments(nameof(MarshalAsAttribute), "Method1"),
@@ -196,7 +196,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationValueNotSupported)
                     .WithLocation(0)
                     .WithArguments(1, nameof(UnmanagedType)),
@@ -228,7 +228,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
                     .WithLocation(0)
                     .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.SafeArraySubType)}"),
@@ -269,7 +269,7 @@ namespace LibraryImportGenerator.UnitTests
                     .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}")
             ];
 
-            var test = new Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<DownlevelLibraryImportGenerator>.Test(TestTargetFramework.Standard2_0)
+            var test = new Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<DownlevelLibraryImportGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>.Test(TestTargetFramework.Standard2_0)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
@@ -302,7 +302,7 @@ namespace LibraryImportGenerator.UnitTests
                 """;
 
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidStringMarshallingConfiguration)
                     .WithLocation(0)
                     .WithArguments("Method1", "'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'."),
@@ -327,7 +327,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidAttributedMethodSignature)
                     .WithLocation(0)
                     .WithArguments("Method"),
@@ -349,13 +349,10 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidAttributedMethodSignature)
                     .WithLocation(0)
-                    .WithArguments("Method"),
-                // Generator ignores the method
-                DiagnosticResult.CompilerError("CS8795")
-                    .WithLocation(0));
+                    .WithArguments("Method"));
         }
 
         [Fact]
@@ -374,18 +371,13 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidAttributedMethodSignature)
                     .WithLocation(0)
                     .WithArguments("Method1"),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidAttributedMethodSignature)
                     .WithLocation(1)
-                    .WithArguments("Method2"),
-                // Generator ignores the method
-                DiagnosticResult.CompilerError("CS8795")
-                    .WithLocation(0),
-                DiagnosticResult.CompilerError("CS8795")
-                    .WithLocation(1));
+                    .WithArguments("Method2"));
         }
 
         [Theory]
@@ -404,16 +396,10 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers)
                     .WithLocation(0)
-                    .WithArguments("Method", "Test"),
-                // Generator ignores the method
-                DiagnosticResult.CompilerError("CS8795")
-                    .WithLocation(0),
-                // Also expect CS0751: A partial method must be declared within a partial type
-                DiagnosticResult.CompilerError("CS0751")
-                    .WithLocation(0));
+                    .WithArguments("Method", "Test"));
         }
 
         [Theory]
@@ -435,7 +421,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifySourceGeneratorAsync(source,
+            await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers)
                     .WithLocation(0)
                     .WithArguments("Method", "Test"));
