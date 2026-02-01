@@ -10,10 +10,22 @@
 #include "dotenv.hpp"
 
 #ifdef TARGET_WASM
-#include "corerun.wasm.hpp"
-#endif
+#include <pinvoke_override.hpp>
+#endif // TARGET_WASM
+
+#ifdef TARGET_BROWSER
+#include <emscripten/emscripten.h>
+#endif // TARGET_BROWSER
 
 #include <fstream>
+
+#if defined(TARGET_UNIX)
+#include <dlfcn.h>
+#endif
+
+#if defined(TARGET_WINDOWS)
+#include <windows.h>
+#endif
 
 using char_t = pal::char_t;
 using string_t = pal::string_t;
@@ -79,7 +91,11 @@ namespace envvar
     // - PROPERTY: corerun will pass the paths vias the TRUSTED_PLATFORM_ASSEMBLIES property
     // - EXTERNAL: corerun will pass an external assembly probe to the runtime for app assemblies
     // - Not set: same as PROPERTY
+    // - The TPA list as a platform delimited list of paths. The same format as the system's PATH env var.
     const char_t* appAssemblies = W("APP_ASSEMBLIES");
+
+    // Variable indicating if a callback to support platform-native R2R should be provided to the runtime
+    const char_t* platformNativeR2R = W("PLATFORM_NATIVE_R2R");
 }
 
 static void wait_for_debugger()
@@ -117,9 +133,7 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
 {
     static const char_t* const tpa_extensions[] =
     {
-        W(".ni.dll"),  // Probe for .ni.dll first so that it's preferred if ni and il coexist in the same dir
         W(".dll"),
-        W(".ni.exe"),
         W(".exe"),
         nullptr
     };
@@ -167,7 +181,7 @@ static bool try_get_export(pal::mod_t mod, const char* symbol, void** fptr)
     *fptr = pal::get_module_symbol(mod, symbol);
     if (*fptr != nullptr)
         return true;
-#else // !TARGET_WASM    
+#else // !TARGET_WASM
     if (!strcmp(symbol, "coreclr_initialize")){
         *fptr = (void*)coreclr_initialize;
         return true;
@@ -272,6 +286,58 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
 static char* s_core_libs_path = nullptr;
 static char* s_core_root_path = nullptr;
 
+static bool HOST_CONTRACT_CALLTYPE get_native_code_data(
+    const host_runtime_contract_native_code_context* context,
+    host_runtime_contract_native_code_data* data)
+{
+#if !defined(TARGET_WINDOWS) && !defined(TARGET_OSX)
+    // Platform-native R2R is only supported on Windows and macOS
+    return false;
+#else
+    if (context == nullptr || data == nullptr)
+        return false;
+
+    const char* assembly_path = context->assembly_path;
+    const char* owner_name = context->owner_composite_name;
+
+    if (assembly_path == nullptr || owner_name == nullptr)
+        return false;
+
+    // Look for native library next to the assembly
+    pal::string_t native_image_path;
+    {
+        pal::string_t file;
+        pal::split_path_to_dir_filename(pal::convert_from_utf8(assembly_path), native_image_path, file);
+        pal::ensure_trailing_delimiter(native_image_path);
+    }
+    native_image_path.append(pal::convert_from_utf8(owner_name));
+
+    pal::mod_t native_image;
+    if (!pal::try_load_library(native_image_path, native_image))
+        return false;
+
+    // Get the R2R header export
+    void* header_ptr = pal::get_module_symbol(native_image, "RTR_HEADER");
+    if (header_ptr == nullptr)
+        return false;
+
+    // Get module information (base address and size)
+    void* base_address = pal::get_image_base(native_image, header_ptr);
+    if (base_address == nullptr)
+        return false;
+
+    size_t image_size = pal::get_image_size(base_address);
+    if (image_size == 0)
+        return false;
+
+    data->size = sizeof(host_runtime_contract_native_code_data);
+    data->r2r_header_ptr = header_ptr;
+    data->image_size = image_size;
+    data->image_base = base_address;
+    return true;
+#endif // TARGET_WINDOWS || TARGET_OSX
+}
+
 static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
     const char* path,
     void** data_start,
@@ -298,6 +364,20 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
 
     return false;
 }
+
+#ifdef TARGET_BROWSER
+bool is_node()
+{
+    return EM_ASM_INT({
+        if (typeof process !== 'undefined' &&
+            process.versions &&
+            process.versions.node) {
+            return 1;
+        }
+        return 0;
+    });
+}
+#endif // TARGET_BROWSER
 
 static int run(const configuration& config)
 {
@@ -380,8 +460,7 @@ static int run(const configuration& config)
     }
     else
     {
-        pal::fprintf(stderr, W("Unknown value for APP_ASSEMBLIES environment variable: %s\n"), app_assemblies_env.c_str());
-        return -1;
+        tpa_list = std::move(app_assemblies_env);
     }
 
     {
@@ -464,7 +543,8 @@ static int run(const configuration& config)
         &get_runtime_property,
         nullptr,
         nullptr,
-        use_external_assembly_probe ? &external_assembly_probe : nullptr };
+        use_external_assembly_probe ? &external_assembly_probe : nullptr,
+        pal::getenv(envvar::platformNativeR2R) == W("1") ? &get_native_code_data : nullptr };
     propertyKeys.push_back(HOST_PROPERTY_RUNTIME_CONTRACT);
     std::stringstream ss;
     ss << "0x" << std::hex << (size_t)(&host_contract);
@@ -492,8 +572,8 @@ static int run(const configuration& config)
 
 #ifdef TARGET_WASM
     // install the pinvoke override callback to resolve p/invokes to statically linked libraries
-    wasm_add_pinvoke_override();
-#endif
+    add_pinvoke_override();
+#endif // TARGET_WASM
 
     int result;
     result = coreclr_init_func(
@@ -538,6 +618,14 @@ static int run(const configuration& config)
 
         actions.after_execute_assembly();
     }
+
+#ifdef TARGET_BROWSER
+    if (!is_node())
+    {
+        // In browser we don't shutdown the runtime here as we want to keep it alive
+        return 0;
+    }
+#endif // TARGET_BROWSER
 
     int latched_exit_code = 0;
     result = coreclr_shutdown2_func(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);

@@ -119,7 +119,7 @@ namespace System.Data.Common
             ADP.CheckArgumentNull(builder, nameof(builder));
             ADP.CheckArgumentLength(keyName, nameof(keyName));
 
-            if ((null == keyName) || !s_connectionStringValidKeyRegex.IsMatch(keyName))
+            if ((null == keyName) || !ConnectionStringValidKeyRegex.IsMatch(keyName))
             {
                 throw ADP.InvalidKeyname(keyName);
             }
@@ -150,7 +150,7 @@ namespace System.Data.Common
                     if ((0 < keyValue.Length) &&
                         // string.Contains(char) is .NetCore2.1+ specific
                         (('{' == keyValue[0]) || (0 <= keyValue.IndexOf(';')) || (string.Equals(DbConnectionStringKeywords.Driver, keyName, StringComparison.OrdinalIgnoreCase))) &&
-                        !s_connectionStringQuoteOdbcValueRegex.IsMatch(keyValue))
+                        !ConnectionStringQuoteOdbcValueRegex.IsMatch(keyValue))
                     {
                         // always quote Driver value (required for ODBC Version 2.65 and earlier)
                         // always quote values that contain a ';'
@@ -161,7 +161,7 @@ namespace System.Data.Common
                         builder.Append(keyValue);
                     }
                 }
-                else if (s_connectionStringQuoteValueRegex.IsMatch(keyValue))
+                else if (ConnectionStringQuoteValueRegex.IsMatch(keyValue))
                 {
                     // <value> -> <value>
                     builder.Append(keyValue);
@@ -446,7 +446,7 @@ namespace System.Data.Common
 
         internal static void ValidateKeyValuePair(string keyword, string value)
         {
-            if ((null == keyword) || !s_connectionStringValidKeyRegex.IsMatch(keyword))
+            if ((null == keyword) || !ConnectionStringValidKeyRegex.IsMatch(keyword))
             {
                 throw ADP.InvalidKeyname(keyword);
             }

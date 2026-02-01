@@ -199,7 +199,7 @@ namespace System.Tests
             yield return new object[] { "http://[::ffff:0:192.168.0.1]/", "http", "", "[::ffff:0:192.168.0.1]", UriHostNameType.IPv6, 80, true, false }; // SIIT
             yield return new object[] { "http://[::ffff:1:192.168.0.1]/", "http", "", "[::ffff:1:c0a8:1]", UriHostNameType.IPv6, 80, true, false }; // SIIT (invalid)
             yield return new object[] { "http://[fe80::0000:5efe:192.168.0.1]/", "http", "", "[fe80::5efe:192.168.0.1]", UriHostNameType.IPv6, 80, true, false }; // ISATAP
-            yield return new object[] { "http://[1111:2222:3333::431/20]", "http", "", "[1111:2222:3333::431]", UriHostNameType.IPv6, 80, true, false }; // Prefix
+            yield return new object[] { "http://[1111:2222:3333::431]", "http", "", "[1111:2222:3333::431]", UriHostNameType.IPv6, 80, true, false };
 
             // IPv6 Host - implicit UNC
             if (s_isWindowsSystem) // Unc can only start with '/' on Windows
@@ -449,8 +449,8 @@ namespace System.Tests
             yield return new object[] { "http://ascii.\u043F\u0440\u0438\u0432\u0435\u0442/", "http", "", "ascii.\u043F\u0440\u0438\u0432\u0435\u0442", "ascii.xn--b1agh1afp", "ascii.\u043F\u0440\u0438\u0432\u0435\u0442", UriHostNameType.Dns, 80, true, false };
             yield return new object[] { "http://\u043F\u0440\u0438\u0432\u0435\u0442.\u03B2\u03AD\u03BB\u03B1\u03C3\u03BC\u03B1/", "http", "", "\u043F\u0440\u0438\u0432\u0435\u0442.\u03B2\u03AD\u03BB\u03B1\u03C3\u03BC\u03B1", "xn--b1agh1afp.xn--ixaiab0ch2c", "\u043F\u0440\u0438\u0432\u0435\u0442.\u03B2\u03AD\u03BB\u03B1\u03C3\u03BC\u03B1", UriHostNameType.Dns, 80, true, false };
 
+            yield return new object[] { "http://[1111:2222:3333::431%16]", "http", "", "[1111:2222:3333::431]", "1111:2222:3333::431%16", "1111:2222:3333::431%16", UriHostNameType.IPv6, 80, true, false }; // Scope ID
             yield return new object[] { "http://[1111:2222:3333::431%16]:50/", "http", "", "[1111:2222:3333::431]", "1111:2222:3333::431%16", "1111:2222:3333::431%16", UriHostNameType.IPv6, 50, false, false }; // Scope ID
-            yield return new object[] { "http://[1111:2222:3333::431%16/20]", "http", "", "[1111:2222:3333::431]", "1111:2222:3333::431%16", "1111:2222:3333::431%16", UriHostNameType.IPv6, 80, true, false }; // Scope ID and prefix
 
             yield return new object[] { "http://\u1234\u2345\u3456/", "http", "", "\u1234\u2345\u3456", "xn--ryd258fr0m", "\u1234\u2345\u3456", UriHostNameType.Dns, 80, true, false };
         }
@@ -1247,9 +1247,11 @@ namespace System.Tests
             yield return new object[] { "http://[::1::1]", UriKind.Absolute };
             yield return new object[] { "http://[11111:2222:3333::431]", UriKind.Absolute };
             yield return new object[] { "http://[/12]", UriKind.Absolute };
+            yield return new object[] { "http://[1111:2222:3333::431%16/12]", UriKind.Absolute };
             yield return new object[] { "http://[1111:2222:3333::431/12/12]", UriKind.Absolute };
             yield return new object[] { "http://[1111:2222:3333::431%16/]", UriKind.Absolute };
             yield return new object[] { "http://[1111:2222:3333::431/123]", UriKind.Absolute };
+            yield return new object[] { "http://[1111:2222:3333::431/20]", UriKind.Absolute };
 
             yield return new object[] { "http://[192.168.0.9/192.168.0.9]", UriKind.Absolute };
             yield return new object[] { "http://[192.168.0.9%192.168.0.9]", UriKind.Absolute };

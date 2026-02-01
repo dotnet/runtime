@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Tests
             {
                 int ret = oldTrySignDataCoreHook(data, context, destination);
                 AssertExtensions.LessThanOrEqualTo(
-                    32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[Algorithm].SignatureSizeInBytes, // randomizer + mldsaSig
+                    CompositeMLDsaTestHelpers.MLDsaAlgorithms[Algorithm].SignatureSizeInBytes, // mldsaSig
                     destination.Length);
                 return ret;
             };
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography.Tests
             {
                 bool ret = oldVerifyDataCoreHook(data, context, signature);
                 AssertExtensions.LessThanOrEqualTo(
-                    32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[Algorithm].SignatureSizeInBytes, // randomizer + mldsaSig
+                    CompositeMLDsaTestHelpers.MLDsaAlgorithms[Algorithm].SignatureSizeInBytes, // mldsaSig
                     signature.Length);
                 return ret;
             };

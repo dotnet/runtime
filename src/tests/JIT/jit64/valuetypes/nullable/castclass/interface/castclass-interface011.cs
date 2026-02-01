@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using System;
 using Xunit;
 
+namespace castclass_interface011;
 public class NullableTest
 {
     private static bool BoxUnboxToNQ(object o)
@@ -28,6 +29,7 @@ public class NullableTest
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         ushort? s = Helper.Create(default(ushort));

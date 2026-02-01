@@ -68,10 +68,10 @@ namespace System.Numerics.Tensors
         private TensorShape(nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, TensorFlags flags)
         {
             int rank = lengths.Length;
-
+            ReadOnlySpan<nint> rank0Lengths = [0];
             if (rank == 0)
             {
-                lengths = [0];
+                lengths = rank0Lengths;
                 rank = 1;
             }
             Debug.Assert(rank >= 1);

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { DotnetModuleConfig, RuntimeAPI, AssetEntry, LoaderConfig, LoadingResource } from "./public-api";
-import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
-import { InteropJavaScriptNativeExportsTable, LoaderExportsTable, HostNativeExportsTable, RuntimeExportsTable, NativeBrowserExportsTable } from "./exchange";
+import type { DotnetModuleConfig, RuntimeAPI, AssetEntry, LoaderConfig } from "./public-api";
+import type { EmscriptenModule, InstantiateWasmCallBack, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
+import { InteropJavaScriptExportsTable, LoaderExportsTable, BrowserHostExportsTable, RuntimeExportsTable, NativeBrowserExportsTable, BrowserUtilsExportsTable, DiagnosticsExportsTable } from "./exchange";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -14,13 +14,15 @@ export type JSHandle = {
 export type JSFnHandle = {
     __brand: "JSFnHandle"
 }
+export interface JSMarshalerArguments extends NativePointer {
+    __brand: "JSMarshalerArguments"
+}
+export type CSFnHandle = {
+    __brand: "CSFnHandle"
+}
 
 export type MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
 export type NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
-
-export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
-export const CharPtrNull: CharPtr = <CharPtr><any>0;
-export const NativePointerNull: NativePointer = <NativePointer><any>0;
 
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
@@ -41,53 +43,29 @@ export type EmscriptenInternals = {
     updateMemoryViews: () => void,
 };
 
-export declare interface EmscriptenModuleInternal extends EmscriptenModule {
-    HEAP8: Int8Array,
-    HEAP16: Int16Array;
-    HEAP32: Int32Array;
-    HEAP64: BigInt64Array;
-    HEAPU8: Uint8Array;
-    HEAPU16: Uint16Array;
-    HEAPU32: Uint32Array;
-    HEAPF32: Float32Array;
-    HEAPF64: Float64Array;
-
-    locateFile?: (path: string, prefix?: string) => string;
-    mainScriptUrlOrBlob?: string;
-    ENVIRONMENT_IS_PTHREAD?: boolean;
-    FS: any;
-    wasmModule: WebAssembly.Instance | null;
-    ready: Promise<unknown>;
-    wasmExports: any;
-    getWasmTableEntry(index: number): any;
-    removeRunDependency(id: string): void;
-    addRunDependency(id: string): void;
-    safeSetTimeout(func: Function, timeout: number): number;
+export type EmscriptenModuleInternal = EmscriptenModule & DotnetModuleConfig & {
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
-    maybeExit(): void;
-    print(message: string): void;
-    printErr(message: string): void;
-    abort(reason: any): void;
-    _emscripten_force_exit(exit_code: number): void;
+    instantiateWasm?: InstantiateWasmCallBack;
+    onAbort?: (reason: any, extraJson?: string) => void;
+    onExit?: (code: number) => void;
 }
 
 export interface AssetEntryInternal extends AssetEntry {
-    // this could have multiple values in time, because of re-try download logic
-    pendingDownloadInternal?: LoadingResource
-    noCache?: boolean
+    integrity?: string
+    cache?: RequestCache
     useCredentials?: boolean
-    isCore?: boolean
 }
 
 export type LoaderConfigInternal = LoaderConfig & {
-    linkerEnabled?: boolean,
     runtimeOptions?: string[], // array of runtime options as strings
     appendElementOnExit?: boolean
     logExitCode?: boolean
     exitOnUnhandledError?: boolean
     loadAllSatelliteResources?: boolean
-    resourcesHash?: string,
+    forwardConsole?: boolean,
+    asyncFlushOnExit?: boolean
+    interopCleanupOnExit?: boolean
 };
 
 
@@ -97,7 +75,7 @@ export interface ControllablePromise<T = any> extends Promise<T> {
 }
 
 /// Just a pair of a promise and its controller
-export interface PromiseController<T> {
+export interface PromiseCompletionSource<T> {
     readonly promise: ControllablePromise<T>;
     isDone: boolean;
     resolve: (value: T | PromiseLike<T>) => void;
@@ -105,19 +83,35 @@ export interface PromiseController<T> {
     propagateFrom: (other: Promise<T>) => void;
 }
 
+export type InternalExchangeSubscriber = (internals: InternalExchange) => void;
 
-export type InternalApis = {
-    runtimeApi: RuntimeAPI,
-    runtimeExportsTable: RuntimeExportsTable,
-    loaderExportsTable: LoaderExportsTable,
-    hostNativeExportsTable: HostNativeExportsTable,
-    interopJavaScriptNativeExportsTable: InteropJavaScriptNativeExportsTable,
-    nativeBrowserExportsTable: NativeBrowserExportsTable,
-    config: LoaderConfigInternal,
-    updates: (() => void)[],
+export type InternalExchange = [
+    RuntimeAPI, //0
+    InternalExchangeSubscriber[], //1
+    LoaderConfigInternal, //2
+    LoaderExportsTable, //3
+    RuntimeExportsTable, //4
+    BrowserHostExportsTable, //5
+    InteropJavaScriptExportsTable, //6
+    NativeBrowserExportsTable, //7
+    BrowserUtilsExportsTable, //8
+    DiagnosticsExportsTable, //9
+]
+export const enum InternalExchangeIndex {
+    RuntimeAPI = 0,
+    InternalUpdatesCallbacks = 1,
+    LoaderConfig = 2,
+    LoaderExportsTable = 3,
+    RuntimeExportsTable = 4,
+    BrowserHostExportsTable = 5,
+    InteropJavaScriptExportsTable = 6,
+    NativeBrowserExportsTable = 7,
+    BrowserUtilsExportsTable = 8,
+    DiagnosticsExportsTable = 9,
 }
 
 export type JsModuleExports = {
-    initialize<T>(internals: InternalApis): Promise<T>;
+    dotnetInitializeModule<T>(internals: InternalExchange): Promise<T>;
 };
 
+export type OnExitListener = (exitCode: number, reason: any, silent: boolean) => boolean;

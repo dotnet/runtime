@@ -41,6 +41,7 @@ regNumber ABIPassingSegment::GetRegister() const
     return static_cast<regNumber>(m_register);
 }
 
+#if HAS_FIXED_REGISTER_SET
 //-----------------------------------------------------------------------------
 // GetRegisterMask:
 //   Get the mask of registers that this segment is passed in.
@@ -62,6 +63,7 @@ regMaskTP ABIPassingSegment::GetRegisterMask() const
 
     return mask;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 //-----------------------------------------------------------------------------
 // GetStackOffset:
@@ -140,7 +142,7 @@ var_types ABIPassingSegment::GetRegisterType() const
             case 3:
             case 4:
                 return TYP_INT;
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             case 5:
             case 6:
             case 7:

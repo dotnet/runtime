@@ -70,10 +70,10 @@
     <CoreRootDirectory>$([MSBuild]::NormalizeDirectory($(CoreRootDirectory)))</CoreRootDirectory>
     <XUnitLogCheckerDirectory>$(TestBinDir)XUnitLogChecker\</XUnitLogCheckerDirectory>
     <XUnitLogCheckerDirectory>$([MSBuild]::NormalizeDirectory($(XUnitLogCheckerDirectory)))</XUnitLogCheckerDirectory>
-    <LegacyPayloadsRootDirectory>$(TestBinDir)LegacyPayloads\</LegacyPayloadsRootDirectory>
-    <LegacyPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(LegacyPayloadsRootDirectory)))</LegacyPayloadsRootDirectory>
     <MergedPayloadsRootDirectory>$(TestBinDir)MergedPayloads\</MergedPayloadsRootDirectory>
     <MergedPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(MergedPayloadsRootDirectory)))</MergedPayloadsRootDirectory>
+    <MobileAppBundleDirName Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">AppBundle</MobileAppBundleDirName>
+    <MobileAppBundleDirName Condition="'$(TargetsBrowser)' == 'true'">wwwroot</MobileAppBundleDirName>
   </PropertyGroup>
 
   <!-- This target runs once and creates several instances of this project (one for each scenario)
@@ -126,7 +126,6 @@
     <Error Condition="'$(_Scenarios)' == ''" Text="_Scenarios not set" />
 
     <ItemGroup>
-      <CleanPreexistingPayloads Include="$(LegacyPayloadsRootDirectory)**" />
       <CleanPreexistingPayloads Include="$(MergedPayloadsRootDirectory)**" />
     </ItemGroup>
 
@@ -206,68 +205,6 @@
 
   <Import Project="testgrouping.proj" />
 
-  <Target Name="DiscoverLegacyXUnitWrappers">
-    <ItemGroup>
-      <_XUnitWrapperDll Include="@(XUnitWrapperGrouping)" />
-
-      <!-- This adds the remaining *.XUnitWrapper.dll files in TestBinDir unless
-           1) they are in LegacyPayloadsRootDirectory or
-           2) they are grouped by XUnitWrapperGrouping. -->
-      <_XUnitWrapperDll Include="$(TestBinDir)**\*.XUnitWrapper.dll" Exclude="$(LegacyPayloadsRootDirectory)**\*.XUnitWrapper.dll;@(XUnitWrapperGrouping->Metadata('FullPath'))">
-         <!-- Set PayloadGroup to empty string, so we can update _XUnitWrapperDll items with no PayloadGroup to default value. Unfortunately, we can't do this right here. -->
-         <PayloadGroup></PayloadGroup>
-      </_XUnitWrapperDll>
-
-      <!-- Assign "default" value of PayloadGroup metadata. -->
-      <_XUnitWrapperDll Update="@(_XUnitWrapperDll)">
-         <PayloadGroup Condition="'%(PayloadGroup)' == ''">$([MSBuild]::ValueOrDefault(%(FileName),'').Replace('.XUnitWrapper',''))</PayloadGroup>
-      </_XUnitWrapperDll>
-    </ItemGroup>
-  </Target>
-
-  <Target Name="PrepareLegacyPayloadDirectory"
-      Outputs="%(_XUnitWrapperDll.FileName)%(PayloadGroup)"
-      DependsOnTargets="DiscoverLegacyXUnitWrappers">
-    <PropertyGroup>
-      <_FileDirectory>%(_XUnitWrapperDll.RootDir)%(Directory)</_FileDirectory>
-      <_PayloadGroup>%(_XUnitWrapperDll.PayloadGroup)</_PayloadGroup>
-      <_XUnitWrapperDll>%(_XUnitWrapperDll.FullPath)</_XUnitWrapperDll>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(_FileDirectory)' != ''">
-      <_LegacyPayloadFiles Include="$(_FileDirectory)**" />
-      <_LegacyPayloadFiles Update="@(_LegacyPayloadFiles)">
-        <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
-             MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
-        <FileRelativeToPayloadsRootDirectory>$(_PayloadGroup)\$([System.IO.Path]::GetRelativePath($(TestBinDir), %(FullPath)))</FileRelativeToPayloadsRootDirectory>
-      </_LegacyPayloadFiles>
-    </ItemGroup>
-
-    <ItemGroup>
-      <!-- Remove the managed pdbs from our payloads.
-           This is for performance reasons to reduce our helix payload size
-           Note: for Native AOT the pdb is the native PDB. !analyze wouldn't work without it at all so we keep it -->
-      <ReducedLegacyPayloadFiles Include="@(_LegacyPayloadFiles)" Condition=" '%(Extension)' != '.pdb' or '$(_NativeAotTest)' == 'true'" />
-
-      <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TestWrapperTargetsWindows)' == 'true' "/>
-      <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TestWrapperTargetsWindows)' != 'true' "/>
-      <!-- Don't include the new merged wrappers in the legacy builds -->
-      <ReducedLegacyPayloadFilesFinal Remove="@(_MergedWrapperRunScript)" />
-    </ItemGroup>
-
-    <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-      <!-- When targeting mobile or browser runs, we publish self-contained builds and build mobile/wasm apps, so we want to exclude these files from the legacy payloads as well -->
-      <PublishedMergedPayloadsToExclude>@(_MergedWrapperRunScript->'%(RootDir)%(Directory)publish/*')</PublishedMergedPayloadsToExclude>
-      <PublishedMergedPayloadsToExclude>$(PublishedMergedPayloadsToExclude);@(_MergedWrapperRunScript->'%(RootDir)%(Directory)AppBundle/**')</PublishedMergedPayloadsToExclude>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <ReducedLegacyPayloadFilesFinal Remove="$(PublishedMergedPayloadsToExclude)" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(ReducedLegacyPayloadFilesFinal)" DestinationFiles="@(ReducedLegacyPayloadFilesFinal->'$(LegacyPayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
-  </Target>
-
   <Target Name="PrepareCorrelationPayloadDirectory">
     <MSBuild Projects="$(RepoRoot)src\tests\Common\xunitconsolerunner.depproj" Targets="Restore" />
 
@@ -296,10 +233,7 @@
 
     <ItemGroup>
       <_PayloadGroups Include="$(PayloadGroups)" />
-      <_ProjectsToBuild Include="testenvironment.proj" Condition="!$(IsMergedTestWrapper)">
-        <Properties>Scenario=$(Scenario);TestEnvFileName=$(LegacyPayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows);RuntimeVariant=$(_RuntimeVariant)</Properties>
-      </_ProjectsToBuild>
-      <_ProjectsToBuild Include="testenvironment.proj" Condition="$(IsMergedTestWrapper)">
+      <_ProjectsToBuild Include="testenvironment.proj">
         <Properties>Scenario=$(Scenario);TestEnvFileName=$(MergedPayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows);RuntimeVariant=$(_RuntimeVariant)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
@@ -307,25 +241,17 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFile" StopOnFirstFailure="true" />
   </Target>
 
-  <Target Name="PreparePayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectories;PrepareLegacyPayloadDirectories" />
-
-  <Target Name="PrepareLegacyPayloadDirectories" DependsOnTargets="PrepareLegacyPayloadDirectory">
-    <ItemGroup>
-      <_LegacyPayloadGroups Include="@(_XUnitWrapperDll->Metadata('PayloadGroup')->DistinctWithCase())" />
-      <_Scenario Include="$(_Scenarios.Split(','))" />
-      <_ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_LegacyPayloadGroups);IsMergedTestWrapper=false</AdditionalProperties>
-      </_ProjectsToBuild>
-    </ItemGroup>
-
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
-  </Target>
-
-  <Target Name="PrepareMergedTestPayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectory">
+  <Target Name="PreparePayloadDirectories"
+          DependsOnTargets="DiscoverMergedTestWrappers;
+                            PrepareMergedTestPayloadDirectoryForDesktop;
+                            PrepareMergedTestPayloadDirectoryForAndroid;
+                            PrepareMergedTestPayloadDirectoryForWasm;
+                            PrepareMergedTestPayloadDirectoryForAppleMobile;
+                            PrepareMergedTestPayloadDirectoryForAppleMobileBuildOnHelix">
     <ItemGroup>
       <_Scenario Include="$(_Scenarios.Split(','))" />
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedPayloadGroups);IsMergedTestWrapper=true</AdditionalProperties>
+        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedPayloadGroups)</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -342,10 +268,11 @@
     <ItemGroup>
       <!-- Exclude WASM support files. They can interfere with our discovery process and create extra work items that don't work. -->
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
+      <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssemblyForStress" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssemblyForStress" />
 
-      <_MergedWrapperMarker Update="@(_MergedWrapperMarker)">
+      <_MergedWrapperMarker>
         <TestExecutionScriptPath Condition="'$(TargetsMobile)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
-        <TestExecutionScriptPath Condition="'$(TargetsMobile)' == 'true'">%(RootDir)%(Directory)AppBundle/$(_AppBundleRunScriptName).$(TestScriptExtension)</TestExecutionScriptPath>
+        <TestExecutionScriptPath Condition="'$(TargetsMobile)' == 'true'">%(RootDir)%(Directory)$(MobileAppBundleDirName)/$(_AppBundleRunScriptName).$(TestScriptExtension)</TestExecutionScriptPath>
       </_MergedWrapperMarker>
 
       <!-- Exclude merged test wrappers without the test execution script for this target (skipped due to CLRTestTargetUnsupported et al) -->
@@ -413,10 +340,26 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <_ExtraTestExecutablesListFiles Remote="@(_ExtraTestExecutablesListFiles)" />
+      <_ExtraTestExecutablesListFiles Include="@(_MergedPayloadFiles)"
+            Condition="$([System.String]::Copy('%(Identity)').ToLower().EndsWith('helix-extra-executables.list'))" />
+      <_ExtraTestExecutables Remove="@(_ExtraTestExecutables)" />
+    </ItemGroup>
+    <ReadLinesFromFile File="%(_ExtraTestExecutablesListFiles.Identity)" Condition="'@(_ExtraTestExecutablesListFiles)' != ''">
+      <Output TaskParameter="Lines" ItemName="_ExtraTestExecutables" />
+    </ReadLinesFromFile>
+    <ItemGroup>
+      <_ExtraTestExecutables Remove="@(_ExtraTestExecutables)" Condition="'%(Identity)' == ''" />
+    </ItemGroup>
+
+    <ItemGroup>
       <!-- We need to ensure that the test run script is marked as executable. -->
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
+
+      <!-- Tests may depend on other executables. Copying files to Helix removes execute permissions, so mark them as executable as well. -->
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true' and Exists('$(TestBinDir)%(Identity)')" Include="@(_ExtraTestExecutables->'chmod +x %(Identity)')" />
 
       <HelixCommandLines Include="$(_WorkaroundForNuGetMigrations)" />
 
@@ -490,12 +433,14 @@
       <_MergedPayloadGroups Include="$(_MergedWrapperName)">
         <ApkPackageName>$(_MergedApkName)</ApkPackageName>
       </_MergedPayloadGroups>
-      <_MergedPayloadFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(ApkPackageName).apk')" />
+      <_MergedPayloadApkFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/bin/%(ApkPackageName).apk')" />
+      <_MergedPayloadFiles Include="@(_MergedPayloadApkFiles)" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)ExpectedExitCode.txt" Condition="Exists('$(_MergedWrapperDirectory)ExpectedExitCode.txt')" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')" />
     <PatchExclusionListInApks
-      ApkPaths="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')"
+      ApkPaths="@(_MergedPayloadApkFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')"
       ExcludedTests="@(FilteredTestExclusionList)" />
   </Target>
 
@@ -504,24 +449,24 @@
       Outputs="%(_MergedWrapperMarker.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
     <ItemGroup>
-      <_MergedWrapperRunScript Include="@(_MergedWrapperMarker->'%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)')" />
+      <_MergedWrapperRunScript Include="@(_MergedWrapperMarker->'%(RootDir)%(Directory)$(MobileAppBundleDirName)/RunTests.$(TestScriptExtension)')" />
     </ItemGroup>
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
 
-      <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle', %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
+      <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)$(MobileAppBundleDirName)', %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
       <_MergedWrapperRunScriptRelative Condition="'$(TestWrapperTargetsWindows)' != 'true'">./$(_MergedWrapperRunScriptRelative)</_MergedWrapperRunScriptRelative>
       <_MergedWrapperRunScriptDirectoryRelative Condition="'$(_MergedWrapperRunScriptRelative)' != ''">$([System.IO.Path]::GetDirectoryName($(_MergedWrapperRunScriptRelative)))</_MergedWrapperRunScriptDirectoryRelative>
     </PropertyGroup>
 
     <ItemGroup>
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
-      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/**" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/**" />
       <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
-        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)$(MobileAppBundleDirName)', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_MergedPayloadFiles>
       <!-- Remove the placeholder test exclusion list here -->
       <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
@@ -551,11 +496,11 @@
 
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
-      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.MergedTestAssembly(ForStress)?\.\d+\.\d+$', ''))</_MergedWrapperName>
     </PropertyGroup>
 
     <PropertyGroup>
-      <XCodeSdk Condition="'$(TargetsiOS)' == 'true'">iphone</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetsiOS)' == 'true'">iphoneos</XCodeSdk>
       <XCodeSdk Condition="'$(TargetsiOSSimulator)' == 'true'">iphonesimulator</XCodeSdk>
       <XCodeSdk Condition="'$(TargetstvOS)' == 'true'">appletvos</XCodeSdk>
       <XCodeSdk Condition="'$(TargetstvOSSimulator)' == 'true'">appletvsimulator</XCodeSdk>
@@ -566,14 +511,16 @@
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
     </ItemGroup>
     <ItemGroup>
-      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)/$(_MergedWrapperName).app/**" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)/$(_MergedWrapperName).app/**" />
       <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
-        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_MergedPayloadFiles>
       <!-- Remove the placeholder test exclusion list here -->
       <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)ExpectedExitCode.txt" Condition="Exists('$(_MergedWrapperDirectory)ExpectedExitCode.txt')" FileRelativeToPayloadsRootDirectory="ExpectedExitCode.txt" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner" Condition="Exists('$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner')" FileRelativeToPayloadsRootDirectory="$(_MergedWrapperName).XHarnessNoRunner" />
       <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
     </ItemGroup>
 
@@ -591,17 +538,19 @@
 
     <PropertyGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
-      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.MergedTestAssembly(ForStress)?\.\d+\.\d+$', ''))</_MergedWrapperName>
     </PropertyGroup>
 
     <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
-      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/**" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/**" />
       <_MergedPayloadFiles Update="@(_MergedPayloadFiles)" Condition="'@(_MergedPayloadFiles)' != ''" >
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
-        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle/', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_MergedPayloadFiles>
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)ExpectedExitCode.txt" Condition="Exists('$(_MergedWrapperDirectory)ExpectedExitCode.txt')" FileRelativeToPayloadsRootDirectory="ExpectedExitCode.txt" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner" Condition="Exists('$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner')" FileRelativeToPayloadsRootDirectory="$(_MergedWrapperName).XHarnessNoRunner" />
       <!-- Remove the placeholder test exclusion list here -->
       <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
       <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
@@ -614,35 +563,12 @@
       Condition="'@(_TestExclusionListPlaceholder)' != ''" />
   </Target>
 
-  <Target Name="PrepareMergedTestPayloadDirectory"
-          DependsOnTargets="DiscoverMergedTestWrappers;
-                            PrepareMergedTestPayloadDirectoryForDesktop;
-                            PrepareMergedTestPayloadDirectoryForAndroid;
-                            PrepareMergedTestPayloadDirectoryForWasm;
-                            PrepareMergedTestPayloadDirectoryForAppleMobile;
-                            PrepareMergedTestPayloadDirectoryForAppleMobileBuildOnHelix" />
-
-  <Target Name="ZipLegacyPayloadDirectory" AfterTargets="PrepareLegacyPayloadDirectories" Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
-    <ItemGroup>
-      <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
-      <LegacyPayloads Update="@(LegacyPayloads)">
-        <PayloadGroup>$([MSBuild]::MakeRelative($(LegacyPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
-        <PayloadDirectory>%(FullPath)</PayloadDirectory>
-      </LegacyPayloads>
-    </ItemGroup>
-
-    <ZipDirectory
-      Condition="'@(LegacyPayloads)' != ''"
-      SourceDirectory="@(LegacyPayloads->Metadata('PayloadDirectory'))"
-      DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
-  </Target>
-
   <Target Name="ZipMergedPayloadDirectory"
           AfterTargets="PrepareMergedTestPayloadDirectories"
           Condition="'$(TargetsBrowser)' == 'true' or ('$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true')">
     <ItemGroup>
       <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
-      <MergedPayloads Update="@(MergedPayloads)">
+      <MergedPayloads>
         <PayloadGroup>$([MSBuild]::MakeRelative($(MergedPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
         <PayloadDirectory>%(FullPath)</PayloadDirectory>
       </MergedPayloads>
@@ -818,20 +744,6 @@
       <Destination>sos</Destination>
       <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>
     </HelixCorrelationPayload>
-
-    <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
-    <LegacyPayloads Update="@(LegacyPayloads)">
-      <PayloadGroup>$([MSBuild]::MakeRelative($(LegacyPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
-      <PayloadDirectory>%(FullPath)</PayloadDirectory>
-      <XUnitWrapperDlls>$([System.String]::Join(' ', $([System.IO.Directory]::GetFiles(%(FullPath), '*.XUnitWrapper.dll', SearchOption.AllDirectories))).Replace($([MSBuild]::EnsureTrailingSlash(%(FullPath))),''))</XUnitWrapperDlls>
-    </LegacyPayloads>
-    <LegacyPayloads Update="@(LegacyPayloads)">
-      <!--
-        PayloadGroup0 is just a synthesized name for a bundle of multiple test assemblies that we send as one payload.
-        Normally the condition above catches this case; however, when we're only sending one assembly, passing PayloadGroup0 to Helix means that no tests will be run.
-      -->
-      <PayloadZipFile>$(LegacyPayloadsRootDirectory)\%(PayloadGroup).zip</PayloadZipFile>
-    </LegacyPayloads>
   </ItemGroup>
 
   <ItemGroup>
@@ -860,6 +772,13 @@
     <MergedPayloads Update="@(MergedPayloads)">
       <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(ApkFileName).apk</ApkPath>
       <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
+    </MergedPayloads>
+    <MergedPayloads Update="@(MergedPayloads)">
+      <ExpectedExitCode Condition="Exists('$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/ExpectedExitCode.txt')">$([System.IO.File]::ReadAllText('$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/ExpectedExitCode.txt').Trim())</ExpectedExitCode>
+    </MergedPayloads>
+    <!-- For tests where we aren't using the XHarness test runner, specify as such on the payload item. -->
+    <MergedPayloads Update="@(MergedPayloads)">
+      <IncludesTestRunner Condition="$([System.IO.File]::Exists('$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).XHarnessNoRunner'))">false</IncludesTestRunner>
     </MergedPayloads>
   </ItemGroup>
 
@@ -988,30 +907,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
-      <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
-      <Command>$(_WorkaroundForNuGetMigrationsForPrepending) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
-      <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
-      <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
-    </HelixWorkItem>
-
-    <XHarnessApkToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAndroid)' == 'true'">
-      <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
-      <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
-    </XHarnessApkToTest>
-
     <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAndroid)' == 'true'">
       <Arguments>--arg=env:TestExclusionListPath=TestExclusionList.txt</Arguments>
       <AndroidPackageName>net.dot.%(ApkFileName)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
     </XHarnessApkToTest>
-
-    <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAppleMobile)' == 'true'">
-      <TestTarget>$(AppleTestTarget)</TestTarget>
-      <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
-      <CustomCommands> $(SigningCommand) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
-    </XHarnessAppBundleToTest>
 
     <XHarnessAppBundleToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAppleMobile)' == 'true'">
       <Arguments>--set-env=TestExclusionListPath=TestExclusionList.txt</Arguments>

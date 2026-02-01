@@ -21,16 +21,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private Func<Export, object>? _castSingleValue;
         private readonly bool _isOpenGeneric;
 
-        [ThreadStatic]
-        internal static Dictionary<Type, Func<Export, object>?>? _castSingleValueCache;
-
-        private static Dictionary<Type, Func<Export, object>?> CastSingleValueCache
-        {
-            get
-            {
-                return _castSingleValueCache ??= new Dictionary<Type, Func<Export, object>?>();
-            }
-        }
+        [field: ThreadStatic]
+        private static Dictionary<Type, Func<Export, object>?> CastSingleValueCache => field ??= new();
 
         public ImportType(Type type, ImportCardinality cardinality)
         {

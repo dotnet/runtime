@@ -13,6 +13,7 @@
   -->
   <PropertyGroup>
     <DOTNETVariables>
+      DOTNET_InterpMode;
       DOTNET_TieredCompilation;
       DOTNET_DbgEnableMiniDump;
       DOTNET_EnableCrashReport;
@@ -95,6 +96,12 @@
          while other scenarios use the default values of DOTNET_* variables defined in ItemDefinitionGroup above -->
     <TestEnvironment Include="normal" TieredCompilation="" />
     <TestEnvironment Include="jitminopts" JITMinOpts="1" />
+    <TestEnvironment Include="interpmode1" TieredCompilation="" InterpMode="1" />
+    <TestEnvironment Include="interpmode2" TieredCompilation="" InterpMode="2" />
+    <TestEnvironment Include="interpmode3" TieredCompilation="" InterpMode="3" />
+    <TestEnvironment Include="interpmode1_no_tiered_compilation" InterpMode="1" TieredCompilation="0"/>
+    <TestEnvironment Include="interpmode2_no_tiered_compilation" InterpMode="2" TieredCompilation="0"/>
+    <TestEnvironment Include="interpmode3_no_tiered_compilation" InterpMode="3" TieredCompilation="0"/>
     <TestEnvironment Include="no_tiered_compilation" TieredCompilation="0" />
     <TestEnvironment Include="forcerelocs" ForceRelocs="1" />
     <TestEnvironment Include="jitstress1" JitStress="1" />

@@ -26,7 +26,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
         }
 
         public override ReadOnlySpan<byte> Name => _name;
-        public override DefType OwningType => _type;
+        public override MetadataType OwningType => _type;
 
         public override TypeDesc FieldType => _fieldType;
 

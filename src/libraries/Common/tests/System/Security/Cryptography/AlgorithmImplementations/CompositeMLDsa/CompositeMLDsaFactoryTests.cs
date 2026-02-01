@@ -158,7 +158,7 @@ namespace System.Security.Cryptography.Tests
 
                 return ComposeKeys(
                     MLDsaTestsData.IetfMLDsa65.PrivateSeed,
-                    WriteECPrivateKey(version, ecdsaKey.D, ecdsaKey.Curve.Oid.Value, ecdsaKey.Q));
+                    WriteECPrivateKey(version, ecdsaKey.D, oid: ecdsaKey.Curve.Oid.Value, point: null));
             }
         }
 
@@ -167,10 +167,9 @@ namespace System.Security.Cryptography.Tests
         {
             ECParameters ecdsaKey = EccTestData.GetNistP256ReferenceKey();
 
-            // no private key
             byte[] compositeKey = ComposeKeys(
                 MLDsaTestsData.IetfMLDsa65.PrivateSeed,
-                WriteECPrivateKey(version: 1, d: null, ecdsaKey.Curve.Oid.Value, point: ecdsaKey.Q));
+                WriteECPrivateKey(version: 1, d: null, oid: ecdsaKey.Curve.Oid.Value, point: null));
 
             AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256, compositeKey);
         }
@@ -189,11 +188,15 @@ namespace System.Security.Cryptography.Tests
                 algorithm,
                 CreateKeyWithCurveOid("1.3.36.3.3.2.8.1.1.7")); // brainpoolP256r1
 
-            // Domain parameters are optional, don't throw (unless platform does not support Composite ML-DSA)
-            CompositeMLDsaTestHelpers.AssertImportPrivateKey(
-                import => AssertThrowIfNotSupported(() => import(), algorithm),
+            // P256 is 1.2.840.10045.3.1.7, so try an OID with same length but invalid
+            AssertImportBadPrivateKey(
                 algorithm,
-                CreateKeyWithCurveOid(ECCurve.NamedCurves.nistP256.Oid.Value));
+                CreateKeyWithCurveOid("1.2.840.10045.3.1.6"));
+
+            // No parameters
+            AssertImportBadPrivateKey(
+                algorithm,
+                CreateKeyWithCurveOid(null));
 
             static byte[] CreateKeyWithCurveOid(string? oid)
             {
@@ -201,26 +204,72 @@ namespace System.Security.Cryptography.Tests
 
                 return ComposeKeys(
                     MLDsaTestsData.IetfMLDsa65.PrivateSeed,
-                    WriteECPrivateKey(version: 1, ecdsaKey.D, oid, ecdsaKey.Q));
+                    WriteECPrivateKey(version: 1, ecdsaKey.D, oid, null));
             }
         }
 
         [Fact]
-        public static void ImportPrivateKey_ECDsa_NoPublicKey()
+        public static void ImportBadPrivateKey_ECDsa_ImplicitCurve()
         {
-            CompositeMLDsaAlgorithm algorithm = CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256;
+            ECParameters ecKey = EccTestData.GetNistP256ReferenceKey();
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            // ECPrivateKey
+            using (writer.PushSequence())
+            {
+                // version
+                writer.WriteInteger(1);
+
+                // privateKey
+                writer.WriteOctetString(ecKey.D);
+
+                // domainParameters
+                using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true)))
+                {
+                    // Implicit curve is encoded as ASN.1 NULL
+                    writer.WriteNull();
+                }
+            }
+
+            byte[] compositeKey = ComposeKeys(MLDsaTestsData.IetfMLDsa65.PrivateSeed, writer);
+            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256, compositeKey);
+        }
+
+        [Fact]
+        public static void ImportBadPrivateKey_ECDsa_ExplicitCurve()
+        {
+            // Key with explicit curve parameters generated with:
+            // > openssl ecparam -name prime256v1 -genkey -param_enc explicit -noout | openssl ec -no_public
+            string keyBase64 =
+                """
+                MIIBIgIBAQQgWal2XjEwfJhLkEsSJfu3MbTRuzcsr320CEuAH03ojJqggfowgfcC
+                AQEwLAYHKoZIzj0BAQIhAP////8AAAABAAAAAAAAAAAAAAAA////////////////
+                MFsEIP////8AAAABAAAAAAAAAAAAAAAA///////////////8BCBaxjXYqjqT57Pr
+                vVV2mIa8ZR0GsMxTsPY7zjw+J9JgSwMVAMSdNgiG5wSTamZ44ROdJreBn36QBEEE
+                axfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpZP40Li/hp/m47n60p8D54W
+                K84zV2sxXs7LtkBoN79R9QIhAP////8AAAAA//////////+85vqtpxeehPO5ysL8
+                YyVRAgEB
+                """;
+            byte[] key = Convert.FromBase64String(keyBase64);
+
+            byte[] compositeKey = new byte[MLDsaTestsData.IetfMLDsa65.PrivateSeed.Length + key.Length];
+            MLDsaTestsData.IetfMLDsa65.PrivateSeed.CopyTo(compositeKey, 0);
+            key.CopyTo(compositeKey, MLDsaTestsData.IetfMLDsa65.PrivateSeed.Length);
+
+            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256, compositeKey);
+        }
+
+        [Fact]
+        public static void ImportPrivateKey_ECDsa_HasPublicKey()
+        {
             ECParameters ecdsaKey = EccTestData.GetNistP256ReferenceKey();
 
-            // no public key
-            byte[] compositeKey = ComposeKeys(
-                MLDsaTestsData.IetfMLDsa65.PrivateSeed,
-                WriteECPrivateKey(version: 1, ecdsaKey.D, ecdsaKey.Curve.Oid.Value, point: null));
-
-            // Public key is optional, don't throw (unless platform does not support Composite ML-DSA)
-            CompositeMLDsaTestHelpers.AssertImportPrivateKey(
-                import => AssertThrowIfNotSupported(() => import(), algorithm),
-                algorithm,
-                compositeKey);
+            // Public key is not allowed
+            AssertImportBadPrivateKey(
+                CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256,
+                ComposeKeys(
+                    MLDsaTestsData.IetfMLDsa65.PrivateSeed,
+                    WriteECPrivateKey(version: 1, ecdsaKey.D, oid: ecdsaKey.Curve.Oid.Value, ecdsaKey.Q)));
         }
 
         static byte[] ComposeKeys(byte[] mldsaKey, AsnWriter tradKey)

@@ -95,7 +95,9 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
         bool HasMember(string name, int order, PrimitiveType primitiveType)
             => classInfo.MemberNames.TryGetValue(name, out int memberOrder)
             && memberOrder == order
-            && ((PrimitiveType)memberTypeInfo.Infos[order].AdditionalInfo!) == primitiveType;
+            && memberTypeInfo.Infos[order].BinaryType == BinaryType.Primitive
+            && memberTypeInfo.Infos[order].AdditionalInfo is PrimitiveType pt
+            && pt == primitiveType;
     }
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetNextAllowedRecordType()

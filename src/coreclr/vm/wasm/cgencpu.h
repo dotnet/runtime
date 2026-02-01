@@ -7,6 +7,7 @@
 
 #include "stublink.h"
 #include "utilcode.h"
+#include <emscripten/stack.h>
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 4
@@ -22,18 +23,18 @@
 
 inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unused */, bool isFloatHfa = false /* unused */)
 {
-    _ASSERTE("The function is not implemented on wasm");
-    return 0;
+    const unsigned stackSlotSize = sizeof(void*);
+    return ALIGN_UP(parmSize, stackSlotSize);
 }
 
 struct HijackArgs
 {
 };
 
-inline LPVOID STDCALL GetCurrentSP()
+inline void* GetCurrentSP()
 {
-    _ASSERTE("The function is not implemented on wasm, it lacks registers");
-    return nullptr;
+    WRAPPER_NO_CONTRACT;
+    return (void*)emscripten_stack_get_current();
 }
 
 extern PCODE GetPreStubEntryPoint();
@@ -74,12 +75,6 @@ class StubLinkerCPU : public StubLinker
 {
 public:
     static void Init() { /* no-op on wasm */ }
-    inline void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray) {
-        _ASSERTE("The EmitShuffleThunk is not implemented on wasm");
-    }
-    inline VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg) {
-        _ASSERTE("The EmitComputedInstantiatingMethodStub is not implemented on wasm");
-    }
 };
 
 //**********************************************************************
@@ -132,26 +127,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 {
     // no-op on wasm
     return true;
-}
-
-//
-// On IA64 back to back jumps should be separated by a nop bundle to get
-// the best performance from the hardware's branch prediction logic.
-// For all other platforms back to back jumps don't require anything special
-// That is why we have these two wrapper functions that call emitJump and decodeJump
-//
-
-//------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    _ASSERTE("emitBackToBackJump is not implemented on wasm");
-}
-
-//------------------------------------------------------------------------
-inline PCODE decodeBackToBackJump(PCODE pBuffer)
-{
-    _ASSERTE("decodeBackToBackJump is not implemented on wasm");
-    return 0;
 }
 
 FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue, int64_t iComparand)

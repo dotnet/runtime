@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
                 {
                     0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "M9"),
 
-                    _ => throw new global::System.IndexOutOfRangeException(nameof(index)),  // return the same exception LoggerMessage.Define returns in this case
+                    _ => throw new global::System.IndexOutOfRangeException(),  // return the same exception LoggerMessage.Define returns in this case
                 };
             }
 

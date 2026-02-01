@@ -52,11 +52,15 @@
         <ExceptionFile>$(TargetDir)%(Class)%(Identity).exception.txt</ExceptionFile>
       </ExecuteMethod>
       <ExecuteMethod>
-        <Command>$(NetCoreAppCurrentTestHostPath)dotnet exec --runtimeconfig $(TargetDir)$(TargetName).runtimeconfig.json Microsoft.DotNet.RemoteExecutor.dll $(AssemblyName) %(Class) %(Identity) %(ExceptionFile) %(Parameters)</Command>
+        <Command>$(NetCoreAppCurrentTestHostPath)dotnet exec --runtimeconfig $(TargetDir)$(TargetName).runtimeconfig.json --depsfile $(TargetDir)$(TargetName).deps.json Microsoft.DotNet.RemoteExecutor.dll $(AssemblyName) %(Class) %(Identity) %(ExceptionFile) %(Parameters)</Command>
       </ExecuteMethod>
     </ItemGroup>
 
-    <Exec Command="%(ExecuteMethod.Command)" WorkingDirectory="$(TargetDir)" />
+    <Exec Command="%(ExecuteMethod.Command)" WorkingDirectory="$(TargetDir)" IgnoreExitCode="true" >
+      <Output TaskParameter="ExitCode" PropertyName="_ExitCode" />
+    </Exec>
+
+    <Error Condition="'$(_ExitCode)' != '42'" Text="Test resource generation failed, exit code: $(_ExitCode)" />
   </Target>
 
 </Project>

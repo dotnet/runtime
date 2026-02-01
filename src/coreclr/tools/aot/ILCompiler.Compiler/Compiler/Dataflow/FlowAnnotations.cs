@@ -36,6 +36,8 @@ namespace ILLink.Shared.TrimAnalysis
 
         public FlowAnnotations(Logger logger, ILProvider ilProvider, CompilerGeneratedState compilerGeneratedState)
         {
+            ilProvider = new AsyncMaskingILProvider(ilProvider);
+
             _hashtable = new TypeAnnotationsHashtable(logger, ilProvider, compilerGeneratedState);
             _logger = logger;
             ILProvider = ilProvider;
@@ -282,7 +284,7 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 if (metadataType.Name.SequenceEqual("Type"u8) && metadataType.Namespace.SequenceEqual("System"u8))
                     return true;
-            } while ((metadataType = metadataType.MetadataBaseType) != null);
+            } while ((metadataType = metadataType.BaseType) != null);
 
             return false;
         }
@@ -298,7 +300,8 @@ namespace ILLink.Shared.TrimAnalysis
             private readonly Logger _logger;
             private readonly CompilerGeneratedState _compilerGeneratedState;
 
-            public TypeAnnotationsHashtable(Logger logger, ILProvider ilProvider, CompilerGeneratedState compilerGeneratedState) => (_logger, _ilProvider, _compilerGeneratedState) = (logger, ilProvider, compilerGeneratedState);
+            public TypeAnnotationsHashtable(Logger logger, ILProvider ilProvider, CompilerGeneratedState compilerGeneratedState) =>
+                (_logger, _ilProvider, _compilerGeneratedState) = (logger, ilProvider, compilerGeneratedState);
 
             private static DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMembersAttribute(MetadataReader reader, CustomAttributeHandleCollection customAttributeHandles)
             {
@@ -503,6 +506,13 @@ namespace ILLink.Shared.TrimAnalysis
                         continue;
 
                     PropertyPseudoDesc property = new PropertyPseudoDesc(ecmaType, propertyHandle);
+
+                    if (CompilerGeneratedNames.IsExtensionType(ecmaType.Name))
+                    {
+                        // Annotations on extension properties are not supported.
+                        _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties, property.GetDisplayName());
+                        continue;
+                    }
 
                     if (!IsTypeInterestingForDataflow(property.Signature.ReturnType))
                     {

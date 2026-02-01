@@ -191,6 +191,7 @@ namespace ILLink.Shared
         TypeMapGroupTypeCannotBeStaticallyDetermined = 2124,
         ReferenceNotMarkedIsTrimmable = 2125,
         DataflowAnalysisDidNotConverge = 2126,
+        DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties = 2127,
         _EndTrimAnalysisWarningsSentinel,
 
         // Single-file diagnostic ids.

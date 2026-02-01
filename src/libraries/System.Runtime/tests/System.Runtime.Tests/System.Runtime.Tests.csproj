@@ -18,7 +18,6 @@
     <ShouldILStrip>false</ShouldILStrip>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
-    <XunitShowProgress>true</XunitShowProgress>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
   </PropertyGroup>
@@ -140,6 +139,7 @@
     <Compile Include="System\NullableMetadataTests.cs" />
     <Compile Include="System\NullableTests.cs" />
     <Compile Include="System\NullReferenceExceptionTests.cs" />
+    <Compile Include="System\Numerics\BFloat16Tests.cs" />
     <Compile Include="System\Numerics\IExponentialFunctionsTests.cs" />
     <Compile Include="System\Numerics\IFloatingPointTests.cs" />
     <Compile Include="System\Numerics\TotalOrderIeee754ComparerTests.cs" />

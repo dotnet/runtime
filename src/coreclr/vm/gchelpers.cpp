@@ -55,7 +55,7 @@ EXTERN_C ee_alloc_context* GetThreadEEAllocContext()
 //  numElements     -  number of array elements
 //  pTransitionBlock-  transition frame to make stack crawlable
 // Returns a pointer to the object allocated or NULL on failure.
-EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, GC_ALLOC_FLAGS uFlags, uintptr_t numElements, TransitionBlock* pTransitionBlock)
+EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, GC_ALLOC_FLAGS uFlags, intptr_t numElements, TransitionBlock* pTransitionBlock)
 {
     OBJECTREF newobj = NULL;
 

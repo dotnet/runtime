@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>False</Optimize>
+    <HasMergedInTests>True</HasMergedInTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CLR-x86-JIT\V1-M13-RTM\b89279\b89279.cs" />
+    <Compile Include="CLR-x86-JIT\V2.0-RTM\b369916\b369916.cs" />
+    <Compile Include="CLR-x86-JIT\V2.0-RTM\b604247\b604247.cs" />
+    <Compile Include="Dev11\dev11_13912\dev11_13912.cs" />
+    <Compile Include="Dev11\dev11_20929\dev11_20929.cs" />
+    <Compile Include="Dev14\DevDiv_876169\DevDiv_876169.cs" />
+    <Compile Include="JitBlue\DevDiv_359736\DevDiv_359736.cs" />
+    <Compile Include="JitBlue\DevDiv_794115\DevDiv_794115.cs" />
+    <Compile Include="JitBlue\DevDiv_794631\DevDiv_794631.cs" />
+    <Compile Include="JitBlue\DevDiv_815940\DevDiv_815940.cs" />
+    <Compile Include="JitBlue\DevDiv_816617\DevDiv_816617.cs" />
+    <Compile Include="JitBlue\devdiv_911875\DevDiv_911875.cs" />
+    <Compile Include="JitBlue\GitHub_19243\GitHub_19243.cs" />
+    <Compile Include="JitBlue\GitHub_19361\GitHub_19361.cs" />
+    <Compile Include="JitBlue\GitHub_19601\Github_19601.cs" />
+    <Compile Include="JitBlue\GitHub_22850\GitHub_22850.cs" />
+    <Compile Include="JitBlue\Runtime_42723\Runtime_42723.cs" />
+  </ItemGroup>
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

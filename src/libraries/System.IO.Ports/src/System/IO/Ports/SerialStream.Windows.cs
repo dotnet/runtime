@@ -1729,42 +1729,37 @@ namespace System.IO.Ports
             {
                 int errors = (int)state;
                 SerialStream stream = (SerialStream)streamWeakReference.Target;
-                if (stream == null)
+                if (stream is null)
                     return;
 
-                if (stream.ErrorReceived != null)
-                {
-                    if ((errors & (int)SerialError.TXFull) != 0)
-                        stream.ErrorReceived(stream, new SerialErrorReceivedEventArgs(SerialError.TXFull));
+                if ((errors & (int)SerialError.TXFull) != 0)
+                    stream.ErrorReceived?.Invoke(stream, new SerialErrorReceivedEventArgs(SerialError.TXFull));
 
-                    if ((errors & (int)SerialError.RXOver) != 0)
-                        stream.ErrorReceived(stream, new SerialErrorReceivedEventArgs(SerialError.RXOver));
+                if ((errors & (int)SerialError.RXOver) != 0)
+                    stream.ErrorReceived?.Invoke(stream, new SerialErrorReceivedEventArgs(SerialError.RXOver));
 
-                    if ((errors & (int)SerialError.Overrun) != 0)
-                        stream.ErrorReceived(stream, new SerialErrorReceivedEventArgs(SerialError.Overrun));
+                if ((errors & (int)SerialError.Overrun) != 0)
+                    stream.ErrorReceived?.Invoke(stream, new SerialErrorReceivedEventArgs(SerialError.Overrun));
 
-                    if ((errors & (int)SerialError.RXParity) != 0)
-                        stream.ErrorReceived(stream, new SerialErrorReceivedEventArgs(SerialError.RXParity));
+                if ((errors & (int)SerialError.RXParity) != 0)
+                    stream.ErrorReceived?.Invoke(stream, new SerialErrorReceivedEventArgs(SerialError.RXParity));
 
-                    if ((errors & (int)SerialError.Frame) != 0)
-                        stream.ErrorReceived(stream, new SerialErrorReceivedEventArgs(SerialError.Frame));
-                }
+                if ((errors & (int)SerialError.Frame) != 0)
+                    stream.ErrorReceived?.Invoke(stream, new SerialErrorReceivedEventArgs(SerialError.Frame));
             }
 
             private void CallReceiveEvents(object state)
             {
                 int nativeEvents = (int)state;
                 SerialStream stream = (SerialStream)streamWeakReference.Target;
-                if (stream == null)
+                if (stream is null)
                     return;
 
-                if (stream.DataReceived != null)
-                {
-                    if ((nativeEvents & (int)SerialData.Chars) != 0)
-                        stream.DataReceived(stream, new SerialDataReceivedEventArgs(SerialData.Chars));
-                    if ((nativeEvents & (int)SerialData.Eof) != 0)
-                        stream.DataReceived(stream, new SerialDataReceivedEventArgs(SerialData.Eof));
-                }
+                if ((nativeEvents & (int)SerialData.Chars) != 0)
+                    stream.DataReceived?.Invoke(stream, new SerialDataReceivedEventArgs(SerialData.Chars));
+
+                if ((nativeEvents & (int)SerialData.Eof) != 0)
+                    stream.DataReceived?.Invoke(stream, new SerialDataReceivedEventArgs(SerialData.Eof));
             }
 
             private void CallPinEvents(object state)
@@ -1772,26 +1767,23 @@ namespace System.IO.Ports
                 int nativeEvents = (int)state;
 
                 SerialStream stream = (SerialStream)streamWeakReference.Target;
-                if (stream == null)
+                if (stream is null)
                     return;
 
-                if (stream.PinChanged != null)
-                {
-                    if ((nativeEvents & (int)SerialPinChange.CtsChanged) != 0)
-                        stream.PinChanged(stream, new SerialPinChangedEventArgs(SerialPinChange.CtsChanged));
+                if ((nativeEvents & (int)SerialPinChange.CtsChanged) != 0)
+                    stream.PinChanged?.Invoke(stream, new SerialPinChangedEventArgs(SerialPinChange.CtsChanged));
 
-                    if ((nativeEvents & (int)SerialPinChange.DsrChanged) != 0)
-                        stream.PinChanged(stream, new SerialPinChangedEventArgs(SerialPinChange.DsrChanged));
+                if ((nativeEvents & (int)SerialPinChange.DsrChanged) != 0)
+                    stream.PinChanged?.Invoke(stream, new SerialPinChangedEventArgs(SerialPinChange.DsrChanged));
 
-                    if ((nativeEvents & (int)SerialPinChange.CDChanged) != 0)
-                        stream.PinChanged(stream, new SerialPinChangedEventArgs(SerialPinChange.CDChanged));
+                if ((nativeEvents & (int)SerialPinChange.CDChanged) != 0)
+                    stream.PinChanged?.Invoke(stream, new SerialPinChangedEventArgs(SerialPinChange.CDChanged));
 
-                    if ((nativeEvents & (int)SerialPinChange.Ring) != 0)
-                        stream.PinChanged(stream, new SerialPinChangedEventArgs(SerialPinChange.Ring));
+                if ((nativeEvents & (int)SerialPinChange.Ring) != 0)
+                    stream.PinChanged?.Invoke(stream, new SerialPinChangedEventArgs(SerialPinChange.Ring));
 
-                    if ((nativeEvents & (int)SerialPinChange.Break) != 0)
-                        stream.PinChanged(stream, new SerialPinChangedEventArgs(SerialPinChange.Break));
-                }
+                if ((nativeEvents & (int)SerialPinChange.Break) != 0)
+                    stream.PinChanged?.Invoke(stream, new SerialPinChangedEventArgs(SerialPinChange.Break));
             }
 
         }

@@ -573,6 +573,13 @@ namespace System.Text.RegularExpressions
             else if (end <= start2)
             {
                 start = start2;
+
+                // Ensure we don't create a capture with negative length
+                // When the balancing capture precedes the balanced group, end might be less than the new start
+                if (end < start)
+                {
+                    end = start;
+                }
             }
             else
             {
