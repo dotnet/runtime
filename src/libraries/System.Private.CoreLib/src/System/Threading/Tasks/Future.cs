@@ -54,7 +54,7 @@ namespace System.Threading.Tasks
     /// and may be used from multiple threads concurrently.
     /// </para>
     /// </remarks>
-    [DebuggerTypeProxy(typeof(SystemThreadingTasks_FutureDebugView<>))]
+    [DebuggerTypeProxy(typeof(SystemThreadingTasks_TaskOfTResultDebugView<>))]
     [DebuggerDisplay("Id = {Id}, Status = {Status}, Method = {DebuggerDisplayMethodDescription}, Result = {DebuggerDisplayResultDescription}")]
     public class Task<TResult> : Task
     {
@@ -1411,17 +1411,17 @@ namespace System.Threading.Tasks
     }
 
     // Proxy class for better debugging experience
-    internal sealed class SystemThreadingTasks_FutureDebugView<TResult>
+    internal sealed class SystemThreadingTasks_TaskOfTResultDebugView<TResult>
     {
         private readonly Task<TResult> m_task;
 
-        public SystemThreadingTasks_FutureDebugView(Task<TResult> task)
+        public SystemThreadingTasks_TaskOfTResultDebugView(Task<TResult> task)
         {
             Debug.Assert(task != null);
             m_task = task;
         }
 
-        public TResult? Result => m_task.Status == TaskStatus.RanToCompletion ? m_task.Result : default;
+        public TResult Result => m_task.Result;
         public object? AsyncState => m_task.AsyncState;
         public TaskCreationOptions CreationOptions => m_task.CreationOptions;
         public Exception? Exception => m_task.Exception;
