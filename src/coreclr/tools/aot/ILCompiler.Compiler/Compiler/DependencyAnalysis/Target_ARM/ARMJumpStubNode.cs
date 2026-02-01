@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (!_target.RepresentsIndirectionCell)
             {
-                encoder.EmitJMP(_target); // b methodEntryPoint
+                encoder.EmitJMP(_target, factory.Target.CodeDelta); // b methodEntryPoint
             }
             else
             {
