@@ -12,8 +12,12 @@ export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
     _ems_.DOTNET.lastScheduledTimerId = _ems_.safeSetTimeout(SystemJS_ScheduleTimerTick, shortestDueTimeMs);
 
     function SystemJS_ScheduleTimerTick(): void {
-        _ems_.DOTNET.lastScheduledTimerId = undefined;
-        _ems_._SystemJS_ExecuteTimerCallback();
+        try {
+            _ems_.DOTNET.lastScheduledTimerId = undefined;
+            _ems_._SystemJS_ExecuteTimerCallback();
+        } catch (err) {
+            _ems_.dotnetApi.exit(1, err);
+        }
     }
 }
 
@@ -26,7 +30,11 @@ export function SystemJS_ScheduleBackgroundJob(): void {
     _ems_.DOTNET.lastScheduledThreadPoolId = _ems_.safeSetTimeout(SystemJS_ScheduleBackgroundJobTick, 0);
 
     function SystemJS_ScheduleBackgroundJobTick(): void {
-        _ems_.DOTNET.lastScheduledThreadPoolId = undefined;
-        _ems_._SystemJS_ExecuteBackgroundJobCallback();
+        try {
+            _ems_.DOTNET.lastScheduledThreadPoolId = undefined;
+            _ems_._SystemJS_ExecuteBackgroundJobCallback();
+        } catch (err) {
+            _ems_.dotnetApi.exit(1, err);
+        }
     }
 }

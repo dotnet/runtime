@@ -132,8 +132,9 @@ export class HostBuilder implements DotnetHostBuilder {
         try {
             if (!this.dotnetApi) {
                 await this.create();
+            } else {
+                validateLoaderConfig();
             }
-            validateLoaderConfig();
             return this.dotnetApi!.runMain(loaderConfig.mainAssemblyName, applicationArguments);
         } catch (err) {
             exit(1, err);
@@ -145,8 +146,9 @@ export class HostBuilder implements DotnetHostBuilder {
         try {
             if (!this.dotnetApi) {
                 await this.create();
+            } else {
+                validateLoaderConfig();
             }
-            validateLoaderConfig();
             return this.dotnetApi!.runMainAndExit(loaderConfig.mainAssemblyName, applicationArguments);
         } catch (err) {
             exit(1, err);

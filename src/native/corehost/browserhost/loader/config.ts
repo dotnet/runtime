@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { Assets, LoaderConfig, LoaderConfigInternal } from "./types";
+import { browserVirtualAppBase } from "./per-module";
 
 export const loaderConfig: LoaderConfigInternal = {};
 
@@ -17,7 +18,6 @@ export function validateLoaderConfig(): void {
         throw new Error("Loader configuration error: 'resources.coreAssembly' is required and must contain at least one assembly.");
     }
 }
-
 
 export function mergeLoaderConfig(source: Partial<LoaderConfigInternal>): void {
     defaultConfig(loaderConfig);
@@ -78,7 +78,7 @@ function defaultConfig(target: LoaderConfigInternal) {
     if (target.loadAllSatelliteResources === undefined) target.loadAllSatelliteResources = false;
     if (target.debugLevel === undefined) target.debugLevel = 0;
     if (target.diagnosticTracing === undefined) target.diagnosticTracing = false;
-    if (target.virtualWorkingDirectory === undefined) target.virtualWorkingDirectory = "/";
+    if (target.virtualWorkingDirectory === undefined) target.virtualWorkingDirectory = browserVirtualAppBase;
     if (target.maxParallelDownloads === undefined) target.maxParallelDownloads = 16;
     normalizeConfig(target);
 }

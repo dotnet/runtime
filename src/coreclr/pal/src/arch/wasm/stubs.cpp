@@ -19,7 +19,16 @@ DBG_DebugBreak()
 #ifdef _DEBUG
     DBG_PrintInterpreterStack();
 #endif // _DEBUG
+    double start = emscripten_get_now();
     emscripten_debugger();
+    double end = emscripten_get_now();
+    // trying to guess if the debugger was attached
+    if (end - start < 100)
+    {
+        // If the debugger was not attached, abort the process
+        // to match other platforms and fail fast
+        emscripten_throw_string("Debugger not attached");
+    }
 }
 
 /* context */

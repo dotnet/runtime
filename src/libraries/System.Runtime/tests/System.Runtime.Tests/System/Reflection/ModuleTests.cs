@@ -92,7 +92,8 @@ namespace System.Reflection.Tests
             // Browser will include the path (/), so strip it
             if (PlatformDetection.IsBrowser && loc.Length > 1)
             {
-                loc = loc.Substring(1);
+                const string browserVirtualAppBase = "/managed/"; // keep in sync other places that define browserVirtualAppBase
+                loc = loc.Replace(browserVirtualAppBase, "");
             }
 
             Assert.Equal(loc, Module.FullyQualifiedName);

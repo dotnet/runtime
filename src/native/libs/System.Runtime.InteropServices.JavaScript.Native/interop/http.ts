@@ -22,6 +22,9 @@ function verifyEnvironment() {
 }
 
 function commonAsserts(controller: HttpController) {
+    if (BuildConfiguration !== "Debug") {
+        return;
+    }
     assertJsInterop();
     dotnetAssert.check(controller, "expected controller");
 }
@@ -71,7 +74,7 @@ function muteUnhandledRejection(promise: Promise<any>) {
 }
 
 export function httpAbort(controller: HttpController): void {
-    if (BuildConfiguration === "Debug") commonAsserts(controller);
+    commonAsserts(controller);
     try {
         if (!controller.isAborted) {
             if (controller.streamWriter) {
@@ -92,7 +95,7 @@ export function httpAbort(controller: HttpController): void {
 }
 
 export function httpTransformStreamWrite(controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<void> {
-    if (BuildConfiguration === "Debug") commonAsserts(controller);
+    commonAsserts(controller);
     dotnetAssert.check(bufferLength > 0, "expected bufferLength > 0");
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
@@ -124,7 +127,7 @@ export function httpTransformStreamClose(controller: HttpController): Controllab
 }
 
 export function httpFetchStream(controller: HttpController, url: string, headerNames: string[], headerValues: string[], optionNames: string[], optionValues: any[]): ControllablePromise<void> {
-    if (BuildConfiguration === "Debug") commonAsserts(controller);
+    commonAsserts(controller);
     const transformStream = new TransformStream<Uint8Array, Uint8Array>();
     controller.streamWriter = transformStream.writable.getWriter();
     muteUnhandledRejection(controller.streamWriter.closed);
@@ -134,7 +137,7 @@ export function httpFetchStream(controller: HttpController, url: string, headerN
 }
 
 export function httpFetchBytes(controller: HttpController, url: string, headerNames: string[], headerValues: string[], optionNames: string[], optionValues: any[], bodyPtr: VoidPtr, bodyLength: number): ControllablePromise<void> {
-    if (BuildConfiguration === "Debug") commonAsserts(controller);
+    commonAsserts(controller);
     // the bodyPtr is pinned by the caller
     const view = new Span(bodyPtr, bodyLength, MemoryViewType.Byte);
     const copy = view.slice() as Uint8Array;
@@ -142,7 +145,7 @@ export function httpFetchBytes(controller: HttpController, url: string, headerNa
 }
 
 export function httpFetch(controller: HttpController, url: string, headerNames: string[], headerValues: string[], optionNames: string[], optionValues: any[], body: Uint8Array | ReadableStream | null): ControllablePromise<void> {
-    if (BuildConfiguration === "Debug") commonAsserts(controller);
+    commonAsserts(controller);
     verifyEnvironment();
     assertJsInterop();
     dotnetAssert.check(url && typeof url === "string", "expected url string");
@@ -189,30 +192,30 @@ export function httpFetch(controller: HttpController, url: string, headerNames: 
 }
 
 export function httpGetResponseType(controller: HttpController): string | undefined {
-    if (BuildConfiguration === "Debug") commonAsserts(controller);
+    commonAsserts(controller);
     return controller.response?.type;
 }
 
 export function httpGetResponseStatus(controller: HttpController): number {
-    if (BuildConfiguration === "Debug") commonAsserts(controller);
+    commonAsserts(controller);
     return controller.response?.status ?? 0;
 }
 
 
 export function httpGetResponseHeaderNames(controller: HttpController): string[] {
-    if (BuildConfiguration === "Debug") commonAsserts(controller);
+    commonAsserts(controller);
     dotnetAssert.check(controller.responseHeaderNames, "expected responseHeaderNames");
     return controller.responseHeaderNames;
 }
 
 export function httpGetResponseHeaderValues(controller: HttpController): string[] {
-    if (BuildConfiguration === "Debug") commonAsserts(controller);
+    commonAsserts(controller);
     dotnetAssert.check(controller.responseHeaderValues, "expected responseHeaderValues");
     return controller.responseHeaderValues;
 }
 
 export function httpGetResponseLength(controller: HttpController): ControllablePromise<number> {
-    if (BuildConfiguration === "Debug") commonAsserts(controller);
+    commonAsserts(controller);
     return wrapAsCancelablePromise(async () => {
         const buffer = await controller.response!.arrayBuffer();
         controller.responseBuffer = buffer;
@@ -236,7 +239,7 @@ export function httpGetResponseBytes(controller: HttpController, view: Span): nu
 }
 
 export function httpGetStreamedResponseBytes(controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<number> {
-    if (BuildConfiguration === "Debug") commonAsserts(controller);
+    commonAsserts(controller);
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     return wrapAsCancelablePromise(async () => {
