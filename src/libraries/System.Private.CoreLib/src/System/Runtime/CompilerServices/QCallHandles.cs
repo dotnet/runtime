@@ -32,8 +32,6 @@ namespace System.Runtime.CompilerServices
         {
             return new ObjectHandleOnStack((object*)Unsafe.AsPointer(ref o));
         }
-
-        internal object? Value { get => *_ptr; }
     }
 
     internal ref struct ByteRef
@@ -45,7 +43,7 @@ namespace System.Runtime.CompilerServices
             _ref = ref byteReference;
         }
 
-        internal ref byte Value { get => ref _ref; }
+        internal ref byte Value => ref _ref;
     }
 
     // Wrapper for address of a byref to byte variable on stack

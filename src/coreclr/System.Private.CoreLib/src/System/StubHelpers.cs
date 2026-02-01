@@ -861,9 +861,7 @@ namespace System.StubHelpers
         {
             try
             {
-                object? managedHome = *pManagedHome;
-                ConvertContentsToManaged(*pMarshaler, ref managedHome, pNativeHome);
-                *pManagedHome = managedHome!;
+                ConvertContentsToManaged(*pMarshaler, ref *pManagedHome, pNativeHome);
             }
             catch (Exception ex)
             {
@@ -888,9 +886,7 @@ namespace System.StubHelpers
         {
             try
             {
-                object managedHome = *pManagedHome;
-                ClearNative(*pMarshaler, ref managedHome, pNativeHome);
-                Debug.Assert(managedHome == *pManagedHome);
+                ClearNative(*pMarshaler, ref *pManagedHome, pNativeHome);
             }
             catch (Exception ex)
             {

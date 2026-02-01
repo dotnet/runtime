@@ -667,10 +667,9 @@ void CallDefaultConstructor(OBJECTREF ref);
 
 // Helper class for calling managed methods marked with [UnmanagedCallersOnly].
 // This provides a more efficient alternative to MethodDescCallSite for methods
-// that use the reverse P/Invoke infrastructure.
+// using the reverse P/Invoke infrastructure.
 // This class assumes the target method signature has a trailing argument for
-// returning the exception (QCall::ObjectHandleOnStack). The C# signature should
-// have that argument, but the templated class parameters should not include it.
+// returning the exception (that is, Exception* in C#).
 //
 // Example usage:
 //   UnmanagedCallersOnlyCaller caller(BinderMethodID::MyMethod);
