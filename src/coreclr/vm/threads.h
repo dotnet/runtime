@@ -587,7 +587,7 @@ public:
         TSNC_Unknown                    = 0x00000000, // threads are initialized this way
 
         TSNC_DebuggerUserSuspend        = 0x00000001, // marked "suspended" by the debugger
-        // unused                       = 0x00000002,
+        TSNC_InterpreterSingleStep      = 0x00000002, // interpreter single-stepping is active on this thread
         TSNC_DebuggerIsStepping         = 0x00000004, // debugger is stepping this thread
         TSNC_DebuggerIsManagedException = 0x00000008, // EH is re-raising a managed exception.
         // unused                       = 0x00000010,
@@ -1970,6 +1970,26 @@ public:
         else
             ResetThreadStateNC(Thread::TSNC_DebuggerIsStepping);
     }
+
+#ifdef FEATURE_INTERPRETER
+    // Interpreter single-step support: mark/check the per-thread flag
+    // that indicates this thread should trigger single-step events when
+    // hitting INTOP_SINGLESTEP opcodes.
+    void MarkInterpreterSingleStep(bool onOff)
+    {
+        WRAPPER_NO_CONTRACT;
+        if (onOff)
+            SetThreadStateNC(Thread::TSNC_InterpreterSingleStep);
+        else
+            ResetThreadStateNC(Thread::TSNC_InterpreterSingleStep);
+    }
+
+    bool IsInterpreterSingleStepEnabled() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_StateNC & Thread::TSNC_InterpreterSingleStep) != 0;
+    }
+#endif // FEATURE_INTERPRETER
 
 #ifdef FEATURE_EMULATE_SINGLESTEP
     // ARM doesn't currently support any reliable hardware mechanism for single-stepping.
