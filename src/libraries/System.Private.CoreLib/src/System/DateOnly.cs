@@ -433,7 +433,19 @@ namespace System
         /// <param name="style">A bitwise combination of enumeration values that indicates the permitted format of s. A typical value to specify is None.</param>
         /// <param name="result">When this method returns, contains the DateOnly value equivalent to the date contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s parameter is empty string, or does not contain a valid string representation of a date. This parameter is passed uninitialized.</param>
         /// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
-        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out DateOnly result) => TryParseInternal(s, provider, style, out result) == ParseFailureKind.None;
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
+        {
+            ParseFailureKind failureKind = TryParseInternal(s, provider, style, out result);
+            if (failureKind != ParseFailureKind.None)
+            {
+                if (failureKind == ParseFailureKind.Argument_InvalidDateStyles)
+                {
+                    ThrowOnError(failureKind, s);
+                }
+                return false;
+            }
+            return true;
+        }
 
         private static ParseFailureKind TryParseInternal(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
         {
@@ -482,8 +494,19 @@ namespace System
         /// <param name="style">A bitwise combination of one or more enumeration values that indicate the permitted format of s.</param>
         /// <param name="result">When this method returns, contains the DateOnly value equivalent to the date contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s is empty string, or does not contain a date that correspond to the pattern specified in format. This parameter is passed uninitialized.</param>
         /// <returns>true if s was converted successfully; otherwise, false.</returns>
-        public static bool TryParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out DateOnly result) =>
-                            TryParseExactInternal(s, format, provider, style, out result) == ParseFailureKind.None;
+        public static bool TryParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
+        {
+            ParseFailureKind failureKind = TryParseExactInternal(s, format, provider, style, out result);
+            if (failureKind != ParseFailureKind.None)
+            {
+                if (failureKind == ParseFailureKind.Argument_InvalidDateStyles || failureKind == ParseFailureKind.Argument_BadFormatSpecifier)
+                {
+                    ThrowOnError(failureKind, s);
+                }
+                return false;
+            }
+            return true;
+        }
         private static ParseFailureKind TryParseExactInternal(ReadOnlySpan<char> s, ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
         {
             if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
@@ -514,7 +537,9 @@ namespace System
             if (!DateTimeParse.TryParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style, ref dtResult))
             {
                 result = default;
-                return ParseFailureKind.Format_BadDateOnly;
+                return dtResult.failure == ParseFailureKind.Argument_BadFormatSpecifier
+                    ? ParseFailureKind.Argument_BadFormatSpecifier
+                    : ParseFailureKind.Format_BadDateOnly;
             }
 
             if ((dtResult.flags & ParseFlagsDateMask) != 0)
@@ -546,8 +571,19 @@ namespace System
         /// <param name="style">A bitwise combination of enumeration values that defines how to interpret the parsed date. A typical value to specify is None.</param>
         /// <param name="result">When this method returns, contains the DateOnly value equivalent to the date contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s parameter is Empty, or does not contain a valid string representation of a date. This parameter is passed uninitialized.</param>
         /// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
-        public static bool TryParseExact(ReadOnlySpan<char> s, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateOnly result) =>
-                            TryParseExactInternal(s, formats, provider, style, out result) == ParseFailureKind.None;
+        public static bool TryParseExact(ReadOnlySpan<char> s, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
+        {
+            ParseFailureKind failureKind = TryParseExactInternal(s, formats, provider, style, out result);
+            if (failureKind != ParseFailureKind.None)
+            {
+                if (failureKind == ParseFailureKind.Argument_InvalidDateStyles || failureKind == ParseFailureKind.Argument_BadFormatSpecifier)
+                {
+                    ThrowOnError(failureKind, s);
+                }
+                return false;
+            }
+            return true;
+        }
 
         private static ParseFailureKind TryParseExactInternal(ReadOnlySpan<char> s, string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
         {
@@ -593,6 +629,12 @@ namespace System
                 {
                     result = new DateOnly(DayNumberFromDateTime(dtResult.parsedDate));
                     return ParseFailureKind.None;
+                }
+
+                if (dtResult.failure == ParseFailureKind.Argument_BadFormatSpecifier)
+                {
+                    result = default;
+                    return ParseFailureKind.Argument_BadFormatSpecifier;
                 }
             }
 
