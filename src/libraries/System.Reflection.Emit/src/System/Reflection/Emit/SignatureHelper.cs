@@ -252,7 +252,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private static void WriteSignatureForFunctionPointerType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
+        internal static void WriteSignatureForFunctionPointerType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
         {
             SignatureCallingConvention callConv = SignatureCallingConvention.Default;
             FunctionPointerAttributes attribs = FunctionPointerAttributes.None;
@@ -295,7 +295,11 @@ namespace System.Reflection.Emit
             if (returnType.GetRequiredCustomModifiers() is Type[] retModReqs)
                 WriteCustomModifiers(retModifiersEncoder, retModReqs, isOptional: false, module);
 
-            WriteSignatureForType(retTypeEncoder.Type(), returnType, module);
+            Type returnTypeToWrite = returnType;
+            if (returnTypeToWrite.IsSignatureType)
+                returnTypeToWrite = returnTypeToWrite.UnderlyingSystemType;
+
+            WriteSignatureForType(retTypeEncoder.Type(), returnTypeToWrite, module);
 
             foreach (Type paramType in paramTypes)
             {
@@ -308,7 +312,11 @@ namespace System.Reflection.Emit
                 if (paramType.GetRequiredCustomModifiers() is Type[] paramModReqs)
                     WriteCustomModifiers(paramModifiersEncoder, paramModReqs, isOptional: false, module);
 
-                WriteSignatureForType(paramEncoder.Type(), paramType, module);
+                Type paramTypeToWrite = paramType;
+                if (paramTypeToWrite.IsSignatureType)
+                    paramTypeToWrite = paramTypeToWrite.UnderlyingSystemType;
+
+                WriteSignatureForType(paramEncoder.Type(), paramTypeToWrite, module);
             }
         }
 

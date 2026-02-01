@@ -645,9 +645,54 @@ namespace System
         public virtual Type MakeArrayType(int rank) => throw new NotSupportedException();
         public virtual Type MakeByRefType() => throw new NotSupportedException();
 
+        /// <summary>
+        /// Creates a function pointer signature type with the specified return type, parameter types and calling conventions.
+        /// </summary>
+        /// <param name="returnType">The return type of the function pointer.
+        /// If <see langword="null"/>, the return type is assumed to be <see langword="void"/>.</param>
+        /// <param name="parameterTypes">An array of types representing the parameters of the function pointer.</param>
+        /// <param name="isUnmanaged"><see langword="true"/> if the function pointer uses unmanaged calling conventions; otherwise, <see langword="false"/>.</param>
+        /// <param name="callingConventions">An array of types representing the calling conventions applied to the function pointer.</param>
+        /// <returns>A <see cref="Type"/> object representing the constructed function pointer signature.</returns>
+        public static Type MakeFunctionPointerSignatureType(Type? returnType, Type[]? parameterTypes, bool isUnmanaged = false, Type[]? callingConventions = null)
+        {
+            returnType ??= typeof(void);
+            parameterTypes ??= [];
+            callingConventions ??= [];
+            return new SignatureFunctionPointerType(returnType, parameterTypes, isUnmanaged, callingConventions);
+        }
+
+        public virtual Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public virtual Type MakeGenericType(params Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+
+        /// <summary>
+        /// Creates a <see cref="Type"/> that represents <paramref name="type"/> with the specified
+        /// required and optional custom modifiers applied to its signature.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> to modify. This parameter cannot be <see langword="null"/>.</param>
+        /// <param name="requiredCustomModifiers">
+        /// An array of <see cref="Type"/> objects that represent required custom modifiers
+        /// (<c>modreq</c>) to apply to the returned type. If <see langword="null"/>, this
+        /// method treats the value as an empty array (no required modifiers).
+        /// </param>
+        /// <param name="optionalCustomModifiers">
+        /// An array of <see cref="Type"/> objects that represent optional custom modifiers
+        /// (<c>modopt</c>) to apply to the returned type. If <see langword="null"/>, this
+        /// method treats the value as an empty array (no optional modifiers).
+        /// </param>
+        /// <returns>A new <see cref="Type"/> instance that represents the specified <paramref name="type"/>
+        /// with the given required and optional custom modifiers.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="type"/> is <see langword="null"/>.</exception>
+        public static Type MakeModifiedSignatureType(Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
+        {
+            ArgumentNullException.ThrowIfNull(type);
+            requiredCustomModifiers ??= [];
+            optionalCustomModifiers ??= [];
+            return new SignatureModifiedType(type, requiredCustomModifiers, optionalCustomModifiers);
+        }
 
         public virtual Type MakePointerType() => throw new NotSupportedException();
 

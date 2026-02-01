@@ -3066,5 +3066,33 @@ public class MyType
                 tlc.Unload();
             }
         }
+
+        [Fact]
+        public void CallFunctionPointerField()
+        {
+            using TempFile file = TempFile.Create();
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder mb);
+            TypeBuilder tb = mb.DefineType("Program", TypeAttributes.Public);
+            MethodBuilder methb = tb.DefineMethod("Test", MethodAttributes.Public | MethodAttributes.Static);
+            methb.SetReturnType(typeof(int));
+            ILGenerator il = methb.GetILGenerator();
+            il.Emit(OpCodes.Call, typeof(ClassWithFunctionPointer).GetMethod("Init"));
+            il.Emit(OpCodes.Ldc_I4_2);
+            il.Emit(OpCodes.Ldc_I4_3);
+            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointer).GetField("Method"));
+            il.EmitCalli(Type.MakeFunctionPointerSignatureType(typeof(int), [typeof(int), typeof(int)]));
+            il.Emit(OpCodes.Ret);
+            tb.CreateType();
+            ab.Save(file.Path);
+
+            TestAssemblyLoadContext tlc = new();
+            Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
+            Type typeFromDisk = assemblyFromDisk.GetType("Program");
+            MethodInfo methodFromDisk = typeFromDisk.GetMethod("Test");
+            int result = (int)methodFromDisk.Invoke(null, null);
+
+            Assert.Equal(5, result);
+            tlc.Unload();
+        }
     }
 }
