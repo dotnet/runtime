@@ -174,7 +174,7 @@
     <value>Central Directory corrupt.</value>
   </data>
   <data name="CentralDirectoryInvalid" xml:space="preserve">
-    <value>Central Directory is invalid. {0}</value>
+    <value>Central Directory is invalid.</value>
   </data>
   <data name="CreateInReadMode" xml:space="preserve">
     <value>Cannot create entries on an archive opened in read mode.</value>
