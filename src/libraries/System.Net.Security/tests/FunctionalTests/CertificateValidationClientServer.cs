@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -304,6 +305,93 @@ namespace System.Net.Security.Tests
                     $"chain cert: subject={element.Certificate.Subject}, issuer={element.Certificate.Issuer}, thumbprint={element.Certificate.Thumbprint}");
             }
             Assert.Equal(cert.Issuer, trustedChain.ChainElements[1].Certificate.Subject);
+        }
+
+        [Fact]
+        public async Task RemoteCertificateValidationCallback_ExtraStoreCertificates_NotDisposed()
+        {
+            // Test that certificates added to ExtraStore during RemoteCertificateValidationCallback
+            // are not disposed by SslStream, avoiding NullReferenceException on subsequent uses.
+            // Regression test for https://github.com/dotnet/runtime/issues/111497
+
+            // Create a shared certificate that will be reused across multiple connections
+            X509Certificate2 sharedCertificate = Configuration.Certificates.GetServerCertificate();
+
+            int connectionCount = 0;
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "localhost",
+                    RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                    {
+                        connectionCount++;
+                        // Add a shared certificate to ExtraStore, simulating user code that
+                        // adds custom CA certificates for validation
+                        chain!.ChainPolicy.ExtraStore.Add(sharedCertificate);
+
+                        // The certificate should remain valid for subsequent uses
+                        Assert.NotEqual(IntPtr.Zero, sharedCertificate.Handle);
+
+                        return true;
+                    }
+                };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = _serverCertificate
+                };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None),
+                    server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
+            }
+
+            // Verify the certificate was not disposed after the connection closed
+            Assert.Equal(1, connectionCount);
+            Assert.NotEqual(IntPtr.Zero, sharedCertificate.Handle);
+
+            // Perform a second connection to ensure the certificate can be reused
+            (SslStream client2, SslStream server2) = TestHelper.GetConnectedSslStreams();
+            using (client2)
+            using (server2)
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "localhost",
+                    RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                    {
+                        connectionCount++;
+                        // Reuse the same certificate - this should not throw NullReferenceException
+                        chain!.ChainPolicy.ExtraStore.Add(sharedCertificate);
+                        chain.Reset();
+                        bool built = chain.Build((X509Certificate2)cert!);
+
+                        // Verify the shared certificate is still valid
+                        Assert.NotEqual(IntPtr.Zero, sharedCertificate.Handle);
+
+                        return true;
+                    }
+                };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = _serverCertificate
+                };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    client2.AuthenticateAsClientAsync(clientOptions, CancellationToken.None),
+                    server2.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
+            }
+
+            // Verify both connections succeeded and the certificate is still valid
+            Assert.Equal(2, connectionCount);
+            Assert.NotEqual(IntPtr.Zero, sharedCertificate.Handle);
+
+            sharedCertificate.Dispose();
         }
     }
 }
