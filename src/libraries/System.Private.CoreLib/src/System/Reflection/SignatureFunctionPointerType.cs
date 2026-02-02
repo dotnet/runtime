@@ -37,7 +37,26 @@ namespace System.Reflection
         public override bool IsGenericParameter => false;
         public override bool IsGenericTypeParameter => false;
         public override bool IsGenericMethodParameter => false;
-        public override bool ContainsGenericParameters => false;
+        public override bool ContainsGenericParameters
+        {
+            get
+            {
+                if (_returnType.ContainsGenericParameters)
+                {
+                    return true;
+                }
+
+                for (int i = 0; i < _parameterTypes.Length; i++)
+                {
+                    if (_parameterTypes[i].ContainsGenericParameters)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
         public override Type[] GenericTypeArguments => [];
         public override int GenericParameterPosition => 0;
         internal override SignatureType? ElementType => null;
