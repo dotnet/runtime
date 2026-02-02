@@ -90,22 +90,25 @@ namespace
     // A uniqifying append helper that doesn't let two entries with the same
     // "asset_name" be part of the "items" paths.
     void add_tpa_asset(
-        const deps_asset_t& asset,
-        const pal::string_t& resolved_path,
+        const pal::string_t& name,
+        const deps_asset_t* asset,
+        pal::string_t&& resolved_path,
         name_to_resolved_asset_map_t* items)
     {
-        name_to_resolved_asset_map_t::iterator existing = items->find(asset.name);
+        name_to_resolved_asset_map_t::iterator existing = items->find(name);
         if (existing == items->end())
         {
+            deps_resolved_asset_t resolved_asset(asset, std::move(resolved_path));
+
             if (trace::is_enabled())
             {
                 trace::verbose(_X("Adding tpa entry: %s, AssemblyVersion: %s, FileVersion: %s"),
-                    resolved_path.c_str(),
-                    asset.assembly_version.as_str().c_str(),
-                    asset.file_version.as_str().c_str());
+                    resolved_asset.resolved_path.c_str(),
+                    resolved_asset.assembly_version().as_str().c_str(),
+                    resolved_asset.file_version().as_str().c_str());
             }
 
-            items->emplace(asset.name, deps_resolved_asset_t(asset, resolved_path));
+            items->emplace(name, std::move(resolved_asset));
         }
     }
 
@@ -118,7 +121,6 @@ namespace
         const pal::string_t& dir_name,
         name_to_resolved_asset_map_t* items)
     {
-        version_t empty;
         trace::verbose(_X("Adding files from %s dir %s"), dir_name.c_str(), dir.c_str());
 
         // Managed extensions in priority order, pick DLL over EXE.
@@ -152,7 +154,7 @@ namespace
                 {
                     trace::verbose(_X("Skipping %s because the %s already exists in %s assemblies"),
                         file.c_str(),
-                        items->find(file_name)->second.asset.relative_path.c_str(),
+                        items->find(file_name)->second.resolved_path.c_str(),
                         dir_name.c_str());
 
                     continue;
@@ -171,8 +173,8 @@ namespace
                     dir_name.c_str(),
                     file_path.c_str());
 
-                deps_asset_t asset(file_name, file, empty, empty);
-                add_tpa_asset(asset, file_path, items);
+                // Pass nullptr for asset - these entries have no version info
+                add_tpa_asset(file_name, nullptr, std::move(file_path), items);
             }
         }
     }
@@ -451,7 +453,7 @@ bool deps_resolver_t::resolve_tpa_list(
                 // The runtime directly probes the bundle-manifest using a host-callback.
                 if (probe_result != probe_result_t::bundled)
                 {
-                    add_tpa_asset(entry.asset, resolved_path, &items);
+                    add_tpa_asset(entry.asset.name, &entry.asset, std::move(resolved_path), &items);
                 }
 
                 return true;
@@ -478,8 +480,8 @@ bool deps_resolver_t::resolve_tpa_list(
             deps_resolved_asset_t* existing_entry = &existing->second;
 
             // If deps entry is same or newer than existing, then see if it should be replaced
-            if (entry.asset.assembly_version > existing_entry->asset.assembly_version ||
-                (entry.asset.assembly_version == existing_entry->asset.assembly_version && entry.asset.file_version >= existing_entry->asset.file_version))
+            if (entry.asset.assembly_version > existing_entry->assembly_version() ||
+                (entry.asset.assembly_version == existing_entry->assembly_version() && entry.asset.file_version >= existing_entry->file_version()))
             {
                 probe_result_t probe_result = probe_deps_entry(entry, deps_dir, fx_level, &resolved_path);
                 if (probe_result != probe_result_t::not_found)
@@ -488,7 +490,9 @@ bool deps_resolver_t::resolve_tpa_list(
                     if (resolved_path != existing_entry->resolved_path)
                     {
                         trace::verbose(_X("Replacing deps entry [%s, AssemblyVersion:%s, FileVersion:%s] with [%s, AssemblyVersion:%s, FileVersion:%s]"),
-                            existing_entry->resolved_path.c_str(), existing_entry->asset.assembly_version.as_str().c_str(), existing_entry->asset.file_version.as_str().c_str(),
+                            existing_entry->resolved_path.c_str(),
+                            existing_entry->assembly_version().as_str().c_str(),
+                            existing_entry->file_version().as_str().c_str(),
                             resolved_path.c_str(), entry.asset.assembly_version.as_str().c_str(), entry.asset.file_version.as_str().c_str());
 
                         existing_entry = nullptr;
@@ -496,8 +500,7 @@ bool deps_resolver_t::resolve_tpa_list(
 
                         if (probe_result != probe_result_t::bundled)
                         {
-                            deps_asset_t asset(entry.asset.name, entry.asset.relative_path, entry.asset.assembly_version, entry.asset.file_version);
-                            add_tpa_asset(asset, resolved_path, &items);
+                            add_tpa_asset(entry.asset.name, &entry.asset, std::move(resolved_path), &items);
                         }
                     }
                 }

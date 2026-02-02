@@ -12,7 +12,7 @@
 
 struct deps_asset_t
 {
-    deps_asset_t() : deps_asset_t(_X(""), _X(""), version_t(), version_t(), _X("")) { }
+    deps_asset_t() : deps_asset_t(_X(""), _X(""), version_t::empty(), version_t::empty(), _X("")) { }
 
     deps_asset_t(const pal::string_t& name, const pal::string_t& relative_path, const version_t& assembly_version, const version_t& file_version)
         : deps_asset_t(name, relative_path, assembly_version, file_version, _X("")) { }

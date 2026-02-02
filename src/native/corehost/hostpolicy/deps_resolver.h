@@ -34,12 +34,24 @@ enum class probe_result_t
 
 struct deps_resolved_asset_t
 {
-    deps_resolved_asset_t(const deps_asset_t& asset, const pal::string_t& resolved_path)
-        : asset(asset)
-        , resolved_path(resolved_path) { }
+    deps_resolved_asset_t(const deps_asset_t* asset, pal::string_t&& resolved_path)
+        : resolved_path(std::move(resolved_path))
+        , m_asset(asset) { }
 
-    deps_asset_t asset;
+    const version_t& assembly_version() const
+    {
+        return m_asset != nullptr ? m_asset->assembly_version : version_t::empty();
+    }
+
+    const version_t& file_version() const
+    {
+        return m_asset != nullptr ? m_asset->file_version : version_t::empty();
+    }
+
     pal::string_t resolved_path;
+
+private:
+    const deps_asset_t* m_asset;
 };
 
 typedef std::unordered_map<pal::string_t, deps_resolved_asset_t> name_to_resolved_asset_map_t;
