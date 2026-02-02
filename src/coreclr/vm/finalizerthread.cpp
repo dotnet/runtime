@@ -40,7 +40,7 @@ bool FinalizerThread::IsCurrentThreadFinalizer()
     return GetThreadNULLOk() == g_pFinalizerThread;
 }
 
-#ifdef TARGET_WASM
+#ifdef TARGET_BROWSER
 
 extern "C" void SystemJS_ScheduleFinalization();
 
@@ -63,7 +63,7 @@ extern "C" void SystemJS_ExecuteFinalizationCallback()
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 }
 
-#endif // TARGET_WASM
+#endif // TARGET_BROWSER
 
 void FinalizerThread::EnableFinalization()
 {
@@ -72,7 +72,11 @@ void FinalizerThread::EnableFinalization()
 #ifndef TARGET_WASM
     hEventFinalizer->Set();
 #else  // !TARGET_WASM
+#ifdef TARGET_BROWSER
     SystemJS_ScheduleFinalization();
+#else
+    // WASI is not implemented yet
+#endif // TARGET_BROWSER
 #endif // !TARGET_WASM
 }
 
