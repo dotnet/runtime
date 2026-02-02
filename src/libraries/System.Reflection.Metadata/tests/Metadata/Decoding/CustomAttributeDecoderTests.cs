@@ -762,6 +762,15 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
             public PrimitiveTypeCode GetUnderlyingEnumType(string type)
             {
+#if NET && !TARGET_BROWSER
+                // Handle generic type instances with nested enums (e.g., "GenericClassForEnum`1/E")
+                // These appear when decoding generic type instantiations in custom attribute signatures
+                if (type.Contains("GenericClassForEnum") && type.Contains("/E"))
+                {
+                    return PrimitiveTypeCode.Int32;
+                }
+#endif
+
                 Type runtimeType = Type.GetType(type.Replace('/', '+')); // '/' vs '+' is only difference between ilasm and reflection notation for fixed set below.
 
                 if (runtimeType == typeof(SByteEnum))
@@ -790,11 +799,6 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
                 if (runtimeType == typeof(MyEnum))
                     return PrimitiveTypeCode.Byte;
-
-#if NET && !TARGET_BROWSER
-                if (runtimeType == typeof(GenericClassForEnum<int>.E))
-                    return PrimitiveTypeCode.Int32;
-#endif
 
                 throw new ArgumentOutOfRangeException();
             }
