@@ -260,7 +260,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_debugLocInfos == null)
                 yield break;
 
-            var sequencePoints = new (string Document, int LineNumber, bool IsBackedSequencePoint)[_debugLocInfos.Length * 4 /* chosen empirically */];
+            var sequencePoints = new (string Document, int LineNumber)[_debugLocInfos.Length * 4 /* chosen empirically */];
             try
             {
                 foreach (var sequencePoint in _debugInfo.GetSequencePoints())
@@ -271,7 +271,7 @@ namespace ILCompiler.DependencyAnalysis
                         int newLength = Math.Max(2 * sequencePoints.Length, sequencePoint.Offset + 1);
                         Array.Resize(ref sequencePoints, newLength);
                     }
-                    sequencePoints[offset] = (sequencePoint.Document, sequencePoint.LineNumber, true);
+                    sequencePoints[offset] = (sequencePoint.Document, sequencePoint.LineNumber);
                 }
 
                 // Propagate last known document/line number forward to enable correct mapping when IL offsets decrease at higher native offsets
@@ -279,7 +279,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (sequencePoints[i].Document == null && sequencePoints[i - 1].Document != null)
                     {
-                        sequencePoints[i] = (sequencePoints[i - 1].Document, sequencePoints[i - 1].LineNumber, false);
+                        sequencePoints[i] = (sequencePoints[i - 1].Document, sequencePoints[i - 1].LineNumber);
                     }
                 }
             }
@@ -292,28 +292,28 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             int previousNativeOffset = -1;
-            int maxIlOffset = -1;
+            string previousDocument = null;
+            int previousLineNumber = -1;
+            // OffsetMapping is sorted in order of increasing native offset (but not necessarily by IL offset)
             foreach (var nativeMapping in _debugLocInfos)
             {
+                // Make sure we don't emit multiple sequence points for the same native offset
+                // Because CreateLineNumbersBlob uses zero deltas to indicate document changes.
                 if (nativeMapping.NativeOffset == previousNativeOffset)
                     continue;
 
-                if (nativeMapping.ILOffset < sequencePoints.Length)
+                var sequencePoint = sequencePoints[Math.Min(nativeMapping.ILOffset, sequencePoints.Length - 1)];
+                // Emit sequence point if its line number or document differ from the previous one.
+                // See WalkILOffsetsCallback in src/coreclr/vm/debugdebugger.cpp for more details.
+                if (sequencePoint.Document != null && (sequencePoint.Document != previousDocument || sequencePoint.LineNumber != previousLineNumber))
                 {
-                    var sequencePoint = sequencePoints[nativeMapping.ILOffset];
-                    // Emit sequence point if we have it from _debugInfo or if ILOffset decreases.
-                    // This handles the case of IL offsets decreasing at higher native offsets.
-                    // See WalkILOffsetsCallback in src/coreclr/vm/debugdebugger.cpp for more details.
-                    if ((sequencePoint.IsBackedSequencePoint || nativeMapping.ILOffset <= maxIlOffset) &&
-                        sequencePoint.Document != null)
-                    {
-                        yield return new NativeSequencePoint(
-                            nativeMapping.NativeOffset,
-                            sequencePoint.Document,
-                            sequencePoint.LineNumber);
-                        previousNativeOffset = nativeMapping.NativeOffset;
-                    }
-                    maxIlOffset = Math.Max(maxIlOffset, nativeMapping.ILOffset);
+                    yield return new NativeSequencePoint(
+                        nativeMapping.NativeOffset,
+                        sequencePoint.Document,
+                        sequencePoint.LineNumber);
+                    previousNativeOffset = nativeMapping.NativeOffset;
+                    previousDocument = sequencePoint.Document;
+                    previousLineNumber = sequencePoint.LineNumber;
                 }
             }
         }
