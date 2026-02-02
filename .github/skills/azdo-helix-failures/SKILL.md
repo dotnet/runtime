@@ -13,7 +13,8 @@ The dotnet/runtime repository uses Azure DevOps for CI builds and Helix for dist
 
 1. **Azure DevOps** orchestrates the build and sends test workloads to Helix
 2. **Helix** runs the tests on various platforms and reports results back
-3. Failure information is spread across AzDO build logs and Helix console logs
+3. **Local tests** run directly on the build agent (some repos like dotnet/sdk)
+4. Failure information is spread across AzDO build logs, Helix console logs, and Test Management
 
 This skill provides tools to quickly retrieve this information.
 
@@ -57,6 +58,7 @@ The script works with any GitHub repository that uses Azure DevOps/Helix:
 
 ```powershell
 .\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276276 -Repository "dotnet/sdk"
 ```
 
 ### Control Output Volume
@@ -83,6 +85,34 @@ The script works with any GitHub repository that uses Azure DevOps/Helix:
 - **PowerShell 5.1+** or **PowerShell Core 7+**
 - **GitHub CLI (`gh`)**: Required only for `-PRNumber` parameter. Install from https://cli.github.com/
 
+## Test Execution Types
+
+The script detects and handles different test execution types:
+
+### Helix Tests
+Tests run on the Helix distributed test infrastructure. The script extracts Helix console log URLs and can fetch detailed failure information with `-ShowLogs`.
+
+### Local Tests (Non-Helix)
+Some repositories (e.g., dotnet/sdk) run tests directly on the build agent. The script:
+- Detects local test failures from Azure DevOps issues
+- Extracts Azure DevOps Test Run URLs for detailed results
+- Provides links to Test Management for viewing individual test failures
+
+Example output for local tests:
+```
+=== Local Test Failures (non-Helix) ===
+
+--- Run TemplateEngine Tests ---
+  XUnit(0,0): error : Tests failed: dotnet-new.IntegrationTests_net10.0_x64.html
+
+  Test Results:
+    Run 35626548: https://dev.azure.com/dnceng-public/public/_TestManagement/Runs?runId=35626548
+    Run 35626550: https://dev.azure.com/dnceng-public/public/_TestManagement/Runs?runId=35626550
+
+  Classification: [Test] Local xUnit test failure
+  Suggested action: Check test run URL for specific failed test details
+```
+
 ## Failure Classification
 
 The script automatically classifies failures and suggests actions:
@@ -100,6 +130,7 @@ The script automatically classifies failures and suggests actions:
 | `Assert.Equal() Failure` | Test | No | Fix test or code |
 | `Unable to pull image` | Infrastructure | Yes | Retry - container registry issue |
 | `Connection refused` | Infrastructure | Yes | Retry - network issue |
+| `XUnit...Tests failed` | Test | No | Check test run URL for details |
 
 ## Build Definition IDs
 

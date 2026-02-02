@@ -350,6 +350,13 @@ function Get-FailureClassification {
             Summary = '[Docker] Container image pull failure'
             Action = 'Retry - transient container registry connectivity issue'
             Transient = $true
+        },
+        @{
+            Pattern = 'XUnit.*error.*Tests failed:'
+            Type = 'Test'
+            Summary = '[Test] Local xUnit test failure'
+            Action = 'Check test run URL for specific failed test details'
+            Transient = $false
         }
     )
     
@@ -371,6 +378,82 @@ function Get-FailureClassification {
         Action = 'Manual investigation required'
         Transient = $false
     }
+}
+
+function Extract-TestRunUrls {
+    param([string]$LogContent)
+    
+    $testRuns = @()
+    
+    # Match Azure DevOps Test Run URLs
+    # Pattern: Published Test Run : https://dev.azure.com/dnceng-public/public/_TestManagement/Runs?runId=35626550&_a=runCharts
+    $pattern = 'Published Test Run\s*:\s*(https://dev\.azure\.com/[^/]+/[^/]+/_TestManagement/Runs\?runId=(\d+)[^\s]*)'
+    $matches = [regex]::Matches($LogContent, $pattern)
+    
+    foreach ($match in $matches) {
+        $testRuns += @{
+            Url = $match.Groups[1].Value
+            RunId = $match.Groups[2].Value
+        }
+    }
+    
+    Write-Verbose "Found $($testRuns.Count) test run URLs"
+    return $testRuns
+}
+
+function Get-LocalTestFailures {
+    param(
+        [object]$Timeline,
+        [int]$BuildId
+    )
+    
+    $localFailures = @()
+    
+    # Find failed test tasks (non-Helix)
+    # Look for tasks with "Test" in name that have issues but no Helix URLs
+    $testTasks = $Timeline.records | Where-Object { 
+        ($_.name -match 'Test|xUnit' -or $_.type -eq 'Task') -and 
+        $_.issues -and 
+        $_.issues.Count -gt 0 
+    }
+    
+    foreach ($task in $testTasks) {
+        # Check if this task has test failures (XUnit errors)
+        $testErrors = $task.issues | Where-Object { 
+            $_.message -match 'Tests failed:' -or 
+            $_.message -match 'error\s*:.*Test.*failed' 
+        }
+        
+        if ($testErrors.Count -gt 0) {
+            # This is a local test failure
+            $failure = @{
+                TaskName = $task.name
+                TaskId = $task.id
+                LogId = $task.log.id
+                Issues = $testErrors
+                TestRunUrls = @()
+            }
+            
+            # Try to get test run URLs from the publish task
+            $publishTask = $Timeline.records | Where-Object { 
+                $_.parentId -eq $task.parentId -and 
+                $_.name -match 'Publish.*Test.*Results' -and
+                $_.log
+            } | Select-Object -First 1
+            
+            if ($publishTask -and $publishTask.log) {
+                $logContent = Get-BuildLog -Build $BuildId -LogId $publishTask.log.id
+                if ($logContent) {
+                    $testRunUrls = Extract-TestRunUrls -LogContent $logContent
+                    $failure.TestRunUrls = $testRunUrls
+                }
+            }
+            
+            $localFailures += $failure
+        }
+    }
+    
+    return $localFailures
 }
 
 function Get-HelixJobDetails {
@@ -646,8 +729,70 @@ try {
     # Get failed jobs
     $failedJobs = Get-FailedJobs -Timeline $timeline
     
-    if (-not $failedJobs -or $failedJobs.Count -eq 0) {
+    # Also check for local test failures (non-Helix)
+    $localTestFailures = Get-LocalTestFailures -Timeline $timeline -BuildId $BuildId
+    
+    if ((-not $failedJobs -or $failedJobs.Count -eq 0) -and $localTestFailures.Count -eq 0) {
         Write-Host "`nNo failed jobs found in build $BuildId" -ForegroundColor Green
+        exit 0
+    }
+    
+    # Report local test failures first (these may exist even without failed jobs)
+    if ($localTestFailures.Count -gt 0) {
+        Write-Host "`n=== Local Test Failures (non-Helix) ===" -ForegroundColor Yellow
+        
+        foreach ($failure in $localTestFailures) {
+            Write-Host "`n--- $($failure.TaskName) ---" -ForegroundColor Cyan
+            
+            # Show issues
+            foreach ($issue in $failure.Issues) {
+                Write-Host "  $($issue.message)" -ForegroundColor Red
+            }
+            
+            # Show test run URLs if available
+            if ($failure.TestRunUrls.Count -gt 0) {
+                Write-Host "`n  Test Results:" -ForegroundColor Yellow
+                foreach ($testRun in $failure.TestRunUrls) {
+                    Write-Host "    Run $($testRun.RunId): $($testRun.Url)" -ForegroundColor Gray
+                }
+            }
+            
+            # Try to get more details from the task log
+            if ($failure.LogId) {
+                $logContent = Get-BuildLog -Build $BuildId -LogId $failure.LogId
+                if ($logContent) {
+                    # Extract test run URLs from this log too
+                    $additionalRuns = Extract-TestRunUrls -LogContent $logContent
+                    if ($additionalRuns.Count -gt 0 -and $failure.TestRunUrls.Count -eq 0) {
+                        Write-Host "`n  Test Results:" -ForegroundColor Yellow
+                        foreach ($testRun in $additionalRuns) {
+                            Write-Host "    Run $($testRun.RunId): $($testRun.Url)" -ForegroundColor Gray
+                        }
+                    }
+                    
+                    # Classify the failure
+                    $buildErrors = Extract-BuildErrors -LogContent $logContent
+                    if ($buildErrors.Count -gt 0) {
+                        $classification = Get-FailureClassification -Errors $buildErrors
+                        if ($classification -and $classification.Type -ne 'Unknown') {
+                            Write-Host "`n  Classification: $($classification.Summary)" -ForegroundColor Yellow
+                            if ($classification.Action) {
+                                Write-Host "  Suggested action: $($classification.Action)" -ForegroundColor Green
+                            }
+                            if ($classification.Transient) {
+                                Write-Host "  (This failure appears to be transient - retry may help)" -ForegroundColor Cyan
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    if (-not $failedJobs -or $failedJobs.Count -eq 0) {
+        Write-Host "`n=== Summary ===" -ForegroundColor Yellow
+        Write-Host "Local test failures: $($localTestFailures.Count)" -ForegroundColor Red
+        Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Cyan
         exit 0
     }
     
@@ -770,6 +915,9 @@ try {
     
     Write-Host "`n=== Summary ===" -ForegroundColor Yellow
     Write-Host "Total failed jobs: $($failedJobs.Count)" -ForegroundColor Red
+    if ($localTestFailures.Count -gt 0) {
+        Write-Host "Local test failures: $($localTestFailures.Count)" -ForegroundColor Red
+    }
     Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Cyan
     
 }
