@@ -176,6 +176,116 @@ function Extract-TestFailures {
     return $failures
 }
 
+function Extract-BuildErrors {
+    param([string]$LogContent)
+    
+    $errors = @()
+    $lines = $LogContent -split "`n"
+    
+    # Patterns for common build errors
+    $errorPatterns = @(
+        '##\[error\].*',
+        'error\s*:\s*.+',
+        'error\s+CS\d+:.*',
+        'error\s+MSB\d+:.*',
+        'error\s+NU\d+:.*',
+        'fatal error:.*',
+        '\.pcm: No such file or directory',
+        'EXEC\s*:\s*error\s*:.*'
+    )
+    
+    $combinedPattern = ($errorPatterns -join '|')
+    
+    foreach ($line in $lines) {
+        if ($line -match $combinedPattern) {
+            # Clean up the line (remove timestamps, etc)
+            $cleanLine = $line -replace '^\d{4}-\d{2}-\d{2}T[\d:\.]+Z\s*', ''
+            $cleanLine = $cleanLine -replace '##\[error\]', 'ERROR: '
+            $errors += $cleanLine.Trim()
+        }
+    }
+    
+    return $errors | Select-Object -Unique -First 10
+}
+
+function Get-FailureClassification {
+    param([string[]]$Errors)
+    
+    $errorText = $Errors -join "`n"
+    
+    # Known failure patterns with classifications
+    $knownPatterns = @(
+        @{
+            Pattern = '\.pcm: No such file or directory|clang/ModuleCache'
+            Type = 'Infrastructure'
+            Summary = '[!] macOS clang module cache issue (dsymutil failure)'
+            Action = 'Apply StripSymbols=false workaround or wait for SDK fix'
+            Transient = $false
+        },
+        @{
+            Pattern = 'File size is not in the expected range|Size of the executable'
+            Type = 'SizeRegression'
+            Summary = '[Size] NativeAOT binary size regression'
+            Action = 'Investigate size increase or update thresholds'
+            Transient = $false
+        },
+        @{
+            Pattern = 'error NU1102: Unable to find package'
+            Type = 'Infrastructure'
+            Summary = '[Pkg] Missing NuGet package'
+            Action = 'Check if package is published to feeds; may need to wait for upstream build'
+            Transient = $true
+        },
+        @{
+            Pattern = 'DEVICE_NOT_FOUND|exit code 81|device unauthorized'
+            Type = 'Infrastructure'
+            Summary = '[Device] Android/iOS device infrastructure issue'
+            Action = 'Retry the build - transient device connection issue'
+            Transient = $true
+        },
+        @{
+            Pattern = 'Helix work item timed out|timed out after'
+            Type = 'Infrastructure'
+            Summary = '[Timeout] Helix timeout'
+            Action = 'Retry or investigate slow test; may need timeout increase'
+            Transient = $true
+        },
+        @{
+            Pattern = 'error CS\d+:'
+            Type = 'Build'
+            Summary = '[Build] C# compilation error'
+            Action = 'Fix the code - this is a real build failure'
+            Transient = $false
+        },
+        @{
+            Pattern = 'error MSB\d+:'
+            Type = 'Build'
+            Summary = '[Build] MSBuild error'
+            Action = 'Check build configuration and dependencies'
+            Transient = $false
+        }
+    )
+    
+    foreach ($known in $knownPatterns) {
+        if ($errorText -match $known.Pattern) {
+            return @{
+                Type = $known.Type
+                Summary = $known.Summary
+                Action = $known.Action
+                Transient = $known.Transient
+            }
+        }
+    }
+    
+    # Unknown failure
+    return @{
+        Type = 'Unknown'
+        Summary = '[?] Unknown failure type'
+        Action = 'Manual investigation required'
+        Transient = $false
+    }
+}
+
 function Get-HelixConsoleLog {
     param([string]$Url)
     
@@ -197,14 +307,25 @@ function Format-TestFailure {
         [int]$MaxLines = $MaxFailureLines
     )
     
-    # Extract the key failure information
     $lines = $LogContent -split "`n"
     $inFailure = $false
     $failureLines = @()
     $emptyLineCount = 0
     
+    # Expanded failure detection patterns
+    $failureStartPatterns = @(
+        '\[FAIL\]',
+        'Assert\.\w+\(\)\s+Failure',
+        'Expected:.*but was:',
+        'BUG:',
+        'FAILED\s*$',
+        'END EXECUTION - FAILED',
+        'System\.\w+Exception:'
+    )
+    $combinedPattern = ($failureStartPatterns -join '|')
+    
     foreach ($line in $lines) {
-        if ($line -match '\[FAIL\]') {
+        if (-not $inFailure -and $line -match $combinedPattern) {
             $inFailure = $true
             $emptyLineCount = 0
         }
@@ -316,15 +437,45 @@ try {
             }
         }
         else {
-            Write-Host "  No Helix tasks found for this job" -ForegroundColor Gray
-            
-            # Check if it's a build failure, not test failure
+            # No Helix tasks - this is a build failure, extract actual errors
             $buildTasks = $timeline.records | Where-Object { 
                 $_.parentId -eq $job.id -and $_.result -eq "failed" 
             }
             
             foreach ($task in $buildTasks | Select-Object -First 3) {
                 Write-Host "  Failed task: $($task.name)" -ForegroundColor Red
+                
+                # Fetch and parse the build log for actual errors
+                if ($task.log) {
+                    Write-Host "  Fetching build log..." -ForegroundColor Gray
+                    $logContent = Get-BuildLog -Build $BuildId -LogId $task.log.id
+                    
+                    if ($logContent) {
+                        $buildErrors = Extract-BuildErrors -LogContent $logContent
+                        
+                        if ($buildErrors.Count -gt 0) {
+                            Write-Host "  Build errors:" -ForegroundColor Red
+                            foreach ($err in $buildErrors) {
+                                Write-Host "    $err" -ForegroundColor White
+                            }
+                            
+                            # Classify the failure
+                            $classification = Get-FailureClassification -Errors $buildErrors
+                            if ($classification) {
+                                Write-Host "`n  Classification: $($classification.Summary)" -ForegroundColor Yellow
+                                if ($classification.Action) {
+                                    Write-Host "  Suggested action: $($classification.Action)" -ForegroundColor Green
+                                }
+                                if ($classification.Transient) {
+                                    Write-Host "  (This failure appears to be transient - retry may help)" -ForegroundColor Cyan
+                                }
+                            }
+                        }
+                        else {
+                            Write-Host "  (No specific errors extracted from log)" -ForegroundColor Gray
+                        }
+                    }
+                }
             }
         }
         
