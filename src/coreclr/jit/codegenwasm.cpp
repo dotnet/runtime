@@ -1427,7 +1427,7 @@ void CodeGen::genCall(GenTreeCall* call)
 //
 void CodeGen::genCallInstruction(GenTreeCall* call)
 {
-    EmitCallParams        params;
+    EmitCallParams params;
     params.isJump      = call->IsFastTailCall();
     params.hasAsyncRet = call->IsAsync();
 
