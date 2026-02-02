@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <CrossGenTest>false</CrossGenTest> <!-- Not compatible with crossgen2 -->
     <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive, IlasmRoundTripIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
 
@@ -21,6 +22,10 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- https://github.com/dotnet/runtime/issues/53321 -->
     <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm64' And '$(TargetOS)' == 'osx'">true</JitOptimizationSensitive>
+
+    <!-- This test is very specific to RyuJIT tooling. -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' != 'coreclr'">true</DisableProjectBuild>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>
@@ -29,12 +34,21 @@
   <ItemGroup>
     <Compile Include="superpmicollect.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 
   <ItemGroup>
     <_SpmiTestProjects Include="..\Performance\CodeQuality\Bytemark\Bytemark.csproj" />
     <_SpmiTestProjects Include="..\Performance\CodeQuality\Roslyn\CscBench.csproj" />
     <_SpmiTestProjects Include="..\Methodical\cctor\xassem\xprecise1_cs_do.csproj" />
-    <_SpmiTestSupportProjects Include="..\Methodical\cctor\xassem\testlib_xassem.csproj" />
+
+    <_SpmiTestProjects Update="@(_SpmiTestProjects)" TestProject="%(FileName)" />
+
+    <_SpmiTestSupportProjects Include="..\Methodical\cctor\xassem\testlib_xassem.csproj" TestProject="xprecise1_cs_do" />
+    <_SpmiTestSupportProjects Include="$(TestLibraryProjectPath)" TestProject="xprecise1_cs_do" />
+    <_SpmiTestSupportProjects Include="$(TestLibraryProjectPath)" TestProject="CscBench" />
+    <_SpmiTestSupportProjects Include="$(TestLibraryProjectPath)" TestProject="Bytemark" />
 
     <ProjectReference Include="@(_SpmiTestProjects);@(_SpmiTestSupportProjects)">
       <Targets>Build</Targets>
@@ -65,7 +79,7 @@
   </ItemGroup>
 
   <Target Name="_CopySpmiTestsToOutput" DependsOnTargets="ResolveProjectReferences" BeforeTargets="AssignTargetPaths">
-    <Copy SourceFiles="@(_SpmiTest)" DestinationFolder="$([System.IO.Path]::GetDirectoryName('$(OutputPath)'))/$([System.IO.Path]::GetFileName('%(FileName)'))" SkipUnchangedFiles="True" />
+    <Copy SourceFiles="@(_SpmiTest)" DestinationFolder="$([System.IO.Path]::GetDirectoryName('$(OutputPath)'))/$([System.IO.Path]::GetFileName('%(TestProject)'))" SkipUnchangedFiles="True" />
   </Target>
 
   <!-- This target builds the executables and test running scripts for the _SpmiTestProjects

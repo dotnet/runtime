@@ -1011,6 +1011,15 @@ BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     else if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
     {
         Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress);
+#ifdef DACCESS_COMPILE
+        // The DAC always treats GetPrecodeFromEntryPoint as if the speculative flag is TRUE.
+        // so it may return NULL
+        if (pPrecode == NULL)
+        {
+            return FALSE;
+        }
+#endif
+
         switch (pPrecode->GetType())
         {
             case PRECODE_STUB:

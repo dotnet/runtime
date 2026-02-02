@@ -2914,56 +2914,7 @@ ErrExit:
     return hr;
 } // HRESULT MDInfo::GetOneElementType()
 
-// Display the fields of the PInvoke custom value structure.
-
-void MDInfo::DisplayCorNativeLink(COR_NATIVE_LINK *pCorNLnk, const char *preFix)
-{
-    // Print the LinkType.
-    const char *curField = "\tLink Type : ";
-    switch(pCorNLnk->m_linkType)
-    {
-    case nltNone:
-        VWriteLine("%s%s%s(%02x)", preFix, curField, "nltNone", pCorNLnk->m_linkType);
-        break;
-    case nltAnsi:
-        VWriteLine("%s%s%s(%02x)", preFix, curField, "nltAnsi", pCorNLnk->m_linkType);
-        break;
-    case nltUnicode:
-        VWriteLine("%s%s%s(%02x)", preFix, curField, "nltUnicode", pCorNLnk->m_linkType);
-        break;
-    case nltAuto:
-        VWriteLine("%s%s%s(%02x)", preFix, curField, "nltAuto", pCorNLnk->m_linkType);
-        break;
-    default:
-        _ASSERTE(!"Invalid Native Link Type!");
-    }
-
-    // Print the link flags
-    curField = "\tLink Flags : ";
-    switch(pCorNLnk->m_flags)
-    {
-    case nlfNone:
-        VWriteLine("%s%s%s(%02x)", preFix, curField, "nlfNone", pCorNLnk->m_flags);
-        break;
-    case nlfLastError:
-        VWriteLine("%s%s%s(%02x)", preFix, curField, "nlfLastError", pCorNLnk->m_flags);
-            break;
-    default:
-        _ASSERTE(!"Invalid Native Link Flags!");
-    }
-
-    // Print the entry point.
-    WCHAR memRefName[STRING_BUFFER_LEN];
-    char memRefNameUtf8[ARRAY_SIZE(memRefName) * MAX_UTF8_CVT];
-    HRESULT hr;
-    hr = m_pImport->GetMemberRefProps( pCorNLnk->m_entryPoint, NULL, memRefName,
-                                    STRING_BUFFER_LEN, NULL, NULL, NULL);
-    if (FAILED(hr)) Error("GetMemberRefProps failed.", hr);
-    VWriteLine("%s\tEntry Point : %s (0x%08x)",
-        preFix, ConvertToUtf8(memRefName, memRefNameUtf8, ARRAY_SIZE(memRefNameUtf8)), pCorNLnk->m_entryPoint);
-} // void MDInfo::DisplayCorNativeLink()
-
-// Fills given varaint with value given in pValue and of type in bCPlusTypeFlag
+// Fills given variant with value given in pValue and of type in bCPlusTypeFlag
 //
 // Taken from MetaInternal.cpp
 #ifdef FEATURE_COMINTEROP

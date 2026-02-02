@@ -225,12 +225,24 @@ protected:
         LIMITED_METHOD_CONTRACT;
     }
 
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    FORCEINLINE BOOL IsRegPassedStruct(TypeHandle th)
     {
-        return pMT->IsRegPassedStruct();
+        return th.AsMethodTable()->IsRegPassedStruct();
     }
 
+#if defined(UNIX_AMD64_ABI)
+    FORCEINLINE SystemVEightByteRegistersInfo GetEightByteRegistersInfo(TypeHandle th)
+    {
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
+    }
+#endif // defined(UNIX_AMD64_ABI)
+
 public:
+    FORCEINLINE BOOL IsRetBuffPassedAsFirstArg()
+    {
+        return ::IsRetBuffPassedAsFirstArg();
+    }
+
     BOOL HasThis()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1271,15 +1283,22 @@ static void PrepareMethodHelper(MethodDesc * pMD)
 
     pMD->EnsureActive();
 
-    if (pMD->ShouldCallPrestub())
-        pMD->DoPrestub(NULL);
-
     if (pMD->IsWrapperStub())
     {
-        pMD = pMD->GetWrappedMethodDesc();
         if (pMD->ShouldCallPrestub())
             pMD->DoPrestub(NULL);
+        pMD = pMD->GetWrappedMethodDesc();
     }
+
+    if (pMD->IsAsyncThunkMethod())
+    {
+        if (pMD->ShouldCallPrestub())
+            pMD->DoPrestub(NULL);
+        pMD = pMD->GetAsyncVariant();
+    }
+
+    if (pMD->ShouldCallPrestub())
+        pMD->DoPrestub(NULL);
 }
 
 // This method triggers a given method to be jitted. CoreCLR implementation of this method triggers jiting of the given method only.

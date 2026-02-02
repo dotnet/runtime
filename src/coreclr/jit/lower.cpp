@@ -946,7 +946,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
     // Make sure we perform an unsigned comparison, just in case the switch index in 'temp'
     // is now less than zero 0 (that would also hit the default case).
-    gtDefaultCaseCond->gtFlags |= GTF_UNSIGNED;
+    gtDefaultCaseCond->SetUnsigned();
 
     GenTree* gtDefaultCaseJump = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, gtDefaultCaseCond);
     gtDefaultCaseJump->gtFlags = node->gtFlags;
@@ -1974,9 +1974,12 @@ void Lowering::InsertPutArgReg(GenTree** argNode, const ABIPassingSegment& regis
     assert(registerSegment.IsPassedInRegister());
 
     InsertBitCastIfNecessary(argNode, registerSegment);
+
+#ifdef HAS_FIXED_REGISTER_SET
     GenTree* putArg = comp->gtNewPutArgReg(genActualType(*argNode), *argNode, registerSegment.GetRegister());
     BlockRange().InsertAfter(*argNode, putArg);
     *argNode = putArg;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -3206,20 +3209,6 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // We expect to see a call that meets the following conditions
     assert(call->IsFastTailCall());
 
-    // VM cannot use return address hijacking when A() and B() tail call each
-    // other in mutual recursion.  Therefore, this block is reachable through
-    // a GC-safe point or the whole method is marked as fully interruptible.
-    //
-    // TODO-Cleanup:
-    // optReachWithoutCall() depends on the fact that loop headers blocks
-    // will have a block number > fgLastBB.  These loop headers gets added
-    // after dominator computation and get skipped by OptReachWithoutCall().
-    // The below condition cannot be asserted in lower because fgSimpleLowering()
-    // can add a new basic block for range check failure which becomes
-    // fgLastBB with block number > loop header block number.
-    // assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) ||
-    //         !comp->optReachWithoutCall(comp->fgFirstBB, comp->compCurBB) || comp->GetInterruptible());
-
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
     if (comp->compMethodRequiresPInvokeFrame())
@@ -3522,12 +3511,6 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     assert(call->IsTailCallViaJitHelper());
     assert(callTarget != nullptr);
 
-    // The TailCall helper call never returns to the caller and is not GC interruptible.
-    // Therefore the block containing the tail call should be a GC safe point to avoid
-    // GC starvation. It is legal for the block to be unmarked iff the entry block is a
-    // GC safe point, as the entry block trivially dominates every reachable block.
-    assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) || comp->fgFirstBB->HasFlag(BBF_GC_SAFE_POINT));
-
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
     if (comp->compMethodRequiresPInvokeFrame())
@@ -3627,8 +3610,99 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
     {
         return;
     }
+    auto cloneUse = [=](LIR::Use& use, bool cloneConsts) -> GenTree* {
+        bool canClone = cloneConsts && use.Def()->IsCnsIntOrI();
+        if (!canClone && use.Def()->OperIs(GT_LCL_VAR))
+        {
+            canClone = !comp->lvaGetDesc(use.Def()->AsLclVarCommon())->IsAddressExposed();
+        }
+
+        if (canClone)
+        {
+            return comp->gtCloneExpr(use.Def());
+        }
+        else
+        {
+            unsigned newLcl = use.ReplaceWithLclVar(comp);
+            return comp->gtNewLclvNode(newLcl, TYP_I_IMPL);
+        }
+    };
 
     GenTree* callTarget = call->gtCallType == CT_INDIRECT ? call->gtCallAddr : call->gtControlExpr;
+
+    if (call->IsVirtualStub())
+    {
+        // VSDs go through a resolver instead which skips double validation and
+        // indirection.
+        CallArg* vsdCellArg = call->gtArgs.FindWellKnownArg(WellKnownArg::VirtualStubCell);
+        CallArg* thisArg    = call->gtArgs.GetThisArg();
+
+        assert((vsdCellArg != nullptr) && (thisArg != nullptr));
+        assert(thisArg->GetNode()->OperIs(GT_PUTARG_REG));
+        LIR::Use thisArgUse(BlockRange(), &thisArg->GetNode()->AsOp()->gtOp1, thisArg->GetNode());
+        GenTree* thisArgClone = cloneUse(thisArgUse, true);
+
+        // The VSD cell is not needed for the original call when going through the resolver.
+        // It can be removed without further fixups because it has fixed ABI assignment.
+        call->gtArgs.RemoveUnsafe(vsdCellArg);
+        assert(vsdCellArg->GetNode()->OperIs(GT_PUTARG_REG));
+        // Also PUTARG_REG can be removed.
+        BlockRange().Remove(vsdCellArg->GetNode());
+        // The actual cell we need for the resolver.
+        GenTree* vsdCellArgNode = vsdCellArg->GetNode()->gtGetOp1();
+
+        GenTreeCall* resolve = comp->gtNewHelperCallNode(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, TYP_I_IMPL);
+
+        // Use a placeholder for the cell since the cell is already inserted in
+        // LIR.
+        GenTree* vsdCellPlaceholder = comp->gtNewZeroConNode(TYP_I_IMPL);
+        resolve->gtArgs.PushFront(comp,
+                                  NewCallArg::Primitive(vsdCellPlaceholder).WellKnown(WellKnownArg::VirtualStubCell));
+
+        // 'this' arg clone is not inserted, so no need to use a placeholder for that.
+        resolve->gtArgs.PushFront(comp, NewCallArg::Primitive(thisArgClone));
+
+        comp->fgMorphTree(resolve);
+
+        LIR::Range resolveRange = LIR::SeqTree(comp, resolve);
+        GenTree*   resolveFirst = resolveRange.FirstNode();
+        GenTree*   resolveLast  = resolveRange.LastNode();
+        // Resolution comes with a null check, so it must happen after all
+        // arguments are evaluated, hence we insert it right before the call.
+        BlockRange().InsertBefore(call, std::move(resolveRange));
+
+        // Swap out the VSD cell argument.
+        LIR::Use vsdCellUse;
+        bool     gotUse = BlockRange().TryGetUse(vsdCellPlaceholder, &vsdCellUse);
+        assert(gotUse);
+        vsdCellUse.ReplaceWith(vsdCellArgNode);
+        vsdCellPlaceholder->SetUnusedValue();
+
+        // Now we can lower the resolver.
+        LowerRange(resolveFirst, resolveLast);
+
+        // That inserted new PUTARG nodes right before the call, so we need to
+        // legalize the existing call's PUTARG_REG nodes.
+        MovePutArgNodesUpToCall(call);
+
+        // Finally update the call target
+        call->gtCallType = CT_INDIRECT;
+        call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+        call->gtCallAddr   = resolve;
+        call->gtCallCookie = nullptr;
+#ifdef FEATURE_READYTORUN
+        call->gtEntryPoint.addr       = nullptr;
+        call->gtEntryPoint.accessType = IAT_VALUE;
+#endif
+
+        if (callTarget != nullptr)
+        {
+            callTarget->SetUnusedValue();
+        }
+
+        callTarget = resolve;
+    }
+
     if (callTarget == nullptr)
     {
         assert((call->gtCallType != CT_INDIRECT) && (!call->IsVirtual() || call->IsVirtualStubRelativeIndir()));
@@ -3655,7 +3729,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
         cloneConsts = true;
 #endif
 
-        GenTree* indirCellClone;
+        GenTree* indirCellClone = cloneUse(indirCellArgUse, cloneConsts);
 
         if (indirCellArgUse.Def()->OperIs(GT_LCL_VAR) || (cloneConsts && indirCellArgUse.Def()->IsCnsIntOrI()))
         {
@@ -4561,7 +4635,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
             // has to generate a small comparison, it can still correctly generate a TYP_INT comparison.
             //
 
-            cmp->gtFlags |= GTF_UNSIGNED;
+            cmp->SetUnsigned();
         }
     }
 #elif defined(TARGET_RISCV64)
@@ -4752,7 +4826,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     {
         TryLowerCselToCSOp(select, cond);
     }
-    else if (trueVal->IsCnsIntOrI() && falseVal->IsCnsIntOrI())
+    else if (trueVal->IsCnsIntOrI() || falseVal->IsCnsIntOrI())
     {
         TryLowerCnsIntCselToCinc(select, cond);
     }
@@ -7355,7 +7429,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         // fgMorphArgs will have created trees to pass the address in VirtualStubParam.reg.
         // All we have to do here is add an indirection to generate the actual call target.
 
-        GenTree* ind = Ind(call->gtCallAddr);
+        GenTree* ind = comp->gtNewIndir(TYP_I_IMPL, call->gtCallAddr, GTF_IND_NONFAULTING);
         BlockRange().InsertAfter(call->gtCallAddr, ind);
         call->gtCallAddr = ind;
 
@@ -7397,7 +7471,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 
             if (!shouldOptimizeVirtualStubCall)
             {
-                result = Ind(addr);
+                result = comp->gtNewIndir(TYP_I_IMPL, addr, GTF_IND_NONFAULTING);
             }
         }
     }
@@ -7969,7 +8043,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
         {
             divMod->ChangeOper(GT_GE);
-            divMod->gtFlags |= GTF_UNSIGNED;
+            divMod->SetUnsigned();
             LowerNode(divMod);
             return true;
         }
@@ -9333,9 +9407,19 @@ void Lowering::LowerBlock(BasicBlock* block)
     {
         node = LowerNode(node);
     }
+    AfterLowerBlock();
 
     assert(CheckBlock(comp, block));
 }
+
+#ifndef TARGET_WASM
+//------------------------------------------------------------------------
+// AfterLowerBlock: target-specific post-processing of the lowered block.
+//
+void Lowering::AfterLowerBlock()
+{
+}
+#endif // !TARGET_WASM
 
 /** Verifies if both of these trees represent the same indirection.
  * Used by Lower to annotate if CodeGen generate an instruction of the
@@ -12031,7 +12115,9 @@ void Lowering::FinalizeOutgoingArgSpace()
     // Finish computing the outgoing args area size
     //
     // Need to make sure the MIN_ARG_AREA_FOR_CALL space is added to the frame if:
-    // 1. there are calls to THROW_HELPER methods.
+    // 1. there may be calls to THROW_HELPER methods. Note when opts.compDbgCode is true,
+    //    we simply assume we may be making throw helper calls. Typically we've already
+    //    added an explicit just my code call so this doesn't increase the frame size.
     // 2. we are generating profiling Enter/Leave/TailCall hooks. This will ensure
     //    that even methods without any calls will have outgoing arg area space allocated.
     // 3. We will be generating calls to PInvoke helpers. TODO: This shouldn't be required because
@@ -12044,7 +12130,7 @@ void Lowering::FinalizeOutgoingArgSpace()
     // the outgoing arg space if the method makes any calls.
     if (m_outgoingArgSpaceSize < MIN_ARG_AREA_FOR_CALL)
     {
-        if (comp->compUsesThrowHelper || comp->compIsProfilerHookNeeded() ||
+        if (comp->opts.compDbgCode || comp->compUsesThrowHelper || comp->compIsProfilerHookNeeded() ||
             (comp->compMethodRequiresPInvokeFrame() && !comp->opts.ShouldUsePInvokeHelpers()) ||
             comp->getNeedsGSSecurityCookie())
         {
