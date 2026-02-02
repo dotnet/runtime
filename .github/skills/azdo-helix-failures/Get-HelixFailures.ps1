@@ -24,6 +24,12 @@
 .PARAMETER MaxJobs
     Maximum number of failed jobs to process. Default: 5
 
+.PARAMETER MaxFailureLines
+    Maximum number of lines to capture per test failure. Default: 50
+
+.PARAMETER TimeoutSec
+    Timeout in seconds for API calls. Default: 30
+
 .EXAMPLE
     .\Get-HelixFailures.ps1 -BuildId 1276327
     
@@ -42,7 +48,9 @@ param(
     [string]$Organization = "dnceng-public",
     [string]$Project = "cbb18261-c48f-4abb-8651-8cdcb5474649",
     [switch]$ShowLogs,
-    [int]$MaxJobs = 5
+    [int]$MaxJobs = 5,
+    [int]$MaxFailureLines = 50,
+    [int]$TimeoutSec = 30
 )
 
 $ErrorActionPreference = "Stop"
@@ -50,7 +58,13 @@ $ErrorActionPreference = "Stop"
 function Get-AzDOBuildIdFromPR {
     param([int]$PR)
     
+    # Check for gh CLI dependency
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+        throw "GitHub CLI (gh) is required for PR lookup. Install from https://cli.github.com/ or use -BuildId instead."
+    }
+    
     Write-Host "Finding build for PR #$PR..." -ForegroundColor Cyan
+    Write-Verbose "Running: gh pr checks $PR --repo dotnet/runtime"
     
     # Use gh cli to get the checks
     $checksOutput = gh pr checks $PR --repo dotnet/runtime 2>&1
@@ -77,9 +91,10 @@ function Get-AzDOTimeline {
     
     $url = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/$Build/timeline?api-version=7.0"
     Write-Host "Fetching build timeline..." -ForegroundColor Cyan
+    Write-Verbose "GET $url"
     
     try {
-        $response = Invoke-RestMethod -Uri $url -Method Get
+        $response = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec $TimeoutSec
         return $response
     }
     catch {
@@ -113,14 +128,15 @@ function Get-HelixJobInfo {
 function Get-BuildLog {
     param([int]$Build, [int]$LogId)
     
-    $url = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/$Build/logs/$LogId`?api-version=7.0"
+    $url = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/$Build/logs/$LogId?api-version=7.0"
+    Write-Verbose "GET $url"
     
     try {
-        $response = Invoke-RestMethod -Uri $url -Method Get
+        $response = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec $TimeoutSec
         return $response
     }
     catch {
-        Write-Warning "Failed to fetch log $LogId`: $_"
+        Write-Warning "Failed to fetch log $LogId: $_"
         return $null
     }
 }
@@ -130,12 +146,13 @@ function Extract-HelixUrls {
     
     $urls = @()
     
-    # Match Helix console log URLs
-    $matches = [regex]::Matches($LogContent, 'https://helix\.dot\.net/api/[^/]+/jobs/[a-f0-9-]+/workitems/[^/\s]+/console')
-    foreach ($match in $matches) {
+    # Match Helix console log URLs (use $urlMatches to avoid shadowing automatic $Matches variable)
+    $urlMatches = [regex]::Matches($LogContent, 'https://helix\.dot\.net/api/[^/]+/jobs/[a-f0-9-]+/workitems/[^/\s]+/console')
+    foreach ($match in $urlMatches) {
         $urls += $match.Value
     }
     
+    Write-Verbose "Found $($urls.Count) Helix URLs"
     return $urls | Select-Object -Unique
 }
 
@@ -144,54 +161,74 @@ function Extract-TestFailures {
     
     $failures = @()
     
-    # Match test failure patterns from MSBuild output
+    # Match test failure patterns from MSBuild output (use $failureMatches to avoid shadowing automatic $Matches variable)
     $pattern = 'error\s*:\s*.*Test\s+(\S+)\s+has failed'
-    $matches = [regex]::Matches($LogContent, $pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    $failureMatches = [regex]::Matches($LogContent, $pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
     
-    foreach ($match in $matches) {
+    foreach ($match in $failureMatches) {
         $failures += @{
             TestName = $match.Groups[1].Value
             FullMatch = $match.Value
         }
     }
     
+    Write-Verbose "Found $($failures.Count) test failures"
     return $failures
 }
 
 function Get-HelixConsoleLog {
     param([string]$Url)
     
+    Write-Verbose "GET $Url"
+    
     try {
-        $response = Invoke-RestMethod -Uri $Url -Method Get
+        $response = Invoke-RestMethod -Uri $Url -Method Get -TimeoutSec $TimeoutSec
         return $response
     }
     catch {
-        Write-Warning "Failed to fetch Helix log from $Url`: $_"
+        Write-Warning "Failed to fetch Helix log from $Url: $_"
         return $null
     }
 }
 
 function Format-TestFailure {
-    param([string]$LogContent)
+    param(
+        [string]$LogContent,
+        [int]$MaxLines = $MaxFailureLines
+    )
     
     # Extract the key failure information
     $lines = $LogContent -split "`n"
     $inFailure = $false
     $failureLines = @()
+    $emptyLineCount = 0
     
     foreach ($line in $lines) {
         if ($line -match '\[FAIL\]') {
             $inFailure = $true
+            $emptyLineCount = 0
         }
         
         if ($inFailure) {
             $failureLines += $line
             
-            # Stop after stack trace ends
-            if ($failureLines.Count -gt 20) {
+            # Track consecutive empty lines to detect end of stack trace
+            if ($line -match '^\s*$') {
+                $emptyLineCount++
+            }
+            else {
+                $emptyLineCount = 0
+            }
+            
+            # Stop after stack trace ends (2+ consecutive empty lines) or max lines reached
+            if ($emptyLineCount -ge 2 -or $failureLines.Count -ge $MaxLines) {
                 break
             }
         }
+    }
+    
+    if ($failureLines.Count -ge $MaxLines) {
+        $failureLines += "... (truncated, use -MaxFailureLines to see more)"
     }
     
     return $failureLines -join "`n"

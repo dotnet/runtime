@@ -51,6 +51,39 @@ To see more or fewer failed jobs:
 .\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -MaxJobs 10
 ```
 
+### Additional Options
+
+```powershell
+# Show more lines of stack trace per failure (default: 50)
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -ShowLogs -MaxFailureLines 100
+
+# Increase API timeout for slow connections (default: 30 seconds)
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -TimeoutSec 60
+
+# Enable verbose output for debugging
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -Verbose
+```
+
+### Prerequisites
+
+- **PowerShell 5.1+** or **PowerShell Core 7+**
+- **GitHub CLI (`gh`)**: Required only for `-PRNumber` parameter. Install from https://cli.github.com/
+
+## Azure DevOps Organizations
+
+The script defaults to the public Azure DevOps organization:
+- **Organization**: `dnceng-public`
+- **Project**: `cbb18261-c48f-4abb-8651-8cdcb5474649` (public)
+
+For internal/private builds, you may need different values:
+- **Organization**: `dnceng` (internal)
+- **Project GUID**: Varies by pipeline
+
+Override with:
+```powershell
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -Organization "dnceng" -Project "internal-project-guid"
+```
+
 ## Manual Investigation
 
 If the script doesn't provide enough information, you can manually investigate:
