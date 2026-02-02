@@ -3,7 +3,11 @@
 
 /*****************************************************************************/
 
-int jitprintf(const char* fmt, ...);
+int jitprintf(const char* fmt, ...)
+#ifdef __GNUC__
+    __attribute__ ((__format__(__printf__, 1, 2)))
+#endif
+;
 
 #ifdef DEBUG
 
@@ -30,11 +34,27 @@ public:
 bool vlogf(unsigned level, const char* fmt, va_list args);
 int  vflogf(FILE* file, const char* fmt, va_list args);
 
-int  logf(const char* fmt, ...);
-int  flogf(FILE* file, const char* fmt, ...);
-void gcDump_logf(const char* fmt, ...);
+int  logf(const char* fmt, ...)
+#ifdef __GNUC__
+    __attribute__ ((__format__(__printf__, 1, 2)))
+#endif
+;
+int  flogf(FILE* file, const char* fmt, ...)
+#ifdef __GNUC__
+    __attribute__ ((__format__(__printf__, 2, 3)))
+#endif
+;
+void gcDump_logf(const char* fmt, ...)
+#ifdef __GNUC__
+    __attribute__ ((__format__(__printf__, 1, 2)))
+#endif
+;
 
-void logf(unsigned level, const char* fmt, ...);
+void logf(unsigned level, const char* fmt, ...)
+#ifdef __GNUC__
+    __attribute__ ((__format__(__printf__, 2, 3)))
+#endif
+;
 
 extern "C" void ANALYZER_NORETURN assertAbort(const char* why, const char* file, unsigned line);
 

@@ -392,7 +392,11 @@ inline bool IsServerHeap()
 
 HRESULT initialize_log_file();
 void flush_gc_log (bool);
-void GCLog (const char *fmt, ... );
+void GCLog (const char *fmt, ... )
+#ifdef __GNUC__
+    __attribute__ ((__format__(__printf__, 1, 2)))
+#endif
+;
 #define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
 #define SIMPLE_DPRINTF_ARG(x) , x
 
