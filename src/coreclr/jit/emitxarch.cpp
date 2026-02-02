@@ -128,6 +128,7 @@ bool emitter::Is3OpRmwInstruction(instruction ins)
         {
             return ((ins >= FIRST_FMA_INSTRUCTION) && (ins <= LAST_FMA_INSTRUCTION)) ||
                    (IsAVXVNNIFamilyInstruction(ins)) ||
+                   ((ins >= FIRST_AVX512BMM_INSTRUCTION) && (ins <= LAST_AVX512BMM_INSTRUCTION)) ||
                    ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION));
         }
     }
@@ -3104,7 +3105,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         // 0x0000RM11.
         leadingBytes = (code >> 16) & 0xFF;
         assert(leadingBytes == 0x0F ||
-               (m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) && leadingBytes >= 0x00 &&
+               ((m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) || emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX512BMM)) && leadingBytes >= 0x00 &&
                 leadingBytes <= 0x07) ||
                (IsApxExtendedEvexInstruction(ins) && leadingBytes == 0));
         code &= 0xFFFF;
@@ -3164,10 +3165,16 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
             break;
         }
 
+        case 0x06:
+        {
+            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX512BMM));
+            evexPrefix |= (0x6 << 16);
+            break;
+        }
+
         case 0x01:
         case 0x02:
         case 0x03:
-        case 0x06:
         case 0x07:
         default:
         {
@@ -21374,6 +21381,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
             }
+            break;
+        }
+
+        case INS_vbmacor16x16x16:
+        case INS_vbmacxor16x16x16:
+        case INS_vbitrev:
+        {
+            result.insLatency = PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
         }
 

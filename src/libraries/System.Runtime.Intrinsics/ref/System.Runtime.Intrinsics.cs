@@ -8581,6 +8581,25 @@ namespace System.Runtime.Intrinsics.X86
     }
 
     [System.CLSCompliantAttribute(false)]
+    public abstract partial class Avx512Bmm : System.Runtime.Intrinsics.X86.Avx512F
+    {
+        internal Avx512Bmm() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector128<byte> BitReverse(System.Runtime.Intrinsics.Vector128<byte> x) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> BitReverse(System.Runtime.Intrinsics.Vector256<byte> x) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<byte> BitReverse(System.Runtime.Intrinsics.Vector512<byte> x) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ushort> Vbmacor16x16x16(System.Runtime.Intrinsics.Vector256<ushort> x, System.Runtime.Intrinsics.Vector256<ushort> y, System.Runtime.Intrinsics.Vector256<ushort> z) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> Vbmacor16x16x16(System.Runtime.Intrinsics.Vector512<ushort> x, System.Runtime.Intrinsics.Vector512<ushort> y, System.Runtime.Intrinsics.Vector512<ushort> z) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ushort> Vbmacxor16x16x16(System.Runtime.Intrinsics.Vector256<ushort> x, System.Runtime.Intrinsics.Vector256<ushort> y, System.Runtime.Intrinsics.Vector256<ushort> z) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> Vbmacxor16x16x16(System.Runtime.Intrinsics.Vector512<ushort> x, System.Runtime.Intrinsics.Vector512<ushort> y, System.Runtime.Intrinsics.Vector512<ushort> z) { throw null; }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx512F.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+
+    [System.CLSCompliantAttribute(false)]
     public abstract partial class Avx512BW : System.Runtime.Intrinsics.X86.Avx512F
     {
         internal Avx512BW() { }

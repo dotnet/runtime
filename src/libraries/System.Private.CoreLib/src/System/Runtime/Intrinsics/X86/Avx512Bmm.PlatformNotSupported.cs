@@ -14,6 +14,12 @@ namespace System.Runtime.Intrinsics.X86
         /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
+        public static Vector128<byte> BitReverse(Vector128<byte> x) { throw new PlatformNotSupportedException(); }
+        public static Vector256<byte> BitReverse(Vector256<byte> x) { throw new PlatformNotSupportedException(); }
+        public static Vector512<byte> BitReverse(Vector512<byte> x) { throw new PlatformNotSupportedException(); }
         public static Vector256<ushort> Vbmacor16x16x16(Vector256<ushort> x, Vector256<ushort> y, Vector256<ushort> z) { throw new PlatformNotSupportedException(); }
+        public static Vector512<ushort> Vbmacor16x16x16(Vector512<ushort> x, Vector512<ushort> y, Vector512<ushort> z) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> Vbmacxor16x16x16(Vector256<ushort> x, Vector256<ushort> y, Vector256<ushort> z) { throw new PlatformNotSupportedException(); }
+        public static Vector512<ushort> Vbmacxor16x16x16(Vector512<ushort> x, Vector512<ushort> y, Vector512<ushort> z) { throw new PlatformNotSupportedException(); }
     }
 }

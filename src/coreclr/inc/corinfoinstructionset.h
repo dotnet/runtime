@@ -299,6 +299,8 @@ public:
             AddInstructionSet(InstructionSet_WAITPKG_X64);
         if (HasInstructionSet(InstructionSet_X86Serialize))
             AddInstructionSet(InstructionSet_X86Serialize_X64);
+        if (HasInstructionSet(InstructionSet_AVX512BMM))
+            AddInstructionSet(InstructionSet_AVX512BMM);
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
 #endif // TARGET_X86
