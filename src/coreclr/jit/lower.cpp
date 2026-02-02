@@ -2458,16 +2458,12 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
             JITDUMP("Accepted for unrolling!\nOld tree:\n")
             DISPTREE(call);
 
-            GenTree* dstAddr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
-            GenTree* srcAddr = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-
-            // TODO-CQ: Try to create an addressing mode
-            GenTreeIndir* srcBlk = comp->gtNewIndir(TYP_STRUCT, srcAddr);
-            srcBlk->SetContained();
-
-            GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
-                GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstAddr, srcBlk, comp->typGetBlkLayout((unsigned)cnsSize));
-            storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
+            GenTree*      dstAddr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree*      srcAddr = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+            ClassLayout*  layout  = comp->typGetBlkLayout((unsigned)cnsSize); // cannot overflow as checked above
+            GenTreeIndir* srcBlk  = comp->gtNewBlkIndir(layout, srcAddr, GTF_IND_ALLOW_NON_ATOMIC | GTF_IND_UNALIGNED);
+            GenTreeBlk*   storeBlk =
+                comp->gtNewStoreBlkNode(layout, dstAddr, srcBlk, GTF_IND_ALLOW_NON_ATOMIC | GTF_IND_UNALIGNED);
 
             // TODO-CQ: Use GenTreeBlk::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
             // unroll this memmove as memcpy - it doesn't require lots of temp registers
@@ -2490,8 +2486,7 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 
             JITDUMP("\nNew tree:\n")
             DISPTREE(storeBlk);
-            // TODO: This skips lowering srcBlk and storeBlk.
-            *next = storeBlk->gtNext;
+            *next = srcBlk;
             return true;
         }
         else
