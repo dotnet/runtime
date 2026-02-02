@@ -43,19 +43,33 @@ To fetch and display the actual Helix console logs with test failure details:
 .\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -ShowLogs
 ```
 
-### Control Output Volume
+### Query a Specific Helix Work Item
 
-To see more or fewer failed jobs:
+To directly analyze a specific Helix job and work item:
 
 ```powershell
-.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -MaxJobs 10
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -WorkItem "iOS.Device.Aot.Test"
 ```
 
-### Additional Options
+### Use with Other Repositories
+
+The script works with any GitHub repository that uses Azure DevOps/Helix:
 
 ```powershell
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
+```
+
+### Control Output Volume
+
+```powershell
+# See more failed jobs (default: 5)
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -MaxJobs 10
+
 # Show more lines of stack trace per failure (default: 50)
 .\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -ShowLogs -MaxFailureLines 100
+
+# Show context lines before errors
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -ContextLines 3
 
 # Increase API timeout for slow connections (default: 30 seconds)
 .\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -TimeoutSec 60
@@ -69,13 +83,41 @@ To see more or fewer failed jobs:
 - **PowerShell 5.1+** or **PowerShell Core 7+**
 - **GitHub CLI (`gh`)**: Required only for `-PRNumber` parameter. Install from https://cli.github.com/
 
+## Failure Classification
+
+The script automatically classifies failures and suggests actions:
+
+| Pattern | Type | Transient? | Suggested Action |
+|---------|------|------------|------------------|
+| `.pcm: No such file` | Infrastructure | No | Apply StripSymbols=false workaround |
+| `Size of the executable` | Size Regression | No | Investigate size increase |
+| `Unable to find package` | Infrastructure | Yes | Wait for upstream build |
+| `DEVICE_NOT_FOUND` | Infrastructure | Yes | Retry - device issue |
+| `timed out` | Infrastructure | Yes | Retry or increase timeout |
+| `error CS####` | Build | No | Fix compilation error |
+| `error MSB####` | Build | No | Check build configuration |
+| `OutOfMemoryException` | Infrastructure | Yes | Retry - memory pressure |
+| `Assert.Equal() Failure` | Test | No | Fix test or code |
+| `Unable to pull image` | Infrastructure | Yes | Retry - container registry issue |
+| `Connection refused` | Infrastructure | Yes | Retry - network issue |
+
+## Build Definition IDs
+
+Key Azure DevOps build definitions for dotnet/runtime:
+
+| Definition ID | Name | Description |
+|---------------|------|-------------|
+| `129` | runtime | Main PR validation build |
+| `133` | runtime-dev-innerloop | Fast innerloop validation |
+| `139` | dotnet-linker-tests | ILLinker/trimming tests |
+
 ## Azure DevOps Organizations
 
 The script defaults to the public Azure DevOps organization:
 - **Organization**: `dnceng-public`
 - **Project**: `cbb18261-c48f-4abb-8651-8cdcb5474649` (public)
 
-For internal/private builds, you may need different values:
+For internal/private builds:
 - **Organization**: `dnceng` (internal)
 - **Project GUID**: Varies by pipeline
 
@@ -109,54 +151,66 @@ $helixTasks | Select-Object id, name, result, log | Format-Table
 
 ```powershell
 $logId = 565  # From task.log.id
-$logContent = Invoke-RestMethod -Uri "https://dev.azure.com/dnceng-public/cbb18261-c48f-4abb-8651-8cdcb5474649/_apis/build/builds/$buildId/logs/$logId?api-version=7.0"
+$logContent = Invoke-RestMethod -Uri "https://dev.azure.com/dnceng-public/cbb18261-c48f-4abb-8651-8cdcb5474649/_apis/build/builds/$buildId/logs/${logId}?api-version=7.0"
 $logContent | Select-String -Pattern "error|FAIL" -Context 2,5
 ```
 
-### Step 4: Get Helix Console Log
+### Step 4: Query Helix APIs Directly
 
-Extract the Helix URL from the build log and fetch it:
+```bash
+# Get job details
+curl -s "https://helix.dot.net/api/2019-06-17/jobs/JOB_ID"
+
+# List work items in a job
+curl -s "https://helix.dot.net/api/2019-06-17/jobs/JOB_ID/workitems"
+
+# Get specific work item details
+curl -s "https://helix.dot.net/api/2019-06-17/jobs/JOB_ID/workitems/WORK_ITEM_NAME"
+
+# Get console log
+curl -s "https://helix.dot.net/api/2019-06-17/jobs/JOB_ID/workitems/WORK_ITEM_NAME/console"
+```
+
+### Step 5: Download Artifacts
+
+Work item artifacts are available in the `Files` array from the work item details:
 
 ```powershell
-$helixUrl = "https://helix.dot.net/api/2019-06-17/jobs/046b3afd-b2d7-4297-8f79-618b9c038ee1/workitems/System.Reflection.Tests/console"
-$helixLog = Invoke-RestMethod -Uri $helixUrl
-$helixLog | Select-String -Pattern "FAIL|Exception|Error" -Context 3,5
+$workItem = Invoke-RestMethod -Uri "https://helix.dot.net/api/2019-06-17/jobs/$jobId/workitems/$workItemName"
+$workItem.Files | ForEach-Object { Write-Host "$($_.Name): $($_.Uri)" }
 ```
 
-## Common Failure Patterns
+Common artifacts include:
+- `console.*.log` - Console output
+- `*.binlog` - MSBuild binary logs (for AOT/build failures)
+- `run-*.log` - XHarness/test runner logs
+- Core dumps and crash reports (when available)
 
-### Test Assertion Failure
+### Extracting Environment Variables
 
-Look for patterns like:
-```
-[FAIL]
-Assert.Equal() Failure: Values differ
-Expected: ...
-Actual:   ...
-Stack Trace:
-```
+The console log shows all `DOTNET_*` variables that affect test behavior:
 
-### Build/Compilation Error
-
-Look for MSBuild errors:
-```
-error CS0214: Pointers and fixed size buffers may only be used in an unsafe context
-error MSB3073: The command ... exited with code 1
+```bash
+curl -s "https://helix.dot.net/api/2019-06-17/jobs/JOB_ID/workitems/WORK_ITEM_NAME/console" | grep "DOTNET_"
 ```
 
-### Helix Infrastructure Issues
+Example output:
+```
+DOTNET_JitStress=1
+DOTNET_TieredCompilation=0
+DOTNET_GCStress=0xC
+```
 
-Look for:
-```
-Helix work item timed out
-Failed to download correlation payload
-```
+These are critical for reproducing the failure locally.
 
 ## Useful Links
 
 - [Azure DevOps Build](https://dev.azure.com/dnceng-public/public/_build?definitionId=129): Main runtime build definition
 - [Helix Portal](https://helix.dot.net/): View Helix jobs and work items
+- [Helix API Documentation](https://helix.dot.net/swagger/): Swagger docs for Helix REST API
 - [Build Analysis](https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/LandingPage.md): Known issues tracking
+- [Triaging Failures Guide](https://github.com/dotnet/runtime/blob/main/docs/workflow/ci/triaging-failures.md): Official triage documentation
+- [Area Owners](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md): Find the right person to ask
 
 ## Tips
 
@@ -164,3 +218,4 @@ Failed to download correlation payload
 2. **Compare with main branch**: Check if the same test is failing on main
 3. **Look at the specific platform**: Failures may be platform-specific (Mono, NativeAOT, WASM, etc.)
 4. **Check for `[ActiveIssue]` attributes**: Tests may need to be skipped for known issues
+5. **Look for transient flags**: The script marks failures that are likely to pass on retry

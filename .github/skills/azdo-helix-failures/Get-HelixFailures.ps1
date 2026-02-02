@@ -5,12 +5,19 @@
 .DESCRIPTION
     This script queries Azure DevOps for failed jobs in a build and retrieves
     the corresponding Helix console logs to show detailed test failure information.
+    It can also directly query a specific Helix job and work item.
 
 .PARAMETER BuildId
     The Azure DevOps build ID to query.
 
 .PARAMETER PRNumber
     The GitHub PR number to find the associated build.
+
+.PARAMETER HelixJob
+    The Helix job ID (GUID) to query directly.
+
+.PARAMETER WorkItem
+    The Helix work item name to query (requires -HelixJob).
 
 .PARAMETER Repository
     The GitHub repository (owner/repo format). Default: dotnet/runtime
@@ -44,6 +51,9 @@
 
 .EXAMPLE
     .\Get-HelixFailures.ps1 -PRNumber 123445 -Repository dotnet/aspnetcore
+
+.EXAMPLE
+    .\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -WorkItem "iOS.Device.Aot.Test"
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'BuildId')]
@@ -53,6 +63,12 @@ param(
 
     [Parameter(ParameterSetName = 'PRNumber', Mandatory = $true)]
     [int]$PRNumber,
+
+    [Parameter(ParameterSetName = 'HelixJob', Mandatory = $true)]
+    [string]$HelixJob,
+
+    [Parameter(ParameterSetName = 'HelixJob')]
+    [string]$WorkItem,
 
     [string]$Repository = "dotnet/runtime",
     [string]$Organization = "dnceng-public",
@@ -357,6 +373,54 @@ function Get-FailureClassification {
     }
 }
 
+function Get-HelixJobDetails {
+    param([string]$JobId)
+    
+    $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId"
+    Write-Verbose "GET $url"
+    
+    try {
+        $response = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec $TimeoutSec
+        return $response
+    }
+    catch {
+        Write-Warning "Failed to fetch Helix job ${JobId}: $_"
+        return $null
+    }
+}
+
+function Get-HelixWorkItems {
+    param([string]$JobId)
+    
+    $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems"
+    Write-Verbose "GET $url"
+    
+    try {
+        $response = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec $TimeoutSec
+        return $response
+    }
+    catch {
+        Write-Warning "Failed to fetch work items for job ${JobId}: $_"
+        return $null
+    }
+}
+
+function Get-HelixWorkItemDetails {
+    param([string]$JobId, [string]$WorkItemName)
+    
+    $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems/$WorkItemName"
+    Write-Verbose "GET $url"
+    
+    try {
+        $response = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec $TimeoutSec
+        return $response
+    }
+    catch {
+        Write-Warning "Failed to fetch work item ${WorkItemName}: $_"
+        return $null
+    }
+}
+
 function Get-HelixConsoleLog {
     param([string]$Url)
     
@@ -460,6 +524,113 @@ function Format-TestFailure {
 
 # Main execution
 try {
+    # Handle direct Helix job query
+    if ($PSCmdlet.ParameterSetName -eq 'HelixJob') {
+        Write-Host "`n=== Helix Job $HelixJob ===" -ForegroundColor Yellow
+        Write-Host "URL: https://helix.dot.net/api/jobs/$HelixJob" -ForegroundColor Gray
+        
+        # Get job details
+        $jobDetails = Get-HelixJobDetails -JobId $HelixJob
+        if ($jobDetails) {
+            Write-Host "`nQueue: $($jobDetails.QueueId)" -ForegroundColor Cyan
+            Write-Host "Source: $($jobDetails.Source)" -ForegroundColor Cyan
+        }
+        
+        if ($WorkItem) {
+            # Query specific work item
+            Write-Host "`n--- Work Item: $WorkItem ---" -ForegroundColor Cyan
+            
+            $workItemDetails = Get-HelixWorkItemDetails -JobId $HelixJob -WorkItemName $WorkItem
+            if ($workItemDetails) {
+                Write-Host "  State: $($workItemDetails.State)" -ForegroundColor $(if ($workItemDetails.State -eq 'Passed') { 'Green' } else { 'Red' })
+                Write-Host "  Exit Code: $($workItemDetails.ExitCode)" -ForegroundColor White
+                Write-Host "  Machine: $($workItemDetails.MachineName)" -ForegroundColor Gray
+                Write-Host "  Duration: $($workItemDetails.Duration)" -ForegroundColor Gray
+                
+                # Show artifacts
+                if ($workItemDetails.Files -and $workItemDetails.Files.Count -gt 0) {
+                    Write-Host "`n  Artifacts:" -ForegroundColor Yellow
+                    foreach ($file in $workItemDetails.Files | Select-Object -First 10) {
+                        Write-Host "    $($file.Name): $($file.Uri)" -ForegroundColor Gray
+                    }
+                }
+                
+                # Fetch console log
+                $consoleUrl = "https://helix.dot.net/api/2019-06-17/jobs/$HelixJob/workitems/$WorkItem/console"
+                Write-Host "`n  Console Log: $consoleUrl" -ForegroundColor Yellow
+                
+                $consoleLog = Get-HelixConsoleLog -Url $consoleUrl
+                if ($consoleLog) {
+                    $failureInfo = Format-TestFailure -LogContent $consoleLog
+                    if ($failureInfo) {
+                        Write-Host $failureInfo -ForegroundColor White
+                        
+                        # Classify the failure
+                        $classification = Get-FailureClassification -Errors @($failureInfo)
+                        if ($classification) {
+                            Write-Host "`n  Classification: $($classification.Summary)" -ForegroundColor Yellow
+                            if ($classification.Action) {
+                                Write-Host "  Suggested action: $($classification.Action)" -ForegroundColor Green
+                            }
+                            if ($classification.Transient) {
+                                Write-Host "  (This failure appears to be transient - retry may help)" -ForegroundColor Cyan
+                            }
+                        }
+                    }
+                    else {
+                        # Show last 50 lines if no failure pattern detected
+                        $lines = $consoleLog -split "`n"
+                        $lastLines = $lines | Select-Object -Last 50
+                        Write-Host ($lastLines -join "`n") -ForegroundColor White
+                    }
+                }
+            }
+        }
+        else {
+            # List all work items in the job
+            Write-Host "`nWork Items:" -ForegroundColor Yellow
+            $workItems = Get-HelixWorkItems -JobId $HelixJob
+            if ($workItems) {
+                Write-Host "  Total: $($workItems.Count)" -ForegroundColor Cyan
+                Write-Host "  Checking for failures..." -ForegroundColor Gray
+                
+                # Need to fetch details for each to find failures (list API only shows 'Finished')
+                $failedItems = @()
+                foreach ($wi in $workItems | Select-Object -First 20) {
+                    $details = Get-HelixWorkItemDetails -JobId $HelixJob -WorkItemName $wi.Name
+                    if ($details -and $details.ExitCode -ne 0) {
+                        $failedItems += @{
+                            Name = $wi.Name
+                            ExitCode = $details.ExitCode
+                            State = $details.State
+                        }
+                    }
+                }
+                
+                if ($failedItems.Count -gt 0) {
+                    Write-Host "`n  Failed Work Items:" -ForegroundColor Red
+                    foreach ($wi in $failedItems | Select-Object -First $MaxJobs) {
+                        Write-Host "    - $($wi.Name) (Exit: $($wi.ExitCode))" -ForegroundColor White
+                    }
+                    Write-Host "`n  Use -WorkItem '<name>' to see details" -ForegroundColor Gray
+                }
+                else {
+                    Write-Host "  No failures found in first 20 work items" -ForegroundColor Green
+                }
+                
+                Write-Host "`n  All work items:" -ForegroundColor Yellow
+                foreach ($wi in $workItems | Select-Object -First 10) {
+                    Write-Host "    - $($wi.Name)" -ForegroundColor White
+                }
+                if ($workItems.Count -gt 10) {
+                    Write-Host "    ... and $($workItems.Count - 10) more" -ForegroundColor Gray
+                }
+            }
+        }
+        
+        exit 0
+    }
+    
     # Get build ID if using PR number
     if ($PSCmdlet.ParameterSetName -eq 'PRNumber') {
         $BuildId = Get-AzDOBuildIdFromPR -PR $PRNumber
