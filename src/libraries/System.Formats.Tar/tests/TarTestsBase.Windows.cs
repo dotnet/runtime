@@ -9,39 +9,26 @@ namespace System.Formats.Tar.Tests
 {
     public abstract partial class TarTestsBase
     {
-        protected void VerifyPathsAreHardLinked(string path1, string path2)
+        protected void AssertPathsAreHardLinked(string path1, string path2)
         {
-            Assert.True(File.Exists(path1));
-            Assert.True(File.Exists(path2));
+            Assert.Equal(GetFileId(path1), GetFileId(path2));
 
-            using SafeFileHandle handle1 = Interop.Kernel32.CreateFile(
-                path1,
-                Interop.Kernel32.GenericOperations.GENERIC_READ,
-                FileShare.ReadWrite | FileShare.Delete,
-                FileMode.Open,
-                Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS | Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT);
-
-            using SafeFileHandle handle2 = Interop.Kernel32.CreateFile(
-                path2,
-                Interop.Kernel32.GenericOperations.GENERIC_READ,
-                FileShare.ReadWrite | FileShare.Delete,
-                FileMode.Open,
-                Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS | Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT);
-
-            if (!Interop.Kernel32.GetFileInformationByHandle(handle1, out Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInfo1))
+            static (uint dwVolumeSerialNumber, uint nFileIndexHigh, uint nFileIndexLow) GetFileId(string path)
             {
-                throw new IOException($"Failed to get file information for {path1}");
-            }
+                using SafeFileHandle handle = Interop.Kernel32.CreateFile(
+                    path,
+                    Interop.Kernel32.GenericOperations.GENERIC_READ,
+                    FileShare.ReadWrite | FileShare.Delete,
+                    FileMode.Open,
+                    Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS | Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT);
 
-            if (!Interop.Kernel32.GetFileInformationByHandle(handle2, out Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInfo2))
-            {
-                throw new IOException($"Failed to get file information for {path2}");
-            }
+                if (!Interop.Kernel32.GetFileInformationByHandle(handle, out Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInfo))
+                {
+                    throw new IOException($"Failed to get file information for {path}");
+                }
 
-            Assert.Equal(fileInfo1.dwVolumeSerialNumber, fileInfo2.dwVolumeSerialNumber);
-            ulong fileIndex1 = ((ulong)fileInfo1.nFileIndexHigh << 32) | fileInfo1.nFileIndexLow;
-            ulong fileIndex2 = ((ulong)fileInfo2.nFileIndexHigh << 32) | fileInfo2.nFileIndexLow;
-            Assert.Equal(fileIndex1, fileIndex2);
+                return (fileInfo.dwVolumeSerialNumber, fileInfo.nFileIndexHigh, fileInfo.nFileIndexLow);
+            }
         }
     }
 }

@@ -8,14 +8,16 @@ namespace System.Formats.Tar.Tests
 {
     public abstract partial class TarTestsBase
     {
-        protected void VerifyPathsAreHardLinked(string path1, string path2)
+        protected void AssertPathsAreHardLinked(string path1, string path2)
         {
-            Assert.True(File.Exists(path1));
-            Assert.True(File.Exists(path2));
-            Assert.Equal(0, Interop.Sys.LStat(path1, out Interop.Sys.FileStatus status1));
-            Assert.Equal(0, Interop.Sys.LStat(path2, out Interop.Sys.FileStatus status2));
-            Assert.Equal(status1.Ino, status2.Ino);
-            Assert.Equal(status1.Dev, status2.Dev);
+            Assert.Equal(GetFileId(path1), GetFileId(path2));
+
+            static (long dev, long ino) GetFileId(string path)
+            {
+                Assert.Equal(0, Interop.Sys.LStat(path, out Interop.Sys.FileStatus status));
+
+                return (status.Dev, status.Ino);
+            }
         }
     }
 }

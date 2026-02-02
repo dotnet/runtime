@@ -407,7 +407,7 @@ namespace System.Formats.Tar.Tests
             // Verify extracted files are hard linked
             string targetFile1 = Path.Join(destination, "dir1", "file.txt");
             string targetFile2 = Path.Join(destination, "dir2", "linked.txt");
-            VerifyPathsAreHardLinked(targetFile1, targetFile2);
+            AssertPathsAreHardLinked(targetFile1, targetFile2);
         }
     }
 }
