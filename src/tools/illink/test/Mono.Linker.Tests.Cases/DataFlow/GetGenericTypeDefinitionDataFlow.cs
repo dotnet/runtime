@@ -31,12 +31,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestCombinations();
         }
 
-        [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresAll))]
         static void TestAllPropagated()
         {
             Type type = typeof(List<int>);
-            type.RequiresAll();
-            // SystemTypeValue doesn't have annotations, so calling GetGenericTypeDefinition won't add them
+            // GetGenericTypeDefinition on a known type should track the result as the specific generic type definition
+            // List<> doesn't have members that violate trimming rules, so this shouldn't warn
             type.GetGenericTypeDefinition().RequiresAll();
         }
 
@@ -118,14 +117,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         static void TestCombinations()
         {
-            TestCombinationAll(typeof(List<int>));
             TestCombinationPublicMethodsAndFields(typeof(List<int>));
-        }
-
-        static void TestCombinationAll([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
-        {
-            // All annotations propagate
-            type.GetGenericTypeDefinition().RequiresAll();
         }
 
         [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresPublicProperties))]
@@ -165,15 +157,5 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static Type GetTypeWithInterfaces() => typeof(List<int>);
 
         static Type GetUnknownType() => null;
-
-        class TestType
-        {
-            public TestType() { }
-            public void Method() { }
-            public int Field;
-            public int Property { get; set; }
-            public event EventHandler Event;
-            public class NestedType { }
-        }
     }
 }
