@@ -123,8 +123,15 @@ namespace LibraryImportGenerator.UnitTests
         public async Task VerifyByValueMarshallingAttributeUsageInfoMessages(string id, string source, DiagnosticResult[] diagnostics)
         {
             _ = id;
-            // Use analyzer verifier since diagnostics are now reported by the analyzer, not the generator
-            await VerifyAnalyzerCS.VerifyAnalyzerAsync(source, diagnostics);
+            // Use a custom test setup that enables SYSLIB1092 (which is disabled by default)
+            var test = new VerifyAnalyzerCS.Test
+            {
+                TestCode = source,
+            };
+            // Re-enable SYSLIB1092 for these tests since we're specifically testing it
+            test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
+            test.ExpectedDiagnostics.AddRange(diagnostics);
+            await test.RunAsync();
         }
     }
 }

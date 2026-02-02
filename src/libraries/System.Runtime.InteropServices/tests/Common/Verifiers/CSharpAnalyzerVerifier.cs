@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.Interop;
 
 namespace Microsoft.Interop.UnitTests.Verifiers
 {
@@ -46,6 +47,8 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                 // Ignore compiler diagnostics since we're only testing the analyzer.
                 // Without the generator, partial methods won't have implementations which causes CS8795.
                 CompilerDiagnostics = CompilerDiagnostics.None;
+                // Disable SYSLIB1092 recommendation diagnostic by default (same as source generator tests)
+                DisabledDiagnostics.Add(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
             }
         }
     }

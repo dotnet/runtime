@@ -52,9 +52,6 @@ namespace LibraryImportGenerator.UnitTests
 
         public static IEnumerable<object[]> CodeSnippetsToCompile()
         {
-            // Not LibraryImportAttribute
-            yield return new object[] { ID(), CodeSnippets.UserDefinedPrefixedAttributes, Array.Empty<DiagnosticResult>() };
-
             // Bug: https://github.com/dotnet/runtime/issues/117448
             // yield return new[] { ID(), CodeSnippets.ImproperCollectionWithMarshalUsingOnElements };
 
@@ -824,6 +821,8 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.PartialPropertyName };
             yield return new[] { ID(), CodeSnippets.InvalidConstantForModuleName };
             yield return new[] { ID(), CodeSnippets.IncorrectAttributeFieldType };
+            // Not LibraryImportAttribute - has custom attribute with similar name
+            yield return new[] { ID(), CodeSnippets.UserDefinedPrefixedAttributes };
         }
 
         [Theory]
