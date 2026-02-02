@@ -372,21 +372,6 @@ namespace System.Reflection.Metadata.Decoding.Tests
         [GenericAttribute<byte>(1, TProperty = 2, TArrayProperty = new byte[] { 3, 4 })]
         public class HasGenericArrayAttributes { }
 
-        // Test for generic type instantiation in custom attributes (nested enum in generic type)
-        [GenericEnumAttribute(default(GenericClassForEnum<int>.E))]
-        public class HasGenericEnumAttribute { }
-
-        public class GenericClassForEnum<T>
-        {
-            public enum E : int { Value1 = 0, Value2 = 1 }
-        }
-
-        [AttributeUsage(AttributeTargets.All)]
-        public class GenericEnumAttribute : Attribute
-        {
-            public GenericEnumAttribute(GenericClassForEnum<int>.E e) { }
-        }
-
         [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
         internal class GenericAttribute<T> : Attribute
         {
@@ -413,6 +398,21 @@ namespace System.Reflection.Metadata.Decoding.Tests
             public K Key { get; set; }
             public V Value { get; set; }
             public K[] ArrayProperty { get; set; }
+        }
+
+        // Test for generic type instantiation in custom attributes (nested enum in generic type)
+        [GenericEnumAttribute(default(GenericClassForEnum<int>.E))]
+        public class HasGenericEnumAttribute { }
+
+        public class GenericClassForEnum<T>
+        {
+            public enum E : int { Value1 = 0, Value2 = 1 }
+        }
+
+        [AttributeUsage(AttributeTargets.All)]
+        public class GenericEnumAttribute : Attribute
+        {
+            public GenericEnumAttribute(GenericClassForEnum<int>.E e) { }
         }
 #endif
 
@@ -791,8 +791,10 @@ namespace System.Reflection.Metadata.Decoding.Tests
                 if (runtimeType == typeof(MyEnum))
                     return PrimitiveTypeCode.Byte;
 
+#if NET && !TARGET_BROWSER
                 if (runtimeType == typeof(GenericClassForEnum<int>.E))
                     return PrimitiveTypeCode.Int32;
+#endif
 
                 throw new ArgumentOutOfRangeException();
             }
