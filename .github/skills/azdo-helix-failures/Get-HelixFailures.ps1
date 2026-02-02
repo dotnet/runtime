@@ -139,7 +139,7 @@ function Get-HelixJobInfo {
 function Get-BuildLog {
     param([int]$Build, [int]$LogId)
     
-    $url = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/$Build/logs/$LogId?api-version=7.0"
+    $url = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/$Build/logs/${LogId}?api-version=7.0"
     Write-Verbose "GET $url"
     
     try {
@@ -157,8 +157,11 @@ function Extract-HelixUrls {
     
     $urls = @()
     
-    # Match Helix console log URLs (use $urlMatches to avoid shadowing automatic $Matches variable)
-    $urlMatches = [regex]::Matches($LogContent, 'https://helix\.dot\.net/api/[^/]+/jobs/[a-f0-9-]+/workitems/[^/\s]+/console')
+    # First, normalize the content by removing line breaks that might split URLs
+    $normalizedContent = $LogContent -replace "`r`n", "" -replace "`n", ""
+    
+    # Match Helix console log URLs - workitem names can contain dots, dashes, and other chars
+    $urlMatches = [regex]::Matches($normalizedContent, 'https://helix\.dot\.net/api/[^/]+/jobs/[a-f0-9-]+/workitems/[^/\s\]]+/console')
     foreach ($match in $urlMatches) {
         $urls += $match.Value
     }
