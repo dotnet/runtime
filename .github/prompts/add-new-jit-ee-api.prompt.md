@@ -1,6 +1,6 @@
 ---
-mode: 'agent'
-tools: ['fetch', 'codebase', 'runCommands', 'usages', 'search', 'think']
+agent: 'agent'
+tools: ['web/fetch', 'search/codebase', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search/usages', 'search', 'edit/editFiles', 'think']
 description: 'Add a new API to the JIT-VM (aka JIT-EE) interface in the codebase.'
 ---
 

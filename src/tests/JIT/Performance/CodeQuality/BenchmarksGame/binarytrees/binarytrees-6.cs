@@ -16,6 +16,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
+using TestLibrary;
 //using BenchmarkDotNet.Attributes;
 //using MicroBenchmarks;
 
@@ -34,6 +35,8 @@ namespace BenchmarksGame
         // 21 is used in official numbers; about 7.8s
         const int N = 18;
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
         [Fact]
         public static int TestEntryPoint()
         {
