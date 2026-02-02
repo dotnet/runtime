@@ -1405,5 +1405,66 @@ namespace System.IO.Compression.Tests
         }
 
         #endregion
+
+        #region CreateEntryFromFile Overload Tests
+
+        public static IEnumerable<object[]> CreateEntryFromFile_Encrypted_TestData()
+        {
+            foreach (var row in EncryptionMethodAndBoolTestData())
+            {
+                var method = (ZipArchiveEntry.EncryptionMethod)row[0];
+                var async = (bool)row[1];
+
+                yield return new object[] { method, false, async }; // no compression overload
+                yield return new object[] { method, true, async };  // compression overload
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CreateEntryFromFile_Encrypted_TestData))]
+        public async Task CreateEntryFromFile_Encrypted_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool useCompression, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string sourcePath = GetTestFilePath();
+            string entryName = useCompression ? "fromfile-compressed.txt" : "fromfile.txt";
+            string password = "password123";
+            string content = useCompression ? "Secret content with compression from file" : "Secret content from file";
+
+            if (async)
+                await File.WriteAllTextAsync(sourcePath, content, Encoding.UTF8);
+            else
+                File.WriteAllText(sourcePath, content, Encoding.UTF8);
+
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
+            {
+                if (async)
+                {
+                    if (useCompression)
+                        await archive.CreateEntryFromFileAsync(sourcePath, entryName, CompressionLevel.Optimal, password, encryptionMethod);
+                    else
+                        await archive.CreateEntryFromFileAsync(sourcePath, entryName, password, encryptionMethod);
+                }
+                else
+                {
+                    if (useCompression)
+                        archive.CreateEntryFromFile(sourcePath, entryName, CompressionLevel.Optimal, password, encryptionMethod);
+                    else
+                        archive.CreateEntryFromFile(sourcePath, entryName, password, encryptionMethod);
+                }
+            }
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                ZipArchiveEntry entry = archive.GetEntry(entryName);
+                Assert.NotNull(entry);
+                Assert.True(entry.IsEncrypted);
+
+                await AssertEntryTextEquals(entry, content, password, async);
+            }
+        }
+
+        #endregion
+
+
     }
 }

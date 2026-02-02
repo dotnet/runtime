@@ -40,11 +40,6 @@ namespace System.IO.Compression.Tests
         }
 
         protected override bool CanSeek => false;
-
-        // ZipCryptoStream doesn't track disposal state internally,
-        // so it won't throw ObjectDisposedException after disposal.
-        public override Task Disposed_ThrowsObjectDisposedException() => Task.CompletedTask;
-
         protected override Task<Stream?> CreateReadOnlyStreamCore(byte[]? initialData) =>
             Task.FromResult<Stream?>(null); // Encryption stream is write-only
 
