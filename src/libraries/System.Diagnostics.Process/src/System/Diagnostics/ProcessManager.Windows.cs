@@ -236,7 +236,7 @@ namespace System.Diagnostics
             }
         }
 
-        public static SafeProcessHandle OpenProcess(int processId, int access, bool throwIfExited)
+        public static SafeProcessHandle OpenProcess(int processId, int access, bool throwOnError)
         {
             SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(access, false, processId);
             int result = Marshal.GetLastWin32Error();
@@ -252,10 +252,19 @@ namespace System.Diagnostics
                 throw new Win32Exception(Interop.Errors.ERROR_ACCESS_DENIED);
             }
 
-            // If the handle is invalid because the process has exited, only throw an exception if throwIfExited is true.
-            if (result != Interop.Errors.ERROR_ACCESS_DENIED && !IsProcessRunning(processId))
+            // Handle different error conditions based on throwOnError parameter.
+            // When throwOnError is false (e.g., during process enumeration), return invalid handle
+            // for common/expected errors instead of throwing to avoid excessive exception overhead.
+            if (result is Interop.Errors.ERROR_ACCESS_DENIED)
             {
-                if (throwIfExited)
+                if (!throwOnError)
+                {
+                    return SafeProcessHandle.InvalidHandle;
+                }
+            }
+            else if (!IsProcessRunning(processId))
+            {
+                if (throwOnError)
                 {
                     throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, processId.ToString()));
                 }
@@ -263,13 +272,6 @@ namespace System.Diagnostics
                 {
                     return SafeProcessHandle.InvalidHandle;
                 }
-            }
-
-            // When throwIfExited is false, return an invalid handle for access denied errors to avoid throwing exceptions
-            // during process enumeration where access denied is common and expected (e.g., for system processes).
-            if (!throwIfExited && result == Interop.Errors.ERROR_ACCESS_DENIED)
-            {
-                return SafeProcessHandle.InvalidHandle;
             }
 
             throw new Win32Exception(result);
