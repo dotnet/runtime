@@ -72,17 +72,22 @@ function libFactory() {
     }
 
     // TODO-WASM: fix PAL https://github.com/dotnet/runtime/issues/122506
-    LibraryManager.library.__syscall_pipe = trim;
-    delete LibraryManager.library.__syscall_pipe__deps;
-
-    LibraryManager.library.__syscall_connect = trim;
-    delete LibraryManager.library.__syscall_connect__deps;
-
-    LibraryManager.library.__syscall_sendto = trim;
-    delete LibraryManager.library.__syscall_sendto__deps;
-
-    LibraryManager.library.__syscall_socket = trim;
-    delete LibraryManager.library.__syscall_socket__deps;
+    if (LibraryManager.library.__syscall_pipe) {
+        LibraryManager.library.__syscall_pipe = trim;
+        delete LibraryManager.library.__syscall_pipe__deps;
+    }
+    if (LibraryManager.library.__syscall_connect) {
+        LibraryManager.library.__syscall_connect = trim;
+        delete LibraryManager.library.__syscall_connect__deps;
+    }
+    if (LibraryManager.library.__syscall_sendto) {
+        LibraryManager.library.__syscall_sendto = trim;
+        delete LibraryManager.library.__syscall_sendto__deps;
+    }
+    if (LibraryManager.library.__syscall_socket) {
+        LibraryManager.library.__syscall_socket = trim;
+        delete LibraryManager.library.__syscall_socket__deps;
+    }
 }
 
 libFactory();

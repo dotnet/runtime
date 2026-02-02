@@ -42,7 +42,9 @@ function libFactory() {
 
     autoAddDeps(libCoreRun, "$CORERUN");
     addToLibrary(libCoreRun);
-    Object.assign(LibraryManager.library.$NODERAWFS, patchNODERAWFS);
+    if (LibraryManager.library.$NODERAWFS) {
+        Object.assign(LibraryManager.library.$NODERAWFS, patchNODERAWFS);
+    }
 }
 
 libFactory();
