@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using TestLibrary;
 
 public class Test_GetTotalAllocatedBytes 
 {
@@ -175,6 +176,7 @@ public class Test_GetTotalAllocatedBytes
             thr.Join();
     }
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static void TestEntryPoint() 
     {

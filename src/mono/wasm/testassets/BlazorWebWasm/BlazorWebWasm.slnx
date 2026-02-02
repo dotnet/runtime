@@ -1,7 +1,6 @@
 <Solution>
   <Configurations>
     <Platform Name="Any CPU" />
-    <Platform Name="wasm" />
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
