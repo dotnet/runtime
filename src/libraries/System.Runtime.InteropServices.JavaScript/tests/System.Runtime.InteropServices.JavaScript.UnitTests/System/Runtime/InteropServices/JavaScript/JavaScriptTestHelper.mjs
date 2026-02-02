@@ -246,13 +246,53 @@ export function invoke2(arg1, name) {
     return res;
 }
 
+export function invokeExportWithPromiseWithDateMaxValue(exportName) {
+    const fn1 = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper[exportName];
+    const res = fn1(returnResolvedPromiseWithDateMaxValue());
+    return res;
+}
+
+export function invokeExportWithDateMaxValue(exportName) {
+    const fn1 = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper[exportName];
+    const res = fn1(returnDateMaxValue());
+    return res;
+}
+
+export function invokeDelegate_DateTimeWithOffset(delegate, date, offset) {
+    return delegate(returnDateWithOffset(date, offset));
+}
+
+export function getInt32ArrayWithOutOfRangeValues() {
+    return [0, 1, 2147483648, 3147483648, 9007199254740991, 9007199254740992];
+}
+
 export function returnResolvedPromise() {
     return Promise.resolve();
+}
+
+export function returnResolvedPromiseWithIntMaxValue() {
+    return Promise.resolve(2147483647);
+}
+
+export function returnResolvedPromiseWithDateMaxValue() {
+    return Promise.resolve(new Date(8640000000000000));
+}
+
+export function returnDateMaxValue() {
+    return new Date(8640000000000000);
+}
+
+export function returnDateWithOffset(date, offset) {
+    return new Date(date.getTime() + offset);
 }
 
 export async function invokeReturnCompletedTask() {
     await dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper.ReturnCompletedTask();
     return "resolved";
+}
+
+export function invokeFuncWithOffset(fn, arg, offset) {
+    return fn(arg + offset);
 }
 
 export function invokeStructClassRecords(arg1) {

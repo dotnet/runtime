@@ -4816,9 +4816,39 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         gtWalkOp(&op2, &op1, nullptr, true);
 #endif // defined(TARGET_XARCH)
 
-        if ((mul > 1) && (op2 != nullptr) && op2->OperIs(GT_LSH, GT_MUL))
+        bool noCSE = (op2 != nullptr) && op2->OperIs(GT_LSH, GT_MUL);
+#if defined(TARGET_RISCV64)
+        noCSE = noCSE && this->compOpportunisticallyDependsOn(InstructionSet_Zba);
+#else
+        noCSE = noCSE && (mul > 1);
+#endif // defined(TARGET_RISCV64)
+
+        if (noCSE)
         {
             op2->gtFlags |= GTF_ADDRMODE_NO_CSE;
+#if defined(TARGET_RISCV64)
+            // RISC-V addressing mode follows the form: (base + index*scale) + offset.
+            // To emit sh1/2/3add.uw, GT_ADD + GT_LSH/MUL + GT_CAST(zero-extend) nodes are required (Zba extension).
+            // Disabling CSE for GT_CAST prevents breaking the pattern and ensures emitting sh1/2/3add.uw.
+            // Note that emitting sh1/2/3add instructions (without .uw) don't require a GT_CAST node.
+            //
+            // Example:
+            //      ADD
+            //      |- ADD
+            //      |  |- LCL_VAR       (base)
+            //      |  |- LSH (or MUL)  (index * scale)
+            //      |     |- GT_CAST    (index, CSE must be disabled here to emit sh1/2/3add.uw)
+            //      |        |- OP1     (CSE/ConstCSE allowed here)
+            //      |     |- CNS_INT    (scale)
+            //      |- CNS_INT          (offset)
+
+            GenTree* index = op2->gtGetOp1();
+            if ((index != nullptr) && index->OperIs(GT_CAST))
+            {
+                assert(index->TypeIs(TYP_I_IMPL));
+                index->gtFlags |= GTF_ADDRMODE_NO_CSE;
+            }
+#endif // defined(TARGET_RISCV64)
         }
 
         // Finally, adjust the costs on the parenting COMMAs.
@@ -21923,19 +21953,19 @@ GenTree* Compiler::gtNewSimdCvtNode(
         switch (simdTargetBaseType)
         {
             case TYP_INT:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt32WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation;
                 break;
 
             case TYP_UINT:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt32WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation;
                 break;
 
             case TYP_LONG:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt64WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation;
                 break;
 
             case TYP_ULONG:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt64WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation;
                 break;
 
             default:
