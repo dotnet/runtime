@@ -11,6 +11,7 @@
 //     File: D:\a\_work\1\s\src\coreclr\jit\lir.cpp Line: 1397
 //
 
+using TestLibrary;
 namespace Runtime_64883;
 
 using System.IO;
@@ -22,6 +23,7 @@ public class Runtime_64883
 {
     public static uint s_29;
     [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestEntryPoint()

@@ -201,7 +201,7 @@ namespace System.Threading.Tasks.Tests
                 try
                 {
                     fastPath1.Wait();
-                    Assert.Fail(string.Format("RunRunTests:    > FAILURE: Expected proxy for already-faulted Task to throw on Wait()"));
+                    Assert.Fail("RunRunTests:    > FAILURE: Expected proxy for already-faulted Task to throw on Wait()");
                 }
                 catch { }
                 Assert.True(fastPath1.Status == TaskStatus.Faulted, "Expected proxy for already-faulted task to be in Faulted status");
@@ -210,7 +210,7 @@ namespace System.Threading.Tasks.Tests
                 try
                 {
                     fastPath1.Wait();
-                    Assert.Fail(string.Format("RunRunTests:    > FAILURE: Expected proxy for already-canceled Task to throw on Wait()"));
+                    Assert.Fail("RunRunTests:    > FAILURE: Expected proxy for already-canceled Task to throw on Wait()");
                 }
                 catch { }
                 Assert.True(fastPath1.Status == TaskStatus.Canceled, "RunRunTests: Expected proxy for already-canceled task to be in Canceled status");
@@ -238,7 +238,7 @@ namespace System.Threading.Tasks.Tests
                 try
                 {
                     fastPath1.Wait();
-                    Assert.Fail(string.Format("RunRunTests:    > FAILURE: Expected proxy for already-faulted future to throw on Wait()"));
+                    Assert.Fail("RunRunTests:    > FAILURE: Expected proxy for already-faulted future to throw on Wait()");
                 }
                 catch { }
                 Assert.True(fastPath1.Status == TaskStatus.Faulted, "Expected proxy for already-faulted future to be in Faulted status");
@@ -247,7 +247,7 @@ namespace System.Threading.Tasks.Tests
                 try
                 {
                     fastPath1.Wait();
-                    Assert.Fail(string.Format("RunRunTests:    > FAILURE: Expected proxy for already-canceled future to throw on Wait()"));
+                    Assert.Fail("RunRunTests:    > FAILURE: Expected proxy for already-canceled future to throw on Wait()");
                 }
                 catch { }
                 Assert.True(fastPath1.Status == TaskStatus.Canceled, "RunRunTests: Expected proxy for already-canceled future to be in Canceled status");
