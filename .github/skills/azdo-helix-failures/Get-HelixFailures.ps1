@@ -327,6 +327,13 @@ function Get-FailureClassification {
             Summary = '[Network] Network connectivity issue'
             Action = 'Retry - transient network issue on Helix machine'
             Transient = $true
+        },
+        @{
+            Pattern = 'Unable to pull image|docker.+pull.+failed|Exit Code:-4'
+            Type = 'Infrastructure'
+            Summary = '[Docker] Container image pull failure'
+            Action = 'Retry - transient container registry connectivity issue'
+            Transient = $true
         }
     )
     
