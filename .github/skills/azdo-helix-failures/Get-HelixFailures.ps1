@@ -136,7 +136,7 @@ function Get-BuildLog {
         return $response
     }
     catch {
-        Write-Warning "Failed to fetch log $LogId: $_"
+        Write-Warning "Failed to fetch log ${LogId}: $_"
         return $null
     }
 }
@@ -186,7 +186,7 @@ function Get-HelixConsoleLog {
         return $response
     }
     catch {
-        Write-Warning "Failed to fetch Helix log from $Url: $_"
+        Write-Warning "Failed to fetch Helix log from ${Url}: $_"
         return $null
     }
 }
