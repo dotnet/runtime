@@ -322,7 +322,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                     CustomAttributeValue<string> value = attribute.DecodeValue(provider);
                     
                     Assert.Equal(1, value.FixedArguments.Length);
-                    // The enum type is int32 based
+                    // Verify the underlying type representation is 'int32' since the enum is int-based
                     Assert.Equal("int32", value.FixedArguments[0].Type);
                     Assert.Equal(0, value.FixedArguments[0].Value);
                     Assert.Empty(value.NamedArguments);
