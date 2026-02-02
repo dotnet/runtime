@@ -2285,15 +2285,6 @@ namespace System.IO.Compression
             UnicodeFileNameAndComment = 0x800
         }
 
-        public enum EncryptionMethod : byte
-        {
-            None = 0,
-            ZipCrypto = 1,
-            Aes128 = 2,
-            Aes192 = 3,
-            Aes256 = 4
-        }
-
         internal sealed class LocalHeaderOffsetComparer : Comparer<ZipArchiveEntry>
         {
             private static readonly LocalHeaderOffsetComparer s_instance = new LocalHeaderOffsetComparer();

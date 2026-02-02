@@ -4,10 +4,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.IO.Compression.Tests
 {
@@ -476,7 +474,7 @@ namespace System.IO.Compression.Tests
                 // Your custom overload that sets per-entry password & ZipCrypto
                 var entry = za.CreateEntry(entryName);
 
-                using var writer = new StreamWriter(entry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
+                using var writer = new StreamWriter(entry.Open(password, EncryptionMethod.ZipCrypto), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
                 writer.Write(expectedContent);
             }
 
@@ -511,7 +509,7 @@ namespace System.IO.Compression.Tests
             ("c/readme.md", "# readme"),
             };
             const string password = "S@m3PW!";
-            const ZipArchiveEntry.EncryptionMethod enc = ZipArchiveEntry.EncryptionMethod.ZipCrypto;
+            const EncryptionMethod enc = EncryptionMethod.ZipCrypto;
 
             // Act 1: Create with same password for all
             using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
@@ -553,7 +551,7 @@ namespace System.IO.Compression.Tests
             ("e/info.txt", "echo-info", "pw-e"),
             ("f/sub/notes.txt", "foxtrot-notes", "pw-f"),
             };
-            const ZipArchiveEntry.EncryptionMethod enc = ZipArchiveEntry.EncryptionMethod.ZipCrypto;
+            const EncryptionMethod enc = EncryptionMethod.ZipCrypto;
 
             // Act 1: Create, each entry with its own password
             using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
@@ -600,7 +598,7 @@ namespace System.IO.Compression.Tests
             if (File.Exists(zipPath)) File.Delete(zipPath);
 
             const string encPw = "EncOnly123!";
-            const ZipArchiveEntry.EncryptionMethod enc = ZipArchiveEntry.EncryptionMethod.ZipCrypto;
+            const EncryptionMethod enc = EncryptionMethod.ZipCrypto;
 
             var encryptedItems = new (string Name, string Content)[]
             {
@@ -682,7 +680,7 @@ namespace System.IO.Compression.Tests
             using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
             {
                 var entry = za.CreateEntry(entryName);
-                using var stream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+                using var stream = entry.Open(password, EncryptionMethod.ZipCrypto);
 
                 byte[] data = Encoding.UTF8.GetBytes(expectedContent);
                 await stream.WriteAsync(data, 0, data.Length);
@@ -724,7 +722,7 @@ namespace System.IO.Compression.Tests
             using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
             {
                 var entry = za.CreateEntry(entryName);
-                using var stream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+                using var stream = entry.Open(password, EncryptionMethod.ZipCrypto);
 
                 foreach (var part in parts)
                 {
@@ -768,7 +766,7 @@ namespace System.IO.Compression.Tests
             using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
             {
                 var entry = za.CreateEntry(entryName);
-                using var writer = new StreamWriter(entry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8);
+                using var writer = new StreamWriter(entry.Open(password, EncryptionMethod.ZipCrypto), Encoding.UTF8);
                 await writer.WriteAsync(expectedContent);
             }
 
@@ -808,14 +806,14 @@ namespace System.IO.Compression.Tests
             {
                 // Synchronous write
                 var syncEntry = za.CreateEntry(syncEntryName);
-                using (var syncWriter = new StreamWriter(syncEntry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8))
+                using (var syncWriter = new StreamWriter(syncEntry.Open(password, EncryptionMethod.ZipCrypto), Encoding.UTF8))
                 {
                     syncWriter.Write(syncContent);
                 }
 
                 // Asynchronous write
                 var asyncEntry = za.CreateEntry(asyncEntryName);
-                using (var asyncWriter = new StreamWriter(asyncEntry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8))
+                using (var asyncWriter = new StreamWriter(asyncEntry.Open(password, EncryptionMethod.ZipCrypto), Encoding.UTF8))
                 {
                     await asyncWriter.WriteAsync(asyncContent);
                 }
@@ -868,7 +866,7 @@ namespace System.IO.Compression.Tests
             using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
             {
                 var entry = za.CreateEntry(entryName);
-                using var stream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+                using var stream = entry.Open(password, EncryptionMethod.ZipCrypto);
 
                 // Write in 64KB chunks
                 const int chunkSize = 65536;
@@ -917,7 +915,7 @@ namespace System.IO.Compression.Tests
             using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
             {
                 var entry = za.CreateEntry(entryName);
-                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+                using var entryStream = entry.Open(password, EncryptionMethod.ZipCrypto);
                 using var sourceStream = new MemoryStream(expectedData);
 
                 await sourceStream.CopyToAsync(entryStream);
@@ -1027,7 +1025,7 @@ namespace System.IO.Compression.Tests
             using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
             {
                 var entry = archive.CreateEntry(entryName);
-                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes256);
+                using var entryStream = entry.Open(password, EncryptionMethod.Aes256);
                 using var writer = new StreamWriter(entryStream, Encoding.UTF8);
                 writer.Write(expectedContent);
             }
@@ -1075,7 +1073,7 @@ namespace System.IO.Compression.Tests
                 foreach (var (name, content) in entries)
                 {
                     var entry = archive.CreateEntry(name);
-                    using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes256);
+                    using var entryStream = entry.Open(password, EncryptionMethod.Aes256);
                     using var writer = new StreamWriter(entryStream, Encoding.UTF8);
                     await writer.WriteAsync(content);
                 }
@@ -1126,7 +1124,7 @@ namespace System.IO.Compression.Tests
                 foreach (var (name, content, pwd) in entries)
                 {
                     var entry = archive.CreateEntry(name);
-                    using var entryStream = entry.Open(pwd, ZipArchiveEntry.EncryptionMethod.Aes256);
+                    using var entryStream = entry.Open(pwd, EncryptionMethod.Aes256);
                     using var writer = new StreamWriter(entryStream, Encoding.UTF8);
                     await writer.WriteAsync(content);
                 }
@@ -1181,7 +1179,7 @@ namespace System.IO.Compression.Tests
                 foreach (var (name, content) in encryptedEntries)
                 {
                     var entry = archive.CreateEntry(name);
-                    using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes256);
+                    using var entryStream = entry.Open(password, EncryptionMethod.Aes256);
                     using var writer = new StreamWriter(entryStream, Encoding.UTF8);
                     await writer.WriteAsync(content);
                 }
@@ -1242,7 +1240,7 @@ namespace System.IO.Compression.Tests
             using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
             {
                 var entry = archive.CreateEntry(entryName);
-                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes128);
+                using var entryStream = entry.Open(password, EncryptionMethod.Aes128);
                 using var writer = new StreamWriter(entryStream, Encoding.UTF8);
                 await writer.WriteAsync(expectedContent);
             }
@@ -1281,7 +1279,7 @@ namespace System.IO.Compression.Tests
             using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
             {
                 var entry = archive.CreateEntry(entryName);
-                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes192);
+                using var entryStream = entry.Open(password, EncryptionMethod.Aes192);
                 using var writer = new StreamWriter(entryStream, Encoding.UTF8);
                 await writer.WriteAsync(expectedContent);
             }
@@ -1311,13 +1309,13 @@ namespace System.IO.Compression.Tests
             Directory.CreateDirectory(DownloadsDir);
             string tempPath = Path.Join(DownloadsDir, "mixed_aes_levels.zip");
 
-            var entries = new (string Name, string Content, string Password, ZipArchiveEntry.EncryptionMethod Encryption)[]
+            var entries = new (string Name, string Content, string Password, EncryptionMethod Encryption)[]
             {
-        ("aes128/file1.txt", "AES-128 encrypted content", "password128", ZipArchiveEntry.EncryptionMethod.Aes128),
-        ("aes192/file2.txt", "AES-192 encrypted content", "password192", ZipArchiveEntry.EncryptionMethod.Aes192),
-        ("aes256/file3.txt", "AES-256 encrypted content", "password256", ZipArchiveEntry.EncryptionMethod.Aes256),
-        ("mixed/doc1.json", "{\"encryption\": \"AES-128\"}", "jsonPass128", ZipArchiveEntry.EncryptionMethod.Aes128),
-        ("mixed/doc2.xml", "<root>AES-192</root>", "xmlPass192", ZipArchiveEntry.EncryptionMethod.Aes192)
+        ("aes128/file1.txt", "AES-128 encrypted content", "password128", EncryptionMethod.Aes128),
+        ("aes192/file2.txt", "AES-192 encrypted content", "password192", EncryptionMethod.Aes192),
+        ("aes256/file3.txt", "AES-256 encrypted content", "password256", EncryptionMethod.Aes256),
+        ("mixed/doc1.json", "{\"encryption\": \"AES-128\"}", "jsonPass128", EncryptionMethod.Aes128),
+        ("mixed/doc2.xml", "<root>AES-192</root>", "xmlPass192", EncryptionMethod.Aes192)
             };
 
             // Act 1: Create ZIP with entries using different AES encryption levels
@@ -1374,7 +1372,7 @@ namespace System.IO.Compression.Tests
             using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
             {
                 var entry = archive.CreateEntry(entryName);
-                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes128);
+                using var entryStream = entry.Open(password, EncryptionMethod.Aes128);
                 entryStream.Write(largeContent);
             }
 
@@ -1423,7 +1421,7 @@ namespace System.IO.Compression.Tests
                 foreach (var (name, content, level) in entries)
                 {
                     var entry = archive.CreateEntry(name, level);
-                    using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes192);
+                    using var entryStream = entry.Open(password, EncryptionMethod.Aes192);
                     using var writer = new StreamWriter(entryStream, Encoding.UTF8);
                     writer.Write(content);
                 }
@@ -1460,22 +1458,22 @@ namespace System.IO.Compression.Tests
             Directory.CreateDirectory(DownloadsDir);
             string tempPath = Path.Join(DownloadsDir, "all_encryption_types.zip");
 
-            var entries = new (string Name, string Content, string? Password, ZipArchiveEntry.EncryptionMethod? Encryption)[]
+            var entries = new (string Name, string Content, string? Password, EncryptionMethod? Encryption)[]
             {
         // Plain entry
         ("plain/readme.txt", "This is a plain unencrypted file", null, null),
         
         // ZipCrypto
-        ("zipcrypto/secret.txt", "ZipCrypto encrypted content", "zipPass", ZipArchiveEntry.EncryptionMethod.ZipCrypto),
+        ("zipcrypto/secret.txt", "ZipCrypto encrypted content", "zipPass", EncryptionMethod.ZipCrypto),
         
         // AES-128
-        ("aes128/data.txt", "AES-128 encrypted data", "aes128Pass", ZipArchiveEntry.EncryptionMethod.Aes128),
+        ("aes128/data.txt", "AES-128 encrypted data", "aes128Pass", EncryptionMethod.Aes128),
         
         // AES-192
-        ("aes192/config.json", "{\"level\": \"AES-192\"}", "aes192Pass", ZipArchiveEntry.EncryptionMethod.Aes192),
+        ("aes192/config.json", "{\"level\": \"AES-192\"}", "aes192Pass", EncryptionMethod.Aes192),
         
         // AES-256
-        ("aes256/secure.xml", "<data>AES-256 secured</data>", "aes256Pass", ZipArchiveEntry.EncryptionMethod.Aes256)
+        ("aes256/secure.xml", "<data>AES-256 secured</data>", "aes256Pass", EncryptionMethod.Aes256)
             };
 
             // Act 1: Create ZIP with all encryption types
@@ -1566,7 +1564,7 @@ namespace System.IO.Compression.Tests
                 foreach (var (name, content) in entries)
                 {
                     var entry = archive.CreateEntry(name);
-                    using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes128);
+                    using var entryStream = entry.Open(password, EncryptionMethod.Aes128);
                     using var writer = new StreamWriter(entryStream, Encoding.UTF8);
                     await writer.WriteAsync(content);
                 }
@@ -1605,7 +1603,7 @@ namespace System.IO.Compression.Tests
             using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
             {
                 var entry = archive.CreateEntry(entryName);
-                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes256);
+                using var entryStream = entry.Open(password, EncryptionMethod.Aes256);
 
                 // Use async write operations
                 byte[] contentBytes = Encoding.UTF8.GetBytes(expectedContent);
@@ -1638,11 +1636,11 @@ namespace System.IO.Compression.Tests
             Directory.CreateDirectory(DownloadsDir);
             string tempPath = Path.Join(DownloadsDir, "multiple_aes_async_writes.zip");
 
-            var entries = new (string Name, byte[] Content, string Password, ZipArchiveEntry.EncryptionMethod Encryption)[]
+            var entries = new (string Name, byte[] Content, string Password, EncryptionMethod Encryption)[]
             {
-        ("async128.bin", Encoding.UTF8.GetBytes("AES-128 async content"), "pass128", ZipArchiveEntry.EncryptionMethod.Aes128),
-        ("async192.bin", Encoding.UTF8.GetBytes("AES-192 async content"), "pass192", ZipArchiveEntry.EncryptionMethod.Aes192),
-        ("async256.bin", Encoding.UTF8.GetBytes("AES-256 async content"), "pass256", ZipArchiveEntry.EncryptionMethod.Aes256)
+        ("async128.bin", Encoding.UTF8.GetBytes("AES-128 async content"), "pass128", EncryptionMethod.Aes128),
+        ("async192.bin", Encoding.UTF8.GetBytes("AES-192 async content"), "pass192", EncryptionMethod.Aes192),
+        ("async256.bin", Encoding.UTF8.GetBytes("AES-256 async content"), "pass256", EncryptionMethod.Aes256)
             };
 
             // Act 1: Create entries with async writes
@@ -1706,7 +1704,7 @@ namespace System.IO.Compression.Tests
             using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
             {
                 var entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
-                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes128);
+                using var entryStream = entry.Open(password, EncryptionMethod.Aes128);
 
                 // Write in chunks asynchronously
                 const int chunkSize = 8192;
@@ -1762,7 +1760,7 @@ namespace System.IO.Compression.Tests
             using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
             {
                 var entry = archive.CreateEntry(entryName);
-                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes256);
+                using var entryStream = entry.Open(password, EncryptionMethod.Aes256);
 
                 // Write each part asynchronously
                 foreach (var part in parts)
@@ -1811,7 +1809,7 @@ namespace System.IO.Compression.Tests
             using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
             {
                 var entry = archive.CreateEntry(entryName);
-                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes128);
+                using var entryStream = entry.Open(password, EncryptionMethod.Aes128);
                 await entryStream.WriteAsync(pattern, 0, pattern.Length);
             }
 
@@ -1860,7 +1858,7 @@ namespace System.IO.Compression.Tests
             {
                 // Synchronous write
                 var syncEntry = archive.CreateEntry(entries[0].Item1);
-                using (var syncStream = syncEntry.Open(entries[0].Item3, ZipArchiveEntry.EncryptionMethod.Aes192))
+                using (var syncStream = syncEntry.Open(entries[0].Item3, EncryptionMethod.Aes192))
                 {
                     byte[] syncBytes = Encoding.UTF8.GetBytes(entries[0].Item2);
                     syncStream.Write(syncBytes, 0, syncBytes.Length);
@@ -1868,7 +1866,7 @@ namespace System.IO.Compression.Tests
 
                 // Asynchronous write
                 var asyncEntry = archive.CreateEntry(entries[1].Item1);
-                using (var asyncStream = asyncEntry.Open(entries[1].Item3, ZipArchiveEntry.EncryptionMethod.Aes192))
+                using (var asyncStream = asyncEntry.Open(entries[1].Item3, EncryptionMethod.Aes192))
                 {
                     byte[] asyncBytes = Encoding.UTF8.GetBytes(entries[1].Item2);
                     await asyncStream.WriteAsync(asyncBytes, 0, asyncBytes.Length);
@@ -1914,7 +1912,7 @@ namespace System.IO.Compression.Tests
             if (File.Exists(archiveAfterUpdatePath)) File.Delete(archiveAfterUpdatePath);
 
             string password = "password123";
-            var encryptionMethod = ZipArchiveEntry.EncryptionMethod.Aes256;
+            var encryptionMethod = EncryptionMethod.Aes256;
 
             // Step 1: Create initial archive with 3 encrypted entries
             using (var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
@@ -2036,10 +2034,10 @@ namespace System.IO.Compression.Tests
 
             var entries = new[]
             {
-                ("entry_zipcrypto.txt", "Content ZipCrypto", ZipArchiveEntry.EncryptionMethod.ZipCrypto),
-                ("entry_aes128.txt", "Content AES-128", ZipArchiveEntry.EncryptionMethod.Aes128),
-                ("entry_aes192.txt", "Content AES-192", ZipArchiveEntry.EncryptionMethod.Aes192),
-                ("entry_aes256.txt", "Content AES-256", ZipArchiveEntry.EncryptionMethod.Aes256)
+                ("entry_zipcrypto.txt", "Content ZipCrypto", EncryptionMethod.ZipCrypto),
+                ("entry_aes128.txt", "Content AES-128", EncryptionMethod.Aes128),
+                ("entry_aes192.txt", "Content AES-192", EncryptionMethod.Aes192),
+                ("entry_aes256.txt", "Content AES-256", EncryptionMethod.Aes256)
             };
 
             // Step 1: Create archive with entries using different encryption methods

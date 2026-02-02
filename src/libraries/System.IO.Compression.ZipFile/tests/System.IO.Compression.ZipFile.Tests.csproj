@@ -42,4 +42,7 @@
   <ItemGroup>
     <PackageReference Include="System.IO.Compression.TestData" Version="$(SystemIOCompressionTestDataVersion)" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.IO.Compression\ref\System.IO.Compression.csproj" />
+  </ItemGroup>
 </Project>

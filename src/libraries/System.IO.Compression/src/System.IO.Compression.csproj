@@ -71,6 +71,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="System\IO\Compression\EncryptionMethod.cs" />
     <Compile Include="System\IO\Compression\ZipCryptoStream.cs" />
     <Compile Include="System\IO\Compression\WinZipAesStream.cs" />
   </ItemGroup>
