@@ -179,8 +179,6 @@ set( JIT_SOURCES
   treelifeupdater.cpp
   utils.cpp
   valuenum.cpp
-  ../jitshared/arenaallocator.cpp
-  ../jitshared/histogram.cpp
 )
 
 set ( JIT_NATIVE_TARGET_SOURCES
@@ -625,6 +623,7 @@ function(add_jit jitName)
           ${JIT_RESOURCES}
           ${JIT_DEF_FILE}
           ${JIT_DLL_MAIN_FILE}
+          $<TARGET_OBJECTS:jitshared>
       )
     else()
       add_library_clr(${jitName}
@@ -634,6 +633,7 @@ function(add_jit jitName)
           ${JIT_RESOURCES}
           ${JIT_DEF_FILE}
           ${JIT_DLL_MAIN_FILE}
+          $<TARGET_OBJECTS:jitshared>
       )
     endif(CLR_CMAKE_TARGET_WIN32)
 

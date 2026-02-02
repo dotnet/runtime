@@ -10,15 +10,16 @@ set(JITSHARED_SOURCES
 set(JITSHARED_HEADERS
     arenaallocator.h
     compallocator.h
+    dumpable.h
     histogram.h
     jitshared.h
     memstats.h
 )
 
 # Create object library for shared allocator code
-add_library_clr(jitshared_objects OBJECT ${JITSHARED_SOURCES})
+add_library_clr(jitshared OBJECT ${JITSHARED_SOURCES} ${JITSHARED_HEADERS})
 
-target_include_directories(jitshared_objects
+target_include_directories(jitshared
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )

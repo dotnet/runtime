@@ -8,6 +8,8 @@ add_library_clr(clrjit_static
     ${JIT_ARCH_SOURCES}
 )
 
+target_sources(clrjit_static PRIVATE $<TARGET_OBJECTS:jitshared>)
+
 if(CLR_CMAKE_HOST_UNIX)
     add_dependencies(clrjit_static coreclrpal gcinfo)
 endif(CLR_CMAKE_HOST_UNIX)
