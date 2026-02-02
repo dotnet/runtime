@@ -300,7 +300,7 @@ namespace System.Net.Security.Tests
             // Regression test for https://github.com/dotnet/runtime/issues/111497
 
             // Create a shared certificate that will be reused across multiple connections
-            X509Certificate2 sharedCertificate = Configuration.Certificates.GetServerCertificate();
+            using X509Certificate2 sharedCertificate = Configuration.Certificates.GetServerCertificate();
 
             int connectionCount = 0;
 
@@ -375,8 +375,6 @@ namespace System.Net.Security.Tests
             // Verify both connections succeeded and the certificate is still valid
             Assert.Equal(2, connectionCount);
             Assert.NotEqual(IntPtr.Zero, sharedCertificate.Handle);
-
-            sharedCertificate.Dispose();
         }
     }
 }
