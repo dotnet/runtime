@@ -475,8 +475,6 @@ namespace System.Threading.Tasks
                 WriteEvent(TRACESYNCHRONOUSWORKSTART_ID, TaskID, (int)Work);               // optimized overload for this exists
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
         [Event(TRACESYNCHRONOUSWORKSTOP_ID, Version = 1,
          Level = EventLevel.Informational, Keywords = Keywords.AsyncCausalitySynchronousWork)]
         public void TraceSynchronousWorkEnd(CausalitySynchronousWork Work)
