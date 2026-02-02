@@ -1048,7 +1048,7 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
             case TYP_INT:
             {
                 ins = INS_i32_const;
-                assert(((INT64)(INT32)bits) == bits);
+                assert(FitsIn<INT32>(bits));
                 break;
             }
             case TYP_LONG:
@@ -1489,27 +1489,22 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // Generate a direct call to a non-virtual user defined or helper method
             assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
 
-            if (call->gtEntryPoint.addr != NULL)
+            assert(call->gtEntryPoint.addr == NULL);
+
+            if (call->IsHelperCall())
             {
-                NYI_WASM("Call with statically known address");
+                NYI_WASM("Call helper statically without indirection cell");
+                CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(params.methHnd);
+                noway_assert(helperNum != CORINFO_HELP_UNDEF);
+
+                CORINFO_CONST_LOOKUP helperLookup = compiler->compGetHelperFtn(helperNum);
+                params.addr                       = helperLookup.addr;
+                assert(helperLookup.accessType == IAT_VALUE);
             }
             else
             {
-                if (call->IsHelperCall())
-                {
-                    NYI_WASM("Call helper statically without indirection cell");
-                    CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(params.methHnd);
-                    noway_assert(helperNum != CORINFO_HELP_UNDEF);
-
-                    CORINFO_CONST_LOOKUP helperLookup = compiler->compGetHelperFtn(helperNum);
-                    params.addr                       = helperLookup.addr;
-                    assert(helperLookup.accessType == IAT_VALUE);
-                }
-                else
-                {
-                    // Direct call to a non-virtual user function.
-                    params.addr = call->gtDirectCallAddress;
-                }
+                // Direct call to a non-virtual user function.
+                params.addr = call->gtDirectCallAddress;
             }
 
             params.callType = EC_FUNC_TOKEN;
