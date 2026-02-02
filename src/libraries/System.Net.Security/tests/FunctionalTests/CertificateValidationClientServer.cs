@@ -312,84 +312,59 @@ namespace System.Net.Security.Tests
         {
             // Test that certificates added to ExtraStore during RemoteCertificateValidationCallback
             // are not disposed by SslStream, avoiding NullReferenceException on subsequent uses.
-            // Regression test for https://github.com/dotnet/runtime/issues/111497
 
             // Create a shared certificate that will be reused across multiple connections
             using X509Certificate2 sharedCertificate = Configuration.Certificates.GetServerCertificate();
 
             int connectionCount = 0;
 
-            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
-            using (client)
-            using (server)
+            // Perform multiple connections to ensure the certificate can be reused
+            for (int i = 0; i < 2; i++)
             {
-                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                using (client)
+                using (server)
                 {
-                    TargetHost = "localhost",
-                    RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                    bool shouldRebuildChain = i == 1;
+                    
+                    SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
                     {
-                        connectionCount++;
-                        // Add a shared certificate to ExtraStore, simulating user code that
-                        // adds custom CA certificates for validation
-                        chain!.ChainPolicy.ExtraStore.Add(sharedCertificate);
+                        TargetHost = "localhost",
+                        RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                        {
+                            connectionCount++;
+                            // Add a shared certificate to ExtraStore, simulating user code that
+                            // adds custom CA certificates for validation
+                            chain!.ChainPolicy.ExtraStore.Add(sharedCertificate);
 
-                        // The certificate should remain valid for subsequent uses
-                        Assert.NotEqual(IntPtr.Zero, sharedCertificate.Handle);
+                            // The certificate should remain valid for subsequent uses
+                            Assert.NotEqual(IntPtr.Zero, sharedCertificate.Handle);
 
-                        return true;
-                    }
-                };
+                            // On second iteration, rebuild the chain to ensure no NullReferenceException
+                            if (shouldRebuildChain)
+                            {
+                                chain.Reset();
+                                _ = chain.Build((X509Certificate2)cert!);
+                            }
 
-                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
-                {
-                    ServerCertificate = _serverCertificate
-                };
+                            return true;
+                        }
+                    };
 
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None),
-                    server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
-            }
-
-            // Verify the certificate was not disposed after the connection closed
-            Assert.Equal(1, connectionCount);
-            Assert.NotEqual(IntPtr.Zero, sharedCertificate.Handle);
-
-            // Perform a second connection to ensure the certificate can be reused
-            (SslStream client2, SslStream server2) = TestHelper.GetConnectedSslStreams();
-            using (client2)
-            using (server2)
-            {
-                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
-                {
-                    TargetHost = "localhost",
-                    RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                    SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
                     {
-                        connectionCount++;
-                        // Reuse the same certificate - this should not throw NullReferenceException
-                        chain!.ChainPolicy.ExtraStore.Add(sharedCertificate);
-                        chain.Reset();
-                        bool built = chain.Build((X509Certificate2)cert!);
+                        ServerCertificate = _serverCertificate
+                    };
 
-                        // Verify the shared certificate is still valid
-                        Assert.NotEqual(IntPtr.Zero, sharedCertificate.Handle);
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None),
+                        server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
+                }
 
-                        return true;
-                    }
-                };
-
-                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
-                {
-                    ServerCertificate = _serverCertificate
-                };
-
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    client2.AuthenticateAsClientAsync(clientOptions, CancellationToken.None),
-                    server2.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
+                // Verify the certificate was not disposed after the connection closed
+                Assert.Equal(i + 1, connectionCount);
+                Assert.NotEqual(IntPtr.Zero, sharedCertificate.Handle);
             }
-
-            // Verify both connections succeeded and the certificate is still valid
-            Assert.Equal(2, connectionCount);
-            Assert.NotEqual(IntPtr.Zero, sharedCertificate.Handle);
         }
     }
 }
