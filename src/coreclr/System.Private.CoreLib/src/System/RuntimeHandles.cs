@@ -818,15 +818,21 @@ namespace System
 
         internal RuntimeType MakeFunctionPointer(Type[] parameterTypes, bool isUnmanaged)
         {
+            parameterTypes = (Type[])parameterTypes.Clone();
+
             int count = 1 + parameterTypes.Length;
-            nint* retAndParamTypeHandles = stackalloc nint[count];
+            nint[] retAndParamTypeHandles = new nint[count];
 
             retAndParamTypeHandles[0] = GetNativeHandle().Value;
             for (int i = 0; i < parameterTypes.Length; i++)
                 retAndParamTypeHandles[i + 1] = parameterTypes[i].TypeHandle.Value;
 
             RuntimeType? type = null;
-            MakeFunctionPointer(retAndParamTypeHandles, parameterTypes.Length, isUnmanaged, ObjectHandleOnStack.Create(ref type));
+            fixed (nint* pRetAndParamTypeHandles = retAndParamTypeHandles)
+            {
+                MakeFunctionPointer(pRetAndParamTypeHandles, parameterTypes.Length, isUnmanaged, ObjectHandleOnStack.Create(ref type));
+            }
+
             GC.KeepAlive(m_type);
             GC.KeepAlive(parameterTypes);
             return type!;

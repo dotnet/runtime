@@ -23,8 +23,8 @@ namespace System.Reflection
         public override bool IsFunctionPointer => true;
         public override bool IsUnmanagedFunctionPointer => _isUnmanaged;
 
-        public override Type[] GetFunctionPointerCallingConventions() => _callingConventions;
-        public override Type[] GetFunctionPointerParameterTypes() => _parameterTypes;
+        public override Type[] GetFunctionPointerCallingConventions() => (Type[])_callingConventions.Clone();
+        public override Type[] GetFunctionPointerParameterTypes() => (Type[])_parameterTypes.Clone();
         public override Type GetFunctionPointerReturnType() => _returnType;
 
         public override bool IsEnum => false;

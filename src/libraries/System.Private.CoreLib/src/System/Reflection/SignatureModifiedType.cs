@@ -17,8 +17,8 @@ namespace System.Reflection
         private readonly Type[] _optionalCustomModifiers;
 
         public override Type UnderlyingSystemType => _unmodifiedType;
-        public override Type[] GetRequiredCustomModifiers() => _requiredCustomModifiers;
-        public override Type[] GetOptionalCustomModifiers() => _optionalCustomModifiers;
+        public override Type[] GetRequiredCustomModifiers() => (Type[])_requiredCustomModifiers.Clone();
+        public override Type[] GetOptionalCustomModifiers() => (Type[])_optionalCustomModifiers.Clone();
 
         public override bool IsTypeDefinition => _unmodifiedType.IsTypeDefinition;
         public override bool IsSZArray => _unmodifiedType.IsSZArray;
