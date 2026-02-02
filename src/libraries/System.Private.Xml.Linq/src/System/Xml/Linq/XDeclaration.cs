@@ -70,7 +70,7 @@ namespace System.Xml.Linq
         {
             string? version = r.GetAttribute("version");
             string? encoding = r.GetAttribute("encoding");
-            string?  standalone = r.GetAttribute("standalone");
+            string? standalone = r.GetAttribute("standalone");
             await r.ReadAsync().ConfigureAwait(false);
             return new XDeclaration(version, encoding, standalone);
         }
