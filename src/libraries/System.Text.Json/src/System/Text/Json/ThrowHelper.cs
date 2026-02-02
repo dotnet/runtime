@@ -483,7 +483,7 @@ namespace System.Text.Json
                     message = SR.EndOfCommentNotFound;
                     break;
                 case ExceptionResource.ZeroDepthAtEnd:
-                    message = SR.Format(SR.ZeroDepthAtEnd);
+                    message = SR.ZeroDepthAtEnd;
                     break;
                 case ExceptionResource.ExpectedJsonTokens:
                     message = SR.ExpectedJsonTokens;
@@ -498,10 +498,10 @@ namespace System.Text.Json
                     message = SR.Format(SR.InvalidCharacterAtStartOfComment, character);
                     break;
                 case ExceptionResource.UnexpectedEndOfDataWhileReadingComment:
-                    message = SR.Format(SR.UnexpectedEndOfDataWhileReadingComment);
+                    message = SR.UnexpectedEndOfDataWhileReadingComment;
                     break;
                 case ExceptionResource.UnexpectedEndOfLineSeparator:
-                    message = SR.Format(SR.UnexpectedEndOfLineSeparator);
+                    message = SR.UnexpectedEndOfLineSeparator;
                     break;
                 case ExceptionResource.InvalidLeadingZeroInNumber:
                     message = SR.Format(SR.InvalidLeadingZeroInNumber, character);
@@ -631,7 +631,7 @@ namespace System.Text.Json
                     break;
                 case ExceptionResource.CannotWritePropertyWithinArray:
                     message = (tokenType == JsonTokenType.PropertyName) ?
-                        SR.Format(SR.CannotWritePropertyAfterProperty) :
+                        SR.CannotWritePropertyAfterProperty :
                         SR.Format(SR.CannotWritePropertyWithinArray, tokenType);
                     break;
                 case ExceptionResource.CannotWriteValueAfterPrimitiveOrClose:

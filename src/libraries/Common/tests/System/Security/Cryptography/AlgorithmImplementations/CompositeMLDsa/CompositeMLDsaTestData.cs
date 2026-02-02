@@ -15,15 +15,17 @@ namespace System.Security.Cryptography.Tests
             internal string Id { get; }
             internal CompositeMLDsaAlgorithm Algorithm { get; }
             internal byte[] Message { get; }
+            internal byte[] Context { get; }
             internal byte[] PublicKey { get; }
             internal byte[] Certificate { get; }
             internal byte[] SecretKey { get; }
             internal byte[] Pkcs8 { get; }
             internal byte[] Signature { get; }
+            internal byte[] SignatureWithContext { get; }
 
             internal byte[] Spki { get; }
 
-            internal CompositeMLDsaTestVector(string tcId, CompositeMLDsaAlgorithm algo, string pk, string x5c, string sk, string sk_pkcs8, string m, string s)
+            internal CompositeMLDsaTestVector(string tcId, CompositeMLDsaAlgorithm algo, string pk, string x5c, string sk, string sk_pkcs8, string m, string ctx, string s, string sWithContext)
             {
                 Id = tcId;
                 Algorithm = algo;
@@ -32,7 +34,9 @@ namespace System.Security.Cryptography.Tests
                 SecretKey = Convert.FromBase64String(sk);
                 Pkcs8 = Convert.FromBase64String(sk_pkcs8);
                 Message = Convert.FromBase64String(m);
+                Context = Convert.FromBase64String(ctx);
                 Signature = Convert.FromBase64String(s);
+                SignatureWithContext = Convert.FromBase64String(sWithContext);
 
                 AsnReader reader = new AsnReader(Certificate, AsnEncodingRules.DER);
                 AsnReader certificate = reader.ReadSequence();

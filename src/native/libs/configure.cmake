@@ -14,6 +14,10 @@ if (CLR_CMAKE_TARGET_APPLE)
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
     add_compile_options(-Wno-poison-system-directories)
+elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" AND CLR_CMAKE_TARGET_BROWSER)
+    # When cross-compiling for browser-wasm on macOS, suppress warnings about
+    # /usr/local/include which may be added by the toolchain (e.g., brew's clang)
+    add_compile_options(-Wno-poison-system-directories)
 elseif (CLR_CMAKE_TARGET_FREEBSD)
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
@@ -887,6 +891,10 @@ check_include_files(
     HAVE_DLFCN_H)
 
 check_include_files(
+    "sys/statfs.h"
+    HAVE_SYS_STATFS_H)
+
+check_include_files(
     "sys/statvfs.h"
     HAVE_SYS_STATVFS_H)
 
@@ -958,6 +966,10 @@ check_include_files(
 check_include_files(
     "sys/mntent.h"
     HAVE_SYS_MNTENT_H)
+
+check_include_files(
+    "mntent.h"
+    HAVE_MNTENT_H)
 
 check_include_files(
     "stdint.h;net/if_media.h"

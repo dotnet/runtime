@@ -19,7 +19,11 @@
         const exports = {};
         libBrowserUtils(exports);
 
-        let commonDeps = ["$libBrowserUtilsFn", "$DOTNET", "emscripten_force_exit", "_exit", "GetDotNetRuntimeContractDescriptor"];
+        let commonDeps = ["$libBrowserUtilsFn", "$DOTNET",
+            "GetDotNetRuntimeContractDescriptor",
+            "emscripten_force_exit", "_exit",
+            "$readI53FromU64", "$readI53FromI64", "$writeI53ToI64"
+        ];
         const lib = {
             $BROWSER_UTILS: {
                 selfInitialize: () => {

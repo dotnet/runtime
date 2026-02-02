@@ -1243,7 +1243,7 @@
     <value>Cannot import null XmlSchema contained in XmlSchemaSet specified via parameter.</value>
   </data>
   <data name="ComplexTypeRestrictionNotSupported" xml:space="preserve">
-    <value>An internal error has occurred. Could not load serialization schema. Consider providing schema with namespace '{0}'.</value>
+    <value>Complex type restriction is not supported.</value>
   </data>
   <data name="DefaultOnElementNotSupported" xml:space="preserve">
     <value>Default value on element '{0}' is not supported.</value>

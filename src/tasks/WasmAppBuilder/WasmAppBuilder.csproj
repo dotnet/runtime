@@ -46,16 +46,19 @@
       <ItemGroup>
         <WasmPInvokeAssembly Include="$(AssembliesScanPath)**/*.dll" />
         <WasmPInvokeModule Include="libSystem.Native" />
+        <WasmPInvokeModule Include="libSystem.Native.Browser" />
         <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
         <WasmPInvokeModule Include="libSystem.Globalization.Native" />
-        <WasmPInvokeModule Include="libz" />
+        <WasmPInvokeModule Include="libSystem.Native.Browser" />
+        <WasmPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
       </ItemGroup>
 
       <Message Importance="high" Text="Running ManagedToNativeGenerator on @(WasmPInvokeAssembly)" />
       <ManagedToNativeGenerator
           Assemblies="@(WasmPInvokeAssembly)"
           PInvokeModules="@(WasmPInvokeModule)"
-          PInvokeOutputPath="$(GeneratorOutputPath)callhelpers-reverse.cpp"
+          PInvokeOutputPath="$(GeneratorOutputPath)callhelpers-pinvoke.cpp"
+          ReversePInvokeOutputPath="$(GeneratorOutputPath)callhelpers-reverse.cpp"
           InterpToNativeOutputPath="$(GeneratorOutputPath)callhelpers-interp-to-managed.cpp">
           <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       </ManagedToNativeGenerator>
