@@ -258,49 +258,10 @@ namespace System.Globalization
         /// <summary>
         /// Return a specific culture. A tad irrelevant now since we always
         /// return valid data for neutral locales.
-        ///
-        /// Note that there's interesting behavior that tries to find a
-        /// smaller name, ala RFC4647, if we can't find a bigger name.
-        /// That doesn't help with things like "zh" though, so the approach
-        /// is of questionable value
         /// </summary>
         public static CultureInfo CreateSpecificCulture(string name)
         {
-            CultureInfo? culture;
-
-            try
-            {
-                culture = new CultureInfo(name);
-            }
-            catch (ArgumentException)
-            {
-                // When CultureInfo throws this exception, it may be because someone passed the form
-                // like "az-az" because it came out of an http accept lang. We should try a little
-                // parsing to perhaps fall back to "az" here and use *it* to create the neutral.
-                culture = null;
-                for (int idx = 0; idx < name.Length; idx++)
-                {
-                    if ('-' == name[idx])
-                    {
-                        try
-                        {
-                            culture = new CultureInfo(name.Substring(0, idx));
-                            break;
-                        }
-                        catch (ArgumentException)
-                        {
-                            // throw the original exception so the name in the string will be right
-                            throw;
-                        }
-                    }
-                }
-
-                if (culture == null)
-                {
-                    // nothing to save here; throw the original exception
-                    throw;
-                }
-            }
+            CultureInfo culture = new CultureInfo(name);
 
             // In the most common case, they've given us a specific culture, so we'll just return that.
             if (!culture.IsNeutralCulture)
