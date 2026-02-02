@@ -862,6 +862,7 @@ namespace System.IO.Compression.Tests
                 // compression method should remain unchanged since we didn't write anything
                 Assert.Equal(firstEntryCompressionMethod, fileContent[8]);
 
+                testStream.Seek(0, SeekOrigin.Begin);
                 // extract and check the file
                 zip = await CreateZipArchive(async, testStream, ZipArchiveMode.Update);
 

@@ -307,6 +307,14 @@ namespace System.IO.Compression
                             {
                                 WriteFile();
                             }
+                            else
+                            {
+                                // Even if we didn't write, unload any entry buffers that may have been loaded
+                                foreach (ZipArchiveEntry entry in _entries)
+                                {
+                                    entry.UnloadStreams();
+                                }
+                            }
                             break;
                     }
                 }
@@ -317,7 +325,6 @@ namespace System.IO.Compression
                 }
             }
         }
-
         /// <summary>
         /// Finishes writing the archive and releases all resources used by the ZipArchive object, unless the object was constructed with leaveOpen as true. Any streams from opened entries in the ZipArchive still open will throw exceptions on subsequent writes, as the underlying streams will have been closed.
         /// </summary>

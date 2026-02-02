@@ -1292,8 +1292,7 @@ namespace System.IO.Compression.Tests
 
         /// <summary>
         /// Tests that opening an entry stream and disposing it without writing does not mark the archive as modified,
-        /// thus not triggering a rewrite on Dispose. This is the scenario from the bug where using a non-expandable
-        /// MemoryStream with ZipArchiveMode.Update would throw NotSupportedException on Dispose if any entry was opened.
+        /// thus not triggering a rewrite on Dispose.
         /// </summary>
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]

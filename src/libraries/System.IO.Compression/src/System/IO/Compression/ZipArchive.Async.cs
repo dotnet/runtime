@@ -157,6 +157,14 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                         {
                             await WriteFileAsync().ConfigureAwait(false);
                         }
+                        else
+                        {
+                            // Even if we didn't write, unload any entry buffers that may have been loaded
+                            foreach (ZipArchiveEntry entry in _entries)
+                            {
+                                await entry.UnloadStreamsAsync().ConfigureAwait(false);
+                            }
+                        }
                         break;
                 }
             }

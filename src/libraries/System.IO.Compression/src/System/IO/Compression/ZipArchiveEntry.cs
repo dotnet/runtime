@@ -905,9 +905,6 @@ namespace System.IO.Compression
         /// <summary>
         /// Marks this entry as modified, indicating that its data has changed and needs to be rewritten.
         /// </summary>
-        /// <summary>
-        /// Marks this entry as modified, indicating that its data has changed and needs to be rewritten.
-        /// </summary>
         internal void MarkAsModified()
         {
             _everOpenedForWrite = true;
@@ -1425,7 +1422,7 @@ namespace System.IO.Compression
             return bytesToWrite;
         }
 
-        private void UnloadStreams()
+        internal void UnloadStreams()
         {
             _storedUncompressedData?.Dispose();
             _compressedBytes = null;

@@ -472,7 +472,7 @@ public partial class ZipArchiveEntry
         return _archive.ArchiveStream.WriteAsync(dataDescriptor.AsMemory(0, bytesToWrite), cancellationToken);
     }
 
-    private async Task UnloadStreamsAsync()
+    internal async Task UnloadStreamsAsync()
     {
         if (_storedUncompressedData != null)
         {
