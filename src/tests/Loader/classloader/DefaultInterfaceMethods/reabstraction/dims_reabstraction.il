@@ -8,7 +8,7 @@
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
-.assembly reabstraction { }
+.assembly dims_reabstraction { }
 
 // Interface with a default method
 .class interface public abstract auto ansi I1
@@ -150,6 +150,10 @@
         string('https://github.com/dotnet/runtime/issues/91923')
         type([TestLibrary]TestLibrary.PlatformDetection)
         string[1] ('IsAppleMobile')
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('https://github.com/dotnet/runtime/issues/91923')
+        int32(2) // Mono
     }
     .entrypoint
 

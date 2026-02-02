@@ -1125,7 +1125,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
 
     instruction ins;
     emitAttr    size                  = emitTypeSize(treeNode);
-    bool        isUnsignedMultiply    = ((treeNode->gtFlags & GTF_UNSIGNED) != 0);
+    bool        isUnsignedMultiply    = treeNode->IsUnsigned();
     bool        requiresOverflowCheck = treeNode->gtOverflowEx();
 
     GenTree* op1 = treeNode->gtGetOp1();
@@ -6657,7 +6657,7 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
         // The common type cannot be smaller than any of the operand types, we're probably mixing int/long
         assert(genTypeSize(type) >= max(genTypeSize(op1Type), genTypeSize(op2Type)));
         // Small unsigned int types (TYP_BOOL can use anything) should use unsigned comparisons
-        assert(!(varTypeIsSmall(type) && varTypeIsUnsigned(type)) || ((tree->gtFlags & GTF_UNSIGNED) != 0));
+        assert(!(varTypeIsSmall(type) && varTypeIsUnsigned(type)) || tree->IsUnsigned());
         // If op1 is smaller then it cannot be in memory, we're probably missing a cast
         assert((genTypeSize(op1Type) >= genTypeSize(type)) || !op1->isUsedFromMemory());
         // If op2 is smaller then it cannot be in memory, we're probably missing a cast
@@ -6819,7 +6819,7 @@ void CodeGen::genLongToIntCast(GenTree* cast)
 
     genConsumeRegs(src);
 
-    var_types srcType  = ((cast->gtFlags & GTF_UNSIGNED) != 0) ? TYP_ULONG : TYP_LONG;
+    var_types srcType  = cast->IsUnsigned() ? TYP_ULONG : TYP_LONG;
     var_types dstType  = cast->CastToType();
     regNumber loSrcReg = src->gtGetOp1()->GetRegNum();
     regNumber hiSrcReg = src->gtGetOp2()->GetRegNum();
@@ -7213,74 +7213,6 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         const bool isRMW = !compiler->canUseVexEncoding();
         inst_RV_RV_TT(ins, emitTypeSize(srcType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
     }
-    genProduceReg(treeNode);
-}
-
-//------------------------------------------------------------------------
-// genFloatToIntCast: Generate code to cast float/double to int/long
-//
-// Arguments:
-//    treeNode - The GT_CAST node
-//
-// Return Value:
-//    None.
-//
-// Assumptions:
-//    Cast is a non-overflow conversion.
-//    The treeNode must have an assigned register.
-//    SrcType=float/double and DstType= int32/uint32/int64/uint64
-//
-// TODO-XArch-CQ: (Low-pri) - generate in-line code when DstType = uint64
-//
-void CodeGen::genFloatToIntCast(GenTree* treeNode)
-{
-    // we don't expect to see overflow detecting float/double --> int type conversions here
-    // as they should have been converted into helper calls by front-end.
-    assert(treeNode->OperIs(GT_CAST));
-    assert(!treeNode->gtOverflow());
-
-    regNumber targetReg = treeNode->GetRegNum();
-    assert(genIsValidIntReg(targetReg));
-
-    GenTree* op1 = treeNode->AsOp()->gtOp1;
-#ifdef DEBUG
-    if (op1->isUsedFromReg())
-    {
-        assert(genIsValidFloatReg(op1->GetRegNum()));
-    }
-#endif
-
-    var_types dstType = treeNode->CastToType();
-    var_types srcType = op1->TypeGet();
-    assert(varTypeIsFloating(srcType) && !varTypeIsFloating(dstType));
-
-    // We should never be seeing dstType whose size is neither sizeof(TYP_INT) nor sizeof(TYP_LONG).
-    // For conversions to byte/sbyte/int16/uint16 from float/double, we would expect the
-    // front-end or lowering phase to have generated two levels of cast. The first one is
-    // for float or double to int32/uint32 and the second one for narrowing int32/uint32 to
-    // the required smaller int type.
-    emitAttr dstSize = EA_ATTR(genTypeSize(dstType));
-    noway_assert((dstSize == EA_ATTR(genTypeSize(TYP_INT))) || (dstSize == EA_ATTR(genTypeSize(TYP_LONG))));
-
-    // We shouldn't be seeing uint64 here as it should have been converted
-    // into a helper call by either front-end or lowering phase, unless we have AVX512
-    // accelerated conversions.
-    assert(!varTypeIsUnsigned(dstType) || (dstSize != EA_ATTR(genTypeSize(TYP_LONG))) ||
-           compiler->canUseEvexEncodingDebugOnly());
-
-    // If the dstType is TYP_UINT, we have 32-bits to encode the
-    // float number. Any of 33rd or above bits can be the sign bit.
-    // To achieve it we pretend as if we are converting it to a long.
-    if (varTypeIsUnsigned(dstType) && (dstSize == EA_ATTR(genTypeSize(TYP_INT))) && !compiler->canUseEvexEncoding())
-    {
-        dstType = TYP_LONG;
-    }
-
-    // Note that we need to specify dstType here so that it will determine
-    // the size of destination integer register and also the rex.w prefix.
-    genConsumeOperands(treeNode->AsOp());
-    instruction ins = ins_FloatConv(dstType, srcType);
-    GetEmitter()->emitInsBinary(ins, emitTypeSize(dstType), treeNode, op1);
     genProduceReg(treeNode);
 }
 

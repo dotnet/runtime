@@ -1834,7 +1834,7 @@ namespace System.Speech.Internal.SrgsParser
         {
             Helpers.ThrowIfEmptyOrNull(id, nameof(id));
 
-            if (!XmlReader.IsName(id) || (id == "NULL") || (id == "VOID") || (id == "GARBAGE") || (id.IndexOfAny(s_invalidRuleIdChars) != -1))
+            if (!XmlReader.IsName(id) || (id == "NULL") || (id == "VOID") || (id == "GARBAGE") || (id.ContainsAny(s_invalidRuleIdChars)))
             {
                 XmlParser.ThrowSrgsException(SRID.InvalidRuleId, id);
             }
