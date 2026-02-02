@@ -1912,7 +1912,12 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         align = INTERP_STACK_SLOT_SIZE;
     }
 
-    m_ofsStack = ALIGN_UP(m_ofsStack, align);
+    if (HasRetBuffArg()) {
+        // the slot for retbuf arg will be removed before the actual call
+        m_ofsStack = ALIGN_UP(m_ofsStack - INTERP_STACK_SLOT_SIZE, align) + INTERP_STACK_SLOT_SIZE;
+    } else {
+        m_ofsStack = ALIGN_UP(m_ofsStack, align);
+    }
 
     int cbArg = ALIGN_UP(argSize, INTERP_STACK_SLOT_SIZE);
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
