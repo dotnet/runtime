@@ -3731,9 +3731,9 @@ namespace System
 
         public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
         {
-            parameterTypes ??= [];
-            foreach (Type t in parameterTypes)
-                ArgumentNullException.ThrowIfNull(t, nameof(parameterTypes));
+            parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
+            for (int i = 0; i < parameterTypes.Length; i++)
+                ArgumentNullException.ThrowIfNull(parameterTypes[i], nameof(parameterTypes));
 
             return new RuntimeTypeHandle(this).MakeFunctionPointer(parameterTypes, isUnmanaged);
         }

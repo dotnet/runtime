@@ -492,6 +492,81 @@ namespace System.Tests
             Assert.Throws<TypeLoadException>(() => t.MakePointerType());
         }
 
+        public static IEnumerable<object[]> MakeFunctionPointerType_TestData()
+        {
+            yield return new object[] { typeof(void), Type.EmptyTypes };
+            yield return new object[] { typeof(int), new Type[] { typeof(string) } };
+            yield return new object[] { typeof(string), new Type[] { typeof(int), typeof(double) } };
+            yield return new object[] { typeof(int*), new Type[] { typeof(int*) } };
+            yield return new object[] { typeof(int[]), new Type[] { typeof(string[]) } };
+            yield return new object[] { typeof(GenericClass<int>), new Type[] { typeof(GenericStruct<int>) } };
+            yield return new object[] { typeof(int), new Type[] { typeof(int).MakeByRefType() } };
+        }
+
+        [Theory]
+        [MemberData(nameof(MakeFunctionPointerType_TestData))]
+        public void MakeFunctionPointerType_Invoke_ReturnsExpected(Type returnType, Type[] parameterTypes)
+        {
+            Type fnPtrType = returnType.MakeFunctionPointerType(parameterTypes);
+
+            Assert.True(fnPtrType.IsFunctionPointer);
+            Assert.False(fnPtrType.IsUnmanagedFunctionPointer);
+            Assert.Equal(returnType, fnPtrType.GetFunctionPointerReturnType());
+            Assert.Equal(parameterTypes, fnPtrType.GetFunctionPointerParameterTypes());
+
+            Assert.Equal(fnPtrType, returnType.MakeFunctionPointerType(parameterTypes));
+        }
+
+        [Fact]
+        public void MakeFunctionPointerType_NullParameters_ReturnsExpected()
+        {
+            Type fnPtrType = typeof(int).MakeFunctionPointerType(null);
+
+            Assert.True(fnPtrType.IsFunctionPointer);
+            Assert.Empty(fnPtrType.GetFunctionPointerParameterTypes());
+        }
+
+        [Fact]
+        public void MakeFunctionPointerType_Unmanaged_ReturnsExpected()
+        {
+            Type[] parameterTypes = [typeof(int), typeof(double)];
+            Type fnPtrManaged = typeof(int).MakeFunctionPointerType(parameterTypes, isUnmanaged: false);
+            Type fnPtrUnmanaged = typeof(int).MakeFunctionPointerType(parameterTypes, isUnmanaged: true);
+
+            Assert.False(fnPtrManaged.IsUnmanagedFunctionPointer);
+            Assert.True(fnPtrUnmanaged.IsUnmanagedFunctionPointer);
+            Assert.NotEqual(fnPtrManaged, fnPtrUnmanaged);
+        }
+
+        [Fact]
+        public void MakeFunctionPointerType_ParameterArrayIsCloned()
+        {
+            Type[] parameterTypes = [typeof(int), typeof(string)];
+            Type fnPtrType = typeof(int).MakeFunctionPointerType(parameterTypes);
+
+            parameterTypes[0] = typeof(double);
+
+            Assert.Equal(typeof(int), fnPtrType.GetFunctionPointerParameterTypes()[0]);
+        }
+
+        [Fact]
+        public void MakeFunctionPointerType_NullParameterInArray_ThrowsArgumentNullException()
+        {
+            Type[] parameterTypes = [typeof(int), null!, typeof(string)];
+            Assert.Throws<ArgumentNullException>("parameterTypes", () => typeof(int).MakeFunctionPointerType(parameterTypes));
+        }
+
+        [Fact]
+        public void MakeFunctionPointerType_GenericTypes_ContainsGenericParameters()
+        {
+            Type openGeneric = typeof(GenericClass<>);
+            Type fnPtrOpen = typeof(int).MakeFunctionPointerType([openGeneric]);
+            Type fnPtrClosed = typeof(int).MakeFunctionPointerType([typeof(GenericClass<int>)]);
+
+            Assert.True(fnPtrOpen.ContainsGenericParameters);
+            Assert.False(fnPtrClosed.ContainsGenericParameters);
+        }
+
         [Theory]
         [InlineData("System.Nullable`1[System.Int32]", typeof(int?))]
         [InlineData("System.Int32*", typeof(int*))]
