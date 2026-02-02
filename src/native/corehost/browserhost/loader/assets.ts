@@ -66,11 +66,10 @@ export function fetchWasm(asset: WasmAsset): Promise<Response> {
 }
 
 export async function instantiateMainWasm(imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback): Promise<void> {
-    //asset
     const { instance, module } = await dotnetBrowserHostExports.instantiateWasm(wasmBinaryPromise!, imports, true, true);
     onDownloadedAsset();
-    mainModulePromiseController.resolve(instance);
     successCallback(instance, module);
+    mainModulePromiseController.resolve(instance);
 }
 
 export async function fetchIcu(asset: IcuAsset): Promise<void> {

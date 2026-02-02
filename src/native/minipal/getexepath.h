@@ -84,7 +84,7 @@ static inline char* minipal_getexepath(void)
 
     return strdup(path);
 #elif defined(TARGET_WASM)
-	const char *browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
+    const char *browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
     return strdup(browserVirtualAppBase);
 #else
 #ifdef __linux__

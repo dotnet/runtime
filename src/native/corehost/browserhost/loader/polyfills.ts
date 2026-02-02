@@ -7,8 +7,7 @@ import { ENVIRONMENT_IS_NODE } from "./per-module";
 let hasFetch = false;
 
 export async function initPolyfills(): Promise<void> {
-    hasFetch = typeof globalThis.fetch === "function";
-    if (ENVIRONMENT_IS_NODE && !hasFetch) {
+    if (ENVIRONMENT_IS_NODE) {
         await nodeFs();
         await nodeUrl();
     }

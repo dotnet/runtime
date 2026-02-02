@@ -68,7 +68,7 @@ function libFactory() {
     addToLibrary(libBROWSERHOST);
 
     function trim() {
-        return 138; // EOPNOTSUPP;
+        return -1;
     }
 
     // TODO-WASM: fix PAL https://github.com/dotnet/runtime/issues/122506

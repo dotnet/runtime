@@ -140,7 +140,7 @@ function fatalHandler(event: any, reason: any, type: string) {
             dotnetApi.exit(1, reason);
         }
     } catch (error: any) {
-        // no not re-throw from the fatal handler
+        // do not re-throw from the fatal handler
     }
 }
 
