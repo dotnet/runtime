@@ -255,7 +255,7 @@ namespace System.Diagnostics
             // Handle different error conditions based on throwIfInaccessible parameter.
             // When throwIfInaccessible is false (e.g., during process enumeration), return invalid handle
             // for common/expected errors instead of throwing to avoid excessive exception overhead.
-            if (result is Interop.Errors.ERROR_ACCESS_DENIED)
+            if (IsProcessAccessError(result))
             {
                 if (!throwIfInaccessible)
                 {
@@ -275,6 +275,16 @@ namespace System.Diagnostics
             }
 
             throw new Win32Exception(result);
+        }
+
+        private static bool IsProcessAccessError(int errorCode)
+        {
+            // Common errors when trying to access processes we don't have permission to query
+            return errorCode == Interop.Errors.ERROR_ACCESS_DENIED ||
+                   errorCode == Interop.Errors.ERROR_INVALID_ACCESS ||
+                   errorCode == Interop.Errors.ERROR_NETWORK_ACCESS_DENIED ||
+                   errorCode == Interop.Errors.ERROR_NO_SUCH_PRIVILEGE ||
+                   errorCode == Interop.Errors.ERROR_PRIVILEGE_NOT_HELD;
         }
 
         public static SafeThreadHandle OpenThread(int threadId, int access)
