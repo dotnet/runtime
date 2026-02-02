@@ -10,6 +10,7 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -627,6 +628,42 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void SaveInterfaceOverrideWithCustomModifier()
+        {
+            using (TempDirectory dir = new())
+            {
+                AssemblyName name = new("TestAssembly");
+                PersistedAssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(name);
+                ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
+                TypeBuilder tb = mb.DefineType("IMethodWithModifiersImpl", TypeAttributes.Class | TypeAttributes.Public);
+                tb.AddInterfaceImplementation(typeof(IMethodWithModifiers));
+                MethodBuilder m = tb.DefineMethod("IMethodWithModifiers.Run",
+                    MethodAttributes.Private | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
+                    CallingConventions.Standard,
+                    returnType: typeof(void),
+                    returnTypeRequiredCustomModifiers: [],
+                    returnTypeOptionalCustomModifiers: [],
+                    parameterTypes: [typeof(int).MakeByRefType()],
+                    parameterTypeRequiredCustomModifiers: [[typeof(InAttribute)]],
+                    parameterTypeOptionalCustomModifiers: [[]]);
+                // The method's parameter has a modreq; make sure it is added to the override's signature.
+                // See https://github.com/dotnet/runtime/issues/123857
+                tb.DefineMethodOverride(m, typeof(IMethodWithModifiers).GetMethod(nameof(IMethodWithModifiers.Run)));
+                var fooMethodParameter = m.DefineParameter(1, ParameterAttributes.In, "x");
+                fooMethodParameter.SetCustomAttribute(new CustomAttributeBuilder(typeof(IsReadOnlyAttribute).GetConstructor(types: [])!, []));
+                m.GetILGenerator().Emit(OpCodes.Ret);
+                tb.CreateType();
+                string assemblyPath = Path.Combine(dir.Path, $"{name.Name}.dll");
+                assemblyBuilder.Save(assemblyPath);
+
+                // Load the assembly and check that loading the type does not throw.
+                AssemblyLoadContext alc = new(nameof(SaveInterfaceOverrideWithCustomModifier), isCollectible: true);
+                Assembly loadedAsm = alc.LoadFromAssemblyPath(assemblyPath);
+                _ = loadedAsm.GetType(tb.Name, throwOnError: true);
+            }
+        }
+
+        [Fact]
         public void SaveMultipleGenericTypeParametersToEnsureSortingWorks()
         {
             using (TempFile file = TempFile.Create())
@@ -981,6 +1018,11 @@ namespace System.Reflection.Emit.Tests
     public interface IOneMethod
     {
         object Func(string a, short b);
+    }
+
+    public interface IMethodWithModifiers
+    {
+        void Run(in int x);
     }
 
     public struct EmptyStruct
