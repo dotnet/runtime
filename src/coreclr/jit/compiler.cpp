@@ -6327,7 +6327,7 @@ void Compiler::compCompileFinish()
         (info.compLocalsCount <= 32) && !opts.MinOpts() && // We may have too many local variables, etc
         (getJitStressLevel() == 0) &&                      // We need extra memory for stress
         !opts.optRepeat &&                                 // We need extra memory to repeat opts
-        !g_jitAllocatorConfig.bypassHostAllocator() && // ArenaAllocator::getDefaultPageSize() is artificially low for
+        !JitMemKindTraits::bypassHostAllocator() && // ArenaAllocator::getDefaultPageSize() is artificially low for
                                                        // DirectAlloc
         // Factor of 2x is because data-structures are bigger under DEBUG
         (compArenaAllocator->getTotalBytesAllocated() > (2 * ArenaAllocator::getDefaultPageSize())) &&
@@ -7573,7 +7573,7 @@ START:
     int result = CORJIT_INTERNALERROR;
 
     ArenaAllocator* pAlloc = nullptr;
-    ArenaAllocator  alloc(&g_jitAllocatorConfig);
+    ArenaAllocator  alloc;
 
 #if MEASURE_CLRAPI_CALLS
     WrapICorJitInfo* wrapCLR = nullptr;

@@ -135,7 +135,6 @@ set( JIT_SOURCES
   inline.cpp
   inlinepolicy.cpp
   instr.cpp
-  jitallocconfig.cpp
   jitconfig.cpp
   jiteh.cpp
   jithashtable.cpp

@@ -8,7 +8,6 @@
 #include "host.h"
 #endif // defined(_HOST_H_)
 
-#include "jitallocconfig.h"
 #include "arenaallocator.h"
 #include "compallocator.h"
 
@@ -29,6 +28,21 @@ struct JitMemKindTraits
     using MemKind = CompMemKind;
     static constexpr int Count = CMK_Count;
     static const char* const Names[];
+
+    // Returns true if the allocator should bypass the host allocator and use direct malloc/free.
+    static bool bypassHostAllocator();
+
+    // Returns true if the allocator should inject faults for testing purposes.
+    static bool shouldInjectFault();
+
+    // Allocates a block of memory from the host.
+    static void* allocateHostMemory(size_t size, size_t* pActualSize);
+
+    // Frees a block of memory previously allocated by allocateHostMemory.
+    static void freeHostMemory(void* block, size_t size);
+
+    // Fills a memory block with an uninitialized pattern (for DEBUG builds).
+    static void fillWithUninitializedPattern(void* block, size_t size);
 
     // Called when allocation fails - calls NOMEM() which does not return.
     static void outOfMemory();

@@ -51,6 +51,57 @@ const char* const InterpMemKindTraits::Names[] = {
 #include "interpmemkind.h"
 };
 
+// The interpreter always uses direct malloc/free, so this returns false.
+bool InterpMemKindTraits::bypassHostAllocator()
+{
+    return false;
+}
+
+// The interpreter doesn't currently support fault injection.
+bool InterpMemKindTraits::shouldInjectFault()
+{
+    return false;
+}
+
+// Allocates a block of memory using malloc.
+void* InterpMemKindTraits::allocateHostMemory(size_t size, size_t* pActualSize)
+{
+    if (pActualSize != nullptr)
+    {
+        *pActualSize = size;
+    }
+    if (size == 0)
+    {
+        size = 1;
+    }
+    void* p = malloc(size);
+    if (p == nullptr)
+    {
+        NOMEM();
+    }
+    return p;
+}
+
+// Frees a block of memory previously allocated by allocateHostMemory.
+void InterpMemKindTraits::freeHostMemory(void* block, size_t size)
+{
+    (void)size; // unused
+    free(block);
+}
+
+// Fills a memory block with an uninitialized pattern for DEBUG builds.
+void InterpMemKindTraits::fillWithUninitializedPattern(void* block, size_t size)
+{
+#if defined(DEBUG)
+    // Use 0xCD pattern (same as MSVC debug heap) to help catch use-before-init bugs
+    memset(block, 0xCD, size);
+#else
+    (void)block;
+    (void)size;
+#endif
+}
+
+// Called when the allocator runs out of memory.
 void InterpMemKindTraits::outOfMemory()
 {
     NOMEM();
@@ -1938,8 +1989,7 @@ static void InterpreterCompilerBreak()
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData* pRetryData)
-    : m_allocConfig()
-    , m_arenaAllocator(&m_allocConfig)
+    : m_arenaAllocator()
     , m_stackmapsByClass(FreeInterpreterStackMap)
     , m_pRetryData(pRetryData)
     , m_pInitLocalsIns(nullptr)

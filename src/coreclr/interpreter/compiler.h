@@ -17,7 +17,6 @@
 #include "../jitshared/compallocator.h"
 #include "../jitshared/memstats.h"
 #include "../jitshared/histogram.h"
-#include "interpallocconfig.h"
 
 // InterpMemKind values are used to tag memory allocations performed via
 // the compiler's allocator so that the memory usage of various compiler
@@ -36,6 +35,21 @@ struct InterpMemKindTraits
     using MemKind = InterpMemKind;
     static constexpr int Count = IMK_Count;
     static const char* const Names[];
+
+    // Returns true if the allocator should bypass the host allocator and use direct malloc/free.
+    static bool bypassHostAllocator();
+
+    // Returns true if the allocator should inject faults for testing purposes.
+    static bool shouldInjectFault();
+
+    // Allocates a block of memory from the host.
+    static void* allocateHostMemory(size_t size, size_t* pActualSize);
+
+    // Frees a block of memory previously allocated by allocateHostMemory.
+    static void freeHostMemory(void* block, size_t size);
+
+    // Fills a memory block with an uninitialized pattern (for DEBUG builds).
+    static void fillWithUninitializedPattern(void* block, size_t size);
 
     // Called when allocation fails - calls NOMEM() which does not return.
     static void outOfMemory();
@@ -645,7 +659,6 @@ class InterpCompiler
 private:
     // Arena allocator for compilation-phase memory.
     // All memory allocated via AllocMemPool is freed when the compiler is destroyed.
-    InterpAllocatorConfig m_allocConfig;
     InterpArenaAllocator m_arenaAllocator;
 
     CORINFO_METHOD_HANDLE m_methodHnd;

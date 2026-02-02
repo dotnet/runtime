@@ -4,13 +4,14 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(JITSHARED_SOURCES
-    arenaallocator.cpp
+    histogram.cpp
 )
 
 set(JITSHARED_HEADERS
-    allocconfig.h
     arenaallocator.h
     compallocator.h
+    histogram.h
+    jitshared.h
     memstats.h
 )
 

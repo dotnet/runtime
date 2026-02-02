@@ -10,7 +10,6 @@
 #include <cstring>
 
 #include "jitshared.h"
-#include "allocconfig.h"
 #include "memstats.h"
 
 // ArenaAllocator is a page-based arena allocator that provides fast allocation
@@ -26,6 +25,12 @@
 //     - MemKind: The enum type for memory kinds
 //     - Count: A static constexpr int giving the number of enum values
 //     - Names: A static const char* const[] array of names for each kind
+//     - static bool bypassHostAllocator(): Whether to bypass host allocator
+//     - static bool shouldInjectFault(): Whether to inject faults for testing
+//     - static void* allocateHostMemory(size_t size, size_t* pActualSize): Allocate memory
+//     - static void freeHostMemory(void* block, size_t size): Free memory
+//     - static void fillWithUninitializedPattern(void* block, size_t size): Fill pattern
+//     - static void outOfMemory(): Called on allocation failure (does not return)
 
 template <typename TMemKindTraits>
 class ArenaAllocatorT
@@ -60,9 +65,6 @@ private:
     // These two pointers (when non-null) will always point into 'm_lastPage'.
     uint8_t* m_nextFreeByte;
     uint8_t* m_lastFreeByte;
-
-    // Configuration interface for host-specific operations.
-    IAllocatorConfig* m_config;
 
     void* allocateNewPage(size_t size);
 
@@ -117,12 +119,11 @@ public:
 #endif // MEASURE_MEM_ALLOC
 
 public:
-    ArenaAllocatorT(IAllocatorConfig* config)
+    ArenaAllocatorT()
         : m_firstPage(nullptr)
         , m_lastPage(nullptr)
         , m_nextFreeByte(nullptr)
         , m_lastFreeByte(nullptr)
-        , m_config(config)
     {
 #if MEASURE_MEM_ALLOC
         memset(&m_statsAllocators, 0, sizeof(m_statsAllocators));
@@ -179,13 +180,13 @@ inline void* ArenaAllocatorT<TMemKindTraits>::allocateMemory(size_t size)
     size = roundUp(size, sizeof(size_t));
 
 #if defined(DEBUG)
-    if (m_config->shouldInjectFault())
+    if (TMemKindTraits::shouldInjectFault())
     {
         // Force the underlying memory allocator (either the OS or the CLR hoster)
         // to allocate the memory. Any fault injection will kick in.
         size_t actualSize;
-        void* p = m_config->allocateHostMemory(1, &actualSize);
-        m_config->freeHostMemory(p, actualSize);
+        void* p = TMemKindTraits::allocateHostMemory(1, &actualSize);
+        TMemKindTraits::freeHostMemory(p, actualSize);
     }
 #endif
 
@@ -198,7 +199,7 @@ inline void* ArenaAllocatorT<TMemKindTraits>::allocateMemory(size_t size)
     }
 
 #if defined(DEBUG)
-    m_config->fillWithUninitializedPattern(block, size);
+    TMemKindTraits::fillWithUninitializedPattern(block, size);
 #endif
 
     return block;
@@ -222,7 +223,7 @@ void* ArenaAllocatorT<TMemKindTraits>::allocateNewPage(size_t size)
     // Check for integer overflow
     if (pageSize < size)
     {
-        m_config->outOfMemory();
+        TMemKindTraits::outOfMemory();
     }
 
     // If the current page is now full, update a few statistics
@@ -235,14 +236,14 @@ void* ArenaAllocatorT<TMemKindTraits>::allocateNewPage(size_t size)
         m_lastPage->m_usedBytes = m_nextFreeByte - m_lastPage->m_contents;
     }
 
-    if (!m_config->bypassHostAllocator())
+    if (!TMemKindTraits::bypassHostAllocator())
     {
         // Round to the nearest multiple of default page size
         pageSize = roundUp(pageSize, DEFAULT_PAGE_SIZE);
     }
 
     // Allocate the new page
-    PageDescriptor* newPage = static_cast<PageDescriptor*>(m_config->allocateHostMemory(pageSize, &pageSize));
+    PageDescriptor* newPage = static_cast<PageDescriptor*>(TMemKindTraits::allocateHostMemory(pageSize, &pageSize));
 
     // Append the new page to the end of the list
     newPage->m_next = nullptr;
@@ -282,7 +283,7 @@ void ArenaAllocatorT<TMemKindTraits>::destroy()
     for (PageDescriptor* next; page != nullptr; page = next)
     {
         next = page->m_next;
-        m_config->freeHostMemory(page, page->m_pageBytes);
+        TMemKindTraits::freeHostMemory(page, page->m_pageBytes);
     }
 
     // Clear out the allocator's fields
