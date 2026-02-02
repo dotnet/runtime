@@ -236,7 +236,7 @@ namespace System.Diagnostics
             }
         }
 
-        public static SafeProcessHandle OpenProcess(int processId, int access, bool throwIfInaccessible)
+        public static SafeProcessHandle OpenProcess(int processId, int access, bool throwOnError)
         {
             SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(access, false, processId);
             int result = Marshal.GetLastWin32Error();
@@ -247,44 +247,22 @@ namespace System.Diagnostics
 
             processHandle.Dispose();
 
+            if (!throwOnError)
+            {
+                return SafeProcessHandle.InvalidHandle;
+            }
+
             if (processId == 0)
             {
                 throw new Win32Exception(Interop.Errors.ERROR_ACCESS_DENIED);
             }
 
-            // Handle different error conditions based on throwIfInaccessible parameter.
-            // When throwIfInaccessible is false (e.g., during process enumeration), return invalid handle
-            // for common/expected errors instead of throwing to avoid excessive exception overhead.
-            if (IsProcessAccessError(result))
+            if (!IsProcessRunning(processId))
             {
-                if (!throwIfInaccessible)
-                {
-                    return SafeProcessHandle.InvalidHandle;
-                }
-            }
-            else if (!IsProcessRunning(processId))
-            {
-                if (throwIfInaccessible)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, processId.ToString()));
-                }
-                else
-                {
-                    return SafeProcessHandle.InvalidHandle;
-                }
+                throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, processId.ToString()));
             }
 
             throw new Win32Exception(result);
-        }
-
-        private static bool IsProcessAccessError(int errorCode)
-        {
-            // Common errors when trying to access processes we don't have permission to query
-            return errorCode == Interop.Errors.ERROR_ACCESS_DENIED ||
-                   errorCode == Interop.Errors.ERROR_INVALID_ACCESS ||
-                   errorCode == Interop.Errors.ERROR_NETWORK_ACCESS_DENIED ||
-                   errorCode == Interop.Errors.ERROR_NO_SUCH_PRIVILEGE ||
-                   errorCode == Interop.Errors.ERROR_PRIVILEGE_NOT_HELD;
         }
 
         public static SafeThreadHandle OpenThread(int threadId, int access)
