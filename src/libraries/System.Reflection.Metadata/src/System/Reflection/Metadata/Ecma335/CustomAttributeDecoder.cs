@@ -231,6 +231,26 @@ namespace System.Reflection.Metadata.Ecma335
 
                     return DecodeFixedArgumentType(ref genericContextReader, default, isElementType);
 
+                case SignatureTypeCode.GenericTypeInstance:
+                    // Generic type instantiation. The parameter is a concrete generic type (e.g. GenericClass<int>.E)
+                    // and is only allowed to be System.Type or Enum.
+                    int kind = signatureReader.ReadCompressedInteger();
+                    if (kind != (int)SignatureTypeKind.Class && kind != (int)SignatureTypeKind.ValueType)
+                    {
+                        throw new BadImageFormatException();
+                    }
+
+                    EntityHandle genericHandle = signatureReader.ReadTypeHandle();
+                    int genericArgumentCount = signatureReader.ReadCompressedInteger();
+                    for (int i = 0; i < genericArgumentCount; i++)
+                    {
+                        SkipType(ref signatureReader);
+                    }
+
+                    info.Type = GetTypeFromHandle(genericHandle);
+                    info.TypeCode = _provider.IsSystemType(info.Type) ? SerializationTypeCode.Type : (SerializationTypeCode)_provider.GetUnderlyingEnumType(info.Type);
+                    break;
+
                 default:
                     throw new BadImageFormatException();
             }

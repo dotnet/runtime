@@ -299,6 +299,64 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        public void TestCustomAttributeDecoderGenericEnum()
+        {
+            Type type = typeof(HasGenericEnumAttribute);
+            using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(type.GetTypeInfo().Assembly)))
+            using (PEReader peReader = new PEReader(stream))
+            {
+                MetadataReader reader = peReader.GetMetadataReader();
+                CustomAttributeTypeProvider provider = new CustomAttributeTypeProvider();
+                TypeDefinitionHandle typeDefHandle = TestMetadataResolver.FindTestType(reader, type);
+
+                bool found = false;
+                foreach (CustomAttributeHandle attributeHandle in reader.GetCustomAttributes(typeDefHandle))
+                {
+                    CustomAttribute attribute = reader.GetCustomAttribute(attributeHandle);
+                    
+                    // Skip attributes that aren't GenericEnumAttribute
+                    if (!IsGenericEnumAttribute(reader, attribute))
+                        continue;
+
+                    CustomAttributeValue<string> value = attribute.DecodeValue(provider);
+                    
+                    Assert.Equal(1, value.FixedArguments.Length);
+                    // The enum type is int32 based
+                    Assert.Equal("int32", value.FixedArguments[0].Type);
+                    Assert.Equal(0, value.FixedArguments[0].Value);
+                    Assert.Empty(value.NamedArguments);
+                    
+                    found = true;
+                    break;
+                }
+                
+                Assert.True(found, "GenericEnumAttribute was not found on HasGenericEnumAttribute");
+            }
+        }
+
+        private static bool IsGenericEnumAttribute(MetadataReader reader, CustomAttribute attribute)
+        {
+            if (attribute.Constructor.Kind == HandleKind.MemberReference)
+            {
+                MemberReference memberRef = reader.GetMemberReference((MemberReferenceHandle)attribute.Constructor);
+                if (memberRef.Parent.Kind == HandleKind.TypeReference)
+                {
+                    TypeReference typeRef = reader.GetTypeReference((TypeReferenceHandle)memberRef.Parent);
+                    string typeName = reader.GetString(typeRef.Name);
+                    return typeName == "GenericEnumAttribute";
+                }
+            }
+            else if (attribute.Constructor.Kind == HandleKind.MethodDefinition)
+            {
+                MethodDefinition methodDef = reader.GetMethodDefinition((MethodDefinitionHandle)attribute.Constructor);
+                TypeDefinition typeDef = reader.GetTypeDefinition(methodDef.GetDeclaringType());
+                string typeName = reader.GetString(typeDef.Name);
+                return typeName == "GenericEnumAttribute";
+            }
+            return false;
+        }
+
         [GenericAttribute<bool>]
         [GenericAttribute<string>("Hello")]
         [GenericAttribute<int>(12)]
@@ -313,6 +371,21 @@ namespace System.Reflection.Metadata.Decoding.Tests
         [GenericAttribute2<int[], byte[]>(new int[] { 1, 2, 3 }, new byte[] { 4, 5 })]
         [GenericAttribute<byte>(1, TProperty = 2, TArrayProperty = new byte[] { 3, 4 })]
         public class HasGenericArrayAttributes { }
+
+        // Test for generic type instantiation in custom attributes (nested enum in generic type)
+        [GenericEnumAttribute(default(GenericClassForEnum<int>.E))]
+        public class HasGenericEnumAttribute { }
+
+        public class GenericClassForEnum<T>
+        {
+            public enum E : int { Value1 = 0, Value2 = 1 }
+        }
+
+        [AttributeUsage(AttributeTargets.All)]
+        public class GenericEnumAttribute : Attribute
+        {
+            public GenericEnumAttribute(GenericClassForEnum<int>.E e) { }
+        }
 
         [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
         internal class GenericAttribute<T> : Attribute
@@ -717,6 +790,9 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
                 if (runtimeType == typeof(MyEnum))
                     return PrimitiveTypeCode.Byte;
+
+                if (runtimeType == typeof(GenericClassForEnum<int>.E))
+                    return PrimitiveTypeCode.Int32;
 
                 throw new ArgumentOutOfRangeException();
             }
