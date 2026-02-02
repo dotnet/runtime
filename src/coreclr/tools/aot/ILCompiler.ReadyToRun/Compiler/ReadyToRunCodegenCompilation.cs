@@ -1022,9 +1022,16 @@ namespace ILCompiler
 
         public override void Dispose()
         {
-            // Workaround for https://github.com/dotnet/runtime/issues/23103
+            // Workaround for https://github.com/dotnet/runtime/issues/23103.
+            // ManifestMetadataTable.Dispose() allows to break circular reference
+            // ConcurrentBag<EcmaModule> -> EcmaModule -> EcmaAssembly -> ReadyToRunCompilerContext -> ... -> ConcurrentBag<EcmaModule>.
+            // This circular reference along with #23103 prevents objects from being collected by GC.
             _nodeFactory.ManifestMetadataTable.Dispose();
-            // Workaround for https://github.com/dotnet/runtime/issues/12255
+
+            // Workaround for https://github.com/dotnet/runtime/issues/12255.
+            // Array.Clear(_corInfoImpls) allows to break circular reference
+            // ConditionalWeakTable  _corInfoImpls -> ReadyToRunCodegenCompilation _compilation -> ConditionalWeakTable  _corInfoImpls.
+            // This circular reference along with 12255 prevents objects from being collected by GC.
             Array.Clear(_corInfoImpls);
         }
 
