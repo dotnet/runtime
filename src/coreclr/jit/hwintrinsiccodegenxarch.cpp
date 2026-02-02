@@ -911,6 +911,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
+                        case NI_AVX512BMM_Vbmacor16x16x16:
+                        case NI_AVX512BMM_Vbmacxor16x16x16:
+                        {
+                            genHWIntrinsic_R_R_R_RM(ins, simdSize, targetReg, op1Reg, op2Reg, op3, instOptions);
+                            break;
+                        }
+
                         default:
                         {
                             unreached();
