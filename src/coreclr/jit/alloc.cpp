@@ -13,6 +13,11 @@ const char* const JitMemKindTraits::Names[] = {
 #include "compmemkind.h"
 };
 
+void JitMemKindTraits::outOfMemory()
+{
+    NOMEM();
+}
+
 #if MEASURE_MEM_ALLOC
 CritSecObject        JitMemStatsInfo::s_statsLock;
 JitAggregateMemStats JitMemStatsInfo::s_aggStats;

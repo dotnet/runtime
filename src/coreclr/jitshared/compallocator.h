@@ -10,17 +10,7 @@
 
 #include "jitshared.h"
 #include "arenaallocator.h"
-
-// Forward declaration for IAllocator interface (from coreclr/inc/iallocator.h)
-#ifndef _IALLOCATOR_DEFINED_
-class IAllocator
-{
-public:
-    virtual void* Alloc(size_t sz) = 0;
-    virtual void* ArrayAlloc(size_t elems, size_t elemSize) = 0;
-    virtual void Free(void* p) = 0;
-};
-#endif
+#include "../inc/iallocator.h"
 
 // CompAllocatorT is a wrapper around ArenaAllocatorT that tracks allocations
 // by memory kind for profiling purposes.
@@ -68,8 +58,7 @@ public:
         // Ensure that count * sizeof(T) does not overflow.
         if (count > (SIZE_MAX / sizeof(T)))
         {
-            // This should call outOfMemory() through the arena's config
-            return nullptr;
+            TMemKindTraits::outOfMemory();
         }
 
         size_t sz = count * sizeof(T);
@@ -150,7 +139,7 @@ public:
             // Ensure that elems * elemSize does not overflow.
             if (elems > (SIZE_MAX / elemSize))
             {
-                return nullptr; // Should call outOfMemory()
+                TMemKindTraits::outOfMemory();
             }
 
             return m_alloc.template allocate<char>(elems * elemSize);

@@ -17,10 +17,10 @@ Histogram::Histogram(const unsigned* const sizeTable)
     : m_sizeTable(sizeTable)
 {
     unsigned sizeCount = 0;
-    do
+    while ((sizeTable[sizeCount] != 0) && (sizeCount < HISTOGRAM_MAX_SIZE_COUNT - 1))
     {
         sizeCount++;
-    } while ((sizeTable[sizeCount] != 0) && (sizeCount < 1000));
+    }
 
     assert(sizeCount < HISTOGRAM_MAX_SIZE_COUNT - 1);
 

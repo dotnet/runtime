@@ -51,6 +51,11 @@ const char* const InterpMemKindTraits::Names[] = {
 #include "interpmemkind.h"
 };
 
+void InterpMemKindTraits::outOfMemory()
+{
+    NOMEM();
+}
+
 #if MEASURE_MEM_ALLOC
 #include <minipal/mutex.h>
 
@@ -90,6 +95,14 @@ void InterpCompiler::finishMemStats()
     // Record histogram data (in KB, rounded up)
     s_memAllocHist.record((unsigned)((stats.nraTotalSizeAlloc + 1023) / 1024));
     s_memUsedHist.record((unsigned)((stats.nraTotalSizeUsed + 1023) / 1024));
+
+    // Ensure the mutex is initialized before locking.
+    // This should always be true since initMemStats() is called during interpreter initialization,
+    // but we check here as a safety measure.
+    if (!s_interpStatsMutexInitialized)
+    {
+        return;
+    }
 
     minipal::MutexHolder lock(s_interpStatsMutex);
     s_aggStats.Add(stats);

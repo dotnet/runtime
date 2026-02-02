@@ -29,6 +29,9 @@ struct JitMemKindTraits
     using MemKind = CompMemKind;
     static constexpr int Count = CMK_Count;
     static const char* const Names[];
+
+    // Called when allocation fails - calls NOMEM() which does not return.
+    static void outOfMemory();
 };
 
 // Type aliases for JIT-specific instantiations of the shared allocator templates.

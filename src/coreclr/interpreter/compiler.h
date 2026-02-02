@@ -36,6 +36,9 @@ struct InterpMemKindTraits
     using MemKind = InterpMemKind;
     static constexpr int Count = IMK_Count;
     static const char* const Names[];
+
+    // Called when allocation fails - calls NOMEM() which does not return.
+    static void outOfMemory();
 };
 
 // InterpArenaAllocator is the arena allocator type used for interpreter compilations.
