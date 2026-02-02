@@ -1939,6 +1939,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genNonLocalJmp(treeNode->AsUnOp());
             break;
 
+        case GT_PATCHPOINT:
+            genCodeForPatchpoint(treeNode->AsOp());
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            genCodeForPatchpointForced(treeNode->AsOp());
+            break;
+
         case GT_LEA:
             // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
             genLeaInstruction(treeNode->AsAddrMode());
@@ -4296,6 +4304,49 @@ void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
 {
     genConsumeOperands(tree->AsOp());
     inst_TT(INS_i_jmp, EA_PTRSIZE, tree->gtGetOp1());
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpoint: Generate code for GT_PATCHPOINT node
+//
+// Arguments:
+//    tree - the GT_PATCHPOINT node
+//
+// Notes:
+//    Emits a call to the patchpoint helper, which returns the address
+//    to jump to (either OSR method or continuation address).
+//    The result is left in the return register for the subsequent GT_NONLOCAL_JMP.
+//
+void CodeGen::genCodeForPatchpoint(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+
+    // Call the patchpoint helper
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT, 0, EA_UNKNOWN);
+
+    // Result is in RAX, which is the target register for this node
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpointForced: Generate code for GT_PATCHPOINT_FORCED node
+//
+// Arguments:
+//    tree - the GT_PATCHPOINT_FORCED node
+//
+// Notes:
+//    Emits a call to the forced patchpoint helper (for partial compilation).
+//    The result is left in the return register for the subsequent GT_NONLOCAL_JMP.
+//
+void CodeGen::genCodeForPatchpointForced(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+
+    // Call the forced patchpoint helper
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT_FORCED, 0, EA_UNKNOWN);
+
+    // Result is in RAX, which is the target register for this node
+    genProduceReg(tree);
 }
 
 // emits the table and an instruction to get the address of the first element

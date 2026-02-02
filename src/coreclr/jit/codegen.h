@@ -1291,6 +1291,8 @@ protected:
 #endif // SWIFT_SUPPORT
 
     void genNonLocalJmp(GenTreeUnOp* treeNode);
+    void genCodeForPatchpoint(GenTreeOp* treeNode);
+    void genCodeForPatchpointForced(GenTreeOp* treeNode);
 
 #ifdef TARGET_XARCH
     void           genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdjustments);

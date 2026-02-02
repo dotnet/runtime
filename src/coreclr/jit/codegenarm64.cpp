@@ -254,6 +254,9 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
         JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes\n", tier0FrameSize);
 
+        // Restore FP/LR from Tier0's frame since we jumped (not called) to OSR method.
+        GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
+
         // Tier0 size may exceed simple immediate. We're in the epilog so not clear if we can
         // use a scratch reg. So just do two subtracts if necessary.
         //
@@ -3781,6 +3784,49 @@ void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
     genConsumeOperands(tree->AsOp());
     regNumber targetReg = tree->gtGetOp1()->GetRegNum();
     GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, targetReg);
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpoint: Generate code for GT_PATCHPOINT node
+//
+// Arguments:
+//    tree - the GT_PATCHPOINT node
+//
+// Notes:
+//    Emits a call to the patchpoint helper, which returns the address
+//    to jump to (either OSR method or continuation address).
+//    The result is left in the return register for the subsequent GT_NONLOCAL_JMP.
+//
+void CodeGen::genCodeForPatchpoint(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+
+    // Call the patchpoint helper
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT, 0, EA_UNKNOWN);
+
+    // Result is in X0, which is the target register for this node
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpointForced: Generate code for GT_PATCHPOINT_FORCED node
+//
+// Arguments:
+//    tree - the GT_PATCHPOINT_FORCED node
+//
+// Notes:
+//    Emits a call to the forced patchpoint helper (for partial compilation).
+//    The result is left in the return register for the subsequent GT_NONLOCAL_JMP.
+//
+void CodeGen::genCodeForPatchpointForced(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+
+    // Call the forced patchpoint helper
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT_FORCED, 0, EA_UNKNOWN);
+
+    // Result is in X0, which is the target register for this node
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------

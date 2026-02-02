@@ -557,6 +557,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genNonLocalJmp(treeNode->AsUnOp());
             break;
 
+        case GT_PATCHPOINT:
+            genCodeForPatchpoint(treeNode->AsOp());
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            genCodeForPatchpointForced(treeNode->AsOp());
+            break;
+
 #ifdef TARGET_ARM
         case GT_LONG:
             assert(treeNode->isUsedFromReg());

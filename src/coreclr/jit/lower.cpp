@@ -691,6 +691,11 @@ GenTree* Lowering::LowerNode(GenTree* node)
             ContainCheckNonLocalJmp(node->AsOp());
             break;
 
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // Patchpoint nodes don't need special lowering
+            break;
+
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
         case GT_CNS_MSK:
             return LowerCnsMask(node->AsMskCon());
@@ -9749,6 +9754,10 @@ void Lowering::ContainCheckNode(GenTree* node)
 #endif // FEATURE_HW_INTRINSICS
         case GT_NONLOCAL_JMP:
             ContainCheckNonLocalJmp(node->AsUnOp());
+            break;
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // No containment for patchpoint nodes
             break;
         default:
             break;

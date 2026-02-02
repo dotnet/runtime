@@ -6868,6 +6868,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_RETFILT:
         case GT_RETURN_SUSPEND:
         case GT_NONLOCAL_JMP:
+        case GT_PATCHPOINT_FORCED:
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
@@ -7153,6 +7154,8 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
         case GT_NONLOCAL_JMP:
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
             return true;
 
         case GT_SWIFT_ERROR:
@@ -7497,6 +7500,8 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
         case GT_NONLOCAL_JMP:
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
             return true;
@@ -7560,6 +7565,8 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
         case GT_NONLOCAL_JMP:
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
         case GT_SWIFT_ERROR:
             return true;
         default:
@@ -10516,6 +10523,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_RETURNTRAP:
         case GT_RETURN_SUSPEND:
         case GT_NONLOCAL_JMP:
+        case GT_PATCHPOINT_FORCED:
             m_edge = &m_node->AsUnOp()->gtOp1;
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::Terminate;

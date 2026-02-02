@@ -691,6 +691,22 @@ void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForPatchpoint: Generate code for GT_PATCHPOINT node
+//
+void CodeGen::genCodeForPatchpoint(GenTreeOp* tree)
+{
+    NYI_ARM("PATCHPOINT");
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpointForced: Generate code for GT_PATCHPOINT_FORCED node
+//
+void CodeGen::genCodeForPatchpointForced(GenTreeOp* tree)
+{
+    NYI_ARM("PATCHPOINT_FORCED");
+}
+
+//------------------------------------------------------------------------
 // genGetInsForOper: Return instruction encoding of the operation tree.
 //
 instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)

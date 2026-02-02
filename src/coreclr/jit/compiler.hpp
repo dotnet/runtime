@@ -4553,6 +4553,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_INC_SATURATE:
         case GT_RETURN_SUSPEND:
         case GT_NONLOCAL_JMP:
+        case GT_PATCHPOINT_FORCED:
             return visitor(this->AsUnOp()->gtOp1);
 
 // Variadic nodes

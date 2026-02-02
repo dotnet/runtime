@@ -11797,6 +11797,7 @@ public:
             case GT_RETURN:
             case GT_RETURN_SUSPEND:
             case GT_NONLOCAL_JMP:
+            case GT_PATCHPOINT_FORCED:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
             case GT_ARR_ADDR:

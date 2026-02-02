@@ -2325,6 +2325,26 @@ void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForPatchpoint: Generate code for GT_PATCHPOINT node
+//
+void CodeGen::genCodeForPatchpoint(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT, 0, EA_UNKNOWN);
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpointForced: Generate code for GT_PATCHPOINT_FORCED node
+//
+void CodeGen::genCodeForPatchpointForced(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT_FORCED, 0, EA_UNKNOWN);
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genLockedInstructions: Generate code for a GT_XADD or GT_XCHG node.
 //
 // Arguments:
@@ -4431,6 +4451,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_NONLOCAL_JMP:
             genNonLocalJmp(treeNode->AsUnOp());
+            break;
+
+        case GT_PATCHPOINT:
+            genCodeForPatchpoint(treeNode->AsOp());
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            genCodeForPatchpointForced(treeNode->AsOp());
             break;
 
         case GT_STORE_BLK:
@@ -6975,6 +7003,10 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     {
         const int tier0FrameSize = compiler->info.compPatchpointInfo->TotalFrameSize();
         JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes\n", tier0FrameSize);
+
+        // Restore FP/RA from Tier0's frame since we jumped (not called) to OSR method.
+        emit->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, 0);
+        emit->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, REGSIZE_BYTES);
 
         if (emitter::isValidUimm11(tier0FrameSize))
         {
