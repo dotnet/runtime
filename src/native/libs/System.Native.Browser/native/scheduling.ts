@@ -46,3 +46,25 @@ export function SystemJS_ScheduleBackgroundJob(): void {
         }
     }
 }
+
+export function SystemJS_ScheduleFinalization(): void {
+    if (_ems_.DOTNET.lastScheduledFinalizationId) {
+        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledFinalizationId);
+        _ems_.runtimeKeepalivePop();
+        _ems_.DOTNET.lastScheduledFinalizationId = undefined;
+    }
+    _ems_.DOTNET.lastScheduledFinalizationId = _ems_.safeSetTimeout(SystemJS_ScheduleFinalizationTick, 0);
+
+    function SystemJS_ScheduleFinalizationTick(): void {
+        try {
+            _ems_.DOTNET.lastScheduledFinalizationId = undefined;
+            _ems_._SystemJS_ExecuteFinalizationCallback();
+        } catch (error: any) {
+            // do not propagate ExitStatus exception
+            if (!error || typeof error.status !== "number") {
+                _ems_.dotnetApi.exit(1, error);
+                throw error;
+            }
+        }
+    }
+}

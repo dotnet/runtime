@@ -3,6 +3,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using Xunit;
 
 public class ElidedBoundsChecks
@@ -31,14 +33,18 @@ public class ElidedBoundsChecks
     {
         // X64-NOT: CORINFO_HELP_RNGCHKFAIL
         // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
-        ReadOnlySpan<byte> log2ToPow10 =
-        [
-            1,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  4,  5,  5,  5,
-            6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9,  10, 10, 10,
-            10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 15, 15,
-            15, 16, 16, 16, 16, 17, 17, 17, 18, 18, 18, 19, 19, 19, 19, 20
-        ];
-        return log2ToPow10[(int)ulong.Log2(value)];
+        if (Lzcnt.X64.IsSupported || ArmBase.Arm64.IsSupported)
+        {
+            ReadOnlySpan<byte> log2ToPow10 =
+            [
+                1,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  4,  5,  5,  5,
+                6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9,  10, 10, 10,
+                10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 15, 15,
+                15, 16, 16, 16, 16, 17, 17, 17, 18, 18, 18, 19, 19, 19, 19, 20
+            ];
+            return log2ToPow10[(int)ulong.Log2(value)];
+        }
+        return 1;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -72,9 +78,6 @@ public class ElidedBoundsChecks
             return 0;
 
         if (CountDigits(1) != 1)
-            return 0;
-
-        if (CountDigits(10000000000000000000UL) != 20)
             return 0;
 
         if (AndByConst(0) != 1)

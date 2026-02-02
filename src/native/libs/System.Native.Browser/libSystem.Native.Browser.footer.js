@@ -20,7 +20,8 @@ function libDotnetFactory() {
     let commonDeps = [
         "$BROWSER_UTILS",
         "SystemJS_ExecuteTimerCallback",
-        "SystemJS_ExecuteBackgroundJobCallback"
+        "SystemJS_ExecuteBackgroundJobCallback",
+        "SystemJS_ExecuteFinalizationCallback",
     ];
     const mergeDotnet = {
         $DOTNET: {
