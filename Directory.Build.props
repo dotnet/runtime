@@ -42,8 +42,8 @@
     <AndroidApiLevelMin>21</AndroidApiLevelMin>
     <iOSVersionMin>13.0</iOSVersionMin>
     <tvOSVersionMin>13.0</tvOSVersionMin>
-    <macOSVersionMin>12.0</macOSVersionMin>
-    <MacCatalystVersionMin>15.2</MacCatalystVersionMin>
+    <macOSVersionMin>14.0</macOSVersionMin>
+    <MacCatalystVersionMin>17.0</MacCatalystVersionMin>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -69,27 +69,26 @@
 
     <!-- The previous supported .NET version. -->
     <NetCoreAppPrevious />
-    <!-- <NetCoreAppPrevious Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious> -->
+    <NetCoreAppPrevious Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious>
     <!-- TODO: Replace NetCoreAppPrevious with NetPrevious in this repo -->
     <NetPrevious>$(NetCoreAppPrevious)</NetPrevious>
 
     <!-- The minimum supported .NET version. -->
     <NetCoreAppMinimum>net10.0</NetCoreAppMinimum>
-    <!-- Until we have an SDK that can target net11.0 we need to continue targeting net10.0 in sourcebuild -->
-    <!-- <NetCoreAppMinimum Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppMinimum> -->
+    <NetCoreAppMinimum Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppMinimum>
     <!-- TODO: Replace NetCoreAppMinimum with NetMinimum in this repo -->
     <NetMinimum>$(NetCoreAppMinimum)</NetMinimum>
 
     <!-- when this is updated, make sure to keep $(_NetCoreAppToolCurrent)
          in src/mono/wasm/build/WasmApp.LocalBuild.props
          and in src/mono/msbuild/apple/build/AppleBuild.LocalBuild.props in sync -->
-    <NetCoreAppToolCurrentVersion>10.0</NetCoreAppToolCurrentVersion>
+    <NetCoreAppToolCurrentVersion>11.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
     <!-- TODO: Replace NetCoreAppToolCurrent with NetToolCurrent in this repo -->
     <NetToolCurrent>$(NetCoreAppToolCurrent)</NetToolCurrent>
 
-    <AspNetCoreAppCurrentVersion>10.0</AspNetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrentVersion>11.0</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
 
     <!-- Don't build for NETFramework during source-build. -->

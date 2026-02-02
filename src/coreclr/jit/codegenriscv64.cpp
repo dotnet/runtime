@@ -730,16 +730,15 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     regMaskTP availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
     // see: src/jit/registerriscv64.h
-    availMask &= ~intRegState.rsCalleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are
-                                                        // currently live
-    availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg as we will zero it and maybe use it for
-                                       // a large constant.
+    availMask &= ~calleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are currently live
+    availMask &= ~genRegMask(initReg);    // Remove the pre-calculated initReg as we will zero it and maybe use it for
+                                          // a large constant.
 
     rAddr           = initReg;
     *pInitRegZeroed = false;
 
     // rAddr is not a live incoming argument reg
-    assert((genRegMask(rAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
+    assert((genRegMask(rAddr) & calleeRegArgMaskLiveIn) == 0);
     assert(untrLclLo % 4 == 0);
 
     if (emitter::isValidSimm12(untrLclLo))
@@ -777,7 +776,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         availMask &= ~regMask;
 
         // rEndAddr is not a live incoming argument reg
-        assert((genRegMask(rEndAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
+        assert((genRegMask(rEndAddr) & calleeRegArgMaskLiveIn) == 0);
 
         ssize_t uLoopBytes = (uRegSlots & ~0x3) * REGSIZE_BYTES;
 
@@ -1054,7 +1053,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     var_types targetType = treeNode->TypeGet();
     emitter*  emit       = GetEmitter();
     emitAttr  attr       = emitActualTypeSize(treeNode);
-    unsigned  isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED);
+    unsigned  isUnsigned = treeNode->IsUnsigned();
 
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2();
@@ -2942,7 +2941,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
     noway_assert((srcSize == EA_4BYTE) || (srcSize == EA_8BYTE));
 
-    bool        isUnsigned = treeNode->gtFlags & GTF_UNSIGNED;
+    bool        isUnsigned = treeNode->IsUnsigned();
     instruction ins        = INS_invalid;
 
     if (isUnsigned)

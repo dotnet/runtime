@@ -1195,7 +1195,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
             exceptObj = CLRException::GetThrowableFromException(&eeExcept);
         }
 
-        RaiseTheExceptionInternalOnly(exceptObj, FALSE);
+        RaiseTheExceptionInternalOnly(exceptObj);
     }
 
     _ASSERTE(this != pCurThread);      // Aborting another thread.
@@ -2247,7 +2247,7 @@ void Thread::HandleThreadAbort ()
             exceptObj = CLRException::GetThrowableFromException(&eeExcept);
         }
 
-        RaiseTheExceptionInternalOnly(exceptObj, FALSE);
+        RaiseTheExceptionInternalOnly(exceptObj);
     }
 
     ::SetLastError(lastError);

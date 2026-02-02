@@ -102,6 +102,9 @@ namespace System.Net.Sockets.Tests
         private const int MaxAttempts = 16;
         private Socket _shadowSocket;
         public Socket MainSocket { get; }
+        public Socket SecondarySocket => _shadowSocket;
+
+        public int Port;
 
         public PortBlocker(Func<Socket> socketFactory)
         {
@@ -126,7 +129,11 @@ namespace System.Net.Sockets.Tests
                     _shadowSocket = new Socket(shadowAddress.AddressFamily, MainSocket.SocketType, MainSocket.ProtocolType);
                     success = TryBindWithoutReuseAddress(_shadowSocket, shadowEndPoint, out _);
 
-                    if (success) break;
+                    if (success)
+                    {
+                        Port = port;
+                        break;
+                    }
                 }
                 catch (SocketException)
                 {
