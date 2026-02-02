@@ -12,6 +12,8 @@
 #ifndef __CALLING_CONVENTION_INCLUDED
 #define __CALLING_CONVENTION_INCLUDED
 
+#include <algorithm>
+
 #ifdef FEATURE_INTERPRETER
 #include <cgencpu.h>
 #include <interpretershared.h>
