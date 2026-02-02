@@ -4,9 +4,9 @@
 #ifndef _COMPALLOCATOR_H_
 #define _COMPALLOCATOR_H_
 
-#include <cstddef>
-#include <cstdint>
-#include <cassert>
+#include <stddef.h>
+#include <stdint.h>
+#include <assert.h>
 
 #include "jitshared.h"
 #include "arenaallocator.h"

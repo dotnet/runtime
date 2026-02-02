@@ -4,10 +4,9 @@
 #ifndef _MEMSTATS_H_
 #define _MEMSTATS_H_
 
-#include <cstddef>
-#include <cstdint>
-#include <cstdio>
-#include <algorithm>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 
 // MemStats tracks memory allocation statistics for profiling purposes.
 // This is a template class parameterized by a traits type.

@@ -4,10 +4,10 @@
 #ifndef _ARENAALLOCATOR_H_
 #define _ARENAALLOCATOR_H_
 
-#include <cstddef>
-#include <cstdint>
-#include <cassert>
-#include <cstring>
+#include <stddef.h>
+#include <stdint.h>
+#include <assert.h>
+#include <string.h>
 
 #include "jitshared.h"
 #include "memstats.h"

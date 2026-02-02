@@ -4,7 +4,7 @@
 #ifndef _DUMPABLE_H_
 #define _DUMPABLE_H_
 
-#include <cstdio>
+#include <stdio.h>
 
 // Base class for objects that can dump their contents to a file.
 // Used by Histogram and other statistics-gathering classes.
