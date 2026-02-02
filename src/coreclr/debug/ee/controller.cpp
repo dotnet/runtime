@@ -5831,10 +5831,15 @@ static bool IsTailCall(const BYTE * ip, ControllerStackInfo* info, TailCallFunct
         return false;
     }
 
-    MethodDesc* pTargetMD =
-        trace.GetTraceType() == TRACE_UNJITTED_METHOD
-        ? trace.GetMethodDesc()
-        : g_pEEInterface->GetNativeCodeMethodDesc(trace.GetAddress());
+    MethodDesc* pTargetMD = NULL;
+    if (trace.GetTraceType() == TRACE_UNJITTED_METHOD)
+    {
+        pTargetMD = trace.GetMethodDesc();
+    }
+    else if (trace.GetAddress() != (PCODE)NULL)
+    {
+        pTargetMD = g_pEEInterface->GetNativeCodeMethodDesc(trace.GetAddress());
+    }
 
     if (type == TailCallFunctionType::StoreTailCallArgs)
     {

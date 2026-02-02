@@ -169,12 +169,12 @@ namespace System.Threading.Tasks.Tests
                                     {
                                         if (ex == null)
                                         {
-                                            Assert.Fail(string.Format("RunContinueWhenAnyTests: > FAILED!  Expected AE<TCE> from continuation.Wait() (no exception thrown)"));
+                                            Assert.Fail("RunContinueWhenAnyTests: > FAILED!  Expected AE<TCE> from continuation.Wait() (no exception thrown)");
                                             ;
                                         }
                                         else if (ex.GetType() != typeof(AggregateException))
                                         {
-                                            Assert.Fail(string.Format("RunContinueWhenAnyTests: > FAILED!  Expected AE<TCE> from continuation.Wait() (didn't throw aggregate exception)"));
+                                            Assert.Fail("RunContinueWhenAnyTests: > FAILED!  Expected AE<TCE> from continuation.Wait() (didn't throw aggregate exception)");
                                         }
                                         else if (((AggregateException)ex).InnerException.GetType() != typeof(TaskCanceledException))
                                         {
@@ -490,7 +490,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 canceledTask.Wait();
-                Assert.Fail(string.Format("    > FAILED!  Pre-canceled result did not throw from Wait()"));
+                Assert.Fail("    > FAILED!  Pre-canceled result did not throw from Wait()");
             }
             catch (AggregateException ae)
             {
@@ -499,11 +499,11 @@ namespace System.Threading.Tasks.Tests
                     var tce = e as TaskCanceledException;
                     if (tce == null)
                     {
-                        Assert.Fail(string.Format("    > FAILED!  Pre-canceled result threw non-TCE from Wait()"));
+                        Assert.Fail("    > FAILED!  Pre-canceled result threw non-TCE from Wait()");
                     }
                     else if (tce.CancellationToken != correctToken)
                     {
-                        Assert.Fail(string.Format("    > FAILED!  Pre-canceled result threw TCE w/ wrong token"));
+                        Assert.Fail("    > FAILED!  Pre-canceled result threw TCE w/ wrong token");
                     }
 
                     return true;

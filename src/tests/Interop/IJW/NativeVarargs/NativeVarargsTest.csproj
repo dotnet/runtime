@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <CrossGenTest>false</CrossGenTest> <!-- https://github.com/dotnet/runtime/issues/83942 -->
     <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Native varargs not supported on ARM -->
@@ -12,6 +13,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NativeVarargsTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
