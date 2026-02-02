@@ -7,7 +7,7 @@
  */
 
 /* eslint-disable no-undef */
-function libFactory() {
+function libBrowserHostFactory() {
     // this executes the function at link time in order to capture exports
     // this is what Emscripten does for linking JS libraries
     // https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#javascript-limits-in-library-files
@@ -32,7 +32,7 @@ function libFactory() {
         "$libBrowserHostFn",
         ...explicitDeps
     ];
-    const libBROWSERHOST = {
+    const libBrowserHost = {
         $BROWSER_HOST: {
             selfInitialize: () => {
                 if (typeof dotnetInternals !== "undefined") {
@@ -55,17 +55,17 @@ function libFactory() {
     for (const exportName of Reflect.ownKeys(exports)) {
         const name = String(exportName);
         if (name === "dotnetInitializeModule") continue;
-        libBROWSERHOST[name] = () => "dummy";
+        libBrowserHost[name] = () => "dummy";
         assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
     }
     for (const importName of explicitDeps) {
         explicitImportsBuilder += `_${importName}();\n`;
     }
-    libBROWSERHOST.$BROWSER_HOST.assignExports = new Function("exports", assignExportsBuilder);
-    libBROWSERHOST.$BROWSER_HOST.explicitImports = new Function(explicitImportsBuilder);
+    libBrowserHost.$BROWSER_HOST.assignExports = new Function("exports", assignExportsBuilder);
+    libBrowserHost.$BROWSER_HOST.explicitImports = new Function(explicitImportsBuilder);
 
-    autoAddDeps(libBROWSERHOST, "$BROWSER_HOST");
-    addToLibrary(libBROWSERHOST);
+    autoAddDeps(libBrowserHost, "$BROWSER_HOST");
+    addToLibrary(libBrowserHost);
 
     function trim() {
         return -1;
@@ -90,4 +90,4 @@ function libFactory() {
     }
 }
 
-libFactory();
+libBrowserHostFactory();

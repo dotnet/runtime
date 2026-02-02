@@ -7,7 +7,7 @@
  */
 
 /* eslint-disable no-undef */
-function libFactory() {
+function libDotnetFactory() {
     // this executes the function at link time in order to capture exports
     // this is what Emscripten does for linking JS libraries
     // https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#javascript-limits-in-library-files
@@ -22,7 +22,7 @@ function libFactory() {
         "SystemJS_ExecuteTimerCallback",
         "SystemJS_ExecuteBackgroundJobCallback"
     ];
-    const libDOTNET = {
+    const libDotnet = {
         $DOTNET: {
             selfInitialize: () => {
                 if (typeof dotnetInternals !== "undefined") {
@@ -40,11 +40,11 @@ function libFactory() {
     for (const exportName of Reflect.ownKeys(exports)) {
         const name = String(exportName);
         if (name === "dotnetInitializeModule") continue;
-        libDOTNET[name] = exports[name];
+        libDotnet[name] = exports[name];
     }
 
-    autoAddDeps(libDOTNET, "$DOTNET");
-    addToLibrary(libDOTNET);
+    autoAddDeps(libDotnet, "$DOTNET");
+    addToLibrary(libDotnet);
 }
 
-libFactory();
+libDotnetFactory();

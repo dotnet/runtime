@@ -7,7 +7,7 @@
  */
 
 /* eslint-disable no-undef */
-function libFactory() {
+function libBrowserUtilsFactory() {
     // this executes the function at link time in order to capture exports
     // this is what Emscripten does for linking JS libraries
     // https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#javascript-limits-in-library-files
@@ -27,7 +27,7 @@ function libFactory() {
         "$readI53FromI64",
         "$writeI53ToI64"
     ];
-    const libBROWSERUTILS = {
+    const libBrowserUtils = {
         $BROWSER_UTILS: {
             selfInitialize: () => {
                 if (typeof dotnetInternals !== "undefined") {
@@ -51,12 +51,12 @@ function libFactory() {
         if (name === "dotnetInternals") continue;
         if (name === "Module") continue;
         const emName = "$" + name;
-        libBROWSERUTILS[emName] = exports._ems_ambient_[exportName];
+        libBrowserUtils[emName] = exports._ems_ambient_[exportName];
         commonDeps.push(emName);
     }
 
-    autoAddDeps(libBROWSERUTILS, "$BROWSER_UTILS");
-    addToLibrary(libBROWSERUTILS);
+    autoAddDeps(libBrowserUtils, "$BROWSER_UTILS");
+    addToLibrary(libBrowserUtils);
 }
 
-libFactory();
+libBrowserUtilsFactory();

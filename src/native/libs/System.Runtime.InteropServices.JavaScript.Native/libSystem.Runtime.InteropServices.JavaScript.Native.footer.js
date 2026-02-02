@@ -7,7 +7,7 @@
  */
 
 /* eslint-disable no-undef */
-function libFactory() {
+function libDotnetInteropFactory() {
     // this executes the function at link time in order to capture exports
     // this is what Emscripten does for linking JS libraries
     // https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#javascript-limits-in-library-files
@@ -26,7 +26,7 @@ function libFactory() {
         "SystemInteropJS_BindAssemblyExports",
         "SystemInteropJS_CallJSExport"
     ];
-    const libDOTNET_INTEROP = {
+    const libDotnetInterop = {
         $DOTNET_INTEROP: {
             selfInitialize: () => {
                 if (typeof dotnetInternals !== "undefined") {
@@ -44,11 +44,11 @@ function libFactory() {
     for (const exportName of Reflect.ownKeys(exports)) {
         const name = String(exportName);
         if (name === "dotnetInitializeModule" || name === "gitHash") continue;
-        libDOTNET_INTEROP[name] = exports[name];
+        libDotnetInterop[name] = exports[name];
     }
 
-    autoAddDeps(libDOTNET_INTEROP, "$DOTNET_INTEROP");
-    addToLibrary(libDOTNET_INTEROP);
+    autoAddDeps(libDotnetInterop, "$DOTNET_INTEROP");
+    addToLibrary(libDotnetInterop);
 }
 
-libFactory();
+libDotnetInteropFactory();

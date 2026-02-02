@@ -2,7 +2,7 @@
 //! The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable no-undef */
-function libFactory() {
+function libCoreRunFactory() {
     let commonDeps = [
         "$DOTNET",
         "$ENV",
@@ -47,4 +47,4 @@ function libFactory() {
     }
 }
 
-libFactory();
+libCoreRunFactory();
