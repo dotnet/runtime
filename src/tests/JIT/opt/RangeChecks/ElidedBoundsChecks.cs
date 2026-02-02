@@ -3,6 +3,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using Xunit;
 
 public class ElidedBoundsChecks
@@ -71,11 +73,15 @@ public class ElidedBoundsChecks
         if (LastCharCheck("abc", "abc/def") != true)
             return 0;
 
-        if (CountDigits(1) != 1)
-            return 0;
+        // Requires HWIntrinsics to expand Log2.
+        if (Lzcnt.X64.IsSupported || ArmBase.Arm64.IsSupported)
+        {
+            if (CountDigits(1) != 1)
+                return 0;
 
-        if (CountDigits(10000000000000000000UL) != 20)
-            return 0;
+            if (CountDigits(10000000000000000000UL) != 20)
+                return 0;
+        }
 
         if (AndByConst(0) != 1)
             return 0;
