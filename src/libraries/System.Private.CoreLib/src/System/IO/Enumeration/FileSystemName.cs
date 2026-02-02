@@ -274,18 +274,11 @@ namespace System.IO.Enumeration
                             // If we are at a period, determine if we are allowed to
                             // consume it, i.e. make sure it is not the last one.
 
-                            bool notLastPeriod = false;
-                            if (!nameFinished && nameChar == '.')
-                            {
-                                for (int offset = nameOffset; offset < name.Length; offset++)
-                                {
-                                    if (name[offset] == '.')
-                                    {
-                                        notLastPeriod = true;
-                                        break;
-                                    }
-                                }
-                            }
+                            // Check if there's another period after this one (not the last period)
+                            bool notLastPeriod =
+                                !nameFinished &&
+                                nameChar == '.' &&
+                                name.Slice(nameOffset).Contains('.');
 
                             if (nameFinished || nameChar != '.' || notLastPeriod)
                             {
