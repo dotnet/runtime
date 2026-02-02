@@ -322,8 +322,10 @@ namespace System.Reflection.Metadata.Decoding.Tests
                     CustomAttributeValue<string> value = attribute.DecodeValue(provider);
                     
                     Assert.Equal(1, value.FixedArguments.Length);
-                    // Verify the underlying type representation is 'int32' since the enum is int-based
-                    Assert.Equal("int32", value.FixedArguments[0].Type);
+                    // For enum types, the Type should be the enum's name in IL assembly notation
+                    // The enum E is nested in GenericClassForEnum`1, which is nested in the test class
+                    Assert.Contains("GenericClassForEnum", value.FixedArguments[0].Type);
+                    Assert.EndsWith("/E", value.FixedArguments[0].Type);
                     Assert.Equal(0, value.FixedArguments[0].Value);
                     Assert.Empty(value.NamedArguments);
                     
