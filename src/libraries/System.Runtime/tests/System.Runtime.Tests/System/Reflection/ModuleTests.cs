@@ -93,7 +93,10 @@ namespace System.Reflection.Tests
             if (PlatformDetection.IsBrowser && loc.Length > 1)
             {
                 const string browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
-                loc = loc.Replace(browserVirtualAppBase, "");
+                if (loc.StartsWith(browserVirtualAppBase, StringComparison.Ordinal))
+                {
+                    loc = loc.Substring(browserVirtualAppBase.Length);
+                }
             }
 
             Assert.Equal(loc, Module.FullyQualifiedName);
