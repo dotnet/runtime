@@ -1,7 +1,6 @@
 ---
-agent: 'agent'
-tools: ['web/fetch', 'search/codebase', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search/usages', 'search', 'edit/editFiles', 'think']
-description: 'Add a new API to the JIT-VM (aka JIT-EE) interface in the codebase.'
+name: add-new-jit-ee-api
+description: Add a new API to the JIT-VM (aka JIT-EE) interface in the codebase.
 ---
 
 #### 1 — Goal
@@ -218,12 +217,10 @@ Consider other similar methods in the file for reference. Do not change implemen
    * `<repo_root>/src/coreclr/inc/corinfo.h`
    * `<repo_root>/src/coreclr/tools/Common/JitInterface/CorInfoImpl.cs`
    * `<repo_root>/src/coreclr/vm/jitinterface.cpp`
-   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h`:
-   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`:
-   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h`:
-   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`:
-   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h` [optional]
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h` [optional - only if new types are needed]
    * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h`
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`
    * `<repo_root>/src/coreclr/tools/superpmi/superpmi/icorjitinfo.cpp`
    * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shim-collector/icorjitinfo.cpp`
 * [ ] All TODO/UNREACHABLE markers remain for future functional implementation.

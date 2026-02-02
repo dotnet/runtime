@@ -1,7 +1,6 @@
 ---
-agent: 'agent'
-tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'read/problems']
-description: 'Ensure that C# types are documented with XML comments and follow best practices for documentation.'
+name: docs
+description: Ensure that C# types are documented with XML comments and follow best practices for documentation.
 ---
 
 # C# Documentation Best Practices
