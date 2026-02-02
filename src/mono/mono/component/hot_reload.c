@@ -350,7 +350,7 @@ hot_reload_update_enabled (int *modifiable_assemblies_out)
 	if (!inited) {
 		modifiable = hot_reload_update_enabled_slow_check (NULL);
 		inited = TRUE;
-		result = (modifiable != MONO_MODIFIABLE_ASSM_UNSET);
+		result = (modifiable == MONO_MODIFIABLE_ASSM_DEBUG);
 		if (result) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Metadata update enabled for debuggable assemblies");
 		}
@@ -396,6 +396,7 @@ assembly_update_supported (MonoImage *image_base, MonoError *error)
 		g_free (invalid_env_val);
 		return FALSE;
 	} else if (modifiable == MONO_MODIFIABLE_ASSM_NONE) {
+		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is set to 'none', not 'Debug'", image_base->name);
 		return FALSE;
 	} else if (!mono_assembly_is_jit_optimizer_disabled (image_base->assembly)) {
 		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because it does not have a System.Diagnostics.DebuggableAttribute with the DebuggingModes.DisableOptimizations flag (editing Release build assemblies is not supported)", image_base->name);
