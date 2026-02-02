@@ -12,6 +12,9 @@
 .PARAMETER PRNumber
     The GitHub PR number to find the associated build.
 
+.PARAMETER Repository
+    The GitHub repository (owner/repo format). Default: dotnet/runtime
+
 .PARAMETER Organization
     The Azure DevOps organization. Default: dnceng-public
 
@@ -30,11 +33,17 @@
 .PARAMETER TimeoutSec
     Timeout in seconds for API calls. Default: 30
 
+.PARAMETER ContextLines
+    Number of context lines to show before errors. Default: 0
+
 .EXAMPLE
     .\Get-HelixFailures.ps1 -BuildId 1276327
     
 .EXAMPLE
     .\Get-HelixFailures.ps1 -PRNumber 123445 -ShowLogs
+
+.EXAMPLE
+    .\Get-HelixFailures.ps1 -PRNumber 123445 -Repository dotnet/aspnetcore
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'BuildId')]
@@ -45,12 +54,14 @@ param(
     [Parameter(ParameterSetName = 'PRNumber', Mandatory = $true)]
     [int]$PRNumber,
 
+    [string]$Repository = "dotnet/runtime",
     [string]$Organization = "dnceng-public",
     [string]$Project = "cbb18261-c48f-4abb-8651-8cdcb5474649",
     [switch]$ShowLogs,
     [int]$MaxJobs = 5,
     [int]$MaxFailureLines = 50,
-    [int]$TimeoutSec = 30
+    [int]$TimeoutSec = 30,
+    [int]$ContextLines = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -63,11 +74,11 @@ function Get-AzDOBuildIdFromPR {
         throw "GitHub CLI (gh) is required for PR lookup. Install from https://cli.github.com/ or use -BuildId instead."
     }
     
-    Write-Host "Finding build for PR #$PR..." -ForegroundColor Cyan
-    Write-Verbose "Running: gh pr checks $PR --repo dotnet/runtime"
+    Write-Host "Finding build for PR #$PR in $Repository..." -ForegroundColor Cyan
+    Write-Verbose "Running: gh pr checks $PR --repo $Repository"
     
     # Use gh cli to get the checks
-    $checksOutput = gh pr checks $PR --repo dotnet/runtime 2>&1
+    $checksOutput = gh pr checks $PR --repo $Repository 2>&1
     
     # Find the runtime build URL
     $runtimeCheck = $checksOutput | Select-String -Pattern "runtime\s+fail.*buildId=(\d+)" | Select-Object -First 1
@@ -83,7 +94,7 @@ function Get-AzDOBuildIdFromPR {
         return [int]$Matches[1]
     }
     
-    throw "Could not find Azure DevOps build for PR #$PR"
+    throw "Could not find Azure DevOps build for PR #$PR in $Repository"
 }
 
 function Get-AzDOTimeline {
@@ -177,35 +188,50 @@ function Extract-TestFailures {
 }
 
 function Extract-BuildErrors {
-    param([string]$LogContent)
+    param(
+        [string]$LogContent,
+        [int]$Context = $ContextLines
+    )
     
     $errors = @()
     $lines = $LogContent -split "`n"
     
-    # Patterns for common build errors
+    # Patterns for common build errors - ordered from most specific to least specific
     $errorPatterns = @(
-        '##\[error\].*',
-        'error\s*:\s*.+',
-        'error\s+CS\d+:.*',
-        'error\s+MSB\d+:.*',
-        'error\s+NU\d+:.*',
-        'fatal error:.*',
-        '\.pcm: No such file or directory',
-        'EXEC\s*:\s*error\s*:.*'
+        'error\s+CS\d+:.*',                        # C# compiler errors
+        'error\s+MSB\d+:.*',                       # MSBuild errors
+        'error\s+NU\d+:.*',                        # NuGet errors
+        '\.pcm: No such file or directory',        # Clang module cache
+        'EXEC\s*:\s*error\s*:.*',                  # Exec task errors
+        'fatal error:.*',                          # Fatal errors (clang, etc)
+        '##\[error\].*'                            # AzDO error annotations (last - catch-all)
     )
     
     $combinedPattern = ($errorPatterns -join '|')
     
-    foreach ($line in $lines) {
-        if ($line -match $combinedPattern) {
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match $combinedPattern) {
             # Clean up the line (remove timestamps, etc)
-            $cleanLine = $line -replace '^\d{4}-\d{2}-\d{2}T[\d:\.]+Z\s*', ''
+            $cleanLine = $lines[$i] -replace '^\d{4}-\d{2}-\d{2}T[\d:\.]+Z\s*', ''
             $cleanLine = $cleanLine -replace '##\[error\]', 'ERROR: '
+            
+            # Add context lines if requested
+            if ($Context -gt 0) {
+                $contextStart = [Math]::Max(0, $i - $Context)
+                $contextLines = @()
+                for ($j = $contextStart; $j -lt $i; $j++) {
+                    $contextLines += "  " + $lines[$j].Trim()
+                }
+                if ($contextLines.Count -gt 0) {
+                    $errors += ($contextLines -join "`n")
+                }
+            }
+            
             $errors += $cleanLine.Trim()
         }
     }
     
-    return $errors | Select-Object -Unique -First 10
+    return $errors | Select-Object -First 20 | Select-Object -Unique
 }
 
 function Get-FailureClassification {
@@ -213,7 +239,7 @@ function Get-FailureClassification {
     
     $errorText = $Errors -join "`n"
     
-    # Known failure patterns with classifications
+    # Known failure patterns with classifications - ordered from most specific to general
     $knownPatterns = @(
         @{
             Pattern = '\.pcm: No such file or directory|clang/ModuleCache'
@@ -263,6 +289,41 @@ function Get-FailureClassification {
             Summary = '[Build] MSBuild error'
             Action = 'Check build configuration and dependencies'
             Transient = $false
+        },
+        @{
+            Pattern = 'OutOfMemoryException|out of memory'
+            Type = 'Infrastructure'
+            Summary = '[OOM] Out of memory failure'
+            Action = 'Retry - may be transient memory pressure on Helix machine'
+            Transient = $true
+        },
+        @{
+            Pattern = 'StackOverflowException'
+            Type = 'Test'
+            Summary = '[Test] Stack overflow in test'
+            Action = 'Investigate infinite recursion or deep call stack'
+            Transient = $false
+        },
+        @{
+            Pattern = 'Assert\.\w+\(\)\s+Failure|Expected:.*but was:'
+            Type = 'Test'
+            Summary = '[Test] Assertion failure'
+            Action = 'Fix the test or the code under test'
+            Transient = $false
+        },
+        @{
+            Pattern = 'System\.TimeoutException|did not complete within'
+            Type = 'Test'
+            Summary = '[Test] Test timeout'
+            Action = 'Retry or increase test timeout; may indicate perf regression'
+            Transient = $true
+        },
+        @{
+            Pattern = 'Connection refused|ECONNREFUSED|network.+unreachable'
+            Type = 'Infrastructure'
+            Summary = '[Network] Network connectivity issue'
+            Action = 'Retry - transient network issue on Helix machine'
+            Transient = $true
         }
     )
     
@@ -304,13 +365,16 @@ function Get-HelixConsoleLog {
 function Format-TestFailure {
     param(
         [string]$LogContent,
-        [int]$MaxLines = $MaxFailureLines
+        [int]$MaxLines = $MaxFailureLines,
+        [int]$MaxFailures = 3
     )
     
     $lines = $LogContent -split "`n"
+    $allFailures = @()
+    $currentFailure = @()
     $inFailure = $false
-    $failureLines = @()
     $emptyLineCount = 0
+    $failureCount = 0
     
     # Expanded failure detection patterns
     $failureStartPatterns = @(
@@ -325,13 +389,25 @@ function Format-TestFailure {
     $combinedPattern = ($failureStartPatterns -join '|')
     
     foreach ($line in $lines) {
-        if (-not $inFailure -and $line -match $combinedPattern) {
+        # Check for new failure start
+        if ($line -match $combinedPattern) {
+            # Save previous failure if exists
+            if ($currentFailure.Count -gt 0) {
+                $allFailures += ($currentFailure -join "`n")
+                $failureCount++
+                if ($failureCount -ge $MaxFailures) {
+                    break
+                }
+            }
+            # Start new failure
+            $currentFailure = @($line)
             $inFailure = $true
             $emptyLineCount = 0
+            continue
         }
         
         if ($inFailure) {
-            $failureLines += $line
+            $currentFailure += $line
             
             # Track consecutive empty lines to detect end of stack trace
             if ($line -match '^\s*$') {
@@ -341,18 +417,35 @@ function Format-TestFailure {
                 $emptyLineCount = 0
             }
             
-            # Stop after stack trace ends (2+ consecutive empty lines) or max lines reached
-            if ($emptyLineCount -ge 2 -or $failureLines.Count -ge $MaxLines) {
-                break
+            # Stop this failure after stack trace ends (2+ consecutive empty lines) or max lines reached
+            if ($emptyLineCount -ge 2 -or $currentFailure.Count -ge $MaxLines) {
+                $allFailures += ($currentFailure -join "`n")
+                $currentFailure = @()
+                $inFailure = $false
+                $failureCount++
+                if ($failureCount -ge $MaxFailures) {
+                    break
+                }
             }
         }
     }
     
-    if ($failureLines.Count -ge $MaxLines) {
-        $failureLines += "... (truncated, use -MaxFailureLines to see more)"
+    # Don't forget last failure
+    if ($currentFailure.Count -gt 0 -and $failureCount -lt $MaxFailures) {
+        $allFailures += ($currentFailure -join "`n")
     }
     
-    return $failureLines -join "`n"
+    if ($allFailures.Count -eq 0) {
+        return $null
+    }
+    
+    $result = $allFailures -join "`n`n--- Next Failure ---`n`n"
+    
+    if ($failureCount -ge $MaxFailures) {
+        $result += "`n`n... (more failures exist, showing first $MaxFailures)"
+    }
+    
+    return $result
 }
 
 # Main execution
@@ -422,6 +515,18 @@ try {
                                     $failureInfo = Format-TestFailure -LogContent $helixLog
                                     if ($failureInfo) {
                                         Write-Host $failureInfo -ForegroundColor White
+                                        
+                                        # Classify the Helix failure
+                                        $classification = Get-FailureClassification -Errors @($failureInfo)
+                                        if ($classification -and $classification.Type -ne 'Unknown') {
+                                            Write-Host "`n  Classification: $($classification.Summary)" -ForegroundColor Yellow
+                                            if ($classification.Action) {
+                                                Write-Host "  Suggested action: $($classification.Action)" -ForegroundColor Green
+                                            }
+                                            if ($classification.Transient) {
+                                                Write-Host "  (This failure appears to be transient - retry may help)" -ForegroundColor Cyan
+                                            }
+                                        }
                                     }
                                 }
                             }
