@@ -15,6 +15,12 @@ namespace ILLink.Shared.TypeSystemProxy
         internal partial bool IsDeclaredOnType(string fullTypeName);
 
         /// <summary>
+        /// Checks if the method or any method it overrides is declared on the specified type.
+        /// This is specifically for intrinsic detection where we want overrides of virtual intrinsic methods to be recognized.
+        /// </summary>
+        internal partial bool IsDeclaredOnTypeOrOverride(string fullTypeName);
+
+        /// <summary>
         /// Returns the number of the parameters in the 'parameters' metadata section. This should map directly to the number of parameters in the C# source declaration as well.
         /// </summary>
         internal partial int GetMetadataParametersCount();

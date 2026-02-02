@@ -17,7 +17,9 @@ namespace ILLink.Shared.TypeSystemProxy
 
         public string GetDisplayName() => Method.GetDisplayName();
 
-        internal partial bool IsDeclaredOnType(string fullTypeName)
+        internal partial bool IsDeclaredOnType(string fullTypeName) => IsTypeOf(Method.ContainingType, fullTypeName);
+
+        internal partial bool IsDeclaredOnTypeOrOverride(string fullTypeName)
         {
             // Check if the method is declared on the specified type
             if (IsTypeOf(Method.ContainingType, fullTypeName))
