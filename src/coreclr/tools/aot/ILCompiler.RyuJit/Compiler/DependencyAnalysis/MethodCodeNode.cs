@@ -297,8 +297,6 @@ namespace ILCompiler.DependencyAnalysis
             // OffsetMapping is sorted in order of increasing native offset (but not necessarily by IL offset)
             foreach (var nativeMapping in _debugLocInfos)
             {
-                // Make sure we don't emit multiple sequence points for the same native offset
-                // Because CreateLineNumbersBlob uses zero deltas to indicate document changes.
                 if (nativeMapping.NativeOffset == previousNativeOffset)
                     continue;
 
