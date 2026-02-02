@@ -555,7 +555,11 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 {
     CONTRACTL
     {
+#ifdef TARGET_UNIX // because UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP is catching exceptions only on Unix. On Windows OS is handling that.
         NOTHROW;
+#else // TARGET_UNIX
+        THROWS;
+#endif // TARGET_UNIX
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
     }
