@@ -130,12 +130,6 @@ namespace System.Diagnostics.Tracing
             return EventProvider.WriteEventErrorCode.NoError;
         }
 
-        // Get or set the per-thread activity ID.
-        internal override int ActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
-        {
-            return EventActivityIdControl(controlCode, ref activityId);
-        }
-
         // Define an EventPipeEvent handle.
         internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
             byte* pMetadata, uint metadataLength)
