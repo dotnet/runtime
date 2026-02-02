@@ -4447,4 +4447,7 @@
   <data name="IO_SharedMemory_DirectoryOwnerPermissionsIncorrect" xml:space="preserve">
     <value>The directory '{0}' does not have the expected owner permissions: {1}.</value>
   </data>
+  <data name="Argument_MustBeFunctionPointer" xml:space="preserve">
+    <value>Argument must represent a function pointer type.</value>
+  </data>
 </root>

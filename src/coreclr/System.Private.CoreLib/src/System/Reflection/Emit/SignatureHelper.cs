@@ -105,6 +105,13 @@ namespace System.Reflection.Emit
             return new SignatureHelper(mod, intCall, returnType, null, null);
         }
 
+        internal static SignatureHelper GetMethodSigHelper(
+            Module? mod, MdSigCallingConvention callingConvention,
+            Type returnType, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
+        {
+            return new SignatureHelper(mod, callingConvention, returnType, requiredCustomModifiers, optionalCustomModifiers);
+        }
+
         public static SignatureHelper GetLocalVarSigHelper()
         {
             return GetLocalVarSigHelper(null);

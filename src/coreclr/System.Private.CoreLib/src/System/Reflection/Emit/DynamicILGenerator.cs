@@ -247,7 +247,13 @@ namespace System.Reflection.Emit
         /// <inheritdoc/>
         public override void EmitCalli(Type functionPointerType)
         {
-            // TODO
+            ArgumentNullException.ThrowIfNull(functionPointerType);
+
+            if (!functionPointerType.IsFunctionPointer)
+                throw new ArgumentException(SR.Argument_MustBeFunctionPointer, nameof(functionPointerType));
+
+            SignatureHelper sig = GetMethodSigHelper(functionPointerType);
+            Emit(OpCodes.Calli, sig);
         }
 
         public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
@@ -474,6 +480,60 @@ namespace System.Reflection.Emit
                 sig.AddArguments(optionalParameterTypes, null, null);
             }
             return sig;
+        }
+
+        private static SignatureHelper GetMethodSigHelper(Type functionPointerType)
+        {
+            Type retType = functionPointerType.GetFunctionPointerReturnType();
+            Type[] retTypeModReqs = retType.GetRequiredCustomModifiers();
+            Type[] retTypeModOpts = retType.GetOptionalCustomModifiers();
+            Type[] paramTypes = functionPointerType.GetFunctionPointerParameterTypes();
+            Type[][] paramModReqs = new Type[paramTypes.Length][];
+            Type[][] paramModOpts = new Type[paramTypes.Length][];
+
+            for (int i = 0; i < paramTypes.Length; i++)
+            {
+                paramModReqs[i] = paramTypes[i].GetRequiredCustomModifiers();
+                paramModOpts[i] = paramTypes[i].GetOptionalCustomModifiers();
+            }
+
+            if (functionPointerType.IsUnmanagedFunctionPointer)
+            {
+                MdSigCallingConvention callConv = MdSigCallingConvention.Unmanaged;
+
+                if (functionPointerType.GetFunctionPointerCallingConventions() is Type[] conventions && conventions.Length == 1)
+                {
+                    switch (conventions[0].FullName)
+                    {
+                        case "System.Runtime.CompilerServices.CallConvCdecl":
+                            callConv = MdSigCallingConvention.C;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvStdcall":
+                            callConv = MdSigCallingConvention.StdCall;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvThiscall":
+                            callConv = MdSigCallingConvention.ThisCall;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvFastcall":
+                            callConv = MdSigCallingConvention.FastCall;
+                            break;
+                    }
+                }
+
+                SignatureHelper sig = SignatureHelper.GetMethodSigHelper(null, callConv, retType, retTypeModReqs, retTypeModOpts);
+                sig.AddArguments(paramTypes, paramModReqs, paramModOpts);
+                return sig;
+            }
+
+            return SignatureHelper.GetMethodSigHelper(
+                scope: null,
+                CallingConventions.Standard,
+                retType,
+                retTypeModReqs,
+                retTypeModOpts,
+                paramTypes,
+                paramModReqs,
+                paramModOpts);
         }
 
         private void AddParameters(SignatureHelper sigHelp, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)

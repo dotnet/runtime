@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -163,6 +164,86 @@ namespace System.Reflection.Emit.Tests
 
             object resultValue = dynamicMethod
                 .Invoke(null, new object[] { funcPtr, input });
+
+            GC.KeepAlive(del);
+
+            Assert.IsType(returnType, resultValue);
+            Assert.Equal(result, resultValue);
+        }
+
+        [Fact]
+        public void TestDynamicMethodEmitCalliFnPtrManaged()
+        {
+            Type fnPtrType = Type.MakeFunctionPointerSignatureType(typeof(int), [typeof(int), typeof(int)]);
+            DynamicMethod dynamicMethod = new("Test", typeof(int), [typeof(nint)]);
+
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldc_I4_S, (byte)10);
+            il.Emit(OpCodes.Ldc_I4_S, (byte)5);
+            il.Emit(OpCodes.Ldarg_0);
+            il.EmitCalli(fnPtrType);
+            il.Emit(OpCodes.Ret);
+
+            object resultValue = dynamicMethod.Invoke(null, [((Func<int, int, int>)Int32Sum).Method.MethodHandle.GetFunctionPointer()]);
+
+            Assert.Equal(15, resultValue);
+        }
+
+        [Fact]
+        public void TestDynamicMethodEmitCalliFnPtrStdCall()
+        {
+            int a = 1, b = 1, result = 2;
+
+            Type returnType = typeof(int);
+
+            var dynamicMethod = new DynamicMethod("F", returnType, [typeof(nint), typeof(int), typeof(int)]);
+
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldarg_2);
+            il.Emit(OpCodes.Ldarg_0);
+            il.EmitCalli(Type.MakeFunctionPointerSignatureType(
+                returnType,
+                parameterTypes: [typeof(int), typeof(int)],
+                isUnmanaged: true,
+                callingConventions: [typeof(CallConvStdcall)]));
+            il.Emit(OpCodes.Ret);
+
+            var del = new Int32SumStdCall(Int32Sum);
+            IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(del);
+
+            object resultValue = dynamicMethod
+                .Invoke(null, [funcPtr, a, b]);
+
+            GC.KeepAlive(del);
+
+            Assert.IsType(returnType, resultValue);
+            Assert.Equal(result, resultValue);
+        }
+
+        [Fact]
+        public void TestDynamicMethodEmitCalliFnPtrCDecl()
+        {
+            string input = "Test string!", result = "!gnirts tseT";
+
+            Type returnType = typeof(string);
+            DynamicMethod dynamicMethod = new("F", returnType, [typeof(nint), typeof(string)]);
+
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldarg_0);
+            il.EmitCalli(Type.MakeFunctionPointerSignatureType(
+                returnType,
+                parameterTypes: [typeof(string)],
+                isUnmanaged: true,
+                callingConventions: [typeof(CallConvCdecl)]));
+            il.Emit(OpCodes.Ret);
+
+            StringReverseCdecl del = new(StringReverse);
+            IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(del);
+
+            object resultValue = dynamicMethod
+                .Invoke(null, [funcPtr, input]);
 
             GC.KeepAlive(del);
 

@@ -666,6 +666,28 @@ namespace System
             foreach (Type callConv in callingConventions)
                 ArgumentNullException.ThrowIfNull(callConv, nameof(callingConventions));
 
+            bool builtInCallConv = false;
+            if (callingConventions.Length == 1)
+            {
+                // Known calling conventions with direct IL equivalent
+                string? callConv = callingConventions[0].FullName;
+                if (!string.IsNullOrEmpty(callConv) &&
+                    (callConv == "System.Runtime.CompilerServices.CallConvCdecl"
+                    || callConv == "System.Runtime.CompilerServices.CallConvStdcall"
+                    || callConv == "System.Runtime.CompilerServices.CallConvThiscall"
+                    || callConv == "System.Runtime.CompilerServices.CallConvFastcall"))
+                    builtInCallConv = true;
+            }
+
+            if (isUnmanaged && !builtInCallConv)
+            {
+                // Newer or multiple calling conventions specified -> encoded as modopts
+                returnType = MakeModifiedSignatureType(
+                    returnType.UnderlyingSystemType,
+                    returnType.GetRequiredCustomModifiers(),
+                    optionalCustomModifiers: [.. callingConventions, .. returnType.GetOptionalCustomModifiers()]);
+            }
+
             return new SignatureFunctionPointerType(
                 returnType,
                 (Type[])parameterTypes.Clone(),
