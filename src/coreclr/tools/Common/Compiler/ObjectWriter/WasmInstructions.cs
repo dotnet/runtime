@@ -5,9 +5,9 @@ using System;
 using System.Diagnostics;
 
 // This namespace implements encodings for certain Wasm expressions (instructions)
-// which are used in the object writer.  
+// which are used in the object writer.
 // For now, these instructions are only used for constructing constant expressions
-// to calculate placements for data segments based on imported globals. 
+// to calculate placements for data segments based on imported globals.
 namespace ILCompiler.ObjectWriter.WasmInstructions
 {
     public enum WasmExprKind

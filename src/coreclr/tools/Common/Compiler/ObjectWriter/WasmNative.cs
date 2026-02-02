@@ -212,19 +212,19 @@ namespace ILCompiler.ObjectWriter
 
     public class WasmGlobalType : WasmImportType
     {
-        WasmValueType ValueType;
-        WasmMutabilityType Mutability;
+        WasmValueType _valueType;
+        WasmMutabilityType _mutability;
 
         public WasmGlobalType(WasmValueType valueType, WasmMutabilityType mutability)
         {
-            ValueType = valueType;
-            Mutability = mutability;
+            _valueType = valueType;
+            _mutability = mutability;
         }
 
         public override int Encode(Span<byte> buffer)
         {
-            buffer[0] = (byte)ValueType;
-            buffer[1] = (byte)Mutability;
+            buffer[0] = (byte)_valueType;
+            buffer[1] = (byte)_mutability;
             return 2;
         }
 
@@ -239,9 +239,9 @@ namespace ILCompiler.ObjectWriter
   
     public class WasmMemoryType : WasmImportType
     {
-        WasmLimitType LimitType;
-        uint Min;
-        uint? Max;
+        WasmLimitType _limitType;
+        uint _min;
+        uint? _max;
 
         public WasmMemoryType(WasmLimitType limitType, uint min, uint? max = null)
         {
@@ -250,29 +250,29 @@ namespace ILCompiler.ObjectWriter
                 throw new ArgumentException("Max must be provided when LimitType is HasMinAndMax");
             }
 
-            LimitType = limitType;
-            Min = min;
-            Max = max;
+            _limitType = limitType;
+            _min = min;
+            _max = max;
         }
 
         public override int Encode(Span<byte> buffer)
         {
             int pos = 0;
-            buffer[pos++] = (byte)LimitType;
-            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), Min);
-            if (LimitType == WasmLimitType.HasMinAndMax)
+            buffer[pos++] = (byte)_limitType;
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), _min);
+            if (_limitType == WasmLimitType.HasMinAndMax)
             {
-                pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), Max!.Value);
+                pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), _max!.Value);
             }
             return pos;
         }
 
         public override int EncodeSize()
         {
-            uint size = 1 + DwarfHelper.SizeOfULEB128(Min);
-            if (LimitType == WasmLimitType.HasMinAndMax)
+            uint size = 1 + DwarfHelper.SizeOfULEB128(_min);
+            if (_limitType == WasmLimitType.HasMinAndMax)
             {
-                size += DwarfHelper.SizeOfULEB128(Max!.Value);
+                size += DwarfHelper.SizeOfULEB128(_max!.Value);
             }
             return (int)size;
         }
@@ -297,7 +297,5 @@ namespace ILCompiler.ObjectWriter
 
         public int Encode(Span<byte> buffer) => Import.Encode(buffer);
         public int EncodeSize() => Import.EncodeSize();
-
-#nullable disable
     }
 }
