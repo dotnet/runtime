@@ -1573,13 +1573,15 @@ void Compiler::optDebugCheckAssertion(const AssertionDsc& assertion) const
             break;
 
         case O2K_ZEROOBJ:
-        {
             // We only make these assertion for stores (not control flow).
             assert(assertion.assertionKind == OAK_EQUAL);
             // We use "optLocalAssertionIsEqualOrNotEqual" to find these.
             assert(assertion.op2.u1.iconVal == 0);
-        }
-        break;
+            break;
+
+        case O2K_CONST_DOUBLE:
+            assert(!FloatingPointUtils::isNaN(assertion.op2.dconVal));
+            break;
 
         default:
             // for all other 'assertion.op2.kind' values we don't check anything
