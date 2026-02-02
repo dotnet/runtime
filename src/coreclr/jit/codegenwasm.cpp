@@ -1192,7 +1192,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     // TODO-WASM: refactor once we have implemented other cases invoking throw helpers
     if (compiler->fgUseThrowHelperBlocks())
     {
-        Compiler::AddCodeDsc* const add = compiler->fgFindExcptnTarget(SCK_NULL_CHECK, compiler->compCurBB);
+        Compiler::AddCodeDsc* const add = compiler->fgGetExcptnTarget(SCK_NULL_CHECK, compiler->compCurBB);
 
         if (add == nullptr)
         {
