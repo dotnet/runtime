@@ -659,7 +659,18 @@ namespace System
             returnType ??= typeof(void);
             parameterTypes ??= [];
             callingConventions ??= [];
-            return new SignatureFunctionPointerType(returnType, parameterTypes, isUnmanaged, callingConventions);
+
+            foreach (Type param in parameterTypes)
+                ArgumentNullException.ThrowIfNull(param, nameof(parameterTypes));
+
+            foreach (Type callConv in callingConventions)
+                ArgumentNullException.ThrowIfNull(callConv, nameof(callingConventions));
+
+            return new SignatureFunctionPointerType(
+                returnType,
+                (Type[])parameterTypes.Clone(),
+                isUnmanaged,
+                (Type[])callingConventions.Clone());
         }
 
         /// <summary>
@@ -709,7 +720,17 @@ namespace System
             ArgumentNullException.ThrowIfNull(type);
             requiredCustomModifiers ??= [];
             optionalCustomModifiers ??= [];
-            return new SignatureModifiedType(type, requiredCustomModifiers, optionalCustomModifiers);
+
+            foreach (Type modReq in requiredCustomModifiers)
+                ArgumentNullException.ThrowIfNull(modReq, nameof(requiredCustomModifiers));
+
+            foreach (Type modOpt in optionalCustomModifiers)
+                ArgumentNullException.ThrowIfNull(modOpt, nameof(optionalCustomModifiers));
+
+            return new SignatureModifiedType(
+                type,
+                (Type[])requiredCustomModifiers.Clone(),
+                (Type[])optionalCustomModifiers.Clone());
         }
 
         public virtual Type MakePointerType() => throw new NotSupportedException();
