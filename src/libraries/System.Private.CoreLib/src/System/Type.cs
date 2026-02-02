@@ -657,17 +657,14 @@ namespace System
         public static Type MakeFunctionPointerSignatureType(Type? returnType, Type[]? parameterTypes, bool isUnmanaged = false, Type[]? callingConventions = null)
         {
             returnType ??= typeof(void);
-            parameterTypes ??= [];
-            callingConventions ??= [];
+            parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
+            callingConventions = (callingConventions != null) ? (Type[])callingConventions.Clone() : [];
 
-            parameterTypes = (Type[])parameterTypes.Clone();
-            callingConventions = (Type[])callingConventions.Clone();
+            for (int i = 0; i < parameterTypes.Length; i++)
+                ArgumentNullException.ThrowIfNull(parameterTypes[i], nameof(parameterTypes));
 
-            foreach (Type param in parameterTypes)
-                ArgumentNullException.ThrowIfNull(param, nameof(parameterTypes));
-
-            foreach (Type callConv in callingConventions)
-                ArgumentNullException.ThrowIfNull(callConv, nameof(callingConventions));
+            for (int i = 0; i < callingConventions.Length; i++)
+                ArgumentNullException.ThrowIfNull(callingConventions[i], nameof(callingConventions));
 
             bool builtInCallConv = false;
             if (callingConventions.Length == 1)
@@ -743,17 +740,14 @@ namespace System
         public static Type MakeModifiedSignatureType(Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
         {
             ArgumentNullException.ThrowIfNull(type);
-            requiredCustomModifiers ??= [];
-            optionalCustomModifiers ??= [];
+            requiredCustomModifiers = (requiredCustomModifiers != null) ? (Type[])requiredCustomModifiers.Clone() : [];
+            optionalCustomModifiers = (optionalCustomModifiers != null) ? (Type[])optionalCustomModifiers.Clone() : [];
 
-            requiredCustomModifiers = (Type[])requiredCustomModifiers.Clone();
-            optionalCustomModifiers = (Type[])optionalCustomModifiers.Clone();
+            for (int i = 0; i < requiredCustomModifiers.Length; i++)
+                ArgumentNullException.ThrowIfNull(requiredCustomModifiers[i], nameof(requiredCustomModifiers));
 
-            foreach (Type modReq in requiredCustomModifiers)
-                ArgumentNullException.ThrowIfNull(modReq, nameof(requiredCustomModifiers));
-
-            foreach (Type modOpt in optionalCustomModifiers)
-                ArgumentNullException.ThrowIfNull(modOpt, nameof(optionalCustomModifiers));
+            for (int i = 0; i < optionalCustomModifiers.Length; i++)
+                ArgumentNullException.ThrowIfNull(optionalCustomModifiers[i], nameof(optionalCustomModifiers));
 
             return new SignatureModifiedType(
                 type,
