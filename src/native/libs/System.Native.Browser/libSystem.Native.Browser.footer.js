@@ -22,7 +22,7 @@ function libDotnetFactory() {
         "SystemJS_ExecuteTimerCallback",
         "SystemJS_ExecuteBackgroundJobCallback"
     ];
-    const libDotnet = {
+    const mergeDotnet = {
         $DOTNET: {
             selfInitialize: () => {
                 if (typeof dotnetInternals !== "undefined") {
@@ -40,11 +40,11 @@ function libDotnetFactory() {
     for (const exportName of Reflect.ownKeys(exports)) {
         const name = String(exportName);
         if (name === "dotnetInitializeModule") continue;
-        libDotnet[name] = exports[name];
+        mergeDotnet[name] = exports[name];
     }
 
-    autoAddDeps(libDotnet, "$DOTNET");
-    addToLibrary(libDotnet);
+    autoAddDeps(mergeDotnet, "$DOTNET");
+    addToLibrary(mergeDotnet);
 }
 
 libDotnetFactory();

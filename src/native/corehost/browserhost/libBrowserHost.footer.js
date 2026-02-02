@@ -32,7 +32,7 @@ function libBrowserHostFactory() {
         "$libBrowserHostFn",
         ...explicitDeps
     ];
-    const libBrowserHost = {
+    const mergeBrowserHost = {
         $BROWSER_HOST: {
             selfInitialize: () => {
                 if (typeof dotnetInternals !== "undefined") {
@@ -45,7 +45,7 @@ function libBrowserHostFactory() {
                 }
             },
         },
-        $libBrowserHostFn: libBrowserHost,
+        $libBrowserHostFn: mergeBrowserHost,
         $BROWSER_HOST__postset: "BROWSER_HOST.selfInitialize()",
         $BROWSER_HOST__deps: commonDeps,
     };
@@ -55,17 +55,17 @@ function libBrowserHostFactory() {
     for (const exportName of Reflect.ownKeys(exports)) {
         const name = String(exportName);
         if (name === "dotnetInitializeModule") continue;
-        libBrowserHost[name] = () => "dummy";
+        mergeBrowserHost[name] = () => "dummy";
         assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
     }
     for (const importName of explicitDeps) {
         explicitImportsBuilder += `_${importName}();\n`;
     }
-    libBrowserHost.$BROWSER_HOST.assignExports = new Function("exports", assignExportsBuilder);
-    libBrowserHost.$BROWSER_HOST.explicitImports = new Function(explicitImportsBuilder);
+    mergeBrowserHost.$BROWSER_HOST.assignExports = new Function("exports", assignExportsBuilder);
+    mergeBrowserHost.$BROWSER_HOST.explicitImports = new Function(explicitImportsBuilder);
 
-    autoAddDeps(libBrowserHost, "$BROWSER_HOST");
-    addToLibrary(libBrowserHost);
+    autoAddDeps(mergeBrowserHost, "$BROWSER_HOST");
+    addToLibrary(mergeBrowserHost);
 
     function trim() {
         return -1;

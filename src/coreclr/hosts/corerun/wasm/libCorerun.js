@@ -10,7 +10,7 @@ function libCoreRunFactory() {
         "$NODEFS",
         "$NODERAWFS",
     ];
-    const libCoreRun = {
+    const mergeCoreRun = {
         $CORERUN: {
             selfInitialize: () => {
                 const browserVirtualAppBase = "/";// keep in sync other places that define browserVirtualAppBase
@@ -40,8 +40,8 @@ function libCoreRunFactory() {
         }
     }
 
-    autoAddDeps(libCoreRun, "$CORERUN");
-    addToLibrary(libCoreRun);
+    autoAddDeps(mergeCoreRun, "$CORERUN");
+    addToLibrary(mergeCoreRun);
     if (LibraryManager.library.$NODERAWFS) {
         Object.assign(LibraryManager.library.$NODERAWFS, patchNODERAWFS);
     }

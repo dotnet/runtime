@@ -26,7 +26,7 @@ function libDotnetInteropFactory() {
         "SystemInteropJS_BindAssemblyExports",
         "SystemInteropJS_CallJSExport"
     ];
-    const libDotnetInterop = {
+    const mergeDotnetInterop = {
         $DOTNET_INTEROP: {
             selfInitialize: () => {
                 if (typeof dotnetInternals !== "undefined") {
@@ -44,11 +44,11 @@ function libDotnetInteropFactory() {
     for (const exportName of Reflect.ownKeys(exports)) {
         const name = String(exportName);
         if (name === "dotnetInitializeModule" || name === "gitHash") continue;
-        libDotnetInterop[name] = exports[name];
+        mergeDotnetInterop[name] = exports[name];
     }
 
-    autoAddDeps(libDotnetInterop, "$DOTNET_INTEROP");
-    addToLibrary(libDotnetInterop);
+    autoAddDeps(mergeDotnetInterop, "$DOTNET_INTEROP");
+    addToLibrary(mergeDotnetInterop);
 }
 
 libDotnetInteropFactory();

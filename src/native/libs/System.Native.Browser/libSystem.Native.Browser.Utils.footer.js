@@ -27,7 +27,7 @@ function libBrowserUtilsFactory() {
         "$readI53FromI64",
         "$writeI53ToI64"
     ];
-    const libBrowserUtils = {
+    const mergeBrowserUtils = {
         $BROWSER_UTILS: {
             selfInitialize: () => {
                 if (typeof dotnetInternals !== "undefined") {
@@ -39,7 +39,7 @@ function libBrowserUtilsFactory() {
                 }
             },
         },
-        $libBrowserUtilsFn: libBrowserUtils,
+        $libBrowserUtilsFn: mergeBrowserUtils,
         $BROWSER_UTILS__postset: "BROWSER_UTILS.selfInitialize()",
         $BROWSER_UTILS__deps: commonDeps,
     };
@@ -51,12 +51,12 @@ function libBrowserUtilsFactory() {
         if (name === "dotnetInternals") continue;
         if (name === "Module") continue;
         const emName = "$" + name;
-        libBrowserUtils[emName] = exports._ems_ambient_[exportName];
+        mergeBrowserUtils[emName] = exports._ems_ambient_[exportName];
         commonDeps.push(emName);
     }
 
-    autoAddDeps(libBrowserUtils, "$BROWSER_UTILS");
-    addToLibrary(libBrowserUtils);
+    autoAddDeps(mergeBrowserUtils, "$BROWSER_UTILS");
+    addToLibrary(mergeBrowserUtils);
 }
 
 libBrowserUtilsFactory();
