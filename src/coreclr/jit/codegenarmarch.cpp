@@ -553,6 +553,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genTableBasedSwitch(treeNode);
             break;
 
+        case GT_NONLOCAL_JMP:
+            genNonLocalJmp(treeNode->AsUnOp());
+            break;
+
 #ifdef TARGET_ARM
         case GT_LONG:
             assert(treeNode->isUsedFromReg());

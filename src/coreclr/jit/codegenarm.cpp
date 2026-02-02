@@ -676,7 +676,18 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 //
 void CodeGen::genFtnEntry(GenTree* treeNode)
 {
-    NYI_ARM64("FTN_ENTRY");
+    NYI_ARM("FTN_ENTRY");
+}
+
+//------------------------------------------------------------------------
+// genNonLocalJmp: Generate code for a non-local jump (indirect branch)
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    NYI_ARM("NONLOCAL_JMP");
 }
 
 //------------------------------------------------------------------------

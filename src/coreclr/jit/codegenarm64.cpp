@@ -3765,7 +3765,22 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 //
 void CodeGen::genFtnEntry(GenTree* treeNode)
 {
-    NYI_ARM64("FTN_ENTRY");
+    // Emit an adr instruction to load the address of the first basic block (function entry)
+    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, compiler->fgFirstBB, treeNode->GetRegNum());
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genNonLocalJmp: Generate code for a non-local jump (indirect branch)
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    genConsumeOperands(tree->AsOp());
+    regNumber targetReg = tree->gtGetOp1()->GetRegNum();
+    GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, targetReg);
 }
 
 //------------------------------------------------------------------------
