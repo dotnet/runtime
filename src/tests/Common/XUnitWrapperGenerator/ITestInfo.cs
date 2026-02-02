@@ -153,9 +153,9 @@ public sealed class ConditionalTest : ITestInfo
         : this(innerTest, GetPlatformConditionFromTestPlatform(platform))
     {
     }
-    
+
     public ConditionalTest(ITestInfo innerTest, string condition, Xunit.TestPlatforms platform)
-        :this(innerTest, $"{(condition.Length == 0 ? "true" : condition)} && ({GetPlatformConditionFromTestPlatform(platform)})")
+        : this(innerTest, $"{(condition.Length == 0 ? "true" : condition)} && ({GetPlatformConditionFromTestPlatform(platform)})")
     {
     }
 

@@ -956,7 +956,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             conditions.Add($"!{ConditionClass}.IsGCStressC");
         }
-        
+
         options.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
         Xunit.TestPlatforms targetPlatform = GetPlatformForTargetOS(targetOS);
 
