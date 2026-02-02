@@ -1334,8 +1334,6 @@ public:
         if ((*use)->GeneratesAssertion())
         {
             AssertionInfo info = (*use)->GetAssertionInfo();
-            // Normally, we extend the assertions by calling optImpliedAssertions, but that
-            // doesn't seem to improve anything here, so we just add the assertion directly.
             BitVecOps::AddElemD(m_compiler->apTraits, *m_pAssertions, info.GetAssertionIndex() - 1);
         }
         return fgWalkResult::WALK_CONTINUE;
