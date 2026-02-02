@@ -44,7 +44,7 @@ public class ElidedBoundsChecks
             ];
             return log2ToPow10[(int)ulong.Log2(value)];
         }
-        return 0;
+        return 1;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -78,9 +78,6 @@ public class ElidedBoundsChecks
             return 0;
 
         if (CountDigits(1) != 1)
-            return 0;
-
-        if (CountDigits(10000000000000000000UL) != 20)
             return 0;
 
         if (AndByConst(0) != 1)
