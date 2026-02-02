@@ -13,7 +13,7 @@ import { AssetEntry } from "./types";
 import { VoidPtr } from "./types/emscripten";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
-export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array): void {
+export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8Array): void {
     mono_log_debug(() => `Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
     const mark = startMeasure();
 
@@ -82,7 +82,7 @@ export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Ar
     ++loaderHelpers.actual_instantiated_assets_count;
 }
 
-export async function instantiate_symbols_asset(pendingAsset: AssetEntryInternal): Promise<void> {
+export async function instantiate_symbols_asset (pendingAsset: AssetEntryInternal): Promise<void> {
     try {
         const response = await pendingAsset.pendingDownloadInternal!.response;
         const text = await response.text();
@@ -92,7 +92,7 @@ export async function instantiate_symbols_asset(pendingAsset: AssetEntryInternal
     }
 }
 
-export async function wait_for_all_assets() {
+export async function wait_for_all_assets () {
     // wait for all assets in memory
     await runtimeHelpers.allAssetsInMemory.promise;
     if (runtimeHelpers.config.assets) {
@@ -104,6 +104,6 @@ export async function wait_for_all_assets() {
 }
 
 // Used by the debugger to enumerate loaded dlls and pdbs
-export function mono_wasm_get_loaded_files(): string[] {
+export function mono_wasm_get_loaded_files (): string[] {
     return loaderHelpers.loadedFiles;
 }
