@@ -123,48 +123,7 @@ namespace Mono.Linker
 
         public static bool IsDeclaredOnType(this MethodReference method, string fullTypeName)
         {
-            // Check if the method is declared on the specified type
-            if (method.DeclaringType.IsTypeOf(fullTypeName))
-                return true;
-
-            // For virtual/override methods, check if any overridden method is declared on the specified type
-            // This handles cases where intrinsics are defined on base virtual methods (e.g., Type.BaseType)
-            // and we want the intrinsic to work for overrides (e.g., RuntimeTypeInfo.BaseType)
-#pragma warning disable RS0030 // Cecil's Resolve is banned - needed to check virtual method overrides
-            if (method.Resolve() is not MethodDefinition methodDef || !methodDef.IsVirtual)
-                return false;
-
-            // Walk up the inheritance hierarchy to check if this method overrides
-            // a virtual method declared on the target type
-            TypeDefinition? currentType = methodDef.DeclaringType.BaseType?.Resolve();
-            while (currentType != null)
-            {
-                if (currentType.IsTypeOf(fullTypeName))
-                {
-                    // Check if this type has a matching virtual method
-                    foreach (var baseMethod in currentType.Methods)
-                    {
-                        if (baseMethod.IsVirtual &&
-                            baseMethod.Name == methodDef.Name &&
-                            baseMethod.HasParameters == methodDef.HasParameters &&
-                            (!baseMethod.HasParameters || CompareParameterCounts(baseMethod, methodDef)))
-                        {
-                            return true;
-                        }
-                    }
-                }
-                currentType = currentType.BaseType?.Resolve();
-            }
-#pragma warning restore RS0030
-
-            return false;
-        }
-
-        private static bool CompareParameterCounts(MethodDefinition method1, MethodDefinition method2)
-        {
-#pragma warning disable RS0030 // MethodDefinition.Parameters is accessed in this helper method
-            return method1.Parameters.Count == method2.Parameters.Count;
-#pragma warning restore RS0030
+            return method.DeclaringType.IsTypeOf(fullTypeName);
         }
 
         public static bool HasImplicitThis(this MethodReference method)
