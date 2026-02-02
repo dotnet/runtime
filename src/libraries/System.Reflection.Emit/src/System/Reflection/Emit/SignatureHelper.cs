@@ -85,7 +85,8 @@ namespace System.Reflection.Emit
             new BlobEncoder(methodSignature).MethodSignature(convention, genParamCount, isInstance).
                     Parameters(paramsLength, out ReturnTypeEncoder retEncoder, out ParametersEncoder parEncoder);
 
-            WriteReturnTypeCustomModifiers(retEncoder.CustomModifiers(), returnTypeRequiredModifiers, returnTypeOptionalModifiers, module);
+            WriteReturnTypeCustomModifiers(retEncoder.CustomModifiers(), returnTypeRequiredModifiers ?? returnType?.GetRequiredCustomModifiers(),
+                returnTypeOptionalModifiers ?? returnType?.GetOptionalCustomModifiers(), module);
 
             if (returnType != null && returnType != module.GetTypeFromCoreAssembly(CoreTypeId.Void))
             {
@@ -156,15 +157,15 @@ namespace System.Reflection.Emit
                 {
                     ParameterTypeEncoder encoder = parameterEncoder.AddParameter();
 
-                    if (requiredModifiers != null && requiredModifiers.Length > i && requiredModifiers[i] != null)
-                    {
-                        WriteCustomModifiers(encoder.CustomModifiers(), requiredModifiers[i], isOptional: false, module);
-                    }
+                    Type[] modreqs = requiredModifiers != null && requiredModifiers.Length > i && requiredModifiers[i] is { } mr
+                        ? mr
+                        : parameters[i].GetRequiredCustomModifiers();
+                    WriteCustomModifiers(encoder.CustomModifiers(), modreqs, isOptional: false, module);
 
-                    if (optionalModifiers != null && optionalModifiers.Length > i && optionalModifiers[i] != null)
-                    {
-                        WriteCustomModifiers(encoder.CustomModifiers(), optionalModifiers[i], isOptional: true, module);
-                    }
+                    Type[] modopts = optionalModifiers != null && optionalModifiers.Length > i && optionalModifiers[i] is { } mo
+                        ? mo
+                        : parameters[i].GetOptionalCustomModifiers();
+                    WriteCustomModifiers(encoder.CustomModifiers(), modopts, isOptional: true, module);
 
                     WriteSignatureForType(encoder.Type(), parameters[i], module);
                 }
