@@ -6774,7 +6774,7 @@ public:
 
     struct AddCodeDsc
     {
-        // After fgCreateThrowHelperBlocks, the block to which
+        // The block to which
         // we jump to raise the exception.
         BasicBlock*     acdDstBlk;
 
@@ -6838,16 +6838,15 @@ public:
 private:
     static unsigned acdHelper(SpecialCodeKind codeKind);
 
-    bool        fgRngChkThrowAdded = false;
     AddCodeDscMap* fgAddCodeDscMap = nullptr;
-
-    void fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind);
-    PhaseStatus fgCreateThrowHelperBlocks();
+    AddCodeDsc* fgCreateAddCodeDsc(BasicBlock* fromBlock, SpecialCodeKind kind);
+    void fgCreateThrowHelperBlock(AddCodeDsc* add);
 
 public:
 
+    bool fgRngChkThrowAdded = false;
     bool fgHasAddCodeDscMap() const { return fgAddCodeDscMap != nullptr; }
-    AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock);
+    AddCodeDsc* fgGetExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock, bool createIfNeeded = false);
     bool fgUseThrowHelperBlocks();
     void fgCreateThrowHelperBlockCode(AddCodeDsc* add);
     void fgSequenceLocals(Statement* stmt);
@@ -8488,7 +8487,7 @@ public:
         {
             if (mustExpand)
             {
-                implLimitation();
+                implReadyToRunUnsupported();
             }
             return true;
         }
@@ -10465,7 +10464,6 @@ public:
         /*  don't care about performance at all */                                              \
                                                                                                 \
         STRESS_MODE(FORCE_INLINE) /* Treat every method as AggressiveInlining */                \
-        STRESS_MODE(CHK_FLOW_UPDATE)                                                            \
         STRESS_MODE(EMITTER)                                                                    \
         STRESS_MODE(CHK_REIMPORT)                                                               \
         STRESS_MODE(GENERIC_CHECK)                                                              \

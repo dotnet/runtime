@@ -9,4 +9,7 @@
   <ItemGroup>
     <Compile Include="NullHandle.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>
