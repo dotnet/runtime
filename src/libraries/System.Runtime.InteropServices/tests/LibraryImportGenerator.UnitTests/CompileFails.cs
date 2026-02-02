@@ -798,13 +798,9 @@ namespace LibraryImportGenerator.UnitTests
             } };
             yield return new object[] { ID(), CodeSnippets.RefReturn("int"), new[]
             {
-                DiagnosticResult.CompilerError("CS8795")
-                    .WithLocation(0),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
                     .WithLocation(0)
                     .WithArguments("ref return", "Basic.RefReturn()"),
-                DiagnosticResult.CompilerError("CS8795")
-                    .WithLocation(1),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
                     .WithLocation(1)
                     .WithArguments("ref return", "Basic.RefReadonlyReturn()"),

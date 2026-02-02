@@ -8,7 +8,8 @@ using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 using Xunit;
 using static Microsoft.Interop.UnitTests.TestUtils;
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator, Microsoft.Interop.Analyzers.LibraryImportDiagnosticsAnalyzer>;
+using VerifyAnalyzerCS = Microsoft.Interop.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.LibraryImportDiagnosticsAnalyzer>;
+using VerifyGeneratorCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator, Microsoft.Interop.Analyzers.LibraryImportDiagnosticsAnalyzer>;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -122,14 +123,8 @@ namespace LibraryImportGenerator.UnitTests
         public async Task VerifyByValueMarshallingAttributeUsageInfoMessages(string id, string source, DiagnosticResult[] diagnostics)
         {
             _ = id;
-            VerifyCS.Test test = new(referenceAncillaryInterop: false)
-            {
-                TestCode = source,
-                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
-            };
-            test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
-            test.ExpectedDiagnostics.AddRange(diagnostics);
-            await test.RunAsync();
+            // Use analyzer verifier since diagnostics are now reported by the analyzer, not the generator
+            await VerifyAnalyzerCS.VerifyAnalyzerAsync(source, diagnostics);
         }
     }
 }
