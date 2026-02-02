@@ -332,7 +332,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void Dispose()
         {
-            _modulesWhichMustBeIndexable.Clear();
+            _modulesWhichMustBeIndexable = null;
         }
     }
 }
