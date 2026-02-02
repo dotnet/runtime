@@ -17,6 +17,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial void InitializeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
 
+        [SuppressGCTransition]
         [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial void WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
 
