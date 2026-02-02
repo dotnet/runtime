@@ -455,6 +455,11 @@ namespace System
         /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static TimeOnly Parse(ReadOnlySpan<char> s, IFormatProvider? provider = default, DateTimeStyles style = DateTimeStyles.None)
         {
+            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
+            }
+
             ParseFailureKind result = TryParseInternal(s, provider, style, out TimeOnly timeOnly);
             if (result != ParseFailureKind.None)
             {
@@ -478,6 +483,11 @@ namespace System
         /// <returns>An object that is equivalent to the time contained in s, as specified by format, provider, and style.</returns>
         public static TimeOnly ParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider = default, DateTimeStyles style = DateTimeStyles.None)
         {
+            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
+            }
+
             ParseFailureKind result = TryParseExactInternal(s, format, provider, style, out TimeOnly timeOnly);
             if (result != ParseFailureKind.None)
             {
@@ -507,6 +517,25 @@ namespace System
         /// <returns>An object that is equivalent to the time contained in s, as specified by format, provider, and style.</returns>
         public static TimeOnly ParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] string[] formats, IFormatProvider? provider, DateTimeStyles style = DateTimeStyles.None)
         {
+            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
+            }
+
+            if (formats == null)
+            {
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
+            }
+
+            // Validate formats array for null/empty entries upfront
+            for (int i = 0; i < formats.Length; i++)
+            {
+                if (string.IsNullOrEmpty(formats[i]))
+                {
+                    throw new FormatException(SR.Argument_BadFormatSpecifier);
+                }
+            }
+
             ParseFailureKind result = TryParseExactInternal(s, formats, provider, style, out TimeOnly timeOnly);
             if (result != ParseFailureKind.None)
             {
@@ -604,25 +633,16 @@ namespace System
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
         {
-            ParseFailureKind failureKind = TryParseInternal(s, provider, style, out result);
-            if (failureKind != ParseFailureKind.None)
+            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
             {
-                if (failureKind == ParseFailureKind.Argument_InvalidDateStyles)
-                {
-                    ThrowOnError(failureKind, s);
-                }
-                return false;
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
             }
-            return true;
+
+            ParseFailureKind failureKind = TryParseInternal(s, provider, style, out result);
+            return failureKind == ParseFailureKind.None;
         }
         private static ParseFailureKind TryParseInternal(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
         {
-            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
-            {
-                result = default;
-                return ParseFailureKind.Argument_InvalidDateStyles;
-            }
-
             DateTimeResult dtResult = default;
 
             dtResult.Init(s);
@@ -665,12 +685,17 @@ namespace System
         /// <returns>true if s was converted successfully; otherwise, false.</returns>
         public static bool TryParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
         {
+            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
+            }
+
             ParseFailureKind failureKind = TryParseExactInternal(s, format, provider, style, out result);
             if (failureKind != ParseFailureKind.None)
             {
-                if (failureKind == ParseFailureKind.Argument_InvalidDateStyles || failureKind == ParseFailureKind.Argument_BadFormatSpecifier)
+                if (failureKind == ParseFailureKind.Argument_BadFormatSpecifier)
                 {
-                    ThrowOnError(failureKind, s);
+                    throw new FormatException(SR.Argument_BadFormatSpecifier);
                 }
                 return false;
             }
@@ -679,12 +704,6 @@ namespace System
 
         private static ParseFailureKind TryParseExactInternal(ReadOnlySpan<char> s, ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
         {
-            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
-            {
-                result = default;
-                return ParseFailureKind.Argument_InvalidDateStyles;
-            }
-
             if (format.Length == 1)
             {
                 switch (format[0] | 0x20)
@@ -742,39 +761,38 @@ namespace System
         /// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
         public static bool TryParseExact(ReadOnlySpan<char> s, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
         {
-            ParseFailureKind failureKind = TryParseExactInternal(s, formats, provider, style, out result);
-            if (failureKind != ParseFailureKind.None)
+            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
             {
-                if (failureKind == ParseFailureKind.Argument_InvalidDateStyles || failureKind == ParseFailureKind.Argument_BadFormatSpecifier)
-                {
-                    ThrowOnError(failureKind, s);
-                }
-                return false;
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
             }
-            return true;
+
+            if (formats == null)
+            {
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
+            }
+
+            // Validate formats array for null/empty entries upfront
+            for (int i = 0; i < formats.Length; i++)
+            {
+                if (string.IsNullOrEmpty(formats[i]))
+                {
+                    throw new FormatException(SR.Argument_BadFormatSpecifier);
+                }
+            }
+
+            return TryParseExactInternal(s, formats, provider, style, out result) == ParseFailureKind.None;
         }
 
         private static ParseFailureKind TryParseExactInternal(ReadOnlySpan<char> s, string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out TimeOnly result)
         {
-            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0 || formats == null)
-            {
-                result = default;
-                return ParseFailureKind.Argument_InvalidDateStyles;
-            }
-
             DateTimeFormatInfo dtfi = DateTimeFormatInfo.GetInstance(provider);
 
-            for (int i = 0; i < formats.Length; i++)
+            for (int i = 0; i < formats!.Length; i++)
             {
                 DateTimeFormatInfo dtfiToUse = dtfi;
                 string? format = formats[i];
-                if (string.IsNullOrEmpty(format))
-                {
-                    result = default;
-                    return ParseFailureKind.Argument_BadFormatSpecifier;
-                }
 
-                if (format.Length == 1)
+                if (format!.Length == 1)
                 {
                     switch (format[0] | 0x20)
                     {
