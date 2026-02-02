@@ -1297,8 +1297,12 @@ namespace ILLink.Shared.TrimAnalysis
                         }
                         else if (value is SystemTypeValue systemTypeValue)
                         {
-                            if (TryGetGenericTypeDefinition(systemTypeValue.RepresentedType, out var genericTypeDefinition))
-                                AddReturnValue(new SystemTypeValue(genericTypeDefinition.Value));
+                            if (TryGetGenericTypeDefinition(systemTypeValue.RepresentedType, out var _))
+                            {
+                                // Return a value with All annotations to prevent IL2072 when passed to methods requiring annotations
+                                // The GenericTypeDefinition will be marked through this value
+                                AddReturnValue(_annotations.GetMethodReturnValue(calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.All));
+                            }
                             else
                                 AddReturnValue(annotatedMethodReturnValue);
                         }
