@@ -31,7 +31,7 @@ namespace System.Formats.Tar
                 Interop.Kernel32.GenericOperations.GENERIC_READ,
                 FileShare.ReadWrite | FileShare.Delete,
                 FileMode.Open,
-                Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS);
+                Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS | Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT);
 
             if (handle.IsInvalid)
             {
