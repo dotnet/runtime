@@ -254,6 +254,49 @@ Or use the GitHub CLI:
 gh issue list --repo dotnet/runtime --label "Known Build Error" --state open --search "FileSystemWatcher"
 ```
 
+## MihuBot Semantic Search
+
+The script can optionally use [MihuBot](https://github.com/MihaZupan/MihuBot)'s semantic search to find related issues and discussions in dotnet repositories. This provides broader context beyond just "Known Build Error" labeled issues.
+
+### Enabling MihuBot Search
+
+```powershell
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -SearchMihuBot
+```
+
+### How It Works
+
+1. When a test failure is detected, the script extracts test names and error patterns
+2. It calls MihuBot's MCP endpoint to perform a semantic search across dotnet repositories
+3. Results include open and closed issues/PRs that may be related to the failure
+4. Results are deduplicated against the Known Build Error search to avoid duplicates
+
+### Example Output
+
+```
+  Known Issues:
+    #103584: Failing test due to no detected IO events in 'FileSystemWatcherTest.ExecuteAndVerifyEvents'
+    https://github.com/dotnet/runtime/issues/103584
+
+  Related Issues (MihuBot):
+    #98234: FileSystemWatcher intermittent failures on Linux [closed]
+    https://github.com/dotnet/runtime/issues/98234
+    #101456: Improve FileSystemWatcher reliability [open]
+    https://github.com/dotnet/runtime/issues/101456
+```
+
+### Benefits
+
+- **Semantic search**: Finds conceptually related issues, not just exact text matches
+- **Cross-repository**: Searches across all dotnet repositories
+- **Historical context**: Includes closed issues/PRs to show how similar problems were resolved
+- **Discussion context**: Can include issue and PR comments for deeper understanding
+
+### Requirements
+
+- Internet access to reach `https://mihubot.xyz/mcp`
+- No authentication required
+
 ## Build Definition IDs
 
 Key Azure DevOps build definitions for dotnet/runtime:

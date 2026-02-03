@@ -55,6 +55,10 @@
 .PARAMETER ContinueOnError
     Continue processing remaining jobs if an API call fails, showing partial results.
 
+.PARAMETER SearchMihuBot
+    Search MihuBot's semantic database for related issues and discussions.
+    Uses https://mihubot.xyz/mcp to find conceptually related issues across dotnet repositories.
+
 .EXAMPLE
     .\Get-HelixFailures.ps1 -BuildId 1276327
 
@@ -66,6 +70,9 @@
 
 .EXAMPLE
     .\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -WorkItem "iOS.Device.Aot.Test"
+
+.EXAMPLE
+    .\Get-HelixFailures.ps1 -BuildId 1276327 -SearchMihuBot
 
 .EXAMPLE
     .\Get-HelixFailures.ps1 -ClearCache
@@ -98,7 +105,8 @@ param(
     [int]$ContextLines = 0,
     [switch]$NoCache,
     [int]$CacheTTLSeconds = 30,
-    [switch]$ContinueOnError
+    [switch]$ContinueOnError,
+    [switch]$SearchMihuBot
 )
 
 $ErrorActionPreference = "Stop"
@@ -822,6 +830,88 @@ function Extract-HelixLogUrls {
 
 #region Known Issues Search
 
+function Search-MihuBotIssues {
+    param(
+        [string[]]$SearchTerms,
+        [string]$ExtraContext = "",
+        [string]$Repository = "dotnet/runtime",
+        [bool]$IncludeOpen = $true,
+        [bool]$IncludeClosed = $true,
+        [int]$TimeoutSec = 30
+    )
+
+    $results = @()
+
+    if (-not $SearchTerms -or $SearchTerms.Count -eq 0) {
+        return $results
+    }
+
+    try {
+        # MihuBot MCP endpoint - call as JSON-RPC style request
+        $mcpUrl = "https://mihubot.xyz/mcp"
+
+        # Build the request payload matching the MCP tool schema
+        $payload = @{
+            jsonrpc = "2.0"
+            method = "tools/call"
+            id = [guid]::NewGuid().ToString()
+            params = @{
+                name = "search_dotnet_repos"
+                arguments = @{
+                    repository = $Repository
+                    searchTerms = $SearchTerms
+                    extraSearchContext = $ExtraContext
+                    includeOpen = $IncludeOpen
+                    includeClosed = $IncludeClosed
+                    includeIssues = $true
+                    includePullRequests = $true
+                    includeComments = $false
+                }
+            }
+        } | ConvertTo-Json -Depth 10
+
+        Write-Verbose "Calling MihuBot MCP endpoint with terms: $($SearchTerms -join ', ')"
+
+        $response = Invoke-RestMethod -Uri $mcpUrl -Method Post -Body $payload -ContentType "application/json" -TimeoutSec $TimeoutSec
+
+        # Parse MCP response
+        if ($response.result -and $response.result.content) {
+            foreach ($content in $response.result.content) {
+                if ($content.type -eq "text" -and $content.text) {
+                    $issueData = $content.text | ConvertFrom-Json -ErrorAction SilentlyContinue
+                    if ($issueData) {
+                        foreach ($issue in $issueData) {
+                            $results += @{
+                                Number = $issue.Number
+                                Title = $issue.Title
+                                Url = $issue.Url
+                                Repository = $issue.Repository
+                                State = $issue.State
+                                Source = "MihuBot"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        # Deduplicate by issue number and repo
+        $unique = @{}
+        foreach ($issue in $results) {
+            $key = "$($issue.Repository)#$($issue.Number)"
+            if (-not $unique.ContainsKey($key)) {
+                $unique[$key] = $issue
+            }
+        }
+
+        return $unique.Values | Select-Object -First 5
+    }
+    catch {
+        Write-Verbose "MihuBot search failed: $_"
+        return @()
+    }
+}
+
 function Search-KnownIssues {
     param(
         [string]$TestName,
@@ -941,7 +1031,8 @@ function Show-KnownIssues {
     param(
         [string]$TestName = "",
         [string]$ErrorMessage = "",
-        [string]$Repository = $script:Repository
+        [string]$Repository = $script:Repository,
+        [switch]$IncludeMihuBot
     )
 
     # Search for known issues if we have a test name or error
@@ -952,6 +1043,54 @@ function Show-KnownIssues {
             foreach ($issue in $knownIssues) {
                 Write-Host "    #$($issue.Number): $($issue.Title)" -ForegroundColor Magenta
                 Write-Host "    $($issue.Url)" -ForegroundColor Gray
+            }
+        }
+
+        # Search MihuBot for related issues/discussions
+        if ($IncludeMihuBot) {
+            $searchTerms = @()
+
+            # Extract meaningful search terms
+            if ($ErrorMessage -match '(\S+)\s+\[FAIL\]') {
+                $failedTest = $Matches[1]
+                if ($failedTest -match '\.([^.]+)$') {
+                    $searchTerms += $Matches[1]
+                }
+            }
+
+            if ($TestName -and $TestName -match '\.([^.]+)$') {
+                $methodName = $Matches[1]
+                if ($methodName -ne "Tests" -and $methodName.Length -gt 5) {
+                    $searchTerms += $methodName
+                }
+            }
+
+            # Add test name as context
+            if ($TestName) {
+                $searchTerms += $TestName
+            }
+
+            $searchTerms = $searchTerms | Select-Object -Unique | Select-Object -First 3
+
+            if ($searchTerms.Count -gt 0) {
+                $mihuBotResults = Search-MihuBotIssues -SearchTerms $searchTerms -Repository $Repository -ExtraContext "test failure $TestName"
+                if ($mihuBotResults -and $mihuBotResults.Count -gt 0) {
+                    # Filter out issues already shown from Known Build Error search
+                    $knownNumbers = @()
+                    if ($knownIssues) {
+                        $knownNumbers = $knownIssues | ForEach-Object { $_.Number }
+                    }
+                    $newResults = $mihuBotResults | Where-Object { $_.Number -notin $knownNumbers }
+
+                    if ($newResults -and @($newResults).Count -gt 0) {
+                        Write-Host "`n  Related Issues (MihuBot):" -ForegroundColor Blue
+                        foreach ($issue in $newResults) {
+                            $stateIcon = if ($issue.State -eq "open") { "[open]" } else { "[closed]" }
+                            Write-Host "    #$($issue.Number): $($issue.Title) $stateIcon" -ForegroundColor Blue
+                            Write-Host "    $($issue.Url)" -ForegroundColor Gray
+                        }
+                    }
+                }
             }
         }
     }
@@ -1297,7 +1436,7 @@ try {
                         Write-Host $failureInfo -ForegroundColor White
 
                         # Search for known issues
-                        Show-KnownIssues -TestName $WorkItem -ErrorMessage $failureInfo
+                        Show-KnownIssues -TestName $WorkItem -ErrorMessage $failureInfo -IncludeMihuBot:$SearchMihuBot
                     }
                     else {
                         # Show last 50 lines if no failure pattern detected
@@ -1476,7 +1615,7 @@ try {
                         # Search for known issues
                         $buildErrors = Extract-BuildErrors -LogContent $logContent
                         if ($buildErrors.Count -gt 0) {
-                            Show-KnownIssues -ErrorMessage ($buildErrors -join "`n")
+                            Show-KnownIssues -ErrorMessage ($buildErrors -join "`n") -IncludeMihuBot:$SearchMihuBot
                         }
                     }
                 }
@@ -1556,7 +1695,7 @@ try {
                                             Write-Host $failureInfo -ForegroundColor White
 
                                             # Search for known issues
-                                            Show-KnownIssues -TestName $workItemName -ErrorMessage $failureInfo
+                                            Show-KnownIssues -TestName $workItemName -ErrorMessage $failureInfo -IncludeMihuBot:$SearchMihuBot
                                         }
                                     }
                                 }
@@ -1623,7 +1762,7 @@ try {
                                 }
 
                                 # Search for known issues
-                                Show-KnownIssues -ErrorMessage ($buildErrors -join "`n")
+                                Show-KnownIssues -ErrorMessage ($buildErrors -join "`n") -IncludeMihuBot:$SearchMihuBot
                             }
                             else {
                                 Write-Host "  (No specific errors extracted from log)" -ForegroundColor Gray
