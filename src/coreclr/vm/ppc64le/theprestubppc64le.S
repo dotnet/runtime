@@ -5,9 +5,11 @@
 #include "asmconstants.h"
 
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
+	std %r2, 24(%r1)
+	addis %r2, %r12, (.TOC.-ThePreStub)@ha
+	addi %r2, %r2, (.TOC.-ThePreStub)@l
 	mflr %r0
 	std %r0, 16(%r1)
-	std %r2, 24(%r1)
 	std %r31, -8(%r1)
 	stdu %r1, -496(%r1)
 	.cfi_def_cfa_offset 496
