@@ -924,8 +924,14 @@ namespace System.PrivateUri.Tests
                 (() => new Uri(new Uri(@"http://www.contoso.com/"), "catalog/shownew.htm?date=today"), "http://www.contoso.com/catalog/shownew.htm?date=today"),
                 (() => new Uri("http://test/a/b/c/d/../../e/f"), "http://test/a/b/e/f"),
                 (() => { var uri = new Uri("http://test/a/b/c/d/../../e/f"); uri.ToString(); return uri; }, "http://test/a/b/e/f"),
-                (() => new Uri("pa%41th", UriKind.Relative), "paAth"),
+                (() => new Uri("p%41th", UriKind.Relative), "pAth"),
                 (() => new Uri("pa\uFFFFth", UriKind.Relative), "pa%EF%BF%BFth"),
+                (() => new Uri("C:\\path", UriKind.Relative), "C:\\path"),
+                (() => new Uri("C:\\p%41th", UriKind.Relative), "C:\\pAth"),
+                (() => new Uri("http:\\host/path", UriKind.Relative), "http:\\host/path"),
+                (() => new Uri("http:\\host/p%41th", UriKind.Relative), "http:\\host/pAth"),
+                (() => new Uri("//host/path", UriKind.RelativeOrAbsolute), "//host/path"),
+                (() => new Uri("//host/p%41th", UriKind.RelativeOrAbsolute), "//host/pAth"),
             ];
 
             foreach ((Func<Uri> factory, string expected) in testData)
