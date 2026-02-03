@@ -7775,14 +7775,17 @@ public:
 
     struct AssertionDsc
     {
-        optAssertionKind assertionKind;
         struct ArrBnd
         {
             ValueNum vnIdx;
             ValueNum vnLen;
         };
+
         struct AssertionDscOp1
         {
+            friend struct AssertionDsc;
+
+        private:
             optOp1Kind kind;
             ValueNum   vn; // TODO-Cleanup: move this field to the union below as they are not used together
             union
@@ -7790,14 +7793,62 @@ public:
                 unsigned lclNum;
                 ArrBnd   bnd;
             };
-        } op1;
+
+        public:
+            bool KindIs(optOp1Kind k) const
+            {
+                return kind == k;
+            }
+
+            template <typename... T>
+            bool KindIs(optOp1Kind kind, T... rest) const
+            {
+                return KindIs(kind) || KindIs(rest...);
+            }
+
+            ValueNum GetVN() const
+            {
+                // TODO-Cleanup: O1K_LCLVAR should be Local-AP only.
+                // Today it's used by both Local and Global AP.
+                assert(KindIs(O1K_LCLVAR, O1K_VN, O1K_BOUND_OPER_BND, O1K_BOUND_LOOP_BND, O1K_CONSTANT_LOOP_BND,
+                              O1K_CONSTANT_LOOP_BND_UN, O1K_EXACT_TYPE, O1K_SUBTYPE));
+                // Basically, only O1K_ARR_BND doesn't use this property (it uses vnIdx and vnLen instead - TODO: we can
+                // optimize the layout here).
+
+                assert(vn != ValueNumStore::NoVN);
+                return vn;
+            }
+
+            unsigned GetLclNum() const
+            {
+                assert(lclNum != BAD_VAR_NUM);
+                assert(KindIs(O1K_LCLVAR));
+                return lclNum;
+            }
+
+            ArrBnd GetArrBnd() const
+            {
+                assert(KindIs(O1K_ARR_BND));
+                assert(bnd.vnLen != ValueNumStore::NoVN);
+                assert(bnd.vnIdx != ValueNumStore::NoVN);
+                return bnd;
+            }
+
+            optOp1Kind GetKind() const
+            {
+                return kind;
+            }
+        };
+
         struct AssertionDscOp2
         {
-            optOp2Kind kind;
+            friend struct AssertionDsc;
+
         private:
-            uint16_t m_encodedIconFlags; // encoded icon gtFlags, don't use directly
+            optOp2Kind kind;
+            uint16_t   m_encodedIconFlags; // encoded icon gtFlags, don't use directly
+            ValueNum   vn;
         public:
-            ValueNum vn;
             struct IntVal
             {
                 ssize_t   iconVal;
@@ -7811,12 +7862,36 @@ public:
                 IntegralRange u2;
             };
 
+            bool KindIs(optOp2Kind k) const
+            {
+                return kind == k;
+            }
+
+            template <typename... T>
+            bool KindIs(optOp2Kind kind, T... rest) const
+            {
+                return KindIs(kind) || KindIs(rest...);
+            }
+
+            ValueNum GetVN() const
+            {
+                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ));
+                assert(vn != ValueNumStore::NoVN);
+                return vn;
+            }
+
+            optOp2Kind GetKind() const
+            {
+                return kind;
+            }
+
             bool HasIconFlag() const
             {
                 assert(kind == O2K_CONST_INT);
                 assert(m_encodedIconFlags <= 0xFF);
                 return m_encodedIconFlags != 0;
             }
+
             GenTreeFlags GetIconFlag() const
             {
                 assert(kind == O2K_CONST_INT);
@@ -7828,6 +7903,7 @@ public:
                 assert((flags & ~GTF_ICON_HDL_MASK) == 0);
                 return flags;
             }
+
             void SetIconFlag(GenTreeFlags flags, FieldSeq* fieldSeq = nullptr)
             {
                 assert(kind == O2K_CONST_INT);
@@ -7836,45 +7912,49 @@ public:
                 m_encodedIconFlags = flags >> iconMaskTzc;
                 u1.fieldSeq        = fieldSeq;
             }
-        } op2;
+        };
+
+        optAssertionKind assertionKind;
+        AssertionDscOp1  op1;
+        AssertionDscOp2  op2;
 
         bool IsCheckedBoundArithBound() const
         {
-            return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_BOUND_OPER_BND);
+            return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.KindIs(O1K_BOUND_OPER_BND));
         }
         bool IsCheckedBoundBound() const
         {
-            return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_BOUND_LOOP_BND);
+            return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.KindIs(O1K_BOUND_LOOP_BND));
         }
         bool IsConstantBound() const
         {
             return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) &&
-                    (op1.kind == O1K_CONSTANT_LOOP_BND));
+                    op1.KindIs(O1K_CONSTANT_LOOP_BND));
         }
         bool IsConstantBoundUnsigned() const
         {
             return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) &&
-                    (op1.kind == O1K_CONSTANT_LOOP_BND_UN));
+                    op1.KindIs(O1K_CONSTANT_LOOP_BND_UN));
         }
         bool IsBoundsCheckNoThrow() const
         {
-            return ((assertionKind == OAK_NO_THROW) && (op1.kind == O1K_ARR_BND));
+            return ((assertionKind == OAK_NO_THROW) && op1.KindIs(O1K_ARR_BND));
         }
 
         bool IsCopyAssertion() const
         {
-            return ((assertionKind == OAK_EQUAL) && (op1.kind == O1K_LCLVAR) && (op2.kind == O2K_LCLVAR_COPY));
+            return ((assertionKind == OAK_EQUAL) && op1.KindIs(O1K_LCLVAR) && op2.KindIs(O2K_LCLVAR_COPY));
         }
 
         bool IsConstantInt32Assertion() const
         {
-            return ((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL)) && (op2.kind == O2K_CONST_INT) &&
-                   ((op1.kind == O1K_LCLVAR) || (op1.kind == O1K_VN));
+            return ((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL)) && op2.KindIs(O2K_CONST_INT) &&
+                   op1.KindIs(O1K_LCLVAR, O1K_VN);
         }
 
         bool CanPropLclVar() const
         {
-            return assertionKind == OAK_EQUAL && op1.kind == O1K_LCLVAR;
+            return assertionKind == OAK_EQUAL && op1.KindIs(O1K_LCLVAR);
         }
 
         bool CanPropEqualOrNotEqual() const
@@ -7884,17 +7964,18 @@ public:
 
         bool CanPropNonNull() const
         {
-            return assertionKind == OAK_NOT_EQUAL && op2.vn == ValueNumStore::VNForNull();
+            return assertionKind == OAK_NOT_EQUAL && op1.KindIs(O1K_LCLVAR, O1K_VN) && op2.KindIs(O2K_CONST_INT) &&
+                   (op2.u1.iconVal == 0);
         }
 
         bool CanPropBndsCheck() const
         {
-            return (op1.kind == O1K_ARR_BND) || (op1.kind == O1K_VN);
+            return op1.KindIs(O1K_ARR_BND, O1K_VN);
         }
 
         bool CanPropSubRange() const
         {
-            return assertionKind == OAK_SUBRANGE && op1.kind == O1K_LCLVAR;
+            return assertionKind == OAK_SUBRANGE && op1.KindIs(O1K_LCLVAR);
         }
 
         AssertionDsc ReverseEquality() const
@@ -7921,34 +8002,36 @@ public:
 
         bool HasSameOp1(const AssertionDsc& that, bool vnBased) const
         {
-            if (op1.kind != that.op1.kind)
+            if (op1.GetKind() != that.op1.GetKind())
             {
                 return false;
             }
-            else if (op1.kind == O1K_ARR_BND)
+            else if (op1.KindIs(O1K_ARR_BND))
             {
                 assert(vnBased);
-                return (op1.bnd.vnIdx == that.op1.bnd.vnIdx) && (op1.bnd.vnLen == that.op1.bnd.vnLen);
+                return (op1.GetArrBnd().vnIdx == that.op1.GetArrBnd().vnIdx) &&
+                       (op1.GetArrBnd().vnLen == that.op1.GetArrBnd().vnLen);
             }
-            else if (op1.kind == O1K_VN)
+            else if (op1.KindIs(O1K_VN))
             {
                 assert(vnBased);
-                return (op1.vn == that.op1.vn);
+                return (op1.GetVN() == that.op1.GetVN());
             }
             else
             {
-                return ((vnBased && (op1.vn == that.op1.vn)) || (!vnBased && (op1.lclNum == that.op1.lclNum)));
+                return ((vnBased && (op1.GetVN() == that.op1.GetVN())) ||
+                        (!vnBased && (op1.GetLclNum() == that.op1.GetLclNum())));
             }
         }
 
         bool HasSameOp2(const AssertionDsc& that, bool vnBased) const
         {
-            if (op2.kind != that.op2.kind)
+            if (op2.GetKind() != that.op2.GetKind())
             {
                 return false;
             }
 
-            switch (op2.kind)
+            switch (op2.GetKind())
             {
                 case O2K_CONST_INT:
                     return ((op2.u1.iconVal == that.op2.u1.iconVal) && (op2.GetIconFlag() == that.op2.GetIconFlag()));
@@ -7999,7 +8082,7 @@ public:
             }
 
             // OAK_NO_THROW is the only kind of assertion where op2 is unused.
-            assert(op2.kind == O2K_INVALID);
+            assert(op2.KindIs(O2K_INVALID));
             return true;
         }
 
@@ -8025,13 +8108,6 @@ public:
                 dsc.op1.vn     = ValueNumStore::NoVN;
                 dsc.op2.vn     = ValueNumStore::NoVN;
                 dsc.op1.lclNum = lclNum;
-
-                // TODO-Quirk: Somewhere in local-AP we check op2.vn for being ValueNumStore::VNForNull
-                // while we shouldn't. It is left here for zero-diff with previous behavior.
-                if (cnsVN == ValueNumStore::VNForNull())
-                {
-                    dsc.op2.vn = ValueNumStore::VNForNull();
-                }
             }
             else
             {
@@ -8051,6 +8127,12 @@ public:
             {
                 dsc.op2.kind    = O2K_CONST_DOUBLE;
                 dsc.op2.dconVal = static_cast<double>(cns);
+            }
+            else if constexpr (std::is_same_v<T, optOp2Kind>)
+            {
+                dsc.op2.kind       = static_cast<optOp2Kind>(cns);
+                dsc.op2.u1.iconVal = 0;
+                assert(dsc.op2.kind == O2K_ZEROOBJ); // only O2K_ZEROOBJ is expected here for now.
             }
             else
             {

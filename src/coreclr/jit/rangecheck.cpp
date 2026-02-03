@@ -916,7 +916,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             ValueNumStore::CompareCheckedBoundArithInfo info;
 
             // Get i, len, cns and < as "info."
-            comp->vnStore->GetCompareCheckedBoundArithInfo(curAssertion.op1.vn, &info);
+            comp->vnStore->GetCompareCheckedBoundArithInfo(curAssertion.op1.GetVN(), &info);
 
             // If we don't have the same variable we are comparing against, bail.
             if (normalLclVN != info.cmpOp)
@@ -945,7 +945,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             ValueNumStore::CompareCheckedBoundArithInfo info;
 
             // Get the info as "i", "<" and "len"
-            comp->vnStore->GetCompareCheckedBound(curAssertion.op1.vn, &info);
+            comp->vnStore->GetCompareCheckedBound(curAssertion.op1.GetVN(), &info);
 
             // If we don't have the same variable we are comparing against, bail.
             if (normalLclVN == info.cmpOp)
@@ -969,7 +969,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             ValueNumStore::ConstantBoundInfo info;
 
             // Get the info as "i", "<" and "100"
-            comp->vnStore->GetConstantBoundInfo(curAssertion.op1.vn, &info);
+            comp->vnStore->GetConstantBoundInfo(curAssertion.op1.GetVN(), &info);
 
             // If we don't have the same variable we are comparing against, bail.
             if (normalLclVN != info.cmpOpVN)
@@ -984,22 +984,22 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         // Current assertion is of the form i == 100
         else if (curAssertion.IsConstantInt32Assertion())
         {
-            if (curAssertion.op1.vn != normalLclVN)
+            if (curAssertion.op1.GetVN() != normalLclVN)
             {
                 continue;
             }
 
             // Ignore GC values/NULL caught by IsConstantInt32Assertion assertion (may happen on 32bit)
-            if (varTypeIsGC(comp->vnStore->TypeOfVN(curAssertion.op2.vn)))
+            if (varTypeIsGC(comp->vnStore->TypeOfVN(curAssertion.op2.GetVN())))
             {
                 continue;
             }
 
             int cnstLimit = (int)curAssertion.op2.u1.iconVal;
-            assert(cnstLimit == comp->vnStore->CoercedConstantValue<int>(curAssertion.op2.vn));
+            assert(cnstLimit == comp->vnStore->CoercedConstantValue<int>(curAssertion.op2.GetVN()));
 
             if ((cnstLimit == 0) && (curAssertion.assertionKind == Compiler::OAK_NOT_EQUAL) && canUseCheckedBounds &&
-                comp->vnStore->IsVNCheckedBound(curAssertion.op1.vn))
+                comp->vnStore->IsVNCheckedBound(curAssertion.op1.GetVN()))
             {
                 // we have arr.Len != 0, so the length must be atleast one
                 limit   = Limit(Limit::keConstant, 1);
@@ -1041,8 +1041,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         // Current assertion asserts a bounds check does not throw
         else if (curAssertion.IsBoundsCheckNoThrow())
         {
-            ValueNum indexVN = curAssertion.op1.bnd.vnIdx;
-            ValueNum lenVN   = curAssertion.op1.bnd.vnLen;
+            ValueNum indexVN = curAssertion.op1.GetArrBnd().vnIdx;
+            ValueNum lenVN   = curAssertion.op1.GetArrBnd().vnLen;
             if (normalLclVN == indexVN)
             {
                 if (canUseCheckedBounds)
@@ -1100,7 +1100,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
 
         // Make sure the assertion is of the form != 0 or == 0 if it isn't a constant assertion.
         if (!isConstantAssertion && (curAssertion.assertionKind != Compiler::OAK_NO_THROW) &&
-            (curAssertion.op2.vn != comp->vnStore->VNZeroForType(TYP_INT)))
+            (curAssertion.op2.GetVN() != comp->vnStore->VNZeroForType(TYP_INT)))
         {
             continue;
         }
