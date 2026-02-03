@@ -601,7 +601,11 @@ void emitter::emitDispIns(
         case IF_ULEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %llu", (uint64_t)imm);
+#ifdef TARGET_64BIT
+            printf(" %lu", (unsigned long)(uint64_t)imm);
+#else
+            printf(" %llu", (unsigned long long)(uint64_t)imm);
+#endif
             dispJumpTargetIfAny();
         }
         break;
@@ -636,7 +640,11 @@ void emitter::emitDispIns(
         case IF_SLEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %lli", (int64_t)imm);
+#ifdef TARGET_64BIT
+            printf(" %ld", (long)(int64_t)imm);
+#else
+            printf(" %lld", (long long)(int64_t)imm);
+#endif
         }
         break;
 
@@ -654,7 +662,11 @@ void emitter::emitDispIns(
         {
             unsigned       log2align = emitGetAlignHintLog2(id);
             cnsval_ssize_t offset    = emitGetInsSC(id);
-            printf(" %u %llu", log2align, (uint64_t)offset);
+#ifdef TARGET_64BIT
+            printf(" %u %lu", log2align, (unsigned long)(uint64_t)offset);
+#else
+            printf(" %u %llu", log2align, (unsigned long long)(uint64_t)offset);
+#endif
         }
         break;
 
