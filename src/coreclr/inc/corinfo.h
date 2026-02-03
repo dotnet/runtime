@@ -638,6 +638,17 @@ enum CorInfoType
     CORINFO_TYPE_COUNT,                         // number of jit types
 };
 
+// Used by Wasm RyuJIT to represent native WebAssembly types and exchanged via some JIT-EE APIs
+enum CorInfoWasmType
+{
+    CORINFO_WASM_TYPE_VOID = 0x40,
+    CORINFO_WASM_TYPE_V128 = 0x7B,
+    CORINFO_WASM_TYPE_F64  = 0x7C,
+    CORINFO_WASM_TYPE_F32  = 0x7D,
+    CORINFO_WASM_TYPE_I64  = 0x7E,
+    CORINFO_WASM_TYPE_I32  = 0x7F,
+};
+
 enum CorInfoTypeWithMod
 {
     CORINFO_TYPE_MASK            = 0x3F,        // lower 6 bits are type mask
@@ -3462,7 +3473,8 @@ public:
     virtual void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) = 0;
 
     virtual CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(
-        CorInfoType*              types
+        CorInfoWasmType*          types,
+        size_t                    typesSize
         ) = 0;
 
     virtual CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;

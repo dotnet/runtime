@@ -376,7 +376,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, void*, CorInfoReloc> getRelocTypeHint;
             public delegate* unmanaged<IntPtr, IntPtr*, uint> getExpectedTargetArchitecture;
             public delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint> getJitFlags;
-            public delegate* unmanaged<IntPtr, IntPtr*, CorInfoType*, CORINFO_WASM_TYPE_SYMBOL_STRUCT_*> getWasmTypeSymbol;
+            public delegate* unmanaged<IntPtr, IntPtr*, CorInfoWasmType*, nuint, CORINFO_WASM_TYPE_SYMBOL_STRUCT_*> getWasmTypeSymbol;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*> getSpecialCopyHelper;
         }
 
@@ -2976,12 +2976,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static CORINFO_WASM_TYPE_SYMBOL_STRUCT_* _getWasmTypeSymbol(IntPtr thisHandle, IntPtr* ppException, CorInfoType* types)
+        private static CORINFO_WASM_TYPE_SYMBOL_STRUCT_* _getWasmTypeSymbol(IntPtr thisHandle, IntPtr* ppException, CorInfoWasmType* types, nuint typesSize)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getWasmTypeSymbol(types);
+                return _this.getWasmTypeSymbol(types, typesSize);
             }
             catch (Exception ex)
             {

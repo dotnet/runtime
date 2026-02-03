@@ -1847,10 +1847,10 @@ uint32_t MyICJI::getExpectedTargetArchitecture()
     return result;
 }
 
-CORINFO_WASM_TYPE_SYMBOL_HANDLE MyICJI::getWasmTypeSymbol(CorInfoType* types)
+CORINFO_WASM_TYPE_SYMBOL_HANDLE MyICJI::getWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize)
 {
     jitInstance->mc->cr->AddCall("getWasmTypeSymbol");
-    CORINFO_WASM_TYPE_SYMBOL_HANDLE result = jitInstance->mc->repGetWasmTypeSymbol(types);
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE result = jitInstance->mc->repGetWasmTypeSymbol(types, typesSize);
     return result;
 }
 

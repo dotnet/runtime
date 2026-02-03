@@ -187,7 +187,7 @@ struct JitInterfaceCallbacks
     CorInfoReloc (* getRelocTypeHint)(void * thisHandle, CorInfoExceptionClass** ppException, void* target);
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
-    CORINFO_WASM_TYPE_SYMBOL_HANDLE (* getWasmTypeSymbol)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoType* types);
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE (* getWasmTypeSymbol)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoWasmType* types, size_t typesSize);
     CORINFO_METHOD_HANDLE (* getSpecialCopyHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE type);
 
 };
@@ -1930,10 +1930,11 @@ public:
 }
 
     virtual CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(
-          CorInfoType* types)
+          CorInfoWasmType* types,
+          size_t typesSize)
 {
     CorInfoExceptionClass* pException = nullptr;
-    CORINFO_WASM_TYPE_SYMBOL_HANDLE temp = _callbacks->getWasmTypeSymbol(_thisHandle, &pException, types);
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE temp = _callbacks->getWasmTypeSymbol(_thisHandle, &pException, types, typesSize);
     if (pException != nullptr) throw pException;
     return temp;
 }

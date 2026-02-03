@@ -2482,7 +2482,7 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 #if defined(UNIX_AMD64_ABI)
                 SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
                 bool result = methodTablePtr->ClassifyEightBytes(&helper, useNativeLayout);
-                
+
                 // The answer must be true at this point.
                 _ASSERTE(result);
 #endif // UNIX_AMD64_ABI
@@ -8818,13 +8818,13 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     {
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
-    
+
     // This is generic virtual method devirtualization.
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(
             pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
-        
+
         // We still can't handle shared generic methods because we don't have
         // the right generic context for runtime lookup.
         // TODO: Remove this limitation.
@@ -10141,7 +10141,7 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
 }
 
 CORINFO_WASM_TYPE_SYMBOL_HANDLE CEEInfo::getWasmTypeSymbol(
-    CorInfoType* types)
+    CorInfoWasmType* types, size_t typesSize)
 {
     CONTRACTL {
         THROWS;

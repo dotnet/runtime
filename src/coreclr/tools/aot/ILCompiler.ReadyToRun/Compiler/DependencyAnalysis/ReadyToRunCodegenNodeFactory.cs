@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
+using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Win32Resources;
@@ -1071,6 +1072,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new Utf8String("RTR_HEADER"u8);
             }
             return default;
+        }
+
+        public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
+        {
+            return new WasmTypeNode(types);
         }
     }
 }

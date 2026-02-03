@@ -7336,29 +7336,36 @@ CORINFO_METHOD_HANDLE MethodContext::repGetSpecialCopyHelper(CORINFO_CLASS_HANDL
     return (CORINFO_METHOD_HANDLE)value;
 }
 
-void MethodContext::recGetWasmTypeSymbol(CorInfoType* types, CORINFO_WASM_TYPE_SYMBOL_HANDLE result)
+void MethodContext::recGetWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize, CORINFO_WASM_TYPE_SYMBOL_HANDLE result)
 {
     if (GetWasmTypeSymbol == nullptr)
-        GetWasmTypeSymbol = new LightWeightMap<DWORDLONG, DWORDLONG>();
+        GetWasmTypeSymbol = new LightWeightMap<Agnostic_GetWasmTypeSymbol, DWORDLONG>();
 
-    DWORDLONG key;
+    Agnostic_GetWasmTypeSymbol key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key = CastPointer(types);
+    key.types = (DWORD)GetWasmTypeSymbol->AddBuffer((unsigned char*)types, (unsigned)(sizeof(CorInfoWasmType) * typesSize));
+    key.typesSize = (DWORD)typesSize;
 
     DWORDLONG value = CastHandle(result);
     GetWasmTypeSymbol->Add(key, value);
     DEBUG_REC(dmpGetWasmTypeSymbol(key, value));
 }
 
-void MethodContext::dmpGetWasmTypeSymbol(DWORDLONG key, DWORDLONG value)
+void MethodContext::dmpGetWasmTypeSymbol(const Agnostic_GetWasmTypeSymbol& key, DWORDLONG value)
 {
-    printf("getWasmTypeSymbol key %016" PRIX64 ", value %016" PRIX64 "", key, value);
+    printf("getWasmTypeSymbol types %u, typesSize %u, value %016" PRIX64 "", key.types, key.typesSize, value);
 }
 
-CORINFO_WASM_TYPE_SYMBOL_HANDLE MethodContext::repGetWasmTypeSymbol(CorInfoType* types)
+CORINFO_WASM_TYPE_SYMBOL_HANDLE MethodContext::repGetWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize)
 {
-    DWORDLONG key = CastPointer(types);
-    DWORDLONG value = LookupByKeyOrMiss(GetWasmTypeSymbol, key, ": key %016" PRIX64 "", key);
+    AssertMapExistsNoMessage(GetWasmTypeSymbol);
+
+    Agnostic_GetWasmTypeSymbol key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.types = (DWORD)GetWasmTypeSymbol->Contains((unsigned char*)types, (unsigned)(sizeof(CorInfoWasmType) * typesSize));
+    key.typesSize = (DWORD)typesSize;
+
+    DWORDLONG value = LookupByKeyOrMiss(GetWasmTypeSymbol, key, "WASM-FIXME: Key message");
     DEBUG_REP(dmpGetWasmTypeSymbol(key, value));
     return (CORINFO_WASM_TYPE_SYMBOL_HANDLE)value;
 }
