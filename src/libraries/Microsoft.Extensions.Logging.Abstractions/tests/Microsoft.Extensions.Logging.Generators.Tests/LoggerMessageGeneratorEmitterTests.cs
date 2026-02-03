@@ -277,6 +277,58 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             Assert.NotNull(type.GenericTypeParameters[1].GetCustomAttribute<TestClasses.BarAttribute>());
         }
 
+        [Theory]
+        [InlineData(@"Foo \\ bar: {foo}", null)]
+        [InlineData(@"Foo \\\\ bar: {foo}", null)]
+        [InlineData(@"Foo \"" bar: {foo}", null)]
+        [InlineData(@"Foo \x22 bar: {foo}", @"Foo \"" bar: {foo}")]
+        [InlineData(@"Foo \u0022 bar: {foo}", @"Foo \"" bar: {foo}")]
+        [InlineData(@"Foo \r bar: {foo}", null)]
+        [InlineData(@"Foo \x0d bar: {foo}", @"Foo \r bar: {foo}")]
+        [InlineData(@"Foo \u000d bar: {foo}", @"Foo \r bar: {foo}")]
+        [InlineData(@"Foo \n bar: {foo}", null)]
+        [InlineData(@"Foo \x0a bar: {foo}", @"Foo \n bar: {foo}")]
+        [InlineData(@"Foo \u000a bar: {foo}", @"Foo \n bar: {foo}")]
+        [InlineData(@"Foo \0 bar: {foo}", null)]
+        [InlineData(@"Foo \x00 bar: {foo}", @"Foo \0 bar: {foo}")]
+        [InlineData(@"Foo \u0000 bar: {foo}", @"Foo \0 bar: {foo}")]
+        [InlineData(@"Foo \x1f bar: {foo}", @"Foo \u001f bar: {foo}")]
+        [InlineData(@"Foo \u001f bar: {foo}", null)]
+        public async Task EmittedMessageIsWellFormed(string message, string? expectedMessage)
+        {
+            var code =
+                $$"""
+                namespace Test
+                {
+                    using Microsoft.Extensions.Logging;
+
+                    partial class C
+                    {
+                        [LoggerMessage(EventId = 5230, Level = LogLevel.Information, Message = "{{message}}")]
+                        static partial void Test(ILogger logger, string foo);
+                    }
+                }
+                """;
+
+            var (diagnostics, generatedSources) = await RoslynTestUtils
+                .RunGenerator(
+                    new LoggerMessageGenerator(),
+                    new[] { typeof(ILogger).Assembly, typeof(LoggerMessageAttribute).Assembly },
+                    new[] { code },
+                    includeBaseReferences: true)
+                .ConfigureAwait(false);
+
+            Assert.Empty(diagnostics);
+            Assert.Single(generatedSources);
+
+            var generatedSource = generatedSources[0];
+            var src = generatedSource.SourceText.ToString();
+            Assert.Contains($"\"{expectedMessage ?? message}\"", src);
+
+            var generatedSourceDiagnostics = generatedSource.SyntaxTree.GetDiagnostics();
+            Assert.Empty(generatedSourceDiagnostics);
+        }
+
         private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
         {
             string baseline = LineEndingsHelper.Normalize(File.ReadAllText(Path.Combine("Baselines", filename)));

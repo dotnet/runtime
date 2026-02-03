@@ -504,7 +504,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             }
 
             LowerCast(node);
-            break;
+            return nextNode;
         }
 
         case GT_BITCAST:
@@ -4826,7 +4826,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     {
         TryLowerCselToCSOp(select, cond);
     }
-    else if (trueVal->IsCnsIntOrI() && falseVal->IsCnsIntOrI())
+    else if (trueVal->IsCnsIntOrI() || falseVal->IsCnsIntOrI())
     {
         TryLowerCnsIntCselToCinc(select, cond);
     }
