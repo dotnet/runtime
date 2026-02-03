@@ -39,11 +39,11 @@ struct InterpDispatchCache
     // List of dead entries to be freed at GC time
     InterpDispatchCacheEntry* m_pDeadList;
 
-    MethodDesc* Lookup(size_t dispatchToken, void* pMT)
+    MethodDesc* Lookup(size_t dispatchToken, void* pMT, uint16_t dispatchTokenHash)
     {
         LIMITED_METHOD_CONTRACT;
 
-        size_t idx = Hash(dispatchToken, pMT);
+        size_t idx = Hash(dispatchToken, pMT, dispatchTokenHash);
 
         InterpDispatchCacheEntry* pEntry = VolatileLoadWithoutBarrier(&m_cache[idx]);
         // Data dependency ensures field reads are ordered after loading of `pEntry`
@@ -54,11 +54,11 @@ struct InterpDispatchCache
         return NULL;
     }
 
-    void Insert(size_t dispatchToken, MethodTable* pMT, MethodDesc* pTargetMD)
+    void Insert(size_t dispatchToken, MethodTable* pMT, MethodDesc* pTargetMD, uint16_t dispatchTokenHash)
     {
         LIMITED_METHOD_CONTRACT;
 
-        size_t idx = Hash(dispatchToken, pMT);
+        size_t idx = Hash(dispatchToken, pMT, dispatchTokenHash);
 
         InterpDispatchCacheEntry* pNewEntry = new (nothrow) InterpDispatchCacheEntry();
         if (pNewEntry == nullptr)
@@ -112,11 +112,9 @@ struct InterpDispatchCache
     }
 
     // Same as VSD DispatchCache's HashToken + HashMT
-    static uint16_t Hash(size_t dispatchToken, void* pMT)
+    static uint16_t Hash(size_t dispatchToken, void* pMT, uint16_t dispatchTokenHash)
     {
         LIMITED_METHOD_CONTRACT;
-
-        uint16_t dispatchTokenHash = DispatchToken::From_SIZE_T(dispatchToken).GetHash();
 
         size_t mtHash = (size_t)pMT;
         mtHash = (((mtHash >> DISPATCH_CACHE_BITS) + mtHash) >> LOG2_PTRSIZE) & DISPATCH_CACHE_MASK;
@@ -2856,6 +2854,7 @@ MAIN_LOOP:
 
                     MethodTable *pObjMT = (*pThisArg)->GetMethodTable();
 
+                    // Interpreter-FIXME: It would be nice to have these caches initialized at compile time instead
                     // Obtain the cached dispatch token or initialize it
                     size_t dispatchToken = (size_t)VolatileLoadWithoutBarrier(&pMethod->pDataItems[ip[4]]);
                     if (dispatchToken == 0)
@@ -2863,9 +2862,16 @@ MAIN_LOOP:
                         dispatchToken = CreateDispatchTokenForMethod(pMD);
                         VolatileStoreWithoutBarrier(&pMethod->pDataItems[ip[4]], (void*)dispatchToken);
                     }
+                    // The token hash is cached in the data item immediately following the dispatchToken
+                    size_t dispatchTokenHash = (size_t)VolatileLoadWithoutBarrier(&pMethod->pDataItems[ip[4] + 1]);
+                    if (dispatchTokenHash == 0)
+                    {
+                        dispatchTokenHash = DispatchToken::From_SIZE_T(dispatchToken).GetHash();
+                        VolatileStoreWithoutBarrier(&pMethod->pDataItems[ip[4] + 1], (void*)dispatchTokenHash);
+                    }
 
                     // Try cache lookup first
-                    targetMethod = g_InterpDispatchCache.Lookup(dispatchToken, pObjMT);
+                    targetMethod = g_InterpDispatchCache.Lookup(dispatchToken, pObjMT, (uint16_t)dispatchTokenHash);
 
                     if (targetMethod == NULL)
                     {
@@ -2874,7 +2880,7 @@ MAIN_LOOP:
                             [&pMD, &pThisArg]() {
                                 return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
                             });
-                        g_InterpDispatchCache.Insert(dispatchToken, pObjMT, targetMethod);
+                        g_InterpDispatchCache.Insert(dispatchToken, pObjMT, targetMethod, (uint16_t)dispatchTokenHash);
                     }
 
                     ip += 5;
