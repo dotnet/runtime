@@ -107,9 +107,13 @@ FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
     JITDUMP("Determining Wasm DFS entry points\n");
 
     // All funclets are entries. For now we assume finallys are funclets.
+    // We walk from outer->inner order, so that for mutual protect trys
+    // the "first" handler is visited last and ends up earlier in RPO.
     //
-    for (EHblkDsc* const ehDsc : EHClauses(comp))
+    for (int XTnum = comp->compHndBBtabCount - 1; XTnum >= 0; XTnum--)
     {
+        EHblkDsc* const ehDsc = &comp->compHndBBtab[XTnum];
+
         JITDUMP(FMT_BB " is handler entry\n", ehDsc->ebdHndBeg->bbNum);
         entryBlocks.push_back(ehDsc->ebdHndBeg);
         if (ehDsc->HasFilter())
@@ -1170,9 +1174,10 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 continue;
             }
 
-            // Branch to next needs no block, unless this is a switch
+            // Branch to next needs no block, unless this is a switch or next is a throw helper.
+            // We may need to branch to a throw helper mid-block, so can't always fall through.
             //
-            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH))
+            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH) && !(succ->HasFlag(BBF_THROW_HELPER)))
             {
                 continue;
             }
@@ -1390,6 +1395,17 @@ PhaseStatus Compiler::fgWasmControlFlow()
         {
             fgUnlinkBlock(block);
             fgInsertBBafter(lastBlock, block);
+
+            // If the last block was the end of a handler, we may need
+            // to update the enclosing region endpoint.
+            //
+            // Because we are not keeping try regions contiguous,
+            // we can't and don't need to do the same for a try.
+            //
+            if (ehIsBlockHndLast(lastBlock) && block->hasHndIndex() && BasicBlock::sameHndRegion(lastBlock, block))
+            {
+                fgSetHndEnd(ehGetBlockHndDsc(block), block);
+            }
             lastBlock = block;
         }
 
@@ -1440,6 +1456,11 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
     JITDUMPEXEC(fgDumpWasmControlFlow());
     JITDUMPEXEC(fgDumpWasmControlFlowDot());
+
+    // By publishing the index to block map, we are also indicating
+    // that try regions may no longer be contiguous.
+    //
+    assert(fgTrysNotContiguous());
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

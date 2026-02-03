@@ -9,6 +9,9 @@
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="foo2.csproj" />
     <ProjectReference Include="foo1.csproj" />
     <ProjectReference Include="interface.csproj" />

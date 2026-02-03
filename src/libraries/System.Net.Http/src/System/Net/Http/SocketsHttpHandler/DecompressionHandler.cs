@@ -19,9 +19,11 @@ namespace System.Net.Http
         private const string Gzip = "gzip";
         private const string Deflate = "deflate";
         private const string Brotli = "br";
+        private const string Zstd = "zstd";
         private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new(Gzip);
         private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new(Deflate);
         private static readonly StringWithQualityHeaderValue s_brotliHeaderValue = new(Brotli);
+        private static readonly StringWithQualityHeaderValue s_zstdHeaderValue = new(Zstd);
 
         /// <summary>Header value for all enabled decompression methods, e.g. "gzip, deflate".</summary>
         private readonly string _acceptEncodingHeaderValue;
@@ -34,14 +36,19 @@ namespace System.Net.Http
             _decompressionMethods = decompressionMethods;
             _innerHandler = innerHandler;
 
-            List<string?> methods = [GZipEnabled ? Gzip : null, DeflateEnabled ? Deflate : null, BrotliEnabled ? Brotli : null];
-            methods.RemoveAll(item => item is null);
-            _acceptEncodingHeaderValue = string.Join(", ", methods);
+            Span<string?> methods = [null, null, null, null];
+            int count = 0;
+            if (GZipEnabled) methods[count++] = Gzip;
+            if (DeflateEnabled) methods[count++] = Deflate;
+            if (BrotliEnabled) methods[count++] = Brotli;
+            if (ZstandardEnabled) methods[count++] = Zstd;
+            _acceptEncodingHeaderValue = string.Join(", ", methods.Slice(0, count));
         }
 
         internal bool GZipEnabled => (_decompressionMethods & DecompressionMethods.GZip) != 0;
         internal bool DeflateEnabled => (_decompressionMethods & DecompressionMethods.Deflate) != 0;
         internal bool BrotliEnabled => (_decompressionMethods & DecompressionMethods.Brotli) != 0;
+        internal bool ZstandardEnabled => (_decompressionMethods & DecompressionMethods.Zstandard) != 0;
 
         private static bool EncodingExists(HttpHeaderValueCollection<StringWithQualityHeaderValue> acceptEncodingHeader, string encoding)
         {
@@ -81,6 +88,11 @@ namespace System.Net.Http
                 {
                     acceptEncoding.Add(s_brotliHeaderValue);
                 }
+
+                if (ZstandardEnabled && !EncodingExists(acceptEncoding, Zstd))
+                {
+                    acceptEncoding.Add(s_zstdHeaderValue);
+                }
             }
 
             HttpResponseMessage response = await _innerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
@@ -104,6 +116,10 @@ namespace System.Net.Http
                 else if (BrotliEnabled && string.Equals(last, Brotli, StringComparison.OrdinalIgnoreCase))
                 {
                     response.Content = new BrotliDecompressedContent(response.Content, encodings);
+                }
+                else if (ZstandardEnabled && string.Equals(last, Zstd, StringComparison.OrdinalIgnoreCase))
+                {
+                    response.Content = new ZstandardDecompressedContent(response.Content, encodings);
                 }
             }
 
@@ -429,6 +445,12 @@ namespace System.Net.Http
         {
             protected override Stream GetDecompressedStream(Stream originalStream) =>
                 new BrotliStream(originalStream, CompressionMode.Decompress);
+        }
+
+        private sealed class ZstandardDecompressedContent(HttpContent originalContent, string[] contentEncodings) : DecompressedContent(originalContent, contentEncodings)
+        {
+            protected override Stream GetDecompressedStream(Stream originalStream) =>
+                new ZstandardStream(originalStream, CompressionMode.Decompress);
         }
     }
 }

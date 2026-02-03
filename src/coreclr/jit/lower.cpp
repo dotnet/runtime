@@ -504,7 +504,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             }
 
             LowerCast(node);
-            break;
+            return nextNode;
         }
 
         case GT_BITCAST:
@@ -3209,20 +3209,6 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // We expect to see a call that meets the following conditions
     assert(call->IsFastTailCall());
 
-    // VM cannot use return address hijacking when A() and B() tail call each
-    // other in mutual recursion.  Therefore, this block is reachable through
-    // a GC-safe point or the whole method is marked as fully interruptible.
-    //
-    // TODO-Cleanup:
-    // optReachWithoutCall() depends on the fact that loop headers blocks
-    // will have a block number > fgLastBB.  These loop headers gets added
-    // after dominator computation and get skipped by OptReachWithoutCall().
-    // The below condition cannot be asserted in lower because fgSimpleLowering()
-    // can add a new basic block for range check failure which becomes
-    // fgLastBB with block number > loop header block number.
-    // assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) ||
-    //         !comp->optReachWithoutCall(comp->fgFirstBB, comp->compCurBB) || comp->GetInterruptible());
-
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
     if (comp->compMethodRequiresPInvokeFrame())
@@ -3524,12 +3510,6 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     // We expect to see a call that meets the following conditions
     assert(call->IsTailCallViaJitHelper());
     assert(callTarget != nullptr);
-
-    // The TailCall helper call never returns to the caller and is not GC interruptible.
-    // Therefore the block containing the tail call should be a GC safe point to avoid
-    // GC starvation. It is legal for the block to be unmarked iff the entry block is a
-    // GC safe point, as the entry block trivially dominates every reachable block.
-    assert(comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT) || comp->fgFirstBB->HasFlag(BBF_GC_SAFE_POINT));
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.  This is a case of caller method has both PInvokes and tail calls.
@@ -4846,7 +4826,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     {
         TryLowerCselToCSOp(select, cond);
     }
-    else if (trueVal->IsCnsIntOrI() && falseVal->IsCnsIntOrI())
+    else if (trueVal->IsCnsIntOrI() || falseVal->IsCnsIntOrI())
     {
         TryLowerCnsIntCselToCinc(select, cond);
     }
@@ -12135,7 +12115,9 @@ void Lowering::FinalizeOutgoingArgSpace()
     // Finish computing the outgoing args area size
     //
     // Need to make sure the MIN_ARG_AREA_FOR_CALL space is added to the frame if:
-    // 1. there are calls to THROW_HELPER methods.
+    // 1. there may be calls to THROW_HELPER methods. Note when opts.compDbgCode is true,
+    //    we simply assume we may be making throw helper calls. Typically we've already
+    //    added an explicit just my code call so this doesn't increase the frame size.
     // 2. we are generating profiling Enter/Leave/TailCall hooks. This will ensure
     //    that even methods without any calls will have outgoing arg area space allocated.
     // 3. We will be generating calls to PInvoke helpers. TODO: This shouldn't be required because
@@ -12148,7 +12130,7 @@ void Lowering::FinalizeOutgoingArgSpace()
     // the outgoing arg space if the method makes any calls.
     if (m_outgoingArgSpaceSize < MIN_ARG_AREA_FOR_CALL)
     {
-        if (comp->compUsesThrowHelper || comp->compIsProfilerHookNeeded() ||
+        if (comp->opts.compDbgCode || comp->compUsesThrowHelper || comp->compIsProfilerHookNeeded() ||
             (comp->compMethodRequiresPInvokeFrame() && !comp->opts.ShouldUsePInvokeHelpers()) ||
             comp->getNeedsGSSecurityCookie())
         {
