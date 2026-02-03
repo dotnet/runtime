@@ -80,6 +80,11 @@ namespace System.Threading
                 "ThreadPool_UnfairSemaphoreSpinLimit",
                 DefaultSemaphoreSpinCountLimit,
                 false);
+
+            // Do not accept unreasonably huge _maxSpinCount value to prevent overflows.
+            // Also, 1+ minute spins do not make sense.
+            if (_maxSpinCount > 1000000)
+                _maxSpinCount = DefaultSemaphoreSpinCountLimit;
         }
 
         public bool Wait(int timeoutMs, short activeThreadCount)
