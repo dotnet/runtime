@@ -133,7 +133,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     assert((params.callType == EC_FUNC_TOKEN) || (params.addr == nullptr));
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
+    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
     {
         codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
     }

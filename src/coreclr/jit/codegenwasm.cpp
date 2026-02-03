@@ -1029,7 +1029,7 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
     if ((type == TYP_INT) || (type == TYP_LONG))
     {
         icon = treeNode->AsIntConCommon();
-        if (icon->ImmedValNeedsReloc(compiler))
+        if (icon->ImmedValNeedsReloc(m_compiler))
         {
             // WASM-TODO: Generate reloc for this handle
             ins  = INS_I_const;
@@ -1435,10 +1435,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     // an IL to native mapping record for the call, to support managed return value debugging.
     // We don't want tail call helper calls that were converted from normal calls to get a record,
     // so we skip this hash table lookup logic in that case.
-    if (compiler->opts.compDbgInfo && compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
+    if (m_compiler->opts.compDbgInfo && m_compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
     {
         DebugInfo di;
-        (void)compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
+        (void)m_compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
         params.debugInfo = di;
     }
 
@@ -1471,7 +1471,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
         // indirection cell but we should not try to optimize.
         WellKnownArg indirectionCellArgKind = WellKnownArg::None;
-        if (!call->IsHelperCall(compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        if (!call->IsHelperCall(m_compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
         {
             indirectionCellArgKind = call->GetIndirectionCellArgKind();
         }
@@ -1494,10 +1494,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             if (call->IsHelperCall())
             {
                 NYI_WASM("Call helper statically without indirection cell");
-                CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(params.methHnd);
+                CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
                 noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
-                CORINFO_CONST_LOOKUP helperLookup = compiler->compGetHelperFtn(helperNum);
+                CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
                 params.addr                       = helperLookup.addr;
                 assert(helperLookup.accessType == IAT_VALUE);
             }
@@ -1520,7 +1520,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 {
     EmitCallParams params;
 
-    CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
+    CORINFO_CONST_LOOKUP helperFunction = m_compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
     params.ireg                         = callTargetReg;
 
     if (helperFunction.accessType == IAT_VALUE)
@@ -1540,7 +1540,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         params.callType = EC_INDIR_R;
     }
 
-    params.methHnd = compiler->eeFindHelper(helper);
+    params.methHnd = m_compiler->eeFindHelper(helper);
     params.argSize = argSize;
     params.retSize = retSize;
 
