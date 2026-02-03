@@ -29,6 +29,10 @@ namespace System.IO.Hashing
         // Computation for Generic Polynomials Using PCLMULQDQ Instruction" in December, 2009.
         // https://github.com/intel/isa-l/blob/33a2d9484595c2d6516c920ce39a694c144ddf69/crc/crc32_ieee_by4.asm
         // https://github.com/SixLabors/ImageSharp/blob/f4f689ce67ecbcc35cebddba5aacb603e6d1068a/src/ImageSharp/Formats/Png/Zlib/Crc32.cs#L80
+        //
+        // Marking this as noinline so the JIT doesn't try and inline this and end up not inlining some of the calls it makes.
+        //
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static uint UpdateVectorized(uint crc, ReadOnlySpan<byte> source)
         {
             Debug.Assert(CanBeVectorized(source), "source cannot be vectorized.");

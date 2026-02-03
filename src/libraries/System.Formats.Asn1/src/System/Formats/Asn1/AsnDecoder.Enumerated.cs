@@ -174,9 +174,9 @@ namespace System.Formats.Asn1
         ///
         ///   -or-
         ///
-        ///   <paramref name="enumType"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
-        ///   <paramref name="enumType"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
         ///   the method.
         /// </exception>
         /// <exception cref="ArgumentNullException">
@@ -265,7 +265,7 @@ namespace System.Formats.Asn1
     public partial class AsnReader
     {
         /// <summary>
-        ///   Reads the next value as a Enumerated with a specified tag, returning the contents
+        ///   Reads the next value as an Enumerated with a specified tag, returning the contents
         ///   as a <see cref="ReadOnlyMemory{T}"/> over the original data.
         /// </summary>
         /// <param name="expectedTag">

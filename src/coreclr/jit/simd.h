@@ -4,6 +4,8 @@
 #ifndef _SIMD_H_
 #define _SIMD_H_
 
+#define SIZE_UNKNOWN UINT8_MAX
+
 template <typename T>
 static bool ElementsAreSame(T* array, size_t size)
 {
@@ -76,7 +78,7 @@ struct simd8_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd8_t) == 8);
+static_assert(sizeof(simd8_t) == 8);
 
 #include <pshpack4.h>
 struct simd12_t
@@ -136,7 +138,7 @@ struct simd12_t
     }
 };
 #include <poppack.h>
-static_assert_no_msg(sizeof(simd12_t) == 12);
+static_assert(sizeof(simd12_t) == 12);
 
 struct simd16_t
 {
@@ -190,7 +192,7 @@ struct simd16_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd16_t) == 16);
+static_assert(sizeof(simd16_t) == 16);
 
 #if defined(TARGET_XARCH)
 struct simd32_t
@@ -246,7 +248,7 @@ struct simd32_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd32_t) == 32);
+static_assert(sizeof(simd32_t) == 32);
 
 struct simd64_t
 {
@@ -302,7 +304,7 @@ struct simd64_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd64_t) == 64);
+static_assert(sizeof(simd64_t) == 64);
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -375,7 +377,7 @@ struct simdmask_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simdmask_t) == 8);
+static_assert(sizeof(simdmask_t) == 8);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
 #if defined(TARGET_XARCH)
@@ -1161,6 +1163,12 @@ void EvaluateBinaryMask(
         case 8:
         {
             bitMask = 0x0101010101010101;
+            break;
+        }
+
+        case 16:
+        {
+            bitMask = 0x0001000100010001;
             break;
         }
 
@@ -2059,6 +2067,69 @@ SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
         }
     }
 }
+
+template <typename TSimd, typename TBase>
+void NarrowSimdLong(TSimd* result, const TSimd& arg0)
+{
+    uint32_t count = sizeof(TSimd) / sizeof(uint64_t);
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        uint64_t input0;
+        memcpy(&input0, &arg0.u8[(i * sizeof(TBase) / sizeof(uint64_t)) * sizeof(uint64_t)], sizeof(uint64_t));
+
+        // Saturate to largest value for TBase
+        if (input0 > (TBase)-1)
+        {
+            input0 = (TBase)-1;
+        }
+
+        memcpy(&result->u8[i * sizeof(TBase)], &input0, sizeof(TBase));
+    }
+}
+
+template <typename TSimd>
+void NarrowSimdLong(var_types baseType, TSimd* result, const TSimd& arg0)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            NarrowSimdLong<TSimd, uint32_t>(result, arg0);
+            break;
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            NarrowSimdLong<TSimd, uint64_t>(result, arg0);
+            break;
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            NarrowSimdLong<TSimd, uint8_t>(result, arg0);
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            NarrowSimdLong<TSimd, uint16_t>(result, arg0);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
 #endif // TARGET_ARM64
 
 #endif // FEATURE_MASKED_HW_INTRINSICS

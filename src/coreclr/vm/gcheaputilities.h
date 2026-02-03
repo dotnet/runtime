@@ -59,16 +59,22 @@ struct ee_alloc_context
         return m_CombinedLimit;
     }
 
-    static size_t getAllocPtrFieldOffset()
+    uint8_t* getAllocPtr()
     {
         LIMITED_METHOD_CONTRACT;
-        return offsetof(ee_alloc_context, m_GCAllocContext) + offsetof(gc_alloc_context, alloc_ptr);
+        return m_GCAllocContext.alloc_ptr;
     }
 
-    static size_t getCombinedLimitFieldOffset()
+    void setAllocPtr(uint8_t* ptr)
     {
         LIMITED_METHOD_CONTRACT;
-        return offsetof(ee_alloc_context, m_CombinedLimit);
+        m_GCAllocContext.alloc_ptr = ptr;
+    }
+
+    uint8_t* getAllocLimit()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_GCAllocContext.alloc_limit;
     }
 
     // Regenerate the randomized sampling limit and update the m_CombinedLimit field.

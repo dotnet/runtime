@@ -14,7 +14,7 @@ internal sealed class ImageDataDirectory : IData<ImageDataDirectory>
 
         VirtualAddress = target.Read<uint>(address + (ulong)type.Fields[nameof(VirtualAddress)].Offset);
         Size = target.Read<uint>(address + (ulong)type.Fields[nameof(Size)].Offset);
-     }
+    }
 
     public uint VirtualAddress { get; }
     public uint Size { get; }

@@ -1,23 +1,29 @@
 # Experimental support of CoreCLR on Android
 
-This is the internal documentation which outlines experimental support of CoreCLR on Android and includes instructions on how to:
-- [Build CoreCLR for Android](./android.md#building-coreclr-for-android)
-- [Build and run a sample application with CoreCLR](./android.md#building-and-running-a-sample-app)
-- [Debug the sample app and the runtime](./android.md#debugging-the-runtime-and-the-sample-app)
+This is the internal documentation which outlines experimental support of CoreCLR on Android.
 
-## Prerequisite
+## Table of Contents
 
-- Download and install [OpenJDK 23](https://openjdk.org/projects/jdk/23/)
-- Download and install [Android Studio](https://developer.android.com/studio/install) and the following:
-  - Android SDK (minimum supported API level is 21)
-  - Android NDK r27
-
-> [!NOTE]
-> Prerequisites can also be downloaded and installed manually:
-> - by running the automated script as described in [Testing Libraries on Android](../../testing/libraries/testing-android.md#using-a-terminal)
-> - by downloading the archives:
->   - Android SDK - Download [command-line tools](https://developer.android.com/studio#command-line-tools-only) and use `sdkmanager` to download the SDK.
->   - Android NDK - Download [NDK](https://developer.android.com/ndk/downloads)
+- [Prerequisite](#prerequisite)
+- [Building CoreCLR for Android](#building-coreclr-for-android)
+  - [MacOS and Linux](#macos-and-linux)
+    - [Requirements](#requirements)
+    - [Building the runtime, libraries and tools](#building-the-runtime-libraries-and-tools)
+  - [Windows + WSL2](#windows--wsl2)
+    - [Windows requirements](#windows-requirements)
+    - [WSL requirements](#wsl-requirements)
+    - [Building the runtime, libraries and tools](#building-the-runtime-libraries-and-tools-1)
+- [Building and running a sample app](#building-and-running-a-sample-app)
+  - [Building HelloAndroid sample](#building-helloandroid-sample)
+  - [Running HelloAndroid sample on an emulator](#running-helloandroid-sample-on-an-emulator)
+    - [WSL2](#wsl2)
+- [Building and running tests on an emulator](#building-and-running-tests-on-an-emulator)
+- [Debugging the runtime and the sample app](#debugging-the-runtime-and-the-sample-app)
+  - [Steps](#steps)
+- [See also](#see-also)
+- [Troubleshooting](#troubleshooting)
+  - [Android samples or functional tests fail to build](#android-samples-or-functional-tests-fail-to-build)
+    - [java.lang.NullPointerException: Cannot invoke String.length()](#javalangnullpointerexception-cannot-invoke-stringlength)
 
 ## Building CoreCLR for Android
 
@@ -34,11 +40,23 @@ Supported target architectures:
 
 ### MacOS and Linux
 
-#### Requirements
+#### Prerequisites
+
+- Download and install [OpenJDK 23](https://openjdk.org/projects/jdk/23/)
+- Download and install [Android Studio](https://developer.android.com/studio/install) and the following:
+  - Android SDK (minimum supported API level is 21)
+  - Android NDK r27c
+
+> [!NOTE]
+> Prerequisites can also be downloaded and installed manually:
+> - An automated script as described in [Testing Libraries on Android](../../testing/libraries/testing-android.md#using-a-terminal)
+> - Downloading the archives:
+>   - Android SDK - Download [command-line tools](https://developer.android.com/studio#command-line-tools-only) and use `sdkmanager` to download the SDK.
+>   - Android NDK - Download [NDK](https://developer.android.com/ndk/downloads)
 
 Set the following environment variables:
-  - ANDROID_SDK_ROOT=`<full-path-to-android-sdk>`
-  - ANDROID_NDK_ROOT=`<full-path-to-android-ndk>`
+  - `export ANDROID_SDK_ROOT=<full-path-to-android-sdk>`
+  - `export ANDROID_NDK_ROOT=<full-path-to-android-ndk>`
 
 #### Building the runtime, libraries and tools
 
@@ -57,22 +75,35 @@ To build CoreCLR runtime NuGet packages, run the following command from `<repo-r
 > [!NOTE]
 > The runtime packages will be located at: `<repo-root>/artifacts/packages/<configuration>/Shipping/`
 
-### Windows
+> [!NOTE]
+> The static CoreCLR runtime for static linking (`libcoreclr_static.a`) is available in inner build artifacts but is not yet shipped in NuGet packages.
+
+### Windows + WSL2
 
 Building on Windows is not directly supported yet. However it is possible to use WSL2 for this purpose.
 
-#### WSL2
+#### Windows prerequisites
 
-##### Requirements
+- Download and install [Android Studio](https://developer.android.com/studio/install)
+- Enable [long paths](../../requirements/windows-requirements.md#enable-long-paths)
 
-1. Install the Android SDK and NDK in WSL per the [prerequisites](#prerequisite). This can be done by downloading the archives or using Android Studio.
+#### WSL prerequisites
+
+1. Follow [linux-requirements.md](../../requirements/linux-requirements.md).
+2. Install OpenJDK, Android SDK and Android NDK in as described in [Linux prerequisites](#prerequisites). There is a convenient automated script, but it can also be done manually by downloading the archives or using Android Studio.
 - In case of Android Studio:
     - Make sure WSL is updated: from Windows host, `wsl --update`
     - [Enabled systemd](https://devblogs.microsoft.com/commandline/systemd-support-is-now-available-in-wsl/#set-the-systemd-flag-set-in-your-wsl-distro-settings)
     - `sudo snap install android-studio --classic`
-2. Set the following environment variables:
-    - ANDROID_SDK_ROOT=`<full-path-to-android-sdk>`
-    - ANDROID_NDK_ROOT=`<full-path-to-android-ndk>`
+- For Ubuntu, OpenJDK 21 is sufficient:
+
+```
+apt install openjdk-21-jdk
+```
+
+3. Set the following environment variables:
+    - `export ANDROID_SDK_ROOT=<full-path-to-android-sdk>`
+    - `export ANDROID_NDK_ROOT=<full-path-to-android-ndk>`
 
 #### Building the runtime, libraries and tools
 
@@ -84,9 +115,7 @@ To build CoreCLR runtime, libraries and tools, run the following command from `<
 
 ## Building and running a sample app
 
-To demonstrate building and running an Android sample application with CoreCLR, we will use:
-- the [HelloAndroid sample app](../../../../src/mono/sample/Android/AndroidSampleApp.csproj).
-- a functional tests [Android.Device_Emulator.JIT.Test](../../../../src/tests/FunctionalTests/Android/Device_Emulator/JIT/Android.Device_Emulator.JIT.Test.csproj)
+To demonstrate building and running an Android application with CoreCLR, we will use the [HelloAndroid sample app](../../../../src/mono/sample/Android/AndroidSampleApp.csproj).
 
 A prerequisite for building and running samples locally is to have CoreCLR successfully built for desired Android platform.
 
@@ -128,30 +157,24 @@ The app can be run on an emulator running on the Windows host.
 2. In Windows, create and start an emulator
 3. In WSL, swap the `adb` from the Android SDK in WSL2 with that from Windows
     - `mv $ANDROID_SDK_ROOT/platform-tools/adb $ANDROID_SDK_ROOT/platform-tools/adb-orig`
-    - `ln -s /mnt/<path-to-adb-on-host> $ANDROID_SDK_ROOT/platform-tools/adb`
+    - `ln -s /mnt/<path-to-sdk-on-host>/platform-tools/adb.exe $ANDROID_SDK_ROOT/platform-tools/adb`
+    - On Windows host, you can find the SDK location in Android Studio's SDK Manager.
 4. In WSL, Make xharness use the `adb` corresponding to the Windows host:
     - `export ADB_EXE_PATH=$ANDROID_SDK_ROOT/platform-tools/adb`
 5. In WSL, run the `make` command as [above](#running-helloandroid-sample-on-an-emulator)
 
-### Building and running functional tests on an emulator
+## Building and running tests on an emulator
 
-Similarly to the `HelloAndroid` sample, it is possible to build and run a functional test on Android with CoreCLR on an emulator.
+To demonstrate building and running tests on CoreCLR Android, we will use the [Android.Device_Emulator.JIT.Test](../../../../src/tests/FunctionalTests/Android/Device_Emulator/JIT/Android.Device_Emulator.JIT.Test.csproj) test project.
 
-To build and run a functional test on Android with CoreCLR, run the following command from `<repo_root>`:
+To build and run the test on Android with CoreCLR, run the following command from `<repo_root>`:
 
 ```
-./dotnet.sh build -c Release src/tests/FunctionalTests/Android/Device_Emulator/JIT/Android.Device_Emulator.JIT.Test.csproj /p:TargetOS=android /p:TargetArchitecture=arm64 /t:Test /p:RuntimeFlavor=coreclr
+./dotnet.sh build -c <Debug|Release> src/tests/FunctionalTests/Android/Device_Emulator/JIT/Android.Device_Emulator.JIT.Test.csproj /p:TargetOS=android /p:TargetArchitecture=<x64|arm64> /t:Test /p:RuntimeFlavor=coreclr
 ```
 
 > [!NOTE]
-> Similarly to the `HelloAndroid` sample the emulator needs to be up and running.
-
-### Useful make commands
-
-For convenience it is possible to run a single make command which builds all required dependencies, the app and runs it:
-```
-make BUILD_CONFIG=<Debug|Release> TARGET_ARCH=<x64|arm64> RUNTIME_FLAVOR=CoreCLR DEPLOY_AND_RUN=true all -C src/mono/sample/Android
-```
+> Similarly to the `HelloAndroid` sample, the emulator needs to be up and running.
 
 ## Debugging the runtime and the sample app
 
@@ -190,6 +213,8 @@ Similar instructions for debugging Android apps with Mono runtime can be found [
 ## Troubleshooting
 
 ### Android samples or functional tests fail to build
+
+#### java.lang.NullPointerException: Cannot invoke String.length()
 
 If multiple JDKs are installed on your system, you may encounter the following error:
 

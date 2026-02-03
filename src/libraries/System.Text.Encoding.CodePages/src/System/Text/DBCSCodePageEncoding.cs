@@ -702,7 +702,7 @@ namespace System.Text
                     if (bytes + 1 >= byteEnd)
                     {
                         // didn't use this char, we'll throw or use buffer
-                        if (fallbackBuffer == null || fallbackHelper.bFallingBack == false)
+                        if (fallbackBuffer == null || !fallbackHelper.bFallingBack)
                         {
                             Debug.Assert(chars > charStart,
                                 "[DBCSCodePageEncoding.GetBytes]Expected chars to have advanced (double byte case)");
@@ -721,7 +721,7 @@ namespace System.Text
                 else if (bytes >= byteEnd)
                 {
                     // didn't use this char, we'll throw or use buffer
-                    if (fallbackBuffer == null || fallbackHelper.bFallingBack == false)
+                    if (fallbackBuffer == null || !fallbackHelper.bFallingBack)
                     {
                         Debug.Assert(chars > charStart,
                             "[DBCSCodePageEncoding.GetBytes]Expected chars to have advanced (single byte case)");
@@ -1086,7 +1086,7 @@ namespace System.Text
             if (decoder != null)
             {
                 // Clear it in case of MustFlush
-                if (bUsedDecoder == false)
+                if (!bUsedDecoder)
                 {
                     decoder.bLeftOver = 0;
                 }

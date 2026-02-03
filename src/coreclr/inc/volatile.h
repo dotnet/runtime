@@ -422,7 +422,7 @@ public:
     // accessed without using Load and Store, but it is necessary for passing Volatile<T> to APIs like
     // InterlockedIncrement.
     //
-    inline volatile T* GetPointer() { return (volatile T*)&m_val; }
+    inline constexpr volatile T* GetPointer() { return (volatile T*)&m_val; }
 
 
     //
@@ -453,8 +453,8 @@ public:
     // a pointer to a volatile T here, so we cannot accidentally pass this pointer to an API that
     // expects a normal pointer.
     //
-    inline T volatile * operator&() {return this->GetPointer();}
-    inline T volatile const * operator&() const {return this->GetPointer();}
+    inline constexpr T volatile * operator&() {return this->GetPointer();}
+    inline constexpr T volatile const * operator&() const {return this->GetPointer();}
 
     //
     // Comparison operators

@@ -37,6 +37,18 @@ namespace System.Net.Sockets.Tests
             await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(s, null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
         }
 
+        [Fact]
+        public void SendFile_NonBlockingSocket_ThrowsInvalidOperationException()
+        {
+            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (client)
+            using (server)
+            {
+                client.Blocking = false;
+                Assert.Throws<InvalidOperationException>(() => client.SendFile(null));
+            }
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -484,7 +496,6 @@ namespace System.Net.Sockets.Tests
         {
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42534", TestPlatforms.Windows)]
         [OuterLoop("Creates and sends a file several gigabytes long")]
         [Fact]
         public async Task GreaterThan2GBFile_SendsAllBytes()

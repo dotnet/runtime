@@ -60,7 +60,6 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/jit-info.h>
 #include <mono/utils/mono-tls-inline.h>
-#include <mono/utils/lifo-semaphore.h>
 #include <mono/utils/w32subset.h>
 
 #ifdef HAVE_SYS_WAIT_H
@@ -1759,6 +1758,12 @@ ves_icall_System_Threading_Thread_GetCurrentThread (void)
 	return mono_thread_current ();
 }
 
+MonoBoolean
+ves_icall_System_Threading_Thread_CurrentThreadIsFinalizerThread (void)
+{
+	return mono_gc_is_finalizer_internal_thread (mono_thread_internal_current ()) ? TRUE : FALSE;
+}
+
 static MonoInternalThread*
 thread_handle_to_internal_ptr (MonoThreadObjectHandle thread_handle)
 {
@@ -3038,7 +3043,7 @@ dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud, FILE* output_fi
 		MonoStackFrameInfo *frame = &ud->frames [i];
 		MonoMethod *method = NULL;
 
-		if (frame->type == FRAME_TYPE_MANAGED)
+		if (frame->type == FRAME_TYPE_MANAGED && frame->ji && !frame->ji->async)
 			method = mono_jit_info_get_method (frame->ji);
 
 		if (method) {
@@ -4876,31 +4881,4 @@ guint64
 ves_icall_System_Threading_Thread_GetCurrentOSThreadId (MonoError *error)
 {
 	return mono_native_thread_os_id_get ();
-}
-
-gpointer
-ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (void)
-{
-	return (gpointer)mono_lifo_semaphore_init ();
-}
-
-void
-ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr)
-{
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_delete (sem);
-}
-
-gint32
-ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms)
-{
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	return mono_lifo_semaphore_timed_wait (sem, timeout_ms);
-}
-
-void
-ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
-{
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_release (sem, count);
 }

@@ -933,7 +933,7 @@ namespace System.Diagnostics.Tests
         [InlineData("")]
         [InlineData("domain")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void Domain_SetWindows_GetReturnsExpected(string domain)
+        public void Domain_SetWindows_GetReturnsExpected(string? domain)
         {
             var info = new ProcessStartInfo { Domain = domain };
             Assert.Equal(domain ?? string.Empty, info.Domain);
@@ -952,7 +952,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("filename")]
-        public void FileName_Set_GetReturnsExpected(string fileName)
+        public void FileName_Set_GetReturnsExpected(string? fileName)
         {
             var info = new ProcessStartInfo { FileName = fileName };
             Assert.Equal(fileName ?? string.Empty, info.FileName);
@@ -1001,7 +1001,7 @@ namespace System.Diagnostics.Tests
         [InlineData("")]
         [InlineData("passwordInClearText")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void PasswordInClearText_SetWindows_GetReturnsExpected(string passwordInClearText)
+        public void PasswordInClearText_SetWindows_GetReturnsExpected(string? passwordInClearText)
         {
             var info = new ProcessStartInfo { PasswordInClearText = passwordInClearText };
             Assert.Equal(passwordInClearText, info.PasswordInClearText);
@@ -1041,7 +1041,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("domain")]
-        public void UserName_Set_GetReturnsExpected(string userName)
+        public void UserName_Set_GetReturnsExpected(string? userName)
         {
             var info = new ProcessStartInfo { UserName = userName };
             Assert.Equal(userName ?? string.Empty, info.UserName);
@@ -1051,7 +1051,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("verb")]
-        public void Verb_Set_GetReturnsExpected(string verb)
+        public void Verb_Set_GetReturnsExpected(string? verb)
         {
             var info = new ProcessStartInfo { Verb = verb };
             Assert.Equal(verb ?? string.Empty, info.Verb);
@@ -1081,7 +1081,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("workingdirectory")]
-        public void WorkingDirectory_Set_GetReturnsExpected(string workingDirectory)
+        public void WorkingDirectory_Set_GetReturnsExpected(string? workingDirectory)
         {
             var info = new ProcessStartInfo { WorkingDirectory = workingDirectory };
             Assert.Equal(workingDirectory ?? string.Empty, info.WorkingDirectory);

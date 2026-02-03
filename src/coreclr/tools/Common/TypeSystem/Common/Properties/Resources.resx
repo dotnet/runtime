@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -155,6 +155,9 @@
   </data>
   <data name="FileLoadErrorGeneric" xml:space="preserve">
     <value>Failed to load assembly '{0}'</value>
+  </data>
+  <data name="InvalidProgramAsync" xml:space="preserve">
+    <value>UnmanagedCallersOnly attribute specified on async method '{0}'</value>
   </data>
   <data name="InvalidProgramDefault" xml:space="preserve">
     <value>Invalid IL or CLR metadata</value>

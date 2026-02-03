@@ -629,13 +629,6 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
             break;
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-        case GT_END_LFIN:
-            srcCount = 0;
-            assert(dstCount == 0);
-            break;
-#endif
-
         case GT_INDEX_ADDR:
         {
             assert(dstCount == 1);
@@ -1305,6 +1298,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be restored in the epilog sequence.
             ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet();
+            if (compiler->getNeedsGSSecurityCookie())
+            {
+                ctrlExprCandidates &= ~compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true).GetIntRegSet();
+            }
         }
 #ifdef TARGET_X86
         else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT) &&
@@ -1709,13 +1706,6 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
                 if (simdTemp == nullptr)
                 {
                     simdTemp = buildInternalFloatRegisterDefForNode(putArgStk);
-                }
-
-                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-                {
-                    // To store SIMD12 without extractps we will need
-                    // a temp xmm reg to do the shuffle.
-                    buildInternalFloatRegisterDefForNode(use.GetNode());
                 }
             }
 #endif // defined(FEATURE_SIMD)
@@ -2270,16 +2260,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                         RefPosition* op1Use = BuildUse(op1);
                         srcCount += 1;
-
-                        if ((baseType == TYP_FLOAT) && HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId) &&
-                            !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-                        {
-                            setDelayFree(op1Use);
-                        }
-                        else
-                        {
-                            tgtPrefUse = op1Use;
-                        }
+                        tgtPrefUse = op1Use;
                     }
 
                     buildUses = false;
@@ -2288,12 +2269,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 else if (varTypeIsByte(baseType) && HWIntrinsicInfo::IsVectorToScalar(intrinsicId))
                 {
                     dstCandidates = allByteRegs();
-                }
-                else if (varTypeIsLong(baseType) && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-                {
-                    // For SSE2 fallbacks, we will need a temp register to insert the upper half of a long
-                    buildInternalFloatRegisterDefForNode(intrinsicTree);
-                    setInternalRegsDelayFree = true;
                 }
 #endif // TARGET_X86
                 break;
@@ -2396,7 +2371,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_SSE42_BlendVariable:
+            case NI_X86Base_BlendVariable:
             {
                 assert(numArgs == 3);
 
@@ -2424,7 +2399,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_SSE42_Extract:
+            case NI_X86Base_Extract:
             {
                 assert(!varTypeIsFloating(baseType));
 
@@ -2438,8 +2413,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
 
 #ifdef TARGET_X86
-            case NI_SSE42_Crc32:
-            case NI_SSE42_X64_Crc32:
+            case NI_X86Base_Crc32:
+            case NI_X86Base_X64_Crc32:
             {
                 // TODO-XArch-Cleanup: Currently we use the BaseType to bring the type of the second argument
                 // to the code generator. We may want to encode the overload info in another way.
@@ -2860,6 +2835,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 // get a tmp register for overflow check
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+
+                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                {
+                    // If AVX is not supported, we need to specifically allocate XMM0 because we will eventually
+                    // generate a pblendvpd, which requires XMM0 specifically for the mask register.
+                    buildInternalFloatRegisterDefForNode(intrinsicTree,
+                                                         compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                                                             ? lowSIMDRegs()
+                                                             : SRBM_XMM0);
+                }
                 setInternalRegsDelayFree = true;
 
                 buildUses = false;
@@ -3106,15 +3091,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     // but in this case they must be contained.
     assert(!indirTree->TypeIs(TYP_STRUCT));
     SingleTypeRegSet useCandidates = RBM_NONE;
-
-#ifdef FEATURE_SIMD
-    if (indirTree->TypeIs(TYP_SIMD12) && indirTree->OperIs(GT_STOREIND) &&
-        !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42) && !indirTree->Data()->IsVectorZero())
-    {
-        // GT_STOREIND needs an internal register so the upper 4 bytes can be extracted
-        buildInternalFloatRegisterDefForNode(indirTree);
-    }
-#endif // FEATURE_SIMD
 
 #ifdef TARGET_AMD64
     if (varTypeUsesIntReg(indirTree->Addr()))

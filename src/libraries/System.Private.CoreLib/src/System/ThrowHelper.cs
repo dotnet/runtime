@@ -78,9 +78,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
+        internal static void ThrowArgument_TypeContainsReferences(Type targetType)
         {
-            throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));
+            throw new ArgumentException(SR.Format(SR.Argument_TypeContainsReferences, targetType));
         }
 
         [DoesNotReturn]
@@ -333,18 +333,6 @@ namespace System
         internal static void ThrowArgumentException(ExceptionResource resource, ExceptionArgument argument)
         {
             throw GetArgumentException(resource, argument);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArgumentException_HandleNotSync(string paramName)
-        {
-            throw new ArgumentException(SR.Arg_HandleNotSync, paramName);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArgumentException_HandleNotAsync(string paramName)
-        {
-            throw new ArgumentException(SR.Arg_HandleNotAsync, paramName);
         }
 
         [DoesNotReturn]
@@ -1066,6 +1054,12 @@ namespace System
                     return "factor";
                 case ExceptionArgument.set:
                     return "set";
+                case ExceptionArgument.valueFactory:
+                    return "valueFactory";
+                case ExceptionArgument.addValueFactory:
+                    return "addValueFactory";
+                case ExceptionArgument.updateValueFactory:
+                    return "updateValueFactory";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1248,6 +1242,10 @@ namespace System
                     return SR.Argument_HasToBeArrayClass;
                 case ExceptionResource.InvalidOperation_IncompatibleComparer:
                     return SR.InvalidOperation_IncompatibleComparer;
+                case ExceptionResource.ConcurrentDictionary_ItemKeyIsNull:
+                    return SR.ConcurrentDictionary_ItemKeyIsNull;
+                case ExceptionResource.ConcurrentDictionary_TypeOfValueIncorrect:
+                    return SR.ConcurrentDictionary_TypeOfValueIncorrect;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1357,6 +1355,9 @@ namespace System
         divisor,
         factor,
         set,
+        valueFactory,
+        addValueFactory,
+        updateValueFactory
     }
 
     //
@@ -1444,5 +1445,7 @@ namespace System
         Format_ExpectedAsciiDigit,
         Argument_HasToBeArrayClass,
         InvalidOperation_IncompatibleComparer,
+        ConcurrentDictionary_ItemKeyIsNull,
+        ConcurrentDictionary_TypeOfValueIncorrect,
     }
 }

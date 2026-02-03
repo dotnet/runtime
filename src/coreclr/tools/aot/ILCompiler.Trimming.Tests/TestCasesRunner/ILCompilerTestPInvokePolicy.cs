@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
     {
         public override bool GenerateDirectCall(MethodDesc method, out string? externName)
         {
-            externName = method.Name;
+            externName = method.GetName();
             return true;
         }
     }

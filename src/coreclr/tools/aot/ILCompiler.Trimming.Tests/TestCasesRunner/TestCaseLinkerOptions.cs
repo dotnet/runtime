@@ -34,5 +34,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         public List<string> Substitutions = new List<string>();
 
         public List<string> LinkAttributes = new List<string>();
+
+        public List<string> RootEntireAssemblies = new List<string>();
     }
 }

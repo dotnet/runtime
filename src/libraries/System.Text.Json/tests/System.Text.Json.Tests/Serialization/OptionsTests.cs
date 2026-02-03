@@ -1952,5 +1952,72 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Single(result);
             Assert.Equal(2, result["a"]);
         }
+
+        [Fact]
+        public static void PreferredObjectCreationHandling_CanBeSet()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Equal(JsonObjectCreationHandling.Replace, options.PreferredObjectCreationHandling);
+            
+            options.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
+            Assert.Equal(JsonObjectCreationHandling.Populate, options.PreferredObjectCreationHandling);
+            
+            options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
+            options.MakeReadOnly();
+            Assert.Throws<InvalidOperationException>(() => options.PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace);
+        }
+
+        [Fact]
+        public static void PreferredObjectCreationHandling_InvalidValue_ThrowsArgumentOutOfRangeException()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.PreferredObjectCreationHandling = (JsonObjectCreationHandling)999);
+        }
+
+        [Fact]
+        public static void TypeInfoResolverChain_CanAddMultipleResolvers()
+        {
+            var options = new JsonSerializerOptions();
+            var resolver1 = new DefaultJsonTypeInfoResolver();
+            var resolver2 = new DefaultJsonTypeInfoResolver();
+            
+            options.TypeInfoResolverChain.Add(resolver1);
+            options.TypeInfoResolverChain.Add(resolver2);
+            
+            Assert.Equal(2, options.TypeInfoResolverChain.Count);
+            Assert.Same(resolver1, options.TypeInfoResolverChain[0]);
+            Assert.Same(resolver2, options.TypeInfoResolverChain[1]);
+        }
+
+        [Fact]
+        public static void TypeInfoResolverChain_ToString_ReturnsChainDescription()
+        {
+            var options = new JsonSerializerOptions();
+            options.TypeInfoResolverChain.Add(new DefaultJsonTypeInfoResolver());
+            
+            string result = options.TypeInfoResolver.ToString();
+            Assert.NotNull(result);
+            Assert.NotEmpty(result);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_WriteIndented()
+        {
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            Assert.True(options.WriteIndented);
+            
+            string json = JsonSerializer.Serialize(new { name = "test" }, options);
+            Assert.Contains("\n", json);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_DefaultBufferSize()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Equal(16384, options.DefaultBufferSize);
+            
+            options.DefaultBufferSize = 8192;
+            Assert.Equal(8192, options.DefaultBufferSize);
+        }
     }
 }

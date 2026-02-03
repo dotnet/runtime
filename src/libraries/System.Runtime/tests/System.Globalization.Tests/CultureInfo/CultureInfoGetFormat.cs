@@ -11,7 +11,7 @@ namespace System.Globalization.Tests
         [InlineData(typeof(NumberFormatInfo), typeof(NumberFormatInfo))]
         [InlineData(typeof(DateTimeFormatInfo), typeof(DateTimeFormatInfo))]
         [InlineData(typeof(string), null)]
-        public void GetFormat(Type formatType, Type expectedFormatType)
+        public void GetFormat(Type formatType, Type? expectedFormatType)
         {
             object format = new CultureInfo("en-US").GetFormat(formatType);
             if (expectedFormatType == null)

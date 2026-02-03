@@ -25,6 +25,8 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static partial int GuessKeySpec(CngProvider provider, string keyName, bool machineKey, CngAlgorithmGroup? algorithmGroup);
 
+        private static partial SafeCertContextHandle DuplicateCertificateHandle(TCertificate certificate);
+
 #if !SYSTEM_SECURITY_CRYPTOGRAPHY
         [SupportedOSPlatform("windows")]
 #endif
@@ -51,7 +53,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             // MLDsaCng and third-party implementations can be copied by exporting the PKCS#8 and importing it into
-            // a new MLDsaCng. An alternative to PKCS#8 would be to try the private seed and fall back to secret key,
+            // a new MLDsaCng. An alternative to PKCS#8 would be to try the private seed and fall back to private key,
             // but that potentially requires two calls and wouldn't allow implementations to do anything smarter internally.
             // Blobs may also be an option for MLDsaCng, but for now we will stick with PKCS#8.
             byte[] exportedPkcs8 = privateKey.ExportPkcs8PrivateKey();
@@ -75,7 +77,7 @@ namespace System.Security.Cryptography.X509Certificates
         internal static T? GetPrivateKey<T>(TCertificate certificate, Func<CspParameters, T> createCsp, Func<CngKey, T?> createCng)
             where T : class, IDisposable
         {
-            using (SafeCertContextHandle certContext = Interop.Crypt32.CertDuplicateCertificateContext(certificate.Handle))
+            using (SafeCertContextHandle certContext = DuplicateCertificateHandle(certificate))
             {
                 SafeNCryptKeyHandle? ncryptKey = TryAcquireCngPrivateKey(certContext, out CngKeyHandleOpenOptions cngHandleOptions);
                 if (ncryptKey != null)

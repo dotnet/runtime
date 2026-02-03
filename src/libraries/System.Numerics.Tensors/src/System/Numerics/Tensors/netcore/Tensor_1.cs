@@ -288,21 +288,11 @@ namespace System.Numerics.Tensors
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryGetSpan(ReadOnlySpan{NIndex}, int, out ReadOnlySpan{T})" />
         public bool TryGetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length, out ReadOnlySpan<T> span) => AsReadOnlyTensorSpan().TryGetSpan(startIndexes, length, out span);
 
-        /// <summary>
-        /// Creates a <see cref="string"/> representation of the <see cref="TensorSpan{T}"/>."/>
-        /// </summary>
-        /// <param name="maximumLengths">Maximum Length of each dimension</param>
-        /// <returns>A <see cref="string"/> representation of the <see cref="Tensor{T}"/></returns>
-        public string ToString(params ReadOnlySpan<nint> maximumLengths)
-        {
-            var sb = new StringBuilder($"System.Numerics.Tensors.Tensor<{typeof(T).Name}>[{_shape}]");
+        /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ToString()" />
+        public override string ToString() => ToString([]);
 
-            sb.AppendLine("{");
-            Tensor.ToString(AsReadOnlyTensorSpan(), maximumLengths, sb);
-            sb.AppendLine("}");
-
-            return sb.ToString();
-        }
+        /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ToString(ReadOnlySpan{nint})" />
+        public string ToString(params scoped ReadOnlySpan<nint> maximumLengths) => Tensor.ToString(AsReadOnlyTensorSpan(), maximumLengths, "System.Numerics.Tensors.Tensor");
 
         //
         // IEnumerable

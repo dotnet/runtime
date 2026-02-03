@@ -34,7 +34,7 @@ namespace System.CodeDom.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("System.Int32")]
-        public void Add_String(string type)
+        public void Add_String(string? type)
         {
             var collection = new CodeTypeReferenceCollection();
             collection.Add(type);

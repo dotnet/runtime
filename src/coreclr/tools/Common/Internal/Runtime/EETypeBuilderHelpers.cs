@@ -187,8 +187,8 @@ namespace Internal.Runtime
 
             if (type is MetadataType mdType &&
                             mdType.Module == mdType.Context.SystemModule &&
-                            mdType.Name is "WeakReference" or "WeakReference`1" &&
-                            mdType.Namespace == "System")
+                            (mdType.Name.SequenceEqual("WeakReference"u8) || mdType.Name.SequenceEqual("WeakReference`1"u8)) &&
+                            mdType.Namespace.SequenceEqual("System"u8))
             {
                 flagsEx |= (ushort)EETypeFlagsEx.HasEagerFinalizerFlag;
             }
@@ -244,7 +244,7 @@ namespace Internal.Runtime
 
             if (type.IsNullable)
             {
-                FieldDesc field = type.GetField("value");
+                FieldDesc field = type.GetField("value"u8);
 
                 int nullableValueOffset = field.Offset.AsInt;
 
@@ -273,8 +273,8 @@ namespace Internal.Runtime
 
                 if (type is MetadataType mdType &&
                             mdType.Module == mdType.Context.SystemModule &&
-                            mdType.Name == "CriticalFinalizerObject" &&
-                            mdType.Namespace == "System.Runtime.ConstrainedExecution")
+                            mdType.Name.SequenceEqual("CriticalFinalizerObject"u8) &&
+                            mdType.Namespace.SequenceEqual("System.Runtime.ConstrainedExecution"u8))
                     return true;
 
                 type = type.BaseType;

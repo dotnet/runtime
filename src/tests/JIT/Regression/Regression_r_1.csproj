@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <HasMergedInTests>True</HasMergedInTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CLR-x86-JIT\V2.0-Beta2\b268908\vars2.cs" />
+    <Compile Include="CLR-x86-JIT\V2.0-Beta2\b338014\vsw338014.cs" />
+    <Compile Include="Dev11\dev11_76013\Dev11_76013.cs" />
+  </ItemGroup>
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

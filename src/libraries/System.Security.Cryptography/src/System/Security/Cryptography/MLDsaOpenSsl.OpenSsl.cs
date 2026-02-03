@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
             SafeEvpPKeyHandle pkeyHandle,
             out SafeEvpPKeyHandle upRefHandle,
             out bool hasSeed,
-            out bool hasSecretKey)
+            out bool hasPrivateKey)
         {
             ArgumentNullException.ThrowIfNull(pkeyHandle);
 
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
                 Interop.Crypto.PalMLDsaAlgorithmId mldsaId = Interop.Crypto.MLDsaGetPalId(
                     upRefHandle,
                     out hasSeed,
-                    out hasSecretKey);
+                    out hasPrivateKey);
 
                 switch (mldsaId)
                 {
@@ -114,11 +114,11 @@ namespace System.Security.Cryptography
             Interop.Crypto.MLDsaExportPublicKey(_key, destination);
 
         /// <inheritdoc />
-        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination)
+        protected override void ExportMLDsaPrivateKeyCore(Span<byte> destination)
         {
-            if (!_hasSecretKey)
+            if (!_hasPrivateKey)
             {
-                throw new CryptographicException(SR.Cryptography_MLDsaNoSecretKey);
+                throw new CryptographicException(SR.Cryptography_NoPrivateKeyAvailable);
             }
 
             Interop.Crypto.MLDsaExportSecretKey(_key, destination);
@@ -141,7 +141,7 @@ namespace System.Security.Cryptography
             return MLDsaPkcs8.TryExportPkcs8PrivateKey(
                 this,
                 _hasSeed,
-                _hasSecretKey,
+                _hasPrivateKey,
                 destination,
                 out bytesWritten);
         }

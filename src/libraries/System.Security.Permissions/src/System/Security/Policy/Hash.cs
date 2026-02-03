@@ -17,7 +17,7 @@ namespace System.Security.Policy
         public static Hash CreateSHA1(byte[] sha1) { return default(Hash); }
         public static Hash CreateSHA256(byte[] sha256) { return default(Hash); }
         public byte[] GenerateHash(HashAlgorithm hashAlg) { return null; }
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif

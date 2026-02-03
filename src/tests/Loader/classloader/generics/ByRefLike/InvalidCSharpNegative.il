@@ -106,6 +106,7 @@
     {
         ldtoken class InvalidCSharpNegative.GenericDerivedInterface_Invalid`1<valuetype ByRefLikeType>
         call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        callvirt   instance class [System.Runtime]System.Type[] [System.Runtime]System.Type::GetInterfaces()
         callvirt instance string [System.Runtime]System.Object::ToString()
         ret
     }

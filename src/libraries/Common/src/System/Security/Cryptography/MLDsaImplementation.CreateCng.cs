@@ -14,11 +14,11 @@ namespace System.Security.Cryptography
         {
             string bcryptBlobType =
                 _hasSeed ? Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB :
-                _hasSecretKey ? Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB :
+                _hasPrivateKey ? Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB :
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB;
 
             CngKeyBlobFormat cngBlobFormat =
-                _hasSecretKey ? CngKeyBlobFormat.PQDsaPrivateBlob :
+                _hasPrivateKey ? CngKeyBlobFormat.PQDsaPrivateBlob :
                 _hasSeed ? CngKeyBlobFormat.PQDsaPrivateSeedBlob :
                 CngKeyBlobFormat.PQDsaPublicBlob;
 

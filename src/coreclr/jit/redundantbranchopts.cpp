@@ -2243,8 +2243,8 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 //   including paths involving EH flow.
 //
 // Arguments:
-//    fromBlock - staring block
-//    toBlock   - ending block
+//    fromBlock     - staring block
+//    toBlock       - ending block
 //    excludedBlock - ignore paths that flow through this block
 //
 // Returns:
@@ -2259,9 +2259,34 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 //
 bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock)
 {
+    ReachabilityResult result = optReachableWithBudget(fromBlock, toBlock, excludedBlock, nullptr);
+    assert(result != ReachabilityResult::BudgetExceeded);
+    return result == ReachabilityResult::Reachable;
+}
+
+//------------------------------------------------------------------------
+// optReachableWithBudget: see if there's a path from one block to another,
+//   including paths involving EH flow. Same as optReachable, but with a budget check.
+//
+// Arguments:
+//    fromBlock     - staring block
+//    toBlock       - ending block
+//    excludedBlock - ignore paths that flow through this block
+//    pBudget       - number of blocks to examine before returning BudgetExceeded
+//
+// Returns:
+//    ReachabilityResult::Reachable if there is a path from fromBlock to toBlock,
+//    ReachabilityResult::Unreachable if there is no such path,
+//    ReachabilityResult::BudgetExceeded if we ran out of budget before finding either.
+//
+Compiler::ReachabilityResult Compiler::optReachableWithBudget(BasicBlock* const fromBlock,
+                                                              BasicBlock* const toBlock,
+                                                              BasicBlock* const excludedBlock,
+                                                              int*              pBudget)
+{
     if (fromBlock == toBlock)
     {
-        return true;
+        return ReachabilityResult::Reachable;
     }
 
     if (optReachableBitVecTraits == nullptr)
@@ -2287,27 +2312,52 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
         {
             continue;
         }
+        BasicBlockVisit result;
+        bool            budgetExceeded = false;
+        if (pBudget == nullptr)
+        {
+            result = nextBlock->VisitAllSuccs(this, [this, toBlock, &stack](BasicBlock* succ) {
+                if (succ == toBlock)
+                {
+                    return BasicBlockVisit::Abort;
+                }
 
-        BasicBlockVisit result = nextBlock->VisitAllSuccs(this, [this, toBlock, &stack](BasicBlock* succ) {
-            if (succ == toBlock)
-            {
-                return BasicBlockVisit::Abort;
-            }
-
-            if (!BitVecOps::TryAddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
-            {
+                if (BitVecOps::TryAddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
+                {
+                    stack.Push(succ);
+                }
                 return BasicBlockVisit::Continue;
-            }
+            });
+        }
+        else
+        {
+            result =
+                nextBlock->VisitAllSuccs(this, [this, toBlock, &stack, &budgetExceeded, pBudget](BasicBlock* succ) {
+                if (succ == toBlock)
+                {
+                    return BasicBlockVisit::Abort;
+                }
 
-            stack.Push(succ);
-            return BasicBlockVisit::Continue;
-        });
+                if (--(*pBudget) <= 0)
+                {
+                    budgetExceeded = true;
+                    return BasicBlockVisit::Abort;
+                }
+
+                if (BitVecOps::TryAddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
+                {
+                    stack.Push(succ);
+                }
+
+                return BasicBlockVisit::Continue;
+            });
+        }
 
         if (result == BasicBlockVisit::Abort)
         {
-            return true;
+            return budgetExceeded ? ReachabilityResult::BudgetExceeded : ReachabilityResult::Reachable;
         }
     }
 
-    return false;
+    return ReachabilityResult::Unreachable;
 }

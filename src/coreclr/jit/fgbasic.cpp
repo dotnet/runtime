@@ -1182,8 +1182,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_AVX2_TrailingZeroCount:
                             case NI_AVX2_X64_LeadingZeroCount:
                             case NI_AVX2_X64_TrailingZeroCount:
-                            case NI_SSE42_PopCount:
-                            case NI_SSE42_X64_PopCount:
+                            case NI_X86Base_PopCount:
+                            case NI_X86Base_X64_PopCount:
                             case NI_Vector256_Create:
                             case NI_Vector512_Create:
                             case NI_Vector256_CreateScalar:
@@ -1483,18 +1483,54 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_ARM64)
                             case NI_Vector64_get_AllBitsSet:
+                            case NI_Vector64_get_E:
+                            case NI_Vector64_get_Epsilon:
+                            case NI_Vector64_get_NaN:
+                            case NI_Vector64_get_NegativeInfinity:
+                            case NI_Vector64_get_NegativeOne:
+                            case NI_Vector64_get_NegativeZero:
                             case NI_Vector64_get_One:
+                            case NI_Vector64_get_Pi:
+                            case NI_Vector64_get_PositiveInfinity:
+                            case NI_Vector64_get_Tau:
                             case NI_Vector64_get_Zero:
 #endif // TARGET_ARM64
                             case NI_Vector128_get_AllBitsSet:
+                            case NI_Vector128_get_E:
+                            case NI_Vector128_get_Epsilon:
+                            case NI_Vector128_get_NaN:
+                            case NI_Vector128_get_NegativeInfinity:
+                            case NI_Vector128_get_NegativeOne:
+                            case NI_Vector128_get_NegativeZero:
                             case NI_Vector128_get_One:
+                            case NI_Vector128_get_Pi:
+                            case NI_Vector128_get_PositiveInfinity:
+                            case NI_Vector128_get_Tau:
                             case NI_Vector128_get_Zero:
 #if defined(TARGET_XARCH)
                             case NI_Vector256_get_AllBitsSet:
+                            case NI_Vector256_get_E:
+                            case NI_Vector256_get_Epsilon:
+                            case NI_Vector256_get_NaN:
+                            case NI_Vector256_get_NegativeInfinity:
+                            case NI_Vector256_get_NegativeOne:
+                            case NI_Vector256_get_NegativeZero:
                             case NI_Vector256_get_One:
+                            case NI_Vector256_get_Pi:
+                            case NI_Vector256_get_PositiveInfinity:
+                            case NI_Vector256_get_Tau:
                             case NI_Vector256_get_Zero:
                             case NI_Vector512_get_AllBitsSet:
+                            case NI_Vector512_get_E:
+                            case NI_Vector512_get_Epsilon:
+                            case NI_Vector512_get_NaN:
+                            case NI_Vector512_get_NegativeInfinity:
+                            case NI_Vector512_get_NegativeOne:
+                            case NI_Vector512_get_NegativeZero:
                             case NI_Vector512_get_One:
+                            case NI_Vector512_get_Pi:
+                            case NI_Vector512_get_PositiveInfinity:
+                            case NI_Vector512_get_Tau:
                             case NI_Vector512_get_Zero:
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
@@ -3741,30 +3777,31 @@ void Compiler::fgFindBasicBlocks()
         }
         else
         {
-            HBtab->ebdTyp = clause.ClassToken;
-
-            /* Set bbCatchTyp as appropriate */
-
+            // Set ebdTyp and bbCatchTyp as appropriate
+            //
             if (clause.Flags & CORINFO_EH_CLAUSE_FINALLY)
             {
                 hndBegBB->bbCatchTyp = BBCT_FINALLY;
+                HBtab->ebdTyp        = 0;
             }
             else
             {
                 if (clause.Flags & CORINFO_EH_CLAUSE_FAULT)
                 {
                     hndBegBB->bbCatchTyp = BBCT_FAULT;
+                    HBtab->ebdTyp        = 0;
                 }
                 else
                 {
-                    hndBegBB->bbCatchTyp = clause.ClassToken;
-
                     // These values should be non-zero value that will
                     // not collide with real tokens for bbCatchTyp
                     if (clause.ClassToken == 0)
                     {
                         BADCODE("Exception catch type is Null");
                     }
+
+                    hndBegBB->bbCatchTyp = clause.ClassToken;
+                    HBtab->ebdTyp        = clause.ClassToken;
 
                     noway_assert(clause.ClassToken != BBCT_FAULT);
                     noway_assert(clause.ClassToken != BBCT_FINALLY);
@@ -3888,10 +3925,6 @@ void Compiler::fgFindBasicBlocks()
          *  try-finally blocks.
          */
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-        HBtab->ebdHandlerNestingLevel = 0;
-#endif // FEATURE_EH_WINDOWS_X86
-
         HBtab->ebdEnclosingTryIndex = EHblkDsc::NO_ENCLOSING_INDEX;
         HBtab->ebdEnclosingHndIndex = EHblkDsc::NO_ENCLOSING_INDEX;
 
@@ -3900,13 +3933,6 @@ void Compiler::fgFindBasicBlocks()
 
         for (EHblkDsc* xtab = compHndBBtab; xtab < HBtab; xtab++)
         {
-#if defined(FEATURE_EH_WINDOWS_X86)
-            if (!UsesFunclets() && jitIsBetween(xtab->ebdHndBegOffs(), hndBegOff, hndEndOff))
-            {
-                xtab->ebdHandlerNestingLevel++;
-            }
-#endif // FEATURE_EH_WINDOWS_X86
-
             /* If we haven't recorded an enclosing try index for xtab then see
              *  if this EH region should be recorded.  We check if the
              *  first offset in the xtab lies within our region.  If so,
@@ -3937,17 +3963,6 @@ void Compiler::fgFindBasicBlocks()
         }
 
     } // end foreach handler table entry
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!UsesFunclets())
-    {
-        for (EHblkDsc* const HBtab : EHClauses(this))
-        {
-            if (ehMaxHndNestingCount <= HBtab->ebdHandlerNestingLevel)
-                ehMaxHndNestingCount = HBtab->ebdHandlerNestingLevel + 1;
-        }
-    }
-#endif // FEATURE_EH_WINDOWS_X86
 
     {
         // always run these checks for a debug build
@@ -4188,7 +4203,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
                 }
                 break;
 
-            case BBJ_EHCATCHRET:  // block ends with a leave out of a catch (only if UsesFunclets() == true)
+            case BBJ_EHCATCHRET:  // block ends with a leave out of a catch
             case BBJ_CALLFINALLY: // block always calls the target finally
             default:
                 noway_assert(!"Unexpected bbKind"); // these blocks don't get created until importing
@@ -4803,11 +4818,34 @@ BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
             }
         }
 
-        curr->bbCodeOffsEnd = max(curr->bbCodeOffs, splitPointILOffset);
+        if (splitPointILOffset == BAD_IL_OFFSET)
+        {
+            // Try to look forwards in the next block
+            for (GenTree* node : LIR::AsRange(newBlock))
+            {
+                if (node->OperIs(GT_IL_OFFSET))
+                {
+                    GenTreeILOffset* ilOffset = node->AsILOffset();
+                    DebugInfo        rootDI   = ilOffset->gtStmtDI.GetRoot();
+                    if (rootDI.IsValid())
+                    {
+                        splitPointILOffset = rootDI.GetLocation().GetOffset();
+                        break;
+                    }
+                }
+            }
+        }
 
-        // Also use this as the beginning offset of the next block. Presumably we could/should
-        // look to see if the first node is a GT_IL_OFFSET node, and use that instead.
-        newBlock->bbCodeOffs = min(splitPointILOffset, newBlock->bbCodeOffsEnd);
+        if (splitPointILOffset == BAD_IL_OFFSET)
+        {
+            // If we found no IL_OFFSET in the block then we cannot do anything
+            // but guess. Let's make the old block (upper part) contain
+            // everything if we have an end, and otherwise nothing.
+            splitPointILOffset = curr->bbCodeOffsEnd == BAD_IL_OFFSET ? curr->bbCodeOffs : curr->bbCodeOffsEnd;
+        }
+
+        curr->bbCodeOffsEnd  = splitPointILOffset;
+        newBlock->bbCodeOffs = splitPointILOffset;
     }
     else
     {
@@ -4872,7 +4910,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 //    Returns a new block, that is a successor of 'curr' and which branches unconditionally to 'succ'
 //
 // Assumptions:
-//    'curr' must have a bbKind of BBJ_COND, BBJ_ALWAYS, or BBJ_SWITCH
+//    'curr' must have a bbKind of BBJ_COND, BBJ_ALWAYS, BBJ_SWITCH, or BBJ_CALLFINALLYRET
 //
 // Notes:
 //    The returned block is empty.
@@ -4880,7 +4918,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 
 BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 {
-    assert(curr->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_ALWAYS));
+    assert(curr->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_ALWAYS, BBJ_CALLFINALLYRET));
     assert(fgPredsComputed);
     assert(fgGetPredForBlock(succ, curr) != nullptr);
 
@@ -5003,16 +5041,13 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     }
 
 #ifdef DEBUG
-    if (UsesFunclets())
+    // You can't unlink a range that includes the first funclet block. A range certainly
+    // can't cross the non-funclet/funclet region. And you can't unlink the first block
+    // of the first funclet with this, either. (If that's necessary, it could be allowed
+    // by updating fgFirstFuncletBB to bEnd->bbNext.)
+    for (BasicBlock* tempBB = bBeg; tempBB != bEnd->Next(); tempBB = tempBB->Next())
     {
-        // You can't unlink a range that includes the first funclet block. A range certainly
-        // can't cross the non-funclet/funclet region. And you can't unlink the first block
-        // of the first funclet with this, either. (If that's necessary, it could be allowed
-        // by updating fgFirstFuncletBB to bEnd->bbNext.)
-        for (BasicBlock* tempBB = bBeg; tempBB != bEnd->Next(); tempBB = tempBB->Next())
-        {
-            assert(tempBB != fgFirstFuncletBB);
-        }
+        assert(tempBB != fgFirstFuncletBB);
     }
 #endif // DEBUG
 }
@@ -5220,39 +5255,6 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
 
 /*****************************************************************************
  *
- *  Is the BasicBlock bJump a forward branch?
- *   Optionally bSrc can be supplied to indicate that
- *   bJump must be forward with respect to bSrc
- */
-bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc /* = NULL */)
-{
-    assert((bJump->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bJump->TargetIs(bDest)) ||
-           (bJump->KindIs(BBJ_COND) && bJump->TrueTargetIs(bDest)));
-
-    bool        result = false;
-    BasicBlock* bTemp  = (bSrc == nullptr) ? bJump : bSrc;
-
-    while (true)
-    {
-        bTemp = bTemp->Next();
-
-        if (bTemp == nullptr)
-        {
-            break;
-        }
-
-        if (bTemp == bDest)
-        {
-            result = true;
-            break;
-        }
-    }
-
-    return result;
-}
-
-/*****************************************************************************
- *
  *  Function called to move the range of blocks [bStart .. bEnd].
  *  The blocks are placed immediately after the insertAfterBlk.
  *  fgFirstFuncletBB is not updated; that is the responsibility of the caller, if necessary.
@@ -5314,7 +5316,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     BasicBlock* bPrev   = nullptr;
 
     // We don't support moving try regions... yet?
-    noway_assert(!UsesFunclets() || relocateType == FG_RELOCATE_HANDLER);
+    noway_assert(relocateType == FG_RELOCATE_HANDLER);
 
     HBtab = ehGetDsc(regionIndex);
 
@@ -5352,24 +5354,11 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
         goto FAILURE;
     }
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    // In the funclets case, we still need to set some information on the handler blocks
-    if (!UsesFunclets() && bLast->IsLast())
-    {
-        INDEBUG(reason = "region is already at the end of the method";)
-        goto FAILURE;
-    }
-#endif // FEATURE_EH_WINDOWS_X86
-
     // Walk the block list for this purpose:
     // 1. Verify that all the blocks in the range are either all rarely run or not rarely run.
     // When creating funclets, we ignore the run rarely flag, as we need to be able to move any blocks
     // in the range.
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    bool isRare;
-    isRare = bStart->isRunRarely();
-#endif // FEATURE_EH_WINDOWS_X86
     block = fgFirstBB;
     while (true)
     {
@@ -5387,15 +5376,6 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 
         if (inTheRange)
         {
-#if defined(FEATURE_EH_WINDOWS_X86)
-            // Unless all blocks are (not) run rarely we must return false.
-            if (!UsesFunclets() && isRare != block->isRunRarely())
-            {
-                INDEBUG(reason = "this region contains both rarely run and non-rarely run blocks";)
-                goto FAILURE;
-            }
-#endif // FEATURE_EH_WINDOWS_X86
-
             validRange = true;
         }
 
@@ -5422,15 +5402,6 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
         fgDispHandlerTab();
     }
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    // This is really expensive, and quickly becomes O(n^n) with funclets
-    // so only do it once after we've created them (see fgCreateFunclets)
-    if (!UsesFunclets() && expensiveDebugCheckLevel >= 2)
-    {
-        fgDebugCheckBBlist();
-    }
-#endif
-
 #endif // DEBUG
 
     BasicBlock* bNext;
@@ -5442,7 +5413,6 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     BasicBlock* insertAfterBlk;
     insertAfterBlk = fgLastBB;
 
-    if (UsesFunclets())
     {
         // There are several cases we need to consider when moving an EH range.
         // If moving a range X, we must consider its relationship to every other EH
@@ -5544,59 +5514,6 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 // We have to wait to do this until we've created all the additional regions
 // Because this relies on ebdEnclosingTryIndex and ebdEnclosingHndIndex
 #endif // DEBUG
-    }
-    else
-    {
-#if defined(FEATURE_EH_WINDOWS_X86)
-        for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
-        {
-            if (XTnum == regionIndex)
-            {
-                // Don't update our handler's Last info
-                continue;
-            }
-
-            if (HBtab->ebdTryLast == bLast)
-            {
-                // If we moved a set of blocks that were at the end of
-                // a different try region then we may need to update ebdTryLast
-                for (block = HBtab->ebdTryBeg; block != NULL; block = block->Next())
-                {
-                    if (block == bPrev)
-                    {
-                        fgSetTryEnd(HBtab, bPrev);
-                        break;
-                    }
-                    else if (HBtab->ebdTryLast->NextIs(block))
-                    {
-                        // bPrev does not come after the TryBeg
-                        break;
-                    }
-                }
-            }
-            if (HBtab->ebdHndLast == bLast)
-            {
-                // If we moved a set of blocks that were at the end of
-                // a different handler region then we must update ebdHndLast
-                for (block = HBtab->ebdHndBeg; block != NULL; block = block->Next())
-                {
-                    if (block == bPrev)
-                    {
-                        fgSetHndEnd(HBtab, bPrev);
-                        break;
-                    }
-                    else if (HBtab->ebdHndLast->NextIs(block))
-                    {
-                        // bPrev does not come after the HndBeg
-                        break;
-                    }
-                }
-            }
-        } // end exception table iteration
-
-        // We have decided to insert the block(s) after fgLastBlock
-        fgMoveBlocksAfter(bStart, bLast, insertAfterBlk);
-#endif // FEATURE_EH_WINDOWS_X86
     }
 
     goto DONE;
@@ -6215,7 +6132,7 @@ BasicBlock* Compiler::fgNewBBinRegion(BBKinds     jumpKind,
 
         // Figure out the start and end block range to search for an insertion location. Pick the beginning and
         // ending blocks of the target EH region (the 'endBlk' is one past the last block of the EH region, to make
-        // loop iteration easier). Note that, after funclets have been created (for UsesFunclets() == true),
+        // loop iteration easier). Note that, after funclets have been created,
         // this linear block range will not include blocks of handlers for try/handler clauses nested within
         // this EH region, as those blocks have been extracted as funclets. That is ok, though, because we don't
         // want to insert a block in any nested EH region.

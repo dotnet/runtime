@@ -7,6 +7,9 @@
 // Reduced from 73.5 KiB to 0.6 KiB in 00:02:02
 // Hits JIT assert in Release:
 // Assertion failed 'varTypeIsUnsigned(srcLoadType) || (genTypeSize(srcLoadType) >= genTypeSize(castType))' in 'Program:Main(Fuzzlyn.ExecutionServer.IRuntime)' during 'Generate code' (IL size 35; hash 0xade6b36b; FullOpts)
+
+namespace Runtime_114573;
+
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;

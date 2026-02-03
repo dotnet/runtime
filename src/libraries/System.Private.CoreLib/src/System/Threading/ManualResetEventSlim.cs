@@ -158,7 +158,7 @@ namespace System.Threading
         {
             // Specify the default spin count, and use default spin if we're
             // on a multi-processor machine. Otherwise, we won't.
-            Initialize(initialState, SpinWait.SpinCountforSpinBeforeWait);
+            Initialize(initialState, SpinWait.SpinCountForSpinBeforeWait);
         }
 
         /// <summary>
@@ -352,9 +352,6 @@ namespace System.Threading
 #endif
         public void Wait()
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
             Wait(Timeout.Infinite, CancellationToken.None);
         }
 
@@ -491,12 +488,7 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
-#if FEATURE_WASM_MANAGED_THREADS
-            Thread.AssureBlockingPossible();
-#endif
+            Thread.ThrowIfSingleThreaded();
 
             if (!IsSet)
             {
@@ -508,7 +500,7 @@ namespace System.Threading
 
 
                 // We spin briefly before falling back to allocating and/or waiting on a true event.
-                uint startTime = 0;
+                long startTime = 0;
                 bool bNeedTimeoutAdjustment = false;
                 int realMillisecondsTimeout = millisecondsTimeout; // this will be adjusted if necessary.
 
@@ -520,7 +512,7 @@ namespace System.Threading
                     // period of time.  The timeout adjustments only take effect when and if we actually
                     // decide to block in the kernel below.
 
-                    startTime = TimeoutHelper.GetTime();
+                    startTime = Environment.TickCount64;
                     bNeedTimeoutAdjustment = true;
                 }
 
@@ -558,7 +550,8 @@ namespace System.Threading
                             // update timeout (delays in wait commencement are due to spinning and/or spurious wakeups from other waits being canceled)
                             if (bNeedTimeoutAdjustment)
                             {
-                                realMillisecondsTimeout = TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
+                                // TimeoutHelper.UpdateTimeOut returns a long but the value is capped as millisecondsTimeout is an int.
+                                realMillisecondsTimeout = (int)TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
                                 if (realMillisecondsTimeout <= 0)
                                     return false;
                             }

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Extensions.Logging.Generators
 {
@@ -177,11 +178,11 @@ namespace {lc.Namespace}
                 string formatMethodBegin =
                     !lm.Message.Contains('{') ? "" :
                     _hasStringCreate ? "string.Create(global::System.Globalization.CultureInfo.InvariantCulture, " :
-                    "global::System.Diagnostics.CodeAnalysis.FormattableString.Invariant(";
+                    "global::System.FormattableString.Invariant(";
                 string formatMethodEnd = formatMethodBegin.Length > 0 ? ")" : "";
 
                 _builder.Append($@"
-                {nestedIndentation}return {formatMethodBegin}$""{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}""{formatMethodEnd};
+                {nestedIndentation}return {formatMethodBegin}${SymbolDisplay.FormatLiteral(lm.Message, quote: true)}{formatMethodEnd};
             {nestedIndentation}}}
 ");
                 _builder.Append($@"
@@ -196,7 +197,7 @@ namespace {lc.Namespace}
 ");
                 GenCases(lm, nestedIndentation);
                 _builder.Append($@"
-                    {nestedIndentation}_ => throw new global::System.IndexOutOfRangeException(nameof(index)),  // return the same exception LoggerMessage.Define returns in this case
+                    {nestedIndentation}_ => throw new global::System.IndexOutOfRangeException(),  // return the same exception LoggerMessage.Define returns in this case
                 {nestedIndentation}}};
             }}
 
@@ -280,7 +281,7 @@ namespace {lc.Namespace}
                     _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this.{NormalizeSpecialSymbol(p.CodeName)}),");
                 }
 
-                _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", \"{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}\"),");
+                _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", {SymbolDisplay.FormatLiteral(lm.Message, quote: true)}),");
             }
 
             private void GenCallbackArguments(LoggerMethod lm)
@@ -406,7 +407,7 @@ namespace {lc.Namespace}
 
                     GenDefineTypes(lm, brackets: true);
 
-                    _builder.Append(@$"({level}, new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}), ""{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}"", new global::Microsoft.Extensions.Logging.LogDefineOptions() {{ SkipEnabledCheck = true }}); 
+                    _builder.Append(@$"({level}, new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}), {SymbolDisplay.FormatLiteral(lm.Message, quote: true)}, new global::Microsoft.Extensions.Logging.LogDefineOptions() {{ SkipEnabledCheck = true }});
 ");
                 }
 
@@ -576,55 +577,6 @@ internal static class __LoggerMessageGenerator
             }
         }
 
-        private static string ConvertEndOfLineAndQuotationCharactersToEscapeForm(string s)
-        {
-            int index = 0;
-            while (index < s.Length)
-            {
-                if (s[index] is '\n' or '\r' or '"')
-                {
-                    break;
-                }
-                index++;
-            }
-
-            if (index >= s.Length)
-            {
-                return s;
-            }
-
-            StringBuilder sb = new StringBuilder(s.Length);
-            sb.Append(s, 0, index);
-
-            while (index < s.Length)
-            {
-                switch (s[index])
-                {
-                    case '\n':
-                        sb.Append('\\');
-                        sb.Append('n');
-                        break;
-
-                    case '\r':
-                        sb.Append('\\');
-                        sb.Append('r');
-                        break;
-
-                    case '"':
-                        sb.Append('\\');
-                        sb.Append('"');
-                        break;
-
-                    default:
-                        sb.Append(s[index]);
-                        break;
-                }
-
-                index++;
-            }
-
-            return sb.ToString();
-        }
         /// <summary>
         /// Checks if variableOrTemplateName contains a special symbol ('@') as starting char
         /// </summary>

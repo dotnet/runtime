@@ -183,6 +183,9 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="UnloadableTestTypes\UnloadableTestTypes.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 </Project>

@@ -76,7 +76,7 @@ namespace System.Collections.Immutable
         /// invocation of <paramref name="transformer"/> returned the existing value.
         /// </returns>
         public static bool Update<T, TArg>(ref T location, Func<T, TArg, T> transformer, TArg transformerArgument) where T : class?
-#if NET9_0_OR_GREATER
+#if NET
             where TArg : allows ref struct
 #endif
         {
@@ -165,7 +165,7 @@ namespace System.Collections.Immutable
         /// invocation of <paramref name="transformer"/> returned the existing value.
         /// </returns>
         public static bool Update<T, TArg>(ref ImmutableArray<T> location, Func<ImmutableArray<T>, TArg, ImmutableArray<T>> transformer, TArg transformerArgument)
-#if NET9_0_OR_GREATER
+#if NET
             where TArg : allows ref struct
 #endif
         {
@@ -249,7 +249,7 @@ namespace System.Collections.Immutable
         /// <returns>The value obtained from the dictionary or <paramref name="valueFactory"/> if it was not present.</returns>
         public static TValue GetOrAdd<TKey, TValue, TArg>(ref ImmutableDictionary<TKey, TValue> location, TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument)
             where TKey : notnull
-#if NET9_0_OR_GREATER
+#if NET
             where TArg : allows ref struct
 #endif
         {

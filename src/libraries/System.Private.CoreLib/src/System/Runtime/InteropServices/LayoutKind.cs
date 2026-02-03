@@ -7,6 +7,7 @@ namespace System.Runtime.InteropServices
     public enum LayoutKind
     {
         Sequential = 0,
+        Extended = 1,
         Explicit = 2,
         Auto = 3,
     }

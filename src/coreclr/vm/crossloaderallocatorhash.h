@@ -200,6 +200,11 @@ private:
         static void* operator new(size_t baseSize, CountWrapper capacity);
 
     public:
+        static void operator delete(void* ptr)
+        {
+            ::operator delete(ptr);
+        }
+
         static KeyValueStore *Create(TCount capacity, const TKey &key);
 
         TCount GetCapacity() const { return _capacity; }

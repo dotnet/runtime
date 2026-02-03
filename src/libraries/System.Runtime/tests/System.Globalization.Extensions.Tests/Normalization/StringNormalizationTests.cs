@@ -138,5 +138,29 @@ namespace System.Globalization.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("strInput", () => StringNormalizationExtensions.Normalize(null));
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+        public void NormalizationForms_ThrowOnNotSupportedPlatforms()
+        {
+            AssertNormalizationFormThrows(NormalizationForm.FormKC);
+            AssertNormalizationFormThrows(NormalizationForm.FormKD);
+        }
+
+        private static void AssertNormalizationFormThrows(NormalizationForm normalizationForm)
+        {
+            foreach (string value in new[] { "ascii", "😊" })
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => value.IsNormalized(normalizationForm));
+                Assert.Throws<PlatformNotSupportedException>(() => value.AsSpan().IsNormalized(normalizationForm));
+                Assert.Throws<PlatformNotSupportedException>(() => value.Normalize(normalizationForm));
+
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                {
+                    Span<char> destination = stackalloc char[32];
+                    value.AsSpan().TryNormalize(destination, out _, normalizationForm);
+                });
+                Assert.Throws<PlatformNotSupportedException>(() => value.AsSpan().GetNormalizedLength(normalizationForm));
+            }
+        }
     }
 }

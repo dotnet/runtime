@@ -98,7 +98,7 @@ public:
                                                                                                                                           "prefixed by the CPU group number. Example: Unix - 1,3,5,7-9,12, Windows - 0:1,1:7-9")    \
     INT_CONFIG   (GCHighMemPercent,          "GCHighMemPercent",          "System.GC.HighMemoryPercent",       0,                  "The percent for GC to consider as high memory")                                           \
     INT_CONFIG   (GCProvModeStress,          "GCProvModeStress",          NULL,                                0,                  "Stress the provisional modes")                                                           \
-    INT_CONFIG   (GCGen0MaxBudget,           "GCGen0MaxBudget",           NULL,                                0,                  "Specifies the largest gen0 allocation budget")                                           \
+    INT_CONFIG   (GCGen0MaxBudget,           "GCGen0MaxBudget",           "System.GC.Gen0MaxBudget",         0,                  "Specifies the largest gen0 allocation budget")                                           \
     INT_CONFIG   (GCGen1MaxBudget,           "GCGen1MaxBudget",           NULL,                                0,                  "Specifies the largest gen1 allocation budget")                                           \
     INT_CONFIG   (GCLowSkipRatio,            "GCLowSkipRatio",            NULL,                                30,                 "Specifies the low generation skip ratio")                                                \
     INT_CONFIG   (GCHeapHardLimit,           "GCHeapHardLimit",           "System.GC.HeapHardLimit",           0,                  "Specifies a hard limit for the GC heap")                                                 \
@@ -128,6 +128,7 @@ public:
     INT_CONFIG   (BGCFLEnableTBH,            "BGCFLEnableTBH",            NULL,                                0,                  "Enables TBH")                                                                            \
     INT_CONFIG   (BGCFLEnableFF,             "BGCFLEnableFF",             NULL,                                0,                  "Enables FF")                                                                             \
     INT_CONFIG   (BGCG2RatioStep,            "BGCG2RatioStep",            NULL,                                5,                  "Ratio correction factor for ML loop")                                                    \
+    INT_CONFIG   (UOHWaitBGCSizeIncPercent,  "UOHWaitBGCSizeIncPercent",  "System.GC.UOHWaitBGCSizeIncPercent",-1,                 "UOH allocation during a BGC waits till end of BGC after UOH increases by this percent")  \
     INT_CONFIG   (GCHeapHardLimitSOH,        "GCHeapHardLimitSOH",        "System.GC.HeapHardLimitSOH",        0,                  "Specifies a hard limit for the GC heap SOH")                                             \
     INT_CONFIG   (GCHeapHardLimitLOH,        "GCHeapHardLimitLOH",        "System.GC.HeapHardLimitLOH",        0,                  "Specifies a hard limit for the GC heap LOH")                                             \
     INT_CONFIG   (GCHeapHardLimitPOH,        "GCHeapHardLimitPOH",        "System.GC.HeapHardLimitPOH",        0,                  "Specifies a hard limit for the GC heap POH")                                             \
@@ -143,6 +144,9 @@ public:
     INT_CONFIG   (GCDynamicAdaptationMode,   "GCDynamicAdaptationMode",   "System.GC.DynamicAdaptationMode",   1,                  "Enable the GC to dynamically adapt to application sizes.")                               \
     INT_CONFIG   (GCDTargetTCP,              "GCDTargetTCP",              "System.GC.DTargetTCP",              0,                  "Specifies the target tcp for DATAS")                                                     \
     INT_CONFIG   (GCDBGCRatio,               "GCDBGCRatio",               NULL,                                0,                  "Specifies the ratio of BGC to NGC2 for HC change")                                       \
+    INT_CONFIG   (GCDGen0GrowthPercent,      "GCDGen0GrowthPercent",      "System.GC.DGen0GrowthPercent",      0,                  "Specifies the percentage of the default growth factor")                                  \
+    INT_CONFIG   (GCDGen0GrowthMinFactor,    "GCDGen0GrowthMinFactor",    "System.GC.DGen0GrowthMinFactor",    0,                  "Specifies the minimum growth factor in permil")                                          \
+    INT_CONFIG   (GCDGen0GrowthMaxFactor,    "GCDGen0GrowthMaxFactor",    "System.GC.DGen0GrowthMaxFactor",    0,                  "Specifies the maximum growth factor in permil")                                          \
     BOOL_CONFIG  (GCCacheSizeFromSysConf,    "GCCacheSizeFromSysConf",    NULL,                                false,              "Specifies using sysconf to retrieve the last level cache size for Unix.")
 
 // This class is responsible for retreiving configuration information

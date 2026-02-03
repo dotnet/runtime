@@ -300,7 +300,6 @@ namespace CorUnix
 
         CThreadSynchronizationInfo synchronizationInfo;
         CThreadSuspensionInfo suspensionInfo;
-        CThreadApcInfo apcInfo;
 
         CPalThread()
             :

@@ -23,8 +23,8 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     protected readonly PublishOptions _defaultBlazorPublishOptions;
     private readonly BuildOptions _defaultBlazorBuildOptions;
 
-    protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-                : base(output, buildContext, new WasmSdkBasedProjectProvider(output, DefaultTargetFrameworkForBlazor))
+    protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, string? targetFramework = null)
+                : base(output, buildContext, new WasmSdkBasedProjectProvider(output, targetFramework ?? DefaultTargetFrameworkForBlazor))
     {
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
         _defaultBlazorPublishOptions = _defaultPublishOptions with { ExtraMSBuildArgs = _blazorExtraMSBuildArgs };
@@ -67,9 +67,8 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     protected void UpdateHomePage() =>
         UpdateFile(Path.Combine("Pages", "Home.razor"), blazorHomePageReplacements);
 
-    public void InitBlazorWasmProjectDir(string id, string? targetFramework = null)
+    public void InitBlazorWasmProjectDir(string id)
     {
-        targetFramework ??= DefaultTargetFrameworkForBlazor;
         InitPaths(id);
         if (Directory.Exists(_projectDir))
             Directory.Delete(_projectDir, recursive: true);
@@ -77,7 +76,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 
         File.WriteAllText(Path.Combine(_projectDir, "nuget.config"),
                             GetNuGetConfigWithLocalPackagesPath(
-                                        GetNuGetConfigPathFor(targetFramework),
+                                        GetNuGetConfigPath(),
                                         s_buildEnv.BuiltNuGetsPath));
 
         File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));

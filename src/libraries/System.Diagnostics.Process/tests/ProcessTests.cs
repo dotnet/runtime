@@ -652,7 +652,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -700,7 +700,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -996,7 +996,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
-        public void PriviledgedProcessorTime_GetNotStarted_ThrowsInvalidOperationException()
+        public void PrivilegedProcessorTime_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.PrivilegedProcessorTime);
@@ -1322,7 +1322,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
-        public void GetProcessesByName_NullEmpty_ReturnsAllProcesses(string name)
+        public void GetProcessesByName_NullEmpty_ReturnsAllProcesses(string? name)
         {
             Process currentProcess = Process.GetCurrentProcess();
             Process[] processes = Process.GetProcessesByName(name);

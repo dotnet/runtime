@@ -198,17 +198,17 @@ class StubLinkerCPU : public StubLinker
         }
 
 #ifdef TARGET_X86
-        VOID EmitUnboxMethodStub(MethodDesc* pRealMD);
+        bool EmitUnboxMethodStub(MethodDesc* pRealMD);
+        bool EmitInstantiatingMethodStub(MethodDesc* pSharedMD, void* extra);
 #endif // TARGET_X86
         VOID EmitTailJumpToMethod(MethodDesc *pMD);
 #ifdef TARGET_AMD64
         VOID EmitLoadMethodAddressIntoAX(MethodDesc *pMD);
 #endif
 
-#if defined(FEATURE_SHARE_GENERIC_CODE)
-        VOID EmitInstantiatingMethodStub(MethodDesc* pSharedMD, void* extra);
-#endif // FEATURE_SHARE_GENERIC_CODE
+#ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
         VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
+#endif
 
         //===========================================================================
         // Emits code to adjust for a static delegate target.

@@ -598,7 +598,7 @@ namespace Internal.Runtime.TypeLoader
             if (type is PointerType || type is ByRefType || type is FunctionPointerType)
             {
                 Debug.Assert(0 == state.NonGcDataSize);
-                Debug.Assert(false == state.HasStaticConstructor);
+                Debug.Assert(!state.HasStaticConstructor);
                 Debug.Assert(0 == state.GcDataSize);
                 Debug.Assert(0 == state.ThreadStaticOffset);
                 Debug.Assert(IntPtr.Zero == state.GcStaticDesc);

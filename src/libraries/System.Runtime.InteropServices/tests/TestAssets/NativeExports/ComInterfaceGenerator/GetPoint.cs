@@ -80,7 +80,7 @@ namespace NativeExports.ComInterfaceGenerator
                     }
                 }
 
-                [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvMemberFunction) })]
+                [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
                 private static Point GetPoint(ComInterfaceDispatch* @this)
                 {
 
@@ -95,7 +95,7 @@ namespace NativeExports.ComInterfaceGenerator
                     }
                 }
 
-                [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvMemberFunction) })]
+                [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
                 private static int SetPoint(ComInterfaceDispatch* @this, Point point)
                 {
 

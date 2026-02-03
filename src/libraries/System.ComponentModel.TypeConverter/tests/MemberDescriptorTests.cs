@@ -345,7 +345,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, "Category2")]
         [InlineData("", "")]
         [InlineData("Category", "Category")]
-        public void Category_GetModifyAttributesAndGet_CachesFirstResult(string originalCategory, string expected)
+        public void Category_GetModifyAttributesAndGet_CachesFirstResult(string? originalCategory, string expected)
         {
             var descriptor = new SubMemberDescriptor("Name", new Attribute[] { new CategoryAttribute(originalCategory) });
             Assert.Equal(originalCategory, descriptor.Category);
@@ -358,7 +358,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("Category")]
-        public void Category_DontGetModifyAttributesAndGet_DoesNotCacheFirstResult(string originalCategory)
+        public void Category_DontGetModifyAttributesAndGet_DoesNotCacheFirstResult(string? originalCategory)
         {
             var descriptor = new SubMemberDescriptor("Name", new Attribute[] { new CategoryAttribute(originalCategory) });
             descriptor.AttributeArray = new Attribute[] { new CategoryAttribute("Category2") };
@@ -400,7 +400,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, "Description2")]
         [InlineData("", "")]
         [InlineData("Description", "Description")]
-        public void Description_GetModifyDescriptionAttribute_CachesFirstResult(string originalDescription, string expected)
+        public void Description_GetModifyDescriptionAttribute_CachesFirstResult(string? originalDescription, string expected)
         {
             var attribute = new ChangingDescriptionAttribute
             {
@@ -417,7 +417,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("Description")]
-        public void Description_DontGetModifyDescriptionAttribute_DoesNotCacheFirstResult(string originalDescription)
+        public void Description_DontGetModifyDescriptionAttribute_DoesNotCacheFirstResult(string? originalDescription)
         {
             var attribute = new ChangingDescriptionAttribute
             {
@@ -432,7 +432,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, "Description2")]
         [InlineData("", "")]
         [InlineData("Description", "Description")]
-        public void Description_GetModifyAttributesAndGet_CachesFirstResult(string originalDescription, string expected)
+        public void Description_GetModifyAttributesAndGet_CachesFirstResult(string? originalDescription, string expected)
         {
             var descriptor = new SubMemberDescriptor("Name", new Attribute[] { new DescriptionAttribute(originalDescription) });
             Assert.Same(originalDescription, descriptor.Description);
@@ -445,7 +445,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("Description")]
-        public void Description_DontGetModifyAttributesAndGet_DoesNotCacheFirstResult(string originalDescription)
+        public void Description_DontGetModifyAttributesAndGet_DoesNotCacheFirstResult(string? originalDescription)
         {
             var descriptor = new SubMemberDescriptor("Name", new Attribute[] { new DescriptionAttribute(originalDescription) });
             descriptor.AttributeArray = new Attribute[] { new DescriptionAttribute("Description2") };
@@ -535,7 +535,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, null)]
         [InlineData("", "Name")]
         [InlineData("DisplayName", "DisplayName")]
-        public void DisplayName_GetModifyDisplayNameAttribute_CachesFirstResult(string originalDisplayName, string expected)
+        public void DisplayName_GetModifyDisplayNameAttribute_CachesFirstResult(string? originalDisplayName, string? expected)
         {
             var attribute = new ChangingDisplayNameAttribute
             {
@@ -552,7 +552,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("DisplayName")]
-        public void DisplayName_DontGetModifyDisplayNameAttribute_DoesNotCacheFirstResult(string originalDisplayName)
+        public void DisplayName_DontGetModifyDisplayNameAttribute_DoesNotCacheFirstResult(string? originalDisplayName)
         {
             var attribute = new ChangingDisplayNameAttribute
             {
@@ -567,7 +567,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, null)]
         [InlineData("", "Name")]
         [InlineData("DisplayName", "DisplayName")]
-        public void DisplayName_GetModifyAttributesAndGet_DoesNotCacheFirstResult(string originalDisplayName, string expected)
+        public void DisplayName_GetModifyAttributesAndGet_DoesNotCacheFirstResult(string? originalDisplayName, string? expected)
         {
             var descriptor = new SubMemberDescriptor("Name", new Attribute[] { new DisplayNameAttribute(originalDisplayName) });
             Assert.Equal(expected, descriptor.DisplayName);
@@ -580,7 +580,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("DisplayName")]
-        public void DisplayName_DontGetModifyAttributesAndGet_DoesNotCacheFirstResult(string originalDisplayName)
+        public void DisplayName_DontGetModifyAttributesAndGet_DoesNotCacheFirstResult(string? originalDisplayName)
         {
             var descriptor = new SubMemberDescriptor("Name", new Attribute[] { new DisplayNameAttribute(originalDisplayName) });
             descriptor.AttributeArray = new Attribute[] { new DisplayNameAttribute("DisplayName2") };

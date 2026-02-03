@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("description")]
-        public void Ctor_String(string description)
+        public void Ctor_String(string? description)
         {
             var attribute = new AssemblyDescriptionAttribute(description);
             Assert.Equal(description, attribute.Description);

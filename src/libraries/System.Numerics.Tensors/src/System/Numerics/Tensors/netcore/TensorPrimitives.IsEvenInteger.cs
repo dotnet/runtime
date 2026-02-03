@@ -47,17 +47,10 @@ namespace System.Numerics.Tensors
         {
             public static bool Invoke(T x) => T.IsEvenInteger(x);
 
-#if NET10_0_OR_GREATER
             public static bool Vectorizable => true;
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.IsEvenInteger(x);
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.IsEvenInteger(x);
             public static Vector512<T> Invoke(Vector512<T> x) => Vector512.IsEvenInteger(x);
-#else
-            public static bool Vectorizable => typeof(T) != typeof(float) && typeof(T) != typeof(double);
-            public static Vector128<T> Invoke(Vector128<T> x) => Vector128.Equals(x & Vector128<T>.One, Vector128<T>.Zero);
-            public static Vector256<T> Invoke(Vector256<T> x) => Vector256.Equals(x & Vector256<T>.One, Vector256<T>.Zero);
-            public static Vector512<T> Invoke(Vector512<T> x) => Vector512.Equals(x & Vector512<T>.One, Vector512<T>.Zero);
-#endif
 
         }
     }

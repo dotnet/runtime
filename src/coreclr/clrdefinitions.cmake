@@ -60,15 +60,6 @@ if(CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
 add_compile_definitions(OUT_OF_PROCESS_SETTHREADCONTEXT)
 endif(CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
 
-if(NOT CLR_CMAKE_TARGET_ARCH_I386)
-  add_definitions(-DFEATURE_PORTABLE_SHUFFLE_THUNKS)
-endif()
-
-if(CLR_CMAKE_TARGET_UNIX OR NOT CLR_CMAKE_TARGET_ARCH_I386)
-  add_definitions(-DFEATURE_INSTANTIATINGSTUB_AS_IL)
-endif()
-
-add_compile_definitions(FEATURE_CODE_VERSIONING)
 add_definitions(-DFEATURE_COLLECTIBLE_TYPES)
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -118,6 +109,12 @@ if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_
 endif (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM64))
 
 add_compile_definitions($<${FEATURE_INTERPRETER}:FEATURE_INTERPRETER>)
+if (FEATURE_PORTABLE_ENTRYPOINTS)
+  add_compile_definitions(FEATURE_PORTABLE_ENTRYPOINTS)
+endif()
+if (FEATURE_PORTABLE_HELPERS)
+  add_compile_definitions(FEATURE_PORTABLE_HELPERS)
+endif()
 
 if (CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DFEATURE_ISYM_READER)
@@ -160,7 +157,9 @@ add_definitions(-DFEATURE_READYTORUN)
 
 set(FEATURE_READYTORUN 1)
 
-add_compile_definitions(FEATURE_REJIT)
+if(FEATURE_REJIT)
+  add_compile_definitions(FEATURE_REJIT)
+endif()
 
 if (CLR_CMAKE_HOST_UNIX AND CLR_CMAKE_TARGET_UNIX)
   add_definitions(-DFEATURE_REMOTE_PROC_MEM)
@@ -170,10 +169,16 @@ if (FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
   add_definitions(-DFEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
 endif(FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
 if (NOT CLR_CMAKE_HOST_ANDROID)
+  set(FEATURE_SVR_GC 1)
   add_definitions(-DFEATURE_SVR_GC)
 endif(NOT CLR_CMAKE_HOST_ANDROID)
 add_definitions(-DFEATURE_SYMDIFF)
-add_compile_definitions(FEATURE_TIERED_COMPILATION)
+
+if (FEATURE_TIERED_COMPILATION)
+  add_compile_definitions(FEATURE_CODE_VERSIONING)
+  add_compile_definitions(FEATURE_TIERED_COMPILATION)
+endif(FEATURE_TIERED_COMPILATION)
+
 add_compile_definitions(FEATURE_PGO)
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
   # Enable the AMD64 Unix struct passing JIT-EE interface for all AMD64 platforms, to enable altjit.
@@ -197,8 +202,6 @@ if(CLR_CMAKE_TARGET_WIN32)
   endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
 endif(CLR_CMAKE_TARGET_WIN32)
 
-add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_EH_FUNCLETS>)
-
 if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64))
   add_definitions(-DFEATURE_SPECIAL_USER_MODE_APC)
 endif()
@@ -212,8 +215,7 @@ if (FEATURE_CORECLR_FLUSH_INSTRUCTION_CACHE_TO_PROTECT_STUB_READS)
 endif()
 
 if (CLR_CMAKE_TARGET_APPLE)
-#  Re-enable when dbgshim containing https://github.com/dotnet/diagnostics/pull/5487 is generally available
-#  add_definitions(-DFEATURE_MAP_THUNKS_FROM_IMAGE)
+ add_definitions(-DFEATURE_MAP_THUNKS_FROM_IMAGE)
 endif()
 
 # Use this function to enable building with a specific target OS and architecture set of defines
@@ -226,6 +228,14 @@ function(set_target_definitions_to_custom_os_and_arch)
   set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_DEFAULT_TARGET_ARCH TRUE)
   set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_DEFAULT_TARGET_OS TRUE)
 
+  if (TARGETDETAILS_OS STREQUAL "browser")
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_UNIX)
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_BROWSER)
+  endif()
+  if (TARGETDETAILS_OS STREQUAL "wasi")
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_UNIX)
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_WASI)
+  endif()
   if ((TARGETDETAILS_OS MATCHES "^unix"))
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_UNIX)
     if (TARGETDETAILS_ARCH STREQUAL "x64")
@@ -269,6 +279,9 @@ function(set_target_definitions_to_custom_os_and_arch)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_64BIT)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_RISCV64)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_MULTIREG_RETURN)
+  elseif(TARGETDETAILS_ARCH STREQUAL "wasm")
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_WASM)
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_WASM32)
   endif()
 
   if (TARGETDETAILS_ARCH STREQUAL "armel")

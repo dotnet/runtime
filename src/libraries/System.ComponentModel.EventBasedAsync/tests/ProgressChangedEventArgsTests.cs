@@ -11,7 +11,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         [InlineData(int.MinValue, null)]
         [InlineData(0, "non null test state")]
         [InlineData(int.MaxValue, "non null test state")]
-        public static void CtorAcceptsValuesAsIs(int expectedPercentage, object expectedState)
+        public static void CtorAcceptsValuesAsIs(int expectedPercentage, object? expectedState)
         {
             var target = new ProgressChangedEventArgs(expectedPercentage, expectedState);
             Assert.Equal(expectedPercentage, target.ProgressPercentage);

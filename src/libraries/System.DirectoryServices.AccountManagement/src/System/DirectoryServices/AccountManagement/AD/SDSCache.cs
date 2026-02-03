@@ -124,7 +124,7 @@ namespace System.DirectoryServices.AccountManagement
 
                             // If the PrincipalContext hasn't been GCed or disposed, use it.
                             // Otherwise, we'll need to create a new one
-                            if (ctx != null && ctx.Disposed == false)
+                            if (ctx != null && !ctx.Disposed)
                             {
                                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSCache", "GetContext: using found refToContext");
                                 return ctx;

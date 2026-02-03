@@ -241,6 +241,8 @@ struct InterfaceDispatchCell
     }
 };
 
+#define IDC_CACHE_POINTER_MASK (InterfaceDispatchCell::Flags::IDC_CachePointerMask)
+
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #ifdef TARGET_ARM
@@ -276,9 +278,7 @@ enum PInvokeTransitionFrameFlags
                                         // a return address pointing into the hijacked method and that method's
                                         // lr register, which may hold a gc pointer
 
-    PTFF_THREAD_ABORT   = 0x00004000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    PTFF_THREAD_HIJACK  = 0x00008000,   // indicates that this is a frame for a hijacked call
+    PTFF_THREAD_HIJACK  = 0x00004000,   // indicates that this is a frame for a hijacked call
 };
 #elif defined(TARGET_ARM64)
 enum PInvokeTransitionFrameFlags : uint64_t
@@ -333,9 +333,7 @@ enum PInvokeTransitionFrameFlags : uint64_t
                                                 // a return address pointing into the hijacked method and that method's
                                                 // lr register, which may hold a gc pointer
 
-    PTFF_THREAD_ABORT   = 0x0000000100000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    PTFF_THREAD_HIJACK  = 0x0000000200000000,   // indicates that this is a frame for a hijacked call
+    PTFF_THREAD_HIJACK  = 0x0000000100000000,   // indicates that this is a frame for a hijacked call
 };
 
 #elif defined(TARGET_LOONGARCH64)
@@ -388,9 +386,7 @@ enum PInvokeTransitionFrameFlags : uint64_t
                                                 // a return address pointing into the hijacked method and that method's
                                                 // ra register, which may hold a gc pointer
 
-    PTFF_THREAD_ABORT   = 0x0000000080000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    PTFF_THREAD_HIJACK  = 0x0000000100000000,   // indicates that this is a frame for a hijacked call
+    PTFF_THREAD_HIJACK  = 0x0000000080000000,   // indicates that this is a frame for a hijacked call
 };
 
 #elif defined(TARGET_RISCV64)
@@ -437,9 +433,7 @@ enum PInvokeTransitionFrameFlags : uint64_t
 
     PTFF_SAVE_RA        = 0x0000000040000000,
 
-    PTFF_THREAD_ABORT   = 0x0000000080000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    PTFF_THREAD_HIJACK  = 0x0000000100000000,   // indicates that this is a frame for a hijacked call
+    PTFF_THREAD_HIJACK  = 0x0000000080000000,   // indicates that this is a frame for a hijacked call
 };
 
 #else // TARGET_ARM
@@ -482,16 +476,14 @@ enum PInvokeTransitionFrameFlags
     PTFF_RAX_IS_BYREF   = 0x00020000,
 #endif
 
-    PTFF_THREAD_ABORT   = 0x00100000,   // indicates that ThreadAbortException should be thrown when returning from the transition
-
-    PTFF_THREAD_HIJACK  = 0x00200000,   // indicates that this is a frame for a hijacked call
+    PTFF_THREAD_HIJACK  = 0x00100000,   // indicates that this is a frame for a hijacked call
 };
 #endif // TARGET_ARM
 
 #pragma warning(push)
 #pragma warning(disable:4200) // nonstandard extension used: zero-sized array in struct/union
 class Thread;
-#if defined(USE_PORTABLE_HELPERS)
+#if defined(FEATURE_PORTABLE_HELPERS)
 //the members of this structure are currently unused except m_pThread and exist only to allow compilation
 //of StackFrameIterator their values are not currently being filled in and will require significant rework
 //in order to satisfy the runtime requirements of StackFrameIterator
@@ -502,7 +494,7 @@ struct PInvokeTransitionFrame
                             // can be an invalid pointer in universal transition cases (which never need to call GetThread)
     uint32_t    m_Flags;    // PInvokeTransitionFrameFlags
 };
-#else // USE_PORTABLE_HELPERS
+#else // FEATURE_PORTABLE_HELPERS
 struct PInvokeTransitionFrame
 {
 #if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -524,15 +516,15 @@ struct PInvokeTransitionFrame
 #endif
     UIntTarget      m_PreservedRegs[];
 };
-#endif // USE_PORTABLE_HELPERS
+#endif // FEATURE_PORTABLE_HELPERS
 #pragma warning(pop)
 
 #ifdef TARGET_AMD64
 // RBX, RSI, RDI, R12, R13, R14, R15, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 9
 #elif defined(TARGET_X86)
-// RBX, RSI, RDI, RAX, RSP
-#define PInvokeTransitionFrame_SaveRegs_count 5
+// RBX, RSI, RDI, RSP, RAX, RCX
+#define PInvokeTransitionFrame_SaveRegs_count 6
 #elif defined(TARGET_ARM)
 // R4-R10, R0, SP
 #define PInvokeTransitionFrame_SaveRegs_count 9

@@ -15,14 +15,13 @@ namespace System.Threading
     public sealed partial class Thread
     {
         [ThreadStatic]
-        private static ApartmentType t_apartmentType;
-
-        [ThreadStatic]
         private static ComState t_comState;
 
         private SafeWaitHandle _osHandle;
 
         private ApartmentState _initialApartmentState = ApartmentState.Unknown;
+
+        private SafeWaitHandle GetJoinHandle() => _osHandle;
 
         partial void PlatformSpecificInitialize();
 
@@ -130,49 +129,6 @@ namespace System.Threading
             }
         }
 
-        private bool JoinInternal(int millisecondsTimeout)
-        {
-            // This method assumes the thread has been started
-            Debug.Assert(!GetThreadStateBit(ThreadState.Unstarted) || (millisecondsTimeout == 0));
-            SafeWaitHandle waitHandle = _osHandle;
-
-            // If an OS thread is terminated and its Thread object is resurrected, _osHandle may be finalized and closed
-            if (waitHandle.IsClosed)
-            {
-                return true;
-            }
-
-            // Handle race condition with the finalizer
-            try
-            {
-                waitHandle.DangerousAddRef();
-            }
-            catch (ObjectDisposedException)
-            {
-                return true;
-            }
-
-            try
-            {
-                int result;
-
-                if (millisecondsTimeout == 0)
-                {
-                    result = (int)Interop.Kernel32.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
-                }
-                else
-                {
-                    result = WaitHandle.WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout, useTrivialWaits: false);
-                }
-
-                return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
-            }
-            finally
-            {
-                waitHandle.DangerousRelease();
-            }
-        }
-
         private unsafe bool CreateThread(GCHandle<Thread> thisThreadHandle)
         {
             const int AllocationGranularity = 0x10000;  // 64 KiB
@@ -200,7 +156,7 @@ namespace System.Threading
             }
 
             _osHandle = Interop.Kernel32.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
-                &ThreadEntryPoint, GCHandle<Thread>.ToIntPtr(thisThreadHandle),
+                RuntimeImports.RhGetThreadEntryPointAddress(), GCHandle<Thread>.ToIntPtr(thisThreadHandle),
                 Interop.Kernel32.CREATE_SUSPENDED | Interop.Kernel32.STACK_SIZE_PARAM_IS_A_RESERVATION,
                 out _);
 
@@ -212,6 +168,13 @@ namespace System.Threading
             // CoreCLR ignores OS errors while setting the priority, so do we
             SetPriorityLive(_priority);
 
+            // If the thread was interrupted before it was started, queue the interruption now
+            if (GetThreadStateBit(Interrupted))
+            {
+                ClearThreadStateBit(Interrupted);
+                Interrupt();
+            }
+
             Interop.Kernel32.ResumeThread(_osHandle);
             return true;
         }
@@ -219,7 +182,7 @@ namespace System.Threading
         /// <summary>
         /// This is an entry point for managed threads created by application
         /// </summary>
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "ThreadEntryPoint")]
         private static uint ThreadEntryPoint(IntPtr parameter)
         {
             StartThread(parameter);
@@ -235,14 +198,15 @@ namespace System.Threading
                 return _initialApartmentState;
             }
 
-            switch (GetCurrentApartmentType())
+            switch (GetCurrentApartmentState())
             {
-                case ApartmentType.STA:
+                case ApartmentState.STA:
                     return ApartmentState.STA;
-                case ApartmentType.MTA:
+                case ApartmentState.MTA:
                     return ApartmentState.MTA;
                 default:
-                    return ApartmentState.Unknown;
+                    // If COM is uninitialized on the current thread, it is assumed to be implicit MTA.
+                    return ApartmentState.MTA;
             }
         }
 
@@ -275,21 +239,43 @@ namespace System.Threading
                     }
                     else
                     {
+                        // Compat: Setting ApartmentState to Unknown uninitializes COM
                         UninitializeCom();
                     }
+
+                    // Clear the cache and check whether new state matches the desired state
+                    t_comState &= ~(ComState.STA | ComState.MTA);
+
+                    retState = GetCurrentApartmentState();
                 }
+                else
+                {
+                    Debug.Assert((t_comState & ComState.MTA) != 0);
+                    retState = ApartmentState.MTA;
+                }
+            }
 
-                // Clear the cache and check whether new state matches the desired state
-                t_apartmentType = ApartmentType.Unknown;
-
-                retState = GetApartmentState();
+            // Special case where we pass in Unknown and get back MTA.
+            //  Once we CoUninitialize the thread, the OS will still
+            //  report the thread as implicitly in the MTA if any
+            //  other thread in the process is CoInitialized.
+            if ((state == ApartmentState.Unknown) && (retState == ApartmentState.MTA))
+            {
+                return true;
             }
 
             if (retState != state)
             {
                 if (throwOnError)
                 {
-                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState);
+                    // NOTE: We do the enum stringification manually to avoid introducing a dependency
+                    // on enum stringification in small apps. We set apartment state in the startup path.
+                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState switch
+                    {
+                        ApartmentState.MTA => "MTA",
+                        ApartmentState.STA => "STA",
+                        _ => "Unknown"
+                    });
                     throw new InvalidOperationException(msg);
                 }
 
@@ -309,7 +295,7 @@ namespace System.Threading
             // Process-wide COM is initialized very early before any managed code can run.
             // Assume it is done.
             // Prevent re-initialization of COM model on threadpool threads from the default one.
-            t_comState |= ComState.Locked;
+            t_comState |= ComState.Locked | ComState.MTA;
         }
 
         private static void InitializeCom(ApartmentState state = ApartmentState.MTA)
@@ -317,15 +303,9 @@ namespace System.Threading
             if ((t_comState & ComState.InitializedByUs) != 0)
                 return;
 
-#if ENABLE_WINRT
-            int hr = Interop.WinRT.RoInitialize(
-                (state == ApartmentState.STA) ? Interop.WinRT.RO_INIT_SINGLETHREADED
-                    : Interop.WinRT.RO_INIT_MULTITHREADED);
-#else
             int hr = Interop.Ole32.CoInitializeEx(IntPtr.Zero,
                 (state == ApartmentState.STA) ? Interop.Ole32.COINIT_APARTMENTTHREADED
                     : Interop.Ole32.COINIT_MULTITHREADED);
-#endif
             if (hr < 0)
             {
                 // RPC_E_CHANGED_MODE indicates this thread has been already initialized with a different
@@ -353,11 +333,7 @@ namespace System.Threading
             if ((t_comState & ComState.InitializedByUs) == 0)
                 return;
 
-#if ENABLE_WINRT
-            Interop.WinRT.RoUninitialize();
-#else
             Interop.Ole32.CoUninitialize();
-#endif
 
             t_comState &= ~ComState.InitializedByUs;
         }
@@ -386,27 +362,66 @@ namespace System.Threading
             return InitializeExistingThreadPoolThread();
         }
 
-        public void Interrupt() { throw new PlatformNotSupportedException(); }
+        public void Interrupt()
+        {
+            using (_lock.EnterScope())
+            {
+                // Thread.Interrupt for dead thread should do nothing
+                if (IsDead())
+                {
+                    return;
+                }
+
+                // Thread.Interrupt for thread that has not been started yet should queue a pending interrupt
+                // for when we actually create the thread.
+                if (_osHandle?.IsInvalid ?? true)
+                {
+                    SetThreadStateBit(Interrupted);
+                    return;
+                }
+
+                unsafe
+                {
+                    Interop.Kernel32.QueueUserAPC(RuntimeImports.RhGetInterruptApcCallback(), _osHandle, 0);
+                }
+            }
+        }
+
+        internal static void CheckForPendingInterrupt()
+        {
+            if (RuntimeImports.RhCheckAndClearPendingInterrupt())
+            {
+                CurrentThread.ClearWaitSleepJoinState();
+                throw new ThreadInterruptedException();
+            }
+        }
+
+        internal static unsafe int ReentrantWaitAny(bool alertable, int timeout, int count, IntPtr* handles)
+        {
+            Debug.Assert(ReentrantWaitsEnabled);
+            return RuntimeImports.RhCompatibleReentrantWaitAny(alertable, timeout, count, handles);
+        }
 
         internal static bool ReentrantWaitsEnabled =>
-            GetCurrentApartmentType() == ApartmentType.STA;
+            GetCurrentApartmentState() == ApartmentState.STA;
 
-        internal static ApartmentType GetCurrentApartmentType()
+        // Unlike the public API, this returns ApartmentState.Unknown when COM is uninitialized on the current thread
+        internal static ApartmentState GetCurrentApartmentState()
         {
-            ApartmentType currentThreadType = t_apartmentType;
-            if (currentThreadType != ApartmentType.Unknown)
-                return currentThreadType;
+            if ((t_comState & (ComState.MTA | ComState.STA)) != 0)
+                return ((t_comState & ComState.STA) != 0) ? ApartmentState.STA : ApartmentState.MTA;
 
             Interop.APTTYPE aptType;
             Interop.APTTYPEQUALIFIER aptTypeQualifier;
             int result = Interop.Ole32.CoGetApartmentType(out aptType, out aptTypeQualifier);
 
-            ApartmentType type = ApartmentType.Unknown;
+            ApartmentState state = ApartmentState.Unknown;
 
             switch (result)
             {
                 case HResults.CO_E_NOTINITIALIZED:
-                    type = ApartmentType.None;
+                    Debug.Fail("COM is not initialized");
+                    state = ApartmentState.Unknown;
                     break;
 
                 case HResults.S_OK:
@@ -414,24 +429,27 @@ namespace System.Threading
                     {
                         case Interop.APTTYPE.APTTYPE_STA:
                         case Interop.APTTYPE.APTTYPE_MAINSTA:
-                            type = ApartmentType.STA;
+                            state = ApartmentState.STA;
                             break;
 
                         case Interop.APTTYPE.APTTYPE_MTA:
-                            type = ApartmentType.MTA;
+                            state = ApartmentState.MTA;
                             break;
 
                         case Interop.APTTYPE.APTTYPE_NA:
                             switch (aptTypeQualifier)
                             {
                                 case Interop.APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_MTA:
+                                    state = ApartmentState.MTA;
+                                    break;
+
                                 case Interop.APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_IMPLICIT_MTA:
-                                    type = ApartmentType.MTA;
+                                    state = ApartmentState.Unknown;
                                     break;
 
                                 case Interop.APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_STA:
                                 case Interop.APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_MAINSTA:
-                                    type = ApartmentType.STA;
+                                    state = ApartmentState.STA;
                                     break;
 
                                 default:
@@ -447,17 +465,9 @@ namespace System.Threading
                     break;
             }
 
-            if (type != ApartmentType.Unknown)
-                t_apartmentType = type;
-            return type;
-        }
-
-        internal enum ApartmentType : byte
-        {
-            Unknown = 0,
-            None,
-            STA,
-            MTA
+            if (state != ApartmentState.Unknown)
+                t_comState |= (state == ApartmentState.STA) ? ComState.STA : ComState.MTA;
+            return state;
         }
 
         [Flags]
@@ -465,6 +475,8 @@ namespace System.Threading
         {
             InitializedByUs = 1,
             Locked = 2,
+            MTA = 4,
+            STA = 8
         }
     }
 }

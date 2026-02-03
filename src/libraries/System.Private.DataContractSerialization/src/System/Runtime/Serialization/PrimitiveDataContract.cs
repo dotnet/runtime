@@ -705,6 +705,78 @@ namespace System.Runtime.Serialization.DataContracts
         }
     }
 
+    internal sealed class DateOnlyDataContract : PrimitiveDataContract
+    {
+        public DateOnlyDataContract() : this(DictionaryGlobals.DateOnlyLocalName, DictionaryGlobals.SerializationNamespace)
+        {
+        }
+
+        internal DateOnlyDataContract(XmlDictionaryString name, XmlDictionaryString ns) : base(typeof(DateOnly), name, ns)
+        {
+        }
+
+        internal override string WriteMethodName => "WriteDateOnly";
+        internal override string ReadMethodName => "ReadElementContentAsDateOnly";
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
+        {
+            writer.WriteDateOnly((DateOnly)obj);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
+        {
+            return (context == null) ? reader.ReadElementContentAsDateOnly()
+                : HandleReadValue(reader.ReadElementContentAsDateOnly(), context);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
+        {
+            xmlWriter.WriteDateOnly((DateOnly)obj!, name, ns);
+        }
+    }
+
+    internal sealed class TimeOnlyDataContract : PrimitiveDataContract
+    {
+        public TimeOnlyDataContract() : this(DictionaryGlobals.TimeOnlyLocalName, DictionaryGlobals.SerializationNamespace)
+        {
+        }
+
+        internal TimeOnlyDataContract(XmlDictionaryString name, XmlDictionaryString ns) : base(typeof(TimeOnly), name, ns)
+        {
+        }
+
+        internal override string WriteMethodName => "WriteTimeOnly";
+        internal override string ReadMethodName => "ReadElementContentAsTimeOnly";
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
+        {
+            writer.WriteTimeOnly((TimeOnly)obj);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
+        {
+            return (context == null) ? reader.ReadElementContentAsTimeOnly()
+                : HandleReadValue(reader.ReadElementContentAsTimeOnly(), context);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
+        {
+            xmlWriter.WriteTimeOnly((TimeOnly)obj!, name, ns);
+        }
+    }
+
     internal class StringDataContract : PrimitiveDataContract
     {
         public StringDataContract() : this(DictionaryGlobals.StringLocalName, DictionaryGlobals.SchemaNamespace)

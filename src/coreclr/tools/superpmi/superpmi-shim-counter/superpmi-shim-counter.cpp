@@ -13,55 +13,64 @@
 #include "logging.h"
 #include "spmiutil.h"
 #include "jithost.h"
+#include <memory>
 
-HMODULE               g_hRealJit      = 0; // We leak this currently (could do the proper shutdown in process_detach)
-WCHAR*                g_realJitPath   = nullptr; // We leak this (could do the proper shutdown in process_detach)
-WCHAR*                g_logPath       = nullptr; // Again, we leak this one too...
-char*                 g_logFilePath   = nullptr; // We *don't* leak this, hooray!
-WCHAR*                g_HomeDirectory = nullptr;
-WCHAR*                g_DefaultRealJitPath = nullptr;
-MethodCallSummarizer* g_globalContext      = nullptr;
+HMODULE     g_hRealJit = 0;    // We leak this currently (could do the proper shutdown in process_detach)
+std::string g_realJitPath{""}; // Destructable objects will be cleaned up and won't leak
+std::string g_logPath{""};
+std::string g_HomeDirectory{""};
+std::string g_DefaultRealJitPath{""};
+
+std::unique_ptr<MethodCallSummarizer> g_globalContext = nullptr;
+
+// RAII holder for logger
+// Global deconstructors are unreliable. We only use it for superpmi shim.
+class LoggerHolder
+{
+public:
+    LoggerHolder()
+    {
+        Logger::Initialize();
+        // If the environment variable isn't set, we don't enable file logging
+        const char* logFilePath = GetEnvWithDefault("SuperPMIShimLogFilePath", nullptr);
+        if (logFilePath)
+        {
+            Logger::OpenLogFile(logFilePath);
+        }
+    }
+
+    ~LoggerHolder()
+    {
+        Logger::Shutdown();
+    }
+} loggerHolder;
 
 void SetDefaultPaths()
 {
-    if (g_HomeDirectory == nullptr)
+    if (g_HomeDirectory.empty())
     {
-        g_HomeDirectory = GetEnvironmentVariableWithDefaultW(W("HOME"), W("."));
+        g_HomeDirectory = GetEnvWithDefault("HOME", ".");
     }
 
-    if (g_DefaultRealJitPath == nullptr)
+    if (g_DefaultRealJitPath.empty())
     {
-        size_t len           = u16_strlen(g_HomeDirectory) + 1 + u16_strlen(DEFAULT_REAL_JIT_NAME_W) + 1;
-        g_DefaultRealJitPath = new WCHAR[len];
-        wcscpy_s(g_DefaultRealJitPath, len, g_HomeDirectory);
-        wcscat_s(g_DefaultRealJitPath, len, DIRECTORY_SEPARATOR_STR_W);
-        wcscat_s(g_DefaultRealJitPath, len, DEFAULT_REAL_JIT_NAME_W);
+        g_DefaultRealJitPath = g_HomeDirectory + DIRECTORY_SEPARATOR_CHAR_A + DEFAULT_REAL_JIT_NAME_A;
     }
 }
 
 void SetLibName()
 {
-    if (g_realJitPath == nullptr)
+    if (g_realJitPath.empty())
     {
-        g_realJitPath = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimPath"), g_DefaultRealJitPath);
+        g_realJitPath = GetEnvWithDefault("SuperPMIShimPath", g_DefaultRealJitPath.c_str());
     }
 }
 
 void SetLogPath()
 {
-    if (g_logPath == nullptr)
+    if (g_logPath.empty())
     {
-        g_logPath = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimLogPath"), g_HomeDirectory);
-    }
-}
-
-// TODO: this only works for ANSI file paths...
-void SetLogFilePath()
-{
-    if (g_logFilePath == nullptr)
-    {
-        // If the environment variable isn't set, we don't enable file logging
-        g_logFilePath = GetEnvironmentVariableWithDefaultA("SuperPMIShimLogFilePath", nullptr);
+        g_logPath = GetEnvWithDefault("SuperPMIShimLogPath", g_HomeDirectory.c_str());
     }
 }
 
@@ -82,25 +91,9 @@ extern "C"
                 exit(1);
             }
 #endif // HOST_UNIX
-
-            Logger::Initialize();
-            SetLogFilePath();
-            Logger::OpenLogFile(g_logFilePath);
             break;
 
         case DLL_PROCESS_DETACH:
-            Logger::Shutdown();
-
-            delete[] g_logFilePath;
-            g_logFilePath = nullptr;
-
-            if (g_globalContext != nullptr)
-            {
-                g_globalContext->SaveTextFile();
-            }
-
-            break;
-
         case DLL_THREAD_ATTACH:
         case DLL_THREAD_DETACH:
             break;
@@ -120,7 +113,7 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
     }
 
     // Get the required entrypoint
-    PjitStartup pnjitStartup = (PjitStartup)::GetProcAddress(g_hRealJit, "jitStartup");
+    PjitStartup pnjitStartup = (PjitStartup)GET_PROC_ADDRESS(g_hRealJit, "jitStartup");
     if (pnjitStartup == nullptr)
     {
         // This portion of the interface is not used by the JIT under test.
@@ -133,10 +126,10 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
     if (g_globalContext == nullptr)
     {
         SetLogPath();
-        g_globalContext = new MethodCallSummarizer(g_logPath);
+        g_globalContext = std::unique_ptr<MethodCallSummarizer>(new MethodCallSummarizer(g_logPath));
     }
 
-    g_ourJitHost->setMethodCallSummarizer(g_globalContext);
+    g_ourJitHost->setMethodCallSummarizer(g_globalContext.get());
 
     pnjitStartup(g_ourJitHost);
 }
@@ -158,7 +151,7 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
     }
 
     // get the required entrypoints
-    pngetJit = (PgetJit)::GetProcAddress(g_hRealJit, "getJit");
+    pngetJit = (PgetJit)GET_PROC_ADDRESS(g_hRealJit, "getJit");
     if (pngetJit == 0)
     {
         LogError("getJit() - GetProcAddress 'getJit' failed (0x%08x)", ::GetLastError());
@@ -178,8 +171,8 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
     if (g_globalContext == nullptr)
     {
         SetLogPath();
-        g_globalContext = new MethodCallSummarizer(g_logPath);
+        g_globalContext = std::unique_ptr<MethodCallSummarizer>(new MethodCallSummarizer(g_logPath));
     }
-    pJitInstance->mcs = g_globalContext;
+    pJitInstance->mcs = g_globalContext.get();
     return pJitInstance;
 }

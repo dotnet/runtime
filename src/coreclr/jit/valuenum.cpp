@@ -46,6 +46,11 @@ struct FloatTraits
         unsigned bits = 0xFFC00000u;
 #elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         unsigned bits = 0x7FC00000u;
+#elif defined(TARGET_WASM)
+        // TODO-WASM: this may prove tricker than it seems since there are two possible "canonical"
+        // NaN values. We may need to introduce a new "unknown" value to be returned here.
+        NYI_WASM("FloatTraits::NaN");
+        unsigned bits = 0;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -72,6 +77,11 @@ struct DoubleTraits
         unsigned long long bits = 0xFFF8000000000000ull;
 #elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         unsigned long long bits = 0x7FF8000000000000ull;
+#elif defined(TARGET_WASM)
+        // TODO-WASM: this may prove tricker than it seems since there are two possible "canonical"
+        // NaN values. We may need to introduce a new "unknown" value to be returned here.
+        NYI_WASM("DoubleTraits::NaN");
+        unsigned long long bits = 0;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -264,14 +274,14 @@ TFp FpRem(TFp dividend, TFp divisor)
 VNFunc GetVNFuncForNode(GenTree* node)
 {
     static const VNFunc relopUnFuncs[]{VNF_LT_UN, VNF_LE_UN, VNF_GE_UN, VNF_GT_UN};
-    static_assert_no_msg(GT_LE - GT_LT == 1);
-    static_assert_no_msg(GT_GE - GT_LT == 2);
-    static_assert_no_msg(GT_GT - GT_LT == 3);
+    static_assert(GT_LE - GT_LT == 1);
+    static_assert(GT_GE - GT_LT == 2);
+    static_assert(GT_GT - GT_LT == 3);
 
     static const VNFunc binopOvfFuncs[]{VNF_ADD_OVF, VNF_SUB_OVF, VNF_MUL_OVF};
     static const VNFunc binopUnOvfFuncs[]{VNF_ADD_UN_OVF, VNF_SUB_UN_OVF, VNF_MUL_UN_OVF};
-    static_assert_no_msg(GT_SUB - GT_ADD == 1);
-    static_assert_no_msg(GT_MUL - GT_ADD == 2);
+    static_assert(GT_SUB - GT_ADD == 1);
+    static_assert(GT_MUL - GT_ADD == 2);
 
     switch (node->OperGet())
     {
@@ -351,11 +361,11 @@ VNFunc GetVNFuncForNode(GenTree* node)
 
 bool ValueNumStore::VNFuncIsOverflowArithmetic(VNFunc vnf)
 {
-    static_assert_no_msg(VNF_ADD_OVF + 1 == VNF_SUB_OVF);
-    static_assert_no_msg(VNF_SUB_OVF + 1 == VNF_MUL_OVF);
-    static_assert_no_msg(VNF_MUL_OVF + 1 == VNF_ADD_UN_OVF);
-    static_assert_no_msg(VNF_ADD_UN_OVF + 1 == VNF_SUB_UN_OVF);
-    static_assert_no_msg(VNF_SUB_UN_OVF + 1 == VNF_MUL_UN_OVF);
+    static_assert(VNF_ADD_OVF + 1 == VNF_SUB_OVF);
+    static_assert(VNF_SUB_OVF + 1 == VNF_MUL_OVF);
+    static_assert(VNF_MUL_OVF + 1 == VNF_ADD_UN_OVF);
+    static_assert(VNF_ADD_UN_OVF + 1 == VNF_SUB_UN_OVF);
+    static_assert(VNF_SUB_UN_OVF + 1 == VNF_MUL_UN_OVF);
 
     return VNF_ADD_OVF <= vnf && vnf <= VNF_MUL_UN_OVF;
 }
@@ -2354,9 +2364,9 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
     return VNBroadcastForSimdType(simdType, simdBaseType, oneVN);
 }
 
-ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType)
+ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, var_types simdBaseType)
 {
-    ValueNum baseTypeVN = VNForIntCon(INT32(simdBaseJitType));
+    ValueNum baseTypeVN = VNForIntCon(INT32(simdBaseType));
     ValueNum sizeVN     = VNForIntCon(simdSize);
     ValueNum simdTypeVN = VNForFunc(TYP_REF, VNF_SimdType, sizeVN, baseTypeVN);
 
@@ -6702,8 +6712,8 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_MDArrLowerBound:
 #ifdef FEATURE_HW_INTRINSICS
 #ifdef TARGET_XARCH
-                case VNF_HWI_SSE42_PopCount:
-                case VNF_HWI_SSE42_X64_PopCount:
+                case VNF_HWI_X86Base_PopCount:
+                case VNF_HWI_X86Base_X64_PopCount:
                 case VNF_HWI_AVX2_LeadingZeroCount:
                 case VNF_HWI_AVX2_TrailingZeroCount:
                 case VNF_HWI_AVX2_X64_LeadingZeroCount:
@@ -8084,7 +8094,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 
-            case NI_SSE42_PopCount:
+            case NI_X86Base_PopCount:
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
 
@@ -8094,7 +8104,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForIntCon(static_cast<int32_t>(result));
             }
 
-            case NI_SSE42_X64_PopCount:
+            case NI_X86Base_X64_PopCount:
             {
                 assert(varTypeIsLong(type));
 
@@ -8339,9 +8349,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 }
             }
 
-#if defined(TARGET_XARCH)
             if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
             {
+#if defined(TARGET_XARCH)
                 if (TypeOfVN(arg1VN) == TYP_SIMD16)
                 {
                     if (!HWIntrinsicInfo::IsVariableShift(ni))
@@ -8367,8 +8377,25 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                         }
                     }
                 }
-            }
+#elif defined(TARGET_ARM64)
+                CorInfoType auxJitType = tree->GetAuxiliaryJitType();
+                if (auxJitType != CORINFO_TYPE_UNDEF &&
+                    genTypeSize(JITtype2varType(auxJitType)) != genTypeSize(baseType))
+                {
+                    // Handle the "wide elements" variant of shift, where arg1 is a vector of ulongs,
+                    // which is looped over to read the shift values. The values can safely be narrowed
+                    // to the result type.
+                    assert(auxJitType == CORINFO_TYPE_ULONG);
+                    assert(tree->TypeIs(TYP_SIMD16));
+
+                    simd16_t arg1 = GetConstantSimd16(arg1VN);
+
+                    simd16_t result = {};
+                    NarrowSimdLong<simd16_t>(baseType, &result, arg1);
+                    arg1VN = VNForSimd16Con(result);
+                }
 #endif // TARGET_XARCH
+            }
 
             return EvaluateBinarySimd(this, oper, isScalar, type, baseType, arg0VN, arg1VN);
         }
@@ -9385,8 +9412,6 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
 
     if (IsVNConstant(arg0VN) && (!m_pComp->IsAot() || m_pComp->IsTargetIntrinsic(gtMathFN)))
     {
-        assert(varTypeIsFloating(TypeOfVN(arg0VN)));
-
         if (typ == TYP_DOUBLE)
         {
             // Both operand and its result must be of the same floating point type.
@@ -9861,7 +9886,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 }
 
 #ifdef TARGET_RISCV64
-                case NI_System_Math_MaxNumber:
+                case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
@@ -9869,7 +9894,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_MinNumber:
+                case NI_System_Math_MinNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
@@ -9903,7 +9928,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 }
 
 #ifdef TARGET_RISCV64
-                case NI_System_Math_MaxNumber:
+                case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
@@ -9911,7 +9936,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_MinNumber:
+                case NI_System_Math_MinNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
@@ -9987,27 +10012,27 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
 
 #ifdef TARGET_RISCV64
             case NI_System_Math_Max:
-                vnf = VNF_Max;
-                break;
-
-            case NI_System_Math_MaxNumber:
-                vnf = VNF_MaxNumber;
+                vnf = VNF_MaxInt;
                 break;
 
             case NI_System_Math_MaxUnsigned:
-                vnf = VNF_Max_UN;
+                vnf = VNF_MaxInt_UN;
+                break;
+
+            case NI_System_Math_MaxNative:
+                vnf = VNF_MaxNumber;
                 break;
 
             case NI_System_Math_Min:
-                vnf = VNF_Min;
-                break;
-
-            case NI_System_Math_MinNumber:
-                vnf = VNF_MinNumber;
+                vnf = VNF_MinInt;
                 break;
 
             case NI_System_Math_MinUnsigned:
-                vnf = VNF_Min_UN;
+                vnf = VNF_MinInt_UN;
+                break;
+
+            case NI_System_Math_MinNative:
+                vnf = VNF_MinNumber;
                 break;
 #endif // TARGET_RISCV64
 
@@ -10054,11 +10079,11 @@ bool ValueNumStore::GetVNFunc(ValueNum vn, VNFuncApp* funcApp)
     Chunk*   c      = m_chunks.GetNoExpand(GetChunkNum(vn));
     unsigned offset = ChunkOffset(vn);
     assert(offset < c->m_numUsed);
-    static_assert_no_msg(AreContiguous(CEA_Func0, CEA_Func1, CEA_Func2, CEA_Func3, CEA_Func4));
+    static_assert(AreContiguous(CEA_Func0, CEA_Func1, CEA_Func2, CEA_Func3, CEA_Func4));
     unsigned arity = c->m_attribs - CEA_Func0;
     if (arity <= 4)
     {
-        static_assert_no_msg(sizeof(VNFunc) == sizeof(VNDefFuncAppFlexible));
+        static_assert(sizeof(VNFunc) == sizeof(VNDefFuncAppFlexible));
         funcApp->m_arity           = arity;
         VNDefFuncAppFlexible* farg = c->PointerToFuncApp(offset, arity);
         funcApp->m_func            = farg->m_func;
@@ -11879,7 +11904,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
             {
-                tree->gtVNPair.SetBoth(vnStore->VNForLongCon(INT64(tree->AsIntConCommon()->LngValue())));
+                tree->gtVNPair.SetBoth(vnStore->VNForLongCon(tree->AsIntConCommon()->IntegralValue()));
             }
             else
             {
@@ -12507,7 +12532,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         if (isCnsObjHandle(vnStore, baseVN, &objHandle) && (dataOffset >= (ssize_t)OFFSETOF__CORINFO_String__chars) &&
             ((dataOffset % 2) == 0))
         {
-            static_assert_no_msg((OFFSETOF__CORINFO_String__chars % 2) == 0);
+            static_assert((OFFSETOF__CORINFO_String__chars % 2) == 0);
             index = (dataOffset - OFFSETOF__CORINFO_String__chars) / 2;
         }
     }
@@ -12624,9 +12649,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_GCPOLL:
             case GT_JMP:   // Control flow
             case GT_LABEL: // Control flow
-#if defined(FEATURE_EH_WINDOWS_X86)
-            case GT_END_LFIN: // Control flow
-#endif
                 tree->gtVNPair = vnStore->VNPForVoid();
                 break;
 
@@ -13300,7 +13322,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     else
     {
         VNFunc       func       = GetVNFuncForNode(tree);
-        ValueNum     simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetNormalizedSimdBaseJitType());
+        ValueNum     simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseType());
         ValueNumPair resultTypeVNPair(simdTypeVN, simdTypeVN);
 
         JITDUMP("    simdTypeVN is ");
@@ -13459,7 +13481,7 @@ void Compiler::fgValueNumberCastTree(GenTree* tree)
     ValueNumPair srcVNPair        = tree->AsOp()->gtOp1->gtVNPair;
     var_types    castToType       = tree->CastToType();
     var_types    castFromType     = tree->CastFromType();
-    bool         srcIsUnsigned    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
+    bool         srcIsUnsigned    = tree->IsUnsigned();
     bool         hasOverflowCheck = tree->gtOverflowEx();
 
     assert(genActualType(castToType) == genActualType(tree->TypeGet())); // Ensure that the resultType is correct
@@ -13768,6 +13790,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_ReadyToRunIsInstanceOf:
         case VNF_ReadyToRunCastClass:
         case VNF_ReadyToRunGenericHandle:
+        case VNF_ReadyToRunVirtualFuncPtr:
         {
             useEntryPointAddrAsArg0 = true;
         }
@@ -14282,10 +14305,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_RuntimeHandleClass;
             break;
 
-        case CORINFO_HELP_STRCNS:
-            vnf = VNF_LazyStrCns;
-            break;
-
         case CORINFO_HELP_CHKCASTCLASS:
         case CORINFO_HELP_CHKCASTCLASS_SPECIAL:
         case CORINFO_HELP_CHKCASTARRAY:
@@ -14357,6 +14376,18 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 
         case CORINFO_HELP_BOX_NULLABLE:
             vnf = VNF_BoxNullable;
+            break;
+
+        case CORINFO_HELP_VIRTUAL_FUNC_PTR:
+            vnf = VNF_VirtualFuncPtr;
+            break;
+
+        case CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
+            vnf = VNF_GVMLookupForSlot;
+            break;
+
+        case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
+            vnf = VNF_ReadyToRunVirtualFuncPtr;
             break;
 
         default:
@@ -14531,6 +14562,15 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                                                          call->gtArgs.GetUserArgByIndex(1)->GetNode());
                 break;
 
+            case CORINFO_HELP_VIRTUAL_FUNC_PTR:
+            case CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
+                vnpExc = fgValueNumberIndirNullCheckExceptions(call->gtArgs.GetThisArg()->GetNode());
+                break;
+
+            case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
+                vnpExc = fgValueNumberIndirNullCheckExceptions(call->gtArgs.GetUserArgByIndex(0)->GetNode());
+                break;
+
             default:
                 // Setup vnpExc with the information that multiple different exceptions
                 // could be generated by this helper, in an opaque way
@@ -14605,12 +14645,6 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 //                 exception set.  We calculate a base address to use as the
 //                 argument to the VNF_nullPtrExc function.
 //
-// Notes:        - The calculation of the base address removes any constant
-//                 offsets, so that obj.x and obj.y will both have obj as
-//                 their base address.
-//                 For arrays the base address currently includes the
-//                 index calculations.
-//
 void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree* baseAddr)
 {
     // We should have tree that a unary indirection or a tree node with an implicit indirection
@@ -14622,6 +14656,28 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
         return;
     }
 
+    // Add the NullPtrExc to "tree"'s value numbers.
+    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, fgValueNumberIndirNullCheckExceptions(baseAddr));
+}
+
+//--------------------------------------------------------------------------------
+// fgValueNumberIndirNullCheckExceptions:
+//   Create VNP for an indirection's implicit null check.
+//
+// Arguments:
+//    baseAddr - The address that we are indirecting
+//
+// Return Value:
+//   VNP representing exception set.
+//
+//
+// Notes:
+//   The calculation of the base address removes any constant offsets, so that
+//   obj.x and obj.y will both have obj as their base address. For arrays the
+//   base address currently includes the index calculations.
+//
+ValueNumPair Compiler::fgValueNumberIndirNullCheckExceptions(GenTree* baseAddr)
+{
     // We evaluate the baseAddr ValueNumber further in order
     // to obtain a better value to use for the null check exception.
     //
@@ -14652,10 +14708,6 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
         }
     }
 
-    // The exceptions in "baseVNP" should have been added to the "tree"'s set already.
-    assert(vnStore->VNPExcIsSubset(vnStore->VNPExceptionSet(tree->gtVNPair),
-                                   vnStore->VNPExceptionSet(ValueNumPair(baseLVN, baseCVN))));
-
     // The normal VNs for base address are used to create the NullPtrExcs
     ValueNumPair excChkSet = vnStore->VNPForEmptyExcSet();
 
@@ -14669,8 +14721,7 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
         excChkSet.SetConservative(vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, baseCVN)));
     }
 
-    // Add the NullPtrExc to "tree"'s value numbers.
-    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excChkSet);
+    return excChkSet;
 }
 
 //--------------------------------------------------------------------------------

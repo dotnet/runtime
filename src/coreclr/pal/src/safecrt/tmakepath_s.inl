@@ -4,14 +4,10 @@
 /***
 *tmakepath_s.inl - general implementation of _tmakepath_s
 *
-
-*
 *Purpose:
 *       This file contains the general algorithm for _makepath_s and its variants.
-*
 *******************************************************************************/
 
-_FUNC_PROLOGUE
 errno_t __cdecl _FUNC_NAME(_Out_writes_z_(_SIZE) _CHAR *_DEST, _In_opt_ size_t _SIZE, _In_opt_z_ const _CHAR *_Drive, _In_opt_z_ const _CHAR *_Dir, _In_opt_z_ const _CHAR *_Filename, _In_opt_z_ const _CHAR *_Ext)
 {
     size_t written;

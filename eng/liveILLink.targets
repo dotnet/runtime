@@ -33,7 +33,8 @@
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all"
                       Private="false"
-                      SetConfiguration="Configuration=$(ToolsConfiguration)">
+                      SetConfiguration="Configuration=$(ToolsConfiguration)"
+                      GlobalPropertiesToRemove="RuntimeIdentifier">
         <!-- Keep TFMs in sync with ILLink.Tasks.csproj -->
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">TargetFramework=$(NetCoreAppToolCurrent)</SetTargetFramework>
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">TargetFramework=$(NetFrameworkToolCurrent)</SetTargetFramework>

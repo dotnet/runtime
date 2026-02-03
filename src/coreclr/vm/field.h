@@ -10,6 +10,7 @@
 #define _FIELD_H_
 
 #include "excep.h"
+#include "cdacdata.h"
 
 // Temporary values stored in FieldDesc m_dwOffset during loading
 // The high 5 bits must be zero (because in field.h we steal them for other uses), so we must choose values > 0
@@ -36,17 +37,16 @@
 class FieldDesc
 {
     friend class MethodTableBuilder;
+    friend struct ::cdac_data<FieldDesc>;
 
   protected:
     PTR_MethodTable m_pMTOfEnclosingClass;  // This is used to hold the log2 of the field size temporarily during class loading.  Yuck.
 
     // See also: FieldDesc::InitializeFrom method
 
-#if defined(DACCESS_COMPILE)
     union { //create a union so I can get the correct offset for ClrDump.
         unsigned m_dword1;
         struct {
-#endif
         unsigned m_mb               : 24;
 
         // 8 bits...
@@ -54,24 +54,17 @@ class FieldDesc
         unsigned m_isThreadLocal    : 1;
         unsigned m_isRVA            : 1;
         unsigned m_prot             : 3;
-#if defined(DACCESS_COMPILE)
         };
     };
-#endif
-
-#if defined(DACCESS_COMPILE)
     union { //create a union so I can get the correct offset for ClrDump
         unsigned m_dword2;
         struct {
-#endif
         // Note: this has been as low as 22 bits in the past & seemed to be OK.
         // we can steal some more bits here if we need them.
         unsigned m_dwOffset         : 27;
         unsigned m_type             : 5;
-#if defined(DACCESS_COMPILE)
         };
     };
-#endif
 
 #ifdef _DEBUG
     LPUTF8 m_debugName;
@@ -450,7 +443,7 @@ public:
     OBJECTREF GetStaticOBJECTREF()
     {
         WRAPPER_NO_CONTRACT;
-        return *(OBJECTREF *)GetCurrentStaticAddress();
+        return ObjectToOBJECTREF(*(Object**)GetCurrentStaticAddress());
     }
 
     VOID SetStaticOBJECTREF(OBJECTREF objRef);
@@ -742,6 +735,14 @@ public:
 #ifndef DACCESS_COMPILE
     REFLECTFIELDREF AllocateStubFieldInfo();
 #endif
+};
+
+template<>
+struct cdac_data<FieldDesc>
+{
+    static constexpr size_t DWord1 = offsetof(FieldDesc, m_dword1);
+    static constexpr size_t DWord2 = offsetof(FieldDesc, m_dword2);
+    static constexpr size_t MTOfEnclosingClass = offsetof(FieldDesc, m_pMTOfEnclosingClass);
 };
 
 #endif // _FIELD_H_

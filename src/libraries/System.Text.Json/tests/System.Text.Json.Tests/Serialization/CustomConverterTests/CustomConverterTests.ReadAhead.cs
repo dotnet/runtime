@@ -66,7 +66,7 @@ namespace System.Text.Json.Serialization.Tests
         private static void AppendTestString(int i, int stringSize, StringBuilder builder)
         {
             builder.Append(@"""");
-            builder.Append(new string(i.ToString()[0], stringSize));
+            builder.Append(i.ToString()[0], stringSize);
             builder.Append(@"""");
         }
 

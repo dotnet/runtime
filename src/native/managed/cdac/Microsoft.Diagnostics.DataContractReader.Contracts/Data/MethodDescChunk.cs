@@ -17,6 +17,9 @@ internal sealed class MethodDescChunk : IData<MethodDescChunk>
         Size = target.Read<byte>(address + (ulong)type.Fields[nameof(Size)].Offset);
         Count = target.Read<byte>(address + (ulong)type.Fields[nameof(Count)].Offset);
         FlagsAndTokenRange = target.Read<ushort>(address + (ulong)type.Fields[nameof(FlagsAndTokenRange)].Offset);
+
+        // The first MethodDesc is at the end of the MethodDescChunk
+        FirstMethodDesc = address + type.Size!.Value;
     }
 
     public TargetPointer MethodTable { get; init; }
@@ -24,4 +27,6 @@ internal sealed class MethodDescChunk : IData<MethodDescChunk>
     public byte Size { get; init; }
     public byte Count { get; init; }
     public ushort FlagsAndTokenRange { get; init; }
+
+    public TargetPointer FirstMethodDesc { get; init; }
 }

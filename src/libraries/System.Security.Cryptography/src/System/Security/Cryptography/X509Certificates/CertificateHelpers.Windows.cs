@@ -101,7 +101,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             // These are ordered in terms of perceived likeliness, given that the key
             // is AT_SIGNATURE.
-            int[] provTypes =
+            ReadOnlySpan<int> provTypes =
             [
                 PROV_RSA_FULL,
                 PROV_RSA_AES,
@@ -120,10 +120,8 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     using (new RSACryptoServiceProvider(cspParameters))
                     {
-                        {
-                            keySpec = cspParameters.KeyNumber;
-                            return true;
-                        }
+                        keySpec = cspParameters.KeyNumber;
+                        return true;
                     }
                 }
                 catch (CryptographicException)
@@ -141,7 +139,7 @@ namespace System.Security.Cryptography.X509Certificates
             const int PROV_DSS = 3;
             const int PROV_DSS_DH = 13;
 
-            int[] provTypes =
+            ReadOnlySpan<int> provTypes =
             [
                 PROV_DSS_DH,
                 PROV_DSS,
@@ -155,10 +153,8 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     using (new DSACryptoServiceProvider(cspParameters))
                     {
-                        {
-                            keySpec = cspParameters.KeyNumber;
-                            return true;
-                        }
+                        keySpec = cspParameters.KeyNumber;
+                        return true;
                     }
                 }
                 catch (CryptographicException)
@@ -169,6 +165,34 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Fail("DSA key did not open with KeyNumber 0 or AT_SIGNATURE");
             keySpec = 0;
             return false;
+        }
+
+        private static partial SafeCertContextHandle DuplicateCertificateHandle(CertificatePal certificate)
+        {
+            SafeCertContextHandle? handle = certificate.SafeHandle;
+            bool addedRef = false;
+
+            try
+            {
+                if (handle is not null)
+                {
+                    handle.DangerousAddRef(ref addedRef);
+                    return Interop.Crypt32.CertDuplicateCertificateContext(handle.DangerousGetHandle());
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // Let this go to the invalid handle throw.
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    handle!.DangerousRelease();
+                }
+            }
+
+            throw new CryptographicException(SR.Format(SR.Cryptography_InvalidHandle, nameof(handle)));
         }
     }
 }

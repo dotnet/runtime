@@ -41,7 +41,14 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             if (!_method.IsAbstract)
+            {
                 yield return new DependencyListEntry(factory.GenericVirtualMethodImpl(_method), "Implementation of the generic virtual method");
+            }
+
+            if (!_method.OwningType.IsInterface)
+            {
+                yield return new DependencyListEntry(factory.TypeGVMEntries(_method.OwningType.GetTypeDefinition()), "Resolution metadata");
+            }
         }
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
@@ -94,6 +101,8 @@ namespace ILCompiler.DependencyAnalysis
                 if (methodIsShared &&
                     potentialOverrideType.ConvertToCanonForm(CanonicalFormKind.Specific) != potentialOverrideType)
                     continue;
+
+                bool foundImpl = false;
 
                 // If this is an interface gvm, look for types that implement the interface
                 // and other instantantiations that have the same canonical form.
@@ -150,6 +159,8 @@ namespace ILCompiler.DependencyAnalysis
                                 TypeSystemEntity origin = (implementingMethodInstantiation.OwningType != potentialOverrideType) ? potentialOverrideType : null;
                                 factory.MetadataManager.NoteOverridingMethod(_method, implementingMethodInstantiation, origin);
                             }
+
+                            foundImpl = true;
                         }
                     }
                 }
@@ -201,7 +212,20 @@ namespace ILCompiler.DependencyAnalysis
                             factory.GenericVirtualMethodImpl(instantiatedTargetMethod), null, "DerivedMethodInstantiation"));
 
                         factory.MetadataManager.NoteOverridingMethod(_method, instantiatedTargetMethod);
+
+                        foundImpl = true;
                     }
+                }
+
+                if (foundImpl)
+                {
+                    TypeDesc currentType = potentialOverrideType;
+                    do
+                    {
+                        dynamicDependencies.Add(new CombinedDependencyListEntry(factory.TypeGVMEntries(currentType.GetTypeDefinition()), null, "Resolution metadata"));
+                        currentType = currentType.BaseType;
+                    }
+                    while (currentType != null);
                 }
             }
 

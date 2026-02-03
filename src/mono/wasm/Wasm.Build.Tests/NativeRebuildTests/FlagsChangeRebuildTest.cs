@@ -4,6 +4,7 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
@@ -29,7 +30,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         [Theory]
         [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ false)]
         [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ true)]
-        public async void ExtraEmccFlagsSetButNoRealChange(Configuration config, bool aot, string extraCFlags, string extraLDFlags)
+        public async Task ExtraEmccFlagsSetButNoRealChange(Configuration config, bool aot, string extraCFlags, string extraLDFlags)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, requestNativeRelink: true, invariant: false);
@@ -51,10 +52,9 @@ namespace Wasm.Build.NativeRebuild.Tests
             // cflags: pinvoke get's compiled, but doesn't overwrite pinvoke.o
             // and thus doesn't cause relinking
             TestUtils.AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
-            
+
             // ldflags: link step args change, so it should trigger relink
-            TestUtils.AssertSubstring("Linking with emcc", output, contains: extraLDFlags.Length > 0);
-            
+            TestUtils.AssertSubstring("Linking with emcc", output, contains: !dotnetNativeFilesUnchanged);
             if (aot)
             {
                 // ExtraEmccLDFlags does not affect .bc files

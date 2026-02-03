@@ -234,7 +234,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
             }
 
-            // DynamicDependency is not supported yet in the analyzer 
+            // DynamicDependency is not supported yet in the analyzer
             [ExpectedWarning("IL2111", nameof(MethodWithSingleAnnotatedParameter), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/83080")]
             [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(AnnotatedMethodParameters))]
             static void DynamicDependency()
@@ -247,7 +247,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
             }
 
-            // DynamicDependency is not supported yet in the analyzer 
+            // DynamicDependency is not supported yet in the analyzer
             [ExpectedWarning("IL2111", nameof(MethodWithSingleAnnotatedParameter), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/83080")]
             [DynamicDependency(nameof(MethodWithSingleAnnotatedParameter), typeof(AnnotatedMethodParameters))]
             static void DynamicDependencyByName()
@@ -681,14 +681,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 typeof(AnnotatedProperty).RequiresAll();
             }
 
-            // Analyzer doesn't produce this warning 
-            [ExpectedWarning("IL2110", nameof(Property1WithAnnotation), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2628")]
+            // Analyzer doesn't produce this warning
+            [ExpectedWarning("IL2110", nameof(Property1WithAnnotation))]
             static void DynamicallyAccessedFields()
             {
                 typeof(AnnotatedProperty).RequiresNonPublicFields();
             }
 
-            // Analyzer doesn't recognize Linq.Expressions 
+            // Analyzer doesn't recognize Linq.Expressions
             [ExpectedWarning("IL2111", nameof(Property1WithAnnotation) + ".set", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101148")]
             static void LdToken()
             {

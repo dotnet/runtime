@@ -51,7 +51,9 @@ namespace System.Text.Json.Serialization
 
         public readonly bool IsFinalBlock => _isFinalBlock;
 
+#if DEBUG
         public readonly ReadOnlySequence<byte> Bytes => new(_buffer.AsMemory(_offset, _count));
+#endif
 
         /// <summary>
         /// Read from the stream until either our buffer is filled or we hit EOF.
@@ -153,6 +155,14 @@ namespace System.Text.Json.Serialization
             }
 
             _offset = 0;
+        }
+
+        public void GetReader(JsonReaderState jsonReaderState, out Utf8JsonReader reader)
+        {
+            reader = new Utf8JsonReader(
+                _buffer.AsSpan(_offset, _count),
+                IsFinalBlock,
+                jsonReaderState);
         }
 
         private void ProcessReadBytes()

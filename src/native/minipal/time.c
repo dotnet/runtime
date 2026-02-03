@@ -29,7 +29,26 @@ int64_t minipal_hires_tick_frequency()
 
 int64_t minipal_lowres_ticks()
 {
-    return GetTickCount64();
+    // GetTickCount64 uses fixed resolution of 10-16ms for backward compatibility. Use
+    // QueryUnbiasedInterruptTime instead which becomes more accurate if the underlying system
+    // resolution is improved. This helps responsiveness in the case an app is trying to opt
+    // into things like multimedia scenarios and additionally does not include "bias" from time
+    // the system is spent asleep or in hibernation.
+
+    const ULONGLONG TicksPerMillisecond = 10000;
+
+    ULONGLONG unbiasedTime;
+    BOOL ret;
+    ret = QueryUnbiasedInterruptTime(&unbiasedTime);
+    assert(ret); // The function is documented to only fail if a null-ptr is passed in
+    return (int64_t)(unbiasedTime / TicksPerMillisecond);
+}
+
+uint64_t minipal_get_system_time()
+{
+    FILETIME filetime;
+    GetSystemTimeAsFileTime(&filetime);
+    return ((uint64_t)filetime.dwHighDateTime << 32) | filetime.dwLowDateTime;
 }
 
 #else // HOST_WINDOWS
@@ -68,6 +87,7 @@ inline static void YieldProcessor(void)
 #define tccSecondsToNanoSeconds 1000000000      // 10^9
 #define tccSecondsToMilliSeconds 1000           // 10^3
 #define tccMilliSecondsToNanoSeconds 1000000    // 10^6
+#define tccSecondsTo100NS 10000000              // 10^7
 int64_t minipal_hires_tick_frequency(void)
 {
     return tccSecondsToNanoSeconds;
@@ -123,6 +143,18 @@ int64_t minipal_lowres_ticks(void)
 #else
     #error "minipal_lowres_ticks requires clock_gettime_nsec_np or clock_gettime to be supported."
 #endif
+}
+
+uint64_t minipal_get_system_time(void)
+{
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) != 0)
+    {
+        assert(!"clock_gettime(CLOCK_REALTIME) failed");
+    }
+
+    const uint64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
+    return ((uint64_t)(ts.tv_sec) + SECS_BETWEEN_1601_AND_1970_EPOCHS) * tccSecondsTo100NS + (ts.tv_nsec / 100);
 }
 
 #endif // HOST_WINDOWS

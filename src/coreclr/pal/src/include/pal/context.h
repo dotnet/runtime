@@ -528,7 +528,7 @@ inline UINT32 FPREG_ExtendedSize(const ucontext_t *uc)
 inline bool FPREG_HasExtendedState(const ucontext_t *uc)
 {
     // See comments in /usr/include/x86_64-linux-gnu/asm/sigcontext.h for info on how to detect if extended state is present
-    static_assert_no_msg(FP_XSTATE_MAGIC2_SIZE == sizeof(UINT32));
+    static_assert(FP_XSTATE_MAGIC2_SIZE == sizeof(UINT32));
 
     if (FPREG_FpxSwBytes(uc)->magic1 != FP_XSTATE_MAGIC1)
     {
@@ -929,7 +929,7 @@ inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
     return (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX64)) || (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX512_64));
 }
 
-static_assert_no_msg(offsetof(_STRUCT_X86_AVX_STATE64, __fpu_ymmh0) == offsetof(_STRUCT_X86_AVX512_STATE64, __fpu_ymmh0));
+static_assert(offsetof(_STRUCT_X86_AVX_STATE64, __fpu_ymmh0) == offsetof(_STRUCT_X86_AVX512_STATE64, __fpu_ymmh0));
 
 inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc, uint32_t *featureSize)
 {
@@ -1394,9 +1394,8 @@ inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
     return pContext->PSWAddr;
 #elif defined(HOST_POWERPC64)
     return pContext->Nip;
-#elif defined(HOST_WASM) // wasm has no PC
-    _ASSERT(false);
-    return 0;
+#elif defined(HOST_WASM)
+    return pContext->InterpreterIP;
 #else
     return pContext->Pc;
 #endif
@@ -1412,8 +1411,8 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
     pContext->PSWAddr = pc;
 #elif defined(HOST_POWERPC64)
     pContext->Nip = pc;
-#elif defined(HOST_WASM) // wasm has no PC
-    _ASSERT(false);
+#elif defined(HOST_WASM)
+    pContext->InterpreterIP = pc;
 #else
     pContext->Pc = pc;
 #endif
@@ -1431,9 +1430,8 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
     return pContext->R11;
 #elif defined(HOST_POWERPC64)
     return pContext->R31;
-#elif defined(HOST_WASM) // wasm has no PC
-    _ASSERT(false);
-    return 0;
+#elif defined(HOST_WASM)
+    return pContext->InterpreterFP;
 #else
     return pContext->Fp;
 #endif

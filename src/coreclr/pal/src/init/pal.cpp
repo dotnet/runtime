@@ -24,7 +24,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "../objmgr/listedobjectmanager.hpp"
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
-#include "pal/sharedmemory.h"
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
@@ -36,6 +35,8 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/stackstring.hpp"
 #include "pal/cgroup.h"
 #include <minipal/getexepath.h>
+#include <minipal/memorybarrierprocesswide.h>
+#include <minipal/descriptorlimit.h>
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
@@ -47,7 +48,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/param.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
 #include <limits.h>
 #include <string.h>
@@ -115,7 +115,6 @@ static minipal_mutex* init_critsec = NULL;
 static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
 
 static int Initialize(int argc, const char *const argv[], DWORD flags);
-static BOOL INIT_IncreaseDescriptorLimit(void);
 static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv);
 static LPWSTR INIT_GetCurrentEXEPath();
 static BOOL INIT_SharedFilesPath(void);
@@ -354,20 +353,6 @@ Initialize(
             goto CLEANUP0a;
         }
 
-        // The gSharedFilesPath is allocated dynamically so its destructor does not get
-        // called unexpectedly during cleanup
-        gSharedFilesPath = new(std::nothrow) PathCharString();
-        if (gSharedFilesPath == nullptr)
-        {
-            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            goto CLEANUP0a;
-        }
-
-        if (INIT_SharedFilesPath() == FALSE)
-        {
-            goto CLEANUP0a;
-        }
-
         fFirstTimeInit = true;
 
         InitializeDefaultStackSize();
@@ -400,14 +385,12 @@ Initialize(
             goto CLEANUP1;
         }
 
-        if (!INIT_IncreaseDescriptorLimit())
+        if (!minipal_increase_descriptor_limit())
         {
             ERROR("Unable to increase the file descriptor limit!\n");
             // We can continue if this fails; we'll just have problems if
             // we use large numbers of threads or have many open files.
         }
-
-        SharedMemoryManager::StaticInitialize();
 
         //
         // Initialize global process data
@@ -580,7 +563,7 @@ Initialize(
         if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
         {
             // Initialize before first thread is created for faster load on Linux
-            if (!InitializeFlushProcessWriteBuffers())
+            if (!minipal_initialize_memory_barrier_process_wide())
             {
                 ERROR("Unable to initialize flush process write buffers\n");
                 palError = ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
@@ -835,8 +818,6 @@ PALCommonCleanup()
         //
         CPalSynchMgrController::PrepareForShutdown();
 
-        SharedMemoryManager::StaticClose();
-
 #ifdef _DEBUG
         PROCDumpThreadList();
 #endif
@@ -904,52 +885,6 @@ void PALInitUnlock(void)
 }
 
 /* Internal functions *********************************************************/
-
-/*++
-Function:
-    INIT_IncreaseDescriptorLimit [internal]
-
-Abstract:
-    Calls setrlimit(2) to increase the maximum number of file descriptors
-    this process can open.
-
-Return value:
-    TRUE if the call to setrlimit succeeded; FALSE otherwise.
---*/
-static BOOL INIT_IncreaseDescriptorLimit(void)
-{
-#ifdef TARGET_WASM
-    // WebAssembly cannot set limits
-    return TRUE;
-#endif
-#ifndef DONT_SET_RLIMIT_NOFILE
-    struct rlimit rlp;
-    int result;
-
-    result = getrlimit(RLIMIT_NOFILE, &rlp);
-    if (result != 0)
-    {
-        return FALSE;
-    }
-    // Set our soft limit for file descriptors to be the same
-    // as the max limit.
-    rlp.rlim_cur = rlp.rlim_max;
-#ifdef __APPLE__
-    // Based on compatibility note in setrlimit(2) manpage for OSX,
-    // trim the limit to OPEN_MAX.
-    if (rlp.rlim_cur > OPEN_MAX)
-    {
-        rlp.rlim_cur = OPEN_MAX;
-    }
-#endif
-    result = setrlimit(RLIMIT_NOFILE, &rlp);
-    if (result != 0)
-    {
-        return FALSE;
-    }
-#endif // !DONT_SET_RLIMIT_NOFILE
-    return TRUE;
-}
 
 /*++
 Function:
@@ -1134,64 +1069,4 @@ static LPWSTR INIT_GetCurrentEXEPath()
     }
 
     return return_value;
-}
-
-/*++
-Function:
-  INIT_SharedFilesPath
-
-Abstract:
-    Initializes the shared application
---*/
-static BOOL INIT_SharedFilesPath(void)
-{
-#ifdef __APPLE__
-    // Store application group Id. It will be null if not set
-    gApplicationGroupId = getenv("DOTNET_SANDBOX_APPLICATION_GROUP_ID");
-
-    if (nullptr != gApplicationGroupId)
-    {
-        // Verify the length of the application group ID
-        gApplicationGroupIdLength = strlen(gApplicationGroupId);
-        if (gApplicationGroupIdLength > MAX_APPLICATION_GROUP_ID_LENGTH)
-        {
-            SetLastError(ERROR_BAD_LENGTH);
-            return FALSE;
-        }
-
-        // In sandbox, all IPC files (locks, pipes) should be written to the application group
-        // container. There will be no write permissions to TEMP_DIRECTORY_PATH
-        if (!GetApplicationContainerFolder(*gSharedFilesPath, gApplicationGroupId, gApplicationGroupIdLength))
-        {
-            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            return FALSE;
-        }
-
-        // Verify the size of the path won't exceed maximum allowed size
-        if (gSharedFilesPath->GetCount() + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ > MAX_LONGPATH)
-        {
-            SetLastError(ERROR_FILENAME_EXCED_RANGE);
-            return FALSE;
-        }
-
-        // Check if the path already exists and it's a directory
-        struct stat statInfo;
-        int statResult = stat(*gSharedFilesPath, &statInfo);
-
-        // If the path exists, check that it's a directory
-        if (statResult != 0 || !(statInfo.st_mode & S_IFDIR))
-        {
-            SetLastError(ERROR_PATH_NOT_FOUND);
-            return FALSE;
-        }
-
-        return TRUE;
-    }
-#endif // __APPLE__
-
-    // If we are here, then we are not in sandbox mode, resort to TEMP_DIRECTORY_PATH as shared files path
-    return gSharedFilesPath->Set(TEMP_DIRECTORY_PATH);
-
-    // We can verify statically the non sandboxed case, since the size is known during compile time
-    static_assert_no_msg(STRING_LENGTH(TEMP_DIRECTORY_PATH) + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ <= MAX_LONGPATH);
 }

@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.Hosting
             },
             applicationLifetime);
 
-#if NET8_0_OR_GREATER
+#if NET
             await Task.Delay(Timeout.Infinite, applicationLifetime.ApplicationStopping).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 #else
             var waitForStop = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);

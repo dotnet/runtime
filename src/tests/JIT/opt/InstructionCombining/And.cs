@@ -105,6 +105,26 @@ namespace TestAnd
                 fail = true;
             }
 
+            if (!AndsGreaterThan(3, 2))
+            {
+                fail = true;
+            }
+
+            if (!AndsGreaterThanEq(5, 8))
+            {
+                fail = true;
+            }
+
+            if (!AndsLessThan(-8, -4))
+            {
+                fail = true;
+            }
+
+            if (!AndsLessThanEq(5, 2))
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -263,6 +283,34 @@ namespace TestAnd
             //ARM64-FULL-LINE: tst {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: tst {{w[0-9]+}}, {{w[0-9]+}}
             return ((a & b) == 0) | ((c & d) == 0);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AndsGreaterThan(int a, int b)
+        {
+            //ARM64-FULL-LINE: ands w0, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & b) > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AndsGreaterThanEq(int a, int b)
+        {
+            //ARM64-FULL-LINE: ands w0, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & b) >= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AndsLessThan(int a, int b)
+        {
+            //ARM64-FULL-LINE: ands w0, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & b) < 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AndsLessThanEq(int a, int b)
+        {
+            //ARM64-FULL-LINE: ands w0, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & b) <= 0;
         }
     }
 }

@@ -391,6 +391,8 @@ HRESULT EEClass::AddField(MethodTable* pMT, mdFieldDef fieldDef, FieldDesc** ppN
             LOG((LF_ENC, LL_INFO100, "EEClass::AddField Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
 
             EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
+            CrstHolder ch(pMod->GetClassLoader()->GetAvailableTypesLock());
+
             EETypeHashTable::Iterator it(paramTypes);
             EETypeHashEntry* pEntry;
             while (paramTypes->FindNext(&it, &pEntry))
@@ -587,6 +589,8 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
             LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
 
             EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
+            CrstHolder ch(pMod->GetClassLoader()->GetAvailableTypesLock());
+
             EETypeHashTable::Iterator it(paramTypes);
             EETypeHashEntry* pEntry;
             while (paramTypes->FindNext(&it, &pEntry))
@@ -656,13 +660,8 @@ HRESULT EEClass::AddMethodDesc(
     if (FAILED(hr = pImport->GetSigOfMethodDef(methodDef, &sigLen, &sig)))
         return hr;
 
-    SigParser sigParser(sig, sigLen);
-    ULONG offsetOfAsyncDetails;
-    bool isValueTask;
-    MethodReturnKind returnKind = ClassifyMethodReturnKind(sigParser, pModule, &offsetOfAsyncDetails, &isValueTask);
-    if (returnKind != MethodReturnKind::NormalMethod)
+    if (IsMiAsync(dwImplFlags))
     {
-        // TODO: (async) revisit and examine if this can be supported
         LOG((LF_ENC, LL_INFO100, "**Error** EnC for Async methods is NYI"));
         return E_FAIL;
     }
@@ -735,7 +734,7 @@ HRESULT EEClass::AddMethodDesc(
                                 pImport,
                                 NULL,
                                 Signature(),
-                                AsyncMethodKind::NotAsync
+                                AsyncMethodFlags::None
                                 COMMA_INDEBUG(debug_szMethodName)
                                 COMMA_INDEBUG(pMT->GetDebugClassName())
                                 COMMA_INDEBUG(NULL)
@@ -937,7 +936,7 @@ EEClass::CheckVarianceInSig(
                 uint32_t cArgs;
                 IfFailThrow(psig.GetData(&cArgs));
 
-                // Conservatively, assume non-variance of function pointer types
+                // Conservatively, assume non-variance of function pointer types, if we ever change this, update the TypeValidationChecker in crossgen2 also
                 if (!CheckVarianceInSig(numGenericArgs, pVarianceInfo, pModule, psig, gpNonVariant))
                     return FALSE;
 
@@ -1132,6 +1131,22 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
     if (!pMT->IsCanonicalMethodTable())
     {
         EnsureLoaded(TypeHandle(pMT->GetCanonicalMethodTable()), CLASS_LOAD_EXACTPARENTS);
+    }
+
+    if (pMT->GetClass()->HasRVAStaticFields())
+    {
+        ApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::STATIC_FIELDS);
+        FieldDesc* pFD = NULL;
+        while ((pFD = fdIterator.Next()) != NULL)
+        {
+            if (pFD->IsByValue() && pFD->IsRVA())
+            {
+                if (pFD->GetApproxFieldTypeHandleThrowing().GetMethodTable()->GetClass()->HasFieldsWhichMustBeInited())
+                {
+                    ThrowHR(COR_E_BADIMAGEFORMAT);
+                }
+            }
+        }
     }
 
     LoadExactParentAndInterfacesTransitively(pMT);
@@ -1339,7 +1354,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
         return;
 
     // Step 1: Validate compatibility of return types on overriding methods
-    if (pMT->GetClass()->HasCovariantOverride() && (!pMT->GetModule()->IsReadyToRun() || !pMT->GetModule()->GetReadyToRunInfo()->SkipTypeValidation()))
+    if (pMT->GetClass()->HasCovariantOverride() && !pMT->GetModule()->SkipTypeValidation())
     {
         for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
         {
@@ -1842,6 +1857,29 @@ EEClass::CheckForHFA()
 #else
                     fieldHFAType = pFD->LookupApproxFieldTypeHandle().AsMethodTable()->GetHFAType();
 #endif
+                }
+
+                int requiredAlignment;
+                switch (fieldHFAType)
+                {
+                case CORINFO_HFA_ELEM_FLOAT:
+                    requiredAlignment = 4;
+                    break;
+                case CORINFO_HFA_ELEM_VECTOR64:
+                case CORINFO_HFA_ELEM_DOUBLE:
+                    requiredAlignment = 8;
+                    break;
+                case CORINFO_HFA_ELEM_VECTOR128:
+                    requiredAlignment = 16;
+                    break;
+                default:
+                    // VT without a valid HFA type inside of this struct means this struct is not an HFA
+                    return false;
+                }
+
+                if (requiredAlignment && (pFD->GetOffset() % requiredAlignment != 0)) // HFAs don't have unaligned fields.
+                {
+                    return false;
                 }
             }
             break;
@@ -2790,13 +2828,15 @@ void SparseVTableMap::AllocOrExpand()
 }
 
 //*******************************************************************************
-// While building mapping list, record a gap in VTable slot numbers.
+// While building mapping list, record a gap in VTable slot numbers or MT slots.
+// A positive number indicates a gap in the VTable slot numbers.
+// A negative number indicates a gap in the MT slots.
 void SparseVTableMap::RecordGap(WORD StartMTSlot, WORD NumSkipSlots)
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE((StartMTSlot == 0) || (StartMTSlot > m_MTSlot));
-    _ASSERTE(NumSkipSlots > 0);
+    _ASSERTE(NumSkipSlots != 0);
 
     // We use the information about the current gap to complete a map entry for
     // the last non-gap. There is a special case where the vtable begins with a
@@ -2820,6 +2860,14 @@ void SparseVTableMap::RecordGap(WORD StartMTSlot, WORD NumSkipSlots)
     m_MTSlot = StartMTSlot;
 
     m_MapEntries++;
+}
+
+//*******************************************************************************
+// While building mapping list, record an excluded MT slot.
+void SparseVTableMap::RecordExcludedMethod(WORD MTSlot)
+{
+    WRAPPER_NO_CONTRACT;
+    return RecordGap(MTSlot, -1);
 }
 
 //*******************************************************************************

@@ -288,6 +288,7 @@ typedef enum CorTypeAttr
     tdAutoLayout            =   0x00000000,     // Class fields are auto-laid out
     tdSequentialLayout      =   0x00000008,     // Class fields are laid out sequentially
     tdExplicitLayout        =   0x00000010,     // Layout is supplied explicitly
+    tdExtendedLayout        =   0x00000018,     // Layout is supplied via the System.Runtime.InteropServices.ExtendedLayoutAttribute
     // end layout mask
 
     // Use this mask to retrieve class semantics information.
@@ -325,6 +326,11 @@ typedef enum CorTypeAttr
     tdHasSecurity           =   0x00040000,     // Class has security associate with it.
 } CorTypeAttr;
 
+enum class CorExtendedLayoutKind
+{
+    CStruct = 0, // C-style struct
+    CUnion = 1, // C-style union
+};
 
 // Macros for accessing the members of the CorTypeAttr.
 #define IsTdNotPublic(x)                    (((x) & tdVisibilityMask) == tdNotPublic)
@@ -340,6 +346,7 @@ typedef enum CorTypeAttr
 #define IsTdAutoLayout(x)                   (((x) & tdLayoutMask) == tdAutoLayout)
 #define IsTdSequentialLayout(x)             (((x) & tdLayoutMask) == tdSequentialLayout)
 #define IsTdExplicitLayout(x)               (((x) & tdLayoutMask) == tdExplicitLayout)
+#define IsTdExtendedLayout(x)               (((x) & tdLayoutMask) == tdExtendedLayout)
 
 #define IsTdClass(x)                        (((x) & tdClassSemanticsMask) == tdClass)
 #define IsTdInterface(x)                    (((x) & tdClassSemanticsMask) == tdInterface)
@@ -975,14 +982,15 @@ typedef enum CorCallingConvention
     IMAGE_CEE_CS_CALLCONV_UNMANAGED     = 0x9,  // Unmanaged calling convention encoded as modopts
     IMAGE_CEE_CS_CALLCONV_GENERICINST   = 0xa,  // generic method instantiation
     IMAGE_CEE_CS_CALLCONV_NATIVEVARARG  = 0xb,  // used ONLY for 64bit vararg PInvoke calls
-    IMAGE_CEE_CS_CALLCONV_MAX           = 0xc,  // first invalid calling convention
+    IMAGE_CEE_CS_CALLCONV_ASYNC         = 0xc,  // used for calli in IL stubs
+    IMAGE_CEE_CS_CALLCONV_MAX           = 0xd,  // first invalid calling convention
 
 
         // The high bits of the calling convention convey additional info
-    IMAGE_CEE_CS_CALLCONV_MASK      = 0x0f,  // Calling convention is bottom 4 bits
-    IMAGE_CEE_CS_CALLCONV_HASTHIS   = 0x20,  // Top bit indicates a 'this' parameter
+    IMAGE_CEE_CS_CALLCONV_MASK      = 0x0f,     // Calling convention is bottom 4 bits
+    IMAGE_CEE_CS_CALLCONV_HASTHIS   = 0x20,     // Top bit indicates a 'this' parameter
     IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS = 0x40,  // This parameter is explicitly in the signature
-    IMAGE_CEE_CS_CALLCONV_GENERIC   = 0x10,  // Generic method sig with explicit number of type arguments (precedes ordinary parameter count)
+    IMAGE_CEE_CS_CALLCONV_GENERIC   = 0x10,     // Generic method sig with explicit number of type arguments (precedes ordinary parameter count)
     // 0x80 is reserved for internal use
 } CorCallingConvention;
 
@@ -1144,6 +1152,7 @@ typedef enum CorExceptionFlag                       // definitions for the Flags
     COR_ILEXCEPTION_CLAUSE_FAULT = 0x0004,          // Fault clause (finally that is called on exception only)
     COR_ILEXCEPTION_CLAUSE_DUPLICATED = 0x0008,     // Deprecated: Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
     COR_ILEXCEPTION_CLAUSE_SAMETRY    = 0x0010,     // This clause covers same try block as the previous one
+    COR_ILEXCEPTION_CLAUSE_R2R_SYSTEM_EXCEPTION = 0x0020, // R2R only: This clause catches System.Exception
 } CorExceptionFlag;
 
 /***********************************/

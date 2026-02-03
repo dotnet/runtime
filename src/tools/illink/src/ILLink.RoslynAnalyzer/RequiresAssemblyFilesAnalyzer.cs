@@ -142,7 +142,7 @@ namespace ILLink.RoslynAnalyzer
             {
                 message = requiresAttribute.ConstructorArguments[0].Value?.ToString() ?? "";
                 if (!string.IsNullOrEmpty(message))
-                    message = $" {message}{(message!.TrimEnd().EndsWith(".") ? "" : ".")}";
+                    message = $" {message}{(message.TrimEnd().EndsWith(".") ? "" : ".")}";
             }
             return message;
         }

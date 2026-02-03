@@ -174,8 +174,7 @@ inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJ
     ARG_SLOT retVal = 0;
     PCODE pStubEntryPoint = pCMD->GetILStub();
 
-    INT_PTR dangerousThis;
-    *(OBJECTREF *)&dangerousThis = orThis;
+    INT_PTR dangerousThis = (INT_PTR)OBJECTREFToObject(orThis);
 
     DWORD dwStackSlots = pCMD->GetNumStackBytes() / TARGET_POINTER_SIZE;
 
@@ -263,6 +262,8 @@ OBJECTREF COMToCLRGetObjectAndTarget_NonVirtual(ComCallWrapper * pWrap, MethodDe
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
+
+    CONTRACT_VIOLATION(ThrowsViolation);
 
     //NOTE: No need to optimize for stub dispatch since non-virtuals are retrieved quickly.
     *ppManagedTargetOut = pRealMD->GetSingleCallableAddrOfCode();
@@ -851,6 +852,7 @@ void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(!pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
@@ -975,6 +977,7 @@ void ComCallMethodDesc::InitNativeInfo()
         else
         {
             MethodDesc *pMD = GetCallMethodDesc();
+            _ASSERTE(!pMD->IsAsyncMethod()); // Async methods should never have a ComCallMethodDesc.
 
 #ifdef _DEBUG
             LPCUTF8         szDebugName = pMD->m_pszDebugMethodName;
@@ -986,9 +989,6 @@ void ComCallMethodDesc::InitNativeInfo()
 
             MethodTable * pMT = pMD->GetMethodTable();
             IMDInternalImport * pInternalImport = pMT->GetMDImport();
-            // TODO: (async) revisit and examine if this needs to be supported somehow
-            if (pMD->IsAsyncMethod())
-                ThrowHR(COR_E_NOTSUPPORTED);
 
             mdMethodDef md = pMD->GetMemberDef();
 

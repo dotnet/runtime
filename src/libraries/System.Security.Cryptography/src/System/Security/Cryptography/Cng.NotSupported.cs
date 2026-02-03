@@ -405,7 +405,7 @@ namespace System.Security.Cryptography
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
 
-        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination) =>
+        protected override void ExportMLDsaPrivateKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
@@ -465,5 +465,26 @@ namespace System.Security.Cryptography
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
         }
+    }
+
+    public sealed partial class CompositeMLDsaCng : CompositeMLDsa
+    {
+        public partial CngKey GetKey() =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override int SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override int ExportCompositeMLDsaPrivateKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override int ExportCompositeMLDsaPublicKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
     }
 }

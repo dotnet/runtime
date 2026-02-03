@@ -102,30 +102,30 @@ namespace Internal.IL.Stubs
             }
         }
 
-        private string NamePrefix
+        private ReadOnlySpan<byte> NamePrefix
         {
             get
             {
                 switch (ThunkType)
                 {
                     case StructMarshallingThunkType.ManagedToNative:
-                        return "ManagedToNative";
+                        return "ManagedToNative"u8;
                     case StructMarshallingThunkType.NativeToManaged:
-                        return "NativeToManaged";
+                        return "NativeToManaged"u8;
                     case StructMarshallingThunkType.Cleanup:
-                        return "Cleanup";
+                        return "Cleanup"u8;
                     default:
                         Debug.Fail("Unexpected Struct marshalling thunk type");
-                        return string.Empty;
+                        return [];
                 }
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return NamePrefix + "__" + ((MetadataType)ManagedType).Name;
+                return NamePrefix.Append("__"u8, ManagedType.Name);
             }
         }
 
@@ -133,7 +133,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return NamePrefix + "__" + ManagedType.DiagnosticName;
+                return GetName();
             }
         }
 
@@ -307,7 +307,7 @@ namespace Internal.IL.Stubs
             }
             catch (NotSupportedException)
             {
-                string message = "Struct '" + ((MetadataType)ManagedType).Name +
+                string message = "Struct '" + ((MetadataType)ManagedType).GetName() +
                     "' requires marshalling that is not yet supported by this compiler.";
                 return MarshalHelpers.EmitExceptionBody(message, this);
             }

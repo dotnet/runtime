@@ -1,0 +1,120 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+//
+
+#ifndef __PRECODE_PORTABLE_H__
+#define __PRECODE_PORTABLE_H__
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+#error Requires FEATURE_PORTABLE_ENTRYPOINTS to be set
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+class PortableEntryPoint final
+{
+public: // static
+    static bool HasNativeEntryPoint(PCODE addr);
+    static bool HasInterpreterData(PCODE addr);
+
+    static void* GetActualCode(PCODE addr);
+    static void SetActualCode(PCODE addr, PCODE actualCode);
+    static MethodDesc* GetMethodDesc(PCODE addr);
+    static void* GetInterpreterData(PCODE addr);
+    static void SetInterpreterData(PCODE addr, PCODE interpreterData);
+
+private:
+    Volatile<void*> _pActualCode;
+    MethodDesc* _pMD;
+    void* _pInterpreterData;
+
+    enum PortableEntryPointFlag
+    {
+        kNone = 0,
+        kUnmanagedCallersOnly_Has = 0x1,
+        kUnmanagedCallersOnly_Checked = 0x2,
+    };
+    Volatile<int32_t> _flags;
+
+    // We keep the canary value last to ensure a stable ABI across build flavors
+    INDEBUG(size_t _canary);
+
+#ifdef _DEBUG
+    bool IsValid() const;
+#endif // _DEBUG
+
+public: // static
+    static PortableEntryPoint* ToPortableEntryPoint(PCODE addr);
+
+public:
+    void Init(MethodDesc* pMD);
+    void Init(void* nativeEntryPoint);
+
+    // Check if the entry point represents a method with the UnmanagedCallersOnly attribute.
+    // If it does, update the entry point to point to the UnmanagedCallersOnly thunk if not
+    // already done.
+    bool EnsureCodeForUnmanagedCallersOnly();
+
+    // Query methods for entry point state.
+    bool HasInterpreterCode() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return _pInterpreterData != nullptr;
+    }
+
+    bool HasNativeCode() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return _pActualCode != nullptr;
+    }
+
+    bool IsPreparedForNativeCall() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        // State when interpreted method was prepared to be called from R2R compiled code.
+        // pActualCode is a managed calling convention -> interpreter executor call stub in this case.
+        return _pInterpreterData != nullptr && _pActualCode != nullptr;
+    }
+};
+
+extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
+
+enum PrecodeType
+{
+    PRECODE_INVALID = -100,
+    PRECODE_STUB,
+    PRECODE_UMENTRY_THUNK,
+    PRECODE_FIXUP,
+    PRECODE_PINVOKE_IMPORT,
+    PRECODE_INTERPRETER,
+};
+
+class StubPrecode
+{
+};
+
+class Precode
+{
+public: // static
+    static Precode* Allocate(PrecodeType t, MethodDesc* pMD,
+        LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
+
+public:
+    PrecodeType GetType();
+
+    MethodDesc* GetMethodDesc(BOOL fSpeculative = FALSE);
+
+    PCODE GetEntryPoint();
+
+    void ResetTargetInterlocked();
+
+    BOOL SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub = TRUE);
+};
+
+void FlushCacheForDynamicMappedStub(void* code, SIZE_T size);
+BOOL DoesSlotCallPrestub(PCODE pCode);
+
+class PrecodeMachineDescriptor { };
+
+#endif // __PRECODE_PORTABLE_H__

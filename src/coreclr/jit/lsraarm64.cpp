@@ -356,7 +356,7 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSe
                 shouldCheckForRounding = (regAvailableStartIndex >= 61);
                 break;
             default:
-                assert("Unsupported registersNeeded\n");
+                assert(!"Unsupported registersNeeded\n");
                 break;
         }
 
@@ -1129,52 +1129,21 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 1);
 
-            // Need a variable number of temp regs (see genLclHeap() in codegenarm64.cpp):
-            // Here '-' means don't care.
-            //
-            //  Size?                   Init Memory?    # temp regs
-            //   0                          -               0
-            //   const and <=UnrollLimit    -               0
-            //   const and <PageSize        No              0
-            //   >UnrollLimit               Yes             0
-            //   Non-const                  Yes             0
-            //   Non-const                  No              2
-            //
-
             GenTree* size = tree->gtGetOp1();
-            if (size->IsCnsIntOrI())
+            if (size->isContainedIntOrIImmed())
             {
-                assert(size->isContained());
                 srcCount = 0;
 
+                // We won't have to clear the memory regardless info.compInitMem is set or not
+                // (if it's set, Lower will emit a STORE_BLK for this LCLHEAP), but we still need to
+                // do stack-probing for large allocations.
+                //
                 size_t sizeVal = size->AsIntCon()->gtIconVal;
-
-                if (sizeVal != 0)
+                if (AlignUp(sizeVal, STACK_ALIGN) >= compiler->eeGetPageSize())
                 {
-                    // Compute the amount of memory to properly STACK_ALIGN.
-                    // Note: The GenTree node is not updated here as it is cheap to recompute stack aligned size.
-                    // This should also help in debugging as we can examine the original size specified with
-                    // localloc.
-                    sizeVal = AlignUp(sizeVal, STACK_ALIGN);
-
-                    if (sizeVal <= compiler->getUnrollThreshold(Compiler::UnrollKind::Memset))
-                    {
-                        // Need no internal registers
-                    }
-                    else if (!compiler->info.compInitMem)
-                    {
-                        // No need to initialize allocated stack space.
-                        if (sizeVal < compiler->eeGetPageSize())
-                        {
-                            // Need no internal registers
-                        }
-                        else
-                        {
-                            // We need two registers: regCnt and RegTmp
-                            buildInternalIntRegisterDefForNode(tree);
-                            buildInternalIntRegisterDefForNode(tree);
-                        }
-                    }
+                    // We need two registers: regCnt and RegTmp
+                    buildInternalIntRegisterDefForNode(tree);
+                    buildInternalIntRegisterDefForNode(tree);
                 }
             }
             else
@@ -1710,6 +1679,8 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                     break;
 
                 case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                case NI_Sve2_MultiplyAddRotateComplexBySelectedScalar:
+                case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar:
                 case NI_Sve2_DotProductRotateComplexBySelectedIndex:
                     // This API has two immediates, one of which is used to index pairs of floats in a vector.
                     // For a vector width of 128 bits, this means the index's range is [0, 1],
@@ -1735,6 +1706,8 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                     break;
 
                 case NI_Sve_MultiplyAddRotateComplex:
+                case NI_Sve2_MultiplyAddRotateComplex:
+                case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplex:
                 case NI_Sve2_DotProductRotateComplex:
                     needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
                     break;
@@ -2168,6 +2141,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
             case NI_Sve2_DotProductRotateComplexBySelectedIndex:
             case NI_Sve2_MultiplyAddBySelectedScalar:
+            case NI_Sve2_MultiplyAddRotateComplexBySelectedScalar:
             case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndAdd:
             case NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd:
             case NI_Sve2_MultiplySubtractBySelectedScalar:
@@ -2179,6 +2153,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd:
             case NI_Sve2_MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh:
             case NI_Sve2_MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh:
+            case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar:
                 isLowVectorOpNum = (opNum == 3);
                 break;
             case NI_Sve_MultiplyBySelectedScalar:

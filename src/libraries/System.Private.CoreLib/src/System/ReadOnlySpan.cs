@@ -103,7 +103,7 @@ namespace System
         public unsafe ReadOnlySpan(void* pointer, int length)
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
@@ -406,11 +406,13 @@ namespace System
         /// </summary>
         public T[] ToArray()
         {
-            if (_length == 0)
-                return Array.Empty<T>();
+            if (IsEmpty)
+            {
+                return [];
+            }
 
-            var destination = new T[_length];
-            Buffer.Memmove(ref MemoryMarshal.GetArrayDataReference(destination), ref _reference, (uint)_length);
+            var destination = new T[Length];
+            CopyTo(destination);
             return destination;
         }
     }

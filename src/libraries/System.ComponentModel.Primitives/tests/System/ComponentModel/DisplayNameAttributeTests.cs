@@ -21,7 +21,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, false)]
         [InlineData("", true)]
         [InlineData("displayName", false)]
-        public void Ctor_String(string displayName, bool expectedIsDefaultAttribute)
+        public void Ctor_String(string? displayName, bool expectedIsDefaultAttribute)
         {
             var attribute = new SubDisplayNameAttribute(displayName);
             Assert.Equal(displayName, attribute.DisplayName);
@@ -33,7 +33,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("displayName")]
-        public void DisplayNameValue_Set_GetReturnsExpected(string value)
+        public void DisplayNameValue_Set_GetReturnsExpected(string? value)
         {
             var attribute = new SubDisplayNameAttribute("Name")
             {

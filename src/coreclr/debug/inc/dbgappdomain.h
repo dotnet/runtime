@@ -51,10 +51,10 @@ struct AppDomainInfo
 // Enforce the AppDomain IPC block binary layout doesn't change between versions.
 // Only an issue for x86 since that's the only platform w/ multiple versions.
 #if defined(TARGET_X86)
-static_assert_no_msg(offsetof(AppDomainInfo, m_id) == 0x0);
-static_assert_no_msg(offsetof(AppDomainInfo, m_iNameLengthInBytes) == 0x4);
-static_assert_no_msg(offsetof(AppDomainInfo, m_szAppDomainName) == 0x8);
-static_assert_no_msg(offsetof(AppDomainInfo, m_pAppDomain) == 0xc);
+static_assert(offsetof(AppDomainInfo, m_id) == 0x0);
+static_assert(offsetof(AppDomainInfo, m_iNameLengthInBytes) == 0x4);
+static_assert(offsetof(AppDomainInfo, m_szAppDomainName) == 0x8);
+static_assert(offsetof(AppDomainInfo, m_pAppDomain) == 0xc);
 #endif
 
 

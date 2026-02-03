@@ -15,11 +15,11 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(!source.IsEmpty);
-#pragma warning disable CA1416 // FormKC and FormKD are unsupported on browser, ValidateArguments is throwing PlatformNotSupportedException in that case so suppressing the warning here
+#pragma warning disable CA1416 // FormKC and FormKD are unsupported on browser, CheckNormalizationForm is throwing PlatformNotSupportedException in that case so suppressing the warning here
             Debug.Assert(normalizationForm is NormalizationForm.FormC or NormalizationForm.FormD or NormalizationForm.FormKC or NormalizationForm.FormKD);
 #pragma warning restore CA1416
 
-            ValidateArguments(source, normalizationForm, nameof(source));
+            ValidateArguments(source, nameof(source));
 
             int ret;
             fixed (char* pInput = source)
@@ -50,7 +50,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(normalizationForm == NormalizationForm.FormC || normalizationForm == NormalizationForm.FormD || normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD);
 
-            ValidateArguments(strInput, normalizationForm);
+            ValidateArguments(strInput);
 
             char[]? toReturn = null;
             try
@@ -132,7 +132,7 @@ namespace System.Globalization
                 return false;
             }
 
-            ValidateArguments(source, normalizationForm, nameof(source));
+            ValidateArguments(source, nameof(source));
 
             int realLen;
             fixed (char* pInput = source)
@@ -172,7 +172,7 @@ namespace System.Globalization
             Debug.Assert(!source.IsEmpty);
             Debug.Assert(normalizationForm == NormalizationForm.FormC || normalizationForm == NormalizationForm.FormD || normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD);
 
-            ValidateArguments(source, normalizationForm, nameof(source));
+            ValidateArguments(source, nameof(source));
 
             int realLen;
             fixed (char* pInput = source)
@@ -197,14 +197,8 @@ namespace System.Globalization
             return realLen;
         }
 
-        private static void ValidateArguments(ReadOnlySpan<char> strInput, NormalizationForm normalizationForm, string paramName = "strInput")
+        private static void ValidateArguments(ReadOnlySpan<char> strInput, string paramName = "strInput")
         {
-            if ((OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
-            {
-                // Browser's ICU doesn't contain data needed for FormKC and FormKD
-                throw new PlatformNotSupportedException(SR.Argument_UnsupportedNormalizationFormInBrowser);
-            }
-
             if (HasInvalidUnicodeSequence(strInput))
             {
                 throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, paramName);

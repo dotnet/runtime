@@ -90,4 +90,3 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
         }
     }
 }
-

@@ -57,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // Entry point name
             string entryPointName = _pInvokeMethodData.EntryPointName;
-            if (factory.Target.IsWindows && entryPointName.StartsWith("#", StringComparison.OrdinalIgnoreCase))
+            if (factory.Target.IsWindows && entryPointName.StartsWith('#'))
             {
                 // Windows-specific ordinal import
                 // CLR-compatible behavior: Strings that can't be parsed as a signed integer are treated as zero.
