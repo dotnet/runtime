@@ -1556,7 +1556,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         }
         else
         {
-            LOG((LF_CORDB, LL_INFO100000, "DWSP: Skip IsILStub method.\n"));
+            LOG((LF_CORDB, LL_INFO100000, "DWSP: Skip frameless IL stub.\n"));
         }
     }
     else

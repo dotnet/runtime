@@ -7432,10 +7432,12 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
         return TPR_IGNORE; //don't actually want to stop
     }
 
+    // With the addition of Async Thunks, it is now possible that an unjitted method trace
+    // represents a stub. We need to check for this case and follow the stub trace to find
+    // the real target. 
+    // Replica patches do not contain a reference to the original trace so we can not rely
+    // on the trace type == TRACE_UNJITTED_METHOD to identify this case.
     {
-        // Check if we're currently at a stub (e.g., async thunk). If so, we need to
-        // follow the stub trace to find the real target and patch there instead of
-        // stopping in the stub.
         PCODE currentPC = GetControlPC(&(info.m_activeFrame.registers));
         LOG((LF_CORDB, LL_INFO10000, "DS::TP: Checking stub at PC %p, IsStub=%d\n", currentPC, g_pEEInterface->IsStub((const BYTE*)currentPC)));
         if (g_pEEInterface->IsStub((const BYTE*)currentPC))
@@ -7448,10 +7450,11 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
             traceOk = g_pEEInterface->TraceStub((const BYTE*)currentPC, &trace);
             LOG((LF_CORDB, LL_INFO10000, "DS::TP: TraceStub=%d, trace type=%d\n", traceOk, traceOk ? trace.GetTraceType() : -1));
 
-            // Special case where if TraceStub returns TRACE_MGR_PUSH at our current address
-            // we need to call TraceManager to resolve the real target.
-            // This is a limitation of the GCCONTRACT in TraceStub that prevents it from
-            // fully parsing async thunk targets.
+            // Special case where TraceStub returns TRACE_MGR_PUSH at our current address.
+            // We need to call TraceManager to resolve the real target as the patch at the current
+            // address will not trigger due to being added to the beginning of the patch list.
+            // This behavior is used by the AsyncThunkStubManager due to the CONTRACT in TraceStub
+            // preventing it from triggering the GC.
             if (traceOk &&
                 trace.GetTraceType() == TRACE_MGR_PUSH &&
                 trace.GetAddress() == currentPC)
@@ -7469,27 +7472,16 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                     traceOk, traceOk ? trace.GetTraceType() : -1));
             }
 
-            if (traceOk && g_pEEInterface->FollowTrace(&trace))
+            if (traceOk && 
+                g_pEEInterface->FollowTrace(&trace) &&
+                PatchTrace(&trace, info.m_activeFrame.fp,
+                           (m_rgfMappingStop & STOP_UNMANAGED) ? true : false))
             {
-                if (trace.GetTraceType() == TRACE_UNJITTED_METHOD)
-                {
-                    LOG((LF_CORDB, LL_INFO10000,
-                        "DS::TP: At stub %p, final trace type=TRACE_UNJITTED_METHOD, methodDesc=%p\n", currentPC, trace.GetMethodDesc()));
-                }
-                else
-                {
-                    LOG((LF_CORDB, LL_INFO10000,
-                        "DS::TP: At stub %p, final trace type=%d, target=%p\n", currentPC, trace.GetTraceType(), trace.GetAddress()));
-                }
-
-                if (PatchTrace(&trace, info.m_activeFrame.fp, (m_rgfMappingStop & STOP_UNMANAGED) ? true : false))
-                {
-                    // Successfully patched the real target, continue execution
-                    m_reason = STEP_CALL;
-                    EnableTraceCall(LEAF_MOST_FRAME);
-                    EnableUnwind(m_fp);
-                    return TPR_IGNORE;
-                }
+                // Successfully patched the real target, continue execution
+                m_reason = STEP_CALL;
+                EnableTraceCall(LEAF_MOST_FRAME);
+                EnableUnwind(m_fp);
+                return TPR_IGNORE;
             }
         }
     }
