@@ -253,6 +253,35 @@ function Extract-BuildErrors {
     return $errors | Select-Object -First 20 | Select-Object -Unique
 }
 
+function Extract-HelixLogUrls {
+    param([string]$LogContent)
+    
+    $urls = @()
+    
+    # Match Helix console log URLs from log content
+    # Pattern: https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems/{workItemName}/console
+    $pattern = 'https://helix\.dot\.net/api/[^/]+/jobs/([a-f0-9-]+)/workitems/([^/\s\]]+)/console'
+    $urlMatches = [regex]::Matches($LogContent, $pattern)
+    
+    foreach ($match in $urlMatches) {
+        $urls += @{
+            Url = $match.Value
+            JobId = $match.Groups[1].Value
+            WorkItem = $match.Groups[2].Value
+        }
+    }
+    
+    # Deduplicate by URL
+    $uniqueUrls = @{}
+    foreach ($url in $urls) {
+        if (-not $uniqueUrls.ContainsKey($url.Url)) {
+            $uniqueUrls[$url.Url] = $url
+        }
+    }
+    
+    return $uniqueUrls.Values
+}
+
 function Get-FailureClassification {
     param([string[]]$Errors)
     
@@ -940,9 +969,27 @@ try {
                         $buildErrors = Extract-BuildErrors -LogContent $logContent
                         
                         if ($buildErrors.Count -gt 0) {
-                            Write-Host "  Build errors:" -ForegroundColor Red
-                            foreach ($err in $buildErrors) {
-                                Write-Host "    $err" -ForegroundColor White
+                            # Extract Helix log URLs from the full log content
+                            $helixLogUrls = Extract-HelixLogUrls -LogContent $logContent
+                            
+                            if ($helixLogUrls.Count -gt 0) {
+                                Write-Host "  Helix failures ($($helixLogUrls.Count)):" -ForegroundColor Red
+                                foreach ($helixLog in $helixLogUrls | Select-Object -First 5) {
+                                    Write-Host "    - $($helixLog.WorkItem)" -ForegroundColor White
+                                    Write-Host "      Log: $($helixLog.Url)" -ForegroundColor Gray
+                                }
+                                if ($helixLogUrls.Count -gt 5) {
+                                    Write-Host "    ... and $($helixLogUrls.Count - 5) more" -ForegroundColor Gray
+                                }
+                            }
+                            else {
+                                Write-Host "  Build errors:" -ForegroundColor Red
+                                foreach ($err in $buildErrors | Select-Object -First 5) {
+                                    Write-Host "    $err" -ForegroundColor White
+                                }
+                                if ($buildErrors.Count -gt 5) {
+                                    Write-Host "    ... and $($buildErrors.Count - 5) more errors" -ForegroundColor Gray
+                                }
                             }
                             
                             # Classify the failure
