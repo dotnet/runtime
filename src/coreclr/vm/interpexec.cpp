@@ -511,6 +511,14 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
         SetIP(&ctx, (DWORD64)ip);
         SetFirstArgReg(&ctx, dac_cast<TADDR>(pInterpreterFrame)); // Enable debugger to iterate over interpreter frames
 
+        LOG((LF_CORDB, LL_INFO10000, "InterpBreakpoint: Thread %p, Ctx %p, IP %p, SP %p, FP %p, isStepOut %d\n",
+            pThread,
+            &ctx,
+            (void*)GetIP(&ctx),
+            (void*)GetSP(&ctx),
+            (void*)GetFP(&ctx),
+            isStepOut));
+
         // Check if this is a step-out breakpoint (from Debugger.Break() via TrapStepOut).
         // Step-out breakpoints need FaultingExceptionFrame to trigger AdjustIPAfterException,
         // which adjusts the IP backward to show the correct source line.
@@ -1048,28 +1056,19 @@ SWITCH_OPCODE:
                 {
                     Thread* pThread = GetThread();
                     bpInfo = execControl->GetBreakpointInfo(ip);
-#ifdef DEBUG
-                    printf("Interpreter breakpoint at IP %p, original opcode %u, isStepOut=%d\n", ip, bpInfo.originalOpcode, bpInfo.isStepOut);
-                    fflush(stdout);
-#endif // DEBUG
+
+                    LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit breakpoint at IP %p, original opcode %u, isStepOut=%d\n", ip, bpInfo.originalOpcode, bpInfo.isStepOut));
 
                     if (pThread != NULL && pThread->IsInterpreterSingleStepEnabled())
                     {
-#ifdef DEBUG                        
-                        // This thread is single-stepping - trigger the event
-                        // printf("We hit a breakpoint while single-stepping for thread %d\n", pThread->GetThreadId());
-                        // fflush(stdout);
-#endif // DEBUG
+                        LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: We hit a breakpoint while single-stepping for thread %d\n", pThread->GetThreadId()));
                         bpInfo.isStepOut = false;
                     }
 
                     InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_BREAKPOINT, bpInfo.isStepOut);
                     if (!bpInfo.isStepOut)
                     {
-#ifdef DEBUG                        
-                        // printf("Executing original opcode %u at IP %p\n", bpInfo.originalOpcode, ip);
-                        // fflush(stdout);
-#endif // DEBUG
+                        LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Resuming execution of original opcode %u at IP %p\n", bpInfo.originalOpcode, ip));
                         opcode = bpInfo.originalOpcode;
                         goto SWITCH_OPCODE;
                     }
@@ -1084,17 +1083,11 @@ SWITCH_OPCODE:
                     // The patch stores original opcode, but no thread ID - we check the flag instead.
                     Thread* pThread = GetThread();
                     bpInfo = execControl->GetBreakpointInfo(ip);
-#ifdef DEBUG
-                    // printf("Single-step at IP %p\n", ip);
-                    // fflush(stdout);
-#endif // DEBUG        
+                    LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit single-step at IP %p, original opcode %u\n", ip, bpInfo.originalOpcode));
+  
                     if (pThread != NULL && pThread->IsInterpreterSingleStepEnabled())
                     {
-#ifdef DEBUG
-                        // This thread is single-stepping - trigger the event
-                        printf("Interpreter single-step triggered for thread %d\n", pThread->GetThreadId());
-                        fflush(stdout);
-#endif // DEBUG
+                        LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Single-step triggered for thread %d at IP %p\n", pThread->GetThreadId(), ip));
                         InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_SINGLE_STEP, false /* not step-out */);
                     }
                     
