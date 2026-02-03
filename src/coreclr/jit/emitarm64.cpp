@@ -8897,9 +8897,9 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
  *
  *  Add a label instruction referencing an instruction group directly.
  *  This is used by genFtnEntry to load the address of the function entry point
- *  (prolog) into a register, avoiding the need for FLD_FTN_ENTRY handling in
- *  emitIns_R_C. ARM64's adr instruction is naturally a PC-relative label
- *  reference, so using the existing label mechanism is cleaner.
+ *  (prolog) into a register. Using the existing label mechanism is cleaner
+ *  than a pseudo field handle because adr is naturally a PC-relative label
+ *  reference.
  */
 
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)

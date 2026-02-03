@@ -3776,12 +3776,10 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 //   treeNode - the GT_FTN_ENTRY node
 //
 // Notes:
-//   Unlike xarch which uses FLD_FTN_ENTRY in emitIns_R_C and resolves it later
-//   in emitOutputCV, ARM64 uses emitIns_R_L directly with the prolog instruction
-//   group. This is cleaner because ARM64's adr instruction is inherently a
-//   PC-relative label reference, which fits naturally with the existing
-//   emitIns_R_L mechanism that already handles IF_LARGEADR format and jump
-//   list management for label-to-register operations.
+//   Uses emitIns_R_L directly with the prolog instruction group. This is
+//   cleaner than using a pseudo field handle because the adr instruction is
+//   inherently a PC-relative label reference, fitting naturally with the
+//   existing emitIns_R_L mechanism.
 //
 void CodeGen::genFtnEntry(GenTree* treeNode)
 {
