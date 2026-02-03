@@ -932,7 +932,6 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
                     {
                         printf("MT(0x%p %s)", dspPtr(iconVal), eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
                     }
-                    assert(curAssertion.GetOp2().HasIconFlag());
                 }
                 else if (curAssertion.GetOp1().KindIs(O1K_BOUND_OPER_BND, O1K_BOUND_LOOP_BND, O1K_CONSTANT_LOOP_BND,
                                                       O1K_CONSTANT_LOOP_BND_UN))

@@ -7772,7 +7772,7 @@ public:
     {
         struct AssertionDscOp1
         {
-            friend struct AssertionDsc;
+            friend struct AssertionDsc; // For AssertionDsc::Create* factory methods
 
         private:
             optOp1Kind kind;
@@ -7840,11 +7840,11 @@ public:
 
         struct AssertionDscOp2
         {
-            friend struct AssertionDsc;
+            friend struct AssertionDsc; // For AssertionDsc::Create* factory methods
 
         private:
             optOp2Kind kind;
-            uint16_t   m_encodedIconFlags; // encoded icon gtFlags, don't use directly
+            uint16_t   m_encodedIconFlags; // encoded icon gtFlags
             ValueNum   vn;
             union
             {
@@ -7923,11 +7923,12 @@ public:
             GenTreeFlags GetIconFlag() const
             {
                 assert(KindIs(O2K_CONST_INT));
+
                 // number of trailing zeros in GTF_ICON_HDL_MASK
                 const uint16_t iconMaskTzc = 24;
                 static_assert((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> iconMaskTzc) == 0xFF);
 
-                GenTreeFlags flags = (GenTreeFlags)(m_encodedIconFlags << iconMaskTzc);
+                GenTreeFlags flags = static_cast<GenTreeFlags>(m_encodedIconFlags << iconMaskTzc);
                 assert((flags & ~GTF_ICON_HDL_MASK) == 0);
                 return flags;
             }
@@ -7935,6 +7936,7 @@ public:
             void SetIconFlag(GenTreeFlags flags, FieldSeq* fieldSeq = nullptr)
             {
                 assert(KindIs(O2K_CONST_INT));
+
                 const uint16_t iconMaskTzc = 24;
                 assert((flags & ~GTF_ICON_HDL_MASK) == 0);
                 m_encodedIconFlags = flags >> iconMaskTzc;
