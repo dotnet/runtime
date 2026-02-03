@@ -153,24 +153,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 LazyInitializer.EnsureInitialized(ref _timer, ref _timerInitialized, ref _timerLock, _timerFactory);
             }
 
-            IChangeToken changeToken;
-#if NET
-            bool isWildCard = pattern.Contains('*');
-#else
-            bool isWildCard = pattern.IndexOf('*') != -1;
-#endif
-            if (isWildCard || IsDirectoryPath(pattern))
-            {
-                changeToken = GetOrAddWildcardChangeToken(pattern);
-            }
-            else
-            {
+            return pattern.Contains('*') || IsDirectoryPath(pattern)
+                ? GetOrAddWildcardChangeToken(pattern)
                 // get rid of \. in Windows and ./ in UNIX's at the start of path file
-                var filePath = RemoveRelativePathSegment(pattern);
-                changeToken = GetOrAddFilePathChangeToken(filePath);
-            }
-
-            return changeToken;
+                : GetOrAddFilePathChangeToken(RemoveRelativePathSegment(pattern));
         }
 
         private static string RemoveRelativePathSegment(string pattern) =>

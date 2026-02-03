@@ -1126,7 +1126,7 @@ namespace Internal.JitInterface
     {
         CORINFO_DEVIRTUALIZATION_UNKNOWN,                              // no details available
         CORINFO_DEVIRTUALIZATION_SUCCESS,                              // devirtualization was successful
-        CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class was canonical
+        CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class or method was canonical
         CORINFO_DEVIRTUALIZATION_FAILED_COM,                           // object class was com
         CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
         CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found
@@ -1142,7 +1142,6 @@ namespace Internal.JitInterface
         CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
         CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
         CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE,              // Support for type equivalence in devirtualization is not yet implemented in crossgen2
-        CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL,               // Devirtualization of generic virtual methods is not yet implemented in crossgen2
         CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
     }
 
