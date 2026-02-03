@@ -12,7 +12,7 @@ namespace System.Tests
     public partial class ConsoleTests
     {
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.Android)]
         public void OpenStandardInputHandle_ReturnsValidHandle()
         {
             using SafeFileHandle inputHandle = Console.OpenStandardInputHandle();
@@ -22,7 +22,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.Android)]
         public void OpenStandardOutputHandle_ReturnsValidHandle()
         {
             using SafeFileHandle outputHandle = Console.OpenStandardOutputHandle();
@@ -32,7 +32,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.Android)]
         public void OpenStandardErrorHandle_ReturnsValidHandle()
         {
             using SafeFileHandle errorHandle = Console.OpenStandardErrorHandle();
@@ -42,7 +42,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.Android)]
         public void OpenStandardHandles_DoNotOwnHandle()
         {
             SafeFileHandle inputHandle = Console.OpenStandardInputHandle();
@@ -68,7 +68,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Any & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.Android)]
         public void OpenStandardHandles_CanBeUsedWithStream()
         {
             using RemoteInvokeHandle child = RemoteExecutor.Invoke(() =>
