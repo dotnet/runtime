@@ -380,6 +380,37 @@ function Get-FailureClassification {
     }
 }
 
+function Get-AzDOTestResults {
+    param(
+        [string]$RunId,
+        [string]$Org = "https://dev.azure.com/$Organization"
+    )
+    
+    # Check if az devops CLI is available
+    if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
+        Write-Verbose "Azure CLI not available for fetching test results"
+        return $null
+    }
+    
+    try {
+        Write-Verbose "Fetching test results for run $RunId via az devops CLI..."
+        $results = az devops invoke `
+            --org $Org `
+            --area test `
+            --resource Results `
+            --route-parameters project=$Project runId=$RunId `
+            --api-version 7.0 `
+            --query "value[?outcome=='Failed'].{name:testCaseTitle, outcome:outcome, error:errorMessage}" `
+            -o json 2>$null | ConvertFrom-Json
+        
+        return $results
+    }
+    catch {
+        Write-Verbose "Failed to fetch test results via az devops: $_"
+        return $null
+    }
+}
+
 function Extract-TestRunUrls {
     param([string]$LogContent)
     
@@ -754,6 +785,18 @@ try {
                 Write-Host "`n  Test Results:" -ForegroundColor Yellow
                 foreach ($testRun in $failure.TestRunUrls) {
                     Write-Host "    Run $($testRun.RunId): $($testRun.Url)" -ForegroundColor Gray
+                    
+                    # Try to get actual failed test names via az devops CLI
+                    $testResults = Get-AzDOTestResults -RunId $testRun.RunId -Org "https://dev.azure.com/$Organization"
+                    if ($testResults -and $testResults.Count -gt 0) {
+                        Write-Host "`n    Failed tests ($($testResults.Count)):" -ForegroundColor Red
+                        foreach ($result in $testResults | Select-Object -First 10) {
+                            Write-Host "      - $($result.name)" -ForegroundColor White
+                        }
+                        if ($testResults.Count -gt 10) {
+                            Write-Host "      ... and $($testResults.Count - 10) more" -ForegroundColor Gray
+                        }
+                    }
                 }
             }
             
@@ -767,6 +810,18 @@ try {
                         Write-Host "`n  Test Results:" -ForegroundColor Yellow
                         foreach ($testRun in $additionalRuns) {
                             Write-Host "    Run $($testRun.RunId): $($testRun.Url)" -ForegroundColor Gray
+                            
+                            # Try to get actual failed test names via az devops CLI
+                            $testResults = Get-AzDOTestResults -RunId $testRun.RunId -Org "https://dev.azure.com/$Organization"
+                            if ($testResults -and $testResults.Count -gt 0) {
+                                Write-Host "`n    Failed tests ($($testResults.Count)):" -ForegroundColor Red
+                                foreach ($result in $testResults | Select-Object -First 10) {
+                                    Write-Host "      - $($result.name)" -ForegroundColor White
+                                }
+                                if ($testResults.Count -gt 10) {
+                                    Write-Host "      ... and $($testResults.Count - 10) more" -ForegroundColor Gray
+                                }
+                            }
                         }
                     }
                     
