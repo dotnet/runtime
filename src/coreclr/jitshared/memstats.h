@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <algorithm>
 
 // MemStats tracks memory allocation statistics for profiling purposes.
 // This is a template class parameterized by a traits type.

@@ -215,3 +215,89 @@ INTERPRETER_NORETURN void NOMEM()
 {
     throw InterpException(NULL, CORJIT_OUTOFMEM);
 }
+
+/*****************************************************************************/
+// Define the static Names array for InterpMemKindTraits
+const char* const InterpMemKindTraits::Names[] = {
+#define InterpMemKindMacro(kind) #kind,
+#include "interpmemkind.h"
+};
+
+// The interpreter always uses direct malloc/free, so this returns false.
+bool InterpMemKindTraits::bypassHostAllocator()
+{
+#if defined(DEBUG)
+    // When JitDirectAlloc is set, all JIT allocations requests are forwarded
+    // directly to the OS. This allows taking advantage of pageheap and other gflag
+    // knobs for ensuring that we do not have buffer overruns in the JIT.
+
+    return InterpConfig.InterpDirectAlloc() != 0;
+#else  // defined(DEBUG)
+    return false;
+#endif // !defined(DEBUG)
+}
+
+// The interpreter doesn't currently support fault injection.
+bool InterpMemKindTraits::shouldInjectFault()
+{
+#if defined(DEBUG)
+    return InterpConfig.ShouldInjectFault() != 0;
+#else
+    return false;
+#endif
+}
+
+// Allocates a block of memory using malloc.
+void* InterpMemKindTraits::allocateHostMemory(size_t size, size_t* pActualSize)
+{
+#if defined(DEBUG)
+    if (bypassHostAllocator())
+    {
+        *pActualSize = size;
+        if (size == 0)
+        {
+            size = 1;
+        }
+        void* p = malloc(size);
+        if (p == nullptr)
+        {
+            NOMEM();
+        }
+        return p;
+    }
+#endif // !defined(DEBUG)
+
+    return g_interpHost->allocateSlab(size, pActualSize);
+}
+
+// Frees a block of memory previously allocated by allocateHostMemory.
+void InterpMemKindTraits::freeHostMemory(void* block, size_t size)
+{
+#if defined(DEBUG)
+    if (bypassHostAllocator())
+    {
+        free(block);
+        return;
+    }
+#endif // !defined(DEBUG)
+
+    g_interpHost->freeSlab(block, size);
+}
+
+// Fills a memory block with an uninitialized pattern for DEBUG builds.
+void InterpMemKindTraits::fillWithUninitializedPattern(void* block, size_t size)
+{
+#if defined(DEBUG)
+    // Use 0xCD pattern (same as MSVC debug heap) to help catch use-before-init bugs
+    memset(block, 0xCD, size);
+#else
+    (void)block;
+    (void)size;
+#endif
+}
+
+// Called when the allocator runs out of memory.
+void InterpMemKindTraits::outOfMemory()
+{
+    NOMEM();
+}

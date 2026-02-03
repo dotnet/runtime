@@ -1142,54 +1142,6 @@ public:
 #endif // MEASURE_MEM_ALLOC
 };
 
-/*****************************************************************************
- *  operator new
- *
- *  Uses the compiler's AllocMemPool0, which allocates from the arena allocator.
- *  Memory is automatically freed when the InterpCompiler is destroyed.
- */
-
-inline void* operator new(size_t sz, InterpCompiler* compiler)
-{
-    return compiler->AllocMemPool0(sz);
-}
-
-inline void* operator new[](size_t sz, InterpCompiler* compiler)
-{
-    return compiler->AllocMemPool0(sz);
-}
-
-inline void operator delete(void* ptr, InterpCompiler* compiler)
-{
-    // Nothing to do, memory will be freed when the compiler is destroyed
-}
-
-inline void operator delete[](void* ptr, InterpCompiler* compiler)
-{
-    // Nothing to do, memory will be freed when the compiler is destroyed
-}
-
-// Operator new overloads that work with InterpAllocator for categorized allocations
-inline void* operator new(size_t sz, InterpAllocator alloc)
-{
-    return alloc.allocate<char>(sz);
-}
-
-inline void* operator new[](size_t sz, InterpAllocator alloc)
-{
-    return alloc.allocate<char>(sz);
-}
-
-inline void operator delete(void* ptr, InterpAllocator alloc)
-{
-    // Nothing to do, memory will be freed when the arena is destroyed
-}
-
-inline void operator delete[](void* ptr, InterpAllocator alloc)
-{
-    // Nothing to do, memory will be freed when the arena is destroyed
-}
-
 template<typename T>
 int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
 {

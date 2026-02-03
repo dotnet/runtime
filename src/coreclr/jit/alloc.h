@@ -25,8 +25,8 @@ enum CompMemKind
 // JitMemKindTraits provides the traits required by ArenaAllocator and CompAllocator templates.
 struct JitMemKindTraits
 {
-    using MemKind = CompMemKind;
-    static constexpr int Count = CMK_Count;
+    using MemKind                  = CompMemKind;
+    static constexpr int     Count = CMK_Count;
     static const char* const Names[];
 
     // Returns true if the allocator should bypass the host allocator and use direct malloc/free.
@@ -51,11 +51,11 @@ struct JitMemKindTraits
 // Type aliases for JIT-specific instantiations of the shared allocator templates.
 // These are the allocator types used throughout the JIT.
 using ArenaAllocator = ArenaAllocatorT<JitMemKindTraits>;
-using CompAllocator = CompAllocatorT<JitMemKindTraits>;
+using CompAllocator  = CompAllocatorT<JitMemKindTraits>;
 using CompIAllocator = CompIAllocatorT<JitMemKindTraits>;
 
 // Type aliases for memory statistics
-using JitMemStats = MemStats<JitMemKindTraits>;
+using JitMemStats          = MemStats<JitMemKindTraits>;
 using JitAggregateMemStats = AggregateMemStats<JitMemKindTraits>;
 
 #if MEASURE_MEM_ALLOC

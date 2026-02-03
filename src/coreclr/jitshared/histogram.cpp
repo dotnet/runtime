@@ -22,7 +22,7 @@ Histogram::Histogram(const unsigned* const sizeTable)
         sizeCount++;
     }
 
-    assert(sizeCount < HISTOGRAM_MAX_SIZE_COUNT - 1);
+    assert(sizeCount < HISTOGRAM_MAX_SIZE_COUNT);
 
     m_sizeCount = sizeCount;
 

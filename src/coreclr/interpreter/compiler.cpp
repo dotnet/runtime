@@ -44,68 +44,6 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 
 const char* CorInfoHelperToName(CorInfoHelpFunc helper);
 
-/*****************************************************************************/
-// Define the static Names array for InterpMemKindTraits
-const char* const InterpMemKindTraits::Names[] = {
-#define InterpMemKindMacro(kind) #kind,
-#include "interpmemkind.h"
-};
-
-// The interpreter always uses direct malloc/free, so this returns false.
-bool InterpMemKindTraits::bypassHostAllocator()
-{
-    return false;
-}
-
-// The interpreter doesn't currently support fault injection.
-bool InterpMemKindTraits::shouldInjectFault()
-{
-    return false;
-}
-
-// Allocates a block of memory using malloc.
-void* InterpMemKindTraits::allocateHostMemory(size_t size, size_t* pActualSize)
-{
-    if (pActualSize != nullptr)
-    {
-        *pActualSize = size;
-    }
-    if (size == 0)
-    {
-        size = 1;
-    }
-    void* p = malloc(size);
-    if (p == nullptr)
-    {
-        NOMEM();
-    }
-    return p;
-}
-
-// Frees a block of memory previously allocated by allocateHostMemory.
-void InterpMemKindTraits::freeHostMemory(void* block, size_t size)
-{
-    (void)size; // unused
-    free(block);
-}
-
-// Fills a memory block with an uninitialized pattern for DEBUG builds.
-void InterpMemKindTraits::fillWithUninitializedPattern(void* block, size_t size)
-{
-#if defined(DEBUG)
-    // Use 0xCD pattern (same as MSVC debug heap) to help catch use-before-init bugs
-    memset(block, 0xCD, size);
-#else
-    (void)block;
-    (void)size;
-#endif
-}
-
-// Called when the allocator runs out of memory.
-void InterpMemKindTraits::outOfMemory()
-{
-    NOMEM();
-}
 
 #if MEASURE_MEM_ALLOC
 #include <minipal/mutex.h>

@@ -27,6 +27,8 @@ CONFIG_METHODSET(InterpDump, "InterpDump");
 CONFIG_INTEGER(InterpDumpMemStats, "InterpDumpMemStats", 0); // Dump per-method memory stats when InterpDump is active
 CONFIG_INTEGER(InterpList, "InterpList", 0); // List the methods which are compiled by the interpreter JIT
 CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1); // Enable optimizations for async/await state machines
+CONFIG_INTEGER(InterpDirectAlloc, "InterpDirectAlloc", 0); // Use direct malloc/free for interpreter allocations, to enable pageheap and other gflags
+CONFIG_INTEGER(ShouldInjectFault, "InjectFault", 0); // Enable fault injection in the interpreter allocator
 RELEASE_CONFIG_INTEGER(InterpMode, "InterpMode", 0); // Interpreter mode, one of the following:
 // 0: default, do not use interpreter except explicit opt-in via DOTNET_Interpreter
 // 1: use interpreter for everything except (1) methods that have R2R compiled code and (2) all code in System.Private.CoreLib. All code in System.Private.CoreLib falls back to JIT if there is no R2R available for it.

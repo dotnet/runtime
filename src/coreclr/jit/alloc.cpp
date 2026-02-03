@@ -138,7 +138,7 @@ void JitMemStatsInfo::finishMemStats(ArenaAllocator* arena)
     arena->finishMemStats();
 
     CritSecHolder statsLock(s_statsLock);
-    JitMemStats& stats = arena->getStats();
+    JitMemStats&  stats = arena->getStats();
     s_aggStats.Add(stats);
     if (stats.allocSz > s_maxStats.allocSz)
     {
