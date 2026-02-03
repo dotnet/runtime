@@ -59,8 +59,6 @@
   <!-- Browser -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="System\ConsolePal.Browser.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Dup.cs"
-             Link="Common\Interop\Unix\Interop.Dup.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs"
              Link="Common\Interop\Unix\Interop.Write.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -223,8 +221,6 @@
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs"
              Link="Common\Interop\Unix\Interop.Close.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Dup.cs"
-             Link="Common\Interop\Unix\Interop.Dup.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FLock.cs"
              Link="Common\Interop\Unix\Interop.FLock.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetControlCharacters.cs"
