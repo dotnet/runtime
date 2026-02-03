@@ -1283,15 +1283,22 @@ static void PrepareMethodHelper(MethodDesc * pMD)
 
     pMD->EnsureActive();
 
-    if (pMD->ShouldCallPrestub())
-        pMD->DoPrestub(NULL);
-
     if (pMD->IsWrapperStub())
     {
-        pMD = pMD->GetWrappedMethodDesc();
         if (pMD->ShouldCallPrestub())
             pMD->DoPrestub(NULL);
+        pMD = pMD->GetWrappedMethodDesc();
     }
+
+    if (pMD->IsAsyncThunkMethod())
+    {
+        if (pMD->ShouldCallPrestub())
+            pMD->DoPrestub(NULL);
+        pMD = pMD->GetAsyncVariant();
+    }
+
+    if (pMD->ShouldCallPrestub())
+        pMD->DoPrestub(NULL);
 }
 
 // This method triggers a given method to be jitted. CoreCLR implementation of this method triggers jiting of the given method only.

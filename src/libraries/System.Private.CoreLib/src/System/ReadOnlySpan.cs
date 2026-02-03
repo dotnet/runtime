@@ -408,7 +408,7 @@ namespace System
         {
             if (IsEmpty)
             {
-                return Array.Empty<T>();
+                return [];
             }
 
             var destination = new T[Length];

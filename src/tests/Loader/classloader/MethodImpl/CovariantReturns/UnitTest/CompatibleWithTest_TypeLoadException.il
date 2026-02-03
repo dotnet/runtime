@@ -1,7 +1,9 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern System.Collections { }
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern mscorlib { }
 .assembly 'CompatibleWithTest' { }
 
@@ -10,40 +12,40 @@
 
 .class public auto ansi beforefieldinit C1
 {
-    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
-    .method public hidebysig newslot virtual instance int32[] M1() 
+    .method public hidebysig newslot virtual instance int32[] M1()
     {
         ldnull
         ret
     }
 
-    .method public hidebysig newslot virtual instance class [System.Runtime]System.Collections.Generic.IList`1<int32> M2() 
+    .method public hidebysig newslot virtual instance class [System.Runtime]System.Collections.Generic.IList`1<int32> M2()
     {
         ldnull
         ret
     }
 
-    .method public hidebysig newslot virtual instance int32 M3() 
+    .method public hidebysig newslot virtual instance int32 M3()
     {
         ldc.i4.0
         ret
     }
 
-    .method public hidebysig newslot virtual instance valuetype [mscorlib]System.Nullable`1<int32> M4() 
+    .method public hidebysig newslot virtual instance valuetype [mscorlib]System.Nullable`1<int32> M4()
     {
         ldc.i4.0
         newobj instance void valuetype [mscorlib]System.Nullable`1<int32>::.ctor(!0)
         ret
     }
 
-    .method public hidebysig newslot virtual instance class [System.Runtime]System.Collections.Generic.IList`1<class Base> M5() 
+    .method public hidebysig newslot virtual instance class [System.Runtime]System.Collections.Generic.IList`1<class Base> M5()
     {
         ldnull
         ret
     }
 
-    .method public hidebysig newslot virtual instance native int[] M6() 
+    .method public hidebysig newslot virtual instance native int[] M6()
     {
         ldnull
         ret
@@ -115,9 +117,9 @@
 
 .class public auto ansi beforefieldinit C2 extends C1
 {
-    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
-    .method public hidebysig newslot virtual instance class [System.Runtime]System.Collections.Generic.IList`1<int32> M1() 
+    .method public hidebysig newslot virtual instance class [System.Runtime]System.Collections.Generic.IList`1<int32> M1()
     {
         .override method instance int32[] C1::M1();
         ldnull
@@ -138,9 +140,9 @@
 
 .class public auto ansi beforefieldinit C3 extends C1
 {
-    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
-    .method public hidebysig newslot virtual instance int32[] M2() 
+    .method public hidebysig newslot virtual instance int32[] M2()
     {
         .override method instance class [System.Runtime]System.Collections.Generic.IList`1<int32> C1::M2();
         ldnull
@@ -150,9 +152,9 @@
 
 .class public auto ansi beforefieldinit C4 extends C1
 {
-    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
-    .method public hidebysig virtual instance valuetype [mscorlib]System.Nullable`1<int32> M3() 
+    .method public hidebysig virtual instance valuetype [mscorlib]System.Nullable`1<int32> M3()
     {
         .override method instance int32 C1::M3();
         ldc.i4.0
@@ -163,9 +165,9 @@
 
 .class public auto ansi beforefieldinit C5 extends C1
 {
-    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
-    .method public hidebysig virtual instance int32 M4() 
+    .method public hidebysig virtual instance int32 M4()
     {
         .override method instance valuetype [mscorlib]System.Nullable`1<int32> C1::M4();
         ldc.i4.0
@@ -175,9 +177,9 @@
 
 .class public auto ansi beforefieldinit C6 extends C1
 {
-    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
-    .method public hidebysig virtual instance uint32[] M1() 
+    .method public hidebysig virtual instance uint32[] M1()
     {
         .override method instance int32[] C1::M1();
         ldnull
@@ -187,9 +189,9 @@
 
 .class public auto ansi beforefieldinit C7 extends C1
 {
-    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
-    .method public hidebysig newslot virtual instance uint32[] M2() 
+    .method public hidebysig newslot virtual instance uint32[] M2()
     {
         .override method instance class [System.Runtime]System.Collections.Generic.IList`1<int32> C1::M2();
         ldnull
@@ -199,9 +201,9 @@
 
 .class public auto ansi beforefieldinit C8 extends C1
 {
-    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
-    .method public hidebysig newslot virtual instance class Derived[] M5() 
+    .method public hidebysig newslot virtual instance class Derived[] M5()
     {
         .override method instance class [System.Runtime]System.Collections.Generic.IList`1<class Base> C1::M5();
         ldnull
@@ -211,9 +213,9 @@
 
 .class public auto ansi beforefieldinit C9 extends C1
 {
-    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
-    .method public hidebysig virtual instance uint64[] M6() 
+    .method public hidebysig virtual instance uint64[] M6()
     {
         .override method instance native int[] C1::M6();
         ldnull
@@ -223,9 +225,9 @@
 
 .class public auto ansi beforefieldinit C10 extends C1
 {
-    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
 
-    .method public hidebysig virtual instance uint32[] M6() 
+    .method public hidebysig virtual instance uint32[] M6()
     {
         .override method instance native int[] C1::M6();
         ldnull
@@ -483,7 +485,7 @@
 
 .class public auto ansi beforefieldinit Main extends [mscorlib]System.Object
 {
-    .method public static void RunTestC1() noinlining 
+    .method public static void RunTestC1() noinlining
     {
         newobj instance void class C1::.ctor()
         callvirt instance int32[] class C1::M1()
@@ -493,7 +495,7 @@
         ret
     }
 
-    .method public static void RunTestC2() noinlining 
+    .method public static void RunTestC2() noinlining
     {
         newobj instance void class C2::.ctor()
         callvirt instance int32[] class C1::M1()
@@ -513,7 +515,7 @@
         ret
     }
 
-    .method public static void RunTestC3() noinlining 
+    .method public static void RunTestC3() noinlining
     {
         newobj instance void class C3::.ctor()
         callvirt instance class [System.Runtime]System.Collections.Generic.IList`1<int32> class C1::M2()
@@ -523,7 +525,7 @@
         ret
     }
 
-    .method public static void RunTestC4() noinlining 
+    .method public static void RunTestC4() noinlining
     {
         newobj instance void class C4::.ctor()
         callvirt instance int32 class C1::M3()
@@ -533,7 +535,7 @@
         ret
     }
 
-    .method public static void RunTestC5() noinlining 
+    .method public static void RunTestC5() noinlining
     {
         newobj instance void class C5::.ctor()
         callvirt instance valuetype [mscorlib]System.Nullable`1<int32> C1::M4()
@@ -543,7 +545,7 @@
         ret
     }
 
-    .method public static void RunTestC6() noinlining 
+    .method public static void RunTestC6() noinlining
     {
         newobj instance void class C6::.ctor()
         callvirt instance int32[] class C1::M1()
@@ -553,7 +555,7 @@
         ret
     }
 
-    .method public static void RunTestC7() noinlining 
+    .method public static void RunTestC7() noinlining
     {
         newobj instance void class C7::.ctor()
         callvirt instance class [System.Runtime]System.Collections.Generic.IList`1<int32> class C1::M2()
@@ -563,7 +565,7 @@
         ret
     }
 
-    .method public static void RunTestC8() noinlining 
+    .method public static void RunTestC8() noinlining
     {
         newobj instance void class C8::.ctor()
         callvirt instance class [System.Runtime]System.Collections.Generic.IList`1<class Base> class C1::M5()
@@ -573,7 +575,7 @@
         ret
     }
 
-    .method public static void RunTestC9() noinlining 
+    .method public static void RunTestC9() noinlining
     {
         newobj instance void class C9::.ctor()
         callvirt instance native int[] class C1::M6()
@@ -583,7 +585,7 @@
         ret
     }
 
-    .method public static void RunTestC10() noinlining 
+    .method public static void RunTestC10() noinlining
     {
         newobj instance void class C10::.ctor()
         callvirt instance native int[] class C1::M6()
@@ -783,11 +785,27 @@
         ret
     }
 
-    .method public hidebysig static int32 Main() cil managed
+    .method public hidebysig static int32 Main() cil managed noinlining
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00
         )
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+            string('Synthesized PGO may cause the expected TypeLoadExceptions in this test to appear at unexpected places')
+            type([TestLibrary]TestLibrary.PlatformDetection)
+            string[1] ('IsUsingSynthesizedPgoData')
+        }
+
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+            string('Tests that expect TypeLoadException')
+            type([TestLibrary]TestLibrary.Utilities)
+            string[1] ('IsNativeAot')
+        }
+
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+            string('Doesn\'t pass after LLVM AOT compilation.')
+            int32(0x2) // Mono
+        }
         .entrypoint
         .locals init ( bool result )
 
@@ -824,10 +842,10 @@ CD2:
             leave.s CC4
         }
         catch [mscorlib]System.TypeLoadException
-        {   
+        {
             ldstr "Caught expected TypeLoadException:"
             call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)        
+            call       void [System.Console]System.Console::WriteLine(object)
             leave.s CC4
         }
 
@@ -843,12 +861,12 @@ CC4:
             leave.s CC5
         }
         catch [mscorlib]System.TypeLoadException
-        {   
+        {
             ldstr "Caught expected TypeLoadException:"
             call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)        
+            call       void [System.Console]System.Console::WriteLine(object)
             leave.s CC5
-        }  
+        }
 CC5:
         ldstr "C5: override Nullable<int32> by int32"
         call void [System.Console]System.Console::WriteLine(string)
@@ -861,12 +879,12 @@ CC5:
             leave.s CC9
         }
         catch [mscorlib]System.TypeLoadException
-        {   
+        {
             ldstr "Caught expected TypeLoadException:"
             call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)        
+            call       void [System.Console]System.Console::WriteLine(object)
             leave.s CC9
-        }  
+        }
 CC9:
         ldstr "C9: override native int[] by uint64[]"
         call void [System.Console]System.Console::WriteLine(string)
@@ -879,12 +897,12 @@ CC9:
             leave.s CC10
         }
         catch [mscorlib]System.TypeLoadException
-        {   
+        {
             ldstr "Caught expected TypeLoadException:"
             call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)        
+            call       void [System.Console]System.Console::WriteLine(object)
             leave.s CC10
-        }  
+        }
 CC10:
         ldstr "C10: override native int[] by uint32[]"
         call void [System.Console]System.Console::WriteLine(string)
@@ -897,10 +915,10 @@ CC10:
             leave.s CC11
         }
         catch [mscorlib]System.TypeLoadException
-        {   
+        {
             ldstr "Caught expected TypeLoadException:"
             call       void [System.Console]System.Console::WriteLine(string)
-            call       void [System.Console]System.Console::WriteLine(object)        
+            call       void [System.Console]System.Console::WriteLine(object)
             leave.s CC11
         }
 CC11:
@@ -1146,7 +1164,7 @@ DONE:
         call       void [System.Console]System.Console::WriteLine(string)
         ldc.i4.s   101
         ret
-        
+
         PASS:
         ldstr      "Test PASSED"
         call       void [System.Console]System.Console::WriteLine(string)

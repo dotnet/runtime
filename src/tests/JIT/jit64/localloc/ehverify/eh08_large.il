@@ -6,6 +6,9 @@
   .ver 4:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
+
 .assembly extern mscorlib{}
 .assembly extern localloc_common{}
 .assembly 'eh08_large'{}
@@ -39,6 +42,10 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('Needs triage')
+        int32(0x2) // Mono
+    }
     .entrypoint
     .maxstack  1
     .locals init (int32 retValue)
