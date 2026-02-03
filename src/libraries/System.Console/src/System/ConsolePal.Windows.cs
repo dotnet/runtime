@@ -91,18 +91,6 @@ namespace System
             return r != 0; // In Win32 apps w/ no console, bResult should be 0 for failure.
         }
 
-        // Checks whether stdin is readable.  Do NOT pass
-        // stdout or stderr here!
-        private static unsafe bool ConsoleHandleIsReadable(IntPtr inHandle)
-        {
-            // Windows apps may have non-null valid looking handle values for
-            // stdin, stdout and stderr, but they may not be readable or
-            // writable.  Verify this by calling ReadFile in the
-            // appropriate modes. This must handle console-less Windows apps.
-            int r = Interop.Kernel32.ReadFile(inHandle, null, 0, out _, IntPtr.Zero);
-            return r != 0; // In Win32 apps w/ no console, bResult should be 0 for failure.
-        }
-
         public static SafeFileHandle OpenStandardInputHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE);
 
         public static SafeFileHandle OpenStandardOutputHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_OUTPUT_HANDLE);
