@@ -9131,6 +9131,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumb
     id->idInsFmt(IF_RWR_LABEL);
     id->idOpSize(EA_SIZE(attr));
     id->idAddr()->iiaIGlabel = dst;
+    id->idSetIsBound();  // Mark as bound since we already have the target insGroup directly
 
     /* The label reference is always long */
 
@@ -17847,7 +17848,12 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             idAmd->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
             idAmd->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
             emitSetAmdDisp(idAmd, distVal); // set the displacement
+#ifdef TARGET_AMD64
+            // On AMD64, lea with a label always uses RIP-relative addressing
+            idAmd->idSetIsDspReloc(true);
+#else
             idAmd->idSetIsDspReloc(id->idIsDspReloc());
+#endif
             assert(emitGetInsAmdAny(idAmd) == distVal); // make sure "disp" is stored properly
 
             UNATIVE_OFFSET sz = emitInsSizeAM(idAmd, insCodeRM(ins));
