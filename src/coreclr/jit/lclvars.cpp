@@ -7046,7 +7046,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         return WALK_CONTINUE;
     }
 
-    Compiler* const  pComp      = ((lvaStressLclFldArgs*)data->pCallbackData)->m_pCompiler;
+    Compiler* const  pComp      = ((lvaStressLclFldArgs*)data->pCallbackData)->m_compiler;
     bool const       bFirstPass = ((lvaStressLclFldArgs*)data->pCallbackData)->m_bFirstPass;
     unsigned const   lclNum     = lcl->GetLclNum();
     LclVarDsc* const varDsc     = pComp->lvaGetDesc(lclNum);
@@ -7238,7 +7238,7 @@ void Compiler::lvaStressLclFld()
     }
 
     lvaStressLclFldArgs Args;
-    Args.m_pCompiler  = this;
+    Args.m_compiler   = this;
     Args.m_bFirstPass = true;
 
     // Do First pass

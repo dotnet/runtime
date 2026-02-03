@@ -4221,7 +4221,7 @@ public:
 #ifdef DEBUG
     struct lvaStressLclFldArgs
     {
-        Compiler* m_pCompiler;
+        Compiler* m_compiler;
         bool      m_bFirstPass;
     };
 
