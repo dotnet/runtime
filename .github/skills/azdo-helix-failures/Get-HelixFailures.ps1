@@ -205,6 +205,26 @@ function Get-AzDOBuildIdFromPR {
     throw "Could not find Azure DevOps build for PR #$PR in $Repository"
 }
 
+function Get-AzDOBuildStatus {
+    param([int]$Build)
+    
+    $url = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/${Build}?api-version=7.0"
+    
+    try {
+        $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
+        return @{
+            Status = $response.status        # notStarted, inProgress, completed
+            Result = $response.result        # succeeded, failed, canceled (only set when completed)
+            StartTime = $response.startTime
+            FinishTime = $response.finishTime
+        }
+    }
+    catch {
+        Write-Verbose "Failed to fetch build status: $_"
+        return $null
+    }
+}
+
 function Get-AzDOTimeline {
     param([int]$Build)
     
@@ -1014,6 +1034,24 @@ try {
     Write-Host "`n=== Azure DevOps Build $BuildId ===" -ForegroundColor Yellow
     Write-Host "URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Gray
     
+    # Get and display build status
+    $buildStatus = Get-AzDOBuildStatus -Build $BuildId
+    if ($buildStatus) {
+        $statusColor = switch ($buildStatus.Status) {
+            "inProgress" { "Cyan" }
+            "completed" { if ($buildStatus.Result -eq "succeeded") { "Green" } else { "Red" } }
+            default { "Gray" }
+        }
+        $statusText = $buildStatus.Status
+        if ($buildStatus.Status -eq "completed" -and $buildStatus.Result) {
+            $statusText = "$($buildStatus.Status) ($($buildStatus.Result))"
+        }
+        elseif ($buildStatus.Status -eq "inProgress") {
+            $statusText = "IN PROGRESS - showing failures so far"
+        }
+        Write-Host "Status: $statusText" -ForegroundColor $statusColor
+    }
+    
     # Get timeline
     $timeline = Get-AzDOTimeline -Build $BuildId
     
@@ -1024,7 +1062,13 @@ try {
     $localTestFailures = Get-LocalTestFailures -Timeline $timeline -BuildId $BuildId
     
     if ((-not $failedJobs -or $failedJobs.Count -eq 0) -and $localTestFailures.Count -eq 0) {
-        Write-Host "`nNo failed jobs found in build $BuildId" -ForegroundColor Green
+        if ($buildStatus -and $buildStatus.Status -eq "inProgress") {
+            Write-Host "`nNo failures yet - build still in progress" -ForegroundColor Cyan
+            Write-Host "Run again later to check for failures, or use -NoCache to get fresh data" -ForegroundColor Gray
+        }
+        else {
+            Write-Host "`nNo failed jobs found in build $BuildId" -ForegroundColor Green
+        }
         exit 0
     }
     
