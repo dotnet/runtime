@@ -5084,10 +5084,10 @@ private:
     // This class is used for implementing impReimportSpillClique part on each block within the spill clique
     class ReimportSpillClique : public SpillCliqueWalker
     {
-        Compiler* m_pComp;
+        Compiler* m_compiler;
 
     public:
-        ReimportSpillClique(Compiler* pComp) : m_pComp(pComp)
+        ReimportSpillClique(Compiler* pComp) : m_compiler(pComp)
         {
         }
         virtual void Visit(SpillCliqueDir predOrSucc, BasicBlock* blk);
