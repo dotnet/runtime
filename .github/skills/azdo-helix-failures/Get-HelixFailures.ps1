@@ -70,6 +70,9 @@ param(
     [Parameter(ParameterSetName = 'HelixJob')]
     [string]$WorkItem,
 
+    [Parameter(ParameterSetName = 'ClearCache', Mandatory = $true)]
+    [switch]$ClearCache,
+
     [string]$Repository = "dotnet/runtime",
     [string]$Organization = "dnceng-public",
     [string]$Project = "cbb18261-c48f-4abb-8651-8cdcb5474649",
@@ -84,10 +87,45 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Handle -ClearCache parameter
+if ($ClearCache) {
+    $cacheDir = Join-Path $env:TEMP "helix-failures-cache"
+    if (Test-Path $cacheDir) {
+        $files = Get-ChildItem -Path $cacheDir -File
+        $count = $files.Count
+        Remove-Item -Path $cacheDir -Recurse -Force
+        Write-Host "Cleared $count cached files from $cacheDir" -ForegroundColor Green
+    }
+    else {
+        Write-Host "Cache directory does not exist: $cacheDir" -ForegroundColor Yellow
+    }
+    exit 0
+}
+
 # Setup caching
 $script:CacheDir = Join-Path $env:TEMP "helix-failures-cache"
 if (-not (Test-Path $script:CacheDir)) {
     New-Item -ItemType Directory -Path $script:CacheDir -Force | Out-Null
+}
+
+# Clean up expired cache files on startup (files older than 2x TTL)
+function Clear-ExpiredCache {
+    param([int]$TTLMinutes = $CacheTTLMinutes)
+    
+    $maxAge = $TTLMinutes * 2
+    $cutoff = (Get-Date).AddMinutes(-$maxAge)
+    
+    Get-ChildItem -Path $script:CacheDir -File -ErrorAction SilentlyContinue | Where-Object {
+        $_.LastWriteTime -lt $cutoff
+    } | ForEach-Object {
+        Write-Verbose "Removing expired cache file: $($_.Name)"
+        Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# Run cache cleanup at startup (non-blocking)
+if (-not $NoCache) {
+    Clear-ExpiredCache -TTLMinutes $CacheTTLMinutes
 }
 
 function Get-CachedResponse {
