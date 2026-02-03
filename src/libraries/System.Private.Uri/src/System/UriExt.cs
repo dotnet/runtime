@@ -13,11 +13,21 @@ namespace System
 {
     public partial class Uri
     {
-        //
-        // All public ctors go through here
-        //
+        /// <summary>Helper called by all constructos to construct the Uri.</summary>
         [MemberNotNull(nameof(_string))]
         private void CreateThis(string? uri, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
+        {
+            UriFormatException? e = TryCreateThis(uri, dontEscape, uriKind, in creationOptions);
+
+            if (e is not null)
+            {
+                throw e;
+            }
+        }
+
+        /// <summary>Core helper called by all constructors and TryCreate factories to construct the Uri.</summary>
+        [MemberNotNull(nameof(_string))]
+        private UriFormatException? TryCreateThis(string? uri, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
         {
             DebugAssertInCtor();
 
@@ -37,15 +47,6 @@ namespace System
                 _flags |= Flags.DisablePathAndQueryCanonicalization;
 
             ParsingError err = ParseScheme(_string, ref _flags, ref _syntax!);
-
-            UriFormatException? e = InitializeUri(err, uriKind);
-            if (e != null)
-                throw e;
-        }
-
-        private UriFormatException? InitializeUri(ParsingError err, UriKind uriKind)
-        {
-            DebugAssertInCtor();
             Debug.Assert((err is ParsingError.None) == (_syntax is not null));
 
             bool hasUnicode = false;
@@ -625,24 +626,12 @@ namespace System
         public static bool TryEscapeDataString(ReadOnlySpan<char> charsToEscape, Span<char> destination, out int charsWritten) =>
             UriHelper.TryEscapeDataString(charsToEscape, destination, out charsWritten);
 
-        // Should never be used except by the below method
-        private Uri(Flags flags, UriParser? uriParser, string uri)
-        {
-            _flags = flags;
-            _syntax = uriParser!;
-            _string = uri;
+#pragma warning disable CS8618 // _string will be initialized by TryCreateThis later.
+        /// <summary>Must never be used except by <see cref="CreateHelper(string?, bool, UriKind, in UriCreationOptions)"/>.</summary>
+        private Uri() { }
+#pragma warning restore CS8618
 
-            if (uriParser is null)
-            {
-                // Relative Uris are fully initialized after the call to this constructor
-                // Absolute Uris will be initialized with a call to InitializeUri on the newly created instance
-                DebugSetLeftCtor();
-            }
-        }
-
-        //
-        // a Uri.TryCreate() method goes through here.
-        //
+        /// <summary>Called by TryCreate.</summary>
         internal static Uri? CreateHelper(string? uriString, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
         {
             if (uriString is null)
@@ -650,52 +639,15 @@ namespace System
                 return null;
             }
 
-            if (uriKind is < UriKind.RelativeOrAbsolute or > UriKind.Relative)
-            {
-                throw new ArgumentException(SR.Format(SR.net_uri_InvalidUriKind, uriKind));
-            }
-
-            UriParser? syntax = null;
-            Flags flags = Flags.Zero;
-            ParsingError err = ParseScheme(uriString, ref flags, ref syntax);
-
-            if (dontEscape)
-                flags |= Flags.UserEscaped;
-
-            if (creationOptions.DangerousDisablePathAndQueryCanonicalization)
-                flags |= Flags.DisablePathAndQueryCanonicalization;
-
-            // We won't use User factory for these errors
-            if (err != ParsingError.None)
-            {
-                // If it looks as a relative Uri, custom factory is ignored
-                if (uriKind != UriKind.Absolute && err <= ParsingError.LastErrorOkayForRelativeUris)
-                    return new Uri((flags & Flags.UserEscaped), null, uriString);
-
-                return null;
-            }
-
-            // Cannot be relative Uri if came here
-            Debug.Assert(syntax != null);
-            Uri result = new Uri(flags, syntax, uriString);
-
-            // Validate instance using ether built in or a user Parser
+            Uri result = new();
             try
             {
-                UriFormatException? e = result.InitializeUri(err, uriKind);
-
-                if (e == null)
-                {
-                    result.DebugSetLeftCtor();
-                    return result;
-                }
-
-                return null;
+                UriFormatException? e = result.TryCreateThis(uriString, dontEscape, uriKind, in creationOptions);
+                return e is null ? result : null;
             }
             catch (UriFormatException)
             {
-                Debug.Assert(!syntax.IsSimple, "A UriPraser threw on InitializeAndValidate.");
-                // A precaution since custom Parser should never throw in this case.
+                Debug.Assert(result.Syntax is { IsSimple: false }, "A custom UriParser threw on InitializeAndValidate.");
                 return null;
             }
         }
