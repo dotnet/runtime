@@ -342,7 +342,7 @@ namespace System.Threading
                         return WaitResult.TimedOut;
                     }
 
-                    // We timed out, but our water is already popped. Someone is waking us.
+                    // We timed out, but our waiter is already popped. Someone is waking us.
                     // We can't leave or the wake could be lost, let's wait again.
                     // Give it some extra time.
                     timeoutMs = 10;
