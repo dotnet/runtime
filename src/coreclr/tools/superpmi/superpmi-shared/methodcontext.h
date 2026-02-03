@@ -907,6 +907,10 @@ public:
     void dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value);
     CORINFO_METHOD_HANDLE repGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type);
 
+    void recGetWasmTypeSymbol(CorInfoType* types, CORINFO_WASM_TYPE_SYMBOL_HANDLE result);
+    void dmpGetWasmTypeSymbol(DWORDLONG key, DWORDLONG value);
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE repGetWasmTypeSymbol(CorInfoType* types);
+
     void dmpSigInstHandleMap(DWORD key, DWORDLONG value);
 
     struct Environment
@@ -1209,6 +1213,7 @@ enum mcPackets
     Packet_GetCookieForInterpreterCalliSig = 232,
     Packet_GetHelperFtn = 233,
     Packet_GetContinuationType = 234,
+    Packet_GetWasmTypeSymbol = 235,
 };
 
 void SetDebugDumpVariables();

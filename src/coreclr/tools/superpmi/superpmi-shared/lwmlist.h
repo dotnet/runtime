@@ -171,6 +171,7 @@ LWM(SatisfiesMethodConstraints, DLDL, DWORD)
 LWM(GetUnmanagedCallConv, MethodOrSigInfoValue, DD)
 LWM(DoesFieldBelongToClass, DLDL, DWORD)
 DENSELWM(SigInstHandleMap, DWORDLONG)
+LWM(GetWasmTypeSymbol, DWORDLONG, DWORDLONG)
 
 #undef LWM
 #undef DENSELWM
