@@ -3199,13 +3199,14 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
-        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= TARGET_POINTER_SIZE)
+        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= TARGET_POINTER_SIZE) && IS_ALIGNED(m_s2 - m_s1 + 1, INTERP_STACK_SLOT_SIZE)
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
                  && (!pArgIt || !pArgIt->IsArgPassedByRef())
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
                 )
         {
-            // Extend an existing range, but only if the argument is at least pointer size large.
+            // Extend an existing range, but only if the argument is at least pointer size large and
+            // the existing range end was aligned to interpreter stack slot size.
             // The only case when this is not true is on Apple ARM64 OSes where primitive type smaller
             // than 8 bytes are passed on the stack in a packed manner. We process such arguments one by
             // one to avoid explosion of the number of pRoutines.
