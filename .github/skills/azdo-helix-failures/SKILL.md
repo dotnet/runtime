@@ -109,6 +109,50 @@ The script caches API responses to speed up repeated analysis. Cache files are s
 - **PowerShell 5.1+** or **PowerShell Core 7+**
 - **GitHub CLI (`gh`)**: Required only for `-PRNumber` parameter. Install from https://cli.github.com/
 
+## Build Analysis Integration
+
+When analyzing a PR, the script automatically checks the "Build Analysis" PR check for known issues that have already been identified. This saves time by surfacing known transient failures immediately.
+
+Example output:
+```
+Build Analysis found 1 known issue(s):
+  - #117164: Unable to pull image from mcr.microsoft.com
+    https://github.com/dotnet/runtime/issues/117164
+```
+
+The Build Analysis check is maintained by the dotnet/arcade infrastructure team and automatically matches failures against issues with the "Known Build Error" label.
+
+## Multiple Build Analysis
+
+PRs often trigger multiple pipelines that can fail independently:
+
+| Pipeline | Description |
+|----------|-------------|
+| `runtime` | Main PR validation build |
+| `runtime-dev-innerloop` | Fast innerloop validation |
+| `dotnet-linker-tests` | ILLinker/trimming tests |
+| `runtime-wasm-perf` | WASM performance tests |
+| `runtime-libraries enterprise-linux` | Enterprise Linux compatibility |
+
+The script analyzes **all failing builds** for a PR and provides:
+- Per-build summaries with failed job counts
+- Overall summary with totals across all builds
+- Known issues from Build Analysis shown once at the start
+
+Example with multiple builds:
+```
+Found 3 failing builds:
+  - Build 1276778 (runtime)
+  - Build 1276779 (runtime-dev-innerloop)
+  - Build 1276780 (dotnet-linker-tests)
+
+=== Azure DevOps Build 1276778 ===
+...
+=== Overall Summary ===
+Analyzed 3 builds
+Total failed jobs: 13
+```
+
 ## Test Execution Types
 
 The script detects and handles different test execution types:
@@ -148,8 +192,12 @@ The script automatically classifies failures and suggests actions:
 | `Unable to find package` | Infrastructure | Yes | Check if package exists in feeds |
 | `DEVICE_NOT_FOUND` | Infrastructure | Yes | Check if leg passes on main branch |
 | `timed out` | Infrastructure | Yes | Check if test is slow or hanging |
-| `error CS####` | Build | No | Fix compilation error |
+| `error CS####` | Build | No | Fix C# compilation error |
 | `error MSB####` | Build | No | Check build configuration |
+| `': error:'` (clang/gcc) | Build | No | Fix C++/native compilation error |
+| `undefined reference` | Build | No | Fix linker error - missing symbol |
+| `fatal error:.*not found` | Build | No | Fix missing header include |
+| `collect2: error:` | Build | No | Fix linker errors |
 | `OutOfMemoryException` | Infrastructure | Yes | Check for memory leaks in test |
 | `Assert.Equal() Failure` | Test | No | Fix test or code |
 | `Unable to pull image` | Infrastructure | Yes | Check container registry availability |
@@ -330,16 +378,22 @@ When analyzing CI failures, follow this workflow for best results:
    .\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -PRNumber 12345 -Repository owner/repo
    ```
 
-3. **Interpret results with context**
-   - Are failures in areas the PR modifies?
+3. **Check Build Analysis results**
+   - The script automatically fetches known issues from the Build Analysis PR check
+   - Known issues indicate transient/infrastructure failures that are safe to retry
+
+4. **Correlate failures with PR changes**
+   - Are failures in areas the PR modifies? (e.g., new tests added by PR are failing)
    - Is this a codeflow/dependency update that could bring in breaking changes?
    - Check if the same failures appear on main branch
 
-4. **Check for known issues**
-   - The script searches for issues with "Known Build Error" label
-   - Also search manually if the test name is generic
+5. **Interpret failure patterns**
+   - Same error across many jobs → Likely a real code issue
+   - iOS/Android device failures → Often transient infrastructure issues
+   - Docker image pull failures → Infrastructure, check known issues
+   - New test files failing → PR-related, tests need fixing
 
-5. **Determine actionability**
-   - Real bug: Needs fix in PR
-   - Infrastructure: May be transient, verify before retrying
-   - Pre-existing: Unrelated to PR, may need separate issue
+6. **Determine actionability**
+   - **Real bug**: Needs fix in PR (compilation errors, new test failures)
+   - **Infrastructure**: May be transient, verify before retrying
+   - **Pre-existing**: Unrelated to PR, may need separate issue
