@@ -3,10 +3,10 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace System.Net.Http
 {
-
     internal sealed class HttpAuthority : IEquatable<HttpAuthority>
     {
         // ALPN Protocol Name should also be part of an authority, but we are special-casing for HTTP/3, so this can be assumed to be "H3".
@@ -36,6 +36,15 @@ namespace System.Net.Http
                 // IPv4 address, dns or puny encoded name
                 HostValue = IdnHost = uri.IdnHost;
             }
+
+            if (!Ascii.IsValid(HostValue))
+            {
+                Debug.Assert(uri.HostNameType == UriHostNameType.Basic);
+
+                // This is not a DNS host and it contains non-ASCII characters that can't be Punycode encoded.
+                throw new HttpRequestException(SR.net_http_request_invalid_nonascii_host);
+            }
+
             Port = port;
         }
 
