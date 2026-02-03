@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         void MaterializeSignature();
     }
 
-    public class ManifestMetadataTableNode : HeaderTableNode
+    public class ManifestMetadataTableNode : HeaderTableNode, IDisposable
     {
         /// <summary>
         /// Map from simple assembly names to their module indices. The map gets prepopulated
@@ -328,6 +328,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _manifestAssemblyMvids[i].TryWriteBytes(new Span<byte>(manifestAssemblyMvidTable, GuidByteSize * i, GuidByteSize));
             }
             return manifestAssemblyMvidTable;
+        }
+
+        public void Dispose()
+        {
+            _modulesWhichMustBeIndexable = null;
         }
     }
 }
