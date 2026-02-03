@@ -1467,6 +1467,7 @@ void emitter::emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1, reg
 }
 
 static inline constexpr unsigned WordMask(uint8_t bits);
+static inline constexpr uint64_t BitMask64(uint8_t bits);
 
 //------------------------------------------------------------------------
 // emitLoadImmediate: Emits the instruction sequence needed to load a
@@ -1516,7 +1517,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     //
     // First, determine at which position to partition imm into high32 and offset,
     // so that it yields the least instruction.
-    // Where high32 = imm[y:x] and imm[63:y] are all zeroes or all ones.
+    // Where high32 = sext(imm[y:x]) and imm[63:y] are all zeroes or all ones.
     //
     // From the above equation, the value of offset1 & offset2 are:
     // -> offset1 = imm[x-1:0]
@@ -1626,6 +1627,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     else if ((y - x) < 31)
     {
         y = x + 31;
+        y = (y > 63) ? 63 : y;
     }
     else
     {
@@ -1644,9 +1646,9 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     // See the following discussion:
     // https://github.com/dotnet/runtime/pull/113250#discussion_r1987576070
 
-    uint32_t offset1        = imm & WordMask((uint8_t)x);
-    uint32_t offset2        = (~(offset1 - 1)) & WordMask((uint8_t)x);
-    uint32_t offset         = offset1;
+    uint64_t offset1        = imm & BitMask64((uint8_t)x);
+    uint64_t offset2        = (~(offset1 - 1)) & BitMask64((uint8_t)x);
+    uint64_t offset         = offset1;
     bool     isSubtractMode = false;
 
     if ((high32 == 0x7FFFFFFF) && (y != 63))
@@ -1655,8 +1657,8 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
          * Since adding 1 to it will change the sign bit. Instead, shift x and y
          * to the left by one. */
         int      newX       = x + 1;
-        uint32_t newOffset1 = imm & WordMask((uint8_t)newX);
-        uint32_t newOffset2 = (~(newOffset1 - 1)) & WordMask((uint8_t)newX);
+        uint64_t newOffset1 = imm & BitMask64((uint8_t)newX);
+        uint64_t newOffset2 = (~(newOffset1 - 1)) & BitMask64((uint8_t)newX);
         if (newOffset2 < offset1)
         {
             x              = newX;
@@ -1712,18 +1714,18 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
     // STEP 5: Generate instructions to load offset in 11-bits chunks
 
-    int chunkLsbPos = (x < 11) ? 0 : (x - 11);
-    int shift       = (x < 11) ? x : 11;
-    int chunkMask   = (x < 11) ? WordMask((uint8_t)x) : WordMask(11);
+    int      chunkLsbPos = (x < 11) ? 0 : (x - 11);
+    int      shift       = (x < 11) ? x : 11;
+    uint64_t chunkMask   = (x < 11) ? BitMask64((uint8_t)x) : BitMask64(11);
     while (true)
     {
-        uint32_t chunk = (offset >> chunkLsbPos) & chunkMask;
+        uint64_t chunk = (offset >> chunkLsbPos) & chunkMask;
 
         if (chunk != 0)
         {
             // We could move our 11 bit chunk window to the right for as many as the
             // leading zeros.
-            int leadingZerosOn11BitsChunk = 11 - (32 - BitOperations::LeadingZeroCount(chunk));
+            int leadingZerosOn11BitsChunk = 11 - (64 - BitOperations::LeadingZeroCount(chunk));
             if (leadingZerosOn11BitsChunk > 0)
             {
                 int maxAdditionalShift =
@@ -1750,7 +1752,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
                 else
                 {
                     ins[numberOfInstructions - 1]    = INS_addi;
-                    values[numberOfInstructions - 1] = chunk;
+                    values[numberOfInstructions - 1] = (int32_t)chunk;
                 }
             }
             shift = 0;
@@ -1760,7 +1762,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             break;
         }
         shift += (chunkLsbPos < 11) ? chunkLsbPos : 11;
-        chunkMask = (chunkLsbPos < 11) ? (chunkMask >> (11 - chunkLsbPos)) : WordMask(11);
+        chunkMask = (chunkLsbPos < 11) ? (chunkMask >> (11 - chunkLsbPos)) : BitMask64(11);
         chunkLsbPos -= (chunkLsbPos < 11) ? chunkLsbPos : 11;
     }
     if (shift > 0)
@@ -2839,6 +2841,11 @@ ssize_t emitter::emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig
 static inline constexpr unsigned WordMask(uint8_t bits)
 {
     return static_cast<unsigned>((1ull << bits) - 1);
+}
+
+static inline constexpr uint64_t BitMask64(uint8_t bits)
+{
+    return (bits == 64) ? ~0ull : ((1ull << bits) - 1);
 }
 
 template <uint8_t MaskSize>
