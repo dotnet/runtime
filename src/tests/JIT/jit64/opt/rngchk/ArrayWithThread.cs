@@ -6,7 +6,6 @@ using System.Threading;
 using System.Runtime.CompilerServices;
 using TestLibrary;
 using Xunit;
-using TestLibrary;
 
 namespace ArrayWithThread
 {
