@@ -648,7 +648,7 @@ namespace System.Diagnostics.Tests
             {
                 Regex regex = new(pattern, RegexOptions.None, TimeSpan.FromSeconds(10));
                 Match match = regex.Match(exceptionText, startIndex);
-                Assert.True(match.Success);
+                Assert.True(match.Success, $"Could not find expected pattern '{pattern}' in exception text:\n{exceptionText} starting at index {startIndex}.");
                 startIndex = match.Index + match.Length;
             }
         }
