@@ -633,19 +633,16 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        private void OnValidateStartFailed()
+        private void OnValidateStartFailed() => throw GetOnValidateStartFailedException();
+
+        private InvalidOperationException GetOnValidateStartFailedException()
         {
             // Make sure a new object or array is not attempted within an unfinalized string.
             if (IsWritingPartialString)
             {
-                ThrowInvalidOperationException_CannotWriteWithinString();
+                return ThrowHelper.GetInvalidOperationException(SR.CannotWriteWithinString);
             }
 
-            throw GetValidateStartFailedException();
-        }
-
-        private InvalidOperationException GetValidateStartFailedException()
-        {
             Debug.Assert(!HasPartialStringData);
 
             string message;
