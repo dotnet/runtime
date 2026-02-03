@@ -8857,7 +8857,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     genDefineTempLabel(genCreateTempLabel());
 
     // This test suite needs REX2 enabled.
-    if (!theEmitter->UseRex2Encoding() && !theEmitter->emitComp->DoJitStressRex2Encoding())
+    if (!theEmitter->UseRex2Encoding() && !theEmitter->m_compiler->DoJitStressRex2Encoding())
     {
         return;
     }
@@ -9210,7 +9210,7 @@ void CodeGen::genAmd64EmitterUnitTestsAvx10v2()
     genDefineTempLabel(genCreateTempLabel());
 
     // This test suite needs AVX10.2 enabled.
-    if (!theEmitter->emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2))
+    if (!theEmitter->m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2))
     {
         return;
     }
