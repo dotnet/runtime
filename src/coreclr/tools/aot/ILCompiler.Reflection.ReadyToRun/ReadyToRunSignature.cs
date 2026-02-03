@@ -1663,6 +1663,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("THROW_DIV_ZERO");
                     break;
 
+                case ReadyToRunHelper.ThrowExact:
+                    builder.Append("THROW_EXACT");
+                    break;
+
                 // Write barriers
                 case ReadyToRunHelper.WriteBarrier:
                     builder.Append("WRITE_BARRIER");

@@ -1008,6 +1008,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_THROWDIVZERO:
                     id = ReadyToRunHelper.ThrowDivZero;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROWEXACT:
+                    id = ReadyToRunHelper.ThrowExact;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF:
                     id = ReadyToRunHelper.WriteBarrier;
