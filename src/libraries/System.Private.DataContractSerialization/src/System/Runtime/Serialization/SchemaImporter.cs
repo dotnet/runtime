@@ -62,7 +62,7 @@ namespace System.Runtime.Serialization
             }
             catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
             {
-                throw new ArgumentException(SR.Format(SR.CannotImportInvalidSchemas), ex);
+                throw new ArgumentException(SR.CannotImportInvalidSchemas, ex);
             }
 
             if (_typeNames == null)
@@ -71,7 +71,7 @@ namespace System.Runtime.Serialization
                 foreach (object schemaObj in schemaList)
                 {
                     if (schemaObj == null)
-                        throw new ArgumentException(SR.Format(SR.CannotImportNullSchema));
+                        throw new ArgumentException(SR.CannotImportNullSchema);
 
                     XmlSchema schema = (XmlSchema)schemaObj;
                     if (schema.TargetNamespace != Globals.SerializationNamespace
@@ -94,7 +94,7 @@ namespace System.Runtime.Serialization
                 foreach (XmlQualifiedName typeName in _typeNames)
                 {
                     if (typeName == null)
-                        throw new ArgumentException(SR.Format(SR.CannotImportNullDataContractName));
+                        throw new ArgumentException(SR.CannotImportNullDataContractName);
                     ImportType(typeName);
                 }
 
@@ -417,14 +417,14 @@ namespace System.Runtime.Serialization
                 foreach (XmlSchemaRedefine redefine in RedefineList)
                 {
                     if (redefine.SchemaTypes[typeName] != null)
-                        ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.RedefineNotSupported));
+                        ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.RedefineNotSupported);
                 }
 
                 if (type is XmlSchemaSimpleType simpleType)
                 {
                     XmlSchemaSimpleTypeContent? content = simpleType.Content;
                     if (content is XmlSchemaSimpleTypeUnion)
-                        ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.SimpleTypeUnionNotSupported));
+                        ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.SimpleTypeUnionNotSupported);
                     else if (content is XmlSchemaSimpleTypeList)
                         dataContract = ImportFlagsEnum(typeName, (XmlSchemaSimpleTypeList)content, simpleType.Annotation);
                     else if (content is XmlSchemaSimpleTypeRestriction restriction)
@@ -454,11 +454,11 @@ namespace System.Runtime.Serialization
                     {
                         XmlSchemaContentModel contentModel = complexType.ContentModel;
                         if (contentModel is XmlSchemaSimpleContent)
-                            ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.SimpleContentNotSupported));
+                            ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.SimpleContentNotSupported);
                         else if (contentModel is XmlSchemaComplexContent complexContent)
                         {
                             if (complexContent.IsMixed)
-                                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.MixedContentNotSupported));
+                                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.MixedContentNotSupported);
 
                             if (complexContent.Content is XmlSchemaComplexContentExtension extension)
                             {
@@ -470,7 +470,7 @@ namespace System.Runtime.Serialization
                                 if (baseTypeName == SchemaExporter.AnytypeQualifiedName)
                                     dataContract = ImportType(typeName, restriction.Particle, restriction.Attributes, restriction.AnyAttribute, null /* baseTypeName */, complexType.Annotation);
                                 else
-                                    ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.ComplexTypeRestrictionNotSupported));
+                                    ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.ComplexTypeRestrictionNotSupported);
                             }
                         }
                     }
@@ -631,9 +631,9 @@ namespace System.Runtime.Serialization
             else if (rootParticle is XmlSchemaSequence rootSequence)
             {
                 if (rootSequence.MinOccurs != 1)
-                    ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.RootSequenceMustBeRequired));
+                    ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.RootSequenceMustBeRequired);
                 if (rootSequence.MaxOccurs != 1)
-                    ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.RootSequenceMaxOccursMustBe));
+                    ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.RootSequenceMaxOccursMustBe);
 
                 if (!isDerived && CheckIfCollection(rootSequence))
                     dataContract = ImportCollection(typeName, rootSequence, annotation, isReference);
@@ -643,7 +643,7 @@ namespace System.Runtime.Serialization
                     dataContract = ImportClass(typeName, rootSequence, baseTypeName, annotation, isReference);
             }
             else
-                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.RootParticleMustBeSequence));
+                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.RootParticleMustBeSequence);
             return dataContract;
         }
 
@@ -682,7 +682,7 @@ namespace System.Runtime.Serialization
                 {
                     XmlSchemaElement? element = rootSequence.Items[memberIndex] as XmlSchemaElement;
                     if (element == null)
-                        ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.MustContainOnlyLocalElements));
+                        ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.MustContainOnlyLocalElements);
                     ImportClassMember(element!, dataContract);
                 }
             }
@@ -836,7 +836,7 @@ namespace System.Runtime.Serialization
                 if (!dataContract.BaseClassContract.IsISerializable)
                     ThrowISerializableTypeCannotBeImportedException(dataContract.XmlName.Name, dataContract.XmlName.Namespace, SR.Format(SR.BaseTypeNotISerializable, baseTypeName.Name, baseTypeName.Namespace));
                 if (!IsISerializableDerived(rootSequence))
-                    ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.ISerializableDerivedContainsOneOrMoreItems));
+                    ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.ISerializableDerivedContainsOneOrMoreItems);
             }
 
             return dataContract;
@@ -845,16 +845,16 @@ namespace System.Runtime.Serialization
         private static void CheckISerializableBase(XmlQualifiedName typeName, XmlSchemaSequence? rootSequence, XmlSchemaObjectCollection attributes)
         {
             if (rootSequence == null)
-                ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.ISerializableDoesNotContainAny));
+                ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.ISerializableDoesNotContainAny);
 
             if (rootSequence.Items == null || rootSequence.Items.Count < 1)
-                ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.ISerializableDoesNotContainAny));
+                ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.ISerializableDoesNotContainAny);
             else if (rootSequence.Items.Count > 1)
-                ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.ISerializableContainsMoreThanOneItems));
+                ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.ISerializableContainsMoreThanOneItems);
 
             XmlSchemaObject o = rootSequence.Items[0];
             if (!(o is XmlSchemaAny))
-                ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.ISerializableDoesNotContainAny));
+                ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.ISerializableDoesNotContainAny);
 
             XmlSchemaAny wildcard = (XmlSchemaAny)o;
             XmlSchemaAny iSerializableWildcardElement = SchemaExporter.ISerializableWildcardElement;
@@ -1170,19 +1170,19 @@ namespace System.Runtime.Serialization
         {
             XmlSchemaSimpleType? anonymousType = list.ItemType;
             if (anonymousType == null)
-                ThrowEnumTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.EnumListMustContainAnonymousType));
+                ThrowEnumTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.EnumListMustContainAnonymousType);
 
             XmlSchemaSimpleTypeContent? content = anonymousType.Content;
             if (content is XmlSchemaSimpleTypeUnion)
-                ThrowEnumTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.EnumUnionInAnonymousTypeNotSupported));
+                ThrowEnumTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.EnumUnionInAnonymousTypeNotSupported);
             else if (content is XmlSchemaSimpleTypeList)
-                ThrowEnumTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.EnumListInAnonymousTypeNotSupported));
+                ThrowEnumTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.EnumListInAnonymousTypeNotSupported);
             else if (content is XmlSchemaSimpleTypeRestriction)
             {
                 if (content is XmlSchemaSimpleTypeRestriction restriction && CheckIfEnum(restriction))
                     return ImportEnum(typeName, restriction, true /*isFlags*/, annotation);
                 else
-                    ThrowEnumTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.EnumRestrictionInvalid));
+                    ThrowEnumTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.EnumRestrictionInvalid);
             }
             return null;
         }
@@ -1204,9 +1204,9 @@ namespace System.Runtime.Serialization
             {
                 XmlSchemaEnumerationFacet? enumFacet = facet as XmlSchemaEnumerationFacet;
                 if (enumFacet == null)
-                    ThrowEnumTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.EnumOnlyEnumerationFacetsSupported));
+                    ThrowEnumTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.EnumOnlyEnumerationFacetsSupported);
                 if (enumFacet.Value == null)
-                    ThrowEnumTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.EnumEnumerationFacetsMustHaveValue));
+                    ThrowEnumTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.EnumEnumerationFacetsMustHaveValue);
 
                 string? valueInnerText = GetInnerText(typeName, ImportAnnotation(enumFacet.Annotation, SchemaExporter.EnumerationValueAnnotationName));
                 long enumValue = (valueInnerText == null) ? SchemaExporter.GetDefaultEnumValue(isFlags, dataContract.Members.Count)
@@ -1229,7 +1229,7 @@ namespace System.Runtime.Serialization
             else if (restriction.BaseType != null)
                 dataContract = ImportType(restriction.BaseType);
             else
-                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.SimpleTypeRestrictionDoesNotSpecifyBase));
+                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.SimpleTypeRestrictionDoesNotSpecifyBase);
 
             return dataContract;
         }
@@ -1344,9 +1344,9 @@ namespace System.Runtime.Serialization
         private static void CheckComplexType(XmlQualifiedName typeName, XmlSchemaComplexType type)
         {
             if (type.IsAbstract)
-                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.AbstractTypeNotSupported));
+                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.AbstractTypeNotSupported);
             if (type.IsMixed)
-                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.MixedContentNotSupported));
+                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.MixedContentNotSupported);
         }
 
         private static void CheckIfElementUsesUnsupportedConstructs(XmlQualifiedName typeName, XmlSchemaElement element)
@@ -1364,7 +1364,7 @@ namespace System.Runtime.Serialization
         private static void ImportAttributes(XmlQualifiedName typeName, XmlSchemaObjectCollection attributes, XmlSchemaAnyAttribute? anyAttribute, out bool isReference)
         {
             if (anyAttribute != null)
-                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.AnyAttributeNotSupported));
+                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.AnyAttributeNotSupported);
 
             isReference = false;
             if (attributes != null)

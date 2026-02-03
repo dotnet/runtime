@@ -1925,7 +1925,6 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         case GT_NOT:
         case GT_BSWAP:
         case GT_BSWAP16:
-        case GT_CAST:
         case GT_BITCAST:
             break;
 
@@ -1943,9 +1942,10 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         case GT_ROR:
             break;
 
-        case GT_ADD: // Check for ADDRMODE flag on these Binary Operators
+        case GT_ADD: // Check for ADDRMODE flag on these operators
         case GT_MUL:
         case GT_LSH:
+        case GT_CAST:
             if (tree->IsPartOfAddressMode())
             {
                 return false;
@@ -5873,12 +5873,12 @@ bool Compiler::optSharedConstantCSEEnabled()
     {
         enableSharedConstCSE = true;
     }
-#if defined(TARGET_ARMARCH)
-    else if (configValue == CONST_CSE_ENABLE_ARM)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+    else if (configValue == CONST_CSE_ENABLE_ARM_RISCV64)
     {
         enableSharedConstCSE = true;
     }
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_RISCV64
 
     return enableSharedConstCSE;
 }
@@ -5898,8 +5898,8 @@ bool Compiler::optConstantCSEEnabled()
     {
         enableConstCSE = true;
     }
-#if defined(TARGET_ARMARCH)
-    else if ((configValue == CONST_CSE_ENABLE_ARM) || (configValue == CONST_CSE_ENABLE_ARM_NO_SHARING))
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+    else if ((configValue == CONST_CSE_ENABLE_ARM_RISCV64) || (configValue == CONST_CSE_ENABLE_ARM_RISCV64_NO_SHARING))
     {
         enableConstCSE = true;
     }

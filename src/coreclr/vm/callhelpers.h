@@ -1,20 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 /*============================================================
-**
 ** File:    callhelpers.h
 ** Purpose: Provides helpers for making managed calls
-**
-
 ===========================================================*/
+
 #ifndef __CALLHELPERS_H__
 #define __CALLHELPERS_H__
 
 struct CallDescrData
 {
-    //
     // Input arguments
-    //
     LPVOID                      pSrc;
     UINT32                      numStackSlots;
 #ifdef CALLDESCR_ARGREGS
@@ -83,8 +80,6 @@ void* DispatchCallSimple(
 // 'dest' respecting the struct's layout described in 'info'.
 void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info, bool handleGcRefs);
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-
-bool IsCerRootMethod(MethodDesc *pMD);
 
 class MethodDescCallSite
 {
@@ -480,7 +475,6 @@ enum EEToManagedCallFlags
 #define BEGIN_CALL_TO_MANAGEDEX(flags)                                          \
 {                                                                               \
     MAKE_CURRENT_THREAD_AVAILABLE();                                            \
-    DECLARE_CPFH_EH_RECORD(CURRENT_THREAD);                                     \
     _ASSERTE(CURRENT_THREAD);                                                   \
     _ASSERTE((CURRENT_THREAD->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);     \
     /* This bit should never be set when we call into managed code.  The */     \
@@ -494,11 +488,9 @@ enum EEToManagedCallFlags
         if (CURRENT_THREAD->IsAbortRequested()) {                               \
             CURRENT_THREAD->HandleThreadAbort();                                \
         }                                                                       \
-    }                                                                           \
-    INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE();
+    }
 
 #define END_CALL_TO_MANAGED()                                                   \
-    UNINSTALL_COMPLUS_EXCEPTION_HANDLER();                                      \
 }
 
 /***********************************************************************/
@@ -665,6 +657,86 @@ enum DispatchCallSimpleFlags
 
 
 void CallDefaultConstructor(OBJECTREF ref);
+
+//
+// Helper types for calling managed methods marked with [UnmanagedCallersOnly]
+// from native code.
+//
+
+// Helper class for calling managed methods marked with [UnmanagedCallersOnly].
+// This provides a more efficient alternative to MethodDescCallSite for methods
+// using the reverse P/Invoke infrastructure.
+// This class assumes the target method signature has a trailing argument for
+// returning the exception (that is, Exception* in C#).
+//
+// Example usage:
+//   UnmanagedCallersOnlyCaller caller(BinderMethodID::MyMethod);
+//   ...
+//   caller.InvokeThrowing(arg1, arg2);
+//
+// The corresponding C# method would be declared as:
+//   [UnmanagedCallersOnly]
+//   public static void MyMethod(int arg1, object* arg2, Exception* pException);
+//
+class UnmanagedCallersOnlyCaller final
+{
+    MethodDesc* _pMD;
+public:
+    explicit UnmanagedCallersOnlyCaller(BinderMethodID id)
+        : _pMD{}
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        _pMD = CoreLibBinder::GetMethod(id);
+        _ASSERTE(_pMD != NULL);
+        _ASSERTE(_pMD->HasUnmanagedCallersOnlyAttribute());
+    }
+
+    template<typename... Args>
+    void InvokeThrowing(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        struct
+        {
+            OBJECTREF Exception;
+        } gc;
+        gc.Exception = NULL;
+        GCPROTECT_BEGIN(gc);
+
+        {
+            GCX_PREEMP();
+
+            PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+            _ASSERTE(methodEntry != (PCODE)NULL);
+
+            // Cast the function pointer to the appropriate type.
+            // Note that we append the exception handle argument.
+            auto fptr = reinterpret_cast<void(*)(Args..., OBJECTREF*)>(methodEntry);
+
+            // The last argument is the implied exception handle for any exceptions.
+            fptr(args..., &gc.Exception);
+        }
+
+        // If an exception was thrown, propagate it
+        if (gc.Exception != NULL)
+            COMPlusThrow(gc.Exception);
+
+        GCPROTECT_END();
+    }
+};
 
 #endif //!DACCESS_COMPILE
 

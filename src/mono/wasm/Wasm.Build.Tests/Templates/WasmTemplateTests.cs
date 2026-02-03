@@ -79,7 +79,7 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", extraProperties: extraProperties);
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            UpdateBrowserMainJs(forwardConsole: true);
 
             string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir;
             string projectFilePath = info.ProjectFilePath;
@@ -169,7 +169,7 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false);
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            UpdateBrowserMainJs(forwardConsole: true);
 
             bool isPublish = false;
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath) ?? "";
@@ -297,7 +297,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [InlineData(false)]
+        // [InlineData(false)] https://github.com/dotnet/runtime/issues/123477
         [InlineData(true)]
         public async Task LibraryModeBuild(bool useWasmSdk)
         {

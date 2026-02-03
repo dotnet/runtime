@@ -667,6 +667,10 @@ typedef enum
     // Enables the pinned object allocation monitoring.
     COR_PRF_HIGH_MONITOR_PINNEDOBJECT_ALLOCATED     = 0x00000100,
 
+    // Disables ObjectsAllocatedByClass callback when COR_PRF_MONITOR_GC is enabled, because it can lead to
+    // enormous overhead in the case of Server GC. See https://github.com/dotnet/runtime/issues/108230 for details.
+    COR_PRF_HIGH_MONITOR_GC_SKIP_ALLOCATED_BY_CLASS_STATISTIC = 0x00000200,
+
     COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH             = COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED |
                                                       COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS |
                                                       COR_PRF_HIGH_BASIC_GC |

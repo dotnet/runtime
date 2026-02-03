@@ -46,6 +46,12 @@
     <NestedBuildProperty Include="WasmEnableWebcil" />
     <NestedBuildProperty Include="EnableAggressiveTrimming" />
     <NestedBuildProperty Include="TrimMode" />
+    <NestedBuildProperty Include="WasmTestSupport" />
+    <NestedBuildProperty Include="WasmTestExitOnUnhandledError" />
+    <NestedBuildProperty Include="WasmTestAppendElementOnExit" />
+    <NestedBuildProperty Include="WasmTestLogExitCode" />
+    <NestedBuildProperty Include="WasmTestAsyncFlushOnExit" />
+    <NestedBuildProperty Include="WasmTestForwardConsole" />
   </ItemGroup>
 
   <Target Name="BuildSampleInTree"

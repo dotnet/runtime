@@ -2101,6 +2101,17 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #if defined(TARGET_WASM)
     switch (srcType)
     {
+        case TYP_REF:
+        case TYP_BYREF:
+            return ins_Load(TYP_I_IMPL, aligned);
+        case TYP_BYTE:
+            return INS_i32_load8_s;
+        case TYP_UBYTE:
+            return INS_i32_load8_u;
+        case TYP_SHORT:
+            return INS_i32_load16_s;
+        case TYP_USHORT:
+            return INS_i32_load16_u;
         case TYP_INT:
             return INS_i32_load;
         case TYP_LONG:
@@ -2501,6 +2512,15 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #if defined(TARGET_WASM)
     switch (dstType)
     {
+        case TYP_REF:
+        case TYP_BYREF:
+            return ins_Store(TYP_I_IMPL, aligned);
+        case TYP_BYTE:
+        case TYP_UBYTE:
+            return INS_i32_store8;
+        case TYP_SHORT:
+        case TYP_USHORT:
+            return INS_i32_store16;
         case TYP_INT:
             return INS_i32_store;
         case TYP_LONG:
@@ -2752,11 +2772,6 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 //
 instruction CodeGen::ins_FloatConv(var_types to, var_types from)
 {
-    // AVX: Supports following conversions
-    //   srcType = int16/int64                     castToType = float
-    // AVX512: Supports following conversions
-    //   srcType = ulong                           castToType = double/float
-    bool isAvx10v2 = false;
     switch (from)
     {
         case TYP_INT:
@@ -2808,56 +2823,12 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
             break;
 
         case TYP_FLOAT:
-            if (to == TYP_FLOAT)
-            {
-                return ins_Move_Extend(TYP_FLOAT, false);
-            }
-            else if (to == TYP_DOUBLE)
-            {
-                return INS_cvtss2sd;
-            }
-            isAvx10v2 = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
-
-            switch (to)
-            {
-                case TYP_INT:
-                    return isAvx10v2 ? INS_vcvttss2sis32 : INS_cvttss2si32;
-                case TYP_LONG:
-                    return isAvx10v2 ? INS_vcvttss2sis64 : INS_cvttss2si64;
-                case TYP_ULONG:
-                    return isAvx10v2 ? INS_vcvttss2usis64 : INS_vcvttss2usi64;
-                case TYP_UINT:
-                    return isAvx10v2 ? INS_vcvttss2usis32 : INS_vcvttss2usi32;
-                default:
-                    unreached();
-            }
-            break;
+            assert(to == TYP_DOUBLE);
+            return INS_cvtss2sd;
 
         case TYP_DOUBLE:
-            if (to == TYP_FLOAT)
-            {
-                return INS_cvtsd2ss;
-            }
-            else if (to == TYP_DOUBLE)
-            {
-                return ins_Move_Extend(TYP_DOUBLE, false);
-            }
-            isAvx10v2 = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
-
-            switch (to)
-            {
-                case TYP_INT:
-                    return isAvx10v2 ? INS_vcvttsd2sis32 : INS_cvttsd2si32;
-                case TYP_LONG:
-                    return isAvx10v2 ? INS_vcvttsd2sis64 : INS_cvttsd2si64;
-                case TYP_ULONG:
-                    return isAvx10v2 ? INS_vcvttsd2usis64 : INS_vcvttsd2usi64;
-                case TYP_UINT:
-                    return isAvx10v2 ? INS_vcvttsd2usis32 : INS_vcvttsd2usi32;
-                default:
-                    unreached();
-            }
-            break;
+            assert(to == TYP_FLOAT);
+            return INS_cvtsd2ss;
 
         default:
             unreached();

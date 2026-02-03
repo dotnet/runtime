@@ -1142,21 +1142,43 @@ public:
             {
                 Value& rhs = TopValue(0);
                 Value& lhs = TopValue(1);
-                if (m_compiler->opts.OptimizationEnabled() && lhs.IsAddress() && rhs.IsAddress() &&
-                    (lhs.LclNum() == rhs.LclNum()) && (rhs.Offset() <= lhs.Offset()) &&
-                    FitsIn<int>(lhs.Offset() - rhs.Offset()))
+                if (m_compiler->opts.OptimizationEnabled() && lhs.IsAddress() && rhs.IsAddress())
                 {
-                    // TODO-Bug: Due to inlining we may end up with incorrectly typed SUB trees here.
-                    assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+                    LclVarDsc* lhsDsc = m_compiler->lvaGetDesc(lhs.LclNum());
+                    LclVarDsc* rhsDsc = m_compiler->lvaGetDesc(rhs.LclNum());
 
-                    ssize_t result = (ssize_t)(lhs.Offset() - rhs.Offset());
-                    node->BashToConst(result, TYP_I_IMPL);
-                    INDEBUG(lhs.Consume());
-                    INDEBUG(rhs.Consume());
-                    PopValue();
-                    PopValue();
-                    m_stmtModified = true;
-                    break;
+                    unsigned lhsLclNum = lhs.LclNum();
+                    unsigned rhsLclNum = rhs.LclNum();
+
+                    unsigned lhsOffset = lhs.Offset();
+                    unsigned rhsOffset = rhs.Offset();
+
+                    if (lhsDsc->lvIsStructField)
+                    {
+                        lhsLclNum = lhsDsc->lvParentLcl;
+                        lhsOffset += lhsDsc->lvFldOffset;
+                    }
+
+                    if (rhsDsc->lvIsStructField)
+                    {
+                        rhsLclNum = rhsDsc->lvParentLcl;
+                        rhsOffset += rhsDsc->lvFldOffset;
+                    }
+
+                    if ((lhsLclNum == rhsLclNum) && (rhsOffset <= lhsOffset) && FitsIn<int>(lhsOffset - rhsOffset))
+                    {
+                        // TODO-Bug: Due to inlining we may end up with incorrectly typed SUB trees here.
+                        assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
+                        ssize_t result = (ssize_t)(lhsOffset - rhsOffset);
+                        node->BashToConst(result, TYP_I_IMPL);
+                        INDEBUG(lhs.Consume());
+                        INDEBUG(rhs.Consume());
+                        PopValue();
+                        PopValue();
+                        m_stmtModified = true;
+                        break;
+                    }
                 }
 
                 EscapeValue(TopValue(0), node);

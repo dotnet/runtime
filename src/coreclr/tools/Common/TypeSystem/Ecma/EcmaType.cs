@@ -419,7 +419,7 @@ namespace Internal.TypeSystem.Ecma
                 if (impl == null)
                 {
                     // TODO: invalid input: the type doesn't derive from our System.Object
-                    throw new TypeLoadException(System.Text.Encoding.UTF8.GetString(this.GetFullName()));
+                    ThrowHelper.ThrowTypeLoadException(this);
                 }
 
                 if (impl.OwningType != objectType)
@@ -585,6 +585,9 @@ namespace Internal.TypeSystem.Ecma
                 {
                     case 0:
                         layoutKind = MetadataLayoutKind.CStruct;
+                        break;
+                    case 1:
+                        layoutKind = MetadataLayoutKind.CUnion;
                         break;
                     default:
                         ThrowHelper.ThrowTypeLoadException(this);

@@ -158,15 +158,6 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Retrieves the namespace qualified name of a <see cref="DefType"/>.
-        /// </summary>
-        public static ReadOnlySpan<byte> GetFullName(this DefType metadataType)
-        {
-            ReadOnlySpan<byte> ns = metadataType.Namespace;
-            return ns.Length > 0 ? ns.Append("."u8, metadataType.Name) : metadataType.Name;
-        }
-
-        /// <summary>
         /// Retrieves all methods on a type, including the ones injected by the type system context.
         /// </summary>
         public static IEnumerable<MethodDesc> GetAllMethods(this TypeDesc type)

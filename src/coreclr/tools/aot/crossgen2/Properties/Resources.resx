@@ -424,7 +424,7 @@
     <value>Number of nested occurrences of a potentially cyclic generic type to cut off</value>
   </data>
   <data name="EnableCachedInterfaceDispatchSupport" xml:space="preserve">
-    <value>Enable support for cached interface dispatch</value>
+    <value>Enable support for cached interface dispatch. Default is true on platforms which do not support runtime code generation</value>
   </data>
   <data name="OutputFormat" xml:space="preserve">
     <value>Target output format for the ReadyToRun image</value>
