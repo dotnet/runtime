@@ -662,6 +662,7 @@ namespace System.Text.Json
             return ThrowHelper.GetInvalidOperationException(SR.Format(message, _tokenType));
         }
 
+        [DoesNotReturn]
         private static void ThrowInvalidOperationException_CannotWriteWithinString()
             => throw ThrowHelper.GetInvalidOperationException(SR.CannotWriteWithinString);
 
@@ -751,8 +752,8 @@ namespace System.Text.Json
         /// </exception>
         public void WriteStartArray(ReadOnlySpan<byte> utf8PropertyName)
         {
-            JsonWriterHelper.ValidateProperty(utf8PropertyName);
             ValidateDepth();
+            JsonWriterHelper.ValidateProperty(utf8PropertyName);
 
             WriteStartEscape(utf8PropertyName, JsonConstants.OpenBracket);
 
@@ -777,8 +778,8 @@ namespace System.Text.Json
         /// </exception>
         public void WriteStartObject(ReadOnlySpan<byte> utf8PropertyName)
         {
-            JsonWriterHelper.ValidateProperty(utf8PropertyName);
             ValidateDepth();
+            JsonWriterHelper.ValidateProperty(utf8PropertyName);
 
             WriteStartEscape(utf8PropertyName, JsonConstants.OpenBrace);
 
@@ -902,8 +903,8 @@ namespace System.Text.Json
         /// </exception>
         public void WriteStartArray(ReadOnlySpan<char> propertyName)
         {
-            JsonWriterHelper.ValidateProperty(propertyName);
             ValidateDepth();
+            JsonWriterHelper.ValidateProperty(propertyName);
 
             WriteStartEscape(propertyName, JsonConstants.OpenBracket);
 
@@ -928,8 +929,8 @@ namespace System.Text.Json
         /// </exception>
         public void WriteStartObject(ReadOnlySpan<char> propertyName)
         {
-            JsonWriterHelper.ValidateProperty(propertyName);
             ValidateDepth();
+            JsonWriterHelper.ValidateProperty(propertyName);
 
             WriteStartEscape(propertyName, JsonConstants.OpenBrace);
 
