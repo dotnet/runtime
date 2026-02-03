@@ -1648,6 +1648,60 @@ namespace System.Numerics
                 // add: 6 + 8 + 3 = 17
                 // mul: 12 + 16 = 28
 
+                if (Sse.IsSupported)
+                {
+                    Vector128<float> w = W.AsVector128();
+                    Vector128<float> x = X.AsVector128();
+                    Vector128<float> y = Y.AsVector128();
+                    Vector128<float> z = Z.AsVector128();
+
+                    Vector128<float> z_kjji = Sse.Shuffle(z, z, 0b00010110);
+                    Vector128<float> z_iiij = Sse.Shuffle(z, z, 0b01000000);
+                    Vector128<float> w_ppop = Sse.Shuffle(w, w, 0b11101111);
+                    Vector128<float> w_onpo = Sse.Shuffle(w, w, 0b10110110);
+                    Vector128<float> z_llkl = Sse.Shuffle(z, z, 0b11101111);
+                    Vector128<float> z_kjlk = Sse.Shuffle(z, z, 0b10110110);
+                    Vector128<float> w_onnm = Sse.Shuffle(w, w, 0b00010110);
+                    Vector128<float> w_mmmn = Sse.Shuffle(w, w, 0b01000000);
+                    Vector128<float> y_feee = Sse.Shuffle(y, y, 0b00000001);
+                    Vector128<float> y_ggff = Sse.Shuffle(y, y, 0b01011010);
+                    Vector128<float> y_hhhg = Sse.Shuffle(y, y, 0b10111111);
+
+                    // tmp1[0] = kp_lo
+                    // tmp1[1] = jp_ln
+                    // tmp1[2] = jo_kn
+                    // tmp1[3] = ip_lm
+                    Vector128<float> tmp1 = z_kjji * w_ppop - z_llkl * w_onnm;
+
+                    // tmp2[0] = io_km
+                    // tmp2[1] = in_jm
+                    // tmp2[2] = ip_lm
+                    // tmp2[3] = jo_kn
+                    Vector128<float> tmp2 = z_iiij * w_onpo - z_kjlk * w_mmmn;
+
+                    // tmp3[0] = kp_lo
+                    // tmp3[1] = kp_lo
+                    // tmp3[2] = jp_ln
+                    // tmp3[3] = jo_kn
+                    Vector128<float> tmp3 = Sse.Shuffle(tmp1, tmp1, 0b10010000);
+
+                    // tmp4[0] = jp_ln
+                    // tmp4[1] = ip_lm
+                    // tmp4[2] = ip_lm
+                    // tmp4[3] = io_km
+                    Vector128<float> tmp4 = Sse.Shuffle(tmp1, tmp2, 0b00101101);
+
+                    // tmp5[0] = jo_kn
+                    // tmp5[1] = io_km
+                    // tmp5[2] = in_jm
+                    // tmp5[3] = in_jm
+                    Vector128<float> tmp5 = Sse.Shuffle(tmp2, tmp2, 0b01010011);
+
+                    Vector128<float> tmp6 = x * (y_feee * tmp3 - y_ggff * tmp4 + y_hhhg * tmp5);
+                    Vector128<float> tmp7 = tmp6 - Sse.Shuffle(tmp6, tmp6, 0b00110001);
+                    return tmp7[0] + tmp7[2];
+                }
+
                 float a = X.X, b = X.Y, c = X.Z, d = X.W;
                 float e = Y.X, f = Y.Y, g = Y.Z, h = Y.W;
                 float i = Z.X, j = Z.Y, k = Z.Z, l = Z.W;
