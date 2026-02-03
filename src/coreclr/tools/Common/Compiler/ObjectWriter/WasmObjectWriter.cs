@@ -102,7 +102,7 @@ namespace ILCompiler.ObjectWriter
 
         private int _numImports;
         /// <summary>
-        /// Writes the common prefix for an import entry, which includes the module name, import name, and kind.
+        /// Writes the given import entry, including its prefix (module/name/kind) and body (external ref).
         /// </summary>
         private SectionWriter WriteImport(WasmImport import)
         {
