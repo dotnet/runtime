@@ -1276,6 +1276,13 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.ReversePInvokeExit;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION:
+                    var method = _compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8, null);
+                    var methodWithToken = new MethodWithToken(method, _compilation.CompilationModuleGroup.Resolver.GetModuleTokenForMethod(method, true, true), null, false, null);
+                    return _compilation.NodeFactory.MethodEntrypoint(methodWithToken, false, false, false);
+
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_METHOD:
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_CLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
