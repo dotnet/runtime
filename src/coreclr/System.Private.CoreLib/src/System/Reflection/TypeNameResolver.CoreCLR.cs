@@ -359,7 +359,7 @@ namespace System.Reflection
                     return type;
             }
 
-            RuntimeAssembly? resolvedAssembly = AssemblyLoadContext.OnTypeResolveCore(requestingAssembly, parsedName.FullName);
+            RuntimeAssembly? resolvedAssembly = AssemblyLoadContext.OnTypeResolve(requestingAssembly, parsedName.FullName);
             if (resolvedAssembly is not null)
             {
                 Type? type = resolvedAssembly.GetTypeCore(typeName, nestedTypeNames, throwOnFileNotFound: false, ignoreCase: _ignoreCase);
