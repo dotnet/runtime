@@ -77,10 +77,102 @@ param(
     [int]$MaxJobs = 5,
     [int]$MaxFailureLines = 50,
     [int]$TimeoutSec = 30,
-    [int]$ContextLines = 0
+    [int]$ContextLines = 0,
+    [switch]$NoCache,
+    [int]$CacheTTLMinutes = 60
 )
 
 $ErrorActionPreference = "Stop"
+
+# Setup caching
+$script:CacheDir = Join-Path $env:TEMP "helix-failures-cache"
+if (-not (Test-Path $script:CacheDir)) {
+    New-Item -ItemType Directory -Path $script:CacheDir -Force | Out-Null
+}
+
+function Get-CachedResponse {
+    param(
+        [string]$Url,
+        [int]$TTLMinutes = $CacheTTLMinutes
+    )
+    
+    if ($NoCache) { return $null }
+    
+    # Create a hash of the URL for the cache filename
+    $hash = [System.BitConverter]::ToString(
+        [System.Security.Cryptography.SHA256]::Create().ComputeHash(
+            [System.Text.Encoding]::UTF8.GetBytes($Url)
+        )
+    ).Replace("-", "").Substring(0, 16)
+    
+    $cacheFile = Join-Path $script:CacheDir "$hash.json"
+    
+    if (Test-Path $cacheFile) {
+        $cacheInfo = Get-Item $cacheFile
+        $age = (Get-Date) - $cacheInfo.LastWriteTime
+        
+        if ($age.TotalMinutes -lt $TTLMinutes) {
+            Write-Verbose "Cache hit for $Url (age: $([int]$age.TotalMinutes) min)"
+            return Get-Content $cacheFile -Raw
+        }
+        else {
+            Write-Verbose "Cache expired for $Url"
+        }
+    }
+    
+    return $null
+}
+
+function Set-CachedResponse {
+    param(
+        [string]$Url,
+        [string]$Content
+    )
+    
+    if ($NoCache) { return }
+    
+    $hash = [System.BitConverter]::ToString(
+        [System.Security.Cryptography.SHA256]::Create().ComputeHash(
+            [System.Text.Encoding]::UTF8.GetBytes($Url)
+        )
+    ).Replace("-", "").Substring(0, 16)
+    
+    $cacheFile = Join-Path $script:CacheDir "$hash.json"
+    $Content | Set-Content $cacheFile -Force
+    Write-Verbose "Cached response for $Url"
+}
+
+function Invoke-CachedRestMethod {
+    param(
+        [string]$Uri,
+        [int]$TimeoutSec = 30,
+        [switch]$AsJson
+    )
+    
+    # Check cache first
+    $cached = Get-CachedResponse -Url $Uri
+    if ($cached) {
+        if ($AsJson) {
+            return $cached | ConvertFrom-Json
+        }
+        return $cached
+    }
+    
+    # Make the actual request
+    Write-Verbose "GET $Uri"
+    $response = Invoke-RestMethod -Uri $Uri -Method Get -TimeoutSec $TimeoutSec
+    
+    # Cache the response
+    if ($AsJson -or $response -is [PSCustomObject]) {
+        $content = $response | ConvertTo-Json -Depth 10 -Compress
+        Set-CachedResponse -Url $Uri -Content $content
+    }
+    else {
+        Set-CachedResponse -Url $Uri -Content $response
+    }
+    
+    return $response
+}
 
 function Get-AzDOBuildIdFromPR {
     param([int]$PR)
@@ -118,10 +210,9 @@ function Get-AzDOTimeline {
     
     $url = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/$Build/timeline?api-version=7.0"
     Write-Host "Fetching build timeline..." -ForegroundColor Cyan
-    Write-Verbose "GET $url"
     
     try {
-        $response = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec $TimeoutSec
+        $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
         return $response
     }
     catch {
@@ -156,10 +247,9 @@ function Get-BuildLog {
     param([int]$Build, [int]$LogId)
     
     $url = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/$Build/logs/${LogId}?api-version=7.0"
-    Write-Verbose "GET $url"
     
     try {
-        $response = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec $TimeoutSec
+        $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec
         return $response
     }
     catch {
@@ -674,10 +764,9 @@ function Get-HelixJobDetails {
     param([string]$JobId)
     
     $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId"
-    Write-Verbose "GET $url"
     
     try {
-        $response = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec $TimeoutSec
+        $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
         return $response
     }
     catch {
@@ -690,10 +779,9 @@ function Get-HelixWorkItems {
     param([string]$JobId)
     
     $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems"
-    Write-Verbose "GET $url"
     
     try {
-        $response = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec $TimeoutSec
+        $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
         return $response
     }
     catch {
@@ -706,10 +794,9 @@ function Get-HelixWorkItemDetails {
     param([string]$JobId, [string]$WorkItemName)
     
     $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems/$WorkItemName"
-    Write-Verbose "GET $url"
     
     try {
-        $response = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec $TimeoutSec
+        $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
         return $response
     }
     catch {
@@ -721,10 +808,8 @@ function Get-HelixWorkItemDetails {
 function Get-HelixConsoleLog {
     param([string]$Url)
     
-    Write-Verbose "GET $Url"
-    
     try {
-        $response = Invoke-RestMethod -Uri $Url -Method Get -TimeoutSec $TimeoutSec
+        $response = Invoke-CachedRestMethod -Uri $Url -TimeoutSec $TimeoutSec
         return $response
     }
     catch {
