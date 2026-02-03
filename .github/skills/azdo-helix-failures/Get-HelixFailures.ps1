@@ -43,6 +43,18 @@
 .PARAMETER ContextLines
     Number of context lines to show before errors. Default: 0
 
+.PARAMETER NoCache
+    Bypass cache and fetch fresh data for all API calls.
+
+.PARAMETER CacheTTLMinutes
+    Cache lifetime in minutes. Default: 60
+
+.PARAMETER ClearCache
+    Clear all cached files and exit.
+
+.PARAMETER ContinueOnError
+    Continue processing remaining jobs if an API call fails, showing partial results.
+
 .EXAMPLE
     .\Get-HelixFailures.ps1 -BuildId 1276327
     
@@ -54,6 +66,9 @@
 
 .EXAMPLE
     .\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -WorkItem "iOS.Device.Aot.Test"
+
+.EXAMPLE
+    .\Get-HelixFailures.ps1 -ClearCache
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'BuildId')]
@@ -82,7 +97,8 @@ param(
     [int]$TimeoutSec = 30,
     [int]$ContextLines = 0,
     [switch]$NoCache,
-    [int]$CacheTTLMinutes = 60
+    [int]$CacheTTLMinutes = 60,
+    [switch]$ContinueOnError
 )
 
 $ErrorActionPreference = "Stop"
@@ -211,29 +227,35 @@ function Invoke-CachedRestMethod {
     param(
         [string]$Uri,
         [int]$TimeoutSec = 30,
-        [switch]$AsJson
+        [switch]$AsJson,
+        [switch]$SkipCache,
+        [switch]$SkipCacheWrite
     )
     
-    # Check cache first
-    $cached = Get-CachedResponse -Url $Uri
-    if ($cached) {
-        if ($AsJson) {
-            return $cached | ConvertFrom-Json
+    # Check cache first (unless skipping)
+    if (-not $SkipCache) {
+        $cached = Get-CachedResponse -Url $Uri
+        if ($cached) {
+            if ($AsJson) {
+                return $cached | ConvertFrom-Json
+            }
+            return $cached
         }
-        return $cached
     }
     
     # Make the actual request
     Write-Verbose "GET $Uri"
     $response = Invoke-RestMethod -Uri $Uri -Method Get -TimeoutSec $TimeoutSec
     
-    # Cache the response
-    if ($AsJson -or $response -is [PSCustomObject]) {
-        $content = $response | ConvertTo-Json -Depth 10 -Compress
-        Set-CachedResponse -Url $Uri -Content $content
-    }
-    else {
-        Set-CachedResponse -Url $Uri -Content $response
+    # Cache the response (unless skipping write)
+    if (-not $SkipCache -and -not $SkipCacheWrite) {
+        if ($AsJson -or $response -is [PSCustomObject]) {
+            $content = $response | ConvertTo-Json -Depth 10 -Compress
+            Set-CachedResponse -Url $Uri -Content $content
+        }
+        else {
+            Set-CachedResponse -Url $Uri -Content $response
+        }
     }
     
     return $response
@@ -276,7 +298,31 @@ function Get-AzDOBuildStatus {
     $url = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/${Build}?api-version=7.0"
     
     try {
-        $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
+        # First check cache to see if we have a completed status
+        $cached = Get-CachedResponse -Url $url
+        if ($cached) {
+            $cachedData = $cached | ConvertFrom-Json
+            # Only use cache if build was completed - in-progress status goes stale quickly
+            if ($cachedData.status -eq "completed") {
+                return @{
+                    Status = $cachedData.status
+                    Result = $cachedData.result
+                    StartTime = $cachedData.startTime
+                    FinishTime = $cachedData.finishTime
+                }
+            }
+            Write-Verbose "Skipping cached in-progress build status"
+        }
+        
+        # Fetch fresh status
+        $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson -SkipCache
+        
+        # Only cache if completed
+        if ($response.status -eq "completed") {
+            $content = $response | ConvertTo-Json -Depth 10 -Compress
+            Set-CachedResponse -Url $url -Content $content
+        }
+        
         return @{
             Status = $response.status        # notStarted, inProgress, completed
             Result = $response.result        # succeeded, failed, canceled (only set when completed)
@@ -291,16 +337,24 @@ function Get-AzDOBuildStatus {
 }
 
 function Get-AzDOTimeline {
-    param([int]$Build)
+    param(
+        [int]$Build,
+        [switch]$BuildInProgress
+    )
     
     $url = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/$Build/timeline?api-version=7.0"
     Write-Host "Fetching build timeline..." -ForegroundColor Cyan
     
     try {
-        $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
+        # Don't cache timeline for in-progress builds - it changes as jobs complete
+        $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson -SkipCacheWrite:$BuildInProgress
         return $response
     }
     catch {
+        if ($ContinueOnError) {
+            Write-Warning "Failed to fetch build timeline: $_"
+            return $null
+        }
         throw "Failed to fetch build timeline: $_"
     }
 }
@@ -1118,7 +1172,15 @@ try {
     }
     
     # Get timeline
-    $timeline = Get-AzDOTimeline -Build $BuildId
+    $isInProgress = $buildStatus -and $buildStatus.Status -eq "inProgress"
+    $timeline = Get-AzDOTimeline -Build $BuildId -BuildInProgress:$isInProgress
+    
+    # Handle timeline fetch failure
+    if (-not $timeline) {
+        Write-Host "`nCould not fetch build timeline" -ForegroundColor Red
+        Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Gray
+        exit 1
+    }
     
     # Get failed jobs
     $failedJobs = Get-FailedJobs -Timeline $timeline
@@ -1218,14 +1280,16 @@ try {
     Write-Host "`nFound $($failedJobs.Count) failed job(s):" -ForegroundColor Red
     
     $processedJobs = 0
+    $errorCount = 0
     foreach ($job in $failedJobs) {
         if ($processedJobs -ge $MaxJobs) {
             Write-Host "`n... and $($failedJobs.Count - $MaxJobs) more failed jobs (use -MaxJobs to see more)" -ForegroundColor Yellow
             break
         }
         
-        Write-Host "`n--- $($job.name) ---" -ForegroundColor Cyan
-        Write-Host "  Build: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId&view=logs&j=$($job.id)" -ForegroundColor Gray
+        try {
+            Write-Host "`n--- $($job.name) ---" -ForegroundColor Cyan
+            Write-Host "  Build: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId&view=logs&j=$($job.id)" -ForegroundColor Gray
         
         # Get Helix tasks for this job
         $helixTasks = Get-HelixJobInfo -Timeline $timeline -JobId $job.id
@@ -1341,6 +1405,16 @@ try {
                 }
             }
         }
+        }
+        catch {
+            $errorCount++
+            if ($ContinueOnError) {
+                Write-Warning "  Error processing job '$($job.name)': $_"
+            }
+            else {
+                throw
+            }
+        }
         
         $processedJobs++
     }
@@ -1349,6 +1423,9 @@ try {
     Write-Host "Total failed jobs: $($failedJobs.Count)" -ForegroundColor Red
     if ($localTestFailures.Count -gt 0) {
         Write-Host "Local test failures: $($localTestFailures.Count)" -ForegroundColor Red
+    }
+    if ($errorCount -gt 0) {
+        Write-Host "API errors (partial results): $errorCount" -ForegroundColor Yellow
     }
     Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Cyan
     

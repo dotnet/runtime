@@ -80,6 +80,30 @@ The script works with any GitHub repository that uses Azure DevOps/Helix:
 .\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -Verbose
 ```
 
+### Caching
+
+The script caches API responses to speed up repeated analysis. Cache files are stored in the system temp directory.
+
+```powershell
+# Force fresh data (bypass cache)
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -NoCache
+
+# Clear all cached files
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -ClearCache
+
+# Set custom cache lifetime (default: 60 minutes)
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -CacheTTLMinutes 30
+```
+
+**Note:** In-progress build status and timelines are not cached, ensuring you always see current failure state.
+
+### Error Handling
+
+```powershell
+# Continue processing if some API calls fail (show partial results)
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -ContinueOnError
+```
+
 ### Prerequisites
 
 - **PowerShell 5.1+** or **PowerShell Core 7+**
