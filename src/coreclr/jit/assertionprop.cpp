@@ -757,247 +757,156 @@ void Compiler::optAssertionInit(bool isLocalProp)
 #ifdef DEBUG
 void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionIndex assertionIndex /* = 0 */)
 {
-    if (curAssertion.GetOp1().KindIs(O1K_EXACT_TYPE))
-    {
-        printf("Type     ");
-    }
-    else if (curAssertion.GetOp1().KindIs(O1K_ARR_BND))
-    {
-        printf("ArrBnds  ");
-    }
-    else if (curAssertion.GetOp1().KindIs(O1K_VN))
-    {
-        printf("Vn  ");
-    }
-    else if (curAssertion.GetOp1().KindIs(O1K_SUBTYPE))
-    {
-        printf("Subtype  ");
-    }
-    else if (curAssertion.GetOp2().KindIs(O2K_LCLVAR_COPY))
-    {
-        printf("Copy     ");
-    }
-    else if (curAssertion.GetOp2().KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ))
-    {
-        printf("Constant ");
-    }
-    else if (curAssertion.GetOp2().KindIs(O2K_SUBRANGE))
-    {
-        printf("Subrange ");
-    }
-    else
-    {
-        printf("?assertion classification? ");
-    }
-    printf("Assertion: ");
-
-    if (!optLocalAssertionProp)
-    {
-        printf("(" FMT_VN "," FMT_VN ") ", curAssertion.GetOp1().GetVN(), curAssertion.GetOp2().GetVN());
-    }
-
-    if (curAssertion.GetOp1().KindIs(O1K_LCLVAR))
-    {
-        if (!optLocalAssertionProp)
-        {
-            printf("LCLVAR");
-            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
-        }
-        else
-        {
-            printf("V%02u", curAssertion.GetOp1().GetLclNum());
-        }
-    }
-    else if (curAssertion.GetOp1().KindIs(O1K_EXACT_TYPE))
-    {
-        printf("Exact_Type");
-        vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
-    }
-    else if (curAssertion.GetOp1().KindIs(O1K_SUBTYPE))
-    {
-        printf("Sub_Type");
-        vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
-    }
-    else if (curAssertion.GetOp1().KindIs(O1K_ARR_BND))
-    {
-        printf("[idx: " FMT_VN, curAssertion.GetOp1().GetArrBndIndex());
-        vnStore->vnDump(this, curAssertion.GetOp1().GetArrBndIndex());
-        printf("; len: " FMT_VN, curAssertion.GetOp1().GetArrBndLength());
-        vnStore->vnDump(this, curAssertion.GetOp1().GetArrBndLength());
-        printf("]");
-    }
-    else if (curAssertion.GetOp1().KindIs(O1K_VN))
-    {
-        printf("[vn: " FMT_VN, curAssertion.GetOp1().GetVN());
-        vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
-        printf("]");
-    }
-    else if (curAssertion.GetOp1().KindIs(O1K_BOUND_OPER_BND))
-    {
-        printf("Oper_Bnd");
-        vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
-    }
-    else if (curAssertion.GetOp1().KindIs(O1K_BOUND_LOOP_BND))
-    {
-        printf("Loop_Bnd");
-        vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
-    }
-    else if (curAssertion.GetOp1().KindIs(O1K_CONSTANT_LOOP_BND))
-    {
-        printf("Const_Loop_Bnd");
-        vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
-    }
-    else if (curAssertion.GetOp1().KindIs(O1K_CONSTANT_LOOP_BND_UN))
-    {
-        printf("Const_Loop_Bnd_Un");
-        vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
-    }
-    else
-    {
-        printf("?op1.kind?");
-    }
-
-    if (curAssertion.KindIs(OAK_SUBRANGE))
-    {
-        printf(" in ");
-    }
-    else if (curAssertion.KindIs(OAK_EQUAL))
-    {
-        if (curAssertion.GetOp1().KindIs(O1K_LCLVAR))
-        {
-            printf(" == ");
-        }
-        else
-        {
-            printf(" is ");
-        }
-    }
-    else if (curAssertion.KindIs(OAK_NO_THROW))
-    {
-        printf(" in range ");
-    }
-    else if (curAssertion.KindIs(OAK_NOT_EQUAL))
-    {
-        if (curAssertion.GetOp1().KindIs(O1K_LCLVAR))
-        {
-            printf(" != ");
-        }
-        else
-        {
-            printf(" is not ");
-        }
-    }
-    else
-    {
-        printf(" ?assertionKind? ");
-    }
-
-    if (!curAssertion.GetOp1().KindIs(O1K_ARR_BND))
-    {
-        switch (curAssertion.GetOp2().GetKind())
-        {
-            case O2K_LCLVAR_COPY:
-                printf("V%02u", curAssertion.GetOp2().GetLclNum());
-                break;
-
-            case O2K_CONST_INT:
-                if (curAssertion.GetOp1().KindIs(O1K_EXACT_TYPE))
-                {
-                    ssize_t iconVal = curAssertion.GetOp2().GetIntConstant();
-                    if (IsAot())
-                    {
-                        printf("Exact Type MT(0x%p)", dspPtr(iconVal));
-                    }
-                    else
-                    {
-                        printf("Exact Type MT(0x%p %s)", dspPtr(iconVal),
-                               eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
-                    }
-
-                    // We might want to assert:
-                    //      assert(curAssertion.GetOp2().HasIconFlag());
-                    // However, if we run CSE with shared constant mode, we may end up with an expression instead
-                    // of the original handle value. If we then use JitOptRepeat to re-build value numbers, we lose
-                    // knowledge that the constant was ever a handle, as the expression creating the original value
-                    // was not (and can't be) assigned a handle flag.
-                }
-                else if (curAssertion.GetOp1().KindIs(O1K_SUBTYPE))
-                {
-                    ssize_t iconVal = curAssertion.GetOp2().GetIntConstant();
-                    if (IsAot())
-                    {
-                        printf("MT(0x%p)", dspPtr(iconVal));
-                    }
-                    else
-                    {
-                        printf("MT(0x%p %s)", dspPtr(iconVal), eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
-                    }
-                }
-                else if (curAssertion.GetOp1().KindIs(O1K_BOUND_OPER_BND, O1K_BOUND_LOOP_BND, O1K_CONSTANT_LOOP_BND,
-                                                      O1K_CONSTANT_LOOP_BND_UN))
-                {
-                    assert(!optLocalAssertionProp);
-                    vnStore->vnDump(this, curAssertion.GetOp2().GetVN());
-                }
-                else
-                {
-                    var_types op1Type = !optLocalAssertionProp ? vnStore->TypeOfVN(curAssertion.GetOp1().GetVN())
-                                                               : lvaGetRealType(curAssertion.GetOp1().GetLclNum());
-                    if (op1Type == TYP_REF)
-                    {
-                        if (curAssertion.GetOp2().GetIntConstant() == 0)
-                        {
-                            printf("null");
-                        }
-                        else
-                        {
-                            printf("[%08p]", dspPtr(curAssertion.GetOp2().GetIntConstant()));
-                        }
-                    }
-                    else
-                    {
-                        if (curAssertion.GetOp2().HasIconFlag())
-                        {
-                            printf("[%08p]", dspPtr(curAssertion.GetOp2().GetIntConstant()));
-                        }
-                        else
-                        {
-                            printf("%d", curAssertion.GetOp2().GetIntConstant());
-                        }
-                    }
-                }
-                break;
-
-            case O2K_CONST_DOUBLE:
-                if (FloatingPointUtils::isNegativeZero(curAssertion.GetOp2().GetDoubleConstant()))
-                {
-                    printf("-0.00000");
-                }
-                else
-                {
-                    printf("%#lg", curAssertion.GetOp2().GetDoubleConstant());
-                }
-                break;
-
-            case O2K_ZEROOBJ:
-                printf("ZeroObj");
-                break;
-
-            case O2K_SUBRANGE:
-                IntegralRange::Print(curAssertion.GetOp2().GetIntegralRange());
-                break;
-
-            default:
-                printf("?op2.kind?");
-                break;
-        }
-    }
-
+    // Print assertion index if provided
     if (assertionIndex > 0)
     {
-        printf(", index = ");
         optPrintAssertionIndex(assertionIndex);
+        printf(" ");
     }
+
+    switch (curAssertion.GetOp1().GetKind())
+    {
+        case O1K_LCLVAR:
+            printf("V%02u", curAssertion.GetOp1().GetLclNum());
+            if (!optLocalAssertionProp)
+            {
+                printf(" ");
+                vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            }
+            break;
+
+        case O1K_VN:
+            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            break;
+
+        case O1K_ARR_BND:
+            printf("[idx:");
+            vnStore->vnDump(this, curAssertion.GetOp1().GetArrBndIndex());
+            printf(", len:");
+            vnStore->vnDump(this, curAssertion.GetOp1().GetArrBndLength());
+            printf("]");
+            break;
+
+        case O1K_BOUND_OPER_BND:
+            printf("Oper_Bnd ");
+            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            break;
+
+        case O1K_BOUND_LOOP_BND:
+            printf("Loop_Bnd ");
+            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            break;
+
+        case O1K_CONSTANT_LOOP_BND:
+            printf("Const_Bnd ");
+            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            break;
+
+        case O1K_CONSTANT_LOOP_BND_UN:
+            printf("Const_Bnd_Un ");
+            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            break;
+
+        case O1K_EXACT_TYPE:
+            printf("ExactType ");
+            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            break;
+
+        case O1K_SUBTYPE:
+            printf("SubType ");
+            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            break;
+
+        default:
+            unreached();
+            break;
+    }
+
+    switch (curAssertion.GetKind())
+    {
+        case OAK_EQUAL:
+            printf(" == ");
+            break;
+
+        case OAK_NOT_EQUAL:
+            printf(" != ");
+            break;
+
+        case OAK_SUBRANGE:
+            printf(" in ");
+            break;
+
+        case OAK_NO_THROW:
+            printf(" no-throw\n");
+            return; // No op2 to print
+
+        default:
+            unreached();
+            break;
+    }
+
+    switch (curAssertion.GetOp2().GetKind())
+    {
+        case O2K_LCLVAR_COPY:
+            printf("V%02u", curAssertion.GetOp2().GetLclNum());
+            break;
+
+        case O2K_CONST_INT:
+            if (curAssertion.GetOp1().KindIs(O1K_EXACT_TYPE, O1K_SUBTYPE))
+            {
+                ssize_t iconVal = curAssertion.GetOp2().GetIntConstant();
+                if (IsAot())
+                {
+                    printf("MT(%p)", dspPtr(iconVal));
+                }
+                else
+                {
+                    printf("MT(%s)", eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(iconVal)));
+                }
+            }
+            else if (curAssertion.GetOp1().KindIs(O1K_BOUND_OPER_BND, O1K_BOUND_LOOP_BND, O1K_CONSTANT_LOOP_BND,
+                                                  O1K_CONSTANT_LOOP_BND_UN))
+            {
+                vnStore->vnDump(this, curAssertion.GetOp2().GetVN());
+            }
+            else if (curAssertion.GetOp2().IsNullConstant())
+            {
+                printf("null");
+            }
+            else if (curAssertion.GetOp2().HasIconFlag())
+            {
+                printf("[%p]", dspPtr(curAssertion.GetOp2().GetIntConstant()));
+            }
+            else
+            {
+                printf("%lld", (int64_t)curAssertion.GetOp2().GetIntConstant());
+            }
+            break;
+
+        case O2K_CONST_DOUBLE:
+            if (FloatingPointUtils::isNegativeZero(curAssertion.GetOp2().GetDoubleConstant()))
+            {
+                printf("-0.0");
+            }
+            else
+            {
+                printf("%#lg", curAssertion.GetOp2().GetDoubleConstant());
+            }
+            break;
+
+        case O2K_ZEROOBJ:
+            printf("ZeroObj");
+            break;
+
+        case O2K_SUBRANGE:
+            IntegralRange::Print(curAssertion.GetOp2().GetIntegralRange());
+            break;
+
+        default:
+            unreached();
+            break;
+    }
+
     printf("\n");
 }
 
