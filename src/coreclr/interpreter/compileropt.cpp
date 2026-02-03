@@ -16,7 +16,7 @@ int32_t InterpCompiler::AllocVarOffset(int var, int32_t *pPos)
 
     size_t align = INTERP_STACK_SLOT_SIZE;
 
-    if (size > INTERP_STACK_SLOT_SIZE)
+    if (size > (int32_t)INTERP_STACK_SLOT_SIZE)
     {
         assert(m_pVars[var].interpType == InterpTypeVT);
         align = std::clamp(m_compHnd->getClassAlignmentRequirement(m_pVars[var].clsHnd), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
