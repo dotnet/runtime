@@ -250,9 +250,9 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     //
     if (compiler->opts.IsOSR())
     {
-        PatchpointInfo* const patchpointInfo  = compiler->info.compPatchpointInfo;
-        const int             tier0FrameSize  = patchpointInfo->TotalFrameSize();
-        const int             fpLrSaveOffset  = patchpointInfo->FpLrSaveOffset();
+        PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
+        const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
+        const int             fpLrSaveOffset = patchpointInfo->FpLrSaveOffset();
         JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes, FP/LR at offset %d\n", tier0FrameSize,
                 fpLrSaveOffset);
 
