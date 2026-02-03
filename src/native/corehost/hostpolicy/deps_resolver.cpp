@@ -4,6 +4,7 @@
 #include <set>
 #include <functional>
 #include <cassert>
+#include <utility>
 
 #include <trace.h>
 #include "deps_entry.h"

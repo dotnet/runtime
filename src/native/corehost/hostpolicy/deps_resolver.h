@@ -4,6 +4,7 @@
 #ifndef DEPS_RESOLVER_H
 #define DEPS_RESOLVER_H
 
+#include <utility>
 #include <vector>
 
 #include "pal.h"
@@ -51,6 +52,8 @@ struct deps_resolved_asset_t
     pal::string_t resolved_path;
 
 private:
+    // Asset from a deps.json that was resolved to this path. This should outlive any deps_resolved_asset_t.
+    // If null, this entry is not from a deps.json (for example, there is no deps.json) and has no version information.
     const deps_asset_t* m_asset;
 };
 
