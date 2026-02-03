@@ -1517,19 +1517,6 @@ void Interval::setLocalNumber(Compiler* m_compiler, unsigned lclNum, LinearScan*
 }
 
 //------------------------------------------------------------------------
-// GetCompiler: Get the compiler field.
-//
-// Bridges the field naming difference for common RA code.
-//
-// Return Value:
-//    The 'this->m_compiler' field.
-//
-Compiler* LinearScan::GetCompiler() const
-{
-    return m_compiler;
-}
-
-//------------------------------------------------------------------------
 // LinearScan:identifyCandidatesExceptionDataflow: Build the set of variables exposed on EH flow edges
 //
 // Notes:
