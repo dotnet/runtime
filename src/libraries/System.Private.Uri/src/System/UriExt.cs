@@ -64,19 +64,10 @@ namespace System
                 // and we'll allow relative Uri's, then create one.
                 if (uriKind != UriKind.Absolute && err <= ParsingError.LastErrorOkayForRelativeUris)
                 {
-                    _flags &= Flags.UserEscaped | Flags.HasUnicode; // the only flags that makes sense for a relative uri
-                    if (hasUnicode)
-                    {
-                        // Iri'ze and then normalize relative uris
-                        var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
-                        IriHelper.EscapeUnescapeIri(ref vsb, _originalUnicodeString, isQuery: false);
-                        _string = vsb.ToString();
-                    }
-                    return null;
+                    goto SwitchToRelativeUri;
                 }
 
                 // This is a fatal error based solely on scheme name parsing
-                _string = null!; // make it be invalid Uri
                 return GetException(err);
             }
 
@@ -86,9 +77,7 @@ namespace System
             {
                 if (uriKind == UriKind.Relative)
                 {
-                    _syntax = null!; // make it be relative Uri
-                    _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
-                    return null;
+                    goto SwitchToRelativeUri;
                 }
 
                 // V1 compat
@@ -99,9 +88,7 @@ namespace System
                    ((_string.Length >= 2 && (_string[0] != '\\' || _string[1] != '\\'))
                     || (!OperatingSystem.IsWindows() && InFact(Flags.UnixPath))))
                 {
-                    _syntax = null!; //make it be relative Uri
-                    _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
-                    return null;
+                    goto SwitchToRelativeUri;
                     // Otherwise an absolute file Uri wins when it's of the form "\\something"
                 }
             }
@@ -113,9 +100,7 @@ namespace System
                     if (uriKind != UriKind.Absolute && err <= ParsingError.LastErrorOkayForRelativeUris)
                     {
                         // RFC 3986 Section 5.4.2 - http:(relativeUri) may be considered a valid relative Uri.
-                        _syntax = null!; // convert to relative uri
-                        _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
-                        return null;
+                        goto SwitchToRelativeUri;
                     }
 
                     return GetException(err);
@@ -165,6 +150,21 @@ namespace System
             }
 
             // We have a valid absolute Uri.
+            return null;
+
+        SwitchToRelativeUri:
+            Debug.Assert(uriKind != UriKind.Absolute);
+
+            _syntax = null!;
+            _flags &= Flags.UserEscaped | Flags.HasUnicode; // the only flags that make sense for a relative uri
+
+            if (hasUnicode)
+            {
+                var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                IriHelper.EscapeUnescapeIri(ref vsb, _originalUnicodeString, isQuery: false);
+                _string = vsb.ToString();
+            }
+
             return null;
         }
 
