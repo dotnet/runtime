@@ -386,6 +386,13 @@ function Get-FailureClassification {
             Summary = '[Test] Local xUnit test failure'
             Action = 'Check test run URL for specific failed test details'
             Transient = $false
+        },
+        @{
+            Pattern = '\[FAIL\]'
+            Type = 'Test'
+            Summary = '[Test] Helix test failure'
+            Action = 'Check console log for failure details'
+            Transient = $false
         }
     )
     
@@ -406,6 +413,153 @@ function Get-FailureClassification {
         Summary = '[?] Unknown failure type'
         Action = 'Manual investigation required'
         Transient = $false
+    }
+}
+
+function Search-KnownIssues {
+    param(
+        [string]$TestName,
+        [string]$ErrorMessage,
+        [string]$Repository = "dotnet/runtime"
+    )
+    
+    # Search for known issues using the "Known Build Error" label
+    # This label is used by Build Analysis across dotnet repositories
+    
+    $knownIssues = @()
+    
+    # Check if gh CLI is available
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+        Write-Verbose "GitHub CLI not available for searching known issues"
+        return $knownIssues
+    }
+    
+    try {
+        # Extract search terms from test name and error message
+        $searchTerms = @()
+        
+        # First priority: Look for [FAIL] test names in the error message
+        # Pattern: "TestName [FAIL]" - the test name comes BEFORE [FAIL]
+        if ($ErrorMessage -match '(\S+)\s+\[FAIL\]') {
+            $failedTest = $Matches[1]
+            # Extract just the method name (after last .)
+            if ($failedTest -match '\.([^.]+)$') {
+                $searchTerms += $Matches[1]
+            }
+            # Also add the full test name
+            $searchTerms += $failedTest
+        }
+        
+        # Second priority: Extract test class/method from stack traces
+        if ($ErrorMessage -match 'at\s+(\w+\.\w+)\(' -and $searchTerms.Count -eq 0) {
+            $searchTerms += $Matches[1]
+        }
+        
+        if ($TestName) {
+            # Try to get the test method name from the work item
+            if ($TestName -match '\.([^.]+)$') {
+                $methodName = $Matches[1]
+                # Only add if it looks like a test name (not just "Tests")
+                if ($methodName -ne "Tests" -and $methodName.Length -gt 5) {
+                    $searchTerms += $methodName
+                }
+            }
+            # Also try the full test name if it's not too long and looks specific
+            if ($TestName.Length -lt 100 -and $TestName -notmatch '^System\.\w+\.Tests$') {
+                $searchTerms += $TestName
+            }
+        }
+        
+        # Third priority: Extract specific exception patterns (but not generic TimeoutException)
+        if ($ErrorMessage -and $searchTerms.Count -eq 0) {
+            # Look for specific exception types
+            if ($ErrorMessage -match '(System\.(?:InvalidOperation|ArgumentNull|FormatProvider)\w*Exception)') {
+                $searchTerms += $Matches[1]
+            }
+        }
+        
+        # Deduplicate and limit search terms
+        $searchTerms = $searchTerms | Select-Object -Unique | Select-Object -First 3
+        
+        foreach ($term in $searchTerms) {
+            if (-not $term) { continue }
+            
+            Write-Verbose "Searching for known issues with term: $term"
+            
+            # Search for open issues with the "Known Build Error" label
+            $results = gh issue list `
+                --repo $Repository `
+                --label "Known Build Error" `
+                --state open `
+                --search "$term" `
+                --limit 3 `
+                --json number,title,url 2>$null | ConvertFrom-Json
+            
+            if ($results) {
+                foreach ($issue in $results) {
+                    # Check if the title actually contains our search term (avoid false positives)
+                    if ($issue.title -match [regex]::Escape($term) -or $term.Length -gt 20) {
+                        $knownIssues += @{
+                            Number = $issue.number
+                            Title = $issue.title
+                            Url = $issue.url
+                            SearchTerm = $term
+                        }
+                    }
+                }
+            }
+            
+            # If we found issues, stop searching
+            if ($knownIssues.Count -gt 0) {
+                break
+            }
+        }
+        
+        # Deduplicate by issue number
+        $unique = @{}
+        foreach ($issue in $knownIssues) {
+            if (-not $unique.ContainsKey($issue.Number)) {
+                $unique[$issue.Number] = $issue
+            }
+        }
+        
+        return $unique.Values
+    }
+    catch {
+        Write-Verbose "Failed to search for known issues: $_"
+        return @()
+    }
+}
+
+function Show-ClassificationWithKnownIssues {
+    param(
+        [hashtable]$Classification,
+        [string]$TestName = "",
+        [string]$ErrorMessage = "",
+        [string]$Repository = $script:Repository
+    )
+    
+    if (-not $Classification) { return }
+    
+    # Show classification
+    Write-Host "`n  Classification: $($Classification.Summary)" -ForegroundColor Yellow
+    if ($Classification.Action) {
+        Write-Host "  Suggested action: $($Classification.Action)" -ForegroundColor Green
+    }
+    if ($Classification.Transient) {
+        Write-Host "  (This failure appears to be transient - retry may help)" -ForegroundColor Cyan
+    }
+    
+    # Search for known issues if we have a test name or error
+    if ($TestName -or $ErrorMessage) {
+        $knownIssues = Search-KnownIssues -TestName $TestName -ErrorMessage $ErrorMessage -Repository $Repository
+        if ($knownIssues -and $knownIssues.Count -gt 0) {
+            Write-Host "  Known Issues:" -ForegroundColor Magenta
+            foreach ($issue in $knownIssues) {
+                Write-Host "    #$($issue.Number): $($issue.Title)" -ForegroundColor Magenta
+                Write-Host "    $($issue.Url)" -ForegroundColor Gray
+            }
+        }
     }
 }
 
@@ -708,17 +862,9 @@ try {
                     if ($failureInfo) {
                         Write-Host $failureInfo -ForegroundColor White
                         
-                        # Classify the failure
+                        # Classify the failure and search for known issues
                         $classification = Get-FailureClassification -Errors @($failureInfo)
-                        if ($classification) {
-                            Write-Host "`n  Classification: $($classification.Summary)" -ForegroundColor Yellow
-                            if ($classification.Action) {
-                                Write-Host "  Suggested action: $($classification.Action)" -ForegroundColor Green
-                            }
-                            if ($classification.Transient) {
-                                Write-Host "  (This failure appears to be transient - retry may help)" -ForegroundColor Cyan
-                            }
-                        }
+                        Show-ClassificationWithKnownIssues -Classification $classification -TestName $WorkItem -ErrorMessage $failureInfo
                     }
                     else {
                         # Show last 50 lines if no failure pattern detected
@@ -859,13 +1005,7 @@ try {
                     if ($buildErrors.Count -gt 0) {
                         $classification = Get-FailureClassification -Errors $buildErrors
                         if ($classification -and $classification.Type -ne 'Unknown') {
-                            Write-Host "`n  Classification: $($classification.Summary)" -ForegroundColor Yellow
-                            if ($classification.Action) {
-                                Write-Host "  Suggested action: $($classification.Action)" -ForegroundColor Green
-                            }
-                            if ($classification.Transient) {
-                                Write-Host "  (This failure appears to be transient - retry may help)" -ForegroundColor Cyan
-                            }
+                            Show-ClassificationWithKnownIssues -Classification $classification -ErrorMessage ($buildErrors -join "`n")
                         }
                     }
                 }
@@ -920,22 +1060,22 @@ try {
                             foreach ($url in $helixUrls | Select-Object -First 3) {
                                 Write-Host "`n  $url" -ForegroundColor Gray
                                 
+                                # Extract work item name from URL for known issue search
+                                $workItemName = ""
+                                if ($url -match '/workitems/([^/]+)/console') {
+                                    $workItemName = $Matches[1]
+                                }
+                                
                                 $helixLog = Get-HelixConsoleLog -Url $url
                                 if ($helixLog) {
                                     $failureInfo = Format-TestFailure -LogContent $helixLog
                                     if ($failureInfo) {
                                         Write-Host $failureInfo -ForegroundColor White
                                         
-                                        # Classify the Helix failure
+                                        # Classify the Helix failure and search for known issues
                                         $classification = Get-FailureClassification -Errors @($failureInfo)
                                         if ($classification -and $classification.Type -ne 'Unknown') {
-                                            Write-Host "`n  Classification: $($classification.Summary)" -ForegroundColor Yellow
-                                            if ($classification.Action) {
-                                                Write-Host "  Suggested action: $($classification.Action)" -ForegroundColor Green
-                                            }
-                                            if ($classification.Transient) {
-                                                Write-Host "  (This failure appears to be transient - retry may help)" -ForegroundColor Cyan
-                                            }
+                                            Show-ClassificationWithKnownIssues -Classification $classification -TestName $workItemName -ErrorMessage $failureInfo
                                         }
                                     }
                                 }
@@ -992,16 +1132,10 @@ try {
                                 }
                             }
                             
-                            # Classify the failure
+                            # Classify the failure and search for known issues
                             $classification = Get-FailureClassification -Errors $buildErrors
                             if ($classification) {
-                                Write-Host "`n  Classification: $($classification.Summary)" -ForegroundColor Yellow
-                                if ($classification.Action) {
-                                    Write-Host "  Suggested action: $($classification.Action)" -ForegroundColor Green
-                                }
-                                if ($classification.Transient) {
-                                    Write-Host "  (This failure appears to be transient - retry may help)" -ForegroundColor Cyan
-                                }
+                                Show-ClassificationWithKnownIssues -Classification $classification -ErrorMessage ($buildErrors -join "`n")
                             }
                         }
                         else {
