@@ -767,54 +767,47 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
     switch (curAssertion.GetOp1().GetKind())
     {
         case O1K_LCLVAR:
-            printf("V%02u", curAssertion.GetOp1().GetLclNum());
-            if (!optLocalAssertionProp)
+            if (optLocalAssertionProp)
             {
-                printf(" ");
-                vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+                printf("lclvar V%02u", curAssertion.GetOp1().GetLclNum());
+            }
+            else
+            {
+                printf("lclvar " FMT_VN "", curAssertion.GetOp1().GetVN());
             }
             break;
 
         case O1K_VN:
-            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            printf("VN " FMT_VN "", curAssertion.GetOp1().GetVN());
             break;
 
         case O1K_ARR_BND:
-            printf("[idx:");
-            vnStore->vnDump(this, curAssertion.GetOp1().GetArrBndIndex());
-            printf(", len:");
-            vnStore->vnDump(this, curAssertion.GetOp1().GetArrBndLength());
-            printf("]");
+            printf("ArrBnd idx " FMT_VN " < len " FMT_VN "", curAssertion.GetOp1().GetArrBndIndex(),
+                   curAssertion.GetOp1().GetArrBndLength());
             break;
 
         case O1K_BOUND_OPER_BND:
-            printf("Oper_Bnd ");
-            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            printf("Oper_Bnd " FMT_VN "", curAssertion.GetOp1().GetVN());
             break;
 
         case O1K_BOUND_LOOP_BND:
-            printf("Loop_Bnd ");
-            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            printf("Loop_Bnd " FMT_VN "", curAssertion.GetOp1().GetVN());
             break;
 
         case O1K_CONSTANT_LOOP_BND:
-            printf("Const_Bnd ");
-            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            printf("Const_Bnd " FMT_VN "", curAssertion.GetOp1().GetVN());
             break;
 
         case O1K_CONSTANT_LOOP_BND_UN:
-            printf("Const_Bnd_Un ");
-            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            printf("Const_Bnd_Un " FMT_VN "", curAssertion.GetOp1().GetVN());
             break;
 
         case O1K_EXACT_TYPE:
-            printf("ExactType ");
-            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            printf("ExactType " FMT_VN "", curAssertion.GetOp1().GetVN());
             break;
 
         case O1K_SUBTYPE:
-            printf("SubType ");
-            vnStore->vnDump(this, curAssertion.GetOp1().GetVN());
+            printf("SubType " FMT_VN "", curAssertion.GetOp1().GetVN());
             break;
 
         default:
@@ -848,7 +841,7 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
     switch (curAssertion.GetOp2().GetKind())
     {
         case O2K_LCLVAR_COPY:
-            printf("V%02u", curAssertion.GetOp2().GetLclNum());
+            printf("lclvar V%02u", curAssertion.GetOp2().GetLclNum());
             break;
 
         case O2K_CONST_INT:
