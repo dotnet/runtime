@@ -319,6 +319,75 @@ function Get-AzDOBuildIdFromPR {
     return $buildIds
 }
 
+function Get-BuildAnalysisKnownIssues {
+    param([int]$PR)
+
+    # Check for gh CLI dependency
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+        Write-Verbose "GitHub CLI (gh) not available for Build Analysis check"
+        return @()
+    }
+
+    Write-Verbose "Fetching Build Analysis check for PR #$PR..."
+
+    try {
+        # Get the head commit SHA for the PR
+        $headSha = gh pr view $PR --repo $Repository --json headRefOid --jq '.headRefOid' 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Verbose "Failed to get PR head SHA: $headSha"
+            return @()
+        }
+
+        # Get the Build Analysis check run
+        $checkRuns = gh api "repos/$Repository/commits/$headSha/check-runs" --jq '.check_runs[] | select(.name == "Build Analysis") | .output' 2>&1
+        if ($LASTEXITCODE -ne 0 -or -not $checkRuns) {
+            Write-Verbose "No Build Analysis check found"
+            return @()
+        }
+
+        $output = $checkRuns | ConvertFrom-Json -ErrorAction SilentlyContinue
+        if (-not $output -or -not $output.text) {
+            Write-Verbose "Build Analysis check has no output text"
+            return @()
+        }
+
+        # Parse known issues from the output text
+        # Format: <a href="https://github.com/dotnet/runtime/issues/117164">Issue Title</a>
+        $knownIssues = @()
+        $issuePattern = '<a href="(https://github\.com/[^/]+/[^/]+/issues/(\d+))">([^<]+)</a>'
+        $matches = [regex]::Matches($output.text, $issuePattern)
+
+        foreach ($match in $matches) {
+            $issueUrl = $match.Groups[1].Value
+            $issueNumber = $match.Groups[2].Value
+            $issueTitle = $match.Groups[3].Value
+
+            # Avoid duplicates
+            if (-not ($knownIssues | Where-Object { $_.Number -eq $issueNumber })) {
+                $knownIssues += @{
+                    Number = $issueNumber
+                    Url = $issueUrl
+                    Title = $issueTitle
+                }
+            }
+        }
+
+        if ($knownIssues.Count -gt 0) {
+            Write-Host "`nBuild Analysis found $($knownIssues.Count) known issue(s):" -ForegroundColor Yellow
+            foreach ($issue in $knownIssues) {
+                Write-Host "  - #$($issue.Number): $($issue.Title)" -ForegroundColor Gray
+                Write-Host "    $($issue.Url)" -ForegroundColor DarkGray
+            }
+        }
+
+        return $knownIssues
+    }
+    catch {
+        Write-Verbose "Error fetching Build Analysis: $_"
+        return @()
+    }
+}
+
 function Get-AzDOBuildStatus {
     param([int]$Build)
 
@@ -1285,8 +1354,12 @@ try {
 
     # Get build ID(s) if using PR number
     $buildIds = @()
+    $knownIssuesFromBuildAnalysis = @()
     if ($PSCmdlet.ParameterSetName -eq 'PRNumber') {
         $buildIds = @(Get-AzDOBuildIdFromPR -PR $PRNumber)
+
+        # Check Build Analysis for known issues
+        $knownIssuesFromBuildAnalysis = @(Get-BuildAnalysisKnownIssues -PR $PRNumber)
     }
     else {
         $buildIds = @($BuildId)
@@ -1565,6 +1638,14 @@ if ($buildIds.Count -gt 1) {
     Write-Host "Analyzed $($buildIds.Count) builds" -ForegroundColor White
     Write-Host "Total failed jobs: $totalFailedJobs" -ForegroundColor Red
     Write-Host "Total local test failures: $totalLocalFailures" -ForegroundColor Red
+
+    if ($knownIssuesFromBuildAnalysis.Count -gt 0) {
+        Write-Host "`nKnown Issues (from Build Analysis):" -ForegroundColor Yellow
+        foreach ($issue in $knownIssuesFromBuildAnalysis) {
+            Write-Host "  - #$($issue.Number): $($issue.Title)" -ForegroundColor Gray
+            Write-Host "    $($issue.Url)" -ForegroundColor DarkGray
+        }
+    }
 }
 
 }
