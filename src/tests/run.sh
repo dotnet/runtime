@@ -203,6 +203,11 @@ do
     esac
 done
 
+# Set default for RunWithNode when using wasm architecture
+if [ "$buildArch" = "wasm" ] && [ -z "$RunWithNode" ]; then
+    export RunWithNode=1
+fi
+
 ################################################################################
 # Call run.py to run tests.
 ################################################################################
