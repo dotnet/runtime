@@ -12,5 +12,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IsATty", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IsATty(SafeFileHandle fd);
+
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IsATty", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool IsATty(IntPtr fd);
     }
 }

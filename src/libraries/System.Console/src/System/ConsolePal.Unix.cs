@@ -668,7 +668,7 @@ namespace System
         /// Gets whether the specified file descriptor was redirected.
         /// It's considered redirected if it doesn't refer to a terminal.
         /// </summary>
-        private static bool IsHandleRedirected(SafeFileHandle fd)
+        private static bool IsHandleRedirected(IntPtr fd)
         {
             return !Interop.Sys.IsATty(fd);
         }
@@ -679,7 +679,7 @@ namespace System
         /// </summary>
         public static bool IsInputRedirectedCore()
         {
-            return IsHandleRedirected(OpenStandardInputHandle());
+            return IsHandleRedirected(0);
         }
 
         /// <summary>Gets whether Console.Out is redirected.
@@ -687,7 +687,7 @@ namespace System
         /// </summary>
         public static bool IsOutputRedirectedCore()
         {
-            return IsHandleRedirected(OpenStandardOutputHandle());
+            return IsHandleRedirected(1);
         }
 
         /// <summary>Gets whether Console.Error is redirected.
@@ -695,7 +695,7 @@ namespace System
         /// </summary>
         public static bool IsErrorRedirectedCore()
         {
-            return IsHandleRedirected(OpenStandardErrorHandle());
+            return IsHandleRedirected(2);
         }
 
         /// <summary>Creates an encoding from the current environment.</summary>
