@@ -874,10 +874,13 @@ function Get-LocalTestFailures {
         }
         
         if ($testErrors.Count -gt 0) {
-            # This is a local test failure
+            # This is a local test failure - find the parent job for URL construction
+            $parentJob = $Timeline.records | Where-Object { $_.id -eq $task.parentId -and $_.type -eq "Job" } | Select-Object -First 1
+            
             $failure = @{
                 TaskName = $task.name
                 TaskId = $task.id
+                ParentJobId = if ($parentJob) { $parentJob.id } else { $task.parentId }
                 LogId = if ($task.log) { $task.log.id } else { $null }
                 Issues = $testErrors
                 TestRunUrls = @()
@@ -1213,6 +1216,13 @@ try {
         foreach ($failure in $localTestFailures) {
             Write-Host "`n--- $($failure.TaskName) ---" -ForegroundColor Cyan
             
+            # Show build and log links
+            $jobLogUrl = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId&view=logs&j=$($failure.ParentJobId)"
+            if ($failure.TaskId) {
+                $jobLogUrl += "&t=$($failure.TaskId)"
+            }
+            Write-Host "  Log: $jobLogUrl" -ForegroundColor Gray
+            
             # Show issues
             foreach ($issue in $failure.Issues) {
                 Write-Host "  $($issue.message)" -ForegroundColor Red
@@ -1368,7 +1378,8 @@ try {
                 
                 # Fetch and parse the build log for actual errors
                 if ($task.log) {
-                    Write-Host "  Fetching build log..." -ForegroundColor Gray
+                    $logUrl = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId&view=logs&j=$($job.id)&t=$($task.id)"
+                    Write-Host "  Log: $logUrl" -ForegroundColor Gray
                     $logContent = Get-BuildLog -Build $BuildId -LogId $task.log.id
                     
                     if ($logContent) {
