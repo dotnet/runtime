@@ -278,15 +278,19 @@ function Get-AzDOBuildIdFromPR {
     # Find the runtime build URL
     $runtimeCheck = $checksOutput | Select-String -Pattern "runtime\s+fail.*buildId=(\d+)" | Select-Object -First 1
     if ($runtimeCheck) {
-        if ($runtimeCheck -match "buildId=(\d+)") {
-            return [int]$Matches[1]
+        $buildIdMatch = [regex]::Match($runtimeCheck.ToString(), "buildId=(\d+)")
+        if ($buildIdMatch.Success) {
+            return [int]$buildIdMatch.Groups[1].Value
         }
     }
     
     # Try to find any failing build
     $anyBuild = $checksOutput | Select-String -Pattern "buildId=(\d+)" | Select-Object -First 1
-    if ($anyBuild -and $anyBuild -match "buildId=(\d+)") {
-        return [int]$Matches[1]
+    if ($anyBuild) {
+        $anyBuildMatch = [regex]::Match($anyBuild.ToString(), "buildId=(\d+)")
+        if ($anyBuildMatch.Success) {
+            return [int]$anyBuildMatch.Groups[1].Value
+        }
     }
     
     throw "Could not find Azure DevOps build for PR #$PR in $Repository"
@@ -874,7 +878,7 @@ function Get-LocalTestFailures {
             $failure = @{
                 TaskName = $task.name
                 TaskId = $task.id
-                LogId = $task.log.id
+                LogId = if ($task.log) { $task.log.id } else { $null }
                 Issues = $testErrors
                 TestRunUrls = @()
             }
@@ -1113,7 +1117,7 @@ try {
                 $failedItems = @()
                 foreach ($wi in $workItems | Select-Object -First 20) {
                     $details = Get-HelixWorkItemDetails -JobId $HelixJob -WorkItemName $wi.Name
-                    if ($details -and $details.ExitCode -ne 0) {
+                    if ($details -and $null -ne $details.ExitCode -and $details.ExitCode -ne 0) {
                         $failedItems += @{
                             Name = $wi.Name
                             ExitCode = $details.ExitCode
