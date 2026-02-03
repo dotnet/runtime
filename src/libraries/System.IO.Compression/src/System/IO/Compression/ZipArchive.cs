@@ -583,7 +583,7 @@ namespace System.IO.Compression
             }
             catch (EndOfStreamException ex)
             {
-                throw new InvalidDataException(SR.Format(SR.CentralDirectoryInvalid, ex));
+                throw new InvalidDataException(SR.CentralDirectoryInvalid, ex);
             }
             finally
             {
