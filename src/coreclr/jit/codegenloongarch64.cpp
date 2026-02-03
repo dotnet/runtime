@@ -7003,12 +7003,16 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     // For OSR, we must also adjust the SP to remove the Tier0 frame.
     if (compiler->opts.IsOSR())
     {
-        const int tier0FrameSize = compiler->info.compPatchpointInfo->TotalFrameSize();
-        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes\n", tier0FrameSize);
+        PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
+        const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
+        const int             fpLrSaveOffset = patchpointInfo->FpLrSaveOffset();
+        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes, FP/RA at offset %d\n", tier0FrameSize,
+                fpLrSaveOffset);
 
         // Restore FP/RA from Tier0's frame since we jumped (not called) to OSR method.
-        emit->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, 0);
-        emit->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, REGSIZE_BYTES);
+        // FP/RA are saved at fpLrSaveOffset from the current SP (top of Tier0's frame).
+        emit->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, fpLrSaveOffset);
+        emit->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, fpLrSaveOffset + REGSIZE_BYTES);
 
         if (emitter::isValidUimm11(tier0FrameSize))
         {

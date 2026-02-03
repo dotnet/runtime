@@ -45,6 +45,9 @@ struct PatchpointInfo
         m_keptAliveThisOffset     = -1;
         m_securityCookieOffset    = -1;
         m_monitorAcquiredOffset   = -1;
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        m_fpLrSaveOffset          = 0;
+#endif
     }
 
     // Copy
@@ -56,6 +59,9 @@ struct PatchpointInfo
         m_keptAliveThisOffset = original->m_keptAliveThisOffset;
         m_securityCookieOffset = original->m_securityCookieOffset;
         m_monitorAcquiredOffset = original->m_monitorAcquiredOffset;
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        m_fpLrSaveOffset = original->m_fpLrSaveOffset;
+#endif
 
         for (uint32_t i = 0; i < original->m_numberOfLocals; i++)
         {
@@ -216,6 +222,20 @@ struct PatchpointInfo
         m_tier0Version = ip;
     }
 
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // Offset from SP to saved FP/LR pair in the Tier0 frame.
+    // Used by OSR methods to restore FP/LR when directly jumping to OSR code.
+    int32_t FpLrSaveOffset() const
+    {
+        return m_fpLrSaveOffset;
+    }
+
+    void SetFpLrSaveOffset(int32_t offset)
+    {
+        m_fpLrSaveOffset = offset;
+    }
+#endif
+
 private:
     enum
     {
@@ -233,6 +253,9 @@ private:
     int32_t      m_monitorAcquiredOffset;
     int32_t      m_asyncExecutionContextOffset;
     int32_t      m_asyncSynchronizationContextOffset;
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    int32_t      m_fpLrSaveOffset;  // Offset from SP to saved FP/LR in Tier0 frame
+#endif
     int32_t      m_offsetAndExposureData[];
 };
 

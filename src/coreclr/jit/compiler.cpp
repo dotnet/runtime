@@ -5578,6 +5578,7 @@ void Compiler::generatePatchpointInfo()
     //
     const int totalFrameSize = codeGen->genTotalFrameSize();
     const int offsetAdjust   = codeGen->genSPtoFPdelta() - totalFrameSize;
+    const int fpLrSaveOffset = codeGen->genSPtoFPdelta();
 #else
     NYI("patchpoint info generation");
     const int offsetAdjust   = 0;
@@ -5585,6 +5586,11 @@ void Compiler::generatePatchpointInfo()
 #endif
 
     patchpointInfo->Initialize(info.compLocalsCount, totalFrameSize);
+
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    patchpointInfo->SetFpLrSaveOffset(fpLrSaveOffset);
+    JITDUMP("--OSR--- FP/LR save offset is %d\n", fpLrSaveOffset);
+#endif
 
     JITDUMP("--OSR--- Total Frame Size %d, local offset adjust is %d\n", patchpointInfo->TotalFrameSize(),
             offsetAdjust);

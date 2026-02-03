@@ -250,12 +250,15 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     //
     if (compiler->opts.IsOSR())
     {
-        PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
-        const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
-        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes\n", tier0FrameSize);
+        PatchpointInfo* const patchpointInfo  = compiler->info.compPatchpointInfo;
+        const int             tier0FrameSize  = patchpointInfo->TotalFrameSize();
+        const int             fpLrSaveOffset  = patchpointInfo->FpLrSaveOffset();
+        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes, FP/LR at offset %d\n", tier0FrameSize,
+                fpLrSaveOffset);
 
         // Restore FP/LR from Tier0's frame since we jumped (not called) to OSR method.
-        GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
+        // FP/LR are saved at fpLrSaveOffset from the current SP (top of Tier0's frame).
+        GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, fpLrSaveOffset);
 
         // Tier0 size may exceed simple immediate. We're in the epilog so not clear if we can
         // use a scratch reg. So just do two subtracts if necessary.
