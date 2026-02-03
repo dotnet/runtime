@@ -466,13 +466,34 @@ function Extract-BuildErrors {
         '\.pcm: No such file or directory',        # Clang module cache
         'EXEC\s*:\s*error\s*:.*',                  # Exec task errors
         'fatal error:.*',                          # Fatal errors (clang, etc)
+        ':\s*error:',                              # Clang/GCC errors (file.cpp:123: error:)
+        'undefined reference to',                  # Linker errors
+        'cannot find -l',                          # Linker missing library
+        'collect2: error:',                        # GCC linker wrapper errors
         '##\[error\].*'                            # AzDO error annotations (last - catch-all)
     )
 
     $combinedPattern = ($errorPatterns -join '|')
 
+    # Track if we only found MSBuild wrapper errors
+    $foundRealErrors = $false
+    $msbWrapperLines = @()
+
     for ($i = 0; $i -lt $lines.Count; $i++) {
         if ($lines[$i] -match $combinedPattern) {
+            # Skip MSBuild wrapper "exited with code" if we find real errors
+            if ($lines[$i] -match 'exited with code \d+') {
+                $msbWrapperLines += $i
+                continue
+            }
+
+            # Skip duplicate MSBuild errors (they often repeat)
+            if ($lines[$i] -match 'error MSB3073.*exited with code') {
+                continue
+            }
+
+            $foundRealErrors = $true
+
             # Clean up the line (remove timestamps, etc)
             $cleanLine = $lines[$i] -replace '^\d{4}-\d{2}-\d{2}T[\d:\.]+Z\s*', ''
             $cleanLine = $cleanLine -replace '##\[error\]', 'ERROR: '
@@ -490,6 +511,21 @@ function Extract-BuildErrors {
             }
 
             $errors += $cleanLine.Trim()
+        }
+    }
+
+    # If we only found MSBuild wrapper errors, show context around them
+    if (-not $foundRealErrors -and $msbWrapperLines.Count -gt 0) {
+        $wrapperLine = $msbWrapperLines[0]
+        # Look for real errors in the 50 lines before the wrapper error
+        $searchStart = [Math]::Max(0, $wrapperLine - 50)
+        for ($i = $searchStart; $i -lt $wrapperLine; $i++) {
+            $line = $lines[$i]
+            # Look for C++/clang/gcc style errors
+            if ($line -match ':\s*error:' -or $line -match 'fatal error:' -or $line -match 'undefined reference') {
+                $cleanLine = $line -replace '^\d{4}-\d{2}-\d{2}T[\d:\.]+Z\s*', ''
+                $errors += $cleanLine.Trim()
+            }
         }
     }
 
@@ -641,6 +677,27 @@ function Get-FailureClassification {
             Type = 'Test'
             Summary = '[Test] Helix test failure'
             Action = 'Check console log for failure details'
+            Transient = $false
+        },
+        @{
+            Pattern = "error: use of undeclared identifier|error: member initializer .* does not name|error: no member named|error: unknown type name"
+            Type = 'Build'
+            Summary = '[C++] Clang/GCC compilation error'
+            Action = 'Fix C++ code - likely missing or renamed identifier'
+            Transient = $false
+        },
+        @{
+            Pattern = 'undefined reference to|collect2: error:'
+            Type = 'Build'
+            Summary = '[C++] Linker error - undefined reference'
+            Action = 'Check for missing object files or libraries'
+            Transient = $false
+        },
+        @{
+            Pattern = 'fatal error:.*file not found|fatal error:.*No such file'
+            Type = 'Build'
+            Summary = '[C++] Missing header or file'
+            Action = 'Check include paths and file existence'
             Transient = $false
         }
     )
