@@ -946,6 +946,7 @@ try {
     # Report local test failures first (these may exist even without failed jobs)
     if ($localTestFailures.Count -gt 0) {
         Write-Host "`n=== Local Test Failures (non-Helix) ===" -ForegroundColor Yellow
+        Write-Host "Build: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Gray
         
         foreach ($failure in $localTestFailures) {
             Write-Host "`n--- $($failure.TaskName) ---" -ForegroundColor Cyan
@@ -1030,6 +1031,7 @@ try {
         }
         
         Write-Host "`n--- $($job.name) ---" -ForegroundColor Cyan
+        Write-Host "  Build: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId&view=logs&j=$($job.id)" -ForegroundColor Gray
         
         # Get Helix tasks for this job
         $helixTasks = Get-HelixJobInfo -Timeline $timeline -JobId $job.id
