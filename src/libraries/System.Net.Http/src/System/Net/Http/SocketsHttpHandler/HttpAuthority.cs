@@ -41,8 +41,9 @@ namespace System.Net.Http
             {
                 Debug.Assert(uri.HostNameType == UriHostNameType.Basic);
 
-                // This is not a DNS host and it contains non-ASCII characters that can't be Punycode encoded.
-                throw new HttpRequestException(SR.net_http_request_invalid_nonascii_host);
+                // This is not a DNS host and it contains non-ASCII characters.
+                // Uri failed to Punycode encode it, likely because one of the labels was too long for DNS.
+                throw new HttpRequestException(SR.net_http_request_invalid_host_punycode);
             }
 
             Port = port;
