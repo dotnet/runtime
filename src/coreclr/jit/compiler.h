@@ -7775,6 +7775,12 @@ public:
 
     struct AssertionDsc
     {
+        struct ArrBnd
+        {
+            ValueNum vnIdx;
+            ValueNum vnLen;
+        };
+
         struct AssertionDscOp1
         {
             friend struct AssertionDsc;
@@ -7785,11 +7791,7 @@ public:
             union
             {
                 unsigned lclNum;
-                struct ArrBnd
-                {
-                    ValueNum vnIdx;
-                    ValueNum vnLen;
-                } bnd;
+                ArrBnd   bnd;
             };
 
         public:
