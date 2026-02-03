@@ -649,17 +649,24 @@ namespace System.Reflection.Emit.Tests
                 // The method's parameter has a modreq; make sure it is added to the override's signature.
                 // See https://github.com/dotnet/runtime/issues/123857
                 tb.DefineMethodOverride(m, typeof(IMethodWithModifiers).GetMethod(nameof(IMethodWithModifiers.Run)));
-                var fooMethodParameter = m.DefineParameter(1, ParameterAttributes.In, "x");
-                fooMethodParameter.SetCustomAttribute(new CustomAttributeBuilder(typeof(IsReadOnlyAttribute).GetConstructor(types: [])!, []));
+                ParameterBuilder pb = m.DefineParameter(1, ParameterAttributes.In, "x");
+                pb.SetCustomAttribute(new CustomAttributeBuilder(typeof(IsReadOnlyAttribute).GetConstructor(types: [])!, []));
                 m.GetILGenerator().Emit(OpCodes.Ret);
                 tb.CreateType();
                 string assemblyPath = Path.Combine(dir.Path, $"{name.Name}.dll");
                 assemblyBuilder.Save(assemblyPath);
 
-                // Load the assembly and check that loading the type does not throw.
                 AssemblyLoadContext alc = new(nameof(SaveInterfaceOverrideWithCustomModifier), isCollectible: true);
-                Assembly loadedAsm = alc.LoadFromAssemblyPath(assemblyPath);
-                _ = loadedAsm.GetType(tb.Name, throwOnError: true);
+                try
+                {
+                    // Load the assembly and check that loading the type does not throw.
+                    Assembly loadedAsm = alc.LoadFromAssemblyPath(assemblyPath);
+                    _ = loadedAsm.GetType(tb.Name, throwOnError: true);
+                }
+                finally
+                {
+                    alc.Unload();
+                }
             }
         }
 
