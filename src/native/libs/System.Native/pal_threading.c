@@ -252,6 +252,7 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
 {
     assert_msg(false, "Futex is not supported on this platform", 0);
