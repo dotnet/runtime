@@ -12,6 +12,7 @@ namespace System.IO.Compression.Tests
     /// <summary>
     /// Conformance tests for ZipCryptoStream encryption (write-only stream).
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
     public sealed class ZipCryptoEncryptionStreamConformanceTests : StandaloneStreamConformanceTests
     {
         private const string TestPassword = "test-password";
@@ -68,6 +69,7 @@ namespace System.IO.Compression.Tests
     /// <summary>
     /// Conformance tests for ZipCryptoStream decryption (read-only stream).
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
     public sealed class ZipCryptoDecryptionStreamConformanceTests : StandaloneStreamConformanceTests
     {
         private const string TestPassword = "test-password";

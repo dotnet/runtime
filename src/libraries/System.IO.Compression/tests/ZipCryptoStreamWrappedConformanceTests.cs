@@ -14,6 +14,7 @@ namespace System.IO.Compression.Tests
     /// Wrapped connected stream conformance tests for ZipCryptoStream.
     /// Tests encryption → decryption data flow through connected streams.
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
     public class ZipCryptoStreamWrappedConformanceTests : WrappingConnectedStreamConformanceTests
     {
         private const string TestPassword = "test-password";

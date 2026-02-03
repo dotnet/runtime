@@ -12,6 +12,7 @@ namespace System.IO.Compression.Tests
     /// <summary>
     /// Conformance tests for WinZipAesStream encryption (AES-128, write-only stream).
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
     public sealed class WinZipAes128EncryptionStreamConformanceTests : WinZipAesEncryptionStreamConformanceTests
     {
         protected override int KeySizeBits => 128;
@@ -20,6 +21,7 @@ namespace System.IO.Compression.Tests
     /// <summary>
     /// Conformance tests for WinZipAesStream encryption (AES-256, write-only stream).
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
     public sealed class WinZipAes256EncryptionStreamConformanceTests : WinZipAesEncryptionStreamConformanceTests
     {
         protected override int KeySizeBits => 256;
@@ -89,6 +91,7 @@ namespace System.IO.Compression.Tests
     /// <summary>
     /// Conformance tests for WinZipAesStream decryption (AES-128, read-only stream).
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
     public sealed class WinZipAes128DecryptionStreamConformanceTests : WinZipAesDecryptionStreamConformanceTests
     {
         protected override int KeySizeBits => 128;
@@ -97,6 +100,7 @@ namespace System.IO.Compression.Tests
     /// <summary>
     /// Conformance tests for WinZipAesStream decryption (AES-256, read-only stream).
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
     public sealed class WinZipAes256DecryptionStreamConformanceTests : WinZipAesDecryptionStreamConformanceTests
     {
         protected override int KeySizeBits => 256;
