@@ -914,14 +914,32 @@ namespace System.PrivateUri.Tests
             // a) We can test each method without it being impacted by implicit caching of a previous method's results
             // b) xunit's implicit formatting of arguments doesn't similarly disturb the results
 
-            yield return new object[] { () => new Uri("http://test"), "http://test/" };
-            yield return new object[] { () => new Uri("   http://test   "), "http://test/" };
-            yield return new object[] { () => new Uri("/test", UriKind.Relative), "/test" };
-            yield return new object[] { () => new Uri("test", UriKind.Relative), "test" };
-            yield return new object[] { () => new Uri("http://foo/bar/baz#frag"), "http://foo/bar/baz#frag" };
-            yield return new object[] { () => new Uri(new Uri(@"http://www.contoso.com/"), "catalog/shownew.htm?date=today"), "http://www.contoso.com/catalog/shownew.htm?date=today" };
-            yield return new object[] { () => new Uri("http://test/a/b/c/d/../../e/f"), "http://test/a/b/e/f" };
-            yield return new object[] { () => { var uri = new Uri("http://test/a/b/c/d/../../e/f"); uri.ToString(); return uri; }, "http://test/a/b/e/f" };
+            (Func<Uri>, string)[] testData =
+            [
+                (() => new Uri("http://test"), "http://test/"),
+                (() => new Uri("   http://test   "), "http://test/"),
+                (() => new Uri("/test", UriKind.Relative), "/test"),
+                (() => new Uri("test", UriKind.Relative), "test"),
+                (() => new Uri("http://foo/bar/baz#frag"), "http://foo/bar/baz#frag"),
+                (() => new Uri(new Uri(@"http://www.contoso.com/"), "catalog/shownew.htm?date=today"), "http://www.contoso.com/catalog/shownew.htm?date=today"),
+                (() => new Uri("http://test/a/b/c/d/../../e/f"), "http://test/a/b/e/f"),
+                (() => { var uri = new Uri("http://test/a/b/c/d/../../e/f"); uri.ToString(); return uri; }, "http://test/a/b/e/f"),
+                (() => new Uri("pa%41th", UriKind.Relative), "paAth"),
+                (() => new Uri("pa\uFFFFth", UriKind.Relative), "pa%EF%BF%BFth"),
+            ];
+
+            foreach ((Func<Uri> factory, string expected) in testData)
+            {
+                yield return [factory, expected];
+
+                yield return [() =>
+                {
+                    Uri uri = factory();
+                    Assert.True(Uri.TryCreate(uri.OriginalString, uri.IsAbsoluteUri ? UriKind.Absolute : UriKind.Relative, out Uri? uri2));
+                    Assert.Same(uri.OriginalString, uri2.OriginalString);
+                    return uri2;
+                }, expected];
+            }
         }
 
         [Theory]
