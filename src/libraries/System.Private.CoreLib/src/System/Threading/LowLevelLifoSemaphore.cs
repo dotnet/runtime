@@ -236,7 +236,7 @@ namespace System.Threading
                 }
 
                 // There is no signal and we are trying to block, so far unsuccessfully.
-                // Spin a bit and eventually before retrying.
+                // Spin a bit and eventually yield before retrying.
                 // Note! We could end up doing sched_yield here. Although it should be very rare.
                 sw.SpinOnce(sleep1Threshold: -1);
 
