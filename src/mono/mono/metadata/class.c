@@ -4325,12 +4325,15 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 		}
 
 		if (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR) {
-			if (mono_metadata_signature_equal (m_type_data_get_method (klass_byval_arg), m_type_data_get_method (oklass_byval_arg))) {
-				*result = TRUE;
+			if (m_class_get_byval_arg (oklass)->type != MONO_TYPE_FNPTR) {
+				*result = FALSE;
 				return;
 			}
-
-			*result = FALSE;
+			/* Use type comparison with IGNORE_CMODS to treat function pointers with
+			 * different calling convention modifiers (e.g. Cdecl vs Stdcall) as equal,
+			 * while still distinguishing managed vs unmanaged calling conventions.
+			 * See https://github.com/dotnet/runtime/issues/90308 */
+			*result = mono_metadata_type_equal_full (klass_byval_arg, oklass_byval_arg, MONO_TYPE_EQ_FLAG_IGNORE_CMODS);
 			return;
 		}
 

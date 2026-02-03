@@ -573,6 +573,14 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, false_bb);
 			} else if (mono_class_is_interface (m_class_get_cast_class (klass))) {
 				mini_emit_iface_class_cast (cfg, eclass_reg, m_class_get_cast_class (klass), false_bb, is_null_bb);
+			} else if (m_class_get_class_kind (m_class_get_cast_class (klass)) == MONO_CLASS_POINTER) {
+				/* For function pointer arrays, fall back to runtime check since
+				 * different MonoClass objects may represent semantically equivalent
+				 * function pointer types. See https://github.com/dotnet/runtime/issues/90308 */
+				MonoInst *move, *res_inst;
+				res_inst = emit_isinst_with_cache (cfg, src, klass, context_used);
+				EMIT_NEW_UNALU (cfg, move, OP_MOVE, res_reg, res_inst->dreg);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 			} else {
 				/* the is_null_bb target simply copies the input register to the output */
 				mini_emit_isninst_cast (cfg, eclass_reg, m_class_get_cast_class (klass), false_bb, is_null_bb);
