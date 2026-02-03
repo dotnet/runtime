@@ -10,7 +10,7 @@ This skill helps you investigate build and test failures in dotnet/runtime CI by
 ## When to Use This Skill
 
 Use this skill when asked to:
-- Investigate test failures for a specific dotnet/runtime PR
+- Investigate build and test failures for a specific dotnet/runtime PR (if asked about either build failures or test failures, investigate both)
 - Analyze a specific Helix work item failure given a job ID and work item name
 - Extract console logs and artifacts from a failing Helix job
 - Determine why a specific CI build leg failed
