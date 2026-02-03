@@ -46,6 +46,7 @@ protected:
         SsaLiveness       = false,
         MarkRetBufferDefs = false,
         ComputeMemoryLiveness = false,
+        IsLIR = false,
     };
 
     Liveness(Compiler* compiler)
@@ -109,7 +110,7 @@ void Liveness<TLiveness>::Run()
     {
         printf("*************** In Liveness::Run()\n");
 
-        if (m_compiler->compRationalIRForm)
+        if (TLiveness::IsLIR)
         {
             m_compiler->lvaTableDump();
         }
@@ -1042,7 +1043,7 @@ void Liveness<TLiveness>::MarkUseDef(GenTreeLclVarCommon* tree)
         // loads aliasing it across a store to it.
         assert(!varDsc->IsAddressExposed());
 
-        if (m_compiler->compRationalIRForm && (varDsc->lvType != TYP_STRUCT) && !varTypeIsMultiReg(varDsc))
+        if (TLiveness::IsLIR && (varDsc->lvType != TYP_STRUCT) && !varTypeIsMultiReg(varDsc))
         {
             // If this is an enregisterable variable that is not marked doNotEnregister and not defined via address,
             // we should only see direct references (not ADDRs).
@@ -2038,7 +2039,7 @@ bool Liveness<TLiveness>::ComputeLifeUntrackedLocal(VARSET_TP&           life,
 
     // We have accurate ref counts when running late liveness so we can eliminate
     // some stores if the lhs local has a ref count of 1.
-    if (isDef && m_compiler->compRationalIRForm && (varDsc.lvRefCnt() == 1) && !varDsc.lvPinned)
+    if (isDef && TLiveness::IsLIR && (varDsc.lvRefCnt() == 1) && !varDsc.lvPinned)
     {
         if (varDsc.lvIsStructField)
         {
@@ -2141,7 +2142,7 @@ bool Liveness<TLiveness>::RemoveDeadStore(GenTree**           pTree,
                                           bool*               pStmtInfoDirty,
                                           bool* pStoreRemoved DEBUGARG(bool* treeModf))
 {
-    assert(!m_compiler->compRationalIRForm);
+    assert(!TLiveness::IsLIR);
 
     // Vars should have already been checked for address exposure by this point.
     assert(!varDsc->IsAddressExposed());
@@ -2843,6 +2844,7 @@ void Compiler::fgLocalVarLiveness()
                 SsaLiveness       = false,
                 MarkRetBufferDefs = true,
                 ComputeMemoryLiveness = false,
+                IsLIR = true,
             };
 
             LIRLiveness(Compiler* comp)
@@ -2863,6 +2865,7 @@ void Compiler::fgLocalVarLiveness()
                 SsaLiveness       = true,
                 MarkRetBufferDefs = false,
                 ComputeMemoryLiveness = true,
+                IsLIR = false,
             };
 
             HIRLiveness(Compiler* comp)
@@ -2906,6 +2909,7 @@ PhaseStatus Compiler::fgEarlyLiveness()
             SsaLiveness       = false,
             MarkRetBufferDefs = false,
             ComputeMemoryLiveness = false,
+            IsLIR = false,
         };
 
         EarlyLiveness(Compiler* comp)
