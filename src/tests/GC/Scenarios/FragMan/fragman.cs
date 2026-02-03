@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using TestLibrary;
 /* FragMan
  *
  * This test creates an array of FragNodes, then reorganizes them into a tree.
@@ -20,6 +21,7 @@ namespace DefaultNamespace {
         internal FragNode fnM = null;
         internal FragNode [] CvA_FNodes;
 
+        [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {

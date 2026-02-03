@@ -504,7 +504,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             }
 
             LowerCast(node);
-            break;
+            return nextNode;
         }
 
         case GT_BITCAST:
@@ -1975,7 +1975,7 @@ void Lowering::InsertPutArgReg(GenTree** argNode, const ABIPassingSegment& regis
 
     InsertBitCastIfNecessary(argNode, registerSegment);
 
-#ifdef HAS_FIXED_REGISTER_SET
+#if HAS_FIXED_REGISTER_SET
     GenTree* putArg = comp->gtNewPutArgReg(genActualType(*argNode), *argNode, registerSegment.GetRegister());
     BlockRange().InsertAfter(*argNode, putArg);
     *argNode = putArg;
@@ -3155,6 +3155,11 @@ size_t Lowering::MarkCallPutArgAndFieldListNodes(GenTreeCall* call)
 //
 size_t Lowering::MarkPutArgAndFieldListNodes(GenTree* node)
 {
+#if !HAS_FIXED_REGISTER_SET
+    if (!node->OperIsPutArg() && !node->OperIsFieldList())
+        return 0;
+#endif
+
     assert(node->OperIsPutArg() || node->OperIsFieldList());
 
     assert((node->gtLIRFlags & LIR::Flags::Mark) == 0);
@@ -4826,7 +4831,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     {
         TryLowerCselToCSOp(select, cond);
     }
-    else if (trueVal->IsCnsIntOrI() && falseVal->IsCnsIntOrI())
+    else if (trueVal->IsCnsIntOrI() || falseVal->IsCnsIntOrI())
     {
         TryLowerCnsIntCselToCinc(select, cond);
     }
@@ -9243,13 +9248,13 @@ void Lowering::CheckCallArg(GenTree* arg)
 
             for (GenTreeFieldList::Use& use : list->Uses())
             {
-                assert(use.GetNode()->OperIsPutArg());
+                assert(!HAS_FIXED_REGISTER_SET || use.GetNode()->OperIsPutArg());
             }
         }
         break;
 
         default:
-            assert(arg->OperIsPutArg());
+            assert(!HAS_FIXED_REGISTER_SET || arg->OperIsPutArg());
             break;
     }
 }
@@ -12115,7 +12120,9 @@ void Lowering::FinalizeOutgoingArgSpace()
     // Finish computing the outgoing args area size
     //
     // Need to make sure the MIN_ARG_AREA_FOR_CALL space is added to the frame if:
-    // 1. there are calls to THROW_HELPER methods.
+    // 1. there may be calls to THROW_HELPER methods. Note when opts.compDbgCode is true,
+    //    we simply assume we may be making throw helper calls. Typically we've already
+    //    added an explicit just my code call so this doesn't increase the frame size.
     // 2. we are generating profiling Enter/Leave/TailCall hooks. This will ensure
     //    that even methods without any calls will have outgoing arg area space allocated.
     // 3. We will be generating calls to PInvoke helpers. TODO: This shouldn't be required because
@@ -12128,7 +12135,7 @@ void Lowering::FinalizeOutgoingArgSpace()
     // the outgoing arg space if the method makes any calls.
     if (m_outgoingArgSpaceSize < MIN_ARG_AREA_FOR_CALL)
     {
-        if (comp->compUsesThrowHelper || comp->compIsProfilerHookNeeded() ||
+        if (comp->opts.compDbgCode || comp->compUsesThrowHelper || comp->compIsProfilerHookNeeded() ||
             (comp->compMethodRequiresPInvokeFrame() && !comp->opts.ShouldUsePInvokeHelpers()) ||
             comp->getNeedsGSSecurityCookie())
         {
