@@ -6,6 +6,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Test_finalizedest
 {
@@ -43,6 +44,7 @@ public class Test_finalizedest
         }
     }
 
+    [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

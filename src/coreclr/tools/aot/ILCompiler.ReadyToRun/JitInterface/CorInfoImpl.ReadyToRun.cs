@@ -25,6 +25,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using System.Text;
 using System.Runtime.CompilerServices;
+using ILCompiler.ReadyToRun.TypeSystem;
 
 namespace Internal.JitInterface
 {
@@ -136,12 +137,17 @@ namespace Internal.JitInterface
         public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, object context, TypeDesc devirtualizedMethodOwner = null)
         {
             Debug.Assert(!method.IsUnboxingThunk());
-            Debug.Assert(!method.IsAsyncVariant());
             Method = method;
             Token = token;
             ConstrainedType = constrainedType;
             Unboxing = unboxing;
             OwningType = GetMethodTokenOwningType(this, constrainedType, context, devirtualizedMethodOwner, out OwningTypeNotDerivedFromToken);
+            if (method.IsAsync && method.IsAsyncVariant() && token.Module is MutableModule)
+            {
+                var ecmaMethod = (EcmaMethod)method.GetTypicalMethodDefinition().GetPrimaryMethodDesc();
+                Token = new (ecmaMethod.Module, ecmaMethod.Handle);
+                OwningTypeNotDerivedFromToken = true;
+            }
         }
 
         private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, TypeDesc constrainedType, object context, TypeDesc devirtualizedMethodOwner, out bool owningTypeNotDerivedFromToken)
@@ -558,7 +564,7 @@ namespace Internal.JitInterface
 
         public static bool ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport instructionSetSupport, MethodDesc method)
         {
-            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
+            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition().GetPrimaryMethodDesc() as EcmaMethod;
 
             var metadataReader = ecmaMethod.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
@@ -1285,6 +1291,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
                 // For x86 tailcall where helper is required we need runtime JIT.
                 case CorInfoHelpFunc.CORINFO_HELP_TAILCALL:
+                // DirectOnThreadLocalData helper is used at runtime during R2R fixup resolution, not during R2R compilation
+                case CorInfoHelpFunc.CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE:
                     throw new RequiresRuntimeJitException(ftnNum.ToString());
 
                 default:
@@ -1410,22 +1418,17 @@ namespace Internal.JitInterface
 
                 if (resultDef is MethodDesc resultMethod)
                 {
-                    if (resultMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
-                        resultMethod = rawPinvoke.Target;
-                    if (resultMethod is AsyncMethodVariant asyncVariant)
-                        resultMethod = asyncVariant.Target;
-
                     // It's okay to strip the instantiation away because we don't need a MethodSpec
                     // token - SignatureBuilder will generate the generic method signature
                     // using instantiation parameters from the MethodDesc entity.
-                    resultMethod = resultMethod.GetTypicalMethodDefinition();
+                    resultMethod = resultMethod.GetTypicalMethodDefinition().GetPrimaryMethodDesc();
 
-                    Debug.Assert(resultMethod is EcmaMethod);
-                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType))
+                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(resultMethod.OwningType))
                     {
                         ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(resultMethod, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
                         return result;
                     }
+                    Debug.Assert(resultMethod is EcmaMethod);
                     token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultMethod).Handle);
                     module = ((EcmaMethod)resultMethod).Module;
                 }
@@ -1506,13 +1509,22 @@ namespace Internal.JitInterface
             {
                 ref CORINFO_EH_CLAUSE clause = ref _ehClauses[i];
                 int clauseOffset = (int)EHInfoFields.Length * sizeof(uint) * i;
-                Array.Copy(BitConverter.GetBytes((uint)clause.Flags), 0, ehInfoData, clauseOffset + (int)EHInfoFields.Flags * sizeof(uint), sizeof(uint));
+                CORINFO_EH_CLAUSE_FLAGS flags = clause.Flags;
+                uint classTokenOrOffset = clause.ClassTokenOrOffset;
+                if (flags == CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_NONE
+                    && MethodBeingCompiled.IsAsyncThunk()
+                    && ((TypeDesc)ResolveTokenInScope(_compilation.GetMethodIL(MethodBeingCompiled), MethodBeingCompiled, (mdToken)classTokenOrOffset)).IsWellKnownType(WellKnownType.Exception))
+                {
+                    flags |= CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_R2R_SYSTEM_EXCEPTION;
+                    classTokenOrOffset = 0;
+                }
+                Array.Copy(BitConverter.GetBytes((uint)flags), 0, ehInfoData, clauseOffset + (int)EHInfoFields.Flags * sizeof(uint), sizeof(uint));
                 Array.Copy(BitConverter.GetBytes((uint)clause.TryOffset), 0, ehInfoData, clauseOffset + (int)EHInfoFields.TryOffset * sizeof(uint), sizeof(uint));
                 // JIT in fact returns the end offset in the length field
                 Array.Copy(BitConverter.GetBytes((uint)(clause.TryLength)), 0, ehInfoData, clauseOffset + (int)EHInfoFields.TryEnd * sizeof(uint), sizeof(uint));
                 Array.Copy(BitConverter.GetBytes((uint)clause.HandlerOffset), 0, ehInfoData, clauseOffset + (int)EHInfoFields.HandlerOffset * sizeof(uint), sizeof(uint));
                 Array.Copy(BitConverter.GetBytes((uint)(clause.HandlerLength)), 0, ehInfoData, clauseOffset + (int)EHInfoFields.HandlerEnd * sizeof(uint), sizeof(uint));
-                Array.Copy(BitConverter.GetBytes((uint)clause.ClassTokenOrOffset), 0, ehInfoData, clauseOffset + (int)EHInfoFields.ClassTokenOrOffset * sizeof(uint), sizeof(uint));
+                Array.Copy(BitConverter.GetBytes(classTokenOrOffset), 0, ehInfoData, clauseOffset + (int)EHInfoFields.ClassTokenOrOffset * sizeof(uint), sizeof(uint));
             }
             return new ObjectNode.ObjectData(ehInfoData, Array.Empty<Relocation>(), alignment: 1, definedSymbols: Array.Empty<ISymbolDefinitionNode>());
         }
@@ -3220,9 +3232,30 @@ namespace Internal.JitInterface
                 _inlinedMethods.Add(inlinee);
 
                 var typicalMethod = inlinee.GetTypicalMethodDefinition();
-                if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod) &&
+
+                if ((typicalMethod.IsAsyncVariant() || typicalMethod.IsAsync || typicalMethod.IsAsyncThunk()) && !_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod))
+                {
+                    // TODO: fix this restriction in runtime async
+                    // Disable async methods in cross module inlines for now, we need to trigger the CheckILBodyFixupSignature in the right situations, and that hasn't been implemented
+                    // yet. Currently, we'll correctly trigger the _ilBodiesNeeded logic below, but we also need to avoid triggering the ILBodyFixupSignature for the async thunks, but we ALSO need to make
+                    // sure we generate the CheckILBodyFixupSignature for the actual runtime-async body in which case I think the typicalMethod will be an AsyncVariantMethod, which doesn't appear
+                    // to be handled here. This check is here in the place where I believe we actually would behave incorrectly, but we also have a check in CrossModuleInlineable which disallows 
+                    // the cross module inline of async methods currently.
+                    throw new Exception("Inlining async methods is not supported in ReadyToRun compilation.");
+                }
+
+                MethodIL methodIL = _compilation.GetMethodIL(typicalMethod);
+                if (methodIL is ILStubMethodIL ilStubMethodIL && ilStubMethodIL.StubILHasGeneratedTokens)
+                {
+                    // If a method is implemented by an IL Stub, then we may need to defer creation of the IL body that
+                    // we can really emit into the final file.
+                    _ilBodiesNeeded = _ilBodiesNeeded ?? new List<EcmaMethod>();
+                    _ilBodiesNeeded.Add((EcmaMethod)typicalMethod);
+                }
+                else if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod) &&
                     typicalMethod is EcmaMethod ecmaMethod)
                 {
+                    // TODO, when we implement the async variant logic we'll need to detect generating the ILBodyFixupSignature here
                     Debug.Assert(_compilation.CompilationModuleGroup.CrossModuleInlineable(typicalMethod) ||
                                  _compilation.CompilationModuleGroup.IsNonVersionableWithILTokensThatDoNotNeedTranslation(typicalMethod));
                     bool needsTokenTranslation = !_compilation.CompilationModuleGroup.IsNonVersionableWithILTokensThatDoNotNeedTranslation(typicalMethod);
@@ -3240,7 +3273,7 @@ namespace Internal.JitInterface
                     // 2. If at any time, the set of methods that are inlined includes a method which has an IL body without
                     //    tokens that are useable in compilation, record that information, and once the multi-threaded portion
                     //    of the build finishes, it will then compute the IL bodies for those methods, then run the compilation again.
-                    MethodIL methodIL = _compilation.GetMethodIL(typicalMethod);
+                    
                     if (needsTokenTranslation && !(methodIL is IMethodTokensAreUseableInCompilation) && methodIL is EcmaMethodIL)
                     {
                         // We may have already acquired the right type of MethodIL here, or be working with a method that is an IL Intrinsic

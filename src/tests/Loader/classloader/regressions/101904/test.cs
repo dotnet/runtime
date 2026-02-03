@@ -7,6 +7,7 @@
 // In the end, a MyType<string,int> should be assignable to an IFoo<string> or an IFoo<int>.
 using System;
 using Xunit;
+using TestLibrary;
 
 public interface IFoo<T>{
 }
@@ -19,6 +20,7 @@ public class MyType<S,T> : MyBaseType<S>, IFoo<T>{
 
 public class CMain
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

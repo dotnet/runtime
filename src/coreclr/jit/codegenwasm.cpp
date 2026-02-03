@@ -13,10 +13,14 @@
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
 static const instruction INS_I_sub   = INS_i64_sub;
+static const instruction INS_I_le_u  = INS_i64_le_u;
+static const instruction INS_I_gt_u  = INS_i64_gt_u;
 #else  // !TARGET_64BIT
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
 static const instruction INS_I_sub   = INS_i32_sub;
+static const instruction INS_I_le_u  = INS_i32_le_u;
+static const instruction INS_I_gt_u  = INS_i32_gt_u;
 #endif // !TARGET_64BIT
 
 void CodeGen::genMarkLabelsForCodegen()
@@ -114,16 +118,6 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 {
     JITDUMP("*************** In genHomeRegisterParams()\n");
-
-    if (GetStackPointerReg() == REG_NA)
-    {
-        // We didn't see any local or argument references, so there's nothing to spill.
-        // TODO-WASM: debug codegen would likely spill all the user args anyways.
-        //
-        JITDUMP("  No local references -- skipping parameter homing\n");
-        assert(!isFramePointerUsed());
-        return;
-    }
 
     auto spillParam = [this](unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& segment) {
         assert(segment.IsPassedInRegister());
@@ -505,12 +499,20 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForNegNot(treeNode->AsOp());
             break;
 
+        case GT_NULLCHECK:
+            genCodeForNullCheck(treeNode->AsIndir());
+            break;
+
         case GT_IND:
             genCodeForIndir(treeNode->AsIndir());
             break;
 
         case GT_STOREIND:
             genCodeForStoreInd(treeNode->AsStoreInd());
+            break;
+
+        case GT_CALL:
+            genCall(treeNode->AsCall());
             break;
 
         default:
@@ -932,6 +934,37 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 {
     genConsumeOperands(treeNode);
 
+    // wasm stack is
+    // divisor (top)
+    // dividend (next)
+    // ...
+    // TODO-WASM: To check for exception, we will have to spill these to
+    // internal registers along the way, like so:
+    //
+    // ... push dividend
+    // tee.local $temp1
+    // ... push divisor
+    // tee.local $temp2
+    // ... exception checks (using $temp1 and $temp2; will introduce flow)
+    // div/mod op
+
+    if (!varTypeIsFloating(treeNode->TypeGet()))
+    {
+        ExceptionSetFlags exSetFlags = treeNode->OperExceptions(compiler);
+
+        // TODO-WASM:(AnyVal / 0) => DivideByZeroException
+        //
+        if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+        {
+        }
+
+        // TODO-WASM: (MinInt / -1) => ArithmeticException
+        //
+        if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+        {
+        }
+    }
+
     instruction ins;
     switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
     {
@@ -987,45 +1020,61 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 //
 void CodeGen::genCodeForConstant(GenTree* treeNode)
 {
-    instruction    ins;
-    cnsval_ssize_t bits;
+    instruction    ins  = INS_none;
+    cnsval_ssize_t bits = 0;
     var_types      type = treeNode->TypeIs(TYP_REF, TYP_BYREF) ? TYP_I_IMPL : treeNode->TypeGet();
     static_assert(sizeof(cnsval_ssize_t) >= sizeof(double));
 
-    switch (type)
+    GenTreeIntConCommon* icon = nullptr;
+    if ((type == TYP_INT) || (type == TYP_LONG))
     {
-        case TYP_INT:
+        icon = treeNode->AsIntConCommon();
+        if (icon->ImmedValNeedsReloc(compiler))
         {
-            ins                      = INS_i32_const;
-            GenTreeIntConCommon* con = treeNode->AsIntConCommon();
-            bits                     = con->IntegralValue();
-            break;
+            // WASM-TODO: Generate reloc for this handle
+            ins  = INS_I_const;
+            bits = 0;
         }
-        case TYP_LONG:
+        else
         {
-            ins                      = INS_i64_const;
-            GenTreeIntConCommon* con = treeNode->AsIntConCommon();
-            bits                     = con->IntegralValue();
-            break;
+            bits = icon->IntegralValue();
         }
-        case TYP_FLOAT:
+    }
+
+    if (ins == INS_none)
+    {
+        switch (type)
         {
-            ins                  = INS_f32_const;
-            GenTreeDblCon* con   = treeNode->AsDblCon();
-            double         value = con->DconValue();
-            memcpy(&bits, &value, sizeof(double));
-            break;
+            case TYP_INT:
+            {
+                ins = INS_i32_const;
+                assert(FitsIn<INT32>(bits));
+                break;
+            }
+            case TYP_LONG:
+            {
+                ins = INS_i64_const;
+                break;
+            }
+            case TYP_FLOAT:
+            {
+                ins                  = INS_f32_const;
+                GenTreeDblCon* con   = treeNode->AsDblCon();
+                double         value = con->DconValue();
+                memcpy(&bits, &value, sizeof(double));
+                break;
+            }
+            case TYP_DOUBLE:
+            {
+                ins                  = INS_f64_const;
+                GenTreeDblCon* con   = treeNode->AsDblCon();
+                double         value = con->DconValue();
+                memcpy(&bits, &value, sizeof(double));
+                break;
+            }
+            default:
+                unreached();
         }
-        case TYP_DOUBLE:
-        {
-            ins                  = INS_f64_const;
-            GenTreeDblCon* con   = treeNode->AsDblCon();
-            double         value = con->DconValue();
-            memcpy(&bits, &value, sizeof(double));
-            break;
-        }
-        default:
-            unreached();
     }
 
     // The IF_ for the selected instruction, i.e. IF_F64, determines how these bits are emitted
@@ -1144,6 +1193,48 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 
     GetEmitter()->emitIns(ins);
     genProduceReg(tree);
+}
+
+//---------------------------------------------------------------------
+// genCodeForNullCheck - generate code for a GT_NULLCHECK node
+//
+// Arguments:
+//    tree - the GT_NULLCHECK node
+//
+// Notes:
+//    If throw helper calls are being emitted inline, we need
+//    to wrap the resulting codegen in a block/end pair.
+//
+void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
+{
+    genConsumeAddress(tree->Addr());
+
+    // TODO-WASM: refactor once we have implemented other cases invoking throw helpers
+    if (compiler->fgUseThrowHelperBlocks())
+    {
+        Compiler::AddCodeDsc* const add = compiler->fgGetExcptnTarget(SCK_NULL_CHECK, compiler->compCurBB);
+
+        if (add == nullptr)
+        {
+            NYI_WASM("Missing null check demand");
+        }
+
+        assert(add != nullptr);
+        assert(add->acdUsed);
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
+        GetEmitter()->emitIns(INS_I_le_u);
+        inst_JMP(EJ_jmpif, add->acdDstBlk);
+    }
+    else
+    {
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
+        GetEmitter()->emitIns(INS_I_le_u);
+        GetEmitter()->emitIns(INS_if);
+        // TODO-WASM: codegen for the call instead of unreachable
+        // genEmitHelperCall(compiler->acdHelper(SCK_NULL_CHECK), 0, EA_UNKNOWN);
+        GetEmitter()->emitIns(INS_unreachable);
+        GetEmitter()->emitIns(INS_end);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1300,6 +1391,160 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
 
     genUpdateLife(tree);
+}
+
+//------------------------------------------------------------------------
+// genCall: Produce code for a GT_CALL node
+//
+void CodeGen::genCall(GenTreeCall* call)
+{
+    if (call->NeedsNullCheck())
+    {
+        NYI_WASM("Insert nullchecks for calls that need it in lowering");
+    }
+
+    assert(!call->IsTailCall());
+
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
+    {
+        genConsumeReg(arg.GetEarlyNode());
+    }
+
+    for (CallArg& arg : call->gtArgs.LateArgs())
+    {
+        genConsumeReg(arg.GetLateNode());
+    }
+
+    genCallInstruction(call);
+    genProduceReg(call);
+}
+
+//------------------------------------------------------------------------
+// genCallInstruction - Generate instructions necessary to transfer control to the call.
+//
+// Arguments:
+//    call - the GT_CALL node
+//
+void CodeGen::genCallInstruction(GenTreeCall* call)
+{
+    EmitCallParams params;
+    params.isJump      = call->IsFastTailCall();
+    params.hasAsyncRet = call->IsAsync();
+
+    // We need to propagate the debug information to the call instruction, so we can emit
+    // an IL to native mapping record for the call, to support managed return value debugging.
+    // We don't want tail call helper calls that were converted from normal calls to get a record,
+    // so we skip this hash table lookup logic in that case.
+    if (compiler->opts.compDbgInfo && compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
+    {
+        DebugInfo di;
+        (void)compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
+        params.debugInfo = di;
+    }
+
+#ifdef DEBUG
+    // Pass the call signature information down into the emitter so the emitter can associate
+    // native call sites with the signatures they were generated from.
+    if (!call->IsHelperCall())
+    {
+        params.sigInfo = call->callSig;
+    }
+#endif // DEBUG
+    GenTree* target = getCallTarget(call, &params.methHnd);
+
+    if (target != nullptr)
+    {
+        // Codegen should have already evaluated our target node (last) and pushed it onto the stack,
+        //  ready for call_indirect. Consume it.
+        genConsumeReg(target);
+
+        params.callType = EC_INDIR_R;
+        genEmitCallWithCurrentGC(params);
+    }
+    else
+    {
+        // If we have no target and this is a call with indirection cell then
+        // we do an optimization where we load the call address directly from
+        // the indirection cell instead of duplicating the tree. In BuildCall
+        // we ensure that get an extra register for the purpose. Note that for
+        // CFG the call might have changed to
+        // CORINFO_HELP_DISPATCH_INDIRECT_CALL in which case we still have the
+        // indirection cell but we should not try to optimize.
+        WellKnownArg indirectionCellArgKind = WellKnownArg::None;
+        if (!call->IsHelperCall(compiler, CORINFO_HELP_DISPATCH_INDIRECT_CALL))
+        {
+            indirectionCellArgKind = call->GetIndirectionCellArgKind();
+        }
+
+        if (indirectionCellArgKind != WellKnownArg::None)
+        {
+            assert(call->IsR2ROrVirtualStubRelativeIndir());
+
+            params.callType = EC_INDIR_R;
+            // params.ireg     = targetAddrReg;
+            genEmitCallWithCurrentGC(params);
+        }
+        else
+        {
+            // Generate a direct call to a non-virtual user defined or helper method
+            assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
+
+            assert(call->gtEntryPoint.addr == NULL);
+
+            if (call->IsHelperCall())
+            {
+                NYI_WASM("Call helper statically without indirection cell");
+                CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(params.methHnd);
+                noway_assert(helperNum != CORINFO_HELP_UNDEF);
+
+                CORINFO_CONST_LOOKUP helperLookup = compiler->compGetHelperFtn(helperNum);
+                params.addr                       = helperLookup.addr;
+                assert(helperLookup.accessType == IAT_VALUE);
+            }
+            else
+            {
+                // Direct call to a non-virtual user function.
+                params.addr = call->gtDirectCallAddress;
+            }
+
+            params.callType = EC_FUNC_TOKEN;
+            genEmitCallWithCurrentGC(params);
+        }
+    }
+}
+
+/*****************************************************************************
+ *  Emit a call to a helper function.
+ */
+void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
+{
+    EmitCallParams params;
+
+    CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
+    params.ireg                         = callTargetReg;
+
+    if (helperFunction.accessType == IAT_VALUE)
+    {
+        params.callType = EC_FUNC_TOKEN;
+        params.addr     = helperFunction.addr;
+    }
+    else
+    {
+        params.addr = nullptr;
+        assert(helperFunction.accessType == IAT_PVALUE);
+        void* pAddr = helperFunction.addr;
+
+        // Push indirection cell address onto stack for genEmitCall to dereference
+        GetEmitter()->emitIns_I(INS_i32_const, emitActualTypeSize(TYP_I_IMPL), (cnsval_ssize_t)pAddr);
+
+        params.callType = EC_INDIR_R;
+    }
+
+    params.methHnd = compiler->eeFindHelper(helper);
+    params.argSize = argSize;
+    params.retSize = retSize;
+
+    genEmitCallWithCurrentGC(params);
 }
 
 //------------------------------------------------------------------------
