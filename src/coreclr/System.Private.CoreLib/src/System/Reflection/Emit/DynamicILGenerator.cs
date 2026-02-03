@@ -482,7 +482,7 @@ namespace System.Reflection.Emit
             return sig;
         }
 
-        private static SignatureHelper GetMethodSigHelper(Type functionPointerType)
+        private SignatureHelper GetMethodSigHelper(Type functionPointerType)
         {
             Type retType = functionPointerType.GetFunctionPointerReturnType();
             Type[] retTypeModReqs = retType.GetRequiredCustomModifiers();
@@ -491,15 +491,20 @@ namespace System.Reflection.Emit
             Type[][] paramModReqs = new Type[paramTypes.Length][];
             Type[][] paramModOpts = new Type[paramTypes.Length][];
 
+            retType = retType.UnderlyingSystemType;
+
             for (int i = 0; i < paramTypes.Length; i++)
             {
                 paramModReqs[i] = paramTypes[i].GetRequiredCustomModifiers();
                 paramModOpts[i] = paramTypes[i].GetOptionalCustomModifiers();
+                paramTypes[i] = paramTypes[i].UnderlyingSystemType;
             }
+
+            MdSigCallingConvention callConv = MdSigCallingConvention.Default;
 
             if (functionPointerType.IsUnmanagedFunctionPointer)
             {
-                MdSigCallingConvention callConv = MdSigCallingConvention.Unmanaged;
+                callConv = MdSigCallingConvention.Unmanaged;
 
                 if (functionPointerType.GetFunctionPointerCallingConventions() is Type[] conventions && conventions.Length == 1)
                 {
@@ -519,21 +524,11 @@ namespace System.Reflection.Emit
                             break;
                     }
                 }
-
-                SignatureHelper sig = SignatureHelper.GetMethodSigHelper(null, callConv, retType, retTypeModReqs, retTypeModOpts);
-                sig.AddArguments(paramTypes, paramModReqs, paramModOpts);
-                return sig;
             }
 
-            return SignatureHelper.GetMethodSigHelper(
-                scope: null,
-                CallingConventions.Standard,
-                retType,
-                retTypeModReqs,
-                retTypeModOpts,
-                paramTypes,
-                paramModReqs,
-                paramModOpts);
+            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(m_scope, callConv, retType, retTypeModReqs, retTypeModOpts);
+            sig.AddArguments(m_scope, paramTypes, paramModReqs, paramModOpts);
+            return sig;
         }
 
         private void AddParameters(SignatureHelper sigHelp, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)

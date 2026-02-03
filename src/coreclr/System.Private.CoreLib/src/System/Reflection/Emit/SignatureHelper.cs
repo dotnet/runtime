@@ -106,10 +106,15 @@ namespace System.Reflection.Emit
         }
 
         internal static SignatureHelper GetMethodSigHelper(
-            Module? mod, MdSigCallingConvention callingConvention,
-            Type returnType, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
+            DynamicScope dynamicScope,
+            MdSigCallingConvention callingConvention,
+            Type returnType,
+            Type[]? requiredCustomModifiers,
+            Type[]? optionalCustomModifiers)
         {
-            return new SignatureHelper(mod, callingConvention, returnType, requiredCustomModifiers, optionalCustomModifiers);
+            SignatureHelper sig = new SignatureHelper(null, callingConvention);
+            sig.AddDynamicArgument(dynamicScope, returnType, requiredCustomModifiers, optionalCustomModifiers, false);
+            return sig;
         }
 
         public static SignatureHelper GetLocalVarSigHelper()
@@ -736,9 +741,10 @@ namespace System.Reflection.Emit
             return temp;
         }
 
-        internal void AddDynamicArgument(DynamicScope dynamicScope, Type clsArgument, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
+        internal void AddDynamicArgument(DynamicScope dynamicScope, Type clsArgument, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, bool incArgCount = true)
         {
-            IncrementArgCounts();
+            if (incArgCount)
+                IncrementArgCounts();
 
             Debug.Assert(clsArgument != null);
 
@@ -789,6 +795,15 @@ namespace System.Reflection.Emit
             }
 
             AddOneArgTypeHelper(clsArgument);
+        }
+
+        internal void AddArguments(DynamicScope dynamicScope, Type[]? arguments, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
+        {
+            if (arguments is null)
+                return;
+
+            for (int i = 0; i < arguments.Length; i++)
+                AddDynamicArgument(dynamicScope, arguments[i], requiredCustomModifiers?[i], optionalCustomModifiers?[i]);
         }
 
         #endregion

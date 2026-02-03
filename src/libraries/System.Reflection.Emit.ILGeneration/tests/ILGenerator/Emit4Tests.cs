@@ -236,7 +236,7 @@ namespace System.Reflection.Emit.Tests
                 returnType,
                 parameterTypes: [typeof(string)],
                 isUnmanaged: true,
-                callingConventions: [typeof(CallConvCdecl)]));
+                callingConventions: [typeof(CallConvCdecl), typeof(CallConvMemberFunction)]));
             il.Emit(OpCodes.Ret);
 
             StringReverseCdecl del = new(StringReverse);
