@@ -7989,45 +7989,40 @@ public:
             return m_op2;
         }
 
-        AssertionDscOp2& GetOp2()
-        {
-            return m_op2;
-        }
-
         bool IsCheckedBoundArithBound() const
         {
-            return (CanPropEqualOrNotEqual() && m_op1.KindIs(O1K_BOUND_OPER_BND));
+            return (CanPropEqualOrNotEqual() && GetOp1().KindIs(O1K_BOUND_OPER_BND));
         }
         bool IsCheckedBoundBound() const
         {
-            return (CanPropEqualOrNotEqual() && m_op1.KindIs(O1K_BOUND_LOOP_BND));
+            return (CanPropEqualOrNotEqual() && GetOp1().KindIs(O1K_BOUND_LOOP_BND));
         }
         bool IsConstantBound() const
         {
-            return (CanPropEqualOrNotEqual() && m_op1.KindIs(O1K_CONSTANT_LOOP_BND));
+            return (CanPropEqualOrNotEqual() && GetOp1().KindIs(O1K_CONSTANT_LOOP_BND));
         }
         bool IsConstantBoundUnsigned() const
         {
-            return (CanPropEqualOrNotEqual() && m_op1.KindIs(O1K_CONSTANT_LOOP_BND_UN));
+            return (CanPropEqualOrNotEqual() && GetOp1().KindIs(O1K_CONSTANT_LOOP_BND_UN));
         }
         bool IsBoundsCheckNoThrow() const
         {
-            return (KindIs(OAK_NO_THROW) && m_op1.KindIs(O1K_ARR_BND));
+            return (KindIs(OAK_NO_THROW) && GetOp1().KindIs(O1K_ARR_BND));
         }
 
         bool IsCopyAssertion() const
         {
-            return (KindIs(OAK_EQUAL) && m_op1.KindIs(O1K_LCLVAR) && m_op2.KindIs(O2K_LCLVAR_COPY));
+            return (KindIs(OAK_EQUAL) && GetOp1().KindIs(O1K_LCLVAR) && GetOp2().KindIs(O2K_LCLVAR_COPY));
         }
 
         bool IsConstantInt32Assertion() const
         {
-            return CanPropEqualOrNotEqual() && m_op2.KindIs(O2K_CONST_INT) && m_op1.KindIs(O1K_LCLVAR, O1K_VN);
+            return CanPropEqualOrNotEqual() && GetOp2().KindIs(O2K_CONST_INT) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN);
         }
 
         bool CanPropLclVar() const
         {
-            return KindIs(OAK_EQUAL) && m_op1.KindIs(O1K_LCLVAR);
+            return KindIs(OAK_EQUAL) && GetOp1().KindIs(O1K_LCLVAR);
         }
 
         bool CanPropEqualOrNotEqual() const
@@ -8037,19 +8032,19 @@ public:
 
         bool CanPropNonNull() const
         {
-            return KindIs(OAK_NOT_EQUAL) && m_op1.KindIs(O1K_LCLVAR, O1K_VN) && m_op2.IsNullConstant();
+            return KindIs(OAK_NOT_EQUAL) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN) && GetOp2().IsNullConstant();
         }
 
         bool CanPropBndsCheck() const
         {
-            return m_op1.KindIs(O1K_ARR_BND, O1K_VN);
+            return GetOp1().KindIs(O1K_ARR_BND, O1K_VN);
         }
 
         bool CanPropSubRange() const
         {
             if (KindIs(OAK_SUBRANGE))
             {
-                assert(m_op1.KindIs(O1K_LCLVAR));
+                assert(GetOp1().KindIs(O1K_LCLVAR));
                 return true;
             }
             return false;
@@ -8079,58 +8074,58 @@ public:
 
         bool HasSameOp1(const AssertionDsc& that, bool vnBased) const
         {
-            if (!m_op1.KindIs(that.m_op1.GetKind()))
+            if (!GetOp1().KindIs(that.GetOp1().GetKind()))
             {
                 return false;
             }
-            else if (m_op1.KindIs(O1K_ARR_BND))
+            else if (GetOp1().KindIs(O1K_ARR_BND))
             {
                 assert(vnBased);
-                return (m_op1.GetArrBndIndex() == that.m_op1.GetArrBndIndex()) &&
-                       (m_op1.GetArrBndLength() == that.m_op1.GetArrBndLength());
+                return (GetOp1().GetArrBndIndex() == that.GetOp1().GetArrBndIndex()) &&
+                       (GetOp1().GetArrBndLength() == that.GetOp1().GetArrBndLength());
             }
-            else if (m_op1.KindIs(O1K_VN))
+            else if (GetOp1().KindIs(O1K_VN))
             {
                 assert(vnBased);
-                return (m_op1.GetVN() == that.m_op1.GetVN());
+                return (GetOp1().GetVN() == that.GetOp1().GetVN());
             }
             else
             {
-                return ((vnBased && (m_op1.GetVN() == that.m_op1.GetVN())) ||
-                        (!vnBased && (m_op1.GetLclNum() == that.m_op1.GetLclNum())));
+                return ((vnBased && (GetOp1().GetVN() == that.GetOp1().GetVN())) ||
+                        (!vnBased && (GetOp1().GetLclNum() == that.GetOp1().GetLclNum())));
             }
         }
 
         bool HasSameOp2(const AssertionDsc& that, bool vnBased) const
         {
             assert(HasOp2());
-            if (!m_op2.KindIs(that.m_op2.GetKind()))
+            if (!GetOp2().KindIs(that.GetOp2().GetKind()))
             {
                 return false;
             }
 
-            switch (m_op2.GetKind())
+            switch (GetOp2().GetKind())
             {
                 case O2K_CONST_INT:
-                    return ((m_op2.GetIntConstant() == that.m_op2.GetIntConstant()) &&
-                            (m_op2.GetIconFlag() == that.m_op2.GetIconFlag()));
+                    return ((GetOp2().GetIntConstant() == that.GetOp2().GetIntConstant()) &&
+                            (GetOp2().GetIconFlag() == that.GetOp2().GetIconFlag()));
 
                 case O2K_CONST_DOUBLE:
                     // exact match because of positive and negative zero.
-                    return (memcmp(&m_op2.m_dconVal, &that.m_op2.m_dconVal, sizeof(double)) == 0);
+                    return (memcmp(&GetOp2().m_dconVal, &that.GetOp2().m_dconVal, sizeof(double)) == 0);
 
                 case O2K_ZEROOBJ:
                     return true;
 
                 case O2K_LCLVAR_COPY:
-                    return m_op2.GetLclNum() == that.m_op2.GetLclNum();
+                    return GetOp2().GetLclNum() == that.GetOp2().GetLclNum();
 
                 case O2K_SUBRANGE:
-                    return m_op2.GetIntegralRange().Equals(that.m_op2.GetIntegralRange());
+                    return GetOp2().GetIntegralRange().Equals(that.GetOp2().GetIntegralRange());
 
                 case O2K_INVALID:
                 default:
-                    assert(!"Unexpected value for m_op2.m_kind in AssertionDsc.");
+                    assert(!"Unexpected value for GetOp2().m_kind in AssertionDsc.");
                     break;
             }
 
@@ -8139,7 +8134,7 @@ public:
 
         bool Complementary(const AssertionDsc& that, bool vnBased) const
         {
-            return ComplementaryKind(m_assertionKind, that.m_assertionKind) && HasSameOp1(that, vnBased) &&
+            return ComplementaryKind(GetKind(), that.GetKind()) && HasSameOp1(that, vnBased) &&
                    HasSameOp2(that, vnBased);
         }
 
@@ -8161,7 +8156,7 @@ public:
             }
 
             // OAK_NO_THROW is the only kind of assertion where m_op2 is unused.
-            assert(m_op2.KindIs(O2K_INVALID));
+            assert(GetOp2().KindIs(O2K_INVALID));
             return true;
         }
 
