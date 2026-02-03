@@ -13005,7 +13005,7 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
 
         if (insOptsPostIndex(opt))
         {
-            printf(operStr);
+            printf("%s", operStr);
         }
 
         if (insOptsIndexed(opt))
@@ -13419,7 +13419,7 @@ void emitter::emitDispInsHelp(
                     printf("@RWD%02u", doffs);
 
                 if (imm != 0)
-                    printf("%+Id", imm);
+                    printf("%+zd", (size_t)imm);
             }
             else
             {
