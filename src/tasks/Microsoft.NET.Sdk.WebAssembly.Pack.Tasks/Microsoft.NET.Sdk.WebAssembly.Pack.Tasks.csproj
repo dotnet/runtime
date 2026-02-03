@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <NoWarn>$(NoWarn),CA1050,CA1850,CA1845,CA1859,CA1866,CS8632,NU5128</NoWarn>
+    <NoWarn>$(NoWarn),CA1050,CA1850,CA1845,CA1859,CS8632,NU5128</NoWarn>
     <RootNamespace>Microsoft.NET.Sdk.WebAssembly</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
