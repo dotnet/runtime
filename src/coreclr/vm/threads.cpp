@@ -5676,12 +5676,9 @@ void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightU
 
 void CheckRegDisplaySP (REGDISPLAY *pRD)
 {
-// on wasm the SP is address to interpreter stack, which is located on heap and not on C runtime stack
-// WASM-TODO: update this when we will have codegen
-// For FEATURE_INTERPRETER, the SP can also point to interpreter stack memory which is outside native stack bounds.
-// Skip validation in these cases as the interpreter uses heap-allocated frame structures.
-// TODO: Figure this out without disabling the check entirely.
-#if !defined(TARGET_WASM) && !defined(FEATURE_INTERPRETER)
+    // on wasm the SP is address to interpreter stack, which is located on heap and not on C runtime stack
+    // WASM-TODO: update this when we will have codegen
+#if !defined(TARGET_WASM)
     if (pRD->SP && pRD->_pThread)
     {
 #ifndef NO_FIXED_STACK_LIMIT
@@ -5689,7 +5686,7 @@ void CheckRegDisplaySP (REGDISPLAY *pRD)
 #endif // NO_FIXED_STACK_LIMIT
         _ASSERTE(pRD->_pThread->IsExecutingOnAltStack() || PTR_VOID(pRD->SP) <  pRD->_pThread->GetCachedStackBase());
     }
-#endif // !TARGET_WASM && !FEATURE_INTERPRETER
+#endif // !TARGET_WASM
 }
 
 #endif // DEBUG_REGDISPLAY
