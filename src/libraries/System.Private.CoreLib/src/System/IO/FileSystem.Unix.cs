@@ -674,14 +674,14 @@ namespace System.IO
 
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
-            ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
+            ValueStringBuilder sb = new(stackalloc char[Interop.DefaultPathBufferSize]);
             sb.Append(linkPath);
 
             string? linkTarget = Interop.Sys.ReadLink(linkPath);
             if (linkTarget == null)
             {
-                sb.Dispose();
                 Interop.Error error = Interop.Sys.GetLastError();
+                sb.Dispose();
                 // Not a link, return null
                 if (error == Interop.Error.EINVAL)
                 {

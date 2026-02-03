@@ -9,16 +9,9 @@ using System.Threading;
 
 namespace System.Net.Security
 {
-    [EventSource(Name = NetSecurityTelemetryName)]
-    internal sealed class NetSecurityTelemetry : EventSource
+    [EventSource(Name = "System.Net.Security")]
+    internal sealed partial class NetSecurityTelemetry : EventSource
     {
-        private const string NetSecurityTelemetryName = "System.Net.Security";
-
-        public NetSecurityTelemetry()
-            : base(NetSecurityTelemetryName, EventSourceSettings.EtwManifestEventFormat)
-        {
-        }
-
         private const string ActivitySourceName = "Experimental.System.Net.Security";
         private const string ActivityName = ActivitySourceName + ".TlsHandshake";
 

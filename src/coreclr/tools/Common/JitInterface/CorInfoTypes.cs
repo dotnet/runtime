@@ -326,22 +326,27 @@ namespace Internal.JitInterface
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct AllocMemChunk
+    {
+        // Alignment of the chunk. Must be a power of two with the following restrictions:
+        // - For the hot code chunk the max supported alignment is 32.
+        // - For the cold code chunk the value must always be 1.
+        // - For read-only data chunks the max supported alignment is 64.
+        public uint alignment;
+        public uint size;
+        public CorJitAllocMemFlag flags;
+
+        // out
+        public byte* block;
+        public byte* blockRW;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public unsafe struct AllocMemArgs
     {
-        // Input arguments
-        public uint hotCodeSize;
-        public uint coldCodeSize;
-        public uint roDataSize;
+        public AllocMemChunk* chunks;
+        public uint chunksCount;
         public uint xcptnsCount;
-        public CorJitAllocMemFlag flag;
-
-        // Output arguments
-        public void* hotCodeBlock;
-        public void* hotCodeBlockRW;
-        public void* coldCodeBlock;
-        public void* coldCodeBlockRW;
-        public void* roDataBlock;
-        public void* roDataBlockRW;
     }
 
     // Flags computed by a runtime compiler
@@ -438,6 +443,7 @@ namespace Internal.JitInterface
                                                    CORINFO_GENERICS_CTXT_FROM_METHODDESC |
                                                    CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
         CORINFO_GENERICS_CTXT_KEEP_ALIVE = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
+        CORINFO_ASYNC_SAVE_CONTEXTS = 0x00000200, // Runtime async method must save and restore contexts
     }
 
     // These are used to detect array methods as NamedIntrinsic in JIT importer,
@@ -458,6 +464,47 @@ namespace Internal.JitInterface
         IAT_PVALUE,     // The value needs to be accessed via an       indirection
         IAT_PPVALUE,    // The value needs to be accessed via a double indirection
         IAT_RELPVALUE   // The value needs to be accessed via a relative indirection
+    }
+
+    public enum CorInfoReloc
+    {
+        NONE,
+
+        // General relocation types
+        DIRECT,                                // Direct/absolute pointer sized address
+        RELATIVE32,                            // 32-bit relative address from byte following reloc
+
+        // Arm64 relocs
+        ARM64_BRANCH26,                        // Arm64: B, BL
+        ARM64_PAGEBASE_REL21,                  // ADRP
+        ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+        // Linux arm64
+        ARM64_LIN_TLSDESC_ADR_PAGE21,
+        ARM64_LIN_TLSDESC_LD64_LO12,
+        ARM64_LIN_TLSDESC_ADD_LO12,
+        ARM64_LIN_TLSDESC_CALL,
+        // Windows arm64
+        ARM64_WIN_TLS_SECREL_HIGH12A,          // ADD high 12-bit offset for tls
+        ARM64_WIN_TLS_SECREL_LOW12A,           // ADD low 12-bit offset for tls
+
+        // Windows x64
+        AMD64_WIN_SECREL,
+        // Linux x64
+        AMD64_LIN_TLSGD,
+
+        // Arm32 relocs
+        ARM32_THUMB_BRANCH24,                  // Thumb2: based B, BL
+        ARM32_THUMB_MOV32,                     // Thumb2: based MOVW/MOVT
+        ARM32_THUMB_MOV32_PCREL,               // Thumb2: based MOVW/MOVT
+
+        // LoongArch64 relocs
+        LOONGARCH64_PC,                        // LoongArch64: pcalau12i+imm12
+        LOONGARCH64_JIR,                       // LoongArch64: pcaddu18i+jirl
+
+        // RISCV64 relocs
+        RISCV64_CALL_PLT,                      // RiscV64: auipc + jalr
+        RISCV64_PCREL_I,                       // RiscV64: auipc + I-type
+        RISCV64_PCREL_S,                       // RiscV64: auipc + S-type
     }
 
     public enum CorInfoGCType
@@ -624,6 +671,7 @@ namespace Internal.JitInterface
         CORINFO_EH_CLAUSE_FINALLY = 0x0002, // This clause is a finally clause
         CORINFO_EH_CLAUSE_FAULT = 0x0004, // This clause is a fault clause
         CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one.
+        CORINFO_EH_CLAUSE_R2R_SYSTEM_EXCEPTION = 0x0020, // R2R only: This clause catches System.Exception
     };
 
     public struct CORINFO_EH_CLAUSE
@@ -738,12 +786,10 @@ namespace Internal.JitInterface
     // to guide the memory allocation for the code, readonly data, and read-write data
     public enum CorJitAllocMemFlag
     {
-        CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will be use the normal alignment
-        CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN = 0x00000001, // The code will be 16-byte aligned
-        CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
-        CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
-        CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN = 0x00000008, // The read-only data will be 32-byte aligned
-        CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN = 0x00000010, // The read-only data will be 64-byte aligned
+        CORJIT_ALLOCMEM_HOT_CODE = 1,
+        CORJIT_ALLOCMEM_COLD_CODE = 2,
+        CORJIT_ALLOCMEM_READONLY_DATA = 4,
+        CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE = 8,
     }
 
     public enum CorJitFuncKind
@@ -810,6 +856,16 @@ namespace Internal.JitInterface
         public CORINFO_HELPER_ARG args3;
     }
 
+    public enum CorInfoArch
+    {
+        CORINFO_ARCH_X86,
+        CORINFO_ARCH_X64,
+        CORINFO_ARCH_ARM,
+        CORINFO_ARCH_ARM64,
+        CORINFO_ARCH_LOONGARCH64,
+        CORINFO_ARCH_RISCV64,
+        CORINFO_ARCH_WASM32,
+    }
 
     public enum CORINFO_OS
     {
@@ -894,6 +950,7 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* captureContinuationContextMethHnd;
         public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
+        public CORINFO_METHOD_STRUCT_* restoreContextsOnSuspensionMethHnd;
     }
 
     // Flags passed from JIT to runtime.
@@ -1069,7 +1126,7 @@ namespace Internal.JitInterface
     {
         CORINFO_DEVIRTUALIZATION_UNKNOWN,                              // no details available
         CORINFO_DEVIRTUALIZATION_SUCCESS,                              // devirtualization was successful
-        CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class was canonical
+        CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class or method was canonical
         CORINFO_DEVIRTUALIZATION_FAILED_COM,                           // object class was com
         CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
         CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found
@@ -1105,7 +1162,7 @@ namespace Internal.JitInterface
         // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
         // - detail describes the computation done by the jit host
         // - isInstantiatingStub is set to TRUE if the devirtualized method is a method instantiation stub
-        // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
+        // - needsMethodContext is set TRUE if the devirtualized method may require a method context
         //     (in which case the method handle and context will be a generic method)
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
@@ -1115,8 +1172,8 @@ namespace Internal.JitInterface
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
         public byte _isInstantiatingStub;
         public bool isInstantiatingStub { get { return _isInstantiatingStub != 0; } set { _isInstantiatingStub = value ? (byte)1 : (byte)0; } }
-        public byte _wasArrayInterfaceDevirt;
-        public bool wasArrayInterfaceDevirt { get { return _wasArrayInterfaceDevirt != 0; } set { _wasArrayInterfaceDevirt = value ? (byte)1 : (byte)0; } }
+        public byte _needsMethodContext;
+        public bool needsMethodContext { get { return _needsMethodContext != 0; } set { _needsMethodContext = value ? (byte)1 : (byte)0; } }
     }
 
     //----------------------------------------------------------------------------
@@ -1409,6 +1466,7 @@ namespace Internal.JitInterface
         CORJIT_SKIPPED = unchecked((int)0x80000004),
         CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005),
         CORJIT_IMPLLIMITATION = unchecked((int)0x80000006),
+        CORJIT_R2R_UNSUPPORTED = unchecked((int)0x80000007),
     };
 
     public enum TypeCompareState

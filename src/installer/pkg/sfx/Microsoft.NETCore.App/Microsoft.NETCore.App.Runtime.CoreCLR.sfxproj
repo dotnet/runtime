@@ -32,6 +32,12 @@
     <UseLocalCrossgen2Pack>$(PublishReadyToRun)</UseLocalCrossgen2Pack>
   </PropertyGroup>
 
+  <!-- Use the Mach-O format for Apple mobile platforms as we can't load native code from PE files on these platforms -->
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+    <ForcePublishReadyToRunComposite>true</ForcePublishReadyToRunComposite>
+    <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
+  </PropertyGroup>
+
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
 
   <PropertyGroup>
@@ -52,6 +58,10 @@
                      TargetOS="$(_CrossGenTargetOS)"
                      PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
     </ItemGroup>
+
+    <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+      <PublishReadyToRunEmitSymbols>false</PublishReadyToRunEmitSymbols>
+    </PropertyGroup>
   </Target>
 
   <!--

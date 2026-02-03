@@ -7,8 +7,8 @@
 #define PERFPID_H
 
 #include "sstring.h"
-#include "fstream.h"
 #include "volatile.h"
+#include <stdio.h>
 
 // Generates a perfmap file.
 
@@ -40,7 +40,7 @@ private:
     static CrstStatic s_csPerfMap;
 
     // The file stream to write the map to.
-    CFileStream * m_FileStream;
+    FILE * m_fp;
 
     // Set to true if an error is encountered when writing to the file.
     bool m_ErrorEncountered;

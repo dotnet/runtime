@@ -282,10 +282,6 @@ public:
     void dmpGetFieldOffset(DWORDLONG key, DWORD value);
     unsigned repGetFieldOffset(CORINFO_FIELD_HANDLE field);
 
-    void recGetLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle, CorInfoHelpFunc result);
-    void dmpGetLazyStringLiteralHelper(DWORDLONG key, DWORD value);
-    CorInfoHelpFunc repGetLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle);
-
     void recGetUnBoxHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc result);
     void dmpGetUnBoxHelper(DWORDLONG key, DWORD value);
     CorInfoHelpFunc repGetUnBoxHelper(CORINFO_CLASS_HANDLE cls);
@@ -790,9 +786,9 @@ public:
     void dmpGetFpStructLowering(DWORDLONG key, const Agnostic_GetFpStructLowering& value);
     void repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
 
-    void recGetRelocTypeHint(void* target, WORD result);
+    void recGetRelocTypeHint(void* target, CorInfoReloc result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
-    WORD repGetRelocTypeHint(void* target);
+    CorInfoReloc repGetRelocTypeHint(void* target);
 
     void recGetExpectedTargetArchitecture(DWORD result);
     void dmpGetExpectedTargetArchitecture(DWORD key, DWORD result);
@@ -1125,7 +1121,7 @@ enum mcPackets
     //Packet_IsValidToken = 144,
     //Packet_FindNameOfToken = 145,
     //PacketCR_RecordCallSite = 146,
-    Packet_GetLazyStringLiteralHelper = 147,
+    //Packet_GetLazyStringLiteralHelper = 147,
     Packet_IsIntrinsicType = 148,
     Packet_PrintClassName = 149,
     Packet_GetReadyToRunHelper = 150,

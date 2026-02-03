@@ -219,9 +219,9 @@ namespace BinderTracing
         if (mvidMismatch)
         {
             StackSString format;
-            format.LoadResource(CCompRC::Error, IDS_EE_FILELOAD_ERROR_GENERIC);
+            format.LoadResource(IDS_EE_FILELOAD_ERROR_GENERIC);
             StackSString details;
-            details.LoadResource(CCompRC::Error, IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
+            details.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
             errorMsg.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, m_assemblyName, details);
         }
 

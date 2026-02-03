@@ -15,7 +15,7 @@ public class Runtime_61486
     public static int TestEntryPoint()
     {
         var my = new My(new My(null));
-        var m = my.GetType().GetMethod("M");
+        var m = typeof(My).GetMethod("M");
         try
         {
             m.Invoke(my, null);

@@ -1338,6 +1338,9 @@ namespace System
         internal static extern bool IsConstructor(RuntimeMethodHandleInternal method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsAsyncMethod(RuntimeMethodHandleInternal method);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern LoaderAllocator GetLoaderAllocatorInternal(RuntimeMethodHandleInternal method);
 
         internal static LoaderAllocator GetLoaderAllocator(RuntimeMethodHandleInternal method)
@@ -1550,9 +1553,9 @@ namespace System
         {
             ByteRef fieldDataRef = default;
             GetFieldDataReference(((RtFieldInfo)field).GetFieldDesc(), ObjectHandleOnStack.Create(ref target), ByteRefOnStack.Create(ref fieldDataRef));
-            Debug.Assert(!Unsafe.IsNullRef(ref fieldDataRef.Get()));
+            Debug.Assert(!Unsafe.IsNullRef(ref fieldDataRef.Value));
             GC.KeepAlive(field);
-            return ref fieldDataRef.Get();
+            return ref fieldDataRef.Value;
         }
 
         internal static ref byte GetFieldDataReference(ref byte target, RuntimeFieldInfo field)

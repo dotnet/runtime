@@ -241,7 +241,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Need a register different from target reg to check for overflow.
                 buildInternalIntRegisterDefForNode(tree);
-                if ((tree->gtFlags & GTF_UNSIGNED) == 0)
+                if (!tree->IsUnsigned())
                     buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
             }
@@ -264,6 +264,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_SH3ADD_UW:
         case GT_ADD_UW:
         case GT_SLLI_UW:
+        case GT_BIT_SET:
+        case GT_BIT_CLEAR:
+        case GT_BIT_INVERT:
             if (tree->OperIs(GT_ROR, GT_ROL) && !compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
                 buildInternalIntRegisterDefForNode(tree);
             srcCount = BuildBinaryUses(tree->AsOp());
@@ -287,7 +290,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Need a register different from target reg to check for overflow.
                 buildInternalIntRegisterDefForNode(tree);
-                if ((tree->gtFlags & GTF_UNSIGNED) == 0)
+                if (!tree->IsUnsigned())
                     buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
             }
@@ -337,7 +340,7 @@ int LinearScan::BuildNode(GenTree* tree)
             emitAttr attr = emitActualTypeSize(tree->AsOp());
             if (EA_SIZE(attr) != EA_8BYTE)
             {
-                if ((tree->AsOp()->gtFlags & GTF_UNSIGNED) != 0)
+                if (tree->AsOp()->IsUnsigned())
                     buildInternalIntRegisterDefForNode(tree);
             }
 
@@ -670,46 +673,22 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_LEA:
         {
             GenTreeAddrMode* lea = tree->AsAddrMode();
-
-            GenTree* base  = lea->Base();
-            GenTree* index = lea->Index();
-            int      cns   = lea->Offset();
+            assert(lea->HasBase());
+            assert(!lea->HasIndex());
+            assert(lea->gtScale <= 1);
 
             // This LEA is instantiating an address, so we set up the srcCount here.
-            srcCount = 0;
-            if (base != nullptr)
-            {
-                srcCount++;
-                BuildUse(base);
-            }
-            if (index != nullptr)
-            {
-                srcCount++;
-                BuildUse(index);
-            }
+            srcCount = 1;
+            BuildUse(lea->Base());
             assert(dstCount == 1);
 
-            if ((base != nullptr) && (index != nullptr))
+            if (!emitter::isValidSimm12(lea->Offset()))
             {
-                DWORD scale;
-                BitScanForward(&scale, lea->gtScale);
-                if (scale > 0)
-                    buildInternalIntRegisterDefForNode(tree); // scaleTempReg
+                // This offset can't be contained in the addi instruction, so we need an internal register
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
             }
 
-            // On RISCV64 we may need a single internal register
-            // (when both conditions are true then we still only need a single internal register)
-            if ((index != nullptr) && (cns != 0))
-            {
-                // RISCV64 does not support both Index and offset so we need an internal register
-                buildInternalIntRegisterDefForNode(tree);
-            }
-            else if (!emitter::isValidSimm12(cns))
-            {
-                // This offset can't be contained in the add instruction, so we need an internal register
-                buildInternalIntRegisterDefForNode(tree);
-            }
-            buildInternalRegisterUses();
             BuildDef(tree);
         }
         break;
@@ -829,32 +808,23 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     // but in this case they must be contained.
     assert(!indirTree->TypeIs(TYP_STRUCT));
 
-    GenTree* addr  = indirTree->Addr();
-    GenTree* index = nullptr;
-    int      cns   = 0;
-
+    GenTree* addr = indirTree->Addr();
     if (addr->isContained())
     {
-        if (addr->OperIs(GT_LEA))
+        if (addr->OperIs(GT_CNS_INT))
         {
-            GenTreeAddrMode* lea = addr->AsAddrMode();
-            index                = lea->Index();
-            cns                  = lea->Offset();
-
-            // On RISCV64 we may need a single internal register
-            // (when both conditions are true then we still only need a single internal register)
-            if ((index != nullptr) && (cns != 0))
+            bool needsReloc = addr->AsIntCon()->FitsInAddrBase(compiler) && addr->AsIntCon()->AddrNeedsReloc(compiler);
+            if (needsReloc || !emitter::isValidSimm12(indirTree->Offset()))
             {
-                // RISCV64 does not support both Index and offset so we need an internal register
-                buildInternalIntRegisterDefForNode(indirTree);
-            }
-            else if (!emitter::isValidSimm12(cns))
-            {
-                // This offset can't be contained in the ldr/str instruction, so we need an internal register
-                buildInternalIntRegisterDefForNode(indirTree);
+                bool needTemp = indirTree->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeIsFloating(indirTree);
+                if (needTemp)
+                {
+                    // This offset can't be contained in the ld/sd instruction, so we need an internal register
+                    buildInternalIntRegisterDefForNode(indirTree);
+                }
             }
         }
-        else if (addr->OperIs(GT_CNS_INT))
+        else if (!emitter::isValidSimm12(indirTree->Offset()))
         {
             buildInternalIntRegisterDefForNode(indirTree);
         }

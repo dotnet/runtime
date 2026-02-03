@@ -30,17 +30,6 @@
 class CodeGenInterface;
 class emitter;
 
-// Small helper types
-
-//-------------------- Register selection ---------------------------------
-
-struct RegState
-{
-    regMaskTP rsCalleeRegArgMaskLiveIn; // mask of register arguments (live on entry to method)
-    unsigned  rsCalleeRegArgCount;      // total number of incoming register arguments of this kind (int or float)
-    bool      rsIsFloat;                // true for float argument registers, false for integer argument registers
-};
-
 //-------------------- CodeGenInterface ---------------------------------
 // interface to hide the full CodeGen implementation from rest of Compiler
 
@@ -155,12 +144,13 @@ public:
                                    unsigned* mulPtr,
                                    ssize_t*  cnsPtr) = 0;
 
-    GCInfo gcInfo;
+    GCInfo    gcInfo;
+    RegSet    regSet;
+    regMaskTP calleeRegArgMaskLiveIn; // Mask of register arguments live on entry to the (root) method.
 
-    RegSet                regSet;
-    RegState              intRegState;
-    RegState              floatRegState;
+#if HAS_FIXED_REGISTER_SET
     NodeInternalRegisters internalRegisters;
+#endif
 
 protected:
     Compiler* compiler;
@@ -169,7 +159,8 @@ protected:
 private:
 #if defined(TARGET_XARCH)
     static const insFlags instInfo[INS_count];
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) ||        \
+    defined(TARGET_WASM)
     static const BYTE instInfo[INS_count];
 #else
 #error Unsupported target architecture
@@ -253,6 +244,42 @@ public:
         m_cgFrameRequired = value;
     }
 
+#if !HAS_FIXED_REGISTER_SET
+private:
+    // For targets without a fixed SP/FP, these are the registers with which they are associated.
+    PhasedVar<regNumber> m_cgStackPointerReg = REG_NA;
+    PhasedVar<regNumber> m_cgFramePointerReg = REG_NA;
+
+public:
+    void SetStackPointerReg(regNumber reg)
+    {
+        assert(reg != REG_NA);
+        m_cgStackPointerReg = reg;
+    }
+    void SetFramePointerReg(regNumber reg)
+    {
+        assert(reg != REG_NA);
+        m_cgFramePointerReg = reg;
+    }
+    regNumber GetStackPointerReg() const
+    {
+        return m_cgStackPointerReg;
+    }
+    regNumber GetFramePointerReg() const
+    {
+        return m_cgFramePointerReg;
+    }
+#else  // HAS_FIXED_REGISTER_SET
+    regNumber GetStackPointerReg() const
+    {
+        return REG_SPBASE;
+    }
+    regNumber GetFramePointerReg() const
+    {
+        return REG_FPBASE;
+    }
+#endif // HAS_FIXED_REGISTER_SET
+
 public:
     int genCallerSPtoFPdelta() const;
     int genCallerSPtoInitialSPdelta() const;
@@ -269,7 +296,7 @@ public:
 #ifdef TARGET_XARCH
 #ifdef TARGET_AMD64
     // There are no reloc hints on x86
-    unsigned short genAddrRelocTypeHint(size_t addr);
+    CorInfoReloc genAddrRelocTypeHint(size_t addr);
 #endif
     bool genDataIndirAddrCanBeEncodedAsPCRelOffset(size_t addr);
     bool genCodeIndirAddrCanBeEncodedAsPCRelOffset(size_t addr);

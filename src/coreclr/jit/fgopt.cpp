@@ -1465,7 +1465,6 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
              * abort exceptions to work. Insert a NOP in the empty block
              * to ensure we generate code for the block, if we keep it.
              */
-            if (UsesFunclets())
             {
                 BasicBlock* succBlock = block->GetTarget();
 
@@ -1657,7 +1656,11 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         blockRange = &LIR::AsRange(block);
         switchTree = blockRange->LastNode();
 
+#ifdef TARGET_WASM
+        assert(switchTree->OperIs(GT_SWITCH));
+#else
         assert(switchTree->OperIs(GT_SWITCH_TABLE));
+#endif
     }
     else
     {
@@ -5366,17 +5369,25 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     };
 
-    ArrayStack<BasicBlock*> retBlocks(getAllocator(CMK_ArrayStack));
+    ArrayStack<BasicBlock*> retOrThrowBlocks(getAllocator(CMK_ArrayStack));
 
     // Visit each block
     //
     for (BasicBlock* const block : Blocks())
     {
         iterateTailMerge(block);
-
-        if (block->KindIs(BBJ_RETURN) && !block->isEmpty() && (block != genReturnBB))
+        if (block->isEmpty())
         {
-            // Avoid spitting a return away from a possible tail call
+            continue;
+        }
+
+        if (block->KindIs(BBJ_THROW))
+        {
+            retOrThrowBlocks.Push(block);
+        }
+        else if (block->KindIs(BBJ_RETURN) && (block != genReturnBB))
+        {
+            // Avoid splitting a return away from a possible tail call
             //
             if (!block->hasSingleStmt())
             {
@@ -5389,14 +5400,14 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 }
             }
 
-            retBlocks.Push(block);
+            retOrThrowBlocks.Push(block);
         }
     }
 
     predInfo.Reset();
-    for (int i = 0; i < retBlocks.Height(); i++)
+    for (int i = 0; i < retOrThrowBlocks.Height(); i++)
     {
-        predInfo.Push(PredInfo(retBlocks.Bottom(i), retBlocks.Bottom(i)->lastStmt()));
+        predInfo.Push(PredInfo(retOrThrowBlocks.Bottom(i), retOrThrowBlocks.Bottom(i)->lastStmt()));
     }
 
     tailMergePreds(nullptr);

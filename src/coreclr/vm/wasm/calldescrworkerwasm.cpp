@@ -5,7 +5,7 @@
 #include <interpexec.h>
 
 // Forward declaration
-void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff);
+void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp);
 
 extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
 {
@@ -26,5 +26,5 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
         targetIp = pMethod->GetInterpreterCode();
     }
 
-    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, (int8_t*)pCallDescrData->pSrc, pCallDescrData->nArgsSize, (int8_t*)pCallDescrData->returnValue);
+    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, (int8_t*)pCallDescrData->pSrc, pCallDescrData->nArgsSize, (int8_t*)pCallDescrData->returnValue, (PCODE)&CallDescrWorkerInternal);
 }

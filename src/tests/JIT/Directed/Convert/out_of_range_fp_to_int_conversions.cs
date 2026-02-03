@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Numerics;
 using Xunit;
+using TestLibrary;
 
 namespace FPBehaviorApp
 {
@@ -318,8 +319,8 @@ namespace FPBehaviorApp
             }
         }
 
+        [ActiveIssue("Mono does not define out of range fp to int conversions", TestRuntimes.Mono)]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/120904", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
         public static int TestEntryPoint()
         {
             Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_SATURATING;

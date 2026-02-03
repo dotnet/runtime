@@ -30,12 +30,10 @@
     <None Include="Dictionaries\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Corpora\*\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.DotNetFuzzing.TestData" Version="$(MicrosoftDotNetFuzzingTestDataVersion)" />
     <ProjectReference Include="..\..\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
   </ItemGroup>
 

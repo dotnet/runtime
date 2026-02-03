@@ -5553,7 +5553,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                     if (emitComp->info.compMatchedVM)
                     {
                         void* target = emitOffsetToPtr(dstOffs);
-                        emitRecordRelocation((void*)dst, target, IMAGE_REL_BASED_THUMB_BRANCH24);
+                        emitRecordRelocation((void*)dst, target, CorInfoReloc::ARM32_THUMB_BRANCH24);
                     }
                 }
             }
@@ -6219,7 +6219,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCode(ins, fmt);
             code |= insEncodeRegT2_D(id->idReg1());
             imm  = emitGetInsSC(id);
-            addr = emitConsBlock + imm;
+            addr = emitDataOffsetToPtr((UNATIVE_OFFSET)imm);
             if (!id->idIsReloc())
             {
                 assert(sizeof(size_t) == sizeof(target_size_t));
@@ -6476,7 +6476,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 callInstrSize = SafeCvtAssert<unsigned char>(emitOutput_Thumb2Instr(dst, code));
                 dst += callInstrSize;
                 if (emitComp->info.compMatchedVM)
-                    emitRecordRelocation((void*)(dst - 4), addr, IMAGE_REL_BASED_THUMB_BRANCH24);
+                    emitRecordRelocation((void*)(dst - 4), addr, CorInfoReloc::ARM32_THUMB_BRANCH24);
             }
             else
             {
@@ -7285,7 +7285,7 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg1(), attr, true);
             imm = emitGetInsSC(id);
             {
-                dataSection*  jdsc = 0;
+                dataSection*  jdsc = nullptr;
                 NATIVE_OFFSET offs = 0;
 
                 /* Find the appropriate entry in the data section list */
@@ -7305,22 +7305,29 @@ void emitter::emitDispInsHelp(
                     offs += size;
                 }
 
-                assert(jdsc != NULL);
-
                 if (id->idIsDspReloc())
                 {
                     printf("reloc ");
                 }
-                printf("%s ADDRESS J_M%03u_DS%02u", (id->idIns() == INS_movw) ? "LOW" : "HIGH", emitComp->compMethodID,
-                       imm);
 
-                // After the MOVT, dump the table
-                if (id->idIns() == INS_movt)
+                if (jdsc != nullptr)
+                {
+                    printf("%s ADDRESS J_M%03u_DS%02u", (id->idIns() == INS_movw) ? "LOW" : "HIGH",
+                           emitComp->compMethodID, imm);
+                }
+                else
+                {
+                    printf("%s ADDRESS RWD%02zu", (id->idIns() == INS_movw) ? "LOW" : "HIGH", (size_t)imm);
+                }
+
+                // After the MOVT, dump the table if jdsc is not null. jdsc is null for async resume info
+                // and non-null for block address tables.
+                if (jdsc != nullptr && id->idIns() == INS_movt)
                 {
                     unsigned     cnt = jdsc->dsSize / TARGET_POINTER_SIZE;
                     BasicBlock** bbp = (BasicBlock**)jdsc->dsCont;
 
-                    bool isBound = (emitCodeGetCookie(*bbp) != NULL);
+                    bool isBound = (emitCodeGetCookie(*bbp) != nullptr);
 
                     if (isBound)
                     {
@@ -8178,7 +8185,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             regNumber extraReg = codeGen->internalRegisters.GetSingle(dst);
             assert(extraReg != dst->GetRegNum());
 
-            if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+            if (dst->IsUnsigned())
             {
                 // Compute 8 byte result from 4 byte by 4 byte multiplication.
                 emitIns_R_R_R_R(INS_umull, EA_4BYTE, dst->GetRegNum(), extraReg, src1->GetRegNum(), src2->GetRegNum());
@@ -8214,7 +8221,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
         else
         {
-            bool isUnsignedOverflow = ((dst->gtFlags & GTF_UNSIGNED) != 0);
+            bool isUnsignedOverflow = dst->IsUnsigned();
             jumpKind                = isUnsignedOverflow ? EJ_lo : EJ_vs;
             if (jumpKind == EJ_lo)
             {

@@ -46,6 +46,7 @@ usage()
   echo "                                 '--subset' can be omitted if the subset is given as the first argument."
   echo "                                  [Default: Builds the entire repo.]"
   echo "  --usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
+  echo "  --clrinterpreter                Enables CoreCLR interpreter for Release builds of targets where it is a Debug only feature."
   echo "  --verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   echo "                                  [Default: Minimal]"
   echo "  --use-bootstrap                 Use the results of building the bootstrap subset to build published tools on the target machine."
@@ -68,8 +69,8 @@ usage()
 
   echo "Libraries settings:"
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net10.0 or net481."
-  echo "                             [Default: net10.0]"
+  echo "  --framework (-f)           Build framework: net11.0 or net481."
+  echo "                             [Default: net11.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -381,6 +382,11 @@ while [[ $# -gt 0 ]]; do
       shift 1
       ;;
 
+     -clrinterpreter)
+      arguments+=("/p:FeatureInterpreter=true")
+      shift 1
+      ;;
+
      -librariesconfiguration|-lc)
       if [ -z ${2+x} ]; then
         echo "No libraries configuration supplied. See help (--help) for supported libraries configurations." 1>&2
@@ -602,7 +608,9 @@ if [[ "$bootstrap" == "1" ]]; then
       bootstrapArguments+=("$argument")
     fi
   done
-  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap -bl:$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog
+
+  # Set a different path for prebuilt usage tracking for the bootstrap build.
+  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap /p:TrackPrebuiltUsageReportFile=$scriptroot/../artifacts/log/bootstrap-prebuilt-usage.xml -bl:$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog
 
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
   echo "Cleaning up artifacts from bootstrap build..."

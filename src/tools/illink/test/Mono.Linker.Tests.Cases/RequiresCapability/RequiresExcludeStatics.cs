@@ -162,7 +162,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 StaticMethod();
                 DerivedStaticMethod();
 
-                 // Instantiate for linker test consistency
+                // Instantiate for linker test consistency
                 new DerivedWithoutRequires();
             }
         }

@@ -26,6 +26,7 @@ Param(
   [string[]]$fsanitize,
   [switch]$bootstrap,
   [switch]$useBoostrap,
+  [switch]$clrinterpreter,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -57,6 +58,7 @@ function Get-Help() {
   Write-Host "                                 '-subset' can be omitted if the subset is given as the first argument."
   Write-Host "                                 [Default: Builds the entire repo.]"
   Write-Host "  -usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
+  Write-Host "  -clrinterpreter                Enables CoreCLR interpreter for Release builds of targets where it is a Debug only feature."
   Write-Host "  -verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   Write-Host "                                 [Default: Minimal]"
   Write-Host "  --useBootstrap                 Use the results of building the bootstrap subset to build published tools on the target machine."
@@ -82,8 +84,8 @@ function Get-Help() {
 
   Write-Host "Libraries settings:"
   Write-Host "  -coverage               Collect code coverage when testing."
-  Write-Host "  -framework (-f)         Build framework: net10.0 or net481."
-  Write-Host "                          [Default: net10.0]"
+  Write-Host "  -framework (-f)         Build framework: net11.0 or net481."
+  Write-Host "                          [Default: net11.0]"
   Write-Host "  -testnobuild            Skip building tests when invoking -test."
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all."
   Write-Host ""
@@ -179,11 +181,16 @@ if ($vs) {
     $configToOpen = $runtimeConfiguration
   }
 
-  # Auto-generated solution file that still uses the sln format
-  if ($vs -ieq "coreclr.sln" -or $vs -ieq "coreclr") {
-    # If someone passes in coreclr.sln or just coreclr (case-insensitive),
-    # launch the generated CMake solution.
-    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "CoreCLR.sln"
+  # Auto-generated solution file that uses the sln or slnx format
+  if ($vs -match "^coreclr(\.slnx|\.sln)?$") {
+    # If someone passes in coreclr.sln or coreclr.slnx or just coreclr (case-insensitive),
+    # launch the generated CMake solution with the right extension, defaulting to slnx.
+    $ext = [System.IO.Path]::GetExtension($vs)
+    if ([string]::IsNullOrEmpty($ext)) {
+      $ext = ".slnx"
+    }
+
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "CoreCLR$ext"
     if (-Not (Test-Path $vs)) {
       Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/coreclr/runtime.proj /clp:nosummary /restore /p:Ninja=false /p:Configuration=$configToOpen /p:TargetArchitecture=$archToOpen /p:ConfigureOnly=true /p:ClrFullNativeBuild=true"
       if ($lastExitCode -ne 0) {
@@ -195,9 +202,14 @@ if ($vs) {
       }
     }
   }
-  # Auto-generated solution file that still uses the sln format
-  elseif ($vs -ieq "corehost.sln" -or $vs -ieq "corehost") {
-    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost.sln"
+  # Auto-generated solution file that uses the sln or slnx format
+  elseif ($vs -match "^corehost(\.slnx|\.sln)?$") {
+    $ext = [System.IO.Path]::GetExtension($vs)
+    if ([string]::IsNullOrEmpty($ext)) {
+      $ext = ".slnx"
+    }
+
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost$ext"
     if (-Not (Test-Path $vs)) {
       Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/native/corehost/corehost.proj /clp:nosummary /restore /p:Ninja=false /p:Configuration=$configToOpen /p:TargetArchitecture=$archToOpen /p:ConfigureOnly=true"
       if ($lastExitCode -ne 0) {
@@ -256,9 +268,6 @@ if ($vs) {
 
   # This tells MSBuild to load the SDK from the directory of the bootstrapped SDK
   $env:DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=$env:DOTNET_ROOT
-
-  # This tells .NET Core not to go looking for .NET Core in other places
-  $env:DOTNET_MULTILEVEL_LOOKUP=0;
 
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
@@ -335,6 +344,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "arch"                   {}
     "fsanitize"              { $arguments += " /p:EnableNativeSanitizers=$($PSBoundParameters[$argument])"}
     "useBootstrap"           { $arguments += " /p:UseBootstrap=$($PSBoundParameters[$argument])" }
+    "clrinterpreter"         { $arguments += " /p:FeatureInterpreter=true" }
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }
@@ -385,8 +395,16 @@ if ($bootstrap -eq $True) {
   $config = $((Get-Culture).TextInfo.ToTitleCase($configuration[0]))
   $bootstrapArguments += " -configuration $config"
 
+  # Set a different path for prebuilt usage tracking for the bootstrap build.
+  $bootstrapArguments += " /p:TrackPrebuiltUsageReportFile=$PSScriptRoot/../artifacts/log/bootstrap-prebuilt-usage.xml"
+
   $bootstrapArguments += " /p:Subset=bootstrap /bl:$PSScriptRoot/../artifacts/log/$config/bootstrap.binlog"
   Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $bootstrapArguments"
+
+  if ($lastExitCode -ne 0) {
+    Write-Error "Bootstrap build failed. Stopping build."
+    exit 1
+  }
 
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
   Write-Host "Cleaning up artifacts from bootstrap build..."

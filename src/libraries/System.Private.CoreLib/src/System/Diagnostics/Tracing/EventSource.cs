@@ -177,12 +177,6 @@ using System.Threading.Tasks;
 
 namespace System.Diagnostics.Tracing
 {
-    [Conditional("NEEDED_FOR_SOURCE_GENERATOR_ONLY")]
-    [AttributeUsage(AttributeTargets.Class)]
-    internal sealed class EventSourceAutoGenerateAttribute : Attribute
-    {
-    }
-
     /// <summary>
     /// This class is meant to be inherited by a user-defined event source in order to define a managed
     /// ETW provider.   Please See DESIGN NOTES above for the internal architecture.
@@ -283,16 +277,10 @@ namespace System.Diagnostics.Tracing
         private static readonly bool AllowDuplicateSourceNames = AppContext.TryGetSwitch(DuplicateSourceNamesSwitch, out bool isEnabled) ? isEnabled : false;
 
         [FeatureSwitchDefinition("System.Diagnostics.Tracing.EventSource.IsSupported")]
-        internal static bool IsSupported { get; } = InitializeIsSupported();
-
-        private static bool InitializeIsSupported() =>
-            AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
+        internal static bool IsSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
 
         [FeatureSwitchDefinition("System.Diagnostics.Metrics.Meter.IsSupported")]
-        internal static bool IsMeterSupported { get; } = InitializeIsMeterSupported();
-
-        private static bool InitializeIsMeterSupported() =>
-            AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
+        internal static bool IsMeterSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
 
 #if FEATURE_EVENTSOURCE_XPLAT
 #pragma warning disable CA1823 // field is used to keep listener alive
@@ -466,7 +454,7 @@ namespace System.Diagnostics.Tracing
         {
             if (!IsSupported)
             {
-                return Array.Empty<EventSource>();
+                return [];
             }
 
             var ret = new List<EventSource>();
@@ -1610,14 +1598,39 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        // FrameworkEventSource is on the startup path for the framework, so we have this internal overload that it can use
-        // to prevent the working set hit from looking at the custom attributes on the type to get the Guid.
-        internal EventSource(Guid eventSourceGuid, string eventSourceName)
-            : this(eventSourceGuid, eventSourceName, EventSourceSettings.EtwManifestEventFormat)
+        /// <summary>
+        /// Construct an EventSource with a given name for non-contract based events (e.g. those using the Write() API)
+        /// and a given Guid to identify the source.
+        /// </summary>
+        /// <param name="eventSourceName">
+        /// The name of the event source. Must not be null.
+        /// </param>
+        /// <param name="eventSourceGuid">
+        /// The unique identifier for the event source. Must not be Guid.Empty.
+        /// </param>
+        public EventSource(string eventSourceName, Guid eventSourceGuid)
+            : this(eventSourceName, eventSourceGuid, EventSourceSettings.EtwManifestEventFormat)
         { }
 
-        // Used by the internal FrameworkEventSource constructor and the TraceLogging-style event source constructor
-        internal EventSource(Guid eventSourceGuid, string eventSourceName, EventSourceSettings settings, string[]? traits = null)
+        /// <summary>
+        /// Construct an EventSource with a given name for non-contract based events (e.g. those using the Write() API)
+        /// and a given Guid to identify the source.
+        ///
+        /// Also specify a list of key-value pairs called traits (you must pass an even number of strings).
+        /// The first string is the key and the second is the value.   These are not interpreted by EventSource
+        /// itself but may be interpreted the listeners.  Can be fetched with GetTrait(string).
+        /// </summary>
+        /// <param name="eventSourceName">
+        /// The name of the event source. Must not be null.
+        /// </param>
+        /// <param name="eventSourceGuid">
+        /// The unique identifier for the event source. Must not be Guid.Empty.
+        /// </param>
+        /// <param name="settings">
+        /// Configuration options for the EventSource as a whole.
+        /// </param>
+        /// <param name="traits">A collection of key-value strings (must be an even number).</param>
+        public EventSource(string eventSourceName, Guid eventSourceGuid, EventSourceSettings settings, string[]? traits = null)
         {
             if (IsSupported)
             {
@@ -1679,18 +1692,13 @@ namespace System.Diagnostics.Tracing
                     etwProvider = new OverrideEventProvider(eventSourceFactory, EventProviderType.ETW);
                     etwProvider.Register(eventSourceGuid, eventSourceName);
     #if TARGET_WINDOWS
-                    // API available on OS >= Win 8 and patched Win 7.
-                    // Disable only for FrameworkEventSource to avoid recursion inside exception handling.
-                    if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
+                    var providerMetadata = ProviderMetadata;
+                    fixed (byte* pMetadata = providerMetadata)
                     {
-                        var providerMetadata = ProviderMetadata;
-                        fixed (byte* pMetadata = providerMetadata)
-                        {
-                            etwProvider.SetInformation(
-                                Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
-                                pMetadata,
-                                (uint)providerMetadata.Length);
-                        }
+                        etwProvider.SetInformation(
+                            Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
+                            pMetadata,
+                            (uint)providerMetadata.Length);
                     }
     #endif // TARGET_WINDOWS
                 }
@@ -5449,7 +5457,7 @@ namespace System.Diagnostics.Tracing
         {
             if (this.channelTab == null)
             {
-                return Array.Empty<ulong>();
+                return [];
             }
 
             // We create an array indexed by the channel id for fast look up.
@@ -5618,7 +5626,7 @@ namespace System.Diagnostics.Tracing
         public byte[] CreateManifest()
         {
             string str = CreateManifestString();
-            return (str != "") ? Encoding.UTF8.GetBytes(str) : Array.Empty<byte>();
+            return (str != "") ? Encoding.UTF8.GetBytes(str) : [];
         }
 
         public IList<string> Errors => errors;

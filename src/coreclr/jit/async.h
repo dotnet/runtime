@@ -85,6 +85,8 @@ class AsyncTransformation
                                     AsyncLiveness&                  life,
                                     jitstd::vector<LiveLocalInfo>&  liveLocals);
 
+    bool HasNonContextRestoreExceptionalFlow(BasicBlock* block);
+
     void LiftLIREdges(BasicBlock*                     block,
                       const jitstd::vector<GenTree*>& defs,
                       jitstd::vector<LiveLocalInfo>&  liveLocals);
@@ -95,8 +97,6 @@ class AsyncTransformation
                                           GenTreeCall*                   call,
                                           bool                           needsKeepAlive,
                                           jitstd::vector<LiveLocalInfo>& liveLocals);
-
-    void ClearSuspendedIndicator(BasicBlock* block, GenTreeCall* call);
 
     CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness& life);
 
