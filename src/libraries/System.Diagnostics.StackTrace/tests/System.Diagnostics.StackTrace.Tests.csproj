@@ -19,7 +19,7 @@
     <Compile Include="SymLanguageTypeTests.cs" />
     <Compile Include="SymLanguageVendorTests.cs" />
     <Compile Include="SymbolTokenTests.cs" />
-    <Compile Include="$(RepoRoot)\src\tests\async\RuntimeAsyncMethodGenerationAttribute.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
