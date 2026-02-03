@@ -11,7 +11,7 @@
     <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
     <BuildCoreHostDependsOn>GenerateRuntimeVersionFile</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
-    <BuildCoreHostDependsOn Condition="'$(TargetsBrowser)' == 'true'">$(BuildCoreHostDependsOn);GenerateEmccExports;ResolveRuntimeFilesFromLocalBuild</BuildCoreHostDependsOn>
+    <BuildCoreHostDependsOn Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildCoreHostDependsOn);GenerateEmccExports;ResolveRuntimeFilesFromLocalBuild</BuildCoreHostDependsOn>
     <CopyWasmNativeFilesDependsOn Condition="'$(TargetOS)' == 'windows'">BuildCoreHostOnWindows</CopyWasmNativeFilesDependsOn>
     <CopyWasmNativeFilesDependsOn Condition="'$(TargetOS)' != 'windows'">BuildCoreHostOnUnix</CopyWasmNativeFilesDependsOn>
     <IntermediateOutputRootPath>$(ArtifactsObjDir)$(TargetRid).$(Configuration)\</IntermediateOutputRootPath>

@@ -18,6 +18,9 @@
     <_CMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">$(_CMakeArgs) -cmakeargs "-DCMAKE_USE_PTHREADS=1"</_CMakeArgs>
 
     <_BuildNativeArgs>$(_BuildNativeArgs)$(_CMakeArgs) @(NativeCMakeArg, ' ')</_BuildNativeArgs>
+    <BuildNativeCommonDependsOnTargets>GenerateNativeVersionFile;GenerateEmccExports</BuildNativeCommonDependsOnTargets>
+    <BuildNativeCommonDependsOnTargets Condition="'$(TargetsWasi)' == 'true'">AcquireWasiSdk;$(BuildNativeCommonDependsOnTargets)</BuildNativeCommonDependsOnTargets>
+    <BuildNativeCommonDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildNativeCommonDependsOnTargets)</BuildNativeCommonDependsOnTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,7 +30,7 @@
   <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
 
   <Target Name="BuildNativeCommon"
-          DependsOnTargets="AcquireWasiSdk;GenerateNativeVersionFile;GenerateEmccExports">
+          DependsOnTargets="$(BuildNativeCommonDependsOnTargets)">
     <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
       <_BuildNativeEnvironmentVariables>WASI_SDK_PATH=$(RuntimeBuildWasiSdkPath)</_BuildNativeEnvironmentVariables>
     </PropertyGroup>
