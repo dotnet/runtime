@@ -54,7 +54,7 @@ public sealed class DocumentCompiler
 
         diagnostics.AddRange(image.Diagnostics);
 
-        // In error-tolerant mode, return image even with errors (like native ilasm /ERR)
+        // In error-tolerant mode, return image even with errors
         bool returnImage = !anyErrors || options.ErrorTolerant;
         return (diagnostics.ToImmutable(), returnImage ? image.Image : null);
     }

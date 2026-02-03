@@ -136,7 +136,7 @@ namespace ILAssembler
             // Return early if there are structural errors that prevent building valid metadata.
             // However, allow errors in method bodies (ILA0016-0019) to pass through so we can
             // emit the assembly with the errors reported.
-            // In error-tolerant mode (like native ilasm /ERR), continue despite errors.
+            // In error-tolerant mode, continue despite errors.
             var structuralErrors = _diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && !IsRecoverableError(d.Id));
             if (structuralErrors.Any() && !_options.ErrorTolerant)
             {
@@ -617,7 +617,6 @@ namespace ILAssembler
 
         /// <summary>
         /// Add DebuggableAttribute to the assembly based on debug options.
-        /// Native ilasm values:
         /// - /DEBUG: 0x101 = Default | DisableOptimizations
         /// - /DEBUG=OPT: 0x03 = Default | IgnoreSymbolStoreSequencePoints
         /// - /DEBUG=IMPL: 0x103 = Default | DisableOptimizations | EnableEditAndContinue

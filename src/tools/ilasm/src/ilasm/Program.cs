@@ -63,7 +63,7 @@ internal sealed class Program
         int exitCode = 0;
         try
         {
-            // Report each file being assembled (like native ilasm)
+            // Report each file being assembled
             foreach (string file in inputFiles)
             {
                 if (!quiet)
@@ -72,7 +72,7 @@ internal sealed class Program
                 }
             }
 
-            // Concatenate all input files (like native ilasm)
+            // Concatenate all input files
             var contentBuilder = new StringBuilder();
             foreach (string file in inputFiles)
             {
@@ -240,7 +240,7 @@ internal sealed class Program
                 }
             }
 
-            // In error-tolerant mode, continue even with errors (like native ilasm /ERR)
+            // In error-tolerant mode, continue even with errors
             if (peBuilder is null)
             {
                 Console.Error.WriteLine("***** FAILURE *****");

@@ -561,8 +561,7 @@ namespace ILAssembler
 
         private TypeReferenceEntity ResolveFromCoreAssembly(string typeName)
         {
-            // Match native ilasm behavior: check for assembly refs in order of preference,
-            // then fall back to creating mscorlib if none found
+            // Check for assembly refs in order of preference then fall back to creating mscorlib if none found
             AssemblyReferenceEntity coreAsmRef = GetCoreLibAssemblyReference();
             return GetOrCreateTypeReference(coreAsmRef, new TypeName(null, typeName));
         }
