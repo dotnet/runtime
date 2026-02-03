@@ -95,7 +95,7 @@ namespace System.IO.Tests
             string rootDrive = "/";
 
             DirectoryInfo rootDirectory = new DirectoryInfo(rootDrive);
-            string testFolderName = $"TestFolder_{Guid.NewGuid():N}";
+            string testFolderName = GetTestFileName();
 
             // Expect permission failure when trying to create directly under "/", in test envs access to / is denied,
             //but at least we know directory craeting attempt was done
