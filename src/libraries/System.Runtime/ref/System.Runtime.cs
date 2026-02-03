@@ -6771,7 +6771,7 @@ namespace System
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public virtual System.Type MakeArrayType(int rank) { throw null; }
         public virtual System.Type MakeByRefType() { throw null; }
-        public static Type MakeFunctionPointerSignatureType(Type? returnType, Type[]? parameterTypes, bool isUnmanaged = false, Type[]? callingConventions = null) { throw null; }
+        public static Type MakeFunctionPointerSignatureType(Type returnType, Type[]? parameterTypes, bool isUnmanaged = false, Type[]? callingConventions = null) { throw null; }
         public virtual Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false) { throw null; }
         public static System.Type MakeGenericMethodParameter(int position) { throw null; }
         public static System.Type MakeGenericSignatureType(System.Type genericTypeDefinition, params System.Type[] typeArguments) { throw null; }

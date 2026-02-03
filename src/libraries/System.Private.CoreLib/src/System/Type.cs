@@ -648,15 +648,13 @@ namespace System
         /// <summary>
         /// Creates a function pointer signature type with the specified return type, parameter types and calling conventions.
         /// </summary>
-        /// <param name="returnType">The return type of the function pointer.
-        /// If <see langword="null"/>, the return type is assumed to be <see langword="void"/>.</param>
+        /// <param name="returnType">The return type of the function pointer.</param>
         /// <param name="parameterTypes">An array of types representing the parameters of the function pointer.</param>
         /// <param name="isUnmanaged"><see langword="true"/> if the function pointer uses unmanaged calling conventions; otherwise, <see langword="false"/>.</param>
         /// <param name="callingConventions">An array of types representing the calling conventions applied to the function pointer.</param>
         /// <returns>A <see cref="Type"/> object representing the constructed function pointer signature.</returns>
-        public static Type MakeFunctionPointerSignatureType(Type? returnType, Type[]? parameterTypes, bool isUnmanaged = false, Type[]? callingConventions = null)
+        public static Type MakeFunctionPointerSignatureType(Type returnType, Type[]? parameterTypes, bool isUnmanaged = false, Type[]? callingConventions = null)
         {
-            returnType ??= typeof(void);
             parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
             callingConventions = (callingConventions != null) ? (Type[])callingConventions.Clone() : [];
 

@@ -317,7 +317,7 @@ namespace System.Reflection.Tests
         {
             Type[] paramTypes = [typeof(short)];
             Type[] callConvs = [typeof(CallConvCdecl)];
-            Type t = Type.MakeFunctionPointerSignatureType(null, paramTypes, true, callConvs);
+            Type t = Type.MakeFunctionPointerSignatureType(typeof(void), paramTypes, true, callConvs);
 
             Type fnPtrRet = t.GetFunctionPointerReturnType();
             Type[] fnPtrParams = t.GetFunctionPointerParameterTypes();
@@ -335,7 +335,7 @@ namespace System.Reflection.Tests
         {
             Type[] paramTypes = [typeof(short)];
             Type[] callConvs = [typeof(CallConvSwift)];
-            Type t = Type.MakeFunctionPointerSignatureType(null, paramTypes, true, callConvs);
+            Type t = Type.MakeFunctionPointerSignatureType(typeof(void), paramTypes, true, callConvs);
 
             Type fnPtrRet = t.GetFunctionPointerReturnType();
             Type[] fnPtrParams = t.GetFunctionPointerParameterTypes();
@@ -353,7 +353,7 @@ namespace System.Reflection.Tests
         {
             Type[] paramTypes = [typeof(short)];
             Type[] callConvs = [typeof(CallConvCdecl), typeof(CallConvSuppressGCTransition)];
-            Type t = Type.MakeFunctionPointerSignatureType(null, paramTypes, true, callConvs);
+            Type t = Type.MakeFunctionPointerSignatureType(typeof(void), paramTypes, true, callConvs);
 
             Type fnPtrRet = t.GetFunctionPointerReturnType();
             Type[] fnPtrParams = t.GetFunctionPointerParameterTypes();
