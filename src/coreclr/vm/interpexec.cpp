@@ -19,7 +19,7 @@
 struct InterpDispatchCacheEntry
 {
     // MethodTable of the calling object
-    void* pMT;
+    MethodTable* pMT;
     size_t dispatchToken;
     // Resolved target MethodDesc
     MethodDesc* pTargetMD;
@@ -45,7 +45,7 @@ struct InterpDispatchCache
 
         size_t idx = Hash(dispatchToken, pMT);
 
-        InterpDispatchCacheEntry* pEntry = m_cache[idx];
+        InterpDispatchCacheEntry* pEntry = VolatileLoadWithoutBarrier(&m_cache[idx]);
         // Data dependency ensures field reads are ordered after loading of `pEntry`
         // The entry struct is immutable once created, so these reads are safe
         if (pEntry != nullptr && pEntry->pMT == pMT && pEntry->dispatchToken == dispatchToken)
@@ -54,7 +54,7 @@ struct InterpDispatchCache
         return NULL;
     }
 
-    void Insert(size_t dispatchToken, void* pMT, MethodDesc* pTargetMD)
+    void Insert(size_t dispatchToken, MethodTable* pMT, MethodDesc* pTargetMD)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -85,7 +85,7 @@ struct InterpDispatchCache
     {
         LIMITED_METHOD_CONTRACT;
 
-        InterpDispatchCacheEntry* pDeadList = m_pDeadList;
+        InterpDispatchCacheEntry* pDeadList = VolatileLoadWithoutBarrier(&m_pDeadList);
 
         while (pDeadList != nullptr)
         {
@@ -94,7 +94,7 @@ struct InterpDispatchCache
             pDeadList = pNext;
         }
 
-        m_pDeadList = nullptr;
+        VolatileStoreWithoutBarrier(&m_pDeadList, (InterpDispatchCacheEntry*)nullptr);
     }
 
     // Add an entry to the dead list for later cleanup
@@ -105,7 +105,7 @@ struct InterpDispatchCache
         InterpDispatchCacheEntry* pOldHead;
         do
         {
-            pOldHead = m_pDeadList;
+            pOldHead = VolatileLoadWithoutBarrier(&m_pDeadList);
             pEntry->pNextDead = pOldHead;
         }
         while (InterlockedCompareExchangeT(&m_pDeadList, pEntry, pOldHead) != pOldHead);
@@ -126,6 +126,26 @@ struct InterpDispatchCache
 
         return hash;
     }
+
+    void ClearEntriesForLoaderAllocator(LoaderAllocator* pLoaderAllocator)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        for (size_t i = 0; i < DISPATCH_CACHE_SIZE; i++)
+        {
+            InterpDispatchCacheEntry* pEntry = VolatileLoadWithoutBarrier(&m_cache[i]);
+            if (pEntry == nullptr)
+                continue;
+
+            if (pEntry->pMT->GetLoaderAllocator() == pLoaderAllocator ||
+                pEntry->pTargetMD->GetLoaderAllocator() == pLoaderAllocator)
+            {
+                VolatileStoreWithoutBarrier(&m_cache[i], (InterpDispatchCacheEntry*)nullptr);
+                // Given the EE is suspended, we can free the entry without worrying about races
+                delete pEntry;
+            }
+        }
+    }
 };
 
 // Global interpreter dispatch cache instance
@@ -135,6 +155,13 @@ static InterpDispatchCache g_InterpDispatchCache;
 void InterpDispatchCache_ReclaimAll()
 {
     g_InterpDispatchCache.ReclaimDeadEntries();
+}
+
+// Clear entries that reference types/methods from the given LoaderAllocator.
+// Called during collectible assembly unload when the EE is suspended.
+void InterpDispatchCache_ClearForLoaderAllocator(LoaderAllocator* pLoaderAllocator)
+{
+    g_InterpDispatchCache.ClearEntriesForLoaderAllocator(pLoaderAllocator);
 }
 
 static size_t CreateDispatchTokenForMethod(MethodDesc* pMD)
@@ -2830,11 +2857,11 @@ MAIN_LOOP:
                     MethodTable *pObjMT = (*pThisArg)->GetMethodTable();
 
                     // Obtain the cached dispatch token or initialize it
-                    size_t dispatchToken = (size_t)pMethod->pDataItems[ip[4]];
+                    size_t dispatchToken = (size_t)VolatileLoadWithoutBarrier(&pMethod->pDataItems[ip[4]]);
                     if (dispatchToken == 0)
                     {
                         dispatchToken = CreateDispatchTokenForMethod(pMD);
-                        pMethod->pDataItems[ip[4]] = (void*)dispatchToken;
+                        VolatileStoreWithoutBarrier(&pMethod->pDataItems[ip[4]], (void*)dispatchToken);
                     }
 
                     // Try cache lookup first

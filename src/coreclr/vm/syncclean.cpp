@@ -9,7 +9,7 @@
 #include "threadsuspend.h"
 
 #ifdef FEATURE_INTERPRETER
-void InterpDispatchCache_ReclaimAll();
+#include "interpexec.h"
 #endif
 
 VolatilePtr<Bucket> SyncClean::m_HashMap = NULL;
