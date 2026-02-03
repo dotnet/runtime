@@ -1809,7 +1809,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void GetTypeInfo_MutableOptions_CanModifyMetadata()
         {
             var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
-            JsonTypeInfo<TestClassForEncoding> jti = (JsonTypeInfo<TestClassForEncoding>)options.GetTypeInfo(typeof(TestClassForEncoding));
+            JsonTypeInfo<TestClassForEncoding> jti = options.GetTypeInfo<TestClassForEncoding>();
 
             Assert.False(jti.IsReadOnly);
             Assert.Equal(1, jti.Properties.Count);
@@ -1827,14 +1827,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => options.IncludeFields = false);
 
             // Getting JsonTypeInfo now should return a fresh immutable instance
-            JsonTypeInfo<TestClassForEncoding> jti2 = (JsonTypeInfo<TestClassForEncoding>)options.GetTypeInfo(typeof(TestClassForEncoding));
+            JsonTypeInfo<TestClassForEncoding> jti2 = options.GetTypeInfo<TestClassForEncoding>();
             Assert.NotSame(jti, jti2);
             Assert.True(jti2.IsReadOnly);
             Assert.Equal(1, jti2.Properties.Count);
             Assert.Throws<InvalidOperationException>(() => jti2.Properties.Clear());
 
             // Subsequent requests return the same cached value
-            Assert.Same(jti2, options.GetTypeInfo(typeof(TestClassForEncoding)));
+            Assert.Same(jti2, options.GetTypeInfo<TestClassForEncoding>());
 
             // Default contract should produce expected JSON
             json = JsonSerializer.Serialize(value, options);
@@ -1923,7 +1923,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void GetTypeInfo_ResultsAreGeneric<T>(T value, string expectedJson)
         {
             var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
-            JsonTypeInfo<T> jsonTypeInfo = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
+            JsonTypeInfo<T> jsonTypeInfo = options.GetTypeInfo<T>();
             string json = JsonSerializer.Serialize(value, jsonTypeInfo);
             Assert.Equal(expectedJson, json);
             JsonSerializer.Deserialize(json, jsonTypeInfo);

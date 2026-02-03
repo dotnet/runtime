@@ -77,8 +77,12 @@ namespace System.Text.Json.Serialization.Tests
             return mutable ? options.TypeInfoResolver.GetTypeInfo(type, options) : options.GetTypeInfo(type);
         }
 
-        public JsonTypeInfo<T> GetTypeInfo<T>(JsonSerializerOptions? options = null,bool mutable = false)
-            => (JsonTypeInfo<T>)GetTypeInfo(typeof(T), options, mutable);
+        public JsonTypeInfo<T> GetTypeInfo<T>(JsonSerializerOptions? options = null, bool mutable = false)
+        {
+            options ??= DefaultOptions;
+            options.MakeReadOnly(populateMissingResolver: true);
+            return mutable ? (JsonTypeInfo<T>)options.TypeInfoResolver.GetTypeInfo(typeof(T), options) : options.GetTypeInfo<T>();
+        }
 
         public JsonSerializerOptions GetDefaultOptionsWithMetadataModifier(Action<JsonTypeInfo> modifier)
         {

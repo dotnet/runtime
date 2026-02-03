@@ -101,12 +101,7 @@ namespace System.Text.Json
         /// </remarks>
         public JsonTypeInfo<T> GetTypeInfo<T>()
         {
-            if (JsonTypeInfo.IsInvalidForSerialization(typeof(T)))
-            {
-                ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(T), typeof(T), null, null);
-            }
-
-            return (JsonTypeInfo<T>)GetTypeInfoInternal(typeof(T), resolveIfMutable: true);
+            return (JsonTypeInfo<T>)GetTypeInfo(typeof(T));
         }
 
         /// <summary>
@@ -121,14 +116,9 @@ namespace System.Text.Json
         /// </remarks>
         public bool TryGetTypeInfo<T>([NotNullWhen(true)] out JsonTypeInfo<T>? typeInfo)
         {
-            if (JsonTypeInfo.IsInvalidForSerialization(typeof(T)))
-            {
-                ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(T), typeof(T), null, null);
-            }
-
-            JsonTypeInfo? info = GetTypeInfoInternal(typeof(T), ensureNotNull: null, resolveIfMutable: true);
-            typeInfo = (JsonTypeInfo<T>?)info;
-            return typeInfo is not null;
+            bool success = TryGetTypeInfo(typeof(T), out JsonTypeInfo? nonGeneric);
+            typeInfo = (JsonTypeInfo<T>?)nonGeneric;
+            return success;
         }
 
         /// <summary>
