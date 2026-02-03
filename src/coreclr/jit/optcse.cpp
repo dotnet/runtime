@@ -209,7 +209,7 @@ bool Compiler::optUnmarkCSE(GenTree* tree)
 Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTree** pTree, fgWalkData* walkData)
 {
     GenTree*         tree      = *pTree;
-    Compiler*        comp      = walkData->compiler;
+    Compiler*        comp      = walkData->m_compiler;
     optCSE_MaskData* pUserData = (optCSE_MaskData*)(walkData->pCallbackData);
 
     return WALK_CONTINUE;

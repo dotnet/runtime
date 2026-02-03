@@ -2540,7 +2540,7 @@ void Compiler::fgDumpBlockMemorySsaOut(BasicBlock* block)
 Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree*  tree  = *pTree;
-    Compiler* pComp = data->compiler;
+    Compiler* pComp = data->m_compiler;
 
     if (!tree->OperIs(GT_MUL) || !tree->TypeIs(TYP_INT) || (tree->gtOverflow()))
     {
