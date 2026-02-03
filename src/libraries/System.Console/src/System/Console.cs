@@ -676,6 +676,9 @@ namespace System
         /// <remarks>
         /// The returned handle does not own the underlying resource, so disposing it will not close the standard output handle.
         /// </remarks>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static SafeFileHandle OpenStandardOutputHandle()
         {
             return ConsolePal.OpenStandardOutputHandle();
@@ -688,6 +691,9 @@ namespace System
         /// <remarks>
         /// The returned handle does not own the underlying resource, so disposing it will not close the standard error handle.
         /// </remarks>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static SafeFileHandle OpenStandardErrorHandle()
         {
             return ConsolePal.OpenStandardErrorHandle();

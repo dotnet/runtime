@@ -100,6 +100,9 @@ namespace System
         public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, System.ConsoleColor sourceForeColor, System.ConsoleColor sourceBackColor) { }
         public static System.IO.Stream OpenStandardError() { throw null; }
         public static System.IO.Stream OpenStandardError(int bufferSize) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenStandardErrorHandle() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -116,6 +119,9 @@ namespace System
         public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenStandardInputHandle() { throw null; }
         public static System.IO.Stream OpenStandardOutput() { throw null; }
         public static System.IO.Stream OpenStandardOutput(int bufferSize) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenStandardOutputHandle() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
