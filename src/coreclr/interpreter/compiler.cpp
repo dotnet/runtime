@@ -9240,6 +9240,13 @@ retry_emit:
                     EmitBranch(INTOP_BR, 5 + offset);
                     linkBBlocks = false;
                 }
+                else if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+                {
+                    // In debug builds, emit NOP for branches with offset 0 to create sequence point.
+                    // This allows debugger stepping to stop at "return;" statements that compile to
+                    // "br <next_instruction>" followed by "ret".
+                    AddIns(INTOP_NOP);
+                }
                 m_ip += 5;
                 break;
             }
@@ -9250,6 +9257,13 @@ retry_emit:
                 {
                     EmitBranch(INTOP_BR, 2 + (int8_t)m_ip [1]);
                     linkBBlocks = false;
+                }
+                else if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+                {
+                    // In debug builds, emit NOP for branches with offset 0 to create sequence point.
+                    // This allows debugger stepping to stop at "return;" statements that compile to
+                    // "br.s <next_instruction>" followed by "ret".
+                    AddIns(INTOP_NOP);
                 }
                 m_ip += 2;
                 break;
