@@ -4657,6 +4657,13 @@ namespace Internal.JitInterface
             return false;
         }
 
+        private CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoType* types)
+        {
+            // Use CorInfoImpl.RyuJit.cs and CorInfoImpl.ReadyToRun.cs if the implementation
+            // is not shared for NativeAOT and R2R.
+            throw new NotImplementedException();
+        }
+
         private CORINFO_METHOD_STRUCT_* getSpecialCopyHelper(CORINFO_CLASS_STRUCT_* type)
         {
             throw new NotImplementedException("getSpecialCopyHelper");

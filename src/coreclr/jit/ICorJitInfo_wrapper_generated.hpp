@@ -1749,6 +1749,15 @@ uint32_t WrapICorJitInfo::getJitFlags(
     return temp;
 }
 
+CORINFO_WASM_TYPE_SYMBOL_HANDLE WrapICorJitInfo::getWasmTypeSymbol(
+          CorInfoType* types)
+{
+    API_ENTER(getWasmTypeSymbol);
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE temp = wrapHnd->getWasmTypeSymbol(types);
+    API_LEAVE(getWasmTypeSymbol);
+    return temp;
+}
+
 CORINFO_METHOD_HANDLE WrapICorJitInfo::getSpecialCopyHelper(
           CORINFO_CLASS_HANDLE type)
 {

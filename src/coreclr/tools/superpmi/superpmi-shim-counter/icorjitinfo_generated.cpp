@@ -1447,6 +1447,13 @@ uint32_t interceptor_ICJI::getJitFlags(
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
 }
 
+CORINFO_WASM_TYPE_SYMBOL_HANDLE interceptor_ICJI::getWasmTypeSymbol(
+          CorInfoType* types)
+{
+    mcs->AddCall("getWasmTypeSymbol");
+    return original_ICorJitInfo->getWasmTypeSymbol(types);
+}
+
 CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(
           CORINFO_CLASS_HANDLE type)
 {

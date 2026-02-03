@@ -985,6 +985,7 @@ typedef struct CORINFO_ARG_LIST_STRUCT_*    CORINFO_ARG_LIST_HANDLE;    // repre
 typedef struct CORINFO_JUST_MY_CODE_HANDLE_*CORINFO_JUST_MY_CODE_HANDLE;
 typedef struct CORINFO_PROFILING_STRUCT_*   CORINFO_PROFILING_HANDLE;   // a handle guaranteed to be unique per process
 typedef struct CORINFO_GENERIC_STRUCT_*     CORINFO_GENERIC_HANDLE;     // a generic handle (could be any of the above)
+typedef struct CORINFO_WASM_TYPE_SYMBOL_STRUCT_* CORINFO_WASM_TYPE_SYMBOL_HANDLE; // a handle for WASM type symbols
 
 // what is actually passed on the varargs call
 typedef struct CORINFO_VarArgInfo *         CORINFO_VARARGS_HANDLE;
@@ -3459,6 +3460,10 @@ public:
     // but for tailcalls, the contract is that JIT leaves the indirection cell in
     // a register during tailcall.
     virtual void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) = 0;
+
+    virtual CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(
+        CorInfoType*              types
+        ) = 0;
 
     virtual CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;
 };
