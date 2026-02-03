@@ -1213,12 +1213,12 @@ void Compiler::optValnumCSE_SetUpAsyncByrefKills()
  */
 class CSE_DataFlow
 {
-    Compiler* m_comp;
+    Compiler* m_compiler;
     EXPSET_TP m_preMergeOut;
 
 public:
     CSE_DataFlow(Compiler* pCompiler)
-        : m_comp(pCompiler)
+        : m_compiler(pCompiler)
         , m_preMergeOut(BitVecOps::UninitVal())
     {
     }
@@ -1230,14 +1230,14 @@ public:
         // It is used in EndMerge() to control the termination of the DataFlow algorithm.
         // Note that the first time we visit a block, the value of bbCseOut is MakeFull()
         //
-        BitVecOps::Assign(m_comp->cseLivenessTraits, m_preMergeOut, block->bbCseOut);
+        BitVecOps::Assign(m_compiler->cseLivenessTraits, m_preMergeOut, block->bbCseOut);
 
 #if 0
 #ifdef DEBUG
-        if (m_comp->verbose)
+        if (m_compiler->verbose)
         {
             printf("StartMerge " FMT_BB "\n", block->bbNum);
-            printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
+            printf("  :: cseOut    = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseOut));
         }
 #endif // DEBUG
 #endif // 0
@@ -1248,22 +1248,22 @@ public:
     {
 #if 0
 #ifdef DEBUG
-        if (m_comp->verbose)
+        if (m_compiler->verbose)
         {
             printf("Merge " FMT_BB " and " FMT_BB "\n", block->bbNum, predBlock->bbNum);
-            printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
-            printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
+            printf("  :: cseIn     = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseIn));
+            printf("  :: cseOut    = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseOut));
         }
 #endif // DEBUG
 #endif // 0
 
-        BitVecOps::IntersectionD(m_comp->cseLivenessTraits, block->bbCseIn, predBlock->bbCseOut);
+        BitVecOps::IntersectionD(m_compiler->cseLivenessTraits, block->bbCseIn, predBlock->bbCseOut);
 
 #if 0
 #ifdef DEBUG
-        if (m_comp->verbose)
+        if (m_compiler->verbose)
         {
-            printf("  => cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
+            printf("  => cseIn     = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseIn));
         }
 #endif // DEBUG
 #endif // 0
@@ -1294,17 +1294,17 @@ public:
         //
         if (block->HasFlag(BBF_NO_CSE_IN))
         {
-            BitVecOps::ClearD(m_comp->cseLivenessTraits, block->bbCseIn);
+            BitVecOps::ClearD(m_compiler->cseLivenessTraits, block->bbCseIn);
         }
 
         // We can skip the calls kill step when our block doesn't have a callsite
         // or we don't have any available CSEs in our bbCseIn
         //
-        if (!block->HasFlag(BBF_HAS_CALL) || BitVecOps::IsEmpty(m_comp->cseLivenessTraits, block->bbCseIn))
+        if (!block->HasFlag(BBF_HAS_CALL) || BitVecOps::IsEmpty(m_compiler->cseLivenessTraits, block->bbCseIn))
         {
             // No callsite in 'block' or 'block->bbCseIn was empty, so we can use bbCseIn directly
             //
-            BitVecOps::DataFlowD(m_comp->cseLivenessTraits, block->bbCseOut, block->bbCseGen, block->bbCseIn);
+            BitVecOps::DataFlowD(m_compiler->cseLivenessTraits, block->bbCseOut, block->bbCseGen, block->bbCseIn);
         }
         else
         {
@@ -1314,12 +1314,12 @@ public:
 
             // cseIn_withCallsKill is set to (bbCseIn AND cseCallKillsMask)
             //
-            BitVecOps::Assign(m_comp->cseLivenessTraits, cseIn_withCallsKill, block->bbCseIn);
-            BitVecOps::IntersectionD(m_comp->cseLivenessTraits, cseIn_withCallsKill, m_comp->cseCallKillsMask);
+            BitVecOps::Assign(m_compiler->cseLivenessTraits, cseIn_withCallsKill, block->bbCseIn);
+            BitVecOps::IntersectionD(m_compiler->cseLivenessTraits, cseIn_withCallsKill, m_compiler->cseCallKillsMask);
 
             // Call DataFlowD with the modified BitVec: (bbCseIn AND cseCallKillsMask)
             //
-            BitVecOps::DataFlowD(m_comp->cseLivenessTraits, block->bbCseOut, block->bbCseGen, cseIn_withCallsKill);
+            BitVecOps::DataFlowD(m_compiler->cseLivenessTraits, block->bbCseOut, block->bbCseGen, cseIn_withCallsKill);
         }
 
         // The bool 'notDone' is our terminating condition.
@@ -1331,22 +1331,22 @@ public:
         // we visit a block we have a bit set in m_preMergeOut that won't be set when we compute
         // the new value of bbCseOut.
         //
-        bool notDone = !BitVecOps::Equal(m_comp->cseLivenessTraits, block->bbCseOut, m_preMergeOut);
+        bool notDone = !BitVecOps::Equal(m_compiler->cseLivenessTraits, block->bbCseOut, m_preMergeOut);
 
 #if 0
 #ifdef DEBUG
-        if (m_comp->verbose)
+        if (m_compiler->verbose)
         {
             printf("EndMerge " FMT_BB "\n", block->bbNum);
-            printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
+            printf("  :: cseIn     = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseIn));
             if (block->HasFlag(BBC_HAS_CALL) &&
-                !BitVecOps::IsEmpty(m_comp->cseLivenessTraits, block->bbCseIn))
+                !BitVecOps::IsEmpty(m_compiler->cseLivenessTraits, block->bbCseIn))
             {
-                printf("  -- cseKill   = %s\n", genES2str(m_comp->cseLivenessTraits, m_comp->cseCallKillsMask));
+                printf("  -- cseKill   = %s\n", genES2str(m_compiler->cseLivenessTraits, m_compiler->cseCallKillsMask));
             }
-            printf("  :: cseGen    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseGen));
-            printf("  => cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
-            printf("  != preMerge  = %s, => %s\n", genES2str(m_comp->cseLivenessTraits, m_preMergeOut),
+            printf("  :: cseGen    = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseGen));
+            printf("  => cseOut    = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseOut));
+            printf("  != preMerge  = %s, => %s\n", genES2str(m_compiler->cseLivenessTraits, m_preMergeOut),
                    notDone ? "true" : "false");
         }
 #endif // DEBUG
