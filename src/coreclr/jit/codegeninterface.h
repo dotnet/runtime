@@ -805,7 +805,7 @@ public:
         unsigned int m_LiveDscCount;  // count of args, special args, and IL local variables to report home
         unsigned int m_LiveArgsCount; // count of arguments to report home
 
-        Compiler* m_Compiler;
+        Compiler* m_compiler;
 
         VariableLiveDescriptor* m_vlrLiveDsc; // Array of descriptors that manage VariableLiveRanges.
                                               // Its indices correspond to lvaTable indexes (or lvSlotNum).
