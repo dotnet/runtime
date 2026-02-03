@@ -28,6 +28,8 @@ sleep 1
 if ! pgrep -x proftpd > /dev/null; then
     echo "ProFTPD failed to start, checking logs..."
     cat /var/log/proftpd/proftpd.log 2>/dev/null || echo "No ProFTPD log found"
+    echo "ProFTPD not running"
+    exit 1
 fi
 
 exec /usr/sbin/apache2 -DFOREGROUND "$@"
