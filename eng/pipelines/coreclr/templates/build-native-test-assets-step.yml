@@ -4,7 +4,7 @@ parameters:
   extraBuildArgs: ''
 
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(nativeTestArtifactConfig) $(archType) $(crossArg) $(priorityArg) -os ${{ parameters.extraBuildArgs }} ${{ parameters.compiler }}
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(nativeTestArtifactConfig) $(archType) $(crossArg) $(priorityArg) ${{ parameters.extraBuildArgs }} ${{ parameters.compiler }}
     displayName: Build native test components
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
