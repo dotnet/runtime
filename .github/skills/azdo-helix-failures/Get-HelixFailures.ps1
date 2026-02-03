@@ -538,7 +538,7 @@ function Extract-TestFailures {
 function Extract-BuildErrors {
     param(
         [string]$LogContent,
-        [int]$Context = $ContextLines
+        [int]$Context = 5
     )
 
     $errors = @()
