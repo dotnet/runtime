@@ -249,6 +249,9 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
     syscall(SYS_futex, address, FUTEX_WAKE_PRIVATE, 1);
 }
 #else// TARGET_LINUX
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
 void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
 {
     assert_msg(false, "Futex is not supported on this platform", 0);
@@ -270,6 +273,7 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
     errno = ENOTSUP;
     // trivial implementation of Wake does nothing.
 }
+#pragma clang diagnostic pop
 #endif  // TARGET_LINUX
 
 int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
