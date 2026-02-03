@@ -34,21 +34,13 @@ namespace System
             return new UnixConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
         }
 
-        public static SafeFileHandle OpenStandardInputHandle(bool verifyFd = true) => OpenStandardHandle(0, FileAccess.Read, verifyFd);
+        public static SafeFileHandle OpenStandardInputHandle() => OpenStandardHandle(0);
 
-        public static SafeFileHandle OpenStandardOutputHandle(bool verifyFd = true) => OpenStandardHandle(1, FileAccess.Write, verifyFd);
+        public static SafeFileHandle OpenStandardOutputHandle() => OpenStandardHandle(1);
 
-        public static SafeFileHandle OpenStandardErrorHandle(bool verifyFd = true) => OpenStandardHandle(2, FileAccess.Write, verifyFd);
+        public static SafeFileHandle OpenStandardErrorHandle() => OpenStandardHandle(2);
 
-        private static SafeFileHandle OpenStandardHandle(IntPtr fd, FileAccess access, bool verifyFd)
-        {
-            if (verifyFd && Interop.Sys.Fcntl.CheckAccess(fd, (int)access) == -1)
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_InvalidHandle);
-            }
-
-            return new SafeFileHandle(fd, ownsHandle: false);
-        }
+        private static SafeFileHandle OpenStandardHandle(IntPtr fd) => new SafeFileHandle(fd, ownsHandle: false);
 
         public static Encoding InputEncoding
         {

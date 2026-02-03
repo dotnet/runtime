@@ -657,7 +657,6 @@ namespace System
         /// Gets the standard input handle.
         /// </summary>
         /// <returns>A <see cref="SafeFileHandle"/> representing the standard input handle.</returns>
-        /// <exception cref="InvalidOperationException">The current process does not have a valid standard input handle.</exception>
         /// <remarks>
         /// The returned handle does not own the underlying resource, so disposing it will not close the standard input handle.
         /// </remarks>
@@ -674,7 +673,6 @@ namespace System
         /// Gets the standard output handle.
         /// </summary>
         /// <returns>A <see cref="SafeFileHandle"/> representing the standard output handle.</returns>
-        /// <exception cref="InvalidOperationException">The current process does not have a valid standard output handle.</exception>
         /// <remarks>
         /// The returned handle does not own the underlying resource, so disposing it will not close the standard output handle.
         /// </remarks>
@@ -687,7 +685,6 @@ namespace System
         /// Gets the standard error handle.
         /// </summary>
         /// <returns>A <see cref="SafeFileHandle"/> representing the standard error handle.</returns>
-        /// <exception cref="InvalidOperationException">The current process does not have a valid standard error handle.</exception>
         /// <remarks>
         /// The returned handle does not own the underlying resource, so disposing it will not close the standard error handle.
         /// </remarks>

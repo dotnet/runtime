@@ -112,17 +112,6 @@ namespace System
         private static SafeFileHandle OpenStandardHandle(int handleType)
         {
             IntPtr handle = Interop.Kernel32.GetStdHandle(handleType);
-            bool isReadable = handleType == Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE;
-
-            // If someone launches a managed process via CreateProcess, stdin/stdout/stderr
-            // could be set to INVALID_HANDLE_VALUE or they might use 0 as an invalid handle.
-            // We also need to ensure that the handle is readable (for stdin) or writable (for stdout/stderr).
-            if (handle == IntPtr.Zero || handle == InvalidHandleValue
-                || (isReadable ? !ConsoleHandleIsReadable(handle) : !ConsoleHandleIsWritable(handle)))
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_InvalidHandle);
-            }
-
             return new SafeFileHandle(handle, ownsHandle: false);
         }
 

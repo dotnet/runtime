@@ -19,9 +19,6 @@ internal static partial class Interop
             [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlGetIsNonBlocking", SetLastError = true)]
             internal static partial int GetIsNonBlocking(SafeHandle fd, [MarshalAs(UnmanagedType.Bool)] out bool isNonBlocking);
 
-            [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlCheckAccess", SetLastError = true)]
-            internal static partial int CheckAccess(IntPtr fd, int requestedMode);
-
             [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlSetFD", SetLastError = true)]
             internal static partial int SetFD(SafeHandle fd, int flags);
 

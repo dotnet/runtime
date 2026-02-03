@@ -248,9 +248,6 @@
   <data name="IO_TermInfoInvalidMagicNumber" xml:space="preserve">
     <value>The terminfo database has an invalid magic number: '{0}'.</value>
   </data>
-  <data name="InvalidOperation_InvalidHandle" xml:space="preserve">
-    <value>The handle is invalid.</value>
-  </data>
   <data name="PlatformNotSupported_SystemConsole" xml:space="preserve">
     <value>System.Console is not supported on this platform.</value>
   </data>

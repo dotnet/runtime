@@ -504,13 +504,6 @@ PALEXPORT int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonB
 PALEXPORT int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking);
 
 /**
- * Checks if a file descriptor is valid and opened with the specified access mode.
- *
- * Returns 0 if valid and has the required access, -1 otherwise.
- */
-PALEXPORT int32_t SystemNative_FcntlCheckAccess(intptr_t fd, int32_t requestedAccess);
-
-/**
  * Create a directory. Implemented as a shim to mkdir(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno for failure.
