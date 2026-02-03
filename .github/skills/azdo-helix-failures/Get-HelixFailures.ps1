@@ -388,6 +388,177 @@ function Get-BuildAnalysisKnownIssues {
     }
 }
 
+function Get-PRChangedFiles {
+    param(
+        [int]$PR,
+        [int]$MaxFiles = 100
+    )
+
+    # Check for gh CLI dependency
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+        Write-Verbose "GitHub CLI (gh) not available for PR file lookup"
+        return @()
+    }
+
+    Write-Verbose "Fetching changed files for PR #$PR..."
+
+    try {
+        # Get the file count first to avoid fetching huge PRs
+        $fileCount = gh pr view $PR --repo $Repository --json files --jq '.files | length' 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Verbose "Failed to get PR file count: $fileCount"
+            return @()
+        }
+
+        $count = [int]$fileCount
+        if ($count -gt $MaxFiles) {
+            Write-Verbose "PR has $count files (exceeds limit of $MaxFiles) - skipping correlation"
+            Write-Host "PR has $count changed files - skipping detailed correlation (limit: $MaxFiles)" -ForegroundColor Gray
+            return @()
+        }
+
+        # Get the list of changed files
+        $filesJson = gh pr view $PR --repo $Repository --json files --jq '.files[].path' 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Verbose "Failed to get PR files: $filesJson"
+            return @()
+        }
+
+        $files = $filesJson -split "`n" | Where-Object { $_ }
+        return $files
+    }
+    catch {
+        Write-Verbose "Error fetching PR files: $_"
+        return @()
+    }
+}
+
+function Get-PRCorrelation {
+    param(
+        [array]$ChangedFiles,
+        [string]$FailureInfo
+    )
+
+    # Extract potential file/test names from the failure info
+    $correlations = @()
+
+    foreach ($file in $ChangedFiles) {
+        $fileName = [System.IO.Path]::GetFileNameWithoutExtension($file)
+        $fileNameWithExt = [System.IO.Path]::GetFileName($file)
+
+        # Check if the failure mentions this file
+        if ($FailureInfo -match [regex]::Escape($fileName) -or
+            $FailureInfo -match [regex]::Escape($fileNameWithExt)) {
+            $correlations += @{
+                File = $file
+                MatchType = "direct"
+            }
+        }
+
+        # Check for test file patterns
+        if ($file -match '\.Tests?\.' -or $file -match '/tests?/' -or $file -match '\\tests?\\') {
+            # This is a test file - check if the test name appears in failures
+            if ($FailureInfo -match [regex]::Escape($fileName)) {
+                $correlations += @{
+                    File = $file
+                    MatchType = "test"
+                }
+            }
+        }
+    }
+
+    return $correlations | Select-Object -Unique -Property File, MatchType
+}
+
+function Show-PRCorrelationSummary {
+    param(
+        [array]$ChangedFiles,
+        [array]$AllFailures
+    )
+
+    if ($ChangedFiles.Count -eq 0) {
+        return
+    }
+
+    # Combine all failure info into searchable text
+    $failureText = ($AllFailures | ForEach-Object {
+        $_.TaskName
+        $_.JobName
+        $_.Errors -join "`n"
+        $_.HelixLogs -join "`n"
+        $_.FailedTests -join "`n"
+    }) -join "`n"
+
+    # Also include the raw local test failure messages which may contain test class names
+    # These come from the "issues" property on local failures
+
+    # Find correlations
+    $correlatedFiles = @()
+    $testFiles = @()
+
+    foreach ($file in $ChangedFiles) {
+        $fileName = [System.IO.Path]::GetFileNameWithoutExtension($file)
+        $fileNameWithExt = [System.IO.Path]::GetFileName($file)
+
+        # For files like NtAuthTests.FakeServer.cs, also check NtAuthTests
+        $baseTestName = $fileName -replace '\.[^.]+$', ''  # Remove .FakeServer etc.
+
+        # Check if this file appears in any failure
+        $isCorrelated = $false
+
+        if ($failureText -match [regex]::Escape($fileName) -or
+            $failureText -match [regex]::Escape($fileNameWithExt) -or
+            $failureText -match [regex]::Escape($file) -or
+            ($baseTestName -and $failureText -match [regex]::Escape($baseTestName))) {
+            $isCorrelated = $true
+        }
+
+        # Track test files separately
+        $isTestFile = $file -match '\.Tests?\.' -or $file -match '[/\\]tests?[/\\]' -or $file -match 'Test\.cs$' -or $file -match 'Tests\.cs$'
+
+        if ($isCorrelated) {
+            if ($isTestFile) {
+                $testFiles += $file
+            } else {
+                $correlatedFiles += $file
+            }
+        }
+    }
+
+    # Show results
+    if ($correlatedFiles.Count -gt 0 -or $testFiles.Count -gt 0) {
+        Write-Host "`n=== PR Change Correlation ===" -ForegroundColor Magenta
+
+        if ($testFiles.Count -gt 0) {
+            Write-Host "⚠️  Test files changed by this PR are failing:" -ForegroundColor Yellow
+            $shown = 0
+            foreach ($file in $testFiles) {
+                if ($shown -ge 10) {
+                    Write-Host "    ... and $($testFiles.Count - 10) more test files" -ForegroundColor Gray
+                    break
+                }
+                Write-Host "    $file" -ForegroundColor Red
+                $shown++
+            }
+        }
+
+        if ($correlatedFiles.Count -gt 0) {
+            Write-Host "⚠️  Files changed by this PR appear in failures:" -ForegroundColor Yellow
+            $shown = 0
+            foreach ($file in $correlatedFiles) {
+                if ($shown -ge 10) {
+                    Write-Host "    ... and $($correlatedFiles.Count - 10) more files" -ForegroundColor Gray
+                    break
+                }
+                Write-Host "    $file" -ForegroundColor Red
+                $shown++
+            }
+        }
+
+        Write-Host "`nThese failures are likely PR-related." -ForegroundColor Yellow
+    }
+}
+
 function Get-AzDOBuildStatus {
     param([int]$Build)
 
@@ -1355,11 +1526,18 @@ try {
     # Get build ID(s) if using PR number
     $buildIds = @()
     $knownIssuesFromBuildAnalysis = @()
+    $prChangedFiles = @()
     if ($PSCmdlet.ParameterSetName -eq 'PRNumber') {
         $buildIds = @(Get-AzDOBuildIdFromPR -PR $PRNumber)
 
         # Check Build Analysis for known issues
         $knownIssuesFromBuildAnalysis = @(Get-BuildAnalysisKnownIssues -PR $PRNumber)
+
+        # Get changed files for correlation
+        $prChangedFiles = @(Get-PRChangedFiles -PR $PRNumber)
+        if ($prChangedFiles.Count -gt 0) {
+            Write-Verbose "PR has $($prChangedFiles.Count) changed files"
+        }
     }
     else {
         $buildIds = @($BuildId)
@@ -1368,6 +1546,7 @@ try {
     # Process each build
     $totalFailedJobs = 0
     $totalLocalFailures = 0
+    $allFailuresForCorrelation = @()
 
     foreach ($currentBuildId in $buildIds) {
         Write-Host "`n=== Azure DevOps Build $currentBuildId ===" -ForegroundColor Yellow
@@ -1426,6 +1605,16 @@ try {
 
             foreach ($failure in $localTestFailures) {
                 Write-Host "`n--- $($failure.TaskName) ---" -ForegroundColor Cyan
+
+                # Collect issues for correlation
+                $issueMessages = $failure.Issues | ForEach-Object { $_.message }
+                $allFailuresForCorrelation += @{
+                    TaskName = $failure.TaskName
+                    JobName = "Local Test"
+                    Errors = $issueMessages
+                    HelixLogs = @()
+                    FailedTests = @()
+                }
 
                 # Show build and log links
                 $jobLogUrl = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId&view=logs&j=$($failure.ParentJobId)"
@@ -1507,6 +1696,15 @@ try {
                                 foreach ($failure in $failures) {
                                     Write-Host "    - $($failure.TestName)" -ForegroundColor White
                                 }
+
+                                # Collect for PR correlation
+                                $allFailuresForCorrelation += @{
+                                    TaskName = $task.name
+                                    JobName = $job.name
+                                    Errors = @()
+                                    HelixLogs = @()
+                                    FailedTests = $failures | ForEach-Object { $_.TestName }
+                                }
                             }
 
                             # Extract and optionally fetch Helix URLs
@@ -1568,6 +1766,15 @@ try {
                             $buildErrors = Extract-BuildErrors -LogContent $logContent
 
                             if ($buildErrors.Count -gt 0) {
+                                # Collect for PR correlation
+                                $allFailuresForCorrelation += @{
+                                    TaskName = $task.name
+                                    JobName = $job.name
+                                    Errors = $buildErrors
+                                    HelixLogs = @()
+                                    FailedTests = @()
+                                }
+
                                 # Extract Helix log URLs from the full log content
                                 $helixLogUrls = Extract-HelixLogUrls -LogContent $logContent
 
@@ -1630,6 +1837,11 @@ try {
         Write-Host "API errors (partial results): $errorCount" -ForegroundColor Yellow
     }
     Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId" -ForegroundColor Cyan
+}
+
+# Show PR change correlation if we have changed files
+if ($prChangedFiles.Count -gt 0 -and $allFailuresForCorrelation.Count -gt 0) {
+    Show-PRCorrelationSummary -ChangedFiles $prChangedFiles -AllFailures $allFailuresForCorrelation
 }
 
 # Overall summary if multiple builds
