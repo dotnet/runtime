@@ -2344,6 +2344,13 @@ bool GenTreeCall::HasNonStandardAddedArgs(Compiler* compiler) const
 //
 int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 {
+#if defined(TARGET_WASM)
+    // TODO-WASM: may need adjustments for other hidden args
+    // For now: managed calls get extra SP + PortableEntryPoint args, but
+    // we're not adding the PE arg yet. So just note one extra arg.
+    return IsUnmanaged() ? 0 : 1;
+#endif // defined(TARGET_WASM)
+
     if (IsUnmanaged() && !compiler->opts.ShouldUsePInvokeHelpers())
     {
         // R11 = PInvoke cookie param
@@ -2370,49 +2377,13 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 //
 // Arguments:
 //     compiler    - [In]  the compiler instance so that we can call eeFindHelper
-//     pMethHandle - [Out] the method handle if the call is a devirtualization candidate
 //
 // Return Value:
 //     Returns true if this GT_CALL node is a devirtualization candidate.
 //
-bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler, CORINFO_METHOD_HANDLE* pMethHandle) const
+bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler) const
 {
-    CORINFO_METHOD_HANDLE methHandleToDevirt = NO_METHOD_HANDLE;
-    bool                  isDevirtCandidate  = false;
-
-    if (IsVirtual() && gtCallType == CT_USER_FUNC)
-    {
-        methHandleToDevirt = gtCallMethHnd;
-        isDevirtCandidate  = true;
-    }
-    else if (IsGenericVirtual(compiler) && (JitConfig.JitEnableGenericVirtualDevirtualization() != 0))
-    {
-        GenTree* runtimeMethHndNode =
-            gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
-        assert(runtimeMethHndNode != nullptr);
-        switch (runtimeMethHndNode->OperGet())
-        {
-            case GT_RUNTIMELOOKUP:
-                methHandleToDevirt = runtimeMethHndNode->AsRuntimeLookup()->GetMethodHandle();
-                isDevirtCandidate  = true;
-                break;
-            case GT_CNS_INT:
-                methHandleToDevirt = CORINFO_METHOD_HANDLE(runtimeMethHndNode->AsIntCon()->gtCompileTimeHandle);
-                isDevirtCandidate  = true;
-                break;
-            default:
-                // Unable to get method handle for devirtualization.
-                // This can happen if the method handle is not an RUNTIMELOOKUP or CNS_INT for generic virtuals,
-                break;
-        }
-    }
-
-    if (pMethHandle)
-    {
-        *pMethHandle = methHandleToDevirt;
-    }
-
-    return isDevirtCandidate;
+    return IsVirtual() || (IsGenericVirtual(compiler) && (JitConfig.JitEnableGenericVirtualDevirtualization() != 0));
 }
 
 //-------------------------------------------------------------------------
@@ -2666,7 +2637,7 @@ AGAIN:
     }
 
     /* Sensible flags must be equal */
-    if ((op1->gtFlags & (GTF_UNSIGNED)) != (op2->gtFlags & (GTF_UNSIGNED)))
+    if (op1->IsUnsigned() != op2->IsUnsigned())
     {
         return false;
     }
@@ -4845,9 +4816,39 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         gtWalkOp(&op2, &op1, nullptr, true);
 #endif // defined(TARGET_XARCH)
 
-        if ((mul > 1) && (op2 != nullptr) && op2->OperIs(GT_LSH, GT_MUL))
+        bool noCSE = (op2 != nullptr) && op2->OperIs(GT_LSH, GT_MUL);
+#if defined(TARGET_RISCV64)
+        noCSE = noCSE && this->compOpportunisticallyDependsOn(InstructionSet_Zba);
+#else
+        noCSE = noCSE && (mul > 1);
+#endif // defined(TARGET_RISCV64)
+
+        if (noCSE)
         {
             op2->gtFlags |= GTF_ADDRMODE_NO_CSE;
+#if defined(TARGET_RISCV64)
+            // RISC-V addressing mode follows the form: (base + index*scale) + offset.
+            // To emit sh1/2/3add.uw, GT_ADD + GT_LSH/MUL + GT_CAST(zero-extend) nodes are required (Zba extension).
+            // Disabling CSE for GT_CAST prevents breaking the pattern and ensures emitting sh1/2/3add.uw.
+            // Note that emitting sh1/2/3add instructions (without .uw) don't require a GT_CAST node.
+            //
+            // Example:
+            //      ADD
+            //      |- ADD
+            //      |  |- LCL_VAR       (base)
+            //      |  |- LSH (or MUL)  (index * scale)
+            //      |     |- GT_CAST    (index, CSE must be disabled here to emit sh1/2/3add.uw)
+            //      |        |- OP1     (CSE/ConstCSE allowed here)
+            //      |     |- CNS_INT    (scale)
+            //      |- CNS_INT          (offset)
+
+            GenTree* index = op2->gtGetOp1();
+            if ((index != nullptr) && index->OperIs(GT_CAST))
+            {
+                assert(index->TypeIs(TYP_I_IMPL));
+                index->gtFlags |= GTF_ADDRMODE_NO_CSE;
+            }
+#endif // defined(TARGET_RISCV64)
         }
 
         // Finally, adjust the costs on the parenting COMMAs.
@@ -5512,10 +5513,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = 1;
                     costSz = 4;
 #elif defined(TARGET_WASM)
-                    // TODO-WASM: 1 byte opcodes except for the int->fp saturating casts which are 2 bytes.
-                    NYI_WASM("Cast costing");
-                    costEx = 0;
-                    costSz = 0;
+                    // TODO-WASM: Determine if we need a better costing model for casts.
+                    // Some operations may use 2-byte opcodes, and some operations may need
+                    // multiple wasm instructions.
+                    costEx = 2;
+                    costSz = varTypeIsFloating(op1) && !varTypeIsFloating(tree->TypeGet()) ? 2 : 1;
 #else
 #error "Unknown TARGET"
 #endif
@@ -11974,6 +11976,12 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             {
                 ilName = "AsyncCont";
             }
+#if defined(TARGET_WASM)
+            else if (lclNum == lvaWasmSpArg)
+            {
+                ilName = "SP";
+            }
+#endif // defined(TARGET_WASM)
             else
             {
                 ilKind = "tmp";
@@ -11990,7 +11998,7 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
     }
     else if (lclNum < (compIsForInlining() ? impInlineInfo->InlinerCompiler->info.compArgsCount : info.compArgsCount))
     {
-        if (ilNum == 0 && !info.compIsStatic)
+        if ((ilNum == 0) && !info.compIsStatic)
         {
             ilName = "this";
         }
@@ -12762,7 +12770,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
             var_types finalType = tree->TypeGet();
 
             /* if GTF_UNSIGNED is set then force fromType to an unsigned type */
-            if (tree->gtFlags & GTF_UNSIGNED)
+            if (tree->IsUnsigned())
             {
                 fromType = varTypeToUnsigned(fromType);
             }
@@ -21945,19 +21953,19 @@ GenTree* Compiler::gtNewSimdCvtNode(
         switch (simdTargetBaseType)
         {
             case TYP_INT:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt32WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation;
                 break;
 
             case TYP_UINT:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt32WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation;
                 break;
 
             case TYP_LONG:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt64WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation;
                 break;
 
             case TYP_ULONG:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt64WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation;
                 break;
 
             default:
@@ -32987,7 +32995,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         // Handle `x & 0 == 0` and `0 & x == 0`
                         if (cnsNode->IsMaskZero())
                         {
-                            resultNode = otherNode;
+                            resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                             break;
                         }
 

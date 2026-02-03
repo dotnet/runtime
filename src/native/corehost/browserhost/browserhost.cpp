@@ -44,11 +44,13 @@ extern "C"
     pal::hresult_t coreclr_set_error_writer(
         coreclr_error_writer_callback_fn error_writer);
 
+#if !GEN_PINVOKE
     const void* SystemResolveDllImport(const char* name);
     const void* SystemJSResolveDllImport(const char* name);
     const void* SystemJSInteropResolveDllImport(const char* name);
     const void* GlobalizationResolveDllImport(const char* name);
     const void* CompressionResolveDllImport(const char* name);
+#endif // not GEN_PINVOKE
 
     bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
 }
@@ -62,6 +64,9 @@ static void log_error_info(const char* line)
     std::fprintf(stderr, "log error: %s\n", line);
 }
 
+#if GEN_PINVOKE
+const void* callhelpers_pinvoke_override(const char* library_name, const char* entry_point_name);
+#else
 static const void* pinvoke_override(const char* library_name, const char* entry_point_name)
 {
     if (strcmp(library_name, "libSystem.Native") == 0)
@@ -88,12 +93,17 @@ static const void* pinvoke_override(const char* library_name, const char* entry_
 
     return nullptr;
 }
+#endif // GEN_PINVOKE
 
 static host_runtime_contract host_contract = { sizeof(host_runtime_contract), nullptr };
 
 extern "C" void* BrowserHost_CreateHostContract(void)
 {
+#if GEN_PINVOKE
+    host_contract.pinvoke_override = &callhelpers_pinvoke_override;
+#else
     host_contract.pinvoke_override = &pinvoke_override;
+#endif // GEN_PINVOKE
     host_contract.external_assembly_probe = &BrowserHost_ExternalAssemblyProbe;
     return &host_contract;
 }
