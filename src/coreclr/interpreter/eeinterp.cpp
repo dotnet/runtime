@@ -54,6 +54,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 {
 
     bool doInterpret = false;
+    ArenaAllocatorWithDestructorT<InterpMemKindTraits> arenaAllocator;
 
     if ((g_interpModule != NULL) && (methodInfo->scope == g_interpModule))
         doInterpret = true;
@@ -111,12 +112,12 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
     try
     {
-        InterpreterRetryData retryData;
+        InterpreterRetryData retryData(&arenaAllocator);
 
         while (true)
         {
             retryData.StartCompilationAttempt();
-            InterpCompiler compiler(compHnd, methodInfo, &retryData);
+            InterpCompiler compiler(compHnd, methodInfo, &retryData, &arenaAllocator);
             InterpMethod *pMethod = compiler.CompileMethod();
             if (pMethod == NULL)
             {

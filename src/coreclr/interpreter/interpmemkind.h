@@ -11,20 +11,29 @@
 // This follows the same X-macro pattern as the JIT's compmemkind.h.
 
 // clang-format off
-InterpMemKindMacro(Generic)           // General/uncategorized allocations
+InterpMemKindMacro(AllocOffsets)      // Allloc offsets allocations
+InterpMemKindMacro(AsyncSuspend)      // Async suspend allocations
 InterpMemKindMacro(BasicBlock)        // InterpBasicBlock allocations
-InterpMemKindMacro(Instruction)       // InterpInst allocations
-InterpMemKindMacro(StackInfo)         // Stack state tracking
 InterpMemKindMacro(CallInfo)          // Call metadata (InterpCallInfo)
-InterpMemKindMacro(Var)               // Variable tracking (InterpVar)
-InterpMemKindMacro(GC)                // GC info encoding
-InterpMemKindMacro(Reloc)             // Relocations
+InterpMemKindMacro(ConservativeRange) // Conservative GC range tracking
 InterpMemKindMacro(DataItem)          // Data items array
-InterpMemKindMacro(ILCode)            // IL code buffers
-InterpMemKindMacro(SwitchTable)       // Switch target tables
-InterpMemKindMacro(EHClause)          // Exception handling clauses
-InterpMemKindMacro(IntervalMap)       // Variable interval maps
 InterpMemKindMacro(DebugOnly)         // Debug-only allocations
+InterpMemKindMacro(DelegateCtorPeep)  // Ldftn delegate constructor peep info
+InterpMemKindMacro(EHClause)          // Exception handling clauses
+InterpMemKindMacro(GC)                // GC info encoding
+InterpMemKindMacro(Generic)           // General/uncategorized allocations
+InterpMemKindMacro(ILCode)            // IL code buffers
+InterpMemKindMacro(Instruction)       // InterpInst allocations
+InterpMemKindMacro(IntervalMap)       // Variable interval maps
+InterpMemKindMacro(NativeToILMapping) // Native to IL offset mappings
+InterpMemKindMacro(Reloc)             // Relocations
+InterpMemKindMacro(RetryData)         // Data for retrying compilation
+InterpMemKindMacro(StackInfo)         // Stack state tracking
+InterpMemKindMacro(StackMap)          // Stack map information
+InterpMemKindMacro(StackMapHash)      // Stack map hash information
+InterpMemKindMacro(SwitchTable)       // Switch target tables
+InterpMemKindMacro(Var)               // Variable tracking (InterpVar)
+InterpMemKindMacro(VarSizedDataItem)  // Variable-sized data items
 // clang-format on
 
 #undef InterpMemKindMacro

@@ -134,7 +134,7 @@ public:
     //       goes out of scope is either uninitialized or has been torn down via a call to
     //       destroy(), but this interacts badly in methods that use SEH. #3058 tracks
     //       revisiting EH in the JIT; such a destructor could be added if SEH is removed
-    //       as part of that work.
+    //       as part of that work. For situations where a destructor can be used, use ArenaAllocatorWithDestructorT instead.
 
     void destroy();
 
@@ -152,6 +152,16 @@ public:
     static size_t roundUp(size_t size, size_t alignment)
     {
         return (size + (alignment - 1)) & ~(alignment - 1);
+    }
+};
+
+template <typename TMemKindTraits>
+class ArenaAllocatorWithDestructorT : public ArenaAllocatorT<TMemKindTraits>
+{
+public:
+    ~ArenaAllocatorWithDestructorT()
+    {
+        this->destroy();
     }
 };
 

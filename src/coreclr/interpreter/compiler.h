@@ -11,56 +11,7 @@
 #include "failures.h"
 #include "simdhash.h"
 #include "intrinsics.h"
-
-// Include shared arena allocator infrastructure
-#include "../jitshared/arenaallocator.h"
-#include "../jitshared/compallocator.h"
-#include "../jitshared/memstats.h"
-#include "../jitshared/histogram.h"
-
-// InterpMemKind values are used to tag memory allocations performed via
-// the compiler's allocator so that the memory usage of various compiler
-// components can be tracked separately (when MEASURE_MEM_ALLOC is defined).
-
-enum InterpMemKind
-{
-#define InterpMemKindMacro(kind) IMK_##kind,
-#include "interpmemkind.h"
-    IMK_Count
-};
-
-// InterpMemKindTraits provides the traits required by MemStats and CompAllocator templates.
-struct InterpMemKindTraits
-{
-    using MemKind = InterpMemKind;
-    static constexpr int Count = IMK_Count;
-    static const char* const Names[];
-
-    // Returns true if the allocator should bypass the host allocator and use direct malloc/free.
-    static bool bypassHostAllocator();
-
-    // Returns true if the allocator should inject faults for testing purposes.
-    static bool shouldInjectFault();
-
-    // Allocates a block of memory from the host.
-    static void* allocateHostMemory(size_t size, size_t* pActualSize);
-
-    // Frees a block of memory previously allocated by allocateHostMemory.
-    static void freeHostMemory(void* block, size_t size);
-
-    // Fills a memory block with an uninitialized pattern (for DEBUG builds).
-    static void fillWithUninitializedPattern(void* block, size_t size);
-
-    // Called when allocation fails - calls NOMEM() which does not return.
-    static void outOfMemory();
-};
-
-// InterpArenaAllocator is the arena allocator type used for interpreter compilations.
-using InterpArenaAllocator = ArenaAllocatorT<InterpMemKindTraits>;
-
-// InterpAllocator is the allocator type used for interpreter compilations.
-// It wraps ArenaAllocator and tracks allocations by InterpMemKind.
-using InterpAllocator = CompAllocatorT<InterpMemKindTraits>;
+#include "interpalloc.h"
 
 struct InterpException
 {
@@ -84,7 +35,7 @@ class MemPoolAllocator
     InterpCompiler* const m_compiler;
     InterpMemKind m_memKind;
 public:
-    MemPoolAllocator(InterpCompiler* compiler, InterpMemKind memKind = IMK_Generic)
+    MemPoolAllocator(InterpCompiler* compiler, InterpMemKind memKind)
         : m_compiler(compiler), m_memKind(memKind) {}
     void* Alloc(size_t sz) const;
     void Free(void* ptr) const;
@@ -275,11 +226,11 @@ struct InterpCallInfo
     // For call instructions, this represents an array of all call arg vars
     // in the order they are pushed to the stack. This makes it easy to find
     // all source vars for these types of opcodes. This is terminated with -1.
-    int32_t *pCallArgs;
-    int32_t callOffset;
+    int32_t *pCallArgs = nullptr;
+    int32_t callOffset = 0;
     union {
         // Array of call dependencies that need to be resolved before
-        TSList<InterpInst*> *callDeps;
+        TSList<InterpInst*> *callDeps = nullptr;
         // Stack end offset of call arguments
         int32_t callEndOffset;
     };
@@ -436,18 +387,18 @@ struct InterpBasicBlock
 
 struct InterpVar
 {
-    CORINFO_CLASS_HANDLE clsHnd;
-    InterpType interpType;
-    int offset;
-    int size;
+    CORINFO_CLASS_HANDLE clsHnd = nullptr;
+    InterpType interpType = (InterpType)0;
+    int offset = 0;
+    int size = 0;
     // live_start and live_end are used by the offset allocator
-    InterpInst* liveStart;
-    InterpInst* liveEnd;
+    InterpInst* liveStart = nullptr;
+    InterpInst* liveEnd = nullptr;
     // index of first basic block where this var is used
-    int bbIndex;
+    int bbIndex = -1;
     // If var is callArgs, this is the call instruction using it.
     // Only used by the var offset allocator
-    InterpInst *call;
+    InterpInst *call = nullptr;
 
     unsigned int callArgs : 1; // Var used as argument to a call
     unsigned int noCallArgs : 1; // Var can't be used as argument to a call, needs to be copied to temp
@@ -455,6 +406,15 @@ struct InterpVar
     unsigned int ILGlobal : 1; // Args and IL locals
     unsigned int alive : 1; // Used internally by the var offset allocator
     unsigned int pinned : 1; // Indicates that the var had the 'pinned' modifier in IL
+    InterpVar()
+    {
+        callArgs = false;
+        noCallArgs = false;
+        global = false;
+        ILGlobal = false;
+        alive = false;
+        pinned = false;
+    }
 
     InterpVar(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size)
     {
@@ -477,10 +437,13 @@ struct InterpVar
 struct StackInfo
 {
 private:
-    StackType type;
+    StackType type = (StackType)0;
 public:
 
-    CORINFO_CLASS_HANDLE clsHnd;
+    CORINFO_CLASS_HANDLE clsHnd = 0;
+    // The var associated with the value of this stack entry. Every time we push on
+    // the stack a new var is created.
+    int var = 0;
 
     StackType GetStackType()
     {
@@ -525,9 +488,7 @@ public:
         }
     }
 
-    // The var associated with the value of this stack entry. Every time we push on
-    // the stack a new var is created.
-    int var;
+    StackInfo() {}
 
     StackInfo(StackType type, CORINFO_CLASS_HANDLE clsHnd, int var)
     {
@@ -603,17 +564,22 @@ class InterpreterRetryData
     bool m_needsRetry = false;
     int32_t m_tryCount = 0;
     const char *m_reasonString = "";
+    InterpArenaAllocator *m_arenaAllocator;
 
     dn_simdhash_u32_ptr_holder m_ilMergePointStackTypes;
 
-    static void FreeStackInfo(uint32_t key, void *value, void *userdata)
+    // Returns an allocator for the specified memory kind. Use this for categorized
+    // allocations to enable memory profiling when MEASURE_MEM_ALLOC is defined.
+    InterpAllocator getAllocator(InterpMemKind imk)
     {
-        free(value);
+        return InterpAllocator(m_arenaAllocator, imk);
     }
+
 public:
 
-    InterpreterRetryData()
-        : m_ilMergePointStackTypes(FreeStackInfo)
+    InterpreterRetryData(InterpArenaAllocator* arenaAllocator)
+        : m_arenaAllocator(arenaAllocator),
+          m_ilMergePointStackTypes(getAllocator(IMK_RetryData))
     {
 
     }
@@ -659,7 +625,7 @@ class InterpCompiler
 private:
     // Arena allocator for compilation-phase memory.
     // All memory allocated via AllocMemPool is freed when the compiler is destroyed.
-    InterpArenaAllocator m_arenaAllocator;
+    InterpArenaAllocator *m_arenaAllocator;
 
     CORINFO_METHOD_HANDLE m_methodHnd;
     CORINFO_MODULE_HANDLE m_compScopeHnd;
@@ -827,9 +793,9 @@ private:
 public:
     // Returns an allocator for the specified memory kind. Use this for categorized
     // allocations to enable memory profiling when MEASURE_MEM_ALLOC is defined.
-    InterpAllocator getAllocator(InterpMemKind imk = IMK_Generic)
+    InterpAllocator getAllocator(InterpMemKind imk)
     {
-        return InterpAllocator(&m_arenaAllocator, imk);
+        return InterpAllocator(m_arenaAllocator, imk);
     }
 
     // Convenience methods for common allocation kinds
@@ -838,16 +804,9 @@ public:
     InterpAllocator getAllocatorInstruction() { return getAllocator(IMK_Instruction); }
 
     // Legacy allocation methods - use getAllocator() for new code
-    void* AllocMemPool(size_t numBytes);
-    void* AllocMemPool0(size_t numBytes);
-    MemPoolAllocator GetMemPoolAllocator(InterpMemKind imk = IMK_Generic) { return MemPoolAllocator(this, imk); }
+    MemPoolAllocator GetMemPoolAllocator(InterpMemKind imk) { return MemPoolAllocator(this, imk); }
 
 private:
-    void* AllocTemporary(size_t numBytes);
-    void* AllocTemporary0(size_t numBytes);
-    void* ReallocTemporary(void* ptr, size_t numBytes);
-    void  FreeTemporary(void* ptr);
-
     // Instructions
     InterpBasicBlock *m_pCBB, *m_pEntryBB;
     InterpInst* m_pLastNewIns;
@@ -1110,8 +1069,7 @@ private:
 #endif // DEBUG
 public:
 
-    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData *pretryData);
-    ~InterpCompiler();
+    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData *pretryData, InterpArenaAllocator *arenaAllocator);
 
     InterpMethod* CompileMethod();
     void BuildGCInfo(InterpMethod *pInterpMethod);
@@ -1168,11 +1126,7 @@ int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
         _dataItems->Add(LookupAsPtrs[i]);
     }
 
-    void* hashItemPayload = _compiler->AllocMemPool0(sizeof(VarSizedDataWithPayload<T>));
-    if (hashItemPayload == nullptr)
-        NOMEM();
-
-    VarSizedDataWithPayload<T>* pLookup = new(hashItemPayload) VarSizedDataWithPayload<T>();
+    VarSizedDataWithPayload<T>* pLookup = new (_compiler->getAllocator(InterpMemKind::IMK_VarSizedDataItem)) VarSizedDataWithPayload<T>();
     memcpy(&pLookup->payload, &lookup, sizeof(T));
 
     checkAddedNew(dn_simdhash_ght_try_insert(

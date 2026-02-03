@@ -192,8 +192,8 @@ enum class CalliFlags : int32_t
 
 struct InterpIntervalMapEntry
 {
-    uint32_t startOffset;
-    uint32_t countBytes; // If count is 0 then this is the end marker.
+    uint32_t startOffset = 0;
+    uint32_t countBytes = 0; // If count is 0 then this is the end marker.
 };
 
 struct InterpAsyncSuspendData

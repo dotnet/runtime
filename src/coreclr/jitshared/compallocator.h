@@ -75,6 +75,16 @@ public:
         return static_cast<T*>(p);
     }
 
+    // Allocate a zeroed block of memory suitable to store `count` objects of type `T`.
+    // Zero-length allocations are not allowed.
+    template <typename T>
+    T* allocateZeroed(size_t count)
+    {
+        T* p = allocate<T>(count);
+        memset(p, 0, count * sizeof(T));
+        return p;
+    }
+
     // Deallocate a block of memory previously allocated by `allocate`.
     // The arena allocator does not release memory so this doesn't do anything.
     void deallocate(void* p)

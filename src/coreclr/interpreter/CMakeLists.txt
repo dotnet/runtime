@@ -9,7 +9,8 @@ set(INTERPRETER_SOURCES
   stackmap.cpp
   naming.cpp
   methodset.cpp
-  intrinsics.cpp)
+  intrinsics.cpp
+  simdhash.cpp)
 
 set(INTERPRETER_LINK_LIBRARIES
   gcinfo

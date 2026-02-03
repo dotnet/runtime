@@ -237,8 +237,8 @@ void InterpCompiler::CompactActiveVars(int32_t *pCurrentOffset)
 void InterpCompiler::AllocOffsets()
 {
     InterpBasicBlock *pBB;
-    m_pActiveVars = new TArray<int32_t, MemPoolAllocator>(GetMemPoolAllocator());
-    m_pActiveCalls = new TArray<InterpInst*, MemPoolAllocator>(GetMemPoolAllocator());
+    m_pActiveVars = new TArray<int32_t, MemPoolAllocator>(GetMemPoolAllocator(IMK_AllocOffsets));
+    m_pActiveCalls = new TArray<InterpInst*, MemPoolAllocator>(GetMemPoolAllocator(IMK_AllocOffsets));
     m_pDeferredCalls = NULL;
 
     InitializeGlobalVars();
