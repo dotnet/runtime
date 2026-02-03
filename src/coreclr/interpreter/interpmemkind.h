@@ -14,6 +14,7 @@
 InterpMemKindMacro(AllocOffsets)      // Allloc offsets allocations
 InterpMemKindMacro(AsyncSuspend)      // Async suspend allocations
 InterpMemKindMacro(BasicBlock)        // InterpBasicBlock allocations
+InterpMemKindMacro(CallDependencies)  // Call dependency tracking
 InterpMemKindMacro(CallInfo)          // Call metadata (InterpCallInfo)
 InterpMemKindMacro(ConservativeRange) // Conservative GC range tracking
 InterpMemKindMacro(DataItem)          // Data items array
