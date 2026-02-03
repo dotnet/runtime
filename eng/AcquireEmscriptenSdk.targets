@@ -1,0 +1,204 @@
+<!--
+  Import these targets to acquire the Emscripten SDK.
+  - Use DependsOnTargets="AcquireEmscriptenSdk" on the target that depends on Emscripten SDK.
+    - By default, this target is conditioned on $(TargetsBrowser).
+    - You can depend on "AcquireEmscriptenSdkUnconditional" instead if this doesn't work for your project.
+  - Use $(EMSDK_PATH) (set by "AcquireEmscriptenSdk") to refer to the SDK root in your target.
+-->
+<Project>
+  <!-- Directory to provision and use emscripten if EMSDK_PATH env variable is not set -->
+  <PropertyGroup>
+    <ProvisionEmscriptenDir>$([MSBuild]::NormalizeDirectory('$(MonoProjectRoot)', 'browser', 'emsdk'))</ProvisionEmscriptenDir>
+    <ShouldProvisionEmscripten Condition="'$(EMSDK_PATH)' == '' and !Exists('$(ProvisionEmscriptenDir)')">true</ShouldProvisionEmscripten>
+    <EMSDK_PATH Condition="Exists('$(ProvisionEmscriptenDir)') and '$(EMSDK_PATH)' == ''">$(ProvisionEmscriptenDir.Replace('\', '/'))</EMSDK_PATH>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_AcquireEmscriptenSdkInputsFile>$(MSBuildThisFileFullPath)</_AcquireEmscriptenSdkInputsFile>
+    <_AcquireEmscriptenSdkOutputsFile>$(ProvisionEmscriptenDir)emscripten/.emscripten</_AcquireEmscriptenSdkOutputsFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(ShouldProvisionEmscripten)' == 'true'">
+    <PackageReference Condition="'$(HostOS)' == 'windows'"
+                      Include="Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-x64"
+                      PrivateAssets="all"
+                      Version="$(EmsdkPackageVersion)"
+                      GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Cache.$(NETCoreSdkPortableRuntimeIdentifier)"
+                      PrivateAssets="all"
+                      Version="$(EmsdkPackageVersion)"
+                      PackageArch="$(BuildArchitecture)" />
+    <PackageReference Include="runtime.$(NETCoreSdkPortableRuntimeIdentifier).Microsoft.NETCore.Runtime.Wasm.Node.Transport"
+                      Version="$(NodePackageVersion)"
+                      PackageArch="$(BuildArchitecture)" />
+    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Sdk.$(NETCoreSdkPortableRuntimeIdentifier)"
+                      PrivateAssets="all"
+                      Version="$(EmsdkPackageVersion)"
+                      PackageArch="$(BuildArchitecture)" />
+  </ItemGroup>
+
+  <!-- Validate that EMSDK_PATH is set -->
+  <Target Name="_ValidateEmscriptenSdk">
+    <PropertyGroup>
+      <_UseRuntimeLocalEmscriptenSdk Condition="'$(ShouldProvisionEmscripten)' == 'true'">true</_UseRuntimeLocalEmscriptenSdk>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Provision Emscripten SDK from NuGet packages. -->
+  <Target Name="_AcquireLocalEmscriptenSdk"
+          Condition="'$(_UseRuntimeLocalEmscriptenSdk)' == 'true'"
+          Inputs="$(_AcquireEmscriptenSdkInputsFile)"
+          Outputs="$(_AcquireEmscriptenSdkOutputsFile)">
+
+    <Message Text="Provisioning Emscripten SDK to '$(ProvisionEmscriptenDir)'" Importance="High" />
+
+    <ReadLinesFromFile File="$(MonoProjectRoot)browser/emscripten-version.txt">
+      <Output TaskParameter="Lines" ItemName="_VersionLines" />
+    </ReadLinesFromFile>
+
+    <PropertyGroup>
+      <ScriptExt Condition="'$(HostOS)' == 'windows'">.cmd</ScriptExt>
+      <ScriptExt Condition="'$(HostOS)' != 'windows'">.sh</ScriptExt>
+      <EMSDK_PATH>$(ProvisionEmscriptenDir)</EMSDK_PATH>
+      <BrowserLocalPath>$([MSBuild]::NormalizeDirectory('$(MonoProjectRoot)', 'browser'))</BrowserLocalPath>
+      <EmsdkLocalPath>emsdk</EmsdkLocalPath>
+      <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
+      <_EmsdkPaths Condition="'$(HostOS)' != 'windows'">
+CURRENT_SCRIPT=
+DIR="."
+
+# use shell specific method to get the path
+# to the current file being source'd.
+#
+# To add a shell, add another conditional below,
+# then add tests to scripts/test_source_env.sh
+
+if [ -n "%24{BASH_SOURCE-}" ]%3B then
+  CURRENT_SCRIPT="%24BASH_SOURCE"
+elif [ -n "%24{ZSH_VERSION-}" ]%3B then
+  CURRENT_SCRIPT="%24{(%):-%x}"
+elif [ -n "%24{KSH_VERSION-}" ]%3B then
+  CURRENT_SCRIPT=%24{.sh.file}
+fi
+
+if [ -n "%24{CURRENT_SCRIPT-}" ]%3B then
+  DIR=%24(dirname "%24CURRENT_SCRIPT")
+  if [ -h "%24CURRENT_SCRIPT" ]%3B then
+    # Now work out actual DIR since this is part of a symlink.
+    # Since we can't be sure that readlink or realpath
+    # are available, use tools more likely to be installed.
+    # (This will still fail if sed is not available.)
+    SYMDIR=%24(dirname "%24(ls -l "%24CURRENT_SCRIPT" | sed -n "s/.*-&gt; //p")")
+    if [ -z "%24SYMDIR" ]%3B then
+      SYMDIR="."
+    fi
+    FULLDIR="%24DIR/%24SYMDIR"
+    DIR=%24(cd "%24FULLDIR" &gt; /dev/null 2&gt;&amp;1%3B /bin/pwd)
+    unset SYMDIR
+    unset FULLDIR
+  fi
+fi
+unset CURRENT_SCRIPT
+
+if [ ! -f "%24DIR/emscripten/emcmake.py" ]%3B then
+  echo "Error: unable to determine 'emsdk' directory. Perhaps you are using a shell or" 1&gt;&amp;2
+  echo "       environment that this script does not support." 1&gt;&amp;2
+  echo 1&gt;&amp;2
+  echo "A possible solution is to source this script while in the 'emsdk' directory." 1&gt;&amp;2
+  echo 1&gt;&amp;2
+  unset DIR
+  return
+fi
+
+export EMSDK_PATH=%24{DIR}/
+unset DIR
+
+export DOTNET_EMSCRIPTEN_LLVM_ROOT=%24{EMSDK_PATH}bin/
+export DOTNET_EMSCRIPTEN_NODE_JS=%24{EMSDK_PATH}node/bin/node
+export DOTNET_EMSCRIPTEN_BINARYEN_ROOT=%24{EMSDK_PATH}
+
+      </_EmsdkPaths>
+      <_EmsdkPaths Condition="'$(HostOS)' == 'windows'">
+@echo off
+
+set CURRENT_SCRIPT=%~dp0
+set EMSDK_PATH=%CURRENT_SCRIPT:~0,-1%\
+
+set EMSDK_PYTHON=%EMSDK_PATH%python\python.exe
+set DOTNET_EMSCRIPTEN_LLVM_ROOT=%EMSDK_PATH%bin\
+set DOTNET_EMSCRIPTEN_NODE_JS=%EMSDK_PATH%node\bin\node.exe
+set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=%EMSDK_PATH%
+
+      </_EmsdkPaths>
+      <_EmscriptenPaths>
+import os
+
+emsdk_path = os.path.dirname(os.path.dirname(os.path.realpath(os.getenv('EM_CONFIG')).replace('\\', '/')))
+
+LLVM_ROOT = emsdk_path + '/bin'
+NODE_JS = emsdk_path + '/node/bin/node'
+BINARYEN_ROOT = emsdk_path
+
+FROZEN_CACHE = bool(os.getenv('EM_FROZEN_CACHE', 'True'))
+
+COMPILER_ENGINE = NODE_JS
+JS_ENGINES = [NODE_JS]
+      </_EmscriptenPaths>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(EMSDK_PATH)" />
+
+    <ItemGroup>
+      <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(NETCoreSdkPortableRuntimeIdentifier).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
+                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
+      <NodeFiles    Condition="'%(PackageReference.Identity)' == 'runtime.$(NETCoreSdkPortableRuntimeIdentifier).Microsoft.NETCore.Runtime.Wasm.Node.Transport'"
+                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(NETCoreSdkPortableRuntimeIdentifier)\**" />
+      <PythonFiles  Condition="'$(HostOS)' == 'windows' and '%(PackageReference.Identity)' == 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
+                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(EmsdkFiles)" DestinationFolder="$(EMSDK_PATH)/%(RecursiveDir)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+    <Copy SourceFiles="@(NodeFiles)" DestinationFolder="$(EMSDK_PATH)node/%(RecursiveDir)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+    <Copy Condition="'$(HostOS)' == 'windows'" SourceFiles="@(PythonFiles)" DestinationFolder="$(EMSDK_PATH)python/%(RecursiveDir)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+    <ReadLinesFromFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)">
+      <Output TaskParameter="Lines" PropertyName="_EmsdkEnvFileText" />
+    </ReadLinesFromFile>
+    <WriteLinesToFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)"
+                      Overwrite="true"
+                      Lines="$(_EmsdkPaths);$(_EmsdkEnvFileText)" />
+    <WriteLinesToFile File="$(EMSDK_PATH)emscripten/.emscripten"
+                      Overwrite="true"
+                      Lines="$(_EmscriptenPaths)" />
+    <!-- Fixup files that were symlinks originally (on Linux/Mac, Windows has an equivalent already) -->
+    <ItemGroup>
+      <NodeModulesBinFiles Include="$(EMSDK_PATH)node\bin\npm.js" />
+    </ItemGroup>
+    <WriteLinesToFile
+      Condition="$([MSBuild]::IsOSPlatform(Linux)) or $([MSBuild]::IsOSPlatform(OSX))"
+      Lines="#!/usr/bin/env node;require('../lib/node_modules/%(Filename)/lib/cli.js')(process)"
+      File="%(NodeModulesBinFiles.RootDir)%(NodeModulesBinFiles.Directory)%(NodeModulesBinFiles.Filename)"
+      Overwrite="true" />
+
+    <PropertyGroup>
+      <ShouldProvisionEmscripten>false</ShouldProvisionEmscripten>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="AcquireEmscriptenSdkUnconditional"
+          DependsOnTargets="_ValidateEmscriptenSdk;_AcquireLocalEmscriptenSdk">
+    <PropertyGroup>
+      <EMSDK_PATH Condition="'$(_UseRuntimeLocalEmscriptenSdk)' == 'true'">$(ProvisionEmscriptenDir.Replace('\', '/'))</EMSDK_PATH>
+    </PropertyGroup>
+    <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
+  </Target>
+
+  <Target Name="AcquireEmscriptenSdk"
+          Condition="'$(TargetsBrowser)' == 'true'"
+          DependsOnTargets="AcquireEmscriptenSdkUnconditional" />
+</Project>

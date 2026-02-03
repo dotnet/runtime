@@ -29,6 +29,7 @@
   -->
 
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" />
+  <Import Project="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
 
   <PropertyGroup>
     <_ShippingPackagesPath>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</_ShippingPackagesPath>
@@ -50,7 +51,8 @@
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
 
-    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(RepoRoot), 'src', 'mono', 'browser', 'emsdk'))</EMSDK_PATH>
+    <!-- EMSDK_PATH is set by AcquireEmscriptenSdk.targets, fallback to ProvisionEmscriptenDir -->
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == ''">$(ProvisionEmscriptenDir)</EMSDK_PATH>
     <EmSdkDirForHelixPayload>$(HelixDependenciesStagingPath)\emsdk</EmSdkDirForHelixPayload>
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
