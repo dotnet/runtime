@@ -796,7 +796,7 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
             printf("\n\n");
         }
 
-        if (TMemoryLiveness::ComputeMemoryLiveness)
+        if (TLiveness::ComputeMemoryLiveness)
         {
             printf("** Memory liveness computed, GcHeap states and ByrefExposed states %s\n",
                    (m_compiler->byrefStatesMatchGcHeapStates ? "match" : "diverge"));
