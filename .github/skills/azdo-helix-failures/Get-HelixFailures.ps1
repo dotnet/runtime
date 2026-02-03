@@ -517,6 +517,8 @@ function Get-FailureClassification {
     $errorText = $Errors -join "`n"
     
     # Known failure patterns with classifications - ordered from most specific to general
+    # NOTE: "Transient" means this failure pattern CAN be transient, not that it always is.
+    # Users should verify before assuming a retry will help.
     $knownPatterns = @(
         @{
             Pattern = '\.pcm: No such file or directory|clang/ModuleCache'
@@ -536,21 +538,21 @@ function Get-FailureClassification {
             Pattern = 'error NU1102: Unable to find package'
             Type = 'Infrastructure'
             Summary = '[Pkg] Missing NuGet package'
-            Action = 'Check if package is published to feeds; may need to wait for upstream build'
+            Action = 'Check if package exists in feeds; if recently published, may need time to propagate'
             Transient = $true
         },
         @{
             Pattern = 'DEVICE_NOT_FOUND|exit code 81|device unauthorized'
             Type = 'Infrastructure'
             Summary = '[Device] Android/iOS device infrastructure issue'
-            Action = 'Retry the build - transient device connection issue'
+            Action = 'Check if this leg passes on main branch; if so, may be transient device issue'
             Transient = $true
         },
         @{
             Pattern = 'Helix work item timed out|timed out after'
             Type = 'Infrastructure'
             Summary = '[Timeout] Helix timeout'
-            Action = 'Retry or investigate slow test; may need timeout increase'
+            Action = 'Check if test is slow or hanging; compare with main branch timing'
             Transient = $true
         },
         @{
@@ -571,7 +573,7 @@ function Get-FailureClassification {
             Pattern = 'OutOfMemoryException|out of memory'
             Type = 'Infrastructure'
             Summary = '[OOM] Out of memory failure'
-            Action = 'Retry - may be transient memory pressure on Helix machine'
+            Action = 'Check if test has memory leak; may be transient if Helix machine was under pressure'
             Transient = $true
         },
         @{
@@ -592,21 +594,21 @@ function Get-FailureClassification {
             Pattern = 'System\.TimeoutException|did not complete within'
             Type = 'Test'
             Summary = '[Test] Test timeout'
-            Action = 'Retry or increase test timeout; may indicate perf regression'
+            Action = 'Check if test is consistently slow; may indicate perf regression or test issue'
             Transient = $true
         },
         @{
             Pattern = 'Connection refused|ECONNREFUSED|network.+unreachable'
             Type = 'Infrastructure'
             Summary = '[Network] Network connectivity issue'
-            Action = 'Retry - transient network issue on Helix machine'
+            Action = 'Check if this passes on main branch; may be transient network issue'
             Transient = $true
         },
         @{
             Pattern = 'Unable to pull image|docker.+pull.+failed|Exit Code:-4'
             Type = 'Infrastructure'
             Summary = '[Docker] Container image pull failure'
-            Action = 'Retry - transient container registry connectivity issue'
+            Action = 'Check container registry availability; may be transient'
             Transient = $true
         },
         @{
@@ -776,7 +778,7 @@ function Show-ClassificationWithKnownIssues {
         Write-Host "  Suggested action: $($Classification.Action)" -ForegroundColor Green
     }
     if ($Classification.Transient) {
-        Write-Host "  (This failure appears to be transient - retry may help)" -ForegroundColor Cyan
+        Write-Host "  (This failure pattern can be transient - check main branch before retrying)" -ForegroundColor Cyan
     }
     
     # Search for known issues if we have a test name or error

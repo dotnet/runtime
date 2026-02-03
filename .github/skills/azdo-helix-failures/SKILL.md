@@ -141,21 +141,23 @@ Example output for local tests:
 
 The script automatically classifies failures and suggests actions:
 
-| Pattern | Type | Transient? | Suggested Action |
-|---------|------|------------|------------------|
+| Pattern | Type | May Be Transient | Suggested Action |
+|---------|------|------------------|------------------|
 | `.pcm: No such file` | Infrastructure | No | Apply StripSymbols=false workaround |
 | `Size of the executable` | Size Regression | No | Investigate size increase |
-| `Unable to find package` | Infrastructure | Yes | Wait for upstream build |
-| `DEVICE_NOT_FOUND` | Infrastructure | Yes | Retry - device issue |
-| `timed out` | Infrastructure | Yes | Retry or increase timeout |
+| `Unable to find package` | Infrastructure | Yes | Check if package exists in feeds |
+| `DEVICE_NOT_FOUND` | Infrastructure | Yes | Check if leg passes on main branch |
+| `timed out` | Infrastructure | Yes | Check if test is slow or hanging |
 | `error CS####` | Build | No | Fix compilation error |
 | `error MSB####` | Build | No | Check build configuration |
-| `OutOfMemoryException` | Infrastructure | Yes | Retry - memory pressure |
+| `OutOfMemoryException` | Infrastructure | Yes | Check for memory leaks in test |
 | `Assert.Equal() Failure` | Test | No | Fix test or code |
-| `Unable to pull image` | Infrastructure | Yes | Retry - container registry issue |
-| `Connection refused` | Infrastructure | Yes | Retry - network issue |
+| `Unable to pull image` | Infrastructure | Yes | Check container registry availability |
+| `Connection refused` | Infrastructure | Yes | Check if passes on main branch |
 | `XUnit...Tests failed` | Test | No | Check test run URL for details |
 | `[FAIL]` | Test | No | Helix test failure - check console log |
+
+**Note:** "May Be Transient" means this failure pattern *can* be caused by transient infrastructure issues, but is not guaranteed to be. Always verify by checking if the same test passes on the main branch or in recent CI runs before assuming a retry will help.
 
 ## Known Issue Search
 
@@ -307,7 +309,8 @@ These are critical for reproducing the failure locally.
 ## Tips
 
 1. **Check if it's a known flaky test**: Search for existing issues with the test name
-2. **Compare with main branch**: Check if the same test is failing on main
+2. **Compare with main branch**: Check if the same test is failing on main before assuming it's transient
 3. **Look at the specific platform**: Failures may be platform-specific (Mono, NativeAOT, WASM, etc.)
 4. **Check for `[ActiveIssue]` attributes**: Tests may need to be skipped for known issues
-5. **Look for transient flags**: The script marks failures that are likely to pass on retry
+5. **Don't assume transient**: Even failures marked "may be transient" should be verified - check recent CI history
+6. **Check Build Analysis**: Look for issues with the "Known Build Error" label before retrying
