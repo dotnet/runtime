@@ -367,6 +367,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public int RuntimeFunctionCount { get; set; }
         public int ColdRuntimeFunctionCount { get; set; }
+        public string[] Modifiers { get; }
 
         /// <summary>
         /// Extracts the method signature from the metadata by rid
@@ -379,6 +380,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             string owningType,
             string constrainedType,
             string[] instanceArgs,
+            string[] modifiers,
             int? fixupOffset)
         {
             InstanceArgs = (string[])instanceArgs?.Clone();
@@ -441,6 +443,15 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
 
             StringBuilder sb = new StringBuilder();
+            if (modifiers != null)
+            {
+                Modifiers = modifiers;
+                foreach (var modifier in modifiers)
+                {
+                    sb.Append(modifier);
+                    sb.Append(" ");
+                }
+            }
             sb.Append(Signature.ReturnType);
             sb.Append(" ");
             sb.Append(DeclaringType);
