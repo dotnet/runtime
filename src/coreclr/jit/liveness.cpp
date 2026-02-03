@@ -43,10 +43,9 @@ protected:
         //
         // * Outside SSA: Partial defs are _not_ full defs and are also not
         // considered uses. They do not get included in bbVarUse/bbVarDef.
-        SsaLiveness       = false,
-        MarkRetBufferDefs = false,
+        SsaLiveness           = false,
         ComputeMemoryLiveness = false,
-        IsLIR = false,
+        IsLIR                 = false,
     };
 
     Liveness(Compiler* compiler)
@@ -751,9 +750,9 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
 
         if (TLiveness::ComputeMemoryLiveness)
         {
-            block->bbMemoryUse   = fgCurMemoryUse;
-            block->bbMemoryDef   = fgCurMemoryDef;
-            block->bbMemoryHavoc = fgCurMemoryHavoc;
+            block->bbMemoryUse    = fgCurMemoryUse;
+            block->bbMemoryDef    = fgCurMemoryDef;
+            block->bbMemoryHavoc  = fgCurMemoryHavoc;
             block->bbMemoryLiveIn = emptyMemoryKindSet;
         }
     }
@@ -839,7 +838,7 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
             break;
 
         case GT_LCL_ADDR:
-            if (TLiveness::MarkRetBufferDefs)
+            if (TLiveness::IsLIR)
             {
                 // If this is a definition of a retbuf then we process it as
                 // part of the GT_CALL node.
@@ -906,10 +905,10 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
         // For now, all calls read/write GcHeap/ByrefExposed, writes in their entirety.  Might tighten this case later.
         case GT_CALL:
         {
-            GenTreeCall* call    = tree->AsCall();
+            GenTreeCall* call = tree->AsCall();
             if (TLiveness::ComputeMemoryLiveness)
             {
-                bool         modHeap = true;
+                bool modHeap = true;
                 if (call->IsHelperCall())
                 {
                     CorInfoHelpFunc helpFunc = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
@@ -2841,10 +2840,9 @@ void Compiler::fgLocalVarLiveness()
         {
             enum
             {
-                SsaLiveness       = false,
-                MarkRetBufferDefs = true,
+                SsaLiveness           = false,
                 ComputeMemoryLiveness = false,
-                IsLIR = true,
+                IsLIR                 = true,
             };
 
             LIRLiveness(Compiler* comp)
@@ -2862,10 +2860,9 @@ void Compiler::fgLocalVarLiveness()
         {
             enum
             {
-                SsaLiveness       = true,
-                MarkRetBufferDefs = false,
+                SsaLiveness           = true,
                 ComputeMemoryLiveness = true,
-                IsLIR = false,
+                IsLIR                 = false,
             };
 
             HIRLiveness(Compiler* comp)
@@ -2906,10 +2903,9 @@ PhaseStatus Compiler::fgEarlyLiveness()
     {
         enum
         {
-            SsaLiveness       = false,
-            MarkRetBufferDefs = false,
+            SsaLiveness           = false,
             ComputeMemoryLiveness = false,
-            IsLIR = false,
+            IsLIR                 = false,
         };
 
         EarlyLiveness(Compiler* comp)
