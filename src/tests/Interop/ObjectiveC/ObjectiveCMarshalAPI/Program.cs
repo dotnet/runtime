@@ -439,6 +439,7 @@ namespace ObjectiveCMarshalAPI
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+        [SkipOnMono("Mono does not support the new Objective-C marshalling APIs. Objective-C interop is done via Mono's own runtime embedding APIs.")]
         public static int TestEntryPoint()
         {
             try

@@ -924,9 +924,9 @@ namespace System.Reflection.Emit
             m_scope = new DynamicScope();
             m_method = method;
             m_methodSignature = m_scope.GetTokenFor(methodSignature);
-            m_exceptions = Array.Empty<byte>();
-            m_code = Array.Empty<byte>();
-            m_localSignature = Array.Empty<byte>();
+            m_exceptions = [];
+            m_code = [];
+            m_localSignature = [];
         }
         #endregion
 
@@ -949,7 +949,7 @@ namespace System.Reflection.Emit
 
         public void SetCode(byte[]? code, int maxStackSize)
         {
-            m_code = (code != null) ? (byte[])code.Clone() : Array.Empty<byte>();
+            m_code = (code != null) ? (byte[])code.Clone() : [];
             m_maxStackSize = maxStackSize;
         }
 
@@ -966,7 +966,7 @@ namespace System.Reflection.Emit
 
         public void SetExceptions(byte[]? exceptions)
         {
-            m_exceptions = (exceptions != null) ? (byte[])exceptions.Clone() : Array.Empty<byte>();
+            m_exceptions = (exceptions != null) ? (byte[])exceptions.Clone() : [];
         }
 
         [CLSCompliant(false)]
@@ -982,7 +982,7 @@ namespace System.Reflection.Emit
 
         public void SetLocalSignature(byte[]? localSignature)
         {
-            m_localSignature = (localSignature != null) ? (byte[])localSignature.Clone() : Array.Empty<byte>();
+            m_localSignature = (localSignature != null) ? (byte[])localSignature.Clone() : [];
         }
 
         [CLSCompliant(false)]
