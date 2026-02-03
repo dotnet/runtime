@@ -406,15 +406,6 @@ struct InterpVar
     unsigned int ILGlobal : 1; // Args and IL locals
     unsigned int alive : 1; // Used internally by the var offset allocator
     unsigned int pinned : 1; // Indicates that the var had the 'pinned' modifier in IL
-    InterpVar()
-    {
-        callArgs = false;
-        noCallArgs = false;
-        global = false;
-        ILGlobal = false;
-        alive = false;
-        pinned = false;
-    }
 
     InterpVar(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size)
     {
@@ -1070,6 +1061,7 @@ private:
 public:
 
     InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData *pretryData, InterpArenaAllocator *arenaAllocator);
+    ~InterpCompiler();
 
     InterpMethod* CompileMethod();
     void BuildGCInfo(InterpMethod *pInterpMethod);

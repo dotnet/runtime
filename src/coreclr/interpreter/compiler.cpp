@@ -150,6 +150,16 @@ void InterpCompiler::dumpMethodMemStats()
         }
 #endif // MEASURE_MEM_ALLOC
     }
+    else
+    {
+#if MEASURE_MEM_ALLOC
+        if (InterpConfig.DisplayMemStats() > 1)
+        {
+            printf("Allocations for %s\n", m_methodName.GetUnderlyingArray());
+            m_arenaAllocator->getStats().Print(stdout);
+        }
+#endif
+    }
 #endif // DEBUG
 }
 
@@ -743,7 +753,7 @@ int32_t InterpCompiler::CreateVarExplicit(InterpType interpType, CORINFO_CLASS_H
         if (m_varsCapacity < 16)
             m_varsCapacity = 16;
         
-        m_pVars = (InterpVar*) getAllocator(IMK_Var).allocateZeroed<InterpVar>(m_varsCapacity);
+        m_pVars = getAllocator(IMK_Var).allocateZeroed<InterpVar>(m_varsCapacity);
         if (oldVars != NULL)
         {
             memcpy(m_pVars, oldVars, oldCapacity * sizeof(InterpVar));
@@ -1126,16 +1136,11 @@ void InterpCompiler::EmitCode()
 {
     TArray<Reloc*, MemPoolAllocator> relocs(GetMemPoolAllocator(IMK_Reloc));
     int32_t codeSize = ComputeCodeSize();
-    m_pMethodCode = (int32_t*)AllocMethodData(codeSize * sizeof(int32_t));
+    m_pMethodCode = (int32_t*)getAllocator(IMK_InterpCode).allocate<int32_t>(codeSize);
 
-    // These will eventually be freed by the VM, and they use the delete [] operator for the deletion.
+    // This will eventually be freed by the VM, and they use the delete [] operator for the deletion.
+    // If we fail before handing them to the VM, there is logic in the InterpCompiler destructor to free it.
     m_pILToNativeMap = new ICorDebugInfo::OffsetMapping[m_ILCodeSize];
-
-    ICorDebugInfo::NativeVarInfo* eeVars = NULL;
-    if (m_numILVars > 0)
-    {
-        eeVars = new ICorDebugInfo::NativeVarInfo[m_numILVars];
-    }
 
     // For each BB, compute the number of EH clauses that overlap with it.
     for (unsigned int i = 0; i < getEHcount(m_methodInfo); i++)
@@ -1196,24 +1201,28 @@ void InterpCompiler::EmitCode()
 
     PatchRelocations(&relocs);
 
-    int j = 0;
-    for (int i = 0; i < m_numILVars; i++)
-    {
-        assert(m_pVars[i].ILGlobal);
-        eeVars[j].startOffset          = ConvertOffset(GetLiveStartOffset(i)); // This is where the variable mapping is start to become valid
-        eeVars[j].endOffset            = ConvertOffset(GetLiveEndOffset(i));   // This is where the variable mapping is cease to become valid
-        eeVars[j].varNumber            = j;                                    // This is the index of the variable in [arg] + [local]
-        eeVars[j].loc.vlType           = ICorDebugInfo::VLT_STK;               // This is a stack slot
-        eeVars[j].loc.vlStk.vlsBaseReg = ICorDebugInfo::REGNUM_FP;             // This specifies which register this offset is based off
-        eeVars[j].loc.vlStk.vlsOffset  = m_pVars[i].offset;                    // This specifies starting from the offset, how much offset is this from
-        j++;
-    }
-
     if (m_numILVars > 0)
     {
+        // This will eventually be freed by the VM, and it uses the delete [] operator for the deletion.
+        ICorDebugInfo::NativeVarInfo* eeVars = new ICorDebugInfo::NativeVarInfo[m_numILVars];
+
+        int j = 0;
+        for (int i = 0; i < m_numILVars; i++)
+        {
+            assert(m_pVars[i].ILGlobal);
+            eeVars[j].startOffset          = ConvertOffset(GetLiveStartOffset(i)); // This is where the variable mapping is start to become valid
+            eeVars[j].endOffset            = ConvertOffset(GetLiveEndOffset(i));   // This is where the variable mapping is cease to become valid
+            eeVars[j].varNumber            = j;                                    // This is the index of the variable in [arg] + [local]
+            eeVars[j].loc.vlType           = ICorDebugInfo::VLT_STK;               // This is a stack slot
+            eeVars[j].loc.vlStk.vlsBaseReg = ICorDebugInfo::REGNUM_FP;             // This specifies which register this offset is based off
+            eeVars[j].loc.vlStk.vlsOffset  = m_pVars[i].offset;                    // This specifies starting from the offset, how much offset is this from
+            j++;
+        }
+
         m_compHnd->setVars(m_methodInfo->ftn, m_numILVars, eeVars);
     }
     m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
+    m_pILToNativeMap = NULL; // Ownership transferred to the VM
 }
 
 #ifdef FEATURE_INTERPRETER
@@ -1906,6 +1915,13 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 #endif
 }
 
+InterpCompiler::~InterpCompiler()
+{
+    // Clean up allocated memory if non-null
+    if (m_pILToNativeMap != NULL)
+        delete[] m_pILToNativeMap;
+}
+
 InterpMethod* InterpCompiler::CompileMethod()
 {
 #ifdef DEBUG
@@ -2107,7 +2123,7 @@ void InterpCompiler::CreateILVars()
 
     // add some starting extra space for new vars
     m_varsCapacity = m_numILVars + getEHcount(m_methodInfo) + 64;
-    m_pVars = new (getAllocator(IMK_Var)) InterpVar[m_varsCapacity];
+    m_pVars = getAllocator(IMK_Var).allocateZeroed<InterpVar>(m_varsCapacity);
     m_varsSize = m_numILVars + hasParamArg + hasContinuationArg + (hasThisPointerShadowCopyAsParamIndex ? 1 : 0) + (m_isAsyncMethodWithContextSaveRestore ? 2 : 0) + getEHcount(m_methodInfo);
 
     offset = 0;

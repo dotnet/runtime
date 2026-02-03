@@ -23,6 +23,7 @@ InterpMemKindMacro(EHClause)          // Exception handling clauses
 InterpMemKindMacro(GC)                // GC info encoding
 InterpMemKindMacro(Generic)           // General/uncategorized allocations
 InterpMemKindMacro(ILCode)            // IL code buffers
+InterpMemKindMacro(InterpCode)        // Interpreter bytecode
 InterpMemKindMacro(Instruction)       // InterpInst allocations
 InterpMemKindMacro(IntervalMap)       // Variable interval maps
 InterpMemKindMacro(NativeToILMapping) // Native to IL offset mappings
