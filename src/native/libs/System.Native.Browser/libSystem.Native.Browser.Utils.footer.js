@@ -39,7 +39,7 @@ function libBrowserUtilsFactory() {
                 }
             },
         },
-        $libBrowserUtilsFn: mergeBrowserUtils,
+        $libBrowserUtilsFn: libBrowserUtils,
         $BROWSER_UTILS__postset: "BROWSER_UTILS.selfInitialize()",
         $BROWSER_UTILS__deps: commonDeps,
     };

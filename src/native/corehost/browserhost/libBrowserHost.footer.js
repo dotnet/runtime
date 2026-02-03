@@ -45,7 +45,7 @@ function libBrowserHostFactory() {
                 }
             },
         },
-        $libBrowserHostFn: mergeBrowserHost,
+        $libBrowserHostFn: libBrowserHost,
         $BROWSER_HOST__postset: "BROWSER_HOST.selfInitialize()",
         $BROWSER_HOST__deps: commonDeps,
     };
