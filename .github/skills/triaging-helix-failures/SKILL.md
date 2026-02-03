@@ -5,7 +5,7 @@ description: Analyze Helix test work item failures for dotnet/runtime PRs. Use t
 
 # Helix Failure Analysis for dotnet/runtime
 
-This skill helps you investigate test failures in dotnet/runtime CI by querying Azure DevOps and Helix APIs to extract failure details, console logs, and artifacts.
+This skill helps you investigate build and test failures in dotnet/runtime CI by querying Azure DevOps and Helix APIs to extract failure details, console logs, and artifacts.
 
 ## When to Use This Skill
 
