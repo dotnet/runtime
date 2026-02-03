@@ -3757,7 +3757,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 {
     emitAttr attr = EA_PTRSIZE;
-    if (compiler->eeDataWithCodePointersNeedsRelocs())
+    if (m_compiler->eeDataWithCodePointersNeedsRelocs())
     {
         attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
     }
@@ -4788,7 +4788,7 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
 
     // If we cannot fall into the false target, emit a jump to it
     BasicBlock* falseTarget = m_compiler->compCurBB->GetFalseTarget();
-    if (!m_compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    if (!m_compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, m_compiler))
     {
         inst_JMP(EJ_jmp, falseTarget);
     }
@@ -5022,7 +5022,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 
     // If we cannot fall into the false target, emit a jump to it
     BasicBlock* falseTarget = m_compiler->compCurBB->GetFalseTarget();
-    if (!m_compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    if (!m_compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, m_compiler))
     {
         inst_JMP(EJ_jmp, falseTarget);
     }

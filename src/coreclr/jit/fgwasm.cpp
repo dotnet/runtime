@@ -217,7 +217,7 @@ public:
     //
     Scc(FgWasm* fgWasm, BasicBlock* block)
         : m_fgWasm(fgWasm)
-        , m_comp(fgWasm->Comp())
+        , m_compiler(fgWasm->Comp())
         , m_dfsTree(fgWasm->GetDfsTree())
         , m_traits(fgWasm->GetTraits())
         , m_blocks(BitVecOps::UninitVal())

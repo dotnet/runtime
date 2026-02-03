@@ -8596,7 +8596,7 @@ void emitter::emitIns_R_C(
     id->idjShort = false; // Assume loading constant from long address
 
     // Keep it long if this address requires a reloc or if it's in cold code, in which case it is not next to code.
-    id->idjKeepLong = EA_IS_RELOC(attr) || m_compiler->fgIsBlockCold(emitComp->compCurBB);
+    id->idjKeepLong = EA_IS_RELOC(attr) || m_compiler->fgIsBlockCold(m_compiler->compCurBB);
 
 #ifdef DEBUG
     if (m_compiler->opts.compLongAddress)

@@ -359,7 +359,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     if (intrin.codeGenIsTableDriven())
     {
-        const instruction ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType, compiler);
+        const instruction ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType, m_compiler);
         assert(ins != INS_invalid);
 
         if (intrin.category == HW_Category_SIMDByIndexedElement)
@@ -459,7 +459,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             // Get the registers and intrinsics that needs embedded mask
             const HWIntrinsic intrinEmbMask(op2->AsHWIntrinsic());
-            instruction insEmbMask = HWIntrinsicInfo::lookupIns(intrinEmbMask.id, intrinEmbMask.baseType, compiler);
+            instruction insEmbMask = HWIntrinsicInfo::lookupIns(intrinEmbMask.id, intrinEmbMask.baseType, m_compiler);
             const bool  instrIsRMW = op2->isRMWHWIntrinsic(m_compiler);
 
             regNumber maskReg       = op1Reg;
@@ -1252,11 +1252,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_Sve_StoreNarrowing:
-                ins = HWIntrinsicInfo::lookupIns(intrin.id, node->GetAuxiliaryType(), compiler);
+                ins = HWIntrinsicInfo::lookupIns(intrin.id, node->GetAuxiliaryType(), m_compiler);
                 break;
 
             default:
-                ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType, compiler);
+                ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType, m_compiler);
                 break;
         }
 

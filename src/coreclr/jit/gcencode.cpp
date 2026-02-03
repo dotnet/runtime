@@ -3076,7 +3076,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
         regPtrDsc*       genRegPtrTemp;
         regNumber        thisRegNum = regNumber(0);
-        PendingArgsStack pasStk(m_compiler->GetEmitter()->emitMaxStackDepth, compiler);
+        PendingArgsStack pasStk(m_compiler->GetEmitter()->emitMaxStackDepth, m_compiler);
 
         /* Walk the list of pointer register/argument entries */
 
