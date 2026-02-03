@@ -411,6 +411,12 @@ namespace System.Diagnostics
 
         private bool Equals(Process process)
         {
+            // Check IDs first since they're cheap to compare and will fail most of the time.
+            if (Id != process.Id)
+            {
+                return false;
+            }
+
             // Use non-throwing helper to avoid first-chance exceptions during enumeration.
             if (!TryGetStartTime(out DateTime myStartTime) ||
                 !process.TryGetStartTime(out DateTime otherStartTime))
@@ -418,7 +424,7 @@ namespace System.Diagnostics
                 return false;
             }
 
-            return Id == process.Id && myStartTime == otherStartTime;
+            return myStartTime == otherStartTime;
         }
 
         private List<Exception>? KillTree()
