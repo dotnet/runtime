@@ -3691,7 +3691,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 
     // If we cannot fall into the false target, emit a jump to it
     BasicBlock* falseTarget = m_compiler->compCurBB->GetFalseTarget();
-    if (!m_compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    if (!m_compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, m_compiler))
     {
         inst_JMP(EJ_jmp, falseTarget);
     }
@@ -4270,7 +4270,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             {
                 // If we cannot fall into the false target, emit a jump to it
                 BasicBlock* falseTarget = m_compiler->compCurBB->GetFalseTarget();
-                if (!m_compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+                if (!m_compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, m_compiler))
                 {
                     inst_JMP(EJ_jmp, falseTarget);
                 }
