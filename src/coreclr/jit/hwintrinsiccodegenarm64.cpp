@@ -277,7 +277,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     const HWIntrinsic intrin(node);
 
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
-    assert(compiler->compIsaSupportedDebugOnly(HWIntrinsicInfo::lookupIsa(intrin.id)));
+    assert(m_compiler->compIsaSupportedDebugOnly(HWIntrinsicInfo::lookupIsa(intrin.id)));
 
     regNumber targetReg = node->GetRegNum();
 
@@ -352,7 +352,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         opt      = genGetSimdInsOpt(emitSize, intrin.baseType);
     }
 
-    const bool isRMW               = node->isRMWHWIntrinsic(compiler);
+    const bool isRMW               = node->isRMWHWIntrinsic(m_compiler);
     const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
 
     genConsumeMultiOpOperands(node);
@@ -460,7 +460,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             // Get the registers and intrinsics that needs embedded mask
             const HWIntrinsic intrinEmbMask(op2->AsHWIntrinsic());
             instruction insEmbMask = HWIntrinsicInfo::lookupIns(intrinEmbMask.id, intrinEmbMask.baseType, compiler);
-            const bool  instrIsRMW = op2->isRMWHWIntrinsic(compiler);
+            const bool  instrIsRMW = op2->isRMWHWIntrinsic(m_compiler);
 
             regNumber maskReg       = op1Reg;
             regNumber embMaskOp1Reg = REG_NA;
@@ -1734,10 +1734,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 #ifdef DEBUG
                 // Validates that consecutive registers were used properly.
 
-                assert(node->GetMultiRegCount(compiler) == (unsigned int)GetEmitter()->insGetSveReg1ListSize(ins));
+                assert(node->GetMultiRegCount(m_compiler) == (unsigned int)GetEmitter()->insGetSveReg1ListSize(ins));
 
                 regNumber argReg = targetReg;
-                for (unsigned int i = 0; i < node->GetMultiRegCount(compiler); i++)
+                for (unsigned int i = 0; i < node->GetMultiRegCount(m_compiler); i++)
                 {
                     assert(argReg == node->GetRegNumByIdx(i));
                     argReg = getNextSIMDRegWithWraparound(argReg);

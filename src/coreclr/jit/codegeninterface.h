@@ -60,7 +60,7 @@ public:
 
     Compiler* GetCompiler() const
     {
-        return compiler;
+        return m_compiler;
     }
 
 #if defined(TARGET_AMD64)
@@ -153,7 +153,7 @@ public:
 #endif
 
 protected:
-    Compiler* compiler;
+    Compiler* m_compiler;
     bool      m_genAlignLoops;
 
 private:
