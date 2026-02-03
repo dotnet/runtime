@@ -2565,6 +2565,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
             case CorInfoCallConvExtension::CMemberFunction:
             case CorInfoCallConvExtension::StdcallMemberFunction:
             case CorInfoCallConvExtension::FastcallMemberFunction:
+            case CorInfoCallConvExtension::VectorcallMemberFunction:
                 unmanagedThisCallConv = true;
                 break;
             default:

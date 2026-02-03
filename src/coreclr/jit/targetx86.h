@@ -350,4 +350,7 @@
   #define RBM_STACK_PROBE_HELPER_ARG   RBM_EAX
 
   #define RBM_STACK_PROBE_HELPER_TRASH RBM_NONE
+
+  // Vectorcall is supported on Windows x86
+  #define VECTORCALL_SUPPORT
 // clang-format on

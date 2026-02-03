@@ -1720,6 +1720,7 @@ typedef enum LoadHintEnum
 #define CMOD_CALLCONV_NAME_STDCALL              "CallConvStdcall"
 #define CMOD_CALLCONV_NAME_THISCALL             "CallConvThiscall"
 #define CMOD_CALLCONV_NAME_FASTCALL             "CallConvFastcall"
+#define CMOD_CALLCONV_NAME_VECTORCALL           "CallConvVectorcall"
 #define CMOD_CALLCONV_NAME_SWIFT                "CallConvSwift"
 #define CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION "CallConvSuppressGCTransition"
 #define CMOD_CALLCONV_NAME_MEMBERFUNCTION       "CallConvMemberFunction"

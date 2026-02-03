@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Vectorcall is only meaningful on Windows x86/x64, but the test handles this gracefully -->
+    <!-- On non-Windows, vectorcall falls back to the default calling convention -->
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="VectorcallPInvokes.cs" />
+    <Compile Include="VectorcallTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

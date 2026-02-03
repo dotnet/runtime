@@ -54,6 +54,7 @@ namespace
     BASE_CALL_CONV(CMOD_CALLCONV_NAME_STDCALL, Stdcall)     \
     BASE_CALL_CONV(CMOD_CALLCONV_NAME_THISCALL, Thiscall)   \
     BASE_CALL_CONV(CMOD_CALLCONV_NAME_FASTCALL, Fastcall)   \
+    BASE_CALL_CONV(CMOD_CALLCONV_NAME_VECTORCALL, Vectorcall) \
     BASE_CALL_CONV(CMOD_CALLCONV_NAME_SWIFT, Swift)
 
 #define DECLARE_MOD_CALL_CONVS \
@@ -175,6 +176,8 @@ namespace
             return CorInfoCallConvExtension::StdcallMemberFunction;
         case CorInfoCallConvExtension::Fastcall:
             return CorInfoCallConvExtension::FastcallMemberFunction;
+        case CorInfoCallConvExtension::Vectorcall:
+            return CorInfoCallConvExtension::VectorcallMemberFunction;
         case CorInfoCallConvExtension::Thiscall:
             return CorInfoCallConvExtension::Thiscall;
         case CorInfoCallConvExtension::Swift:

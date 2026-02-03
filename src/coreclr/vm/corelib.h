@@ -888,6 +888,7 @@ DEFINE_CLASS(CALLCONV_FASTCALL,              CompilerServices,       CallConvFas
 DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSuppressGCTransition)
 DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
 DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwift)
+DEFINE_CLASS(CALLCONV_VECTORCALL,            CompilerServices,       CallConvVectorcall)
 
 DEFINE_CLASS(SAFE_HANDLE,         Interop,                SafeHandle)
 DEFINE_FIELD(SAFE_HANDLE,           HANDLE,                 handle)

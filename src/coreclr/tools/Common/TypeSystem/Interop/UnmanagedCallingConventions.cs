@@ -40,7 +40,8 @@ namespace Internal.TypeSystem
         // Unmanaged            = 0x00000009, - this one is always translated to cdecl/stdcall
 
         // The ones higher than 0xF are defined by the type system
-        Swift                   = 0x00000010
+        Swift                   = 0x00000010,
+        Vectorcall              = 0x00000011
     }
 
     public static class CallingConventionExtensions
@@ -208,6 +209,8 @@ namespace Internal.TypeSystem
                 addedCallConv = UnmanagedCallingConventions.IsMemberFunction;
             else if (newConvention.Name.SequenceEqual("CallConvSwift"u8))
                 addedCallConv = UnmanagedCallingConventions.Swift;
+            else if (newConvention.Name.SequenceEqual("CallConvVectorcall"u8))
+                addedCallConv = UnmanagedCallingConventions.Vectorcall;
 
             if (addedCallConv == null)
                 return existing;
@@ -244,6 +247,7 @@ namespace Internal.TypeSystem
                     UnmanagedCallingConventions.Fastcall => "CallConvFastcall"u8,
                     UnmanagedCallingConventions.Thiscall => "CallConvThiscall"u8,
                     UnmanagedCallingConventions.Swift => "CallConvSwift"u8,
+                    UnmanagedCallingConventions.Vectorcall => "CallConvVectorcall"u8,
                     _ => throw new InvalidProgramException()
                 });
             }

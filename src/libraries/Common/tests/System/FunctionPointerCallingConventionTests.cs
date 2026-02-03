@@ -109,11 +109,39 @@ namespace System.Tests.Types
             Assert.Equal(2, modOpts.Length);
         }
 
+        [Fact]
+        public static unsafe void UnmanagedCallConv_Vectorcall()
+        {
+            // Vectorcall is a new calling convention that is always encoded using modopts
+            // (it doesn't have a CallKind byte encoding like Cdecl/Stdcall/Thiscall/Fastcall).
+            Type vectorcallType = typeof(CallConvVectorcall).Project();
+            Type t = typeof(FunctionPointerHolder).Project();
+            MethodInfo m = t.GetMethod(nameof(FunctionPointerHolder.MethodCallConv_Vectorcall), Bindings);
+
+            // Unmodified: the calling convention info is stripped
+            Type fnPtrTypeUnmodified = m.GetParameters()[0].ParameterType;
+            Assert.True(fnPtrTypeUnmodified.IsUnmanagedFunctionPointer);
+            Assert.Equal(0, fnPtrTypeUnmodified.GetFunctionPointerCallingConventions().Length);
+
+            // Modified: the calling convention is visible via modopts
+            Type fnPtrTypeModified = m.GetParameters()[0].GetModifiedParameterType();
+            Assert.True(fnPtrTypeModified.IsUnmanagedFunctionPointer);
+            Type[] callConvs = fnPtrTypeModified.GetFunctionPointerCallingConventions();
+            Assert.Equal(1, callConvs.Length);
+            Assert.Equal(vectorcallType, callConvs[0]);
+
+            // The return type should have the vectorcall modopt
+            Type returnType = fnPtrTypeModified.GetFunctionPointerReturnType();
+            Assert.Equal(1, returnType.GetOptionalCustomModifiers().Length);
+            Assert.Equal(vectorcallType, returnType.GetOptionalCustomModifiers()[0]);
+        }
+
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl_SuppressGCTransition))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Stdcall_SuppressGCTransition))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Thiscall_SuppressGCTransition))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall_SuppressGCTransition))]
+        [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Vectorcall_SuppressGCTransition))]
         public static unsafe void UnmanagedCallConv_PhysicalModifiers_Unmodified(string methodName)
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -132,6 +160,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Stdcall_SuppressGCTransition), typeof(CallConvStdcall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Thiscall_SuppressGCTransition), typeof(CallConvThiscall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall_SuppressGCTransition), typeof(CallConvFastcall))]
+        [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Vectorcall_SuppressGCTransition), typeof(CallConvVectorcall))]
         public static unsafe void UnmanagedCallConv_PhysicalModifiers_Modified(string methodName, Type callingConventionRuntime)
         {
             Type suppressGcTransitionType = typeof(CallConvSuppressGCTransition).Project();
@@ -189,6 +218,8 @@ namespace System.Tests.Types
             public void MethodCallConv_Thiscall_SuppressGCTransition(delegate* unmanaged[Thiscall, SuppressGCTransition]<void> f) { }
             public void MethodCallConv_Fastcall(delegate* unmanaged[Fastcall]<void> f) { }
             public void MethodCallConv_Fastcall_SuppressGCTransition(delegate* unmanaged[Fastcall, SuppressGCTransition]<void> f) { }
+            public void MethodCallConv_Vectorcall(delegate* unmanaged[Vectorcall]<void> f) { }
+            public void MethodCallConv_Vectorcall_SuppressGCTransition(delegate* unmanaged[Vectorcall, SuppressGCTransition]<void> f) { }
 
             public class MyClass { }
 
