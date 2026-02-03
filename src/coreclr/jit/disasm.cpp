@@ -884,7 +884,8 @@ AddrToMethodHandleMap* DisAssembler::GetHelperAddrToMethodHandleMap()
 {
     if (disHelperAddrToMethodHandleMap == nullptr)
     {
-        disHelperAddrToMethodHandleMap = new (m_compiler->getAllocator()) AddrToMethodHandleMap(m_compiler->getAllocator());
+        disHelperAddrToMethodHandleMap =
+            new (m_compiler->getAllocator()) AddrToMethodHandleMap(m_compiler->getAllocator());
     }
     return disHelperAddrToMethodHandleMap;
 }
@@ -1788,7 +1789,7 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
 void DisAssembler::disInit(Compiler* pComp)
 {
     assert(pComp);
-    m_compiler                        = pComp;
+    m_compiler                     = pComp;
     disHasName                     = false;
     disLabels                      = nullptr;
     disAddrToMethodHandleMap       = nullptr;

@@ -1084,8 +1084,9 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         int       shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
         var_types targetType   = tree->TypeGet();
 
-        if ((genActualType(targetType) == TYP_LONG) && m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) &&
-            tree->OperIs(GT_ROL, GT_ROR) && (shiftByValue > 0) && (shiftByValue < 64))
+        if ((genActualType(targetType) == TYP_LONG) &&
+            m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) && tree->OperIs(GT_ROL, GT_ROR) &&
+            (shiftByValue > 0) && (shiftByValue < 64))
         {
             srcCandidates = ForceLowGprForApxIfNeeded(source, srcCandidates, getEvexIsSupported());
             dstCandidates = ForceLowGprForApxIfNeeded(tree, dstCandidates, getEvexIsSupported());

@@ -403,7 +403,7 @@ void CodeGen::genPrepForCompiler()
         }
     }
     VarSetOps::AssignNoCopy(m_compiler, genLastLiveSet, VarSetOps::MakeEmpty(m_compiler));
-    genLastLiveMask                        = RBM_NONE;
+    genLastLiveMask                          = RBM_NONE;
     m_compiler->Metrics.BasicBlocksAtCodegen = m_compiler->fgBBcount;
 }
 
@@ -538,7 +538,8 @@ void CodeGen::genMarkLabelsForCodegen()
     // Walk all the exceptional code blocks and mark them, since they don't appear in the normal flow graph.
     if (m_compiler->fgHasAddCodeDscMap())
     {
-        for (Compiler::AddCodeDsc* const add : Compiler::AddCodeDscMap::ValueIteration(m_compiler->fgGetAddCodeDscMap()))
+        for (Compiler::AddCodeDsc* const add :
+             Compiler::AddCodeDscMap::ValueIteration(m_compiler->fgGetAddCodeDscMap()))
         {
             if (add->acdUsed)
             {
@@ -2001,10 +2002,12 @@ void CodeGen::genGenerateMachineCode()
             printf("; %s\n", m_compiler->fgPgoFailReason);
         }
 
-        if ((m_compiler->fgPgoInlineePgo + m_compiler->fgPgoInlineeNoPgo + m_compiler->fgPgoInlineeNoPgoSingleBlock) > 0)
+        if ((m_compiler->fgPgoInlineePgo + m_compiler->fgPgoInlineeNoPgo + m_compiler->fgPgoInlineeNoPgoSingleBlock) >
+            0)
         {
             printf("; %u inlinees with PGO data; %u single block inlinees; %u inlinees without PGO data\n",
-                   m_compiler->fgPgoInlineePgo, m_compiler->fgPgoInlineeNoPgoSingleBlock, m_compiler->fgPgoInlineeNoPgo);
+                   m_compiler->fgPgoInlineePgo, m_compiler->fgPgoInlineeNoPgoSingleBlock,
+                   m_compiler->fgPgoInlineeNoPgo);
         }
 
         if (m_compiler->opts.IsCFGEnabled())
@@ -2185,8 +2188,8 @@ void CodeGen::genEmitMachineCode()
         }
 #endif // TRACK_LSRA_STATS
 
-        printf(" (MethodHash=%08x) for method %s (%s)\n", m_compiler->info.compMethodHash(), m_compiler->info.compFullName,
-               m_compiler->compGetTieringName(true));
+        printf(" (MethodHash=%08x) for method %s (%s)\n", m_compiler->info.compMethodHash(),
+               m_compiler->info.compFullName, m_compiler->compGetTieringName(true));
 
         if (!dspMetricsOnly)
         {
@@ -2208,7 +2211,7 @@ void CodeGen::genEmitMachineCode()
     }
 #endif
 
-    *nativeSizeOfCode                 = codeSize;
+    *nativeSizeOfCode                   = codeSize;
     m_compiler->info.compNativeCodeSize = (UNATIVE_OFFSET)codeSize;
 
     // printf("%6u bytes of code generated for %s.%s\n", codeSize, m_compiler->info.compFullName);
@@ -2387,9 +2390,9 @@ void CodeGen::genReportEH()
         hndBeg = m_compiler->ehCodeOffset(HBtab->ebdHndBeg);
 
         tryEnd = (HBtab->ebdTryLast == m_compiler->fgLastBB) ? m_compiler->info.compNativeCodeSize
-                                                           : m_compiler->ehCodeOffset(HBtab->ebdTryLast->Next());
+                                                             : m_compiler->ehCodeOffset(HBtab->ebdTryLast->Next());
         hndEnd = (HBtab->ebdHndLast == m_compiler->fgLastBB) ? m_compiler->info.compNativeCodeSize
-                                                           : m_compiler->ehCodeOffset(HBtab->ebdHndLast->Next());
+                                                             : m_compiler->ehCodeOffset(HBtab->ebdHndLast->Next());
 
         if (HBtab->HasFilter())
         {
@@ -2716,7 +2719,7 @@ struct RegNode
 
 class RegGraph
 {
-    Compiler* m_compiler;
+    Compiler*            m_compiler;
     ArrayStack<RegNode*> m_nodes;
 
 public:
@@ -3408,8 +3411,8 @@ void CodeGen::genEnregisterIncomingStackArgs()
         */
         bool isPrespilledForProfiling = false;
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
-        isPrespilledForProfiling =
-            m_compiler->compIsProfilerHookNeeded() && m_compiler->lvaIsPreSpilled(varNum, regSet.rsMaskPreSpillRegs(false));
+        isPrespilledForProfiling = m_compiler->compIsProfilerHookNeeded() &&
+                                   m_compiler->lvaIsPreSpilled(varNum, regSet.rsMaskPreSpillRegs(false));
 #endif
 
         if (varDsc->lvIsRegArg && !isPrespilledForProfiling)
@@ -4329,8 +4332,8 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
 
     bool isPrespilledForProfiling = false;
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
-    isPrespilledForProfiling =
-        m_compiler->compIsProfilerHookNeeded() && m_compiler->lvaIsPreSpilled(contextArg, regSet.rsMaskPreSpillRegs(false));
+    isPrespilledForProfiling = m_compiler->compIsProfilerHookNeeded() &&
+                               m_compiler->lvaIsPreSpilled(contextArg, regSet.rsMaskPreSpillRegs(false));
 #endif
 
     // Load from the argument register only if it is not prespilled.
@@ -5330,7 +5333,8 @@ void CodeGen::genFnProlog()
 
     if (maskStackAlloc == RBM_NONE)
     {
-        genAllocLclFrame(m_compiler->compLclFrameSize + extraFrameSize, initReg, &initRegZeroed, calleeRegArgMaskLiveIn);
+        genAllocLclFrame(m_compiler->compLclFrameSize + extraFrameSize, initReg, &initRegZeroed,
+                         calleeRegArgMaskLiveIn);
     }
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
@@ -6834,13 +6838,14 @@ void CodeGen::genReportAsyncDebugInfo()
         hostSuspensionPoints[i] = (*suspPoints)[i];
 
     jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>* asyncVars = m_compiler->compAsyncVars;
-    ICorDebugInfo::AsyncContinuationVarInfo* hostVars = static_cast<ICorDebugInfo::AsyncContinuationVarInfo*>(
-        m_compiler->info.compCompHnd->allocateArray(asyncVars->size() * sizeof(ICorDebugInfo::AsyncContinuationVarInfo)));
+    ICorDebugInfo::AsyncContinuationVarInfo*                 hostVars =
+        static_cast<ICorDebugInfo::AsyncContinuationVarInfo*>(m_compiler->info.compCompHnd->allocateArray(
+            asyncVars->size() * sizeof(ICorDebugInfo::AsyncContinuationVarInfo)));
     for (size_t i = 0; i < asyncVars->size(); i++)
         hostVars[i] = (*asyncVars)[i];
 
     m_compiler->info.compCompHnd->reportAsyncDebugInfo(&asyncInfo, hostSuspensionPoints, hostVars,
-                                                     static_cast<uint32_t>(asyncVars->size()));
+                                                       static_cast<uint32_t>(asyncVars->size()));
 
 #ifdef DEBUG
     if (verbose)

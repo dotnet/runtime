@@ -1054,8 +1054,8 @@ void LinearScan::setBlockSequence()
         // If optimizations are enabled, allocate blocks in reverse post-order.
         // This ensures each block's predecessors are visited first.
         // Also, ensure loop bodies are compact in the visitation order.
-        m_compiler->m_dfsTree                = m_compiler->fgComputeDfs</* useProfile */ true>();
-        m_compiler->m_loops                  = FlowGraphNaturalLoops::Find(m_compiler->m_dfsTree);
+        m_compiler->m_dfsTree              = m_compiler->fgComputeDfs</* useProfile */ true>();
+        m_compiler->m_loops                = FlowGraphNaturalLoops::Find(m_compiler->m_dfsTree);
         FlowGraphNaturalLoops* const loops = m_compiler->m_loops;
 
         auto addToSequence = [this](BasicBlock* block) {
@@ -1974,7 +1974,7 @@ void LinearScan::initVarRegMaps()
         return;
     }
     assert(m_compiler->lvaTrackedFixed); // We should have already set this to prevent us from adding any new tracked
-                                       // variables.
+                                         // variables.
 
     // The compiler memory allocator requires that the allocation be an
     // even multiple of int-sized objects
@@ -4185,7 +4185,8 @@ void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap in
             // assigned to this register).
             assignedInterval->isActive = false;
             unassignPhysReg(assignedInterval->assignedReg, nullptr);
-            if ((inVarToRegMap != nullptr) && inVarToRegMap[assignedInterval->getVarIndex(m_compiler)] == assignedRegNum)
+            if ((inVarToRegMap != nullptr) &&
+                inVarToRegMap[assignedInterval->getVarIndex(m_compiler)] == assignedRegNum)
             {
                 inVarToRegMap[assignedInterval->getVarIndex(m_compiler)] = REG_STK;
             }
@@ -9151,7 +9152,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             {
                 // For EH vars, we can always safely load them from the stack into the target for this block,
                 // so if we have only EH vars, we'll do that instead of splitting the edge.
-                if ((m_compiler->compHndBBtabCount > 0) && VarSetOps::IsSubset(m_compiler, edgeResolutionSet, exceptVars))
+                if ((m_compiler->compHndBBtabCount > 0) &&
+                    VarSetOps::IsSubset(m_compiler, edgeResolutionSet, exceptVars))
                 {
                     GenTree*        insertionPoint = LIR::AsRange(succBlock).FirstNode();
                     VarSetOps::Iter edgeSetIter(m_compiler, edgeResolutionSet);
@@ -11409,11 +11411,11 @@ void LinearScan::dumpRegRecordTitleIfNeeded()
         lastUsedRegNumIndex = 0;
         int lastRegNumIndex = m_compiler->compFloatingPointUsed ?
 #ifdef HAS_MORE_THAN_64_REGISTERS
-                                                              REG_MASK_LAST
+                                                                REG_MASK_LAST
 #else
-                                                              REG_FP_LAST
+                                                                REG_FP_LAST
 #endif
-                                                              : REG_INT_LAST;
+                                                                : REG_INT_LAST;
         for (int regNumIndex = 0; regNumIndex <= lastRegNumIndex; regNumIndex++)
         {
             if (registersToDump.IsRegNumInMask((regNumber)regNumIndex))
@@ -12457,7 +12459,8 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     this->linearScan = linearScan;
 
 #ifdef DEBUG
-    mappingTable = new (linearScan->m_compiler, CMK_LSRA) ScoreMappingTable(linearScan->m_compiler->getAllocator(CMK_LSRA));
+    mappingTable =
+        new (linearScan->m_compiler, CMK_LSRA) ScoreMappingTable(linearScan->m_compiler->getAllocator(CMK_LSRA));
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);

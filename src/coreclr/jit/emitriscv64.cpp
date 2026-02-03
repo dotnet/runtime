@@ -5141,7 +5141,7 @@ unsigned emitter::get_curTotalCodeSize()
 bool emitter::IsAddressInRange(void* addr)
 {
     return m_compiler->opts.compReloc || (INDEBUG(m_compiler->opts.compEnablePCRelAddr&&)(
-                                           CorInfoReloc::RELATIVE32 == m_compiler->eeGetRelocTypeHint(addr)));
+                                             CorInfoReloc::RELATIVE32 == m_compiler->eeGetRelocTypeHint(addr)));
 }
 
 #if defined(DEBUG) || defined(LATE_DISASM)

@@ -3702,7 +3702,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     unsigned undisp;
 
     base = m_compiler->lvaFrameAddress(varx, m_compiler->funCurrentFunc()->funKind != FUNC_ROOT, &reg2, offs,
-                                     CodeGen::instIsFP(ins));
+                                       CodeGen::instIsFP(ins));
     if (pBaseReg != nullptr)
     {
         *pBaseReg = reg2;
@@ -3843,8 +3843,8 @@ void emitter::emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFlo
     int       base;
     int       disp;
 
-    base =
-        m_compiler->lvaFrameAddress(varx, m_compiler->funCurrentFunc()->funKind != FUNC_ROOT, &regBase, offs, isFloatUsage);
+    base = m_compiler->lvaFrameAddress(varx, m_compiler->funCurrentFunc()->funKind != FUNC_ROOT, &regBase, offs,
+                                       isFloatUsage);
     disp = base + offs;
 
     emitIns_R_S(INS_movw, EA_4BYTE, r, varx, offs, pBaseReg);
@@ -3892,7 +3892,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     unsigned undisp;
 
     base = m_compiler->lvaFrameAddress(varx, m_compiler->funCurrentFunc()->funKind != FUNC_ROOT, &reg2, offs,
-                                     CodeGen::instIsFP(ins));
+                                       CodeGen::instIsFP(ins));
 
     disp   = base + offs;
     undisp = unsigned_abs(disp);
@@ -6623,7 +6623,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         int       varNum = id->idAddr()->iiaLclVar.lvaVarNum();
         unsigned  ofs    = AlignDown(id->idAddr()->iiaLclVar.lvaOffset(), TARGET_POINTER_SIZE);
         regNumber regBase;
-        int adr = m_compiler->lvaFrameAddress(varNum, true, &regBase, ofs, /* isFloatUsage */ false); // no float GC refs
+        int       adr =
+            m_compiler->lvaFrameAddress(varNum, true, &regBase, ofs, /* isFloatUsage */ false); // no float GC refs
         if (id->idGCref() != GCT_NONE)
         {
             emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst DEBUG_ARG(varNum));

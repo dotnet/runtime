@@ -665,15 +665,15 @@ PhaseStatus AsyncTransformation::Run()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    m_compiler->compSuspensionPoints =
-        new (m_compiler, CMK_Async) jitstd::vector<ICorDebugInfo::AsyncSuspensionPoint>(m_compiler->getAllocator(CMK_Async));
+    m_compiler->compSuspensionPoints = new (m_compiler, CMK_Async)
+        jitstd::vector<ICorDebugInfo::AsyncSuspensionPoint>(m_compiler->getAllocator(CMK_Async));
     m_compiler->compAsyncVars = new (m_compiler, CMK_Async)
         jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>(m_compiler->getAllocator(CMK_Async));
 
     m_returnedContinuationVar = m_compiler->lvaGrabTemp(false DEBUGARG("returned continuation"));
     m_compiler->lvaGetDesc(m_returnedContinuationVar)->lvType = TYP_REF;
-    m_newContinuationVar                                  = m_compiler->lvaGrabTemp(false DEBUGARG("new continuation"));
-    m_compiler->lvaGetDesc(m_newContinuationVar)->lvType      = TYP_REF;
+    m_newContinuationVar                                 = m_compiler->lvaGrabTemp(false DEBUGARG("new continuation"));
+    m_compiler->lvaGetDesc(m_newContinuationVar)->lvType = TYP_REF;
 
     m_asyncInfo = m_compiler->eeGetAsyncInfo();
 
@@ -1009,7 +1009,8 @@ bool AsyncTransformation::ContinuationNeedsKeepAlive(AsyncLiveness& life)
     }
 
     const unsigned GENERICS_CTXT_FROM = CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
-    if (((m_compiler->info.compMethodInfo->options & GENERICS_CTXT_FROM) != 0) && life.IsLive(m_compiler->info.compTypeCtxtArg))
+    if (((m_compiler->info.compMethodInfo->options & GENERICS_CTXT_FROM) != 0) &&
+        life.IsLive(m_compiler->info.compTypeCtxtArg))
     {
         return true;
     }
@@ -1241,8 +1242,9 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 #endif
 
     // Now create continuation type. First create bitmap of object refs.
-    bool* objRefs =
-        layout.Size < TARGET_POINTER_SIZE ? nullptr : new (m_compiler, CMK_Async) bool[layout.Size / TARGET_POINTER_SIZE]{};
+    bool* objRefs = layout.Size < TARGET_POINTER_SIZE
+                        ? nullptr
+                        : new (m_compiler, CMK_Async) bool[layout.Size / TARGET_POINTER_SIZE]{};
 
     GCPointerBitMapBuilder bitmapBuilder(objRefs, layout.Size);
     bitmapBuilder.SetIfNotMax(layout.ExceptionOffset);
@@ -1366,7 +1368,8 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
                         unsigned   fieldLclNum = dsc->lvFieldLclStart + i;
                         LclVarDsc* fieldDsc    = m_compiler->lvaGetDesc(fieldLclNum);
 
-                        GenTree* value = m_compiler->gtNewLclFldNode(newLclNum, fieldDsc->TypeGet(), fieldDsc->lvFldOffset);
+                        GenTree* value =
+                            m_compiler->gtNewLclFldNode(newLclNum, fieldDsc->TypeGet(), fieldDsc->lvFldOffset);
                         GenTree* store = m_compiler->gtNewStoreLclVarNode(fieldLclNum, value);
                         LIR::AsRange(block).InsertBefore(use.User(), value, store);
                         DISPTREERANGE(LIR::AsRange(block), store);
@@ -1445,7 +1448,8 @@ BasicBlock* AsyncTransformation::CreateSuspension(
 
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, ilOffsetNode));
 
-    GenTree* recordOffset = new (m_compiler, GT_RECORD_ASYNC_RESUME) GenTreeVal(GT_RECORD_ASYNC_RESUME, TYP_VOID, stateNum);
+    GenTree* recordOffset =
+        new (m_compiler, GT_RECORD_ASYNC_RESUME) GenTreeVal(GT_RECORD_ASYNC_RESUME, TYP_VOID, stateNum);
     LIR::AsRange(suspendBB).InsertAtEnd(recordOffset);
 
     // Allocate continuation
@@ -1539,14 +1543,16 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(AsyncLiveness&    
         // Offset passed to function is relative to instance data.
         int keepAliveOffset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) + layout.KeepAliveOffset;
         GenTree*        keepAliveOffsetNode = m_compiler->gtNewIconNode(keepAliveOffset);
-        CorInfoHelpFunc helperNum = (m_compiler->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODTABLE) != 0
-                                        ? CORINFO_HELP_ALLOC_CONTINUATION_CLASS
-                                        : CORINFO_HELP_ALLOC_CONTINUATION_METHOD;
-        return m_compiler->gtNewHelperCallNode(helperNum, TYP_REF, prevContinuation, contClassHndNode, keepAliveOffsetNode,
-                                           handleArg);
+        CorInfoHelpFunc helperNum =
+            (m_compiler->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODTABLE) != 0
+                ? CORINFO_HELP_ALLOC_CONTINUATION_CLASS
+                : CORINFO_HELP_ALLOC_CONTINUATION_METHOD;
+        return m_compiler->gtNewHelperCallNode(helperNum, TYP_REF, prevContinuation, contClassHndNode,
+                                               keepAliveOffsetNode, handleArg);
     }
 
-    return m_compiler->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION, TYP_REF, prevContinuation, contClassHndNode);
+    return m_compiler->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION, TYP_REF, prevContinuation,
+                                           contClassHndNode);
 }
 
 //------------------------------------------------------------------------
@@ -1646,7 +1652,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
         unsigned contContextOffset = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationContextOffset;
         GenTree* contContextElementOffset =
             m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
-                                  m_compiler->gtNewIconNode((ssize_t)contContextOffset, TYP_I_IMPL));
+                                      m_compiler->gtNewIconNode((ssize_t)contContextOffset, TYP_I_IMPL));
 
         LIR::AsRange(suspendBB).InsertBefore(contContextElementPlaceholder,
                                              LIR::SeqTree(m_compiler, contContextElementOffset));
@@ -1657,10 +1663,11 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
         gotUse = LIR::AsRange(suspendBB).TryGetUse(flagsPlaceholder, &use);
         assert(gotUse);
 
-        newContinuation          = m_compiler->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-        unsigned flagsOffset     = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
-        GenTree* flagsOffsetNode = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
-                                                         m_compiler->gtNewIconNode((ssize_t)flagsOffset, TYP_I_IMPL));
+        newContinuation      = m_compiler->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
+        GenTree* flagsOffsetNode =
+            m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
+                                      m_compiler->gtNewIconNode((ssize_t)flagsOffset, TYP_I_IMPL));
 
         LIR::AsRange(suspendBB).InsertBefore(flagsPlaceholder, LIR::SeqTree(m_compiler, flagsOffsetNode));
         use.ReplaceWith(flagsOffsetNode);
@@ -1966,7 +1973,7 @@ void AsyncTransformation::RestoreFromDataOnResumption(const ContinuationLayout& 
         {
             GenTree* baseAddr = m_compiler->gtNewLclvNode(inf.LclNum, dsc->TypeGet());
             store             = m_compiler->gtNewStoreValueNode(dsc->GetLayout(), baseAddr, value,
-                                                            GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP);
+                                                                GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP);
         }
         else
         {
@@ -2103,7 +2110,7 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
         {
             GenTree* resultOffsetNode = m_compiler->gtNewIconNode((ssize_t)resultOffset, TYP_I_IMPL);
             GenTree* resultAddr       = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, resultBase, resultOffsetNode);
-            GenTree* resultData       = m_compiler->gtNewLoadValueNode(layout.ReturnStructLayout, resultAddr, indirFlags);
+            GenTree* resultData = m_compiler->gtNewLoadValueNode(layout.ReturnStructLayout, resultAddr, indirFlags);
             GenTree* storeResult;
             if ((callDefInfo.DefinitionNode->GetLclOffs() == 0) &&
                 ClassLayout::AreCompatible(resultLcl->GetLayout(), layout.ReturnStructLayout))
@@ -2113,8 +2120,8 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
             else
             {
                 storeResult = m_compiler->gtNewStoreLclFldNode(callDefInfo.DefinitionNode->GetLclNum(), TYP_STRUCT,
-                                                           layout.ReturnStructLayout,
-                                                           callDefInfo.DefinitionNode->GetLclOffs(), resultData);
+                                                               layout.ReturnStructLayout,
+                                                               callDefInfo.DefinitionNode->GetLclOffs(), resultData);
             }
 
             LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeResult));
@@ -2165,8 +2172,8 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
         else
         {
             storeResult = m_compiler->gtNewStoreLclFldNode(callDefInfo.DefinitionNode->GetLclNum(),
-                                                       callDefInfo.DefinitionNode->TypeGet(),
-                                                       callDefInfo.DefinitionNode->GetLclOffs(), value);
+                                                           callDefInfo.DefinitionNode->TypeGet(),
+                                                           callDefInfo.DefinitionNode->GetLclOffs(), value);
         }
 
         LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeResult));
@@ -2431,7 +2438,7 @@ void AsyncTransformation::CreateResumptionSwitch()
         GenTree* ilOffset         = LoadFromOffset(continuationArg, offsetOfIlOffset, TYP_INT);
         unsigned ilOffsetLclNum   = m_compiler->lvaGrabTemp(false DEBUGARG("IL offset for tier0 OSR method"));
         m_compiler->lvaGetDesc(ilOffsetLclNum)->lvType = TYP_INT;
-        GenTree* storeIlOffset                     = m_compiler->gtNewStoreLclVarNode(ilOffsetLclNum, ilOffset);
+        GenTree* storeIlOffset                         = m_compiler->gtNewStoreLclVarNode(ilOffsetLclNum, ilOffset);
         LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeIlOffset));
 
         ilOffset        = m_compiler->gtNewLclvNode(ilOffsetLclNum, TYP_INT);

@@ -501,7 +501,8 @@ void ObjectAllocator::PrepareAnalysis()
     if (m_compiler->lvaTrackedToVarNumSize < maxTrackedLclNum)
     {
         m_compiler->lvaTrackedToVarNumSize = maxTrackedLclNum;
-        m_compiler->lvaTrackedToVarNum     = new (m_compiler->getAllocator(CMK_LvaTable)) unsigned[m_compiler->lvaTrackedToVarNumSize];
+        m_compiler->lvaTrackedToVarNum =
+            new (m_compiler->getAllocator(CMK_LvaTable)) unsigned[m_compiler->lvaTrackedToVarNumSize];
     }
 
     for (unsigned lclNum = 0; lclNum < localCount; lclNum++)
@@ -1718,7 +1719,7 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     else
     {
         JITDUMP("\nSuppressing zero-init for V%02u -- expect to zero in prolog\n", lclNum);
-        lclDsc->lvSuppressedZeroInit = 1;
+        lclDsc->lvSuppressedZeroInit       = 1;
         m_compiler->compSuppressedZeroInit = true;
     }
 
@@ -1799,7 +1800,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     else
     {
         JITDUMP("\nSuppressing zero-init for V%02u -- expect to zero in prolog\n", lclNum);
-        lclDsc->lvSuppressedZeroInit = 1;
+        lclDsc->lvSuppressedZeroInit       = 1;
         m_compiler->compSuppressedZeroInit = true;
     }
 
@@ -3054,7 +3055,8 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
                 }
                 JITDUMP("\n");
             }
-            JITDUMP("   they escape only when V%02u.Type NE %s\n", info->m_local, m_compiler->eeGetClassName(info->m_type));
+            JITDUMP("   they escape only when V%02u.Type NE %s\n", info->m_local,
+                    m_compiler->eeGetClassName(info->m_type));
             JITDUMP("   V%02u + secondary vars have %u appearances\n", info->m_local, info->m_appearanceCount);
 
             m_compiler->Metrics.EnumeratorGDVProvisionalNoEscape++;
@@ -3149,8 +3151,8 @@ unsigned ObjectAllocator::NewPseudoIndex()
 //
 bool ObjectAllocator::IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* info, bool testOutcome)
 {
-    JITDUMP("Checking if [%06u] in " FMT_BB " executes under a %s GDV type test\n", m_compiler->dspTreeID(tree), block->bbNum,
-            testOutcome ? "successful" : "failing");
+    JITDUMP("Checking if [%06u] in " FMT_BB " executes under a %s GDV type test\n", m_compiler->dspTreeID(tree),
+            block->bbNum, testOutcome ? "successful" : "failing");
 
     // Walk up the dominator tree....
     //
@@ -4476,8 +4478,9 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
     {
         // Note enclosing region index may shift because of EH cloning, so refetch it.
         //
-        bool     postCloneInTry             = false;
-        unsigned postCloneEnclosingEHRegion = m_compiler->ehGetMostNestedRegionIndex(info->m_allocBlock, &postCloneInTry);
+        bool     postCloneInTry = false;
+        unsigned postCloneEnclosingEHRegion =
+            m_compiler->ehGetMostNestedRegionIndex(info->m_allocBlock, &postCloneInTry);
         assert(postCloneEnclosingEHRegion >= enclosingEHRegion);
         assert(inTry == postCloneInTry);
 
@@ -4503,8 +4506,9 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
     // Note: we will map all the allocTemp and useTemp appearances to
     // this variable as well.
     //
-    unsigned const newEnumeratorLocal = m_compiler->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("fast-path enumerator"));
-    info->m_enumeratorLocal           = newEnumeratorLocal;
+    unsigned const newEnumeratorLocal =
+        m_compiler->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("fast-path enumerator"));
+    info->m_enumeratorLocal = newEnumeratorLocal;
 
     // Type for now as TYP_REF; this will get rewritten later during RewriteUses
     //
@@ -4517,8 +4521,8 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
     newEnumeratorDsc->lvTracked  = 1;
     newEnumeratorDsc->lvVarIndex = (unsigned short)m_nextLocalIndex; // grr
     assert(newEnumeratorDsc->lvVarIndex < m_compiler->lvaTrackedToVarNumSize);
-    m_compiler->lvaTrackedToVarNum[newEnumeratorDsc->lvVarIndex]   = newEnumeratorLocal;
-    m_ConnGraphAdjacencyMatrix[newEnumeratorDsc->lvVarIndex] = BitVecOps::MakeEmpty(&m_bitVecTraits);
+    m_compiler->lvaTrackedToVarNum[newEnumeratorDsc->lvVarIndex] = newEnumeratorLocal;
+    m_ConnGraphAdjacencyMatrix[newEnumeratorDsc->lvVarIndex]     = BitVecOps::MakeEmpty(&m_bitVecTraits);
     m_nextLocalIndex++;
     assert(m_maxPseudos > 0);
     assert(newEnumeratorDsc->lvVarIndex < m_firstPseudoIndex);

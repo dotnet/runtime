@@ -1484,7 +1484,8 @@ void CodeGen::genLclHeap(GenTree* tree)
     if (m_compiler->lvaOutgoingArgSpaceSize > 0)
     {
         unsigned outgoingArgSpaceAligned = roundUp(m_compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
-        // assert((m_compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain
+        // assert((m_compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to
+        // remain
         //                                                                // aligned
         tempReg = internalRegisters.Extract(tree);
         genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, outgoingArgSpaceAligned, tempReg);
@@ -5396,8 +5397,8 @@ void CodeGen::genCall(GenTreeCall* call)
             // Register where we save call address in should not be overridden by epilog.
             assert((genRegMask(tmpReg) & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == genRegMask(tmpReg));
 
-            regNumber callAddrReg =
-                call->IsVirtualStubRelativeIndir() ? m_compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
+            regNumber callAddrReg = call->IsVirtualStubRelativeIndir() ? m_compiler->virtualStubParamInfo->GetReg()
+                                                                       : REG_R2R_INDIRECT_PARAM;
             GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg, 0);
             // We will use this again when emitting the jump in genCallInstruction in the epilog
             internalRegisters.Add(call, genRegMask(tmpReg));

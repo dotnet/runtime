@@ -2443,7 +2443,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     {
         assert(isFramePointerUsed());
         assert(m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT); // The frame size and offsets must be
-                                                                              // finalized
+                                                                                // finalized
 
         // Frame pointer doesn't point at the end, it points at the pushed r11. So, instead
         // of adding the number of callee-saved regs to CallerSP, we add 1 for lr and 1 for r11

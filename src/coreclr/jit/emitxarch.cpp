@@ -14199,7 +14199,8 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     unsigned paddingToAdd = id->idCodeSize();
 
     // Either things are already aligned or align them here.
-    assert(!validatePadding || (paddingToAdd == 0) || ((offset & (m_compiler->opts.compJitAlignLoopBoundary - 1)) != 0));
+    assert(!validatePadding || (paddingToAdd == 0) ||
+           ((offset & (m_compiler->opts.compJitAlignLoopBoundary - 1)) != 0));
 
     // Padding amount should not exceed the alignment boundary
     assert(0 <= paddingToAdd && paddingToAdd < m_compiler->opts.compJitAlignLoopBoundary);
@@ -14225,7 +14226,8 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     // then add "int3" instruction. Since int3 takes 1 byte, we would only add
     // it if paddingToAdd >= 1 byte.
 
-    if (m_compiler->compStressCompile(Compiler::STRESS_EMITTER, 50) && alignInstr->isPlacedAfterJmp && paddingToAdd >= 1)
+    if (m_compiler->compStressCompile(Compiler::STRESS_EMITTER, 50) && alignInstr->isPlacedAfterJmp &&
+        paddingToAdd >= 1)
     {
         size_t int3Code = insCodeMR(INS_BREAKPOINT);
         // There is no good way to squeeze in "int3" as well as display it
@@ -17799,7 +17801,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 #if DEBUG_EMIT || defined(DEBUG)
             int offsShrinkage = id->idCodeSize() - JMP_SIZE_SMALL;
             if (INDEBUG(m_compiler->verbose ||)(id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM ||
-                                              INTERESTING_JUMP_NUM == 0))
+                                                INTERESTING_JUMP_NUM == 0))
             {
                 printf("; NOTE: size of jump [%08p] mis-predicted by %d bytes\n", dspPtr(id), offsShrinkage);
             }

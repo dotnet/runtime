@@ -813,7 +813,8 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     {
         if (addr->OperIs(GT_CNS_INT))
         {
-            bool needsReloc = addr->AsIntCon()->FitsInAddrBase(m_compiler) && addr->AsIntCon()->AddrNeedsReloc(m_compiler);
+            bool needsReloc =
+                addr->AsIntCon()->FitsInAddrBase(m_compiler) && addr->AsIntCon()->AddrNeedsReloc(m_compiler);
             if (needsReloc || !emitter::isValidSimm12(indirTree->Offset()))
             {
                 bool needTemp = indirTree->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeIsFloating(indirTree);

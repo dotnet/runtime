@@ -482,7 +482,8 @@ void CodeGen::genCodeForBBlist()
                 assert(ilOffset->gtStmtLastILoffs <= m_compiler->info.compILCodeSize ||
                        ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
 
-                if (m_compiler->opts.dspCode && m_compiler->opts.dspInstrs && ilOffset->gtStmtLastILoffs != BAD_IL_OFFSET)
+                if (m_compiler->opts.dspCode && m_compiler->opts.dspInstrs &&
+                    ilOffset->gtStmtLastILoffs != BAD_IL_OFFSET)
                 {
                     while (genCurDispOffset <= ilOffset->gtStmtLastILoffs)
                     {
@@ -1231,7 +1232,8 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex)
         unsigned       fieldVarNum = m_compiler->lvaGetDesc(lclNode)->lvFieldLclStart + multiRegIndex;
         bool           reSpill     = ((spillFlags & GTF_SPILL) != 0);
         bool           isLastUse   = lclNode->IsLastUse(multiRegIndex);
-        genUnspillLocal(fieldVarNum, m_compiler->lvaGetDesc(fieldVarNum)->TypeGet(), lclNode, dstReg, reSpill, isLastUse);
+        genUnspillLocal(fieldVarNum, m_compiler->lvaGetDesc(fieldVarNum)->TypeGet(), lclNode, dstReg, reSpill,
+                        isLastUse);
     }
     else
     {
@@ -2111,8 +2113,8 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
     {
         // Store local variable to its home location.
         // Ensure that lclVar stores are typed correctly.
-        GetEmitter()->emitIns_S_R(ins_Store(type, m_compiler->isSIMDTypeLocalAligned(varNum)), emitTypeSize(type), regNum,
-                                  varNum, 0);
+        GetEmitter()->emitIns_S_R(ins_Store(type, m_compiler->isSIMDTypeLocalAligned(varNum)), emitTypeSize(type),
+                                  regNum, varNum, 0);
     }
 }
 #endif // !TARGET_WASM

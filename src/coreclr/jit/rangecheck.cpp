@@ -1413,8 +1413,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     if (binop->OperIs(GT_XOR))
     {
         int upperBound;
-        if (m_compiler->vnStore->IsVNLog2(m_compiler->vnStore->VNConservativeNormalValue(binop->gtVNPair),
-                                           &upperBound))
+        if (m_compiler->vnStore->IsVNLog2(m_compiler->vnStore->VNConservativeNormalValue(binop->gtVNPair), &upperBound))
         {
             assert(upperBound > 0);
             return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, upperBound));

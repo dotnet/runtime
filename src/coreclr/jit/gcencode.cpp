@@ -2903,7 +2903,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
         if (m_compiler->lvaKeepAliveAndReportThis() && m_compiler->lvaTable[m_compiler->info.compThisArg].lvRegister)
         {
-            unsigned thisRegMask   = (unsigned)genRegMask(m_compiler->lvaTable[m_compiler->info.compThisArg].GetRegNum());
+            unsigned thisRegMask = (unsigned)genRegMask(m_compiler->lvaTable[m_compiler->info.compThisArg].GetRegNum());
             unsigned thisPtrRegEnc = gceEncodeCalleeSavedRegs(thisRegMask) << 4;
 
             if (thisPtrRegEnc)
@@ -3838,7 +3838,7 @@ public:
 };
 
 #define GCENCODER_WITH_LOGGING(withLog, realEncoder)                                                                   \
-    GcInfoEncoderWithLogging  withLog##Var(realEncoder, INDEBUG(m_compiler->verbose ||) m_compiler->opts.dspGCtbls);       \
+    GcInfoEncoderWithLogging  withLog##Var(realEncoder, INDEBUG(m_compiler->verbose ||) m_compiler->opts.dspGCtbls);   \
     GcInfoEncoderWithLogging* withLog = &withLog##Var;
 
 #else // !(defined(DEBUG) || DUMP_GC_TABLES)
@@ -3902,7 +3902,8 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 #ifdef DEBUG
         if (m_compiler->opts.IsOSR())
         {
-            const int callerSpOffset = m_compiler->lvaToCallerSPRelativeOffset(offset, m_compiler->isFramePointerUsed());
+            const int callerSpOffset =
+                m_compiler->lvaToCallerSPRelativeOffset(offset, m_compiler->isFramePointerUsed());
 
             // Sanity check the offset vs saved patchpoint info.
             //

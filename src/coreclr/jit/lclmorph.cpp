@@ -417,7 +417,7 @@ typedef JitHashTable<LocalEqualsLocalAddrAssertion, AssertionKeyFuncs, unsigned>
 
 class LocalEqualsLocalAddrAssertions
 {
-    Compiler* m_compiler;
+    Compiler*                                 m_compiler;
     LoopDefinitions*                          m_loopDefs;
     ArrayStack<LocalEqualsLocalAddrAssertion> m_assertions;
     AssertionToIndexMap                       m_map;

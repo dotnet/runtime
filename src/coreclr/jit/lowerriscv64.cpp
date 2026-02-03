@@ -217,7 +217,8 @@ GenTree* Lowering::LowerSavedIntegerCompare(GenTree* cmp)
         ContainCheckBinary(left->AsOp());
     }
 
-    if (!right->TypeIs(TYP_BYREF) && right->IsIntegralConst() && !right->AsIntConCommon()->ImmedValNeedsReloc(m_compiler))
+    if (!right->TypeIs(TYP_BYREF) && right->IsIntegralConst() &&
+        !right->AsIntConCommon()->ImmedValNeedsReloc(m_compiler))
     {
         if (cmp->OperIs(GT_LE, GT_GE))
         {
@@ -670,7 +671,8 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
         {
             // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type for
             // the non-split case.
-            m_compiler->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
+            m_compiler->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum()
+                                                     DEBUGARG(DoNotEnregisterReason::IsStructArg));
         }
     }
 }

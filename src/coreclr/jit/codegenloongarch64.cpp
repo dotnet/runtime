@@ -4256,7 +4256,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_JCC:
         {
             BasicBlock* tgtBlock = m_compiler->compCurBB->KindIs(BBJ_COND) ? m_compiler->compCurBB->GetTrueTarget()
-                                                                         : m_compiler->compCurBB->GetTarget();
+                                                                           : m_compiler->compCurBB->GetTarget();
 #if !FEATURE_FIXED_OUT_ARGS
             assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
 #endif // !FEATURE_FIXED_OUT_ARGS
@@ -5575,8 +5575,8 @@ void CodeGen::genCall(GenTreeCall* call)
             // Register where we save call address in should not be overridden by epilog.
             assert((genRegMask(tmpReg) & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == genRegMask(tmpReg));
 
-            regNumber callAddrReg =
-                call->IsVirtualStubRelativeIndir() ? m_compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
+            regNumber callAddrReg = call->IsVirtualStubRelativeIndir() ? m_compiler->virtualStubParamInfo->GetReg()
+                                                                       : REG_R2R_INDIRECT_PARAM;
             GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg, 0);
             // We will use this again when emitting the jump in genCallInstruction in the epilog
             internalRegisters.Add(call, genRegMask(tmpReg));

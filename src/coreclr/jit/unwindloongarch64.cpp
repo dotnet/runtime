@@ -1580,7 +1580,8 @@ void UnwindFragmentInfo::SplitEpilogCodes(emitLocation* emitLoc, UnwindFragmentI
 
 bool UnwindFragmentInfo::IsAtFragmentEnd(UnwindEpilogInfo* pEpi)
 {
-    return m_compiler->GetEmitter()->emitIsFuncEnd(pEpi->epiEmitLocation, (ufiNext == NULL) ? NULL : ufiNext->ufiEmitLoc);
+    return m_compiler->GetEmitter()->emitIsFuncEnd(pEpi->epiEmitLocation,
+                                                   (ufiNext == NULL) ? NULL : ufiNext->ufiEmitLoc);
 }
 
 // Merge the unwind codes as much as possible.
@@ -1950,8 +1951,8 @@ void UnwindFragmentInfo::Allocate(
     }
 #endif // DEBUG
 
-    m_compiler->eeAllocUnwindInfo((BYTE*)pHotCode, (BYTE*)pColdCode, startOffset, endOffset, unwindBlockSize, pUnwindBlock,
-                               funKind);
+    m_compiler->eeAllocUnwindInfo((BYTE*)pHotCode, (BYTE*)pColdCode, startOffset, endOffset, unwindBlockSize,
+                                  pUnwindBlock, funKind);
 }
 
 #ifdef DEBUG
@@ -2149,7 +2150,7 @@ void UnwindInfo::Split()
 
     // Call the emitter to do the split, and call us back for every split point it chooses.
     m_compiler->GetEmitter()->emitSplit(uwiFragmentLast->ufiEmitLoc, uwiEndLoc, maxFragmentSize, (void*)this,
-                                     EmitSplitCallback);
+                                        EmitSplitCallback);
 
 #ifdef DEBUG
     // Did the emitter split the function/funclet into as many fragments as we asked for?

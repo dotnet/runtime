@@ -1522,7 +1522,8 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
     if (node.simdTypeHnd != NO_CLASS_HANDLE)
     {
         const char* namespaceName = nullptr;
-        const char* className = m_compiler->info.compCompHnd->getClassNameFromMetadata(node.simdTypeHnd, &namespaceName);
+        const char* className =
+            m_compiler->info.compCompHnd->getClassNameFromMetadata(node.simdTypeHnd, &namespaceName);
 
 #ifdef FEATURE_SIMD
         if (m_compiler->isRuntimeIntrinsicsNamespace(namespaceName) || m_compiler->isNumericsNamespace(namespaceName))

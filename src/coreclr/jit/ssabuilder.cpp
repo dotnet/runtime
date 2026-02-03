@@ -456,7 +456,7 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
                         ssaNum = RenamePushDef(defNode, block, fieldLclNum, /* defIsFull */ true);
                     }
                     else if (m_compiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
-                                                              &fieldStoreSize))
+                                                             &fieldStoreSize))
                     {
                         ssaNum = RenamePushDef(defNode, block, fieldLclNum,
                                                ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc),
@@ -1021,8 +1021,7 @@ void SsaBuilder::AddPhiArgsToNewlyEnteredHandler(BasicBlock* predEnterBlock,
         // If not, go on.
         const unsigned   lclNum    = tree->AsLclVar()->GetLclNum();
         const LclVarDsc* lclVarDsc = m_compiler->lvaGetDesc(lclNum);
-        if (!lclVarDsc->lvTracked ||
-            !VarSetOps::IsMember(m_compiler, predEnterBlock->bbLiveOut, lclVarDsc->lvVarIndex))
+        if (!lclVarDsc->lvTracked || !VarSetOps::IsMember(m_compiler, predEnterBlock->bbLiveOut, lclVarDsc->lvVarIndex))
         {
             continue;
         }
@@ -1510,8 +1509,8 @@ UseDefLocation IncrementalSsaBuilder::FindOrCreateReachingDef(const UseDefLocati
 
                     UseDefLocation phiArgUse         = UseDefLocation(pred, nullptr, nullptr);
                     UseDefLocation phiArgReachingDef = FindOrCreateReachingDef(phiArgUse);
-                    SsaBuilder::AddNewPhiArg(m_compiler, dom, phiDef, phi, m_lclNum, phiArgReachingDef.Tree->GetSsaNum(),
-                                             pred);
+                    SsaBuilder::AddNewPhiArg(m_compiler, dom, phiDef, phi, m_lclNum,
+                                             phiArgReachingDef.Tree->GetSsaNum(), pred);
 
                     // The phi arg is modelled at the end of the pred block;
                     // mark liveness for it.

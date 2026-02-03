@@ -1233,7 +1233,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             fldOffsetNode->SetMorphed(m_compiler);
             fldOffsetNode->gtFieldSeq = addrBaseOffsFldSeq;
             addrClone = m_compiler->gtNewOperNode(GT_ADD, varTypeIsGC(addrClone) ? TYP_BYREF : TYP_I_IMPL, addrClone,
-                                              fldOffsetNode);
+                                                  fldOffsetNode);
             // Avoid constant prop propagating each field access with a large
             // constant address. TODO-Cleanup: We should tune constant prop to
             // have better heuristics around this.
@@ -1315,7 +1315,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                         {
                             m_srcLclNode->ChangeOper(GT_LCL_FLD);
                             m_srcLclNode->gtType = destType;
-                            m_compiler->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+                            m_compiler->lvaSetVarDoNotEnregister(
+                                m_srcLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
                             srcFld = m_srcLclNode;
                             done   = true;
                         }

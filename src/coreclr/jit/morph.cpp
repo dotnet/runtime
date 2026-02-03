@@ -137,7 +137,7 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
 
 class SharedTempsScope
 {
-    Compiler* m_compiler;
+    Compiler*             m_compiler;
     ArrayStack<unsigned>  m_usedSharedTemps;
     ArrayStack<unsigned>* m_prevUsedSharedTemps;
 

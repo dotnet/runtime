@@ -38,7 +38,7 @@ const SM_OPCODE smOpcodeMap[] = {
 
 void CodeSeqSM::Start(Compiler* comp)
 {
-    m_compiler          = comp;
+    m_compiler     = comp;
     States         = gp_SMStates;
     JumpTableCells = gp_SMJumpTableCells;
     StateWeights   = gp_StateWeights;

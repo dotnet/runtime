@@ -10573,8 +10573,9 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             assert(fmt == IF_BI_0A);
             assert((distVal & 1) == 0);
-            code_t     code               = emitInsCode(ins, fmt);
-            const bool doRecordRelocation = m_compiler->opts.compReloc && emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
+            code_t     code = emitInsCode(ins, fmt);
+            const bool doRecordRelocation =
+                m_compiler->opts.compReloc && emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
 
             if (doRecordRelocation)
             {

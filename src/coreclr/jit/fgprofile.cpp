@@ -475,7 +475,8 @@ void BlockCountInstrumentor::RelocateProbes()
 {
     // We only see such blocks when optimizing. They are flagged by the importer.
     //
-    if (!m_compiler->opts.IsInstrumentedAndOptimized() || ((m_compiler->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    if (!m_compiler->opts.IsInstrumentedAndOptimized() ||
+        ((m_compiler->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
     {
         // No problematic blocks to worry about.
         //
@@ -1532,7 +1533,8 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 {
     // We only see such blocks when optimizing. They are flagged by the importer.
     //
-    if (!m_compiler->opts.IsInstrumentedAndOptimized() || ((m_compiler->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    if (!m_compiler->opts.IsInstrumentedAndOptimized() ||
+        ((m_compiler->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
     {
         // No problematic blocks to worry about.
         //
@@ -1839,7 +1841,8 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
         var_types typ =
             entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ? TYP_INT : TYP_LONG;
 
-        GenTree* incCount = BlockCountInstrumentor::CreateCounterIncrement(m_compiler, addrOfCurrentExecutionCount, typ);
+        GenTree* incCount =
+            BlockCountInstrumentor::CreateCounterIncrement(m_compiler, addrOfCurrentExecutionCount, typ);
         m_compiler->fgNewStmtAtBeg(instrumentedBlock, incCount);
 
         if (probe->kind != EdgeKind::Duplicate)
@@ -3098,7 +3101,7 @@ bool Compiler::fgIncorporateBlockCounts()
 class EfficientEdgeCountReconstructor : public SpanningTreeVisitor
 {
 private:
-    Compiler* m_compiler;
+    Compiler*     m_compiler;
     CompAllocator m_allocator;
     unsigned      m_blocks;
     unsigned      m_edges;

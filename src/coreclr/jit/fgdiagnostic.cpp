@@ -1203,8 +1203,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     , m_blkMapSize(blkMapSize)
                 {
                     // Create a root region that encompasses the whole function.
-                    m_rgnRoot =
-                        new (m_compiler, CMK_DebugOnly) Region(RegionType::Root, "Root", comp->fgFirstBB, comp->fgLastBB);
+                    m_rgnRoot = new (m_compiler, CMK_DebugOnly)
+                        Region(RegionType::Root, "Root", comp->fgFirstBB, comp->fgLastBB);
                 }
 
                 //------------------------------------------------------------------------

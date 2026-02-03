@@ -3093,8 +3093,8 @@ void CodeGen::genCall(GenTreeCall* call)
             // Register where we save call address in should not be overridden by epilog.
             assert((genRegMask(tmpReg) & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == genRegMask(tmpReg));
 
-            regNumber callAddrReg =
-                call->IsVirtualStubRelativeIndir() ? m_compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
+            regNumber callAddrReg = call->IsVirtualStubRelativeIndir() ? m_compiler->virtualStubParamInfo->GetReg()
+                                                                       : REG_R2R_INDIRECT_PARAM;
             GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg);
             // We will use this again when emitting the jump in genCallInstruction in the epilog
             internalRegisters.Add(call, genRegMask(tmpReg));
@@ -3876,7 +3876,8 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
         {
             preservedAreaSize += TARGET_POINTER_SIZE;
 
-            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaAsyncExecutionContextVar) == -preservedAreaSize);
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaAsyncExecutionContextVar) ==
+                   -preservedAreaSize);
         }
 
         if (m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
@@ -4569,7 +4570,7 @@ void CodeGen::genPushCalleeSavedRegisters()
                                           INS_OPTS_PRE_INDEX);
             m_compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
 
-            maskSaveRegsInt &= ~(RBM_FP | RBM_LR);                        // We've already saved FP/LR
+            maskSaveRegsInt &= ~(RBM_FP | RBM_LR);                          // We've already saved FP/LR
             offset = (int)m_compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // 2 for FP/LR
         }
         else if ((totalFrameSize <= 512) && !m_compiler->opts.compDbgEnC)
@@ -4622,7 +4623,7 @@ void CodeGen::genPushCalleeSavedRegisters()
                                               m_compiler->lvaOutgoingArgSpaceSize);
                 m_compiler->unwindSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize);
 
-                maskSaveRegsInt &= ~(RBM_FP | RBM_LR);                        // We've already saved FP/LR
+                maskSaveRegsInt &= ~(RBM_FP | RBM_LR);                          // We've already saved FP/LR
                 offset = (int)m_compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // 2 for FP/LR
             }
         }
@@ -4985,8 +4986,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         m_compiler->unwindSetFrameReg(REG_SAVED_LOCALLOC_SP, 0);
     }
 
-    if (jmpEpilog ||
-        genStackAllocRegisterMask(m_compiler->compLclFrameSize, regSet.rsGetModifiedFltCalleeSavedRegsMask()) == RBM_NONE)
+    if (jmpEpilog || genStackAllocRegisterMask(m_compiler->compLclFrameSize,
+                                               regSet.rsGetModifiedFltCalleeSavedRegsMask()) == RBM_NONE)
     {
         genFreeLclFrame(m_compiler->compLclFrameSize, &unwindStarted);
     }

@@ -742,7 +742,7 @@ unsigned emitLclVarAddr::lvaOffset() const // returns the offset into the variab
 
 void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 {
-    m_compiler        = comp;
+    m_compiler      = comp;
     emitCmpHandle   = cmpHandle;
     m_debugInfoSize = sizeof(instrDescDebugInfo*);
 #ifndef DEBUG
@@ -3599,8 +3599,8 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
     // register (RDX) is a GCRef or ByRef pointer.
 
     if (!VarSetOps::IsEmpty(m_compiler, GCvars) || // any frame GCvars live
-        (gcRefRegsInScratch) ||                  // any register gc refs live in scratch regs
-        (byrefRegs != 0) ||                      // any register byrefs live
+        (gcRefRegsInScratch) ||                    // any register gc refs live in scratch regs
+        (byrefRegs != 0) ||                        // any register byrefs live
 #ifdef TARGET_XARCH
         (disp < AM_DISP_MIN) ||        // displacement too negative
         (disp > AM_DISP_MAX) ||        // displacement too positive
@@ -3686,11 +3686,11 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
     bool gcRefRegsInScratch = ((gcrefRegs & RBM_CALLEE_TRASH) != 0);
 
     if (!VarSetOps::IsEmpty(m_compiler, GCvars) || // any frame GCvars live
-        gcRefRegsInScratch ||                    // any register gc refs live in scratch regs
-        (byrefRegs != 0) ||                      // any register byrefs live
-        (argCnt > ID_MAX_SMALL_CNS) ||           // too many args
-        (argCnt < 0)                             // caller pops arguments
-                                                 // There is a second ref/byref return register.
+        gcRefRegsInScratch ||                      // any register gc refs live in scratch regs
+        (byrefRegs != 0) ||                        // any register byrefs live
+        (argCnt > ID_MAX_SMALL_CNS) ||             // too many args
+        (argCnt < 0)                               // caller pops arguments
+                                                   // There is a second ref/byref return register.
         MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)) ||
         hasAsyncRet)
     {
@@ -4535,16 +4535,16 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     {
         if (flag == GTF_ICON_FTN_ADDR)
         {
-            const char* methName = m_compiler->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(cookie), true,
-                                                                 true, buffer, sizeof(buffer));
+            const char* methName = m_compiler->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(cookie),
+                                                                   true, true, buffer, sizeof(buffer));
             printf("%s code for %s", commentPrefix, methName);
             return;
         }
 
         if ((flag == GTF_ICON_STATIC_HDL) || (flag == GTF_ICON_STATIC_BOX_PTR))
         {
-            const char* fieldName =
-                m_compiler->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(cookie), true, buffer, sizeof(buffer));
+            const char* fieldName = m_compiler->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(cookie), true,
+                                                               buffer, sizeof(buffer));
             printf("%s %s for %s", commentPrefix, flag == GTF_ICON_STATIC_HDL ? "data" : "box", fieldName);
             return;
         }
@@ -4597,7 +4597,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     else if (flag == GTF_ICON_METHOD_HDL)
     {
         str = m_compiler->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(handle), true, true, buffer,
-                                            sizeof(buffer));
+                                              sizeof(buffer));
     }
     else if (flag == GTF_ICON_FTN_ADDR)
     {
@@ -6916,7 +6916,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
     comp->Metrics.AllocatedColdCodeBytes = emitTotalColdCodeSize;
 
     m_compiler->eeAllocMem(codeChunk, coldCodeChunk.size > 0 ? &coldCodeChunk : nullptr, emitDataChunks, numDataChunks,
-                         xcptnsCount);
+                           xcptnsCount);
 
     // Give the block addresses to the caller and other functions here
 
@@ -9684,7 +9684,8 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr D
                 if ((EMIT_GC_VERBOSE || m_compiler->opts.disasmWithGC) && (actualVarNum < m_compiler->lvaCount) &&
                     m_compiler->lvaGetDesc(actualVarNum)->lvTracked)
                 {
-                    VarSetOps::AddElemD(m_compiler, debugThisGCrefVars, m_compiler->lvaGetDesc(actualVarNum)->lvVarIndex);
+                    VarSetOps::AddElemD(m_compiler, debugThisGCrefVars,
+                                        m_compiler->lvaGetDesc(actualVarNum)->lvVarIndex);
                 }
 #endif
             }

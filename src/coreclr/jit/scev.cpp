@@ -1357,7 +1357,8 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
                 return false;
             }
 
-            *resultVNP = m_compiler->vnStore->VNPairForCast(opVN, TYP_LONG, ext->Type, scev->OperIs(ScevOper::ZeroExtend));
+            *resultVNP =
+                m_compiler->vnStore->VNPairForCast(opVN, TYP_LONG, ext->Type, scev->OperIs(ScevOper::ZeroExtend));
 
             if (createIR)
             {
@@ -1515,7 +1516,7 @@ RelopEvaluationResult ScalarEvolutionContext::EvaluateRelop(ValueNum vn)
     {
         assert(m_compiler->vnStore->TypeOfVN(vn) == TYP_INT);
         return m_compiler->vnStore->ConstantValue<int32_t>(vn) != 0 ? RelopEvaluationResult::True
-                                                                : RelopEvaluationResult::False;
+                                                                    : RelopEvaluationResult::False;
     }
 
     // Evaluate by using dominators and RBO's logic.
@@ -1671,7 +1672,7 @@ bool ScalarEvolutionContext::MayOverflowBeforeExit(ScevAddRec* lhs, Scev* rhs, V
     ValueNumPair steppedValVNP = MaterializeVN(steppedVal);
 
     ValueNumPair rhsVNP = MaterializeVN(rhs);
-    ValueNum     relop  = m_compiler->vnStore->VNForFunc(TYP_INT, exitOp, steppedValVNP.GetLiberal(), rhsVNP.GetLiberal());
+    ValueNum relop = m_compiler->vnStore->VNForFunc(TYP_INT, exitOp, steppedValVNP.GetLiberal(), rhsVNP.GetLiberal());
     RelopEvaluationResult result = EvaluateRelop(relop);
     return result != RelopEvaluationResult::True;
 }

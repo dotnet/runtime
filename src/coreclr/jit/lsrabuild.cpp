@@ -894,8 +894,8 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     // We don't just add them unconditionally to the killMask because for most architectures
     // they are already in the RBM_CALLEE_TRASH set,
     // and we don't want to introduce extra checks and calls in this hot function.
-    assert(!call->IsVirtualStub() ||
-           ((killMask & m_compiler->virtualStubParamInfo->GetRegMask()) == m_compiler->virtualStubParamInfo->GetRegMask()));
+    assert(!call->IsVirtualStub() || ((killMask & m_compiler->virtualStubParamInfo->GetRegMask()) ==
+                                      m_compiler->virtualStubParamInfo->GetRegMask()));
 #endif // !TARGET_ARM
 
 #ifdef SWIFT_SUPPORT
@@ -1039,7 +1039,7 @@ regMaskTP LinearScan::getKillSetForReturn(GenTree* returnNode)
 regMaskTP LinearScan::getKillSetForProfilerHook()
 {
     return m_compiler->compIsProfilerHookNeeded() ? m_compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_TAILCALL)
-                                                : RBM_NONE;
+                                                  : RBM_NONE;
 }
 
 #ifdef DEBUG
@@ -1531,7 +1531,8 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
         //
         // This will create more UpperSave/UpperRestore RefPositions then needed, but we need to do
         // this for correctness anyway.
-        VARSET_TP bbLiveDefs(VarSetOps::Union(m_compiler, m_compiler->compCurBB->bbLiveIn, m_compiler->compCurBB->bbVarDef));
+        VARSET_TP bbLiveDefs(
+            VarSetOps::Union(m_compiler, m_compiler->compCurBB->bbLiveIn, m_compiler->compCurBB->bbVarDef));
 
         VARSET_TP liveDefsLargeVectors(VarSetOps::Intersection(m_compiler, bbLiveDefs, largeVectorVars));
 
@@ -1586,7 +1587,8 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
                 const GenTreeCall*          call      = defNode->AsCall();
                 const CORINFO_CLASS_HANDLE  retClsHnd = call->gtRetClsHnd;
                 Compiler::structPassingKind howToReturnStruct;
-                regType = m_compiler->getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
+                regType =
+                    m_compiler->getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
                 if (howToReturnStruct == Compiler::SPK_ByValueAsHfa)
                 {
                     regType = m_compiler->GetHfaType(retClsHnd);
@@ -2049,7 +2051,8 @@ void LinearScan::insertZeroInitRefPositions()
 {
     assert(enregisterLocalVars);
 #ifdef DEBUG
-    VARSET_TP expectedLiveVars(VarSetOps::Intersection(m_compiler, registerCandidateVars, m_compiler->fgFirstBB->bbLiveIn));
+    VARSET_TP expectedLiveVars(
+        VarSetOps::Intersection(m_compiler, registerCandidateVars, m_compiler->fgFirstBB->bbLiveIn));
     assert(VarSetOps::Equal(m_compiler, currentLiveVars, expectedLiveVars));
 #endif //  DEBUG
 
@@ -2234,7 +2237,8 @@ void LinearScan::buildIntervals()
             if (mapping != nullptr)
             {
                 LclVarDsc* mappedLcl = m_compiler->lvaGetDesc(mapping->LclNum);
-                bool isMappedLclLive = !mappedLcl->lvTracked || m_compiler->compJmpOpUsed || (mappedLcl->lvRefCnt() != 0);
+                bool       isMappedLclLive =
+                    !mappedLcl->lvTracked || m_compiler->compJmpOpUsed || (mappedLcl->lvRefCnt() != 0);
                 if (mappedLcl->lvIsStructField)
                 {
                     // Struct fields are not saved into their parameter local
@@ -3054,7 +3058,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
     if (!varTypeUsesIntReg(type))
     {
         m_compiler->compFloatingPointUsed = true;
-        needToKillFloatRegs             = true;
+        needToKillFloatRegs               = true;
     }
 
     Interval* interval = newInterval(type);
@@ -4310,7 +4314,8 @@ int LinearScan::BuildReturn(GenTree* tree)
                 }
                 else
                 {
-                    noway_assert(op1->IsMultiRegCall() || (op1->IsMultiRegLclVar() && m_compiler->lvaEnregMultiRegVars));
+                    noway_assert(op1->IsMultiRegCall() ||
+                                 (op1->IsMultiRegLclVar() && m_compiler->lvaEnregMultiRegVars));
 
                     ReturnTypeDesc retTypeDesc = m_compiler->compRetTypeDesc;
                     const int      srcCount    = retTypeDesc.GetReturnRegCount();
@@ -4357,7 +4362,8 @@ int LinearScan::BuildReturn(GenTree* tree)
                                                        regType(retTypeDesc.GetReturnRegType(i))))
                         {
                             BuildUse(op1,
-                                     genSingleTypeRegMask(retTypeDesc.GetABIReturnReg(i, m_compiler->info.compCallConv)),
+                                     genSingleTypeRegMask(
+                                         retTypeDesc.GetABIReturnReg(i, m_compiler->info.compCallConv)),
                                      i);
                         }
                         else

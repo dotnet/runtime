@@ -2031,9 +2031,9 @@ private:
         {
             // There is a return value, so create a temp for it.  Real returns will store the value in there and
             // it'll be reloaded by the single return.
-            unsigned retLclNum   = m_compiler->lvaGrabTemp(true DEBUGARG("Single return block return value"));
+            unsigned retLclNum         = m_compiler->lvaGrabTemp(true DEBUGARG("Single return block return value"));
             m_compiler->genReturnLocal = retLclNum;
-            LclVarDsc* retVarDsc = m_compiler->lvaGetDesc(retLclNum);
+            LclVarDsc* retVarDsc       = m_compiler->lvaGetDesc(retLclNum);
             var_types  retLclType =
                 m_compiler->compMethodReturnsRetBufAddr() ? TYP_BYREF : genActualType(m_compiler->info.compRetType);
 
@@ -2216,7 +2216,7 @@ private:
                 // No general merged return for this function yet; create one.
                 // There had better still be room left in the array.
                 assert(searchLimit < maxReturns);
-                mergedReturnBlock = CreateReturnBB(searchLimit);
+                mergedReturnBlock       = CreateReturnBB(searchLimit);
                 m_compiler->genReturnBB = mergedReturnBlock;
                 // Downstream code expects the `genReturnBB` to always remain
                 // once created, so that it can redirect flow edges to it.

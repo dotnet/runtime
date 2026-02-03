@@ -56,7 +56,8 @@ PhaseStatus StackLevelSetter::DoPhase()
     {
         if (m_compiler->opts.OptimizationEnabled())
         {
-            for (Compiler::AddCodeDsc* const add : Compiler::AddCodeDscMap::ValueIteration(m_compiler->fgGetAddCodeDscMap()))
+            for (Compiler::AddCodeDsc* const add :
+                 Compiler::AddCodeDscMap::ValueIteration(m_compiler->fgGetAddCodeDscMap()))
             {
                 if (add->acdUsed)
                 {
@@ -83,10 +84,11 @@ PhaseStatus StackLevelSetter::DoPhase()
         {
             // Assume all helpers used. Fill in all helper block code.
             //
-            for (Compiler::AddCodeDsc* const add : Compiler::AddCodeDscMap::ValueIteration(m_compiler->fgGetAddCodeDscMap()))
+            for (Compiler::AddCodeDsc* const add :
+                 Compiler::AddCodeDscMap::ValueIteration(m_compiler->fgGetAddCodeDscMap()))
             {
                 m_compiler->compUsesThrowHelper = true;
-                add->acdUsed              = true;
+                add->acdUsed                    = true;
                 m_compiler->fgCreateThrowHelperBlockCode(add);
                 madeChanges = true;
             }

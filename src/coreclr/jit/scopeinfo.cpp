@@ -935,7 +935,8 @@ void CodeGenInterface::initializeVariableLiveKeeper()
     int amountTrackedVariables = m_compiler->opts.compDbgInfo ? m_compiler->info.compLocalsCount : 0;
     int amountTrackedArgs      = m_compiler->opts.compDbgInfo ? m_compiler->info.compArgsCount : 0;
 
-    varLiveKeeper = new (allocator) VariableLiveKeeper(amountTrackedVariables, amountTrackedArgs, m_compiler, allocator);
+    varLiveKeeper =
+        new (allocator) VariableLiveKeeper(amountTrackedVariables, amountTrackedArgs, m_compiler, allocator);
 }
 
 CodeGenInterface::VariableLiveKeeper* CodeGenInterface::getVariableLiveKeeper() const

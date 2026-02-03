@@ -486,7 +486,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
                                                  &immUpperBound);
 
                 if (m_compiler->CheckHWIntrinsicImmRange(intrinsicId, simdBaseType, immOp2, mustExpand, immLowerBound,
-                                                   immUpperBound, hasFullRangeImm, &useFallback))
+                                                         immUpperBound, hasFullRangeImm, &useFallback))
                 {
                     // Set this as nullptr so we stay an intrinsic if both immediates are constant and in range
                     immOp2 = nullptr;
@@ -504,7 +504,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             if ((immOp2 == nullptr) && (immOp1 != nullptr))
             {
                 if (m_compiler->CheckHWIntrinsicImmRange(intrinsicId, simdBaseType, immOp1, mustExpand, immLowerBound,
-                                                   immUpperBound, hasFullRangeImm, &useFallback))
+                                                         immUpperBound, hasFullRangeImm, &useFallback))
                 {
                     // We're already in the right shape, so just stop tracking ourselves as a user call
                     hwintrinsic->gtFlags &= ~(GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
@@ -857,7 +857,8 @@ void Rationalizer::RewriteHWIntrinsicToNonMask(GenTree** use, Compiler::GenTreeS
             unsigned  simdSize     = node->GetSimdSize();
             var_types simdType     = Compiler::getSIMDTypeForSize(simdSize);
 
-            GenTree* op1 = m_compiler->gtNewSimdBinOpNode(GT_XOR, simdType, node->Op(1), node->Op(2), simdBaseType, simdSize);
+            GenTree* op1 =
+                m_compiler->gtNewSimdBinOpNode(GT_XOR, simdType, node->Op(1), node->Op(2), simdBaseType, simdSize);
             BlockRange().InsertBefore(node, op1);
             node->Op(1) = op1;
 
@@ -1148,8 +1149,8 @@ void Rationalizer::RewriteHWIntrinsicBitwiseOpToNonMask(GenTree** use, Compiler:
         GenTree* op2 = m_compiler->gtNewAllBitsSetConNode(simdType);
         BlockRange().InsertBefore(node, op2);
 
-        intrinsic =
-            GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(m_compiler, GT_XOR, op1, op2, simdBaseType, simdSize, isScalar);
+        intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(m_compiler, GT_XOR, op1, op2, simdBaseType, simdSize,
+                                                                 isScalar);
 
         node->gtType = simdType;
         node->ResetHWIntrinsicId(intrinsic, m_compiler, op1, op2);
@@ -1457,21 +1458,23 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
             GenTree* op2 = m_compiler->gtClone(op1);
             BlockRange().InsertAfter(op1, op2);
 
-            tmp = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_AddPairwise, simdBaseType, simdSize);
+            tmp = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_AddPairwise, simdBaseType,
+                                                       simdSize);
             BlockRange().InsertAfter(op2, tmp);
             op1 = tmp;
         }
         else
         {
-            tmp = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseType, simdSize);
+            tmp = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseType,
+                                                       simdSize);
             BlockRange().InsertAfter(op1, tmp);
             op1 = tmp;
         }
     }
     else if (simdSize == 16)
     {
-        tmp =
-            m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar, simdBaseType, simdSize);
+        tmp = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar, simdBaseType,
+                                                   simdSize);
         BlockRange().InsertAfter(op1, tmp);
         op1 = tmp;
     }
@@ -1905,7 +1908,7 @@ PhaseStatus Rationalizer::DoPhase()
     for (BasicBlock* const block : m_compiler->Blocks())
     {
         m_compiler->compCurBB = block;
-        m_block         = block;
+        m_block               = block;
 
         block->MakeLIR(nullptr, nullptr);
 
@@ -1940,7 +1943,8 @@ PhaseStatus Rationalizer::DoPhase()
                 DebugInfo di = statement->GetDebugInfo();
                 if (di.IsValid() || di.GetRoot().IsValid())
                 {
-                    GenTreeILOffset* ilOffset = m_compiler->gtNewILOffsetNode(di DEBUGARG(statement->GetLastILOffset()));
+                    GenTreeILOffset* ilOffset =
+                        m_compiler->gtNewILOffsetNode(di DEBUGARG(statement->GetLastILOffset()));
                     BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
                 }
 

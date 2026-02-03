@@ -567,7 +567,8 @@ void Lowering::LowerRotate(GenTree* tree)
         }
         else
         {
-            GenTree* tmp = m_compiler->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
+            GenTree* tmp =
+                m_compiler->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
             BlockRange().InsertAfter(rotateLeftIndexNode, tmp);
             tree->AsOp()->gtOp2 = tmp;
         }

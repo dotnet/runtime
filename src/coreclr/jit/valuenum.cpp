@@ -2594,8 +2594,8 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                         if (field != NULL)
                         {
                             uint8_t buffer[TARGET_POINTER_SIZE] = {0};
-                            if (m_compiler->info.compCompHnd->getStaticFieldContent(field, buffer, TARGET_POINTER_SIZE, 0,
-                                                                                 false))
+                            if (m_compiler->info.compCompHnd->getStaticFieldContent(field, buffer, TARGET_POINTER_SIZE,
+                                                                                    0, false))
                             {
                                 // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
                                 // value holding 32bit handle with upper half zeroed (hence, "= NULL").
@@ -3331,7 +3331,9 @@ bool ValueNumStore::SmallValueNumSet::Add(Compiler* comp, ValueNum vn)
 //
 ValueNum ValueNumStore::VNPhiDefToVN(const VNPhiDef& phiDef, unsigned ssaArgNum)
 {
-    return m_compiler->lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaArgs[ssaArgNum])->m_vnPair.Get(VNK_Conservative);
+    return m_compiler->lvaGetDesc(phiDef.LclNum)
+        ->GetPerSsaData(phiDef.SsaArgs[ssaArgNum])
+        ->m_vnPair.Get(VNK_Conservative);
 }
 
 //------------------------------------------------------------------------------
@@ -4722,7 +4724,7 @@ ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, Value
     ValueNum               result = NoVN;
     const TypeCompareState s =
         m_compiler->info.compCompHnd->compareTypesForEquality(CORINFO_CLASS_HANDLE(compileTimeHandle0),
-                                                           CORINFO_CLASS_HANDLE(compileTimeHandle1));
+                                                              CORINFO_CLASS_HANDLE(compileTimeHandle1));
     if (s != TypeCompareState::May)
     {
         const bool typesAreEqual = (s == TypeCompareState::Must);
@@ -9858,7 +9860,8 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
     // If the math intrinsic is not implemented by target-specific instructions, such as implemented
     // by user calls, then don't do constant folding on it during ReadyToRun. This minimizes precision loss.
 
-    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN) && (!m_compiler->IsAot() || m_compiler->IsTargetIntrinsic(gtMathFN)))
+    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN) &&
+        (!m_compiler->IsAot() || m_compiler->IsTargetIntrinsic(gtMathFN)))
     {
         if (typ == TYP_DOUBLE)
         {
@@ -10966,7 +10969,7 @@ void ValueNumStore::RunTests(Compiler* comp)
 
 class ValueNumberState
 {
-    Compiler* m_compiler;
+    Compiler*    m_compiler;
     BitVecTraits m_blockTraits;
     BitVec       m_provenUnreachableBlocks;
 

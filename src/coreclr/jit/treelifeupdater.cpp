@@ -77,7 +77,7 @@ bool TreeLifeUpdater<ForCodeGen>::UpdateLifeFieldVar(GenTreeLclVar* lclNode, uns
             if (previouslyLive != isBorn)
             {
                 m_compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(fldVarDsc, fieldVarNum,
-                                                                                            isBorn, isDying);
+                                                                                              isBorn, isDying);
             }
         }
     }
@@ -177,7 +177,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
                 if (isDying == previouslyLive)
                 {
                     m_compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(varDsc, lclNum,
-                                                                                                !isDying, isDying);
+                                                                                                  !isDying, isDying);
                 }
             }
         }
@@ -269,7 +269,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
                 if (isDying == previouslyLive)
                 {
                     m_compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(fldVarDsc, fldLclNum,
-                                                                                                !isDying, isDying);
+                                                                                                  !isDying, isDying);
                 }
             }
         }

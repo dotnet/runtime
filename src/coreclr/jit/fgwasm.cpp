@@ -194,7 +194,7 @@ class Scc
 private:
 
     FgWasm*              m_fgWasm;
-    Compiler* m_compiler;
+    Compiler*            m_compiler;
     FlowGraphDfsTree*    m_dfsTree;
     BitVecTraits*        m_traits;
     BitVec               m_blocks;
@@ -567,7 +567,8 @@ public:
 
             // Split edges, rewire flow, and add control var assignments
             //
-            const unsigned   controlVarNum = m_compiler->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("Scc control var"));
+            const unsigned controlVarNum =
+                m_compiler->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("Scc control var"));
             LclVarDsc* const controlVarDsc = m_compiler->lvaGetDesc(controlVarNum);
             controlVarDsc->lvType          = TYP_INT;
             BasicBlock*      dispatcher    = nullptr;
@@ -601,7 +602,7 @@ public:
                         JITDUMP("Dispatch header needs to go in method region\n");
                     }
                     dispatcher = m_compiler->fgNewBBinRegion(BBJ_SWITCH, EnclosingTryIndex(), EnclosingHndIndex(),
-                                                         /* nearBlk */ nullptr);
+                                                             /* nearBlk */ nullptr);
                     dispatcher->setBBProfileWeight(TotalEntryWeight());
                 }
 

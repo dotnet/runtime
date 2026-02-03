@@ -725,8 +725,9 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     {
 #ifdef DEBUG
         // Use BlkOpKindLoop for more cases under stress mode
-        if (m_compiler->compStressCompile(Compiler::STRESS_STORE_BLOCK_UNROLLING, 50) && blkNode->OperIs(GT_STORE_BLK) &&
-            ((blkNode->GetLayout()->GetSize() % TARGET_POINTER_SIZE) == 0) && src->IsIntegralConst(0))
+        if (m_compiler->compStressCompile(Compiler::STRESS_STORE_BLOCK_UNROLLING, 50) &&
+            blkNode->OperIs(GT_STORE_BLK) && ((blkNode->GetLayout()->GetSize() % TARGET_POINTER_SIZE) == 0) &&
+            src->IsIntegralConst(0))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
 #ifdef TARGET_ARM64
@@ -931,7 +932,8 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
         {
             // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type for
             // the non-split case.
-            m_compiler->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
+            m_compiler->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum()
+                                                     DEBUGARG(DoNotEnregisterReason::IsStructArg));
         }
     }
 }
@@ -997,7 +999,8 @@ void Lowering::LowerRotate(GenTree* tree)
         }
         else
         {
-            GenTree* tmp = m_compiler->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
+            GenTree* tmp =
+                m_compiler->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
             BlockRange().InsertAfter(rotateLeftIndexNode, tmp);
             tree->AsOp()->gtOp2 = tmp;
         }
@@ -2030,7 +2033,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
         GenTreeHWIntrinsic* condSelNode =
             m_compiler->gtNewSimdHWIntrinsicNode(nodeType, trueMask, node, falseVal, NI_Sve_ConditionalSelect,
-                                           node->GetSimdBaseType(), simdSize);
+                                                 node->GetSimdBaseType(), simdSize);
         BlockRange().InsertAfter(node, condSelNode);
         if (foundUse)
         {
@@ -2074,7 +2077,8 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
     if (op1->IsCnsIntOrI())
     {
         const ssize_t dataValue = op1->AsIntCon()->gtIconVal;
-        return m_compiler->GetEmitter()->emitIns_valid_imm_for_movi(dataValue, emitActualTypeSize(node->GetSimdBaseType()));
+        return m_compiler->GetEmitter()->emitIns_valid_imm_for_movi(dataValue,
+                                                                    emitActualTypeSize(node->GetSimdBaseType()));
     }
     else if (op1->IsCnsFltOrDbl())
     {
@@ -2151,8 +2155,8 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             GenTree* opClone = m_compiler->gtClone(op);
             BlockRange().InsertAfter(op, opClone);
 
-            cmp =
-                m_compiler->gtNewSimdHWIntrinsicNode(simdType, op, opClone, NI_AdvSimd_Arm64_MaxPairwise, TYP_UINT, simdSize);
+            cmp = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op, opClone, NI_AdvSimd_Arm64_MaxPairwise, TYP_UINT,
+                                                       simdSize);
             BlockRange().InsertBefore(node, cmp);
             LowerNode(cmp);
         }
@@ -2162,7 +2166,8 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         GenTree* zroCns = m_compiler->gtNewIconNode(0, TYP_INT);
         BlockRange().InsertAfter(cmp, zroCns);
 
-        GenTree* val = m_compiler->gtNewSimdHWIntrinsicNode(TYP_LONG, cmp, zroCns, NI_AdvSimd_Extract, TYP_ULONG, simdSize);
+        GenTree* val =
+            m_compiler->gtNewSimdHWIntrinsicNode(TYP_LONG, cmp, zroCns, NI_AdvSimd_Extract, TYP_ULONG, simdSize);
         BlockRange().InsertAfter(zroCns, val);
         LowerNode(val);
 
@@ -2246,7 +2251,8 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         GenTree* cmpClone = m_compiler->gtClone(cmp);
         BlockRange().InsertAfter(cmp, cmpClone);
 
-        msk = m_compiler->gtNewSimdHWIntrinsicNode(simdType, cmp, cmpClone, NI_AdvSimd_Arm64_MinPairwise, TYP_UINT, simdSize);
+        msk = m_compiler->gtNewSimdHWIntrinsicNode(simdType, cmp, cmpClone, NI_AdvSimd_Arm64_MinPairwise, TYP_UINT,
+                                                   simdSize);
         BlockRange().InsertAfter(cmpClone, msk);
         LowerNode(msk);
 
@@ -2443,7 +2449,8 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         // Place the insert as early as possible to avoid creating a lot of long lifetimes.
         GenTree* insertionPoint = LIR::LastNode(tmp1, opN);
         idx                     = m_compiler->gtNewIconNode(N);
-        tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, opN, NI_AdvSimd_Insert, simdBaseType, simdSize);
+        tmp1 =
+            m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, opN, NI_AdvSimd_Insert, simdBaseType, simdSize);
         BlockRange().InsertAfter(insertionPoint, idx, tmp1);
         LowerNode(tmp1);
     }
@@ -2595,7 +2602,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 //   ...
 
                 tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_AddPairwise, simdBaseType,
-                                                      simdSize);
+                                                            simdSize);
                 BlockRange().InsertAfter(tmp2, tmp1);
                 LowerNode(tmp1);
             }
@@ -2620,8 +2627,8 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             //   var tmp1 = AdvSimd.Arm64.AddPairwise(tmp1, tmp2);
             //   ...
 
-            tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_Arm64_AddPairwise, simdBaseType,
-                                                  simdSize);
+            tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_Arm64_AddPairwise,
+                                                        simdBaseType, simdSize);
             BlockRange().InsertAfter(tmp2, tmp1);
             LowerNode(tmp1);
 
@@ -2659,8 +2666,8 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 tmp2 = m_compiler->gtClone(tmp1);
                 BlockRange().InsertAfter(tmp1, tmp2);
 
-                tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_Arm64_AddPairwise, simdBaseType,
-                                                      simdSize);
+                tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_Arm64_AddPairwise,
+                                                            simdBaseType, simdSize);
                 BlockRange().InsertAfter(tmp2, tmp1);
                 LowerNode(tmp1);
             }
@@ -2707,7 +2714,8 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             //   var tmp2 = AdvSimd.AddPairwise(tmp1, tmp2);
             //   ...
 
-            tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_AddPairwise, simdBaseType, simdSize);
+            tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_AddPairwise, simdBaseType,
+                                                        simdSize);
             BlockRange().InsertAfter(tmp2, tmp1);
             LowerNode(tmp1);
 
@@ -2726,7 +2734,8 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             //   var tmp2 = AdvSimd.Arm64.AddAcross(tmp1);
             //   ...
 
-            tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, tmp1, NI_AdvSimd_Arm64_AddAcross, simdBaseType, simdSize);
+            tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, tmp1, NI_AdvSimd_Arm64_AddAcross, simdBaseType,
+                                                        simdSize);
             BlockRange().InsertAfter(tmp1, tmp2);
             LowerNode(tmp2);
         }
@@ -3668,7 +3677,8 @@ bool Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next)
     // Create the new node and replace the original.
     NamedIntrinsic intrinsicId =
         op->OperIs(GT_ADD) ? NI_ArmBase_Arm64_MultiplyLongAdd : NI_ArmBase_Arm64_MultiplyLongSub;
-    GenTreeHWIntrinsic* outOp = m_compiler->gtNewScalarHWIntrinsicNode(TYP_LONG, mul->gtOp1, mul->gtOp2, addVal, intrinsicId);
+    GenTreeHWIntrinsic* outOp =
+        m_compiler->gtNewScalarHWIntrinsicNode(TYP_LONG, mul->gtOp1, mul->gtOp2, addVal, intrinsicId);
     outOp->SetSimdBaseType(mul->IsUnsigned() ? TYP_ULONG : TYP_LONG);
 
     BlockRange().InsertAfter(op, outOp);

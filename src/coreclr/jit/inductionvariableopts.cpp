@@ -1405,7 +1405,7 @@ struct CursorInfo
 
 class StrengthReductionContext
 {
-    Compiler* m_compiler;
+    Compiler*               m_compiler;
     ScalarEvolutionContext& m_scevContext;
     FlowGraphNaturalLoop*   m_loop;
     PerLoopInfo&            m_loopInfo;
@@ -2223,7 +2223,8 @@ GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* source
 
     int64_t ivStep       = 0;
     int64_t sourceIVStep = 0;
-    if (!iv->Step->GetConstantValue(m_compiler, &ivStep) || !sourceIV->Step->GetConstantValue(m_compiler, &sourceIVStep))
+    if (!iv->Step->GetConstantValue(m_compiler, &ivStep) ||
+        !sourceIV->Step->GetConstantValue(m_compiler, &sourceIVStep))
     {
         unreached();
     }
@@ -2237,7 +2238,7 @@ GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* source
         if (isPow2(scale))
         {
             return m_compiler->gtNewOperNode(GT_LSH, TYP_INT, sourceTree,
-                                         m_compiler->gtNewIconNode(BitOperations::Log2((uint32_t)scale)));
+                                             m_compiler->gtNewIconNode(BitOperations::Log2((uint32_t)scale)));
         }
         else
         {
@@ -2252,7 +2253,7 @@ GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* source
         if (isPow2(scale))
         {
             return m_compiler->gtNewOperNode(GT_LSH, TYP_LONG, sourceTree,
-                                         m_compiler->gtNewLconNode(BitOperations::Log2((uint64_t)scale)));
+                                             m_compiler->gtNewLconNode(BitOperations::Log2((uint64_t)scale)));
         }
         else
         {

@@ -78,7 +78,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         case 2:
         {
             JITDUMP("Frame type 2 (save FP/LR at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
-                    unsigned(m_compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(m_compiler->compLocallocUsed));
+                    unsigned(m_compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
+                    dspBool(m_compiler->compLocallocUsed));
 
             assert(!genSaveFpLrWithAllCalleeSavedRegisters);
 
@@ -98,7 +99,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         case 3:
         {
             JITDUMP("Frame type 3 (save FP/LR at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
-                    unsigned(m_compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(m_compiler->compLocallocUsed));
+                    unsigned(m_compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
+                    dspBool(m_compiler->compLocallocUsed));
 
             assert(!genSaveFpLrWithAllCalleeSavedRegisters);
 
@@ -166,7 +168,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         case 4:
         {
             JITDUMP("Frame type 4 (save FP/LR at top). #outsz=%d; #framesz=%d; localloc? %s\n",
-                    unsigned(m_compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(m_compiler->compLocallocUsed));
+                    unsigned(m_compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
+                    dspBool(m_compiler->compLocallocUsed));
 
             assert(genSaveFpLrWithAllCalleeSavedRegisters);
 
@@ -184,7 +187,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         case 5:
         {
             JITDUMP("Frame type 5 (save FP/LR at top). #outsz=%d; #framesz=%d; localloc? %s\n",
-                    unsigned(m_compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(m_compiler->compLocallocUsed));
+                    unsigned(m_compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
+                    dspBool(m_compiler->compLocallocUsed));
 
             assert(genSaveFpLrWithAllCalleeSavedRegisters);
             assert((calleeSaveSpOffset == 0) || (calleeSaveSpOffset == REGSIZE_BYTES));
@@ -1699,8 +1703,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     int SP_to_CalleeSave_delta;
 
     // Are we stressing frame type 5? Don't do it unless we have non-zero outgoing arg space.
-    const bool useFrameType5 =
-        genSaveFpLrWithAllCalleeSavedRegisters && genForceFuncletFrameType5 && (m_compiler->lvaOutgoingArgSpaceSize > 0);
+    const bool useFrameType5 = genSaveFpLrWithAllCalleeSavedRegisters && genForceFuncletFrameType5 &&
+                               (m_compiler->lvaOutgoingArgSpaceSize > 0);
 
     if ((twoSpAdjustmentFuncletFrameSizeAligned <= 512) && !useFrameType5)
     {
@@ -3099,7 +3103,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     if (m_compiler->lvaOutgoingArgSpaceSize > 0)
     {
         assert((m_compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain
-                                                                        // aligned
+                                                                          // aligned
         genInstrWithConstant(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, m_compiler->lvaOutgoingArgSpaceSize,
                              rsGetRsvdReg());
         stackAdjustment += m_compiler->lvaOutgoingArgSpaceSize;

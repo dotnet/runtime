@@ -2861,7 +2861,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     if (m_compiler->lvaOutgoingArgSpaceSize > 0)
     {
         assert((m_compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain
-                                                                        // aligned
+                                                                          // aligned
 
         // If the localloc amount is a small enough constant, and we're not initializing the allocated
         // memory, then don't bother popping off the ougoing arg space first; just allocate the amount
@@ -6200,7 +6200,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     if (target != nullptr)
     {
 #ifdef TARGET_X86
-        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT) && !m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT) &&
+            !m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             // On x86, we need to generate a very specific pattern for indirect VSD calls:
             //
@@ -8451,8 +8452,8 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned            codeSize,
 
     /* Create the method info block: header followed by GC tracking tables */
 
-    m_compiler->compInfoBlkAddr +=
-        gcInfo.gcInfoBlockHdrSave(m_compiler->compInfoBlkAddr, -1, codeSize, prologSize, epilogSize, &header, &s_cached);
+    m_compiler->compInfoBlkAddr += gcInfo.gcInfoBlockHdrSave(m_compiler->compInfoBlkAddr, -1, codeSize, prologSize,
+                                                             epilogSize, &header, &s_cached);
 
     assert(m_compiler->compInfoBlkAddr == (BYTE*)infoPtr + headerSize);
     m_compiler->compInfoBlkAddr = gcInfo.gcPtrTableSave(m_compiler->compInfoBlkAddr, header, codeSize, &argTabOffset);
@@ -8572,7 +8573,8 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
         {
             preservedAreaSize += TARGET_POINTER_SIZE;
 
-            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaAsyncExecutionContextVar) == -preservedAreaSize);
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaAsyncExecutionContextVar) ==
+                   -preservedAreaSize);
         }
 
         if (m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
@@ -9484,7 +9486,8 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // Push the profilerHandle
     if (m_compiler->compProfilerMethHndIndirected)
     {
-        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA, (ssize_t)m_compiler->compProfilerMethHnd);
+        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA,
+                                   (ssize_t)m_compiler->compProfilerMethHnd);
     }
     else
     {
@@ -9561,7 +9564,8 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
     if (m_compiler->compProfilerMethHndIndirected)
     {
-        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA, (ssize_t)m_compiler->compProfilerMethHnd);
+        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA,
+                                   (ssize_t)m_compiler->compProfilerMethHnd);
     }
     else
     {
@@ -10792,7 +10796,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         // The called function must remove hidden address argument from the stack before returning
         // in case of struct returning according to cdecl calling convention on linux.
         // Details: http://www.sco.com/developers/devspecs/abi386-4.pdf pages 40-43
-        if (m_compiler->info.compCallConv == CorInfoCallConvExtension::C && m_compiler->info.compRetBuffArg != BAD_VAR_NUM)
+        if (m_compiler->info.compCallConv == CorInfoCallConvExtension::C &&
+            m_compiler->info.compRetBuffArg != BAD_VAR_NUM)
             stkArgSize += TARGET_POINTER_SIZE;
 #endif // UNIX_X86_ABI
 #endif // TARGET_X86
@@ -10937,13 +10942,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     assert(isFramePointerUsed());
     assert(m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT); // The frame size and offsets must be
-                                                                          // finalized
+                                                                            // finalized
 
     assert(m_compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
 #ifndef UNIX_AMD64_ABI
     // No 4 slots for outgoing params on the stack for System V systems.
     assert((m_compiler->lvaOutgoingArgSpaceSize == 0) ||
-           (m_compiler->lvaOutgoingArgSpaceSize >= (4 * REGSIZE_BYTES))); // On AMD64, we always have 4 outgoing argument
+           (m_compiler->lvaOutgoingArgSpaceSize >= (4 * REGSIZE_BYTES))); // On AMD64, we always have 4 outgoing
+                                                                          // argument
 // slots if there are any calls in the function.
 #endif // UNIX_AMD64_ABI
     unsigned offset = m_compiler->lvaOutgoingArgSpaceSize;
