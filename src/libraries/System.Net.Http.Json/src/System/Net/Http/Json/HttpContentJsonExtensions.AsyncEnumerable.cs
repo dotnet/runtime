@@ -86,7 +86,7 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options,
             CancellationToken cancellationToken)
         {
-            JsonTypeInfo<TValue> jsonTypeInfo = JsonHelpers.GetJsonTypeInfo<TValue>(options);
+            var jsonTypeInfo = (JsonTypeInfo<TValue>)JsonHelpers.GetJsonTypeInfo(typeof(TValue), options);
             return ReadFromJsonAsAsyncEnumerableCore(content, jsonTypeInfo, cancellationToken);
         }
 

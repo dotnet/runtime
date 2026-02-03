@@ -25,17 +25,6 @@ namespace System.Net.Http.Json
             return options.GetTypeInfo(type);
         }
 
-        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        internal static JsonTypeInfo<T> GetJsonTypeInfo<T>(JsonSerializerOptions? options)
-        {
-            // Resolves JsonTypeInfo metadata using the appropriate JsonSerializerOptions configuration,
-            // following the semantics of the JsonSerializer reflection methods.
-            options ??= JsonSerializerOptions.Web;
-            options.MakeReadOnly(populateMissingResolver: true);
-            return options.GetTypeInfo<T>();
-        }
-
         internal const string DefaultMediaType = "application/json; charset=utf-8";
 
         internal static Encoding? GetEncoding(HttpContent content)
