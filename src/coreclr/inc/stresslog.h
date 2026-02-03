@@ -291,7 +291,11 @@ public:
     static BOOL InlinedStressLogOn(unsigned facility, unsigned level);
     static BOOL InlinedETWLogOn(unsigned facility, unsigned level);
 
-    static void LogMsg(unsigned level, unsigned facility, int cArgs, const char* format, ... );
+    static void LogMsg(unsigned level, unsigned facility, int cArgs, const char* format, ... )
+#ifdef __GNUC__
+        __attribute__ ((__format__(__printf__, 4, 5)))
+#endif
+    ;
 
     static void LogMsg(unsigned level, unsigned facility, const StressLogMsg& msg);
 
@@ -313,7 +317,16 @@ public:
 #endif
 
     static void LogMsgOL(const char* format)
-    { LogMsg(LL_ALWAYS, LF_GC, 0, format); }
+    {
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-security"
+#endif
+        LogMsg(LL_ALWAYS, LF_GC, 0, format);
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+    }
 
     template<typename... Ts>
     static void LogMsgOL(const char* format, Ts... args)
@@ -754,7 +767,11 @@ public:
         return "StressLog TaskSwitch Marker\n";
     }
 
-    void LogMsg(unsigned facility, int cArgs, const char* format, ...);
+    void LogMsg(unsigned facility, int cArgs, const char* format, ...)
+#ifdef __GNUC__
+        __attribute__ ((__format__(__printf__, 4, 5)))
+#endif
+    ;
 
     FORCEINLINE void LogMsg (unsigned facility, int cArgs, const char* format, va_list Args);
 #ifdef STRESS_LOG_READONLY

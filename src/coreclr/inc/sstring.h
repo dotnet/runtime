@@ -566,9 +566,17 @@ private:
     // Utilities
     //---------------------------------------------------------------------
 
-    void Printf(const CHAR *format, ...);
+    void Printf(const CHAR *format, ...)
+#ifdef __GNUC__
+        __attribute__ ((__format__(__printf__, 2, 3)))
+#endif
+    ;
     void VPrintf(const CHAR *format, va_list args);
-    void AppendPrintf(const CHAR *format, ...);
+    void AppendPrintf(const CHAR *format, ...)
+#ifdef __GNUC__
+        __attribute__ ((__format__(__printf__, 2, 3)))
+#endif
+    ;
     void AppendVPrintf(const CHAR *format, va_list args);
 
 public:

@@ -7415,9 +7415,9 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                         if (isJccAffectedIns)
                         {
                             unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & jccAlignBoundaryMask);
-                            printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d ; jcc erratum) %dB boundary "
+                            printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %zu ; jcc erratum) %zuB boundary "
                                    "...............................\n",
-                                   codeGen->genInsDisplayName(curInstrDesc), bytesCrossedBoundary, jccAlignBoundary);
+                                   codeGen->genInsDisplayName(curInstrDesc), (size_t)bytesCrossedBoundary, (size_t)jccAlignBoundary);
                         }
                     }
 
@@ -8582,7 +8582,11 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                     }
                     else
                     {
-                        printf("\tdq\t%016llXh", reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
+#ifdef TARGET_64BIT
+                        printf("\tdq\t%016lXh", (unsigned long)reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
+#else
+                        printf("\tdq\t%016llXh", (unsigned long long)reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
+#endif
                     }
 #endif // TARGET_64BIT
                 }
@@ -8662,7 +8666,11 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                         {
                             printf("\t<Unexpected data size %d (expected >= 4)\n", data->dsSize);
                         }
-                        printf("\tdd\t%08llXh\t", (UINT64) * reinterpret_cast<uint32_t*>(&data->dsCont[i]));
+#ifdef TARGET_64BIT
+                        printf("\tdd\t%08lXh\t", (unsigned long) * reinterpret_cast<uint32_t*>(&data->dsCont[i]));
+#else
+                        printf("\tdd\t%08llXh\t", (unsigned long long) * reinterpret_cast<uint32_t*>(&data->dsCont[i]));
+#endif
                         printf("\t; %9.6g",
                                FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&data->dsCont[i])));
                         i += 4;
@@ -8673,7 +8681,11 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                         {
                             printf("\t<Unexpected data size %d (expected >= 8)\n", data->dsSize);
                         }
-                        printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
+#ifdef TARGET_64BIT
+                        printf("\tdq\t%016lXh", (unsigned long)*reinterpret_cast<uint64_t*>(&data->dsCont[i]));
+#else
+                        printf("\tdq\t%016llXh", (unsigned long long)*reinterpret_cast<uint64_t*>(&data->dsCont[i]));
+#endif
                         printf("\t; %12.9g", *reinterpret_cast<double*>(&data->dsCont[i]));
                         i += 8;
                         break;
@@ -8731,13 +8743,23 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                                 {
                                     printf("\t<Unexpected data size %d (expected size%%8 == 0)\n", data->dsSize);
                                 }
-                                printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
+#ifdef TARGET_64BIT
+                                printf("\tdq\t%016lXh", (unsigned long)*reinterpret_cast<uint64_t*>(&data->dsCont[i]));
                                 for (j = 8; j < 64; j += 8)
                                 {
                                     if (i + j >= data->dsSize)
                                         break;
-                                    printf(", %016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i + j]));
+                                    printf(", %016lXh", (unsigned long)*reinterpret_cast<uint64_t*>(&data->dsCont[i + j]));
                                 }
+#else
+                                printf("\tdq\t%016llXh", (unsigned long long)*reinterpret_cast<uint64_t*>(&data->dsCont[i]));
+                                for (j = 8; j < 64; j += 8)
+                                {
+                                    if (i + j >= data->dsSize)
+                                        break;
+                                    printf(", %016llXh", (unsigned long long)*reinterpret_cast<uint64_t*>(&data->dsCont[i + j]));
+                                }
+#endif
                                 i += j;
                                 break;
 
