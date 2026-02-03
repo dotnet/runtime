@@ -541,6 +541,7 @@ DEFINE_METASIG_T(SM(Str_AssemblyBase_Bool_UInt_RetIntPtr, s C(ASSEMBLYBASE) F K,
 // UCO signatures for assembly loading
 DEFINE_METASIG_T(SM(PtrAssembly_PtrException_RetVoid, P(C(ASSEMBLY)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrAssembly_PtrSByte_PtrAssembly_PtrException_RetVoid, P(C(ASSEMBLY)) P(B) P(C(ASSEMBLY)) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrAssembly_PtrChar_PtrAssembly_PtrException_RetVoid, P(C(ASSEMBLY)) P(u) P(C(ASSEMBLY)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(IntPtr_PtrAssemblyName_PtrAssemblyBase_PtrException_RetVoid, I P(C(ASSEMBLY_NAME)) P(C(ASSEMBLYBASE)) P(C(EXCEPTION)), v))
 
 // For FailFast

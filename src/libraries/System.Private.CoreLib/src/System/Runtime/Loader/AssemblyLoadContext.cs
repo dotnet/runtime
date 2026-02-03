@@ -778,7 +778,7 @@ namespace System.Runtime.Loader
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void OnAssemblyResolve(RuntimeAssembly* pAssembly, sbyte* assemblyFullName, RuntimeAssembly* ppResult, Exception* pException)
+        private static unsafe void OnAssemblyResolve(RuntimeAssembly* pAssembly, char* assemblyFullName, RuntimeAssembly* ppResult, Exception* pException)
         {
             try
             {
@@ -809,7 +809,7 @@ namespace System.Runtime.Loader
         {
             try
             {
-                AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
+                AssemblyLoadContext context = GCHandle<AssemblyLoadContext>.FromIntPtr(gchAssemblyLoadContext).Target;
                 *ppResult = context.ResolveSatelliteAssembly(*pAssemblyName);
             }
             catch (Exception ex)
@@ -823,7 +823,7 @@ namespace System.Runtime.Loader
         {
             try
             {
-                AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
+                AssemblyLoadContext context = GCHandle<AssemblyLoadContext>.FromIntPtr(gchAssemblyLoadContext).Target;
                 *ppResult = context.ResolveUsingEvent(*pAssemblyName);
             }
             catch (Exception ex)

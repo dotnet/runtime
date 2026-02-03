@@ -3773,7 +3773,8 @@ AppDomain::RaiseAssemblyResolveEvent(
         }
 
         UnmanagedCallersOnlyCaller onAssemblyResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_RESOLVE);
-        onAssemblyResolve.InvokeThrowing(&gc.AssemblyRef, ssName.GetUTF8(), &gc.ResultRef);
+        _ASSERTE(ssName.IsNormalized()); // Verify Unicode normalization
+        onAssemblyResolve.InvokeThrowing(&gc.AssemblyRef, ssName.GetUnicode(), &gc.ResultRef);
 
         if (gc.ResultRef != NULL)
         {
@@ -4111,11 +4112,8 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToBindWith
             // This is not invoked for TPA Binder since it always returns NULL.
             tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::AssemblyLoadContextLoad);
 
-            // Finally, setup arguments for invocation
             UnmanagedCallersOnlyCaller methLoadAssembly(METHOD__ASSEMBLYLOADCONTEXT__RESOLVE);
-
-            // Make the call
-            methLoadAssembly.InvokeThrowing((void*)pAssemblyLoadContextToBindWithin, &_gcRefs.oRefAssemblyName, &_gcRefs.oRefLoadedAssembly);
+            methLoadAssembly.InvokeThrowing(pAssemblyLoadContextToBindWithin, &_gcRefs.oRefAssemblyName, &_gcRefs.oRefLoadedAssembly);
             if (_gcRefs.oRefLoadedAssembly != NULL)
             {
                 fResolvedAssembly = true;
@@ -4153,9 +4151,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToBindWith
             tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::ResolveSatelliteAssembly);
 
             UnmanagedCallersOnlyCaller methResolveSateliteAssembly(METHOD__ASSEMBLYLOADCONTEXT__RESOLVESATELLITEASSEMBLY);
-
-            // Make the call
-            methResolveSateliteAssembly.InvokeThrowing((void*)pAssemblyLoadContextToBindWithin, &_gcRefs.oRefAssemblyName, &_gcRefs.oRefLoadedAssembly);
+            methResolveSateliteAssembly.InvokeThrowing(pAssemblyLoadContextToBindWithin, &_gcRefs.oRefAssemblyName, &_gcRefs.oRefLoadedAssembly);
             if (_gcRefs.oRefLoadedAssembly != NULL)
             {
                 // Set the flag indicating we found the assembly
@@ -4175,9 +4171,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToBindWith
             tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::AssemblyLoadContextResolvingEvent);
 
             UnmanagedCallersOnlyCaller methResolveUsingEvent(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUSINGEVENT);
-
-            // Make the call
-            methResolveUsingEvent.InvokeThrowing((void*)pAssemblyLoadContextToBindWithin, &_gcRefs.oRefAssemblyName, &_gcRefs.oRefLoadedAssembly);
+            methResolveUsingEvent.InvokeThrowing(pAssemblyLoadContextToBindWithin, &_gcRefs.oRefAssemblyName, &_gcRefs.oRefLoadedAssembly);
             if (_gcRefs.oRefLoadedAssembly != NULL)
             {
                 // Set the flag indicating we found the assembly
