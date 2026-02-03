@@ -11,7 +11,7 @@
 // This follows the same X-macro pattern as the JIT's compmemkind.h.
 
 // clang-format off
-InterpMemKindMacro(AllocOffsets)      // Allloc offsets allocations
+InterpMemKindMacro(AllocOffsets)      // Alloc offsets allocations
 InterpMemKindMacro(AsyncSuspend)      // Async suspend allocations
 InterpMemKindMacro(BasicBlock)        // InterpBasicBlock allocations
 InterpMemKindMacro(CallDependencies)  // Call dependency tracking
