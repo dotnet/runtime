@@ -381,7 +381,7 @@ namespace Internal.JitInterface
             {
                 ThrowHelper.ThrowInvalidProgramException();
             }
-            if (result == CorJitResult.CORJIT_IMPLLIMITATION)
+            if (result == CorJitResult.CORJIT_IMPLLIMITATION || result == CorJitResult.CORJIT_R2R_UNSUPPORTED)
             {
 #if READYTORUN
                 throw new RequiresRuntimeJitException("JIT implementation limitation");
@@ -1339,13 +1339,6 @@ namespace Internal.JitInterface
 
             // Transform from the unboxing thunk to the normal method
             decl = decl.IsUnboxingThunk() ? decl.GetUnboxedMethod() : decl;
-
-            if (decl.HasInstantiation)
-            {
-                // We cannot devirtualize generic virtual methods in AOT yet
-                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL;
-                return false;
-            }
 
             if ((info->context != null) && decl.OwningType.IsInterface)
             {
@@ -3394,8 +3387,19 @@ namespace Internal.JitInterface
 
             pEEInfoOut.osPageSize = 0x1000;
 
-            pEEInfoOut.maxUncheckedOffsetForNullObject = (_compilation.NodeFactory.Target.IsWindows) ?
-                (32 * 1024 - 1) : (pEEInfoOut.osPageSize / 2 - 1);
+            if (_compilation.NodeFactory.Target.IsWasm)
+            {
+                // TODO: Set this value to 0 for Wasm
+                pEEInfoOut.maxUncheckedOffsetForNullObject = 1024 - 1;
+            }
+            else if (_compilation.NodeFactory.Target.IsWindows)
+            {
+                pEEInfoOut.maxUncheckedOffsetForNullObject = 32 * 1024 - 1;
+            }
+            else
+            {
+                pEEInfoOut.maxUncheckedOffsetForNullObject = pEEInfoOut.osPageSize / 2 - 1;
+            }
 
             pEEInfoOut.targetAbi = TargetABI;
             pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);

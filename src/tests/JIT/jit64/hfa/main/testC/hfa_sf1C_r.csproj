@@ -12,4 +12,7 @@
     <CMakeProjectReference Include="..\dll\CMakeLists.txt" />
     <ProjectReference Include="..\dll\hfa_simple_f32_common.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

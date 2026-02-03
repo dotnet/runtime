@@ -81,8 +81,6 @@ void* DispatchCallSimple(
 void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info, bool handleGcRefs);
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
-bool IsCerRootMethod(MethodDesc *pMD);
-
 class MethodDescCallSite
 {
 private:
@@ -659,6 +657,86 @@ enum DispatchCallSimpleFlags
 
 
 void CallDefaultConstructor(OBJECTREF ref);
+
+//
+// Helper types for calling managed methods marked with [UnmanagedCallersOnly]
+// from native code.
+//
+
+// Helper class for calling managed methods marked with [UnmanagedCallersOnly].
+// This provides a more efficient alternative to MethodDescCallSite for methods
+// using the reverse P/Invoke infrastructure.
+// This class assumes the target method signature has a trailing argument for
+// returning the exception (that is, Exception* in C#).
+//
+// Example usage:
+//   UnmanagedCallersOnlyCaller caller(BinderMethodID::MyMethod);
+//   ...
+//   caller.InvokeThrowing(arg1, arg2);
+//
+// The corresponding C# method would be declared as:
+//   [UnmanagedCallersOnly]
+//   public static void MyMethod(int arg1, object* arg2, Exception* pException);
+//
+class UnmanagedCallersOnlyCaller final
+{
+    MethodDesc* _pMD;
+public:
+    explicit UnmanagedCallersOnlyCaller(BinderMethodID id)
+        : _pMD{}
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        _pMD = CoreLibBinder::GetMethod(id);
+        _ASSERTE(_pMD != NULL);
+        _ASSERTE(_pMD->HasUnmanagedCallersOnlyAttribute());
+    }
+
+    template<typename... Args>
+    void InvokeThrowing(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        struct
+        {
+            OBJECTREF Exception;
+        } gc;
+        gc.Exception = NULL;
+        GCPROTECT_BEGIN(gc);
+
+        {
+            GCX_PREEMP();
+
+            PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+            _ASSERTE(methodEntry != (PCODE)NULL);
+
+            // Cast the function pointer to the appropriate type.
+            // Note that we append the exception handle argument.
+            auto fptr = reinterpret_cast<void(*)(Args..., OBJECTREF*)>(methodEntry);
+
+            // The last argument is the implied exception handle for any exceptions.
+            fptr(args..., &gc.Exception);
+        }
+
+        // If an exception was thrown, propagate it
+        if (gc.Exception != NULL)
+            COMPlusThrow(gc.Exception);
+
+        GCPROTECT_END();
+    }
+};
 
 #endif //!DACCESS_COMPILE
 
