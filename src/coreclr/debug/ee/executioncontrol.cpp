@@ -63,6 +63,7 @@ InterpreterExecutionControl* InterpreterExecutionControl::GetInstance()
     return &s_instance;
 }
 
+// Assume controller lock is held by caller
 bool InterpreterExecutionControl::ApplyPatch(DebuggerControllerPatch* patch)
 {
     _ASSERTE(patch != NULL);

@@ -33,9 +33,8 @@ static const char* const s_interpOpNameWalker[] = {
 
 static const char* InterpOpNameLocal(int opcode)
 {
-    if (opcode >= 0 && opcode < (int)(sizeof(s_interpOpNameWalker)/sizeof(s_interpOpNameWalker[0])))
-        return s_interpOpNameWalker[opcode];
-    return "UNKNOWN";
+    _ASSERTE(opcode >= 0 && opcode < (int)(sizeof(s_interpOpNameWalker)/sizeof(s_interpOpNameWalker[0])));
+    return s_interpOpNameWalker[opcode];
 }
 
 void InterpreterWalker::Init(const int32_t* ip, InterpMethod* pInterpMethod)
@@ -72,6 +71,8 @@ int32_t InterpreterWalker::ResolveOpcode(const int32_t* ip) const
 
 int InterpreterWalker::GetOpcodeLength(int32_t opcode) const
 {
+    _ASSERTE(opcode >= 0 && opcode < (int)(sizeof(s_interpOpLenWalker)/sizeof(s_interpOpLenWalker[0])));
+
     int len = s_interpOpLenWalker[opcode];
     if (len == 0)
     {
@@ -207,8 +208,11 @@ MethodDesc* InterpreterWalker::GetCallTarget() const
         if (m_pInterpMethod != NULL && m_pInterpMethod->pDataItems != NULL)
         {
             // Method slot is at ip[3] for all direct call opcodes
-            LOG((LF_CORDB, LL_INFO10000, "InterpreterWalker::GetCallTarget: method slot=%d\n", m_ip[3]));
+            // Ensure instruction is long enough to have method slot
+            _ASSERTE(GetOpcodeLength(m_opcode) > 3);
             int32_t methodSlot = m_ip[3];
+            LOG((LF_CORDB, LL_INFO10000, "InterpreterWalker::GetCallTarget: method slot=%d\n", methodSlot));
+            _ASSERTE(methodSlot >= 0);
             return (MethodDesc*)m_pInterpMethod->pDataItems[methodSlot];
         }
         LOG((LF_CORDB, LL_INFO10000, "InterpreterWalker::GetCallTarget: no pInterpMethod or pDataItems\n"));
