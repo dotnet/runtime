@@ -21,6 +21,56 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal("fake.suffix.net", suffix);
         }
 
+        [Fact]
+        public void DnsSuffixParsing_DomainKeyword()
+        {
+            string fileName = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("NetworkFiles/resolv_domain.conf", fileName);
+
+            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
+            Assert.Equal("domain.suffix.net", suffix);
+        }
+
+        [Fact]
+        public void DnsSuffixParsing_DomainBeforeSearch_SearchWins()
+        {
+            string fileName = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("NetworkFiles/resolv_domain_before_search.conf", fileName);
+
+            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
+            Assert.Equal("search.suffix.net", suffix);
+        }
+
+        [Fact]
+        public void DnsSuffixParsing_SearchBeforeDomain_DomainWins()
+        {
+            string fileName = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("NetworkFiles/resolv_search_before_domain.conf", fileName);
+
+            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
+            Assert.Equal("domain.suffix.net", suffix);
+        }
+
+        [Fact]
+        public void DnsSuffixParsing_MultipleSearchDirectives_LastWins()
+        {
+            string fileName = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("NetworkFiles/resolv_multiple_search.conf", fileName);
+
+            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
+            Assert.Equal("last.suffix.net", suffix);
+        }
+
+        [Fact]
+        public void DnsSuffixParsing_MultipleDomainAndSearch_LastWins()
+        {
+            string fileName = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("NetworkFiles/resolv_multiple_domains_search.conf", fileName);
+
+            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
+            Assert.Equal("last.suffix.net", suffix);
+        }
+
         [InlineData("NetworkFiles/resolv.conf")]
         [InlineData("NetworkFiles/resolv_nonewline.conf")]
         [Theory]
