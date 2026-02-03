@@ -1417,10 +1417,22 @@ try {
                 Write-Host "  Machine: $($workItemDetails.MachineName)" -ForegroundColor Gray
                 Write-Host "  Duration: $($workItemDetails.Duration)" -ForegroundColor Gray
 
-                # Show artifacts
+                # Show artifacts with binlogs highlighted
                 if ($workItemDetails.Files -and $workItemDetails.Files.Count -gt 0) {
                     Write-Host "`n  Artifacts:" -ForegroundColor Yellow
-                    foreach ($file in $workItemDetails.Files | Select-Object -First 10) {
+                    $binlogs = $workItemDetails.Files | Where-Object { $_.Name -like "*.binlog" }
+                    $otherFiles = $workItemDetails.Files | Where-Object { $_.Name -notlike "*.binlog" }
+
+                    # Show binlogs first with special formatting
+                    foreach ($file in $binlogs) {
+                        Write-Host "    📋 $($file.Name): $($file.Uri)" -ForegroundColor Cyan
+                    }
+                    if ($binlogs.Count -gt 0) {
+                        Write-Host "    (Tip: Use MSBuild MCP server or https://live.msbuildlog.com/ to analyze binlogs)" -ForegroundColor DarkGray
+                    }
+
+                    # Show other files
+                    foreach ($file in $otherFiles | Select-Object -First 10) {
                         Write-Host "    $($file.Name): $($file.Uri)" -ForegroundColor Gray
                     }
                 }

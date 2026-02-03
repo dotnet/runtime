@@ -382,6 +382,38 @@ Common artifacts include:
 - `run-*.log` - XHarness/test runner logs
 - Core dumps and crash reports (when available)
 
+### Analyzing MSBuild Binary Logs (binlogs)
+
+Helix work items often include `.binlog` files that contain detailed MSBuild execution traces. These are invaluable for diagnosing build failures, especially for:
+- AOT compilation failures
+- Static web asset issues
+- NuGet restore problems
+- Target execution order issues
+
+**Using the MSBuild MCP Server:**
+
+If you have access to an MSBuild MCP server (e.g., `msbuild-mcp`), you can analyze binlogs programmatically:
+
+```
+# Download the binlog from the Helix artifact URL
+# Then use the MSBuild MCP server to analyze it
+
+msbuild-mcp analyze --binlog path/to/build.binlog --errors
+msbuild-mcp analyze --binlog path/to/build.binlog --target ResolveReferences
+```
+
+**Manual Analysis:**
+
+You can also use the [MSBuild Structured Log Viewer](https://msbuildlog.com/) to open binlogs locally:
+1. Download the `.binlog` file from the Helix artifact URL
+2. Open it in the viewer or at https://live.msbuildlog.com/
+3. Search for errors, warnings, or specific targets
+
+Binlogs are especially useful when:
+- The console log shows `error MSB4018` (task failure) - the binlog shows the full stack trace
+- You need to see the exact order of target execution
+- You want to inspect item/property values at specific points in the build
+
 ### Extracting Environment Variables
 
 The console log shows all `DOTNET_*` variables that affect test behavior:
