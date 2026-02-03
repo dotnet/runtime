@@ -2431,7 +2431,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     var_types targetType = treeNode->TypeGet();
     emitter*  emit       = GetEmitter();
     emitAttr  attr       = emitActualTypeSize(treeNode);
-    unsigned  isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED);
+    unsigned  isUnsigned = treeNode->IsUnsigned();
 
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2();
@@ -4387,7 +4387,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
-    if (treeNode->gtFlags & GTF_UNSIGNED)
+    if (treeNode->IsUnsigned())
     {
         srcType = varTypeToUnsigned(srcType);
     }
@@ -5937,7 +5937,7 @@ BasicBlock* CodeGen::genGetThrowHelper(SpecialCodeKind codeKind)
     {
         // For code with throw helper blocks, find and use the helper block for
         // raising the exception. The block may be shared by other trees too.
-        Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
+        Compiler::AddCodeDsc* add = compiler->fgGetExcptnTarget(codeKind, compiler->compCurBB);
         assert((add != nullptr) && ("ERROR: failed to find exception throw block"));
         assert(add->acdUsed);
         excpRaisingBlock = add->acdDstBlk;

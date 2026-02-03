@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentOutOfRange_CompressionLevel" xml:space="preserve">
+    <value>The compression level must be between {0} and {1}.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
+    <value>Enum value was out of legal range.</value>
+  </data>
+  <data name="CannotReadFromCompressionStream" xml:space="preserve">
+    <value>Cannot read from a stream that was opened for compression.</value>
+  </data>
+  <data name="CannotWriteToDecompressionStream" xml:space="preserve">
+    <value>Cannot write to a stream that was opened for decompression.</value>
+  </data>
+  <data name="IOCompressionZstandard_PlatformNotSupported" xml:space="preserve">
+    <value>System.IO.Compression.Zstandard is not supported on this platform.</value>
+  </data>
+  <data name="Stream_FalseCanRead" xml:space="preserve">
+    <value>The base stream is not readable.</value>
+  </data>
+  <data name="Stream_FalseCanWrite" xml:space="preserve">
+    <value>The base stream is not writable.</value>
+  </data>
+  <data name="ZstandardEncoderDecoder_InvalidState" xml:space="preserve">
+    <value>The requested operation is not valid once compression or decompression has begun.</value>
+  </data>
+  <data name="ZstandardStream_Decompress_TruncatedData" xml:space="preserve">
+    <value>Found truncated data while decoding.</value>
+  </data>
+  <data name="ZstandardDecoder_WindowTooLarge" xml:space="preserve">
+    <value>Data requires too much memory for decoding. Consider increasing the 'maxWindowLog' parameter.</value>
+  </data>
+  <data name="ZstandardDecoder_DictionaryWrong" xml:space="preserve">
+    <value>The provided dictionary is not valid for decoding the current data.</value>
+  </data>
+  <data name="ZstandardStream_Decompress_InvalidData" xml:space="preserve">
+    <value>Decoder encountered invalid data.</value>
+  </data>
+  <data name="ZstandardStream_Decompress_InvalidStream" xml:space="preserve">
+    <value>ZstandardStream.BaseStream returned more bytes than requested in Read.</value>
+  </data>
+  <data name="ZstandardStream_Compress_InvalidData" xml:space="preserve">
+    <value>Encoder encountered invalid data.</value>
+  </data>
+  <data name="ZstandardStream_ConcurrentRWOperation" xml:space="preserve">
+    <value>Only one pending read/write operation is supported.</value>
+  </data>
+  <data name="ZstandardDictionary_EmptyBuffer" xml:space="preserve">
+    <value>Buffer cannot be empty.</value>
+  </data>
+  <data name="ZstandardDictionary_CreateCompressionFailed" xml:space="preserve">
+    <value>Failed to create Zstandard compression dictionary.</value>
+  </data>
+  <data name="ZstandardDictionary_CreateDecompressionFailed" xml:space="preserve">
+    <value>Failed to create Zstandard decompression dictionary.</value>
+  </data>
+  <data name="ZstandardDictionary_SampleLengthsMismatch" xml:space="preserve">
+    <value>The sum of sample lengths does not match the length of the samples buffer.</value>
+  </data>
+  <data name="ZstandardDictionary_Train_MinimumSampleCount" xml:space="preserve">
+    <value>At least {0} samples are required to train the dictionary.</value>
+  </data>
+  <data name="ZstandardDictionary_Train_InvalidSampleLength" xml:space="preserve">
+    <value>Sample lengths must be positive values.</value>
+  </data>
+  <data name="Zstd_InternalError" xml:space="preserve">
+    <value>An internal error has occurred: {0}.</value>
+  </data>
+</root>

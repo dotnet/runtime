@@ -1107,6 +1107,13 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
             return false;
         }
 
+        // Bail out if the array is definitely too large - we don't want to even start building its layout.
+        if (ClassLayoutBuilder::IsArrayTooLarge(comp, clsHnd, (unsigned)length, m_StackAllocMaxSize))
+        {
+            *reason = "[array is too large]";
+            return false;
+        }
+
         ClassLayout* const layout = comp->typGetArrayLayout(clsHnd, (unsigned)length);
         classSize                 = layout->GetSize();
     }
@@ -2642,6 +2649,14 @@ void ObjectAllocator::RewriteUses()
             }
             else if (newType == TYP_STRUCT)
             {
+                // For struct stores there is no upwards type propagation.
+                // These nodes and any ancestors will remain TYP_STRUCT.
+                //
+                if (tree->OperIs(GT_STORE_LCL_VAR, GT_STORE_LCL_FLD))
+                {
+                    return Compiler::fgWalkResult::WALK_CONTINUE;
+                }
+
                 newLayout    = lclVarDsc->GetLayout();
                 newType      = newLayout->HasGCPtr() ? TYP_BYREF : TYP_I_IMPL;
                 retypeFields = true;

@@ -6,6 +6,7 @@ using System.Threading;
 using System.Runtime.CompilerServices;
 using TestLibrary;
 using Xunit;
+using TestLibrary;
 
 namespace ArrayWithThread
 {
@@ -15,8 +16,9 @@ namespace ArrayWithThread
         public static int val = 0;
         public static AutoResetEvent myResetEvent1 = new AutoResetEvent(false);
         public static ManualResetEvent myResetEvent2 = new ManualResetEvent(false);
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [ActiveIssue("times out", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
         [SkipOnCoreClr("", RuntimeTestModes.AnyGCStress)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static int TestEntryPoint()
         {
             int retVal = 100;

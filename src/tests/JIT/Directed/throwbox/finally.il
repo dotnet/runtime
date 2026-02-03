@@ -8,6 +8,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly 'finally' { }
 .namespace JitTest
 {
@@ -19,6 +21,11 @@
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+          string('https://github.com/dotnet/runtimelab/issues/155: Non-exception throws')
+          type([TestLibrary]TestLibrary.Utilities)
+          string[1] ('IsNativeAot')
+      }
       .entrypoint
       // Code size       115 (0x73)
       .maxstack  2
@@ -61,7 +68,7 @@
         IL_0032:  ldstr      "after try...finally"
         IL_0037:  call       void [System.Console]System.Console::WriteLine(string)
         IL_003c:  leave.s    IL_004d
-        
+
       }  // end .try
       catch [mscorlib]System.Double
       {
@@ -70,7 +77,7 @@
         		  ldc.r8 1.0
         		  ceq
                   brfalse LEAVE
-        		
+
         IL_003f:  ldstr      "inside catch"
         IL_0044:  call       void [System.Console]System.Console::WriteLine(string)
         IL_0049:  ldc.i4.1
@@ -101,7 +108,7 @@
       IL_0072:  ret
     } // end of method Test::Main
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void .ctor() cil managed
     {
       // Code size       7 (0x7)

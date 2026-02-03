@@ -1116,7 +1116,7 @@ namespace System.Net.Http.Functional.Tests
                 await IgnoreExceptions(async () =>
                 {
                     LoopbackServer.Connection connection = await server.EstablishConnectionAsync().WaitAsync(cancelServerCts.Token);
-                    connection.Socket.Shutdown(SocketShutdown.Send);
+                    await connection.Socket.ShutdownAsync(SocketShutdown.Send);
                 });
             });
         }

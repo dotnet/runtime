@@ -29,6 +29,8 @@ namespace System
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
+        public static bool IsInterpreter => IsMonoInterpreter || IsCoreClrInterpreter;
+        public static bool IsNotInterpreter => !IsInterpreter;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsNotMonoInterpreter => !IsMonoInterpreter;
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";

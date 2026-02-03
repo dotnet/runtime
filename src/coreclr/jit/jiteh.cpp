@@ -3695,7 +3695,7 @@ void Compiler::fgVerifyHandlerTab()
     // Make sure that all blocks have the right index, including those blocks that should have zero (no EH region).
     for (BasicBlock* const block : Blocks())
     {
-        assert(block->bbTryIndex == blockTryIndex[block->bbNum]);
+        assert(fgTrysNotContiguous() || block->bbTryIndex == blockTryIndex[block->bbNum]);
         assert(block->bbHndIndex == blockHndIndex[block->bbNum]);
 
         // Also, since we're walking the blocks, check that all blocks we didn't mark as EH handler 'begin' blocks

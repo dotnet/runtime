@@ -5,6 +5,8 @@
         <FeaturePortableEntryPoints>false</FeaturePortableEntryPoints>
         <FeaturePortableHelpers>false</FeaturePortableHelpers>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
+        <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
+        <FeaturePortableTimer>true</FeaturePortableTimer>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' OR '$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked'">
@@ -15,6 +17,13 @@
         <FeaturePortableEntryPoints>true</FeaturePortableEntryPoints>
         <FeaturePortableHelpers>true</FeaturePortableHelpers>
         <FeatureInterpreter>true</FeatureInterpreter>
+        <FeatureWasmManagedThreads Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
+        
+        <!-- single thread -->
+        <FeatureSingleThread Condition="'$(WasmEnableThreads)' != 'true'">true</FeatureSingleThread>
+        <FeaturePortableTimer Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableTimer>
+        <FeaturePortableThreadPool Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableThreadPool>
+        <!-- until we implement ST event pipe for CoreCLR -->
         <FeaturePerfTracing>false</FeaturePerfTracing>
     </PropertyGroup>
 
@@ -39,7 +48,7 @@
         <FeatureInterpreter>true</FeatureInterpreter>
     </PropertyGroup>
 
-    <PropertyGroup Condition="('$(Platform)' == 'x64' OR '$(Platform)' == 'arm64') AND ('$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked') AND '$(TargetsAndroid)' != 'true'">
+    <PropertyGroup Condition="('$(Platform)' == 'x64' OR '$(Platform)' == 'arm64' OR '$(Platform)' == 'arm' OR '$(Platform)' == 'riscv64') AND ('$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked') AND '$(TargetsAndroid)' != 'true'">
         <FeatureInterpreter>true</FeatureInterpreter>
     </PropertyGroup>
 
@@ -56,6 +65,8 @@
         <DefineConstants Condition="'$(FeatureInterpreter)' == 'true'">$(DefineConstants);FEATURE_INTERPRETER</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableEntryPoints)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_ENTRYPOINTS</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableHelpers)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_HELPERS</DefineConstants>
+        <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
+        <DefineConstants Condition="'$(FeatureSingleThread)' == 'true'">$(DefineConstants);FEATURE_SINGLE_THREADED</DefineConstants>
 
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
     </PropertyGroup>

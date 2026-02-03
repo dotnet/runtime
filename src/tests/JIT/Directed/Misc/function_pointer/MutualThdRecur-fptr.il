@@ -9,6 +9,9 @@
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern System.Threading.Thread { auto }
 .assembly extern legacy library mscorlib { auto }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 
 .assembly 'MutualThdRecur-fptr'
 {
@@ -2992,7 +2995,7 @@ call void Thread_EA::Dispatch(method explicit instance void *(int32), int32)
 {
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
         type([TestLibrary]TestLibrary.PlatformDetection)
-        string[1] ('IsWasmThreadingSupported')
+        string[1] ('IsThreadingSupported')
     }
   .maxstack  4
   .entrypoint
