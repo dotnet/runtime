@@ -6252,7 +6252,7 @@ namespace System.Threading.Tasks
                 int count = taskCollection.Count;
                 if (count == 0)
                 {
-                    return new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default);
+                    return new Task<TResult[]>(false, [], TaskCreationOptions.None, default);
                 }
 
                 taskArray = new Task<TResult>[count];
@@ -6286,7 +6286,7 @@ namespace System.Threading.Tasks
             }
 
             return taskList.Count == 0 ?
-                new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default) :
+                new Task<TResult[]>(false, [], TaskCreationOptions.None, default) :
                 new WhenAllPromise<TResult>(taskList.ToArray());
         }
 
@@ -6363,7 +6363,7 @@ namespace System.Threading.Tasks
         {
             if (tasks.IsEmpty)
             {
-                return new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default);
+                return new Task<TResult[]>(false, [], TaskCreationOptions.None, default);
             }
 
             Task<TResult>[] tasksCopy = tasks.ToArray();

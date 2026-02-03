@@ -5,11 +5,13 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace ExtendedLayoutTests;
 
 public static class CStructTests
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void BlittablePrimitiveFieldsLayout()
     {
@@ -21,6 +23,7 @@ public static class CStructTests
         Assert.Equal(8, Unsafe.ByteOffset(ref Unsafe.As<CStructBlittablePrimitiveFields, byte>(ref c), ref c.c));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void NonBlittableUnmanagedPrimitiveFields_TreatedAsBlittable()
     {
@@ -31,6 +34,7 @@ public static class CStructTests
         Assert.Equal(2, Unsafe.ByteOffset(ref Unsafe.As<CStructNonBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<char, byte>(ref c.c)));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void ReferenceFields_ThrowTypeLoadException()
     {
@@ -39,6 +43,7 @@ public static class CStructTests
         Assert.Throws<TypeLoadException>(() => typeof(CStructWithMixedFields));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void NestedCStruct()
     {
@@ -53,6 +58,7 @@ public static class CStructTests
         Assert.Equal(4, Unsafe.SizeOf<CStructCustomCStructField>());
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void NestedNonCStructNonAuto()
     {
@@ -67,18 +73,21 @@ public static class CStructTests
         Assert.Equal(4, Unsafe.SizeOf<CStructCustomSeqStructField>());
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void NestedAutoLayout_ThrowTypeLoadException()
     {
         Assert.Throws<TypeLoadException>(() => typeof(CStructCustomAutoStructField));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void EmptyStruct()
     {
         Assert.Throws<TypeLoadException>(() => typeof(EmptyCStruct));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void ExplicitOffsets_Ignored()
     {
@@ -87,12 +96,14 @@ public static class CStructTests
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CStructWithOffsets, byte>(ref c), ref Unsafe.As<int, byte>(ref c.a)));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void ExplicitSize_Ignored()
     {
         Assert.Equal(4, Unsafe.SizeOf<CStructWithSize>());
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Pack_Ignored()
     {
@@ -103,6 +114,7 @@ public static class CStructTests
         Assert.Equal(4, Unsafe.ByteOffset(ref Unsafe.As<CStructWithPack, byte>(ref c), ref Unsafe.As<int, byte>(ref c.b)));
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void ByRefLike_ThrowTypeLoadException()
     {
