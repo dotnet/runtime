@@ -13,49 +13,56 @@ namespace System.Net.NetworkInformation
             // Per resolv.conf(5), both "search" and "domain" keywords can specify DNS suffixes.
             // The "domain" directive is an obsolete name for "search" that handles one entry only.
             // If multiple instances of these keywords are present, the last instance wins.
-            string? lastSearchSuffix = null;
-            int lastSearchIndex = -1;
+            string? dnsSuffix = null;
 
-            string? lastDomainSuffix = null;
-            int lastDomainIndex = -1;
+            // Process the file using RowConfigReader. It validates that keys are at line start
+            // and followed by whitespace. We interleave searches for both keywords to ensure
+            // we process them in file order and the last match wins.
+            int currentIndex = 0;
 
-            // Find all "search" entries and remember the last one
-            int searchIndex = 0;
-            while ((searchIndex = data.IndexOf("search", searchIndex, StringComparison.Ordinal)) != -1)
+            while (currentIndex < data.Length)
             {
-                RowConfigReader rcr = new RowConfigReader(data.Substring(searchIndex));
-                if (rcr.TryGetNextValue("search", out string? suffix))
+                // Find the next occurrence of either keyword in the raw data
+                int searchIndex = data.IndexOf("search", currentIndex, StringComparison.Ordinal);
+                int domainIndex = data.IndexOf("domain", currentIndex, StringComparison.Ordinal);
+
+                // Determine which keyword appears next (if any)
+                int nextIndex;
+                string nextKeyword;
+
+                if (searchIndex == -1 && domainIndex == -1)
                 {
-                    lastSearchSuffix = suffix;
-                    lastSearchIndex = searchIndex;
+                    break; // No more occurrences of either keyword
                 }
-                searchIndex++;
-            }
-
-            // Find all "domain" entries and remember the last one
-            int domainIndex = 0;
-            while ((domainIndex = data.IndexOf("domain", domainIndex, StringComparison.Ordinal)) != -1)
-            {
-                RowConfigReader rcr = new RowConfigReader(data.Substring(domainIndex));
-                if (rcr.TryGetNextValue("domain", out string? suffix))
+                else if (searchIndex == -1)
                 {
-                    lastDomainSuffix = suffix;
-                    lastDomainIndex = domainIndex;
+                    nextIndex = domainIndex;
+                    nextKeyword = "domain";
                 }
-                domainIndex++;
+                else if (domainIndex == -1)
+                {
+                    nextIndex = searchIndex;
+                    nextKeyword = "search";
+                }
+                else
+                {
+                    // Both found - process whichever comes first
+                    nextIndex = Math.Min(searchIndex, domainIndex);
+                    nextKeyword = searchIndex < domainIndex ? "search" : "domain";
+                }
+
+                // Use RowConfigReader to validate and extract the value.
+                // This handles validation that the key is at line start and followed by whitespace.
+                RowConfigReader lineReader = new RowConfigReader(data.Substring(nextIndex));
+                if (lineReader.TryGetNextValue(nextKeyword, out string? suffix))
+                {
+                    dnsSuffix = suffix;
+                }
+
+                currentIndex = nextIndex + 1;
             }
 
-            // Return the value from whichever keyword appeared last
-            if (lastSearchIndex >= 0 && lastSearchIndex > lastDomainIndex)
-            {
-                return lastSearchSuffix!;
-            }
-            else if (lastDomainIndex >= 0)
-            {
-                return lastDomainSuffix!;
-            }
-
-            return string.Empty;
+            return dnsSuffix ?? string.Empty;
         }
 
         internal static List<IPAddress> ParseDnsAddressesFromResolvConfFile(string data)

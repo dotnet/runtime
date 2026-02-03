@@ -71,6 +71,17 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal("last.suffix.net", suffix);
         }
 
+        [Fact]
+        public void DnsSuffixParsing_DomainKeywordInComment_NotMatched()
+        {
+            // Ensure that "domain" appearing as part of other words (like "subdomain") is not matched
+            string fileName = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("NetworkFiles/resolv_subdomain_comment.conf", fileName);
+
+            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
+            Assert.Equal("correct.domain.net", suffix);
+        }
+
         [InlineData("NetworkFiles/resolv.conf")]
         [InlineData("NetworkFiles/resolv_nonewline.conf")]
         [Theory]
