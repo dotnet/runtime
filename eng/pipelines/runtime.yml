@@ -115,6 +115,7 @@ extends:
             buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
             timeoutInMinutes: 120
             postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
