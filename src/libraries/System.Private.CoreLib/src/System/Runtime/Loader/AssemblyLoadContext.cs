@@ -679,26 +679,22 @@ namespace System.Runtime.Loader
             return (assembly != null) ? ValidateAssemblyNameWithSimpleName(assembly, simpleName) : null;
         }
 
-        // This method is called by the VM.
-        private static void OnAssemblyLoad(RuntimeAssembly assembly)
+        private static void OnAssemblyLoadCore(RuntimeAssembly assembly)
         {
             AssemblyLoad?.Invoke(AppDomain.CurrentDomain, new AssemblyLoadEventArgs(assembly));
         }
 
-        // This method is called by the VM.
-        internal static RuntimeAssembly? OnResourceResolve(RuntimeAssembly assembly, string resourceName)
+        internal static RuntimeAssembly? OnResourceResolveCore(RuntimeAssembly assembly, string resourceName)
         {
             return InvokeResolveEvent(ResourceResolve, assembly, resourceName);
         }
 
-        // This method is called by the VM
-        internal static RuntimeAssembly? OnTypeResolve(RuntimeAssembly? assembly, string typeName)
+        internal static RuntimeAssembly? OnTypeResolveCore(RuntimeAssembly? assembly, string typeName)
         {
             return InvokeResolveEvent(TypeResolve, assembly, typeName);
         }
 
-        // This method is called by the VM.
-        private static RuntimeAssembly? OnAssemblyResolve(RuntimeAssembly? assembly, string assemblyFullName)
+        private static RuntimeAssembly? OnAssemblyResolveCore(RuntimeAssembly? assembly, string assemblyFullName)
         {
             return InvokeResolveEvent(AssemblyResolve, assembly, assemblyFullName);
         }
@@ -737,13 +733,112 @@ namespace System.Runtime.Loader
 
             return null;
         }
+
+#if CORECLR
+        // UnmanagedCallersOnly wrappers for VM callbacks
+        // These methods provide efficient reverse P/Invoke entry points for the VM.
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnAssemblyLoad(object* pAssembly, object* pException)
+        {
+            try
+            {
+                OnAssemblyLoadCore((RuntimeAssembly)(*pAssembly));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnTypeResolve(object* pAssembly, sbyte* typeName, object* ppResult, object* pException)
+        {
+            try
+            {
+                *ppResult = OnTypeResolveCore((RuntimeAssembly?)(*pAssembly), new string(typeName));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnResourceResolve(object* pAssembly, sbyte* resourceName, object* ppResult, object* pException)
+        {
+            try
+            {
+                *ppResult = OnResourceResolveCore((RuntimeAssembly)(*pAssembly), new string(resourceName));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnAssemblyResolve(object* pAssembly, sbyte* assemblyFullName, object* ppResult, object* pException)
+        {
+            try
+            {
+                *ppResult = OnAssemblyResolveCore((RuntimeAssembly?)(*pAssembly), new string(assemblyFullName));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void Resolve(IntPtr gchAssemblyLoadContext, object* pAssemblyName, object* ppResult, object* pException)
+        {
+            try
+            {
+                AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
+                *ppResult = context.ResolveUsingLoad((AssemblyName)(*pAssemblyName));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void ResolveSatelliteAssembly(IntPtr gchAssemblyLoadContext, object* pAssemblyName, object* ppResult, object* pException)
+        {
+            try
+            {
+                AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
+                *ppResult = context.ResolveSatelliteAssemblyCore((AssemblyName)(*pAssemblyName));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void ResolveUsingResolvingEvent(IntPtr gchAssemblyLoadContext, object* pAssemblyName, object* ppResult, object* pException)
+        {
+            try
+            {
+                AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
+                *ppResult = context.ResolveUsingEvent((AssemblyName)(*pAssemblyName));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif // CORECLR
 #endif // !NATIVEAOT
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Satellite assemblies have no code in them and loading is not a problem")]
         [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
             Justification = "This call is fine because native call runs before this and checks BindSatelliteResourceFromBundle")]
-        private RuntimeAssembly? ResolveSatelliteAssembly(AssemblyName assemblyName)
+        private RuntimeAssembly? ResolveSatelliteAssemblyCore(AssemblyName assemblyName)
         {
             // Called by native runtime when CultureName is not empty
             Debug.Assert(assemblyName.CultureName?.Length > 0);
