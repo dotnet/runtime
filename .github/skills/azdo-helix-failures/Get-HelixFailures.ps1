@@ -57,7 +57,7 @@
 
 .EXAMPLE
     .\Get-HelixFailures.ps1 -BuildId 1276327
-    
+
 .EXAMPLE
     .\Get-HelixFailures.ps1 -PRNumber 123445 -ShowLogs
 
@@ -102,6 +102,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+#region Caching Functions
 
 # Cross-platform temp directory detection
 function Get-TempDirectory {
@@ -154,10 +156,10 @@ if (-not (Test-Path $script:CacheDir)) {
 # Clean up expired cache files on startup (files older than 2x TTL)
 function Clear-ExpiredCache {
     param([int]$TTLMinutes = $CacheTTLMinutes)
-    
+
     $maxAge = $TTLMinutes * 2
     $cutoff = (Get-Date).AddMinutes(-$maxAge)
-    
+
     Get-ChildItem -Path $script:CacheDir -File -ErrorAction SilentlyContinue | Where-Object {
         $_.LastWriteTime -lt $cutoff
     } | ForEach-Object {
@@ -176,22 +178,22 @@ function Get-CachedResponse {
         [string]$Url,
         [int]$TTLMinutes = $CacheTTLMinutes
     )
-    
+
     if ($NoCache) { return $null }
-    
+
     # Create a hash of the URL for the cache filename
     $hash = [System.BitConverter]::ToString(
         [System.Security.Cryptography.SHA256]::Create().ComputeHash(
             [System.Text.Encoding]::UTF8.GetBytes($Url)
         )
     ).Replace("-", "").Substring(0, 16)
-    
+
     $cacheFile = Join-Path $script:CacheDir "$hash.json"
-    
+
     if (Test-Path $cacheFile) {
         $cacheInfo = Get-Item $cacheFile
         $age = (Get-Date) - $cacheInfo.LastWriteTime
-        
+
         if ($age.TotalMinutes -lt $TTLMinutes) {
             Write-Verbose "Cache hit for $Url (age: $([int]$age.TotalMinutes) min)"
             return Get-Content $cacheFile -Raw
@@ -200,7 +202,7 @@ function Get-CachedResponse {
             Write-Verbose "Cache expired for $Url"
         }
     }
-    
+
     return $null
 }
 
@@ -209,15 +211,15 @@ function Set-CachedResponse {
         [string]$Url,
         [string]$Content
     )
-    
+
     if ($NoCache) { return }
-    
+
     $hash = [System.BitConverter]::ToString(
         [System.Security.Cryptography.SHA256]::Create().ComputeHash(
             [System.Text.Encoding]::UTF8.GetBytes($Url)
         )
     ).Replace("-", "").Substring(0, 16)
-    
+
     $cacheFile = Join-Path $script:CacheDir "$hash.json"
     $Content | Set-Content $cacheFile -Force
     Write-Verbose "Cached response for $Url"
@@ -231,7 +233,7 @@ function Invoke-CachedRestMethod {
         [switch]$SkipCache,
         [switch]$SkipCacheWrite
     )
-    
+
     # Check cache first (unless skipping)
     if (-not $SkipCache) {
         $cached = Get-CachedResponse -Url $Uri
@@ -242,11 +244,11 @@ function Invoke-CachedRestMethod {
             return $cached
         }
     }
-    
+
     # Make the actual request
     Write-Verbose "GET $Uri"
     $response = Invoke-RestMethod -Uri $Uri -Method Get -TimeoutSec $TimeoutSec
-    
+
     # Cache the response (unless skipping write)
     if (-not $SkipCache -and -not $SkipCacheWrite) {
         if ($AsJson -or $response -is [PSCustomObject]) {
@@ -257,24 +259,28 @@ function Invoke-CachedRestMethod {
             Set-CachedResponse -Url $Uri -Content $response
         }
     }
-    
+
     return $response
 }
 
+#endregion Caching Functions
+
+#region Azure DevOps API Functions
+
 function Get-AzDOBuildIdFromPR {
     param([int]$PR)
-    
+
     # Check for gh CLI dependency
     if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
         throw "GitHub CLI (gh) is required for PR lookup. Install from https://cli.github.com/ or use -BuildId instead."
     }
-    
+
     Write-Host "Finding build for PR #$PR in $Repository..." -ForegroundColor Cyan
     Write-Verbose "Running: gh pr checks $PR --repo $Repository"
-    
+
     # Use gh cli to get the checks
     $checksOutput = gh pr checks $PR --repo $Repository 2>&1
-    
+
     # Find the runtime build URL
     $runtimeCheck = $checksOutput | Select-String -Pattern "runtime\s+fail.*buildId=(\d+)" | Select-Object -First 1
     if ($runtimeCheck) {
@@ -283,7 +289,7 @@ function Get-AzDOBuildIdFromPR {
             return [int]$buildIdMatch.Groups[1].Value
         }
     }
-    
+
     # Try to find any failing build
     $anyBuild = $checksOutput | Select-String -Pattern "buildId=(\d+)" | Select-Object -First 1
     if ($anyBuild) {
@@ -292,15 +298,15 @@ function Get-AzDOBuildIdFromPR {
             return [int]$anyBuildMatch.Groups[1].Value
         }
     }
-    
+
     throw "Could not find Azure DevOps build for PR #$PR in $Repository"
 }
 
 function Get-AzDOBuildStatus {
     param([int]$Build)
-    
+
     $url = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/${Build}?api-version=7.0"
-    
+
     try {
         # First check cache to see if we have a completed status
         $cached = Get-CachedResponse -Url $url
@@ -317,16 +323,16 @@ function Get-AzDOBuildStatus {
             }
             Write-Verbose "Skipping cached in-progress build status"
         }
-        
+
         # Fetch fresh status
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson -SkipCache
-        
+
         # Only cache if completed
         if ($response.status -eq "completed") {
             $content = $response | ConvertTo-Json -Depth 10 -Compress
             Set-CachedResponse -Url $url -Content $content
         }
-        
+
         return @{
             Status = $response.status        # notStarted, inProgress, completed
             Result = $response.result        # succeeded, failed, canceled (only set when completed)
@@ -345,10 +351,10 @@ function Get-AzDOTimeline {
         [int]$Build,
         [switch]$BuildInProgress
     )
-    
+
     $url = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/$Build/timeline?api-version=7.0"
     Write-Host "Fetching build timeline..." -ForegroundColor Cyan
-    
+
     try {
         # Don't cache timeline for in-progress builds - it changes as jobs complete
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson -SkipCacheWrite:$BuildInProgress
@@ -365,32 +371,32 @@ function Get-AzDOTimeline {
 
 function Get-FailedJobs {
     param($Timeline)
-    
-    $failedJobs = $Timeline.records | Where-Object { 
-        $_.type -eq "Job" -and $_.result -eq "failed" 
+
+    $failedJobs = $Timeline.records | Where-Object {
+        $_.type -eq "Job" -and $_.result -eq "failed"
     }
-    
+
     return $failedJobs
 }
 
 function Get-HelixJobInfo {
     param($Timeline, $JobId)
-    
+
     # Find tasks in this job that mention Helix
-    $helixTasks = $Timeline.records | Where-Object { 
-        $_.parentId -eq $JobId -and 
-        $_.name -like "*Helix*" -and 
+    $helixTasks = $Timeline.records | Where-Object {
+        $_.parentId -eq $JobId -and
+        $_.name -like "*Helix*" -and
         $_.result -eq "failed"
     }
-    
+
     return $helixTasks
 }
 
 function Get-BuildLog {
     param([int]$Build, [int]$LogId)
-    
+
     $url = "https://dev.azure.com/$Organization/$Project/_apis/build/builds/$Build/logs/${LogId}?api-version=7.0"
-    
+
     try {
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec
         return $response
@@ -401,40 +407,44 @@ function Get-BuildLog {
     }
 }
 
+#endregion Azure DevOps API Functions
+
+#region Log Parsing Functions
+
 function Extract-HelixUrls {
     param([string]$LogContent)
-    
+
     $urls = @()
-    
+
     # First, normalize the content by removing line breaks that might split URLs
     $normalizedContent = $LogContent -replace "`r`n", "" -replace "`n", ""
-    
+
     # Match Helix console log URLs - workitem names can contain dots, dashes, and other chars
     $urlMatches = [regex]::Matches($normalizedContent, 'https://helix\.dot\.net/api/[^/]+/jobs/[a-f0-9-]+/workitems/[^/\s\]]+/console')
     foreach ($match in $urlMatches) {
         $urls += $match.Value
     }
-    
+
     Write-Verbose "Found $($urls.Count) Helix URLs"
     return $urls | Select-Object -Unique
 }
 
 function Extract-TestFailures {
     param([string]$LogContent)
-    
+
     $failures = @()
-    
+
     # Match test failure patterns from MSBuild output (use $failureMatches to avoid shadowing automatic $Matches variable)
     $pattern = 'error\s*:\s*.*Test\s+(\S+)\s+has failed'
     $failureMatches = [regex]::Matches($LogContent, $pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-    
+
     foreach ($match in $failureMatches) {
         $failures += @{
             TestName = $match.Groups[1].Value
             FullMatch = $match.Value
         }
     }
-    
+
     Write-Verbose "Found $($failures.Count) test failures"
     return $failures
 }
@@ -444,10 +454,10 @@ function Extract-BuildErrors {
         [string]$LogContent,
         [int]$Context = $ContextLines
     )
-    
+
     $errors = @()
     $lines = $LogContent -split "`n"
-    
+
     # Patterns for common build errors - ordered from most specific to least specific
     $errorPatterns = @(
         'error\s+CS\d+:.*',                        # C# compiler errors
@@ -458,15 +468,15 @@ function Extract-BuildErrors {
         'fatal error:.*',                          # Fatal errors (clang, etc)
         '##\[error\].*'                            # AzDO error annotations (last - catch-all)
     )
-    
+
     $combinedPattern = ($errorPatterns -join '|')
-    
+
     for ($i = 0; $i -lt $lines.Count; $i++) {
         if ($lines[$i] -match $combinedPattern) {
             # Clean up the line (remove timestamps, etc)
             $cleanLine = $lines[$i] -replace '^\d{4}-\d{2}-\d{2}T[\d:\.]+Z\s*', ''
             $cleanLine = $cleanLine -replace '##\[error\]', 'ERROR: '
-            
+
             # Add context lines if requested
             if ($Context -gt 0) {
                 $contextStart = [Math]::Max(0, $i - $Context)
@@ -478,24 +488,24 @@ function Extract-BuildErrors {
                     $errors += ($contextLines -join "`n")
                 }
             }
-            
+
             $errors += $cleanLine.Trim()
         }
     }
-    
+
     return $errors | Select-Object -First 20 | Select-Object -Unique
 }
 
 function Extract-HelixLogUrls {
     param([string]$LogContent)
-    
+
     $urls = @()
-    
+
     # Match Helix console log URLs from log content
     # Pattern: https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems/{workItemName}/console
     $pattern = 'https://helix\.dot\.net/api/[^/]+/jobs/([a-f0-9-]+)/workitems/([^/\s\]]+)/console'
     $urlMatches = [regex]::Matches($LogContent, $pattern)
-    
+
     foreach ($match in $urlMatches) {
         $urls += @{
             Url = $match.Value
@@ -503,7 +513,7 @@ function Extract-HelixLogUrls {
             WorkItem = $match.Groups[2].Value
         }
     }
-    
+
     # Deduplicate by URL
     $uniqueUrls = @{}
     foreach ($url in $urls) {
@@ -511,15 +521,19 @@ function Extract-HelixLogUrls {
             $uniqueUrls[$url.Url] = $url
         }
     }
-    
+
     return $uniqueUrls.Values
 }
 
+#endregion Log Parsing Functions
+
+#region Failure Classification
+
 function Get-FailureClassification {
     param([string[]]$Errors)
-    
+
     $errorText = $Errors -join "`n"
-    
+
     # Known failure patterns with classifications - ordered from most specific to general
     # NOTE: "Transient" means this failure pattern CAN be transient, not that it always is.
     # Users should verify before assuming a retry will help.
@@ -630,7 +644,7 @@ function Get-FailureClassification {
             Transient = $false
         }
     )
-    
+
     foreach ($known in $knownPatterns) {
         if ($errorText -match $known.Pattern) {
             return @{
@@ -641,7 +655,7 @@ function Get-FailureClassification {
             }
         }
     }
-    
+
     # Unknown failure
     return @{
         Type = 'Unknown'
@@ -657,22 +671,22 @@ function Search-KnownIssues {
         [string]$ErrorMessage,
         [string]$Repository = "dotnet/runtime"
     )
-    
+
     # Search for known issues using the "Known Build Error" label
     # This label is used by Build Analysis across dotnet repositories
-    
+
     $knownIssues = @()
-    
+
     # Check if gh CLI is available
     if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
         Write-Verbose "GitHub CLI not available for searching known issues"
         return $knownIssues
     }
-    
+
     try {
         # Extract search terms from test name and error message
         $searchTerms = @()
-        
+
         # First priority: Look for [FAIL] test names in the error message
         # Pattern: "TestName [FAIL]" - the test name comes BEFORE [FAIL]
         if ($ErrorMessage -match '(\S+)\s+\[FAIL\]') {
@@ -684,12 +698,12 @@ function Search-KnownIssues {
             # Also add the full test name
             $searchTerms += $failedTest
         }
-        
+
         # Second priority: Extract test class/method from stack traces
         if ($ErrorMessage -match 'at\s+(\w+\.\w+)\(' -and $searchTerms.Count -eq 0) {
             $searchTerms += $Matches[1]
         }
-        
+
         if ($TestName) {
             # Try to get the test method name from the work item
             if ($TestName -match '\.([^.]+)$') {
@@ -704,7 +718,7 @@ function Search-KnownIssues {
                 $searchTerms += $TestName
             }
         }
-        
+
         # Third priority: Extract specific exception patterns (but not generic TimeoutException)
         if ($ErrorMessage -and $searchTerms.Count -eq 0) {
             # Look for specific exception types
@@ -712,15 +726,15 @@ function Search-KnownIssues {
                 $searchTerms += $Matches[1]
             }
         }
-        
+
         # Deduplicate and limit search terms
         $searchTerms = $searchTerms | Select-Object -Unique | Select-Object -First 3
-        
+
         foreach ($term in $searchTerms) {
             if (-not $term) { continue }
-            
+
             Write-Verbose "Searching for known issues with term: $term"
-            
+
             # Search for open issues with the "Known Build Error" label
             $results = gh issue list `
                 --repo $Repository `
@@ -729,7 +743,7 @@ function Search-KnownIssues {
                 --search "$term" `
                 --limit 3 `
                 --json number,title,url 2>$null | ConvertFrom-Json
-            
+
             if ($results) {
                 foreach ($issue in $results) {
                     # Check if the title actually contains our search term (avoid false positives)
@@ -743,13 +757,13 @@ function Search-KnownIssues {
                     }
                 }
             }
-            
+
             # If we found issues, stop searching
             if ($knownIssues.Count -gt 0) {
                 break
             }
         }
-        
+
         # Deduplicate by issue number
         $unique = @{}
         foreach ($issue in $knownIssues) {
@@ -757,7 +771,7 @@ function Search-KnownIssues {
                 $unique[$issue.Number] = $issue
             }
         }
-        
+
         return $unique.Values
     }
     catch {
@@ -773,9 +787,9 @@ function Show-ClassificationWithKnownIssues {
         [string]$ErrorMessage = "",
         [string]$Repository = $script:Repository
     )
-    
+
     if (-not $Classification) { return }
-    
+
     # Show classification
     Write-Host "`n  Classification: $($Classification.Summary)" -ForegroundColor Yellow
     if ($Classification.Action) {
@@ -784,7 +798,7 @@ function Show-ClassificationWithKnownIssues {
     if ($Classification.Transient) {
         Write-Host "  (This failure pattern can be transient - check main branch before retrying)" -ForegroundColor Cyan
     }
-    
+
     # Search for known issues if we have a test name or error
     if ($TestName -or $ErrorMessage) {
         $knownIssues = Search-KnownIssues -TestName $TestName -ErrorMessage $ErrorMessage -Repository $Repository
@@ -798,18 +812,22 @@ function Show-ClassificationWithKnownIssues {
     }
 }
 
+#endregion Failure Classification
+
+#region Test Results Functions
+
 function Get-AzDOTestResults {
     param(
         [string]$RunId,
         [string]$Org = "https://dev.azure.com/$Organization"
     )
-    
+
     # Check if az devops CLI is available
     if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
         Write-Verbose "Azure CLI not available for fetching test results"
         return $null
     }
-    
+
     try {
         Write-Verbose "Fetching test results for run $RunId via az devops CLI..."
         $results = az devops invoke `
@@ -820,7 +838,7 @@ function Get-AzDOTestResults {
             --api-version 7.0 `
             --query "value[?outcome=='Failed'].{name:testCaseTitle, outcome:outcome, error:errorMessage}" `
             -o json 2>$null | ConvertFrom-Json
-        
+
         return $results
     }
     catch {
@@ -831,21 +849,21 @@ function Get-AzDOTestResults {
 
 function Extract-TestRunUrls {
     param([string]$LogContent)
-    
+
     $testRuns = @()
-    
+
     # Match Azure DevOps Test Run URLs
     # Pattern: Published Test Run : https://dev.azure.com/dnceng-public/public/_TestManagement/Runs?runId=35626550&_a=runCharts
     $pattern = 'Published Test Run\s*:\s*(https://dev\.azure\.com/[^/]+/[^/]+/_TestManagement/Runs\?runId=(\d+)[^\s]*)'
     $matches = [regex]::Matches($LogContent, $pattern)
-    
+
     foreach ($match in $matches) {
         $testRuns += @{
             Url = $match.Groups[1].Value
             RunId = $match.Groups[2].Value
         }
     }
-    
+
     Write-Verbose "Found $($testRuns.Count) test run URLs"
     return $testRuns
 }
@@ -855,28 +873,28 @@ function Get-LocalTestFailures {
         [object]$Timeline,
         [int]$BuildId
     )
-    
+
     $localFailures = @()
-    
+
     # Find failed test tasks (non-Helix)
     # Look for tasks with "Test" in name that have issues but no Helix URLs
-    $testTasks = $Timeline.records | Where-Object { 
-        ($_.name -match 'Test|xUnit' -or $_.type -eq 'Task') -and 
-        $_.issues -and 
-        $_.issues.Count -gt 0 
+    $testTasks = $Timeline.records | Where-Object {
+        ($_.name -match 'Test|xUnit' -or $_.type -eq 'Task') -and
+        $_.issues -and
+        $_.issues.Count -gt 0
     }
-    
+
     foreach ($task in $testTasks) {
         # Check if this task has test failures (XUnit errors)
-        $testErrors = $task.issues | Where-Object { 
-            $_.message -match 'Tests failed:' -or 
-            $_.message -match 'error\s*:.*Test.*failed' 
+        $testErrors = $task.issues | Where-Object {
+            $_.message -match 'Tests failed:' -or
+            $_.message -match 'error\s*:.*Test.*failed'
         }
-        
+
         if ($testErrors.Count -gt 0) {
             # This is a local test failure - find the parent job for URL construction
             $parentJob = $Timeline.records | Where-Object { $_.id -eq $task.parentId -and $_.type -eq "Job" } | Select-Object -First 1
-            
+
             $failure = @{
                 TaskName = $task.name
                 TaskId = $task.id
@@ -885,14 +903,14 @@ function Get-LocalTestFailures {
                 Issues = $testErrors
                 TestRunUrls = @()
             }
-            
+
             # Try to get test run URLs from the publish task
-            $publishTask = $Timeline.records | Where-Object { 
-                $_.parentId -eq $task.parentId -and 
+            $publishTask = $Timeline.records | Where-Object {
+                $_.parentId -eq $task.parentId -and
                 $_.name -match 'Publish.*Test.*Results' -and
                 $_.log
             } | Select-Object -First 1
-            
+
             if ($publishTask -and $publishTask.log) {
                 $logContent = Get-BuildLog -Build $BuildId -LogId $publishTask.log.id
                 if ($logContent) {
@@ -900,19 +918,23 @@ function Get-LocalTestFailures {
                     $failure.TestRunUrls = $testRunUrls
                 }
             }
-            
+
             $localFailures += $failure
         }
     }
-    
+
     return $localFailures
 }
 
+#endregion Test Results Functions
+
+#region Helix API Functions
+
 function Get-HelixJobDetails {
     param([string]$JobId)
-    
+
     $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId"
-    
+
     try {
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
         return $response
@@ -925,9 +947,9 @@ function Get-HelixJobDetails {
 
 function Get-HelixWorkItems {
     param([string]$JobId)
-    
+
     $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems"
-    
+
     try {
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
         return $response
@@ -940,9 +962,9 @@ function Get-HelixWorkItems {
 
 function Get-HelixWorkItemDetails {
     param([string]$JobId, [string]$WorkItemName)
-    
+
     $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems/$WorkItemName"
-    
+
     try {
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
         return $response
@@ -955,7 +977,7 @@ function Get-HelixWorkItemDetails {
 
 function Get-HelixConsoleLog {
     param([string]$Url)
-    
+
     try {
         $response = Invoke-CachedRestMethod -Uri $Url -TimeoutSec $TimeoutSec
         return $response
@@ -966,20 +988,24 @@ function Get-HelixConsoleLog {
     }
 }
 
+#endregion Helix API Functions
+
+#region Output Formatting
+
 function Format-TestFailure {
     param(
         [string]$LogContent,
         [int]$MaxLines = $MaxFailureLines,
         [int]$MaxFailures = 3
     )
-    
+
     $lines = $LogContent -split "`n"
     $allFailures = @()
     $currentFailure = @()
     $inFailure = $false
     $emptyLineCount = 0
     $failureCount = 0
-    
+
     # Expanded failure detection patterns
     $failureStartPatterns = @(
         '\[FAIL\]',
@@ -991,7 +1017,7 @@ function Format-TestFailure {
         'System\.\w+Exception:'
     )
     $combinedPattern = ($failureStartPatterns -join '|')
-    
+
     foreach ($line in $lines) {
         # Check for new failure start
         if ($line -match $combinedPattern) {
@@ -1009,10 +1035,10 @@ function Format-TestFailure {
             $emptyLineCount = 0
             continue
         }
-        
+
         if ($inFailure) {
             $currentFailure += $line
-            
+
             # Track consecutive empty lines to detect end of stack trace
             if ($line -match '^\s*$') {
                 $emptyLineCount++
@@ -1020,7 +1046,7 @@ function Format-TestFailure {
             else {
                 $emptyLineCount = 0
             }
-            
+
             # Stop this failure after stack trace ends (2+ consecutive empty lines) or max lines reached
             if ($emptyLineCount -ge 2 -or $currentFailure.Count -ge $MaxLines) {
                 $allFailures += ($currentFailure -join "`n")
@@ -1033,24 +1059,54 @@ function Format-TestFailure {
             }
         }
     }
-    
+
     # Don't forget last failure
     if ($currentFailure.Count -gt 0 -and $failureCount -lt $MaxFailures) {
         $allFailures += ($currentFailure -join "`n")
     }
-    
+
     if ($allFailures.Count -eq 0) {
         return $null
     }
-    
+
     $result = $allFailures -join "`n`n--- Next Failure ---`n`n"
-    
+
     if ($failureCount -ge $MaxFailures) {
         $result += "`n`n... (more failures exist, showing first $MaxFailures)"
     }
-    
+
     return $result
 }
+
+# Helper to display test results from a test run
+function Show-TestRunResults {
+    param(
+        [object[]]$TestRunUrls,
+        [string]$Org = "https://dev.azure.com/$Organization"
+    )
+
+    if (-not $TestRunUrls -or $TestRunUrls.Count -eq 0) { return }
+
+    Write-Host "`n  Test Results:" -ForegroundColor Yellow
+    foreach ($testRun in $TestRunUrls) {
+        Write-Host "    Run $($testRun.RunId): $($testRun.Url)" -ForegroundColor Gray
+
+        $testResults = Get-AzDOTestResults -RunId $testRun.RunId -Org $Org
+        if ($testResults -and $testResults.Count -gt 0) {
+            Write-Host "`n    Failed tests ($($testResults.Count)):" -ForegroundColor Red
+            foreach ($result in $testResults | Select-Object -First 10) {
+                Write-Host "      - $($result.name)" -ForegroundColor White
+            }
+            if ($testResults.Count -gt 10) {
+                Write-Host "      ... and $($testResults.Count - 10) more" -ForegroundColor Gray
+            }
+        }
+    }
+}
+
+#endregion Output Formatting
+
+#region Main Execution
 
 # Main execution
 try {
@@ -1058,25 +1114,25 @@ try {
     if ($PSCmdlet.ParameterSetName -eq 'HelixJob') {
         Write-Host "`n=== Helix Job $HelixJob ===" -ForegroundColor Yellow
         Write-Host "URL: https://helix.dot.net/api/jobs/$HelixJob" -ForegroundColor Gray
-        
+
         # Get job details
         $jobDetails = Get-HelixJobDetails -JobId $HelixJob
         if ($jobDetails) {
             Write-Host "`nQueue: $($jobDetails.QueueId)" -ForegroundColor Cyan
             Write-Host "Source: $($jobDetails.Source)" -ForegroundColor Cyan
         }
-        
+
         if ($WorkItem) {
             # Query specific work item
             Write-Host "`n--- Work Item: $WorkItem ---" -ForegroundColor Cyan
-            
+
             $workItemDetails = Get-HelixWorkItemDetails -JobId $HelixJob -WorkItemName $WorkItem
             if ($workItemDetails) {
                 Write-Host "  State: $($workItemDetails.State)" -ForegroundColor $(if ($workItemDetails.State -eq 'Passed') { 'Green' } else { 'Red' })
                 Write-Host "  Exit Code: $($workItemDetails.ExitCode)" -ForegroundColor White
                 Write-Host "  Machine: $($workItemDetails.MachineName)" -ForegroundColor Gray
                 Write-Host "  Duration: $($workItemDetails.Duration)" -ForegroundColor Gray
-                
+
                 # Show artifacts
                 if ($workItemDetails.Files -and $workItemDetails.Files.Count -gt 0) {
                     Write-Host "`n  Artifacts:" -ForegroundColor Yellow
@@ -1084,17 +1140,17 @@ try {
                         Write-Host "    $($file.Name): $($file.Uri)" -ForegroundColor Gray
                     }
                 }
-                
+
                 # Fetch console log
                 $consoleUrl = "https://helix.dot.net/api/2019-06-17/jobs/$HelixJob/workitems/$WorkItem/console"
                 Write-Host "`n  Console Log: $consoleUrl" -ForegroundColor Yellow
-                
+
                 $consoleLog = Get-HelixConsoleLog -Url $consoleUrl
                 if ($consoleLog) {
                     $failureInfo = Format-TestFailure -LogContent $consoleLog
                     if ($failureInfo) {
                         Write-Host $failureInfo -ForegroundColor White
-                        
+
                         # Classify the failure and search for known issues
                         $classification = Get-FailureClassification -Errors @($failureInfo)
                         Show-ClassificationWithKnownIssues -Classification $classification -TestName $WorkItem -ErrorMessage $failureInfo
@@ -1115,7 +1171,7 @@ try {
             if ($workItems) {
                 Write-Host "  Total: $($workItems.Count)" -ForegroundColor Cyan
                 Write-Host "  Checking for failures..." -ForegroundColor Gray
-                
+
                 # Need to fetch details for each to find failures (list API only shows 'Finished')
                 $failedItems = @()
                 foreach ($wi in $workItems | Select-Object -First 20) {
@@ -1128,7 +1184,7 @@ try {
                         }
                     }
                 }
-                
+
                 if ($failedItems.Count -gt 0) {
                     Write-Host "`n  Failed Work Items:" -ForegroundColor Red
                     foreach ($wi in $failedItems | Select-Object -First $MaxJobs) {
@@ -1139,7 +1195,7 @@ try {
                 else {
                     Write-Host "  No failures found in first 20 work items" -ForegroundColor Green
                 }
-                
+
                 Write-Host "`n  All work items:" -ForegroundColor Yellow
                 foreach ($wi in $workItems | Select-Object -First 10) {
                     Write-Host "    - $($wi.Name)" -ForegroundColor White
@@ -1149,19 +1205,19 @@ try {
                 }
             }
         }
-        
+
         exit 0
     }
-    
+
     # Get build ID if using PR number
     if ($PSCmdlet.ParameterSetName -eq 'PRNumber') {
         $BuildId = Get-AzDOBuildIdFromPR -PR $PRNumber
         Write-Host "Found build ID: $BuildId" -ForegroundColor Green
     }
-    
+
     Write-Host "`n=== Azure DevOps Build $BuildId ===" -ForegroundColor Yellow
     Write-Host "URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Gray
-    
+
     # Get and display build status
     $buildStatus = Get-AzDOBuildStatus -Build $BuildId
     if ($buildStatus) {
@@ -1179,24 +1235,24 @@ try {
         }
         Write-Host "Status: $statusText" -ForegroundColor $statusColor
     }
-    
+
     # Get timeline
     $isInProgress = $buildStatus -and $buildStatus.Status -eq "inProgress"
     $timeline = Get-AzDOTimeline -Build $BuildId -BuildInProgress:$isInProgress
-    
+
     # Handle timeline fetch failure
     if (-not $timeline) {
         Write-Host "`nCould not fetch build timeline" -ForegroundColor Red
         Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Gray
         exit 1
     }
-    
+
     # Get failed jobs
     $failedJobs = Get-FailedJobs -Timeline $timeline
-    
+
     # Also check for local test failures (non-Helix)
     $localTestFailures = Get-LocalTestFailures -Timeline $timeline -BuildId $BuildId
-    
+
     if ((-not $failedJobs -or $failedJobs.Count -eq 0) -and $localTestFailures.Count -eq 0) {
         if ($buildStatus -and $buildStatus.Status -eq "inProgress") {
             Write-Host "`nNo failures yet - build still in progress" -ForegroundColor Cyan
@@ -1207,47 +1263,32 @@ try {
         }
         exit 0
     }
-    
+
     # Report local test failures first (these may exist even without failed jobs)
     if ($localTestFailures.Count -gt 0) {
         Write-Host "`n=== Local Test Failures (non-Helix) ===" -ForegroundColor Yellow
         Write-Host "Build: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Gray
-        
+
         foreach ($failure in $localTestFailures) {
             Write-Host "`n--- $($failure.TaskName) ---" -ForegroundColor Cyan
-            
+
             # Show build and log links
             $jobLogUrl = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId&view=logs&j=$($failure.ParentJobId)"
             if ($failure.TaskId) {
                 $jobLogUrl += "&t=$($failure.TaskId)"
             }
             Write-Host "  Log: $jobLogUrl" -ForegroundColor Gray
-            
+
             # Show issues
             foreach ($issue in $failure.Issues) {
                 Write-Host "  $($issue.message)" -ForegroundColor Red
             }
-            
+
             # Show test run URLs if available
             if ($failure.TestRunUrls.Count -gt 0) {
-                Write-Host "`n  Test Results:" -ForegroundColor Yellow
-                foreach ($testRun in $failure.TestRunUrls) {
-                    Write-Host "    Run $($testRun.RunId): $($testRun.Url)" -ForegroundColor Gray
-                    
-                    # Try to get actual failed test names via az devops CLI
-                    $testResults = Get-AzDOTestResults -RunId $testRun.RunId -Org "https://dev.azure.com/$Organization"
-                    if ($testResults -and $testResults.Count -gt 0) {
-                        Write-Host "`n    Failed tests ($($testResults.Count)):" -ForegroundColor Red
-                        foreach ($result in $testResults | Select-Object -First 10) {
-                            Write-Host "      - $($result.name)" -ForegroundColor White
-                        }
-                        if ($testResults.Count -gt 10) {
-                            Write-Host "      ... and $($testResults.Count - 10) more" -ForegroundColor Gray
-                        }
-                    }
-                }
+                Show-TestRunResults -TestRunUrls $failure.TestRunUrls -Org "https://dev.azure.com/$Organization"
             }
-            
+
             # Try to get more details from the task log
             if ($failure.LogId) {
                 $logContent = Get-BuildLog -Build $BuildId -LogId $failure.LogId
@@ -1255,24 +1296,9 @@ try {
                     # Extract test run URLs from this log too
                     $additionalRuns = Extract-TestRunUrls -LogContent $logContent
                     if ($additionalRuns.Count -gt 0 -and $failure.TestRunUrls.Count -eq 0) {
-                        Write-Host "`n  Test Results:" -ForegroundColor Yellow
-                        foreach ($testRun in $additionalRuns) {
-                            Write-Host "    Run $($testRun.RunId): $($testRun.Url)" -ForegroundColor Gray
-                            
-                            # Try to get actual failed test names via az devops CLI
-                            $testResults = Get-AzDOTestResults -RunId $testRun.RunId -Org "https://dev.azure.com/$Organization"
-                            if ($testResults -and $testResults.Count -gt 0) {
-                                Write-Host "`n    Failed tests ($($testResults.Count)):" -ForegroundColor Red
-                                foreach ($result in $testResults | Select-Object -First 10) {
-                                    Write-Host "      - $($result.name)" -ForegroundColor White
-                                }
-                                if ($testResults.Count -gt 10) {
-                                    Write-Host "      ... and $($testResults.Count - 10) more" -ForegroundColor Gray
-                                }
-                            }
-                        }
+                        Show-TestRunResults -TestRunUrls $additionalRuns -Org "https://dev.azure.com/$Organization"
                     }
-                    
+
                     # Classify the failure
                     $buildErrors = Extract-BuildErrors -LogContent $logContent
                     if ($buildErrors.Count -gt 0) {
@@ -1285,16 +1311,16 @@ try {
             }
         }
     }
-    
+
     if (-not $failedJobs -or $failedJobs.Count -eq 0) {
         Write-Host "`n=== Summary ===" -ForegroundColor Yellow
         Write-Host "Local test failures: $($localTestFailures.Count)" -ForegroundColor Red
         Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Cyan
         exit 0
     }
-    
+
     Write-Host "`nFound $($failedJobs.Count) failed job(s):" -ForegroundColor Red
-    
+
     $processedJobs = 0
     $errorCount = 0
     foreach ($job in $failedJobs) {
@@ -1302,126 +1328,126 @@ try {
             Write-Host "`n... and $($failedJobs.Count - $MaxJobs) more failed jobs (use -MaxJobs to see more)" -ForegroundColor Yellow
             break
         }
-        
+
         try {
             Write-Host "`n--- $($job.name) ---" -ForegroundColor Cyan
             Write-Host "  Build: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId&view=logs&j=$($job.id)" -ForegroundColor Gray
-        
-        # Get Helix tasks for this job
-        $helixTasks = Get-HelixJobInfo -Timeline $timeline -JobId $job.id
-        
-        if ($helixTasks) {
-            foreach ($task in $helixTasks) {
-                if ($task.log) {
-                    Write-Host "  Fetching Helix task log..." -ForegroundColor Gray
-                    $logContent = Get-BuildLog -Build $BuildId -LogId $task.log.id
-                    
-                    if ($logContent) {
-                        # Extract test failures
-                        $failures = Extract-TestFailures -LogContent $logContent
-                        
-                        if ($failures.Count -gt 0) {
-                            Write-Host "  Failed tests:" -ForegroundColor Red
-                            foreach ($failure in $failures) {
-                                Write-Host "    - $($failure.TestName)" -ForegroundColor White
-                            }
-                        }
-                        
-                        # Extract and optionally fetch Helix URLs
-                        $helixUrls = Extract-HelixUrls -LogContent $logContent
-                        
-                        if ($helixUrls.Count -gt 0 -and $ShowLogs) {
-                            Write-Host "`n  Helix Console Logs:" -ForegroundColor Yellow
-                            
-                            foreach ($url in $helixUrls | Select-Object -First 3) {
-                                Write-Host "`n  $url" -ForegroundColor Gray
-                                
-                                # Extract work item name from URL for known issue search
-                                $workItemName = ""
-                                if ($url -match '/workitems/([^/]+)/console') {
-                                    $workItemName = $Matches[1]
+
+            # Get Helix tasks for this job
+            $helixTasks = Get-HelixJobInfo -Timeline $timeline -JobId $job.id
+
+            if ($helixTasks) {
+                foreach ($task in $helixTasks) {
+                    if ($task.log) {
+                        Write-Host "  Fetching Helix task log..." -ForegroundColor Gray
+                        $logContent = Get-BuildLog -Build $BuildId -LogId $task.log.id
+
+                        if ($logContent) {
+                            # Extract test failures
+                            $failures = Extract-TestFailures -LogContent $logContent
+
+                            if ($failures.Count -gt 0) {
+                                Write-Host "  Failed tests:" -ForegroundColor Red
+                                foreach ($failure in $failures) {
+                                    Write-Host "    - $($failure.TestName)" -ForegroundColor White
                                 }
-                                
-                                $helixLog = Get-HelixConsoleLog -Url $url
-                                if ($helixLog) {
-                                    $failureInfo = Format-TestFailure -LogContent $helixLog
-                                    if ($failureInfo) {
-                                        Write-Host $failureInfo -ForegroundColor White
-                                        
-                                        # Classify the Helix failure and search for known issues
-                                        $classification = Get-FailureClassification -Errors @($failureInfo)
-                                        if ($classification -and $classification.Type -ne 'Unknown') {
-                                            Show-ClassificationWithKnownIssues -Classification $classification -TestName $workItemName -ErrorMessage $failureInfo
+                            }
+
+                            # Extract and optionally fetch Helix URLs
+                            $helixUrls = Extract-HelixUrls -LogContent $logContent
+
+                            if ($helixUrls.Count -gt 0 -and $ShowLogs) {
+                                Write-Host "`n  Helix Console Logs:" -ForegroundColor Yellow
+
+                                foreach ($url in $helixUrls | Select-Object -First 3) {
+                                    Write-Host "`n  $url" -ForegroundColor Gray
+
+                                    # Extract work item name from URL for known issue search
+                                    $workItemName = ""
+                                    if ($url -match '/workitems/([^/]+)/console') {
+                                        $workItemName = $Matches[1]
+                                    }
+
+                                    $helixLog = Get-HelixConsoleLog -Url $url
+                                    if ($helixLog) {
+                                        $failureInfo = Format-TestFailure -LogContent $helixLog
+                                        if ($failureInfo) {
+                                            Write-Host $failureInfo -ForegroundColor White
+
+                                            # Classify the Helix failure and search for known issues
+                                            $classification = Get-FailureClassification -Errors @($failureInfo)
+                                            if ($classification -and $classification.Type -ne 'Unknown') {
+                                                Show-ClassificationWithKnownIssues -Classification $classification -TestName $workItemName -ErrorMessage $failureInfo
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                        elseif ($helixUrls.Count -gt 0) {
-                            Write-Host "`n  Helix logs available (use -ShowLogs to fetch):" -ForegroundColor Yellow
-                            foreach ($url in $helixUrls | Select-Object -First 3) {
-                                Write-Host "    $url" -ForegroundColor Gray
+                            elseif ($helixUrls.Count -gt 0) {
+                                Write-Host "`n  Helix logs available (use -ShowLogs to fetch):" -ForegroundColor Yellow
+                                foreach ($url in $helixUrls | Select-Object -First 3) {
+                                    Write-Host "    $url" -ForegroundColor Gray
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        else {
-            # No Helix tasks - this is a build failure, extract actual errors
-            $buildTasks = $timeline.records | Where-Object { 
-                $_.parentId -eq $job.id -and $_.result -eq "failed" 
-            }
-            
-            foreach ($task in $buildTasks | Select-Object -First 3) {
-                Write-Host "  Failed task: $($task.name)" -ForegroundColor Red
-                
-                # Fetch and parse the build log for actual errors
-                if ($task.log) {
-                    $logUrl = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId&view=logs&j=$($job.id)&t=$($task.id)"
-                    Write-Host "  Log: $logUrl" -ForegroundColor Gray
-                    $logContent = Get-BuildLog -Build $BuildId -LogId $task.log.id
-                    
-                    if ($logContent) {
-                        $buildErrors = Extract-BuildErrors -LogContent $logContent
-                        
-                        if ($buildErrors.Count -gt 0) {
-                            # Extract Helix log URLs from the full log content
-                            $helixLogUrls = Extract-HelixLogUrls -LogContent $logContent
-                            
-                            if ($helixLogUrls.Count -gt 0) {
-                                Write-Host "  Helix failures ($($helixLogUrls.Count)):" -ForegroundColor Red
-                                foreach ($helixLog in $helixLogUrls | Select-Object -First 5) {
-                                    Write-Host "    - $($helixLog.WorkItem)" -ForegroundColor White
-                                    Write-Host "      Log: $($helixLog.Url)" -ForegroundColor Gray
+            else {
+                # No Helix tasks - this is a build failure, extract actual errors
+                $buildTasks = $timeline.records | Where-Object {
+                    $_.parentId -eq $job.id -and $_.result -eq "failed"
+                }
+
+                foreach ($task in $buildTasks | Select-Object -First 3) {
+                    Write-Host "  Failed task: $($task.name)" -ForegroundColor Red
+
+                    # Fetch and parse the build log for actual errors
+                    if ($task.log) {
+                        $logUrl = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId&view=logs&j=$($job.id)&t=$($task.id)"
+                        Write-Host "  Log: $logUrl" -ForegroundColor Gray
+                        $logContent = Get-BuildLog -Build $BuildId -LogId $task.log.id
+
+                        if ($logContent) {
+                            $buildErrors = Extract-BuildErrors -LogContent $logContent
+
+                            if ($buildErrors.Count -gt 0) {
+                                # Extract Helix log URLs from the full log content
+                                $helixLogUrls = Extract-HelixLogUrls -LogContent $logContent
+
+                                if ($helixLogUrls.Count -gt 0) {
+                                    Write-Host "  Helix failures ($($helixLogUrls.Count)):" -ForegroundColor Red
+                                    foreach ($helixLog in $helixLogUrls | Select-Object -First 5) {
+                                        Write-Host "    - $($helixLog.WorkItem)" -ForegroundColor White
+                                        Write-Host "      Log: $($helixLog.Url)" -ForegroundColor Gray
+                                    }
+                                    if ($helixLogUrls.Count -gt 5) {
+                                        Write-Host "    ... and $($helixLogUrls.Count - 5) more" -ForegroundColor Gray
+                                    }
                                 }
-                                if ($helixLogUrls.Count -gt 5) {
-                                    Write-Host "    ... and $($helixLogUrls.Count - 5) more" -ForegroundColor Gray
+                                else {
+                                    Write-Host "  Build errors:" -ForegroundColor Red
+                                    foreach ($err in $buildErrors | Select-Object -First 5) {
+                                        Write-Host "    $err" -ForegroundColor White
+                                    }
+                                    if ($buildErrors.Count -gt 5) {
+                                        Write-Host "    ... and $($buildErrors.Count - 5) more errors" -ForegroundColor Gray
+                                    }
+                                }
+
+                                # Classify the failure and search for known issues
+                                $classification = Get-FailureClassification -Errors $buildErrors
+                                if ($classification) {
+                                    Show-ClassificationWithKnownIssues -Classification $classification -ErrorMessage ($buildErrors -join "`n")
                                 }
                             }
                             else {
-                                Write-Host "  Build errors:" -ForegroundColor Red
-                                foreach ($err in $buildErrors | Select-Object -First 5) {
-                                    Write-Host "    $err" -ForegroundColor White
-                                }
-                                if ($buildErrors.Count -gt 5) {
-                                    Write-Host "    ... and $($buildErrors.Count - 5) more errors" -ForegroundColor Gray
-                                }
+                                Write-Host "  (No specific errors extracted from log)" -ForegroundColor Gray
                             }
-                            
-                            # Classify the failure and search for known issues
-                            $classification = Get-FailureClassification -Errors $buildErrors
-                            if ($classification) {
-                                Show-ClassificationWithKnownIssues -Classification $classification -ErrorMessage ($buildErrors -join "`n")
-                            }
-                        }
-                        else {
-                            Write-Host "  (No specific errors extracted from log)" -ForegroundColor Gray
                         }
                     }
                 }
             }
-        }
         }
         catch {
             $errorCount++
@@ -1432,10 +1458,10 @@ try {
                 throw
             }
         }
-        
+
         $processedJobs++
     }
-    
+
     Write-Host "`n=== Summary ===" -ForegroundColor Yellow
     Write-Host "Total failed jobs: $($failedJobs.Count)" -ForegroundColor Red
     if ($localTestFailures.Count -gt 0) {
@@ -1445,9 +1471,11 @@ try {
         Write-Host "API errors (partial results): $errorCount" -ForegroundColor Yellow
     }
     Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Cyan
-    
+
 }
 catch {
     Write-Error "Error: $_"
     exit 1
 }
+
+#endregion Main Execution
