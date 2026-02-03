@@ -141,17 +141,44 @@ The script analyzes **all failing builds** for a PR and provides:
 
 Example with multiple builds:
 ```
+Finding builds for PR #123909 in dotnet/runtime...
 Found 3 failing builds:
   - Build 1276778 (runtime)
   - Build 1276779 (runtime-dev-innerloop)
   - Build 1276780 (dotnet-linker-tests)
 
 === Azure DevOps Build 1276778 ===
+URL: https://dev.azure.com/dnceng-public/cbb18261-c48f-4abb-8651-8cdcb5474649/_build/results?buildId=1276778
+Status: completed (failed)
 ...
+
 === Overall Summary ===
 Analyzed 3 builds
 Total failed jobs: 13
+Total local test failures: 3
+
+Known Issues (from Build Analysis):
+  - #117164: Unable to pull image from mcr.microsoft.com
+    https://github.com/dotnet/runtime/issues/117164
 ```
+
+## PR Change Correlation
+
+The script automatically correlates failures with files changed in the PR to help identify PR-related issues:
+
+```
+=== PR Change Correlation ===
+⚠️  Test files changed by this PR are failing:
+    src/libraries/System.Net.Http/tests/FunctionalTests/NtAuthTests.FakeServer.cs
+
+These failures are likely PR-related.
+```
+
+This feature:
+- Fetches the list of files changed in the PR
+- Compares file names against failure messages and build errors
+- Highlights test files and source files that appear in failures
+- Skips correlation for large PRs (>100 files) to avoid performance issues
 
 ## Test Execution Types
 
@@ -159,6 +186,23 @@ The script detects and handles different test execution types:
 
 ### Helix Tests
 Tests run on the Helix distributed test infrastructure. The script extracts Helix console log URLs and can fetch detailed failure information with `-ShowLogs`.
+
+Example output for Helix tests:
+```
+Found 2 failed job(s):
+
+--- browser-wasm linux Release WasmBuildTests ---
+  Build: https://dev.azure.com/dnceng-public/cbb18261-c48f-4abb-8651-8cdcb5474649/_build/results?buildId=1276507&view=logs&j=1fa93050-f528-55d3-a351-f8bf9ce5adbf
+  Fetching Helix task log...
+  Failed tests:
+    - System.Net.Http.Functional.Tests.NtAuthTests.Http2_FakeServer_SessionAuthChallenge
+
+  Helix logs available (use -ShowLogs to fetch):
+    https://helix.dot.net/api/2019-06-17/jobs/216ee994-0f0f-4568-949c-c0fa97892e89/workitems/Workloads-ST-Wasm.Build.Tests/console
+
+  Classification: [Test] Helix test failure
+  Suggested action: Check console log for failure details
+```
 
 ### Local Tests (Non-Helix)
 Some repositories (e.g., dotnet/sdk) run tests directly on the build agent. The script:
@@ -169,13 +213,14 @@ Some repositories (e.g., dotnet/sdk) run tests directly on the build agent. The 
 Example output for local tests:
 ```
 === Local Test Failures (non-Helix) ===
+Build: https://dev.azure.com/dnceng-public/cbb18261-c48f-4abb-8651-8cdcb5474649/_build/results?buildId=1276327
 
 --- Run TemplateEngine Tests ---
-  XUnit(0,0): error : Tests failed: dotnet-new.IntegrationTests_net10.0_x64.html
+  Log: https://dev.azure.com/dnceng-public/cbb18261-c48f-4abb-8651-8cdcb5474649/_build/results?buildId=1276327&view=logs&j=...
+  XUnit(5,2): error : Tests failed: dotnet-new.IntegrationTests_net10.0_x64.html
 
   Test Results:
     Run 35626548: https://dev.azure.com/dnceng-public/public/_TestManagement/Runs?runId=35626548
-    Run 35626550: https://dev.azure.com/dnceng-public/public/_TestManagement/Runs?runId=35626550
 
   Classification: [Test] Local xUnit test failure
   Suggested action: Check test run URL for specific failed test details
