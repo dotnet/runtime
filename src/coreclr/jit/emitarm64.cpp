@@ -8531,8 +8531,8 @@ void emitter::emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, in
 /*****************************************************************************
  *
  *  Add an instruction with a register + static member operands.
- *  Constant is stored into JIT data which is adjacent to code.
- *  No relocation is needed. PC-relative offset will be encoded directly into instruction.
+ *  Usually constants are stored into JIT data adjacent to code, in which case no
+ *  relocation is needed. PC-relative offset will be encoded directly into instruction.
  *
  */
 void emitter::emitIns_R_C(
@@ -8583,11 +8583,11 @@ void emitter::emitIns_R_C(
     id->idInsOpt(INS_OPTS_NONE);
     id->idSmallCns(offs);
     id->idOpSize(size);
+    id->idSetRelocFlags(attr);
     id->idAddr()->iiaFieldHnd = fldHnd;
     id->idSetIsBound(); // We won't patch address since we will know the exact distance once JIT code and data are
                         // allocated together.
-
-    id->idReg1(reg); // destination register that will get the constant value.
+    id->idReg1(reg);    // destination register that will get the constant value.
     if (addrReg != REG_NA)
     {
         id->idReg2(addrReg); // integer register to compute long address (used for vector dest when we end up with long
@@ -8595,8 +8595,8 @@ void emitter::emitIns_R_C(
     }
     id->idjShort = false; // Assume loading constant from long address
 
-    // Keep it long if it's in cold code.
-    id->idjKeepLong = emitComp->fgIsBlockCold(emitComp->compCurBB);
+    // Keep it long if this address requires a reloc or if it's in cold code, in which case it is not next to code.
+    id->idjKeepLong = EA_IS_RELOC(attr) || emitComp->fgIsBlockCold(emitComp->compCurBB);
 
 #ifdef DEBUG
     if (emitComp->opts.compLongAddress)
@@ -10271,6 +10271,7 @@ BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, inst
         // adr x, [rel addr] --  compute address: current addr(ip) + rel addr.
         assert(ins == INS_adr);
         assert(fmt == IF_DI_1E);
+        assert(!id->idIsReloc());
         ssize_t distVal = (ssize_t)(dstAddr - srcAddr);
         dst             = emitOutputShortAddress(dst, ins, fmt, distVal, dstReg);
     }
@@ -10280,6 +10281,10 @@ BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, inst
         assert(fmt == IF_LARGEADR);
         ssize_t relPageAddr = computeRelPageAddr((size_t)dstAddr, (size_t)srcAddr);
         dst                 = emitOutputShortAddress(dst, INS_adrp, IF_DI_1E, relPageAddr, dstReg);
+        if (id->idIsReloc())
+        {
+            emitRecordRelocation(dst - sizeof(code_t), dstAddr, CorInfoReloc::ARM64_PAGEBASE_REL21);
+        }
 
         // add x, x, page offs -- compute address = page addr + page offs
         ssize_t imm12 = (ssize_t)dstAddr & 0xFFF; // 12 bits
@@ -10291,6 +10296,10 @@ BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, inst
         code |= insEncodeReg_Rd(dstReg);     // ddddd
         code |= insEncodeReg_Rn(dstReg);     // nnnnn
         dst += emitOutput_Instr(dst, code);
+        if (id->idIsReloc())
+        {
+            emitRecordRelocation(dst - sizeof(code_t), dstAddr, CorInfoReloc::ARM64_PAGEOFFSET_12A);
+        }
     }
     return dst;
 }
@@ -11433,7 +11442,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_DI_1E: // DI_1E   .ii.....iiiiiiii iiiiiiiiiiiddddd      Rd       simm21
         case IF_LARGEADR:
             assert(insOptsNone(id->idInsOpt()));
-            if (id->idIsReloc())
+            if (id->idIsReloc() && (fmt == IF_DI_1E))
             {
                 code = emitInsCode(ins, fmt);
                 code |= insEncodeReg_Rd(id->idReg1()); // ddddd
@@ -11444,7 +11453,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                // Local jmp/load case which does not need a relocation.
+                // Local jmp/load case
                 assert(id->idIsBound());
                 dst = emitOutputLJ(ig, dst, id);
             }

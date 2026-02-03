@@ -8770,6 +8770,8 @@ public:
 
     // ICorJitInfo wrappers
 
+    bool eeDataWithCodePointersNeedsRelocs();
+
     void eeAllocMem(AllocMemChunk& codeChunk,
                     AllocMemChunk* coldCodeChunk,
                     AllocMemChunk* dataChunks,
