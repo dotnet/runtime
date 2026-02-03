@@ -8,12 +8,6 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
-#ifdef __GNUC__
-#define MINIPAL_ATTR_FORMAT_PRINTF(fmt_pos, arg_pos) __attribute__ ((__format__(__printf__, fmt_pos, arg_pos)))
-#else
-#define MINIPAL_ATTR_FORMAT_PRINTF(fmt_pos, arg_pos)
-#endif
-
 #ifdef __cplusplus
 extern "C"
 {

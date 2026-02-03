@@ -257,11 +257,10 @@ inline void FATAL_GC_ERROR()
 #endif //SYNCHRONIZATION_STATS
 
 #ifdef GC_CONFIG_DRIVEN
-void GCLogConfig (const char *fmt, ... )
-#ifdef __GNUC__
-    __attribute__ ((__format__(__printf__, 1, 2)))
-#endif
-;
+
+#include <minipal/types.h>
+
+void GCLogConfig (const char *fmt, ... ) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 #define cprintf(x) {GCLogConfig x;}
 #endif //GC_CONFIG_DRIVEN
 

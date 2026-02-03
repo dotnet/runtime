@@ -6,6 +6,7 @@
 #pragma hdrstop
 #endif
 
+#include <inttypes.h>
 #include "codegen.h"
 
 // clang-format off
@@ -601,11 +602,7 @@ void emitter::emitDispIns(
         case IF_ULEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-#ifdef TARGET_64BIT
-            printf(" %lu", (unsigned long)(uint64_t)imm);
-#else
-            printf(" %llu", (unsigned long long)(uint64_t)imm);
-#endif
+            printf(" %" PRIu64, (uint64_t)imm);
             dispJumpTargetIfAny();
         }
         break;
@@ -640,11 +637,7 @@ void emitter::emitDispIns(
         case IF_SLEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-#ifdef TARGET_64BIT
-            printf(" %ld", (long)(int64_t)imm);
-#else
-            printf(" %lld", (long long)(int64_t)imm);
-#endif
+            printf(" %" PRId64, (int64_t)imm);
         }
         break;
 
@@ -662,11 +655,7 @@ void emitter::emitDispIns(
         {
             unsigned       log2align = emitGetAlignHintLog2(id);
             cnsval_ssize_t offset    = emitGetInsSC(id);
-#ifdef TARGET_64BIT
-            printf(" %u %lu", log2align, (unsigned long)(uint64_t)offset);
-#else
-            printf(" %u %llu", log2align, (unsigned long long)(uint64_t)offset);
-#endif
+            printf(" %u %" PRIu64, log2align, (uint64_t)offset);
         }
         break;
 

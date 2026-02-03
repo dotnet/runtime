@@ -17,6 +17,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #if defined(TARGET_XARCH)
 
+#include <inttypes.h>
+
 /*****************************************************************************/
 /*****************************************************************************/
 
@@ -12996,14 +12998,7 @@ void emitter::emitDispIns(
                 }
             }
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-security"
-#endif
-            printf(sstr);
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
+            printf("%s", sstr);
             emitDispAddrMode(id);
             emitDispEmbMasking(id);
             printf(", %s", emitRegName(id->idReg1(), attr));
@@ -13752,14 +13747,7 @@ void emitter::emitDispIns(
                 }
             }
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-security"
-#endif
-            printf(sstr);
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
+            printf("%s", sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             emitDispEmbMasking(id);

@@ -5,23 +5,18 @@
 #define TRACE_H
 
 #include "pal.h"
-
-#ifdef __GNUC__
-#define TRACE_ATTR_FORMAT_PRINTF(fmt_pos, arg_pos) __attribute__ ((__format__(__printf__, fmt_pos, arg_pos)))
-#else
-#define TRACE_ATTR_FORMAT_PRINTF(fmt_pos, arg_pos)
-#endif
+#include <minipal/types.h>
 
 namespace trace
 {
     void setup();
     bool enable();
     bool is_enabled();
-    void verbose(const pal::char_t* format, ...) TRACE_ATTR_FORMAT_PRINTF(1, 2);
-    void info(const pal::char_t* format, ...) TRACE_ATTR_FORMAT_PRINTF(1, 2);
-    void warning(const pal::char_t* format, ...) TRACE_ATTR_FORMAT_PRINTF(1, 2);
-    void error(const pal::char_t* format, ...) TRACE_ATTR_FORMAT_PRINTF(1, 2);
-    void println(const pal::char_t* format, ...) TRACE_ATTR_FORMAT_PRINTF(1, 2);
+    void verbose(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
+    void info(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
+    void warning(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
+    void error(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
+    void println(const pal::char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
     void println();
     void flush();
 

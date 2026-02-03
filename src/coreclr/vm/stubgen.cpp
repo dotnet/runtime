@@ -9,6 +9,7 @@
 
 #include "common.h"
 
+#include <inttypes.h>
 #include "stubgen.h"
 #include "jitinterface.h"
 #include "ilstubcache.h"
@@ -532,11 +533,7 @@ ILStubLinker::LogILInstruction(
             break;
 
         case InlineI8:
-#ifdef TARGET_64BIT
-            strArgument.Printf("0x%lx", (unsigned long)(uint64_t)pInstruction->uArg);
-#else
-            strArgument.Printf("0x%llx", (unsigned long long)(uint64_t)pInstruction->uArg);
-#endif
+            strArgument.Printf("0x%" PRIx64, (uint64_t)pInstruction->uArg);
             break;
 
         case InlineMethod:

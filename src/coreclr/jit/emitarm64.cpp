@@ -12765,7 +12765,7 @@ void emitter::emitDispVectorElemList(
     printf("{");
     for (unsigned i = 0; i < listSize; i++)
     {
-        printf(emitVectorRegName(currReg));
+        printf("%s", emitVectorRegName(currReg));
         emitDispElemsize(elemsize);
         const bool notLastRegister = (i != listSize - 1);
         if (notLastRegister)
@@ -12840,7 +12840,7 @@ void emitter::emitDispArrangement(insOpts opt)
             assert(!"Invalid insOpt");
     }
     printf(".");
-    printf(str);
+    printf("%s", str);
 }
 
 //------------------------------------------------------------------------
@@ -12870,7 +12870,7 @@ void emitter::emitDispElemsize(emitAttr elemsize)
             break;
     }
 
-    printf(str);
+    printf("%s", str);
 }
 
 //------------------------------------------------------------------------
@@ -12882,7 +12882,7 @@ void emitter::emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAt
     assert((imm & 0x003F) == imm);
     assert(((imm & 0x0020) == 0) || (size == EA_8BYTE));
 
-    printf(emitRegName(reg, size));
+    printf("%s", emitRegName(reg, size));
 
     if (imm > 0)
     {
@@ -12998,7 +12998,7 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
 
         if (insOptsPreIndex(opt))
         {
-            printf(operStr);
+            printf("%s", operStr);
         }
 
         emitDispReg(reg, EA_8BYTE, false);
