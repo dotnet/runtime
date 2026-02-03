@@ -7737,17 +7737,14 @@ public:
 
     enum optAssertionKind : uint8_t
     {
-        OAK_INVALID,
         OAK_EQUAL,
         OAK_NOT_EQUAL,
         OAK_SUBRANGE,
         OAK_NO_THROW,
-        OAK_COUNT
     };
 
     enum optOp1Kind : uint8_t
     {
-        O1K_INVALID,
         O1K_LCLVAR,
         O1K_VN,
         O1K_ARR_BND,
@@ -7756,8 +7753,7 @@ public:
         O1K_CONSTANT_LOOP_BND,
         O1K_CONSTANT_LOOP_BND_UN,
         O1K_EXACT_TYPE,
-        O1K_SUBTYPE,
-        O1K_COUNT
+        O1K_SUBTYPE
         // NOTE: as of today, only LCLVAR is used by both Local and Global assertion prop
         // the rest are used only by Global assertion prop.
     };
@@ -7769,35 +7765,31 @@ public:
         O2K_CONST_INT,
         O2K_CONST_DOUBLE,
         O2K_ZEROOBJ,
-        O2K_SUBRANGE,
-        O2K_COUNT
+        O2K_SUBRANGE
     };
 
     struct AssertionDsc
     {
-        struct ArrBnd
-        {
-            ValueNum vnIdx;
-            ValueNum vnLen;
-        };
-
         struct AssertionDscOp1
         {
             friend struct AssertionDsc;
 
         private:
             optOp1Kind kind;
-            ValueNum   vn; // TODO-Cleanup: move this field to the union below as they are not used together
             union
             {
+                ValueNum vn;
                 unsigned lclNum;
-                ArrBnd   bnd;
+                struct
+                {
+                    ValueNum vnIdx;
+                    ValueNum vnLen;
+                } bnd;
             };
 
         public:
             bool KindIs(optOp1Kind k) const
             {
-                assert(kind != O1K_INVALID);
                 return kind == k;
             }
 
@@ -7854,17 +7846,16 @@ public:
             optOp2Kind kind;
             uint16_t   m_encodedIconFlags; // encoded icon gtFlags, don't use directly
             ValueNum   vn;
-            struct IntVal
-            {
-                ssize_t   iconVal;
-                FieldSeq* fieldSeq;
-            };
             union
             {
                 unsigned      lclNum;
-                IntVal        u1;
                 double        dconVal;
                 IntegralRange u2;
+                struct
+                {
+                    ssize_t   iconVal;
+                    FieldSeq* fieldSeq;
+                } u1;
             };
         public:
 
@@ -7905,11 +7896,9 @@ public:
 
             bool IsNullConstant() const
             {
-                assert(KindIs(O2K_CONST_INT));
-
                 // Even for local prop we use ValueNumStore::VNForNull as a hint of nullness.
                 // Otherwise, we'd have to validate op1.lclNum's real type every time.
-                return vn == ValueNumStore::VNForNull();
+                return KindIs(O2K_CONST_INT) && (vn == ValueNumStore::VNForNull());
             }
 
             ValueNum GetVN() const
@@ -7959,9 +7948,39 @@ public:
             }
         };
 
+    private:
         optAssertionKind assertionKind;
         AssertionDscOp1  op1;
         AssertionDscOp2  op2;
+    public:
+
+        bool KindIs(optAssertionKind k) const
+        {
+            return assertionKind == k;
+        }
+
+        template <typename... T>
+        bool KindIs(optAssertionKind kind, T... rest) const
+        {
+            return KindIs(kind) || KindIs(rest...);
+        }
+
+        const AssertionDscOp1& GetOp1() const
+        {
+            return op1;
+        }
+
+        bool HasOp2() const
+        {
+            // For OAK_NO_THROW, op2 is not used.
+            return !KindIs(OAK_NO_THROW);
+        }
+
+        const AssertionDscOp2& GetOp2() const
+        {
+            assert(HasOp2());
+            return op2;
+        }
 
         bool IsCheckedBoundArithBound() const
         {
@@ -8009,8 +8028,7 @@ public:
 
         bool CanPropNonNull() const
         {
-            return assertionKind == OAK_NOT_EQUAL && op1.KindIs(O1K_LCLVAR, O1K_VN) && op2.KindIs(O2K_CONST_INT) &&
-                   op2.IsNullConstant();
+            return assertionKind == OAK_NOT_EQUAL && op1.KindIs(O1K_LCLVAR, O1K_VN) && op2.IsNullConstant();
         }
 
         bool CanPropBndsCheck() const
@@ -8071,6 +8089,7 @@ public:
 
         bool HasSameOp2(const AssertionDsc& that, bool vnBased) const
         {
+            assert(HasOp2());
             if (op2.GetKind() != that.op2.GetKind())
             {
                 return false;
@@ -8122,7 +8141,7 @@ public:
                 return false;
             }
 
-            if (assertionKind != OAK_NO_THROW)
+            if (HasOp2())
             {
                 return HasSameOp2(that, vnBased);
             }
@@ -8138,8 +8157,14 @@ public:
 
         // Create a generic "lclNum ==/!= constant" or "vn ==/!= constant" assertion
         template <typename T>
-        static AssertionDsc CreateConstLclVarAssertion(
-            const Compiler* comp, unsigned lclNum, ValueNum vn, T cns, ValueNum cnsVN, bool equals)
+        static AssertionDsc CreateConstLclVarAssertion(const Compiler* comp,
+                                                       unsigned        lclNum,
+                                                       ValueNum        vn,
+                                                       T               cns,
+                                                       ValueNum        cnsVN,
+                                                       bool            equals,
+                                                       GenTreeFlags    iconFlags = GTF_EMPTY,
+                                                       FieldSeq*       fldSeq    = nullptr)
         {
             AssertionDsc dsc  = {};
             dsc.assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
@@ -8149,9 +8174,6 @@ public:
             {
                 assert(lclNum != BAD_VAR_NUM);
 
-                // TODO-Cleanup: We need to introduce getters for op1.vn and op2.vn that validate that we don't use
-                // these outside of their intended context (only certain kinds of assertions and only in global-AP).
-                dsc.op1.vn     = ValueNumStore::NoVN;
                 dsc.op1.lclNum = lclNum;
 
                 // We use ValueNumStore::VNForNull() as a hint of nullness. This allows us to avoid looking up the
@@ -8170,26 +8192,30 @@ public:
             {
                 assert(vn != ValueNumStore::NoVN);
                 assert(cnsVN != ValueNumStore::NoVN);
-                dsc.op1.lclNum = BAD_VAR_NUM; // same as above
-                dsc.op1.vn     = vn;
-                dsc.op2.vn     = cnsVN;
+                dsc.op1.vn = vn;
+                dsc.op2.vn = cnsVN;
             }
 
             if constexpr (std::is_same_v<T, int> || std::is_same_v<T, ssize_t>)
             {
                 dsc.op2.kind       = O2K_CONST_INT;
                 dsc.op2.u1.iconVal = static_cast<ssize_t>(cns);
+                dsc.op2.SetIconFlag(iconFlags, fldSeq);
             }
             else if constexpr (std::is_same_v<T, double>)
             {
                 dsc.op2.kind    = O2K_CONST_DOUBLE;
                 dsc.op2.dconVal = static_cast<double>(cns);
+                assert(iconFlags == GTF_EMPTY); // no flags expected for double constants
+                assert(fldSeq == nullptr);      // no fieldSeq expected for double constants
             }
             else if constexpr (std::is_same_v<T, optOp2Kind>)
             {
                 dsc.op2.kind       = static_cast<optOp2Kind>(cns);
                 dsc.op2.u1.iconVal = 0;
                 assert(dsc.op2.kind == O2K_ZEROOBJ); // only O2K_ZEROOBJ is expected here for now.
+                assert(iconFlags == GTF_EMPTY);      // no flags expected for ZEROOBJ
+                assert(fldSeq == nullptr);           // no fieldSeq expected for ZEROOBJ
             }
             else
             {
@@ -8224,14 +8250,9 @@ public:
             AssertionDsc dsc  = {};
             dsc.assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
             dsc.op1.kind      = O1K_LCLVAR;
-            dsc.op1.vn        = ValueNumStore::NoVN;
             dsc.op1.lclNum    = lclNum1;
-            dsc.op2.vn        = ValueNumStore::NoVN;
             dsc.op2.lclNum    = lclNum2;
             dsc.op2.kind      = O2K_LCLVAR_COPY;
-
-            // TODO-Cleanup: We need to introduce getters for op1.vn and op2.vn that validate that we don't use these
-            // outside of their intended context (only certain kinds of assertions and only in global-AP).
 
             return dsc;
         }
