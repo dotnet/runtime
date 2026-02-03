@@ -431,7 +431,7 @@ private:
     StackType type = (StackType)0;
 public:
 
-    CORINFO_CLASS_HANDLE clsHnd = 0;
+    CORINFO_CLASS_HANDLE clsHnd = nullptr;
     // The var associated with the value of this stack entry. Every time we push on
     // the stack a new var is created.
     int var = 0;
