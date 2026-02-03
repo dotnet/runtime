@@ -847,7 +847,7 @@ private:
     void        ClearSearchPath();
     SearchPath* m_pSearchPath;
 
-    Compiler*     m_pCompiler;
+    Compiler*     m_compiler;
     CompAllocator m_alloc;
 
     // The number of nodes for which range is computed throughout the current method.
