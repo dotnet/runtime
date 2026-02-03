@@ -8550,14 +8550,14 @@ void emitter::emitIns_R_C(
         instrDescJmp* id = emitNewInstrJmp();
         id->idIns(ins);
         id->idInsFmt(IF_LARGEADR);
-        id->idjShort              = false;
-        id->idAddr()->iiaIGlabel  = emitPrologIG;
+        id->idjShort             = false;
+        id->idAddr()->iiaIGlabel = emitPrologIG;
         id->idReg1(reg);
         id->idOpSize(EA_PTRSIZE);
         id->idjKeepLong = false;
 
-        id->idjIG   = emitCurIG;
-        id->idjOffs = emitCurIGsize;
+        id->idjIG        = emitCurIG;
+        id->idjOffs      = emitCurIGsize;
         id->idjNext      = emitCurIGjmpList;
         emitCurIGjmpList = id;
 
