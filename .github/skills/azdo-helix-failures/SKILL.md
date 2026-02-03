@@ -131,6 +131,43 @@ The script automatically classifies failures and suggests actions:
 | `Unable to pull image` | Infrastructure | Yes | Retry - container registry issue |
 | `Connection refused` | Infrastructure | Yes | Retry - network issue |
 | `XUnit...Tests failed` | Test | No | Check test run URL for details |
+| `[FAIL]` | Test | No | Helix test failure - check console log |
+
+## Known Issue Search
+
+The script automatically searches for known issues when failures are detected. It uses the `Known Build Error` label which is applied by Build Analysis across dotnet repositories.
+
+### How It Works
+
+1. When a test failure is detected, the script extracts the test name from the `[FAIL]` line in the log
+2. It searches GitHub for open issues with the `Known Build Error` label matching the test name
+3. If found, it displays links to the relevant issues
+
+### Example Output
+
+```
+  Classification: [Test] Helix test failure
+  Suggested action: Check console log for failure details
+  Known Issues:
+    #103584: Failing test due to no detected IO events in 'FileSystemWatcherTest.ExecuteAndVerifyEvents'
+    https://github.com/dotnet/runtime/issues/103584
+```
+
+### Requirements
+
+- **GitHub CLI (`gh`)**: Required for searching known issues. Install from https://cli.github.com/
+
+### Manual Search
+
+If you need to search manually, use GitHub's search:
+```
+repo:dotnet/runtime is:issue is:open label:"Known Build Error" FileSystemWatcher
+```
+
+Or use the GitHub CLI:
+```bash
+gh issue list --repo dotnet/runtime --label "Known Build Error" --state open --search "FileSystemWatcher"
+```
 
 ## Build Definition IDs
 
