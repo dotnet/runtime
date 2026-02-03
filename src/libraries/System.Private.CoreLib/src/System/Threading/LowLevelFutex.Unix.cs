@@ -6,10 +6,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    // Only supported on Linux for now. More platforms can be added.
-    // Most OS have support for futex-like APIs.
-    // (ex: OSX has `os_sync_wait_on_address`, but support may vary by OS version)
-#if TARGET_LINUX
+    // NOTE: Only supported on Linux for now.
+    //       Most OS have support for futex-like APIs and should be added in the future.
+    //       (ex: OSX has `os_sync_wait_on_address`, but support may vary by OS version)
+
     /// <summary>
     /// A compare-and-wait synchronization primitive.
     /// Provides simple functionality to block and wake threads.
@@ -38,5 +38,4 @@ namespace System.Threading
             Interop.Sys.LowLevelFutex_WakeByAddressSingle(address);
         }
     }
-#endif
 }

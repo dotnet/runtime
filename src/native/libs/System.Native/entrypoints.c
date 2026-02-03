@@ -247,11 +247,9 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LowLevelMonitor_Wait)
     DllImportEntry(SystemNative_LowLevelMonitor_TimedWait)
     DllImportEntry(SystemNative_LowLevelMonitor_Signal_Release)
-#if defined TARGET_LINUX
     DllImportEntry(SystemNative_LowLevelFutex_WaitOnAddress)
     DllImportEntry(SystemNative_LowLevelFutex_WaitOnAddressTimeout)
     DllImportEntry(SystemNative_LowLevelFutex_WakeByAddressSingle)
-#endif
     DllImportEntry(SystemNative_LoadLibrary)
     DllImportEntry(SystemNative_GetLoadLibraryError)
     DllImportEntry(SystemNative_GetProcAddress)

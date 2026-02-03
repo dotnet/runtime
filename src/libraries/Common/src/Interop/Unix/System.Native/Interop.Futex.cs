@@ -8,7 +8,6 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-#if TARGET_LINUX
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelFutex_WaitOnAddress")]
         internal static unsafe partial void LowLevelFutex_WaitOnAddress(int* address, int comparand);
 
@@ -19,6 +18,5 @@ internal static partial class Interop
         [SuppressGCTransition]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelFutex_WakeByAddressSingle")]
         internal static unsafe partial void LowLevelFutex_WakeByAddressSingle(int* address);
-#endif
     }
 }

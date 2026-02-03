@@ -248,6 +248,28 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 {
     syscall(SYS_futex, address, FUTEX_WAKE_PRIVATE, 1);
 }
+#else// TARGET_LINUX
+void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand)
+{
+    assert_msg(false, "Futex is not supported on this platform", 0);
+    errno = ENOTSUP;
+    // trivial implementation of Wait always wakes spuriously.
+}
+
+int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_t comparand, int32_t timeoutMilliseconds)
+{
+    assert_msg(false, "Futex is not supported on this platform", 0);
+    errno = ENOTSUP;
+    // trivial implementation of Wait always wakes spuriously.
+    return true;
+}
+
+void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
+{
+    assert_msg(false, "Futex is not supported on this platform", 0);
+    errno = ENOTSUP;
+    // trivial implementation of Wake does nothing.
+}
 #endif  // TARGET_LINUX
 
 int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)

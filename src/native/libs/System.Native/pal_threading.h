@@ -23,13 +23,11 @@ PALEXPORT int32_t SystemNative_LowLevelMonitor_TimedWait(LowLevelMonitor *monito
 
 PALEXPORT void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor);
 
-#if defined(TARGET_LINUX)
 PALEXPORT void SystemNative_LowLevelFutex_WaitOnAddress(int32_t* address, int32_t comparand);
 
 PALEXPORT int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_t comparand, int32_t timeoutMilliseconds);
 
 PALEXPORT void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address);
-#endif
 
 PALEXPORT int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter);
 
