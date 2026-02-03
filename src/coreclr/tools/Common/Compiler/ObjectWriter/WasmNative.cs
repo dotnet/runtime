@@ -196,8 +196,13 @@ namespace ILCompiler.ObjectWriter
 
     public abstract class WasmImportType : IWasmEncodable
     {
+        public readonly WasmExternalKind Kind;
         public abstract int Encode(Span<byte> buffer);
         public abstract int EncodeSize();
+        public WasmImportType(WasmExternalKind kind)
+        {
+            Kind = kind;
+        }
     }
 
     public enum WasmExternalKind : byte
@@ -210,12 +215,12 @@ namespace ILCompiler.ObjectWriter
         Count = 0x05 // Not actually part of the spec; used for counting kinds
     }
 
-    public class WasmGlobalType : WasmImportType
+    public class WasmGlobalImportType : WasmImportType
     {
         WasmValueType _valueType;
         WasmMutabilityType _mutability;
 
-        public WasmGlobalType(WasmValueType valueType, WasmMutabilityType mutability)
+        public WasmGlobalImportType(WasmValueType valueType, WasmMutabilityType mutability) : base (WasmExternalKind.Global)
         {
             _valueType = valueType;
             _mutability = mutability;
@@ -237,13 +242,13 @@ namespace ILCompiler.ObjectWriter
         HasMinAndMax = 0x01
     }
   
-    public class WasmMemoryType : WasmImportType
+    public class WasmMemoryImportType : WasmImportType
     {
         WasmLimitType _limitType;
         uint _min;
         uint? _max;
 
-        public WasmMemoryType(WasmLimitType limitType, uint min, uint? max = null)
+        public WasmMemoryImportType(WasmLimitType limitType, uint min, uint? max = null) : base(WasmExternalKind.Memory)
         {
             if (limitType == WasmLimitType.HasMinAndMax && !max.HasValue)
             {
@@ -282,15 +287,14 @@ namespace ILCompiler.ObjectWriter
     {
         public readonly string Module;
         public readonly string Name;
-        public readonly WasmExternalKind Kind;
+        public  WasmExternalKind Kind => Import.Kind;
         public readonly int? Index;
         public readonly WasmImportType Import;
 
-        public WasmImport(string module, string name, WasmExternalKind kind, WasmImportType import, int? index = null)
+        public WasmImport(string module, string name, WasmImportType import, int? index = null)
         {
             Module = module;
             Name = name;
-            Kind = kind;
             Import = import;
             Index = index;
         }

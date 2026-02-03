@@ -326,8 +326,8 @@ namespace ILCompiler.ObjectWriter
         private WasmImport[] _defaultImports = new[]
         {
             null, // placeholder for memory, which is set up dynamically in WriteImports()
-            new WasmImport("env", "__stack_pointer", WasmExternalKind.Global, new WasmGlobalType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
-            new WasmImport("env", "__r2r_start", WasmExternalKind.Global, new WasmGlobalType(WasmValueType.I32, WasmMutabilityType.Const), index: R2RStartGlobalIndex),
+            new WasmImport("env", "__stack_pointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
+            new WasmImport("env", "__r2r_start", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: R2RStartGlobalIndex),
         };
 
         private void WriteImports()
@@ -337,8 +337,7 @@ namespace ILCompiler.ObjectWriter
             uint dataPages = checked((uint)((contentSize + (1<<16) - 1) >> 16));
             uint numPages = Math.Max(dataPages, 1); // Ensure at least one page is allocated for the minimum
 
-            _defaultImports[0] = new WasmImport("env", "memory", WasmExternalKind.Memory,
-                new WasmMemoryType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
+            _defaultImports[0] = new WasmImport("env", "memory", import: new WasmMemoryImportType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
 
             int[] assignedImportIndices = new int[(int)WasmExternalKind.Count];
             foreach (WasmImport import in _defaultImports)
