@@ -1642,7 +1642,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - mangod9
+            - agocke
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1750,7 +1750,6 @@ configuration:
           - LakshanF
           - sbomer
           - joperezr
-          - marek-safar
           replyTemplate: >-
             Tagging subscribers to 'linkable-framework': ${mentionees}
 
@@ -1768,7 +1767,6 @@ configuration:
             mentionees:
             - eerhardt
             - SamMonoRT
-            - marek-safar
             replyTemplate: >-
               Tagging subscribers to 'size-reduction': ${mentionees}
 

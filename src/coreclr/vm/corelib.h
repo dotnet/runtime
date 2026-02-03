@@ -97,7 +97,7 @@ DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, TARGET,            _target)
 DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, ACCESSTYPE,        _accessType)
 
 DEFINE_CLASS(APPCONTEXT,            System,                 AppContext)
-DEFINE_METHOD(APPCONTEXT,   SETUP,              Setup,          SM_PtrPtrChar_PtrPtrChar_Int_RetVoid)
+DEFINE_METHOD(APPCONTEXT,   SETUP,              Setup,          SM_PtrPtrChar_PtrPtrChar_Int_PtrException_RetVoid)
 DEFINE_METHOD(APPCONTEXT,   ON_PROCESS_EXIT,    OnProcessExit,  SM_RetVoid)
 DEFINE_METHOD(APPCONTEXT,   ON_UNHANDLED_EXCEPTION,     OnUnhandledException,  SM_Obj_RetVoid)
 DEFINE_FIELD(APPCONTEXT, FIRST_CHANCE_EXCEPTION,        FirstChanceException)
@@ -199,9 +199,6 @@ DEFINE_CLASS(HANDLE_REF,            Interop,                HandleRef)
 DEFINE_FIELD(HANDLE_REF,            WRAPPER,                _wrapper)
 DEFINE_FIELD(HANDLE_REF,            HANDLE,                 _handle)
 
-DEFINE_CLASS(CRITICAL_FINALIZER_OBJECT, ConstrainedExecution, CriticalFinalizerObject)
-DEFINE_METHOD(CRITICAL_FINALIZER_OBJECT, FINALIZE,          Finalize,                   IM_RetVoid)
-
 DEFINE_CLASS_U(Reflection,             RuntimeConstructorInfo,  NoClass)
 DEFINE_FIELD_U(m_handle,                   ReflectMethodObject, m_pMD)
 DEFINE_CLASS(CONSTRUCTOR,           Reflection,             RuntimeConstructorInfo)
@@ -214,25 +211,9 @@ DEFINE_METHOD(STUBMETHODINFO,     FROMPTR,                FromPtr,              
 
 DEFINE_CLASS(CONSTRUCTOR_INFO,      Reflection,             ConstructorInfo)
 
-DEFINE_CLASS_U(Globalization,          CultureInfo,        CultureInfoBaseObject)
-DEFINE_FIELD_U(_compareInfo,       CultureInfoBaseObject,  _compareInfo)
-DEFINE_FIELD_U(_textInfo,          CultureInfoBaseObject,  _textInfo)
-DEFINE_FIELD_U(_numInfo,           CultureInfoBaseObject,  _numInfo)
-DEFINE_FIELD_U(_dateTimeInfo,      CultureInfoBaseObject,  _dateTimeInfo)
-DEFINE_FIELD_U(_calendar,          CultureInfoBaseObject,  _calendar)
-DEFINE_FIELD_U(_consoleFallbackCulture, CultureInfoBaseObject, _consoleFallbackCulture)
-DEFINE_FIELD_U(_name,             CultureInfoBaseObject,  _name)
-DEFINE_FIELD_U(_nonSortName,      CultureInfoBaseObject,  _nonSortName)
-DEFINE_FIELD_U(_sortName,         CultureInfoBaseObject,  _sortName)
-DEFINE_FIELD_U(_parent,           CultureInfoBaseObject,  _parent)
-DEFINE_FIELD_U(_isReadOnly,        CultureInfoBaseObject,  _isReadOnly)
-DEFINE_FIELD_U(_isInherited,      CultureInfoBaseObject,  _isInherited)
 DEFINE_CLASS(CULTURE_INFO,          Globalization,          CultureInfo)
-DEFINE_FIELD(CULTURE_INFO,          CURRENT_CULTURE,        s_userDefaultCulture)
 DEFINE_METHOD(CULTURE_INFO,         INT_CTOR,               .ctor,                      IM_Int_RetVoid)
 DEFINE_PROPERTY(CULTURE_INFO,       ID,                     LCID,                       Int)
-DEFINE_FIELD(CULTURE_INFO,          CULTURE,                s_currentThreadCulture)
-DEFINE_FIELD(CULTURE_INFO,          UI_CULTURE,             s_currentThreadUICulture)
 DEFINE_STATIC_SET_PROPERTY(CULTURE_INFO, CURRENT_CULTURE,      CurrentCulture,     CultureInfo)
 DEFINE_STATIC_SET_PROPERTY(CULTURE_INFO, CURRENT_UI_CULTURE,   CurrentUICulture,   CultureInfo)
 
@@ -892,8 +873,6 @@ DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwi
 DEFINE_CLASS(SAFE_HANDLE,         Interop,                SafeHandle)
 DEFINE_FIELD(SAFE_HANDLE,           HANDLE,                 handle)
 
-DEFINE_CLASS(SECURITY_EXCEPTION,    Security,               SecurityException)
-
 DEFINE_CLASS_U(Diagnostics,                StackFrameHelper,   StackFrameHelper)
 DEFINE_FIELD_U(rgiOffset,                  StackFrameHelper,   rgiOffset)
 DEFINE_FIELD_U(rgiILOffset,                StackFrameHelper,   rgiILOffset)
@@ -999,9 +978,6 @@ DEFINE_CLASS(AUTORELEASEPOOL,       Threading,              AutoreleasePool)
 DEFINE_METHOD(AUTORELEASEPOOL,      CREATEAUTORELEASEPOOL,  CreateAutoreleasePool,  SM_RetVoid)
 DEFINE_METHOD(AUTORELEASEPOOL,      DRAINAUTORELEASEPOOL,   DrainAutoreleasePool,   SM_RetVoid)
 #endif // FEATURE_OBJCMARSHAL
-
-DEFINE_CLASS(TIMESPAN,              System,                 TimeSpan)
-
 
 DEFINE_CLASS(TYPE,                  System,                 Type)
 DEFINE_METHOD(TYPE,                 GET_TYPE_FROM_HANDLE,   GetTypeFromHandle,          SM_RuntimeTypeHandle_RetType)
@@ -1187,6 +1163,10 @@ DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,  ConvertCon
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED, ConvertContentsToManaged,   SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_NATIVE,                ClearNative,                SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED,               ClearManaged,               SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE_UCO,  ConvertContentsToNative,    SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED_UCO, ConvertContentsToManaged,   SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_NATIVE_UCO,                ClearNative,                SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED_UCO,               ClearManaged,               SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
 
 DEFINE_CLASS(ASANY_MARSHALER,            StubHelpers,                 AsAnyMarshaler)
 DEFINE_METHOD(ASANY_MARSHALER,           CTOR,                        .ctor,                      IM_IntPtr_RetVoid)
@@ -1250,13 +1230,6 @@ DEFINE_METHOD(LOADERALLOCATOR,          CTOR,                   .ctor,          
 DEFINE_CLASS_U(Reflection,             LoaderAllocatorScout,     LoaderAllocatorScoutObject)
 DEFINE_FIELD_U(m_nativeLoaderAllocator,  LoaderAllocatorScoutObject,      m_nativeLoaderAllocator)
 DEFINE_CLASS(LOADERALLOCATORSCOUT,      Reflection,             LoaderAllocatorScout)
-
-DEFINE_CLASS(CONTRACTEXCEPTION,     CodeContracts,  ContractException)
-
-DEFINE_CLASS_U(CodeContracts,       ContractException,          ContractExceptionObject)
-DEFINE_FIELD_U(_kind,               ContractExceptionObject,    _Kind)
-DEFINE_FIELD_U(_userMessage,        ContractExceptionObject,    _UserMessage)
-DEFINE_FIELD_U(_condition,          ContractExceptionObject,    _Condition)
 
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
 

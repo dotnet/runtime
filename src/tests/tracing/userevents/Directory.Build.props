@@ -1,8 +1,13 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/123442 -->
+    <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
+
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'Mono'">true</CLRTestTargetUnsupported>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/123697 -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
-
 </Project>
