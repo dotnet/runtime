@@ -624,21 +624,29 @@ ClrDataValue::StartEnumFields(
 
     EX_TRY
     {
-        status = SplitName::
-            CdStartField(NULL,
-                         0,
-                         flags,
-                         fromType,
-                         m_typeHandle,
-                         NULL,
-                         mdTypeDefNil,
-                         m_baseAddr,
-                         m_thread,
-                         NULL,
-                         m_appDomain,
-                         NULL,
-                         NULL,
-                         handle);
+        if (m_typeHandle.IsNull())
+        {
+            *handle = 0;
+            status = E_NOTIMPL;
+        }
+        else
+        {
+            status = SplitName::
+                CdStartField(NULL,
+                             0,
+                             flags,
+                             fromType,
+                             m_typeHandle,
+                             NULL,
+                             mdTypeDefNil,
+                             m_baseAddr,
+                             m_thread,
+                             NULL,
+                             m_appDomain,
+                             NULL,
+                             NULL,
+                             handle);
+        }
     }
     EX_CATCH
     {
@@ -738,21 +746,29 @@ ClrDataValue::StartEnumFieldsByName(
 
     EX_TRY
     {
-        status = SplitName::
-            CdStartField(name,
-                         nameFlags,
-                         fieldFlags,
-                         fromType,
-                         m_typeHandle,
-                         NULL,
-                         mdTypeDefNil,
-                         m_baseAddr,
-                         m_thread,
-                         NULL,
-                         m_appDomain,
-                         NULL,
-                         NULL,
-                         handle);
+        if (m_typeHandle.IsNull())
+        {
+            *handle = 0;
+            status = E_NOTIMPL;
+        }
+        else
+        {
+            status = SplitName::
+                CdStartField(name,
+                             nameFlags,
+                             fieldFlags,
+                             fromType,
+                             m_typeHandle,
+                             NULL,
+                             mdTypeDefNil,
+                             m_baseAddr,
+                             m_thread,
+                             NULL,
+                             m_appDomain,
+                             NULL,
+                             NULL,
+                             handle);
+        }
     }
     EX_CATCH
     {
@@ -3139,21 +3155,29 @@ ClrDataTypeInstance::StartEnumStaticFields(
 
     EX_TRY
     {
-        status = SplitName::
-            CdStartField(NULL,
-                         0,
-                         flags,
-                         NULL,
-                         m_typeHandle,
-                         NULL,
-                         mdTypeDefNil,
-                         0,
-                         NULL,
-                         tlsTask,
-                         m_appDomain,
-                         NULL,
-                         NULL,
-                         handle);
+        if (m_typeHandle.IsNull())
+        {
+            *handle = 0;
+            status = E_NOTIMPL;
+        }
+        else
+        {
+            status = SplitName::
+                CdStartField(NULL,
+                             0,
+                             flags,
+                             NULL,
+                             m_typeHandle,
+                             NULL,
+                             mdTypeDefNil,
+                             0,
+                             NULL,
+                             tlsTask,
+                             m_appDomain,
+                             NULL,
+                             NULL,
+                             handle);
+        }
     }
     EX_CATCH
     {
@@ -3249,21 +3273,29 @@ ClrDataTypeInstance::StartEnumStaticFieldsByName2(
 
     EX_TRY
     {
-        status = SplitName::
-            CdStartField(name,
-                         nameFlags,
-                         fieldFlags,
-                         NULL,
-                         m_typeHandle,
-                         NULL,
-                         mdTypeDefNil,
-                         0,
-                         NULL,
-                         tlsTask,
-                         m_appDomain,
-                         NULL,
-                         NULL,
-                         handle);
+        if (m_typeHandle.IsNull())
+        {
+            *handle = 0;
+            status = E_NOTIMPL;
+        }
+        else
+        {
+            status = SplitName::
+                CdStartField(name,
+                             nameFlags,
+                             fieldFlags,
+                             NULL,
+                             m_typeHandle,
+                             NULL,
+                             mdTypeDefNil,
+                             0,
+                             NULL,
+                             tlsTask,
+                             m_appDomain,
+                             NULL,
+                             NULL,
+                             handle);
+        }
     }
     EX_CATCH
     {
