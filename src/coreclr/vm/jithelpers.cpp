@@ -371,6 +371,19 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex)
 }
 HCIMPLEND
 
+// *** This helper corresponds CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE.
+// Returns the address of the pThread field within thread-local storage, which serves as the storage
+// location for the DirectOnThreadLocalData.pNativeThread thread static field. Adjust the value by
+// OFFSETOF__CORINFO_Array__data, since all thread static bases are returned as relative to the start of an
+// array object.
+HCIMPL0(void*, JIT_GetDirectOnThreadLocalDataNonGCThreadStaticBase)
+{
+    FCALL_CONTRACT;
+
+    return (void*)((uint8_t*)&(((ThreadLocalData*)&t_ThreadStatics)->pThread) - OFFSETOF__CORINFO_Array__data);
+}
+HCIMPLEND
+
 #include <optdefault.h>
 
 //========================================================================
