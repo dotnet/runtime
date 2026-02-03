@@ -55,7 +55,8 @@ bool Lowering::IsCallTargetInRange(void* addr)
 //
 bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 {
-    EX_THROW(HRException, (E_FAIL));
+    return false;
+    //EX_THROW(HRException, (E_FAIL));
     //_ASSERTE(!"NYI");
 //#if 0 
     if (!varTypeIsFloating(parentNode->TypeGet()))
@@ -464,7 +465,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 //
 GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    EX_THROW(HRException, (E_FAIL));
+   // EX_THROW(HRException, (E_FAIL));
     //_ASSERTE(!"NYI");
 #if 0 
 #ifdef TARGET_ARM
@@ -601,7 +602,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    EX_THROW(HRException, (E_FAIL));
+    //EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 #if 0 
     if (comp->opts.OptimizationEnabled())
@@ -2831,7 +2832,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 //
 void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
-    EX_THROW(HRException, (E_FAIL));
+   // EX_THROW(HRException, (E_FAIL));
     //_ASSERTE(!"NYI");
 //#if 0
     GenTree* op1 = node->gtGetOp1();
@@ -2848,7 +2849,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
         std::swap(node->gtOp1, node->gtOp2);
         return;
     }
-
+#if 0
     if (comp->opts.OptimizationEnabled())
     {
         if (IsContainableUnaryOrBinaryOp(node, op2))
@@ -2876,6 +2877,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
             return;
         }
     }
+#endif
 //#endif
 }
 
@@ -2949,7 +2951,7 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 //
 void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 {
-    EX_THROW(HRException, (E_FAIL));
+    //EX_THROW(HRException, (E_FAIL));
     //_ASSERTE(!"NYI");
 //#if 0
     assert(storeLoc->OperIsLocalStore());
@@ -2982,7 +2984,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     }
 #endif // FEATURE_SIMD
 
-#ifdef TARGET_S390X
+#ifndef TARGET_S390X
     if (IsContainableImmed(storeLoc, op1))
     {
         MakeSrcContained(storeLoc, op1);
