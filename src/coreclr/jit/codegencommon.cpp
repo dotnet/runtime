@@ -2716,12 +2716,12 @@ struct RegNode
 
 class RegGraph
 {
-    Compiler*            m_comp;
+    Compiler* m_compiler;
     ArrayStack<RegNode*> m_nodes;
 
 public:
     RegGraph(Compiler* comp)
-        : m_comp(comp)
+        : m_compiler(comp)
         , m_nodes(comp->getAllocator(CMK_Codegen))
     {
     }
@@ -2766,7 +2766,7 @@ public:
 
         if (node == nullptr)
         {
-            node            = new (m_comp, CMK_Codegen) RegNode;
+            node            = new (m_compiler, CMK_Codegen) RegNode;
             node->reg       = reg;
             node->copiedReg = REG_NA;
             node->incoming  = nullptr;
@@ -2790,7 +2790,7 @@ public:
     void AddEdge(RegNode* from, RegNode* to, var_types type, unsigned destOffset)
     {
         assert(type != TYP_STRUCT);
-        RegNodeEdge* edge = new (m_comp, CMK_Codegen) RegNodeEdge;
+        RegNodeEdge* edge = new (m_compiler, CMK_Codegen) RegNodeEdge;
         edge->from        = from;
         edge->to          = to;
         edge->type        = type;

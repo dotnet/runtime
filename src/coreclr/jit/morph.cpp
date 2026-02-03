@@ -137,13 +137,13 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
 
 class SharedTempsScope
 {
-    Compiler*             m_comp;
+    Compiler* m_compiler;
     ArrayStack<unsigned>  m_usedSharedTemps;
     ArrayStack<unsigned>* m_prevUsedSharedTemps;
 
 public:
     SharedTempsScope(Compiler* comp)
-        : m_comp(comp)
+        : m_compiler(comp)
         , m_usedSharedTemps(comp->getAllocator(CMK_CallArgs))
         , m_prevUsedSharedTemps(comp->fgUsedSharedTemps)
     {
@@ -152,11 +152,11 @@ public:
 
     ~SharedTempsScope()
     {
-        m_comp->fgUsedSharedTemps = m_prevUsedSharedTemps;
+        m_compiler->fgUsedSharedTemps = m_prevUsedSharedTemps;
 
         for (int i = 0; i < m_usedSharedTemps.Height(); i++)
         {
-            m_comp->fgAvailableOutgoingArgTemps->setBit((indexType)m_usedSharedTemps.Top(i));
+            m_compiler->fgAvailableOutgoingArgTemps->setBit((indexType)m_usedSharedTemps.Top(i));
         }
     }
 };

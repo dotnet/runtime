@@ -10966,13 +10966,13 @@ void ValueNumStore::RunTests(Compiler* comp)
 
 class ValueNumberState
 {
-    Compiler*    m_comp;
+    Compiler* m_compiler;
     BitVecTraits m_blockTraits;
     BitVec       m_provenUnreachableBlocks;
 
 public:
     ValueNumberState(Compiler* comp)
-        : m_comp(comp)
+        : m_compiler(comp)
         , m_blockTraits(comp->fgBBNumMax + 1, comp)
         , m_provenUnreachableBlocks(BitVecOps::MakeEmpty(&m_blockTraits))
     {
@@ -11002,7 +11002,7 @@ public:
     //
     bool IsReachable(BasicBlock* bb)
     {
-        return m_comp->m_dfsTree->Contains(bb) &&
+        return m_compiler->m_dfsTree->Contains(bb) &&
                !BitVecOps::IsMember(&m_blockTraits, m_provenUnreachableBlocks, bb->bbNum);
     }
 
@@ -11037,13 +11037,13 @@ public:
         // TODO-Cleanup: Using liberal VNs here is a bit questionable as it
         // adds a cross-phase dependency on RBO to definitely fold this branch
         // away.
-        ValueNum normalVN = m_comp->vnStore->VNNormalValue(cond->GetVN(VNK_Liberal));
-        if (!m_comp->vnStore->IsVNConstant(normalVN))
+        ValueNum normalVN = m_compiler->vnStore->VNNormalValue(cond->GetVN(VNK_Liberal));
+        if (!m_compiler->vnStore->IsVNConstant(normalVN))
         {
             return true;
         }
 
-        bool        isTaken         = normalVN != m_comp->vnStore->VNZeroForType(TYP_INT);
+        bool        isTaken         = normalVN != m_compiler->vnStore->VNZeroForType(TYP_INT);
         BasicBlock* unreachableSucc = isTaken ? predBlock->GetFalseTarget() : predBlock->GetTrueTarget();
         return block != unreachableSucc;
     }
