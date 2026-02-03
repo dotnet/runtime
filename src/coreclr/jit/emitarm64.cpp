@@ -8541,6 +8541,31 @@ void emitter::emitIns_R_C(
     assert(offs >= 0);
     assert(instrDesc::fitsInSmallCns(offs));
 
+    // Handle FLD_FTN_ENTRY specially - emit as label reference to function entry (prolog)
+    if (fldHnd == FLD_FTN_ENTRY)
+    {
+        assert(ins == INS_adr);
+        assert(emitPrologIG != nullptr);
+
+        instrDescJmp* id = emitNewInstrJmp();
+        id->idIns(ins);
+        id->idInsFmt(IF_LARGEADR);
+        id->idjShort              = false;
+        id->idAddr()->iiaIGlabel  = emitPrologIG;
+        id->idReg1(reg);
+        id->idOpSize(EA_PTRSIZE);
+        id->idjKeepLong = false;
+
+        id->idjIG   = emitCurIG;
+        id->idjOffs = emitCurIGsize;
+        id->idjNext      = emitCurIGjmpList;
+        emitCurIGjmpList = id;
+
+        dispIns(id);
+        appendToCurIG(id);
+        return;
+    }
+
     emitAttr      size = EA_SIZE(attr);
     insFormat     fmt  = IF_NONE;
     instrDescJmp* id   = emitNewInstrJmp();

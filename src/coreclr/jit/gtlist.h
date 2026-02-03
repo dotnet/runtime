@@ -107,8 +107,8 @@ GTNODE(LZCNT            , GenTreeOp          ,0,0,GTK_UNOP)               // Lea
 
 GTNODE(NONLOCAL_JMP     , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE)   // Non-local jump to specified address
 
-GTNODE(PATCHPOINT       , GenTreeOp          ,0,0,GTK_BINOP)              // OSR patchpoint - call helper and return address to jump to
-GTNODE(PATCHPOINT_FORCED, GenTreeOp          ,0,0,GTK_UNOP)               // Forced OSR patchpoint (partial compilation)
+GTNODE(PATCHPOINT       , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE)  // OSR patchpoint - call helper and jump to returned address
+GTNODE(PATCHPOINT_FORCED, GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE)   // Forced OSR patchpoint (partial compilation)
 
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):

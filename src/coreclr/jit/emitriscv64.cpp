@@ -1215,6 +1215,27 @@ void emitter::emitIns_R_R_R_R(
 void emitter::emitIns_R_C(
     instruction ins, emitAttr attr, regNumber destReg, regNumber addrReg, CORINFO_FIELD_HANDLE fldHnd)
 {
+    // Handle FLD_FTN_ENTRY specially - emit as label reference to function entry (prolog)
+    if (fldHnd == FLD_FTN_ENTRY)
+    {
+        assert(ins == INS_lea);
+        assert(emitPrologIG != nullptr);
+
+        // Emit auipc + addi sequence targeting the prolog
+        instrDesc* id = emitNewInstr(attr);
+        id->idIns(ins);
+        id->idInsOpt(INS_OPTS_RL);
+        id->idAddr()->iiaIGlabel = emitPrologIG;
+
+        if (emitComp->opts.compReloc)
+            id->idSetIsDspReloc();
+
+        id->idCodeSize(2 * sizeof(code_t));
+        id->idReg1(destReg);
+        appendToCurIG(id);
+        return;
+    }
+
     instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
     assert(destReg != REG_R0); // for special. reg Must not be R0.

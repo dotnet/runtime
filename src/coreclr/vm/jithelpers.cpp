@@ -1631,17 +1631,20 @@ extern "C" PCODE JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransit
     {
         // No transition - return address after the jmp instruction to continue in Tier0
         // The jmp instruction is 2 bytes on x64 (jmp rax = FF E0) and 4 bytes on ARM64 (br xN)
+        PCODE continueAddr;
 #if defined(TARGET_AMD64)
-        return ip + 2;  // Skip "jmp rax" (FF E0)
+        continueAddr = ip + 2;  // Skip "jmp rax" (FF E0)
 #elif defined(TARGET_ARM64)
-        return ip + 4;  // Skip "br xN" (4 bytes)
+        continueAddr = ip + 4;  // Skip "br xN" (4 bytes)
 #elif defined(TARGET_RISCV64)
-        return ip + 4;  // Skip "jalr x0, xN, 0" (4 bytes)
+        continueAddr = ip + 4;  // Skip "jalr x0, xN, 0" (4 bytes)
 #elif defined(TARGET_LOONGARCH64)
-        return ip + 4;  // Skip "jirl r0, rN, 0" (4 bytes)
+        continueAddr = ip + 4;  // Skip "jirl r0, rN, 0" (4 bytes)
 #else
-        return ip;      // Fallback - should not happen
+#error "Unsupported platform for patchpoint continuation"
 #endif
+        _ASSERTE(continueAddr > ip);
+        return continueAddr;
     }
 }
 

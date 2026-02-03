@@ -178,17 +178,14 @@ private:
 
         // Fill in helper block
         //
-        // osrAddr = PPHelper(&ppCounter, ilOffset);
-        // jmp osrAddr;
-        //
+        // GT_PATCHPOINT calls the helper and jumps to the returned address.
         // The helper returns the OSR method address (to transition) or
         // the address after the jmp instruction (to continue in Tier0).
         GenTree* ilOffsetNode  = compiler->gtNewIconNode(ilOffset, TYP_INT);
         GenTree* ppCounterAddr = compiler->gtNewLclVarAddrNode(ppCounterLclNum);
-        GenTree* patchpoint    = compiler->gtNewOperNode(GT_PATCHPOINT, TYP_I_IMPL, ppCounterAddr, ilOffsetNode);
-        GenTree* nonLocalJmp   = compiler->gtNewOperNode(GT_NONLOCAL_JMP, TYP_VOID, patchpoint);
+        GenTree* patchpoint    = compiler->gtNewOperNode(GT_PATCHPOINT, TYP_VOID, ppCounterAddr, ilOffsetNode);
 
-        compiler->fgNewStmtAtEnd(helperBlock, nonLocalJmp);
+        compiler->fgNewStmtAtEnd(helperBlock, patchpoint);
     }
 
     //  ppCounter = <initial value>
@@ -237,17 +234,11 @@ private:
         // Update flow
         block->SetKindAndTargetEdge(BBJ_THROW);
 
-        // Add patchpoint and jump
-        //
-        // osrAddr = PartialCompilationPatchpointHelper(ilOffset);
-        // jmp osrAddr;
-        //
-        // The helper returns the OSR method address (this helper always transitions).
-        GenTree* ilOffsetNode    = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTree* patchpointForced = compiler->gtNewOperNode(GT_PATCHPOINT_FORCED, TYP_I_IMPL, ilOffsetNode);
-        GenTree* nonLocalJmp     = compiler->gtNewOperNode(GT_NONLOCAL_JMP, TYP_VOID, patchpointForced);
+        // GT_PATCHPOINT_FORCED calls the helper and jumps to the returned OSR method address.
+        GenTree* ilOffsetNode     = compiler->gtNewIconNode(ilOffset, TYP_INT);
+        GenTree* patchpointForced = compiler->gtNewOperNode(GT_PATCHPOINT_FORCED, TYP_VOID, ilOffsetNode);
 
-        compiler->fgNewStmtAtEnd(block, nonLocalJmp);
+        compiler->fgNewStmtAtEnd(block, patchpointForced);
     }
 };
 

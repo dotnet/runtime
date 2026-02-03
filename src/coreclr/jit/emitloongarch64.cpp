@@ -1982,6 +1982,33 @@ void emitter::emitIns_R_C(
     assert(offs >= 0);
     assert(instrDesc::fitsInSmallCns(offs)); // can optimize.
 
+    // Handle FLD_FTN_ENTRY specially - emit as label reference to function entry (prolog)
+    if (fldHnd == FLD_FTN_ENTRY)
+    {
+        assert(ins == INS_lea);
+        assert(emitPrologIG != nullptr);
+
+        // Emit instruction sequence targeting the prolog
+        instrDesc* id = emitNewInstr(attr);
+        id->idIns(ins);
+        id->idInsOpt(INS_OPTS_RL);
+        id->idAddr()->iiaIGlabel = emitPrologIG;
+
+        if (emitComp->opts.compReloc)
+        {
+            id->idSetIsDspReloc();
+            id->idCodeSize(8);
+        }
+        else
+        {
+            id->idCodeSize(12);
+        }
+
+        id->idReg1(reg);
+        appendToCurIG(id);
+        return;
+    }
+
     // when id->idIns == bl, for reloc! 4-ins.
     //   pcaddu12i reg, off-hi-20bits
     //   addi_d  reg, reg, off-lo-12bits

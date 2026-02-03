@@ -4313,19 +4313,18 @@ void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
 //    tree - the GT_PATCHPOINT node
 //
 // Notes:
-//    Emits a call to the patchpoint helper, which returns the address
-//    to jump to (either OSR method or continuation address).
-//    The result is left in the return register for the subsequent GT_NONLOCAL_JMP.
+//    Emits a call to the patchpoint helper followed by a jump to the returned address.
+//    The helper returns OSR method address (to transition) or continuation address (to stay in Tier0).
 //
 void CodeGen::genCodeForPatchpoint(GenTreeOp* tree)
 {
     genConsumeOperands(tree);
 
-    // Call the patchpoint helper
+    // Call the patchpoint helper - result in RAX
     genEmitHelperCall(CORINFO_HELP_PATCHPOINT, 0, EA_UNKNOWN);
 
-    // Result is in RAX, which is the target register for this node
-    genProduceReg(tree);
+    // Jump to the returned address (jmp rax)
+    GetEmitter()->emitIns_R(INS_i_jmp, EA_PTRSIZE, REG_INTRET);
 }
 
 //------------------------------------------------------------------------
@@ -4335,18 +4334,17 @@ void CodeGen::genCodeForPatchpoint(GenTreeOp* tree)
 //    tree - the GT_PATCHPOINT_FORCED node
 //
 // Notes:
-//    Emits a call to the forced patchpoint helper (for partial compilation).
-//    The result is left in the return register for the subsequent GT_NONLOCAL_JMP.
+//    Emits a call to the forced patchpoint helper followed by a jump to the returned OSR method address.
 //
 void CodeGen::genCodeForPatchpointForced(GenTreeOp* tree)
 {
     genConsumeOperands(tree);
 
-    // Call the forced patchpoint helper
+    // Call the forced patchpoint helper - result in RAX
     genEmitHelperCall(CORINFO_HELP_PATCHPOINT_FORCED, 0, EA_UNKNOWN);
 
-    // Result is in RAX, which is the target register for this node
-    genProduceReg(tree);
+    // Jump to the returned OSR method address (jmp rax)
+    GetEmitter()->emitIns_R(INS_i_jmp, EA_PTRSIZE, REG_INTRET);
 }
 
 // emits the table and an instruction to get the address of the first element

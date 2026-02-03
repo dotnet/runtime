@@ -2305,8 +2305,8 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 //
 void CodeGen::genFtnEntry(GenTree* treeNode)
 {
-    // Emit instruction to load the address of the first basic block (function entry)
-    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, compiler->fgFirstBB, treeNode->GetRegNum());
+    // Use FLD_FTN_ENTRY pseudo handle to get the actual function entry point (before prolog)
+    GetEmitter()->emitIns_R_C(INS_lea, EA_PTRSIZE, treeNode->GetRegNum(), REG_NA, FLD_FTN_ENTRY, 0);
     genProduceReg(treeNode);
 }
 
@@ -2331,7 +2331,8 @@ void CodeGen::genCodeForPatchpoint(GenTreeOp* tree)
 {
     genConsumeOperands(tree);
     genEmitHelperCall(CORINFO_HELP_PATCHPOINT, 0, EA_UNKNOWN);
-    genProduceReg(tree);
+    // Jump to the returned address (jirl r0, REG_INTRET, 0)
+    GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
 }
 
 //------------------------------------------------------------------------
@@ -2341,7 +2342,8 @@ void CodeGen::genCodeForPatchpointForced(GenTreeOp* tree)
 {
     genConsumeOperands(tree);
     genEmitHelperCall(CORINFO_HELP_PATCHPOINT_FORCED, 0, EA_UNKNOWN);
-    genProduceReg(tree);
+    // Jump to the returned OSR method address (jirl r0, REG_INTRET, 0)
+    GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
 }
 
 //------------------------------------------------------------------------
