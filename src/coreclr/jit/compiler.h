@@ -8260,9 +8260,7 @@ public:
     {
         return optAssertionCount;
     }
-    ASSERT_TP*                                                                     bbJtrueAssertionOut;
-    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, ASSERT_TP> ValueNumToAssertsMap;
-    ValueNumToAssertsMap*                                                          optValueNumToAsserts;
+    ASSERT_TP* bbJtrueAssertionOut;
 
     // Assertion prop helpers.
     ASSERT_TP&          GetAssertionDep(unsigned lclNum, bool mustExist = false);
@@ -8298,13 +8296,7 @@ public:
 
     void optCreateComplementaryAssertion(AssertionIndex assertionIndex, GenTree* op1, GenTree* op2);
 
-    bool           optAssertionVnInvolvesNan(const AssertionDsc& assertion) const;
     AssertionIndex optAddAssertion(const AssertionDsc& assertion);
-    void           optAddVnAssertionMapping(ValueNum vn, AssertionIndex index);
-#ifdef DEBUG
-    void optPrintVnAssertionMapping() const;
-#endif
-    ASSERT_TP optGetVnMappedAssertions(ValueNum vn);
 
     // Used for respective assertion propagations.
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
@@ -8368,11 +8360,7 @@ public:
                                           bool*            isKnownNonZero,
                                           bool*            isKnownNonNegative);
 
-    // Implied assertion functions.
-    void optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions);
-    void optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions);
     bool optCreateJumpTableImpliedAssertions(BasicBlock* switchBb);
-    void optImpliedByConstAssertion(const AssertionDsc& curAssertion, ASSERT_TP& result);
 
 #ifdef DEBUG
     void optPrintAssertion(const AssertionDsc& newAssertion, AssertionIndex assertionIndex = 0);

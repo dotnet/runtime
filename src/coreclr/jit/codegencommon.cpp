@@ -1556,7 +1556,6 @@ FOUND_AM:
     return true;
 }
 
-#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // genEmitCallWithCurrentGC:
 //   Emit a call with GC information captured from current GC information.
@@ -1571,7 +1570,6 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
     params.byrefRegs = gcInfo.gcRegByrefSetCur;
     GetEmitter()->emitIns_Call(params);
 }
-#endif // !TARGET_WASM
 
 /*****************************************************************************
  *
@@ -5741,6 +5739,8 @@ CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
     return m_compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(CORINFO_AsyncResumeInfo));
 }
 
+#endif // !TARGET_WASM
+
 //------------------------------------------------------------------------
 // getCallTarget - Get the node that evaluates to the call target
 //
@@ -5817,6 +5817,8 @@ regNumber CodeGen::getCallIndirectionCellReg(GenTreeCall* call)
 
     return result;
 }
+
+#if !defined(TARGET_WASM)
 
 //------------------------------------------------------------------------
 // genDefinePendingLabel - If necessary, define the pending call label after a

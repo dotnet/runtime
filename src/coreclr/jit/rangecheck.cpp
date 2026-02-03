@@ -786,8 +786,8 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
 
                 // But maybe we can do better and determine if they are always true or always false,
                 // hence, return [1..1] or [0..0]
-                if ((comp->vnStore->TypeOfVN(funcApp.m_args[0]) == TYP_INT) &&
-                    (comp->vnStore->TypeOfVN(funcApp.m_args[1]) == TYP_INT))
+                if ((genActualType(comp->vnStore->TypeOfVN(funcApp.m_args[0])) == TYP_INT) &&
+                    (genActualType(comp->vnStore->TypeOfVN(funcApp.m_args[1])) == TYP_INT))
                 {
                     Range r1 = GetRangeFromAssertions(comp, funcApp.m_args[0], assertions, --budget);
                     Range r2 = GetRangeFromAssertions(comp, funcApp.m_args[1], assertions, --budget);
@@ -1334,8 +1334,6 @@ public:
         if ((*use)->GeneratesAssertion())
         {
             AssertionInfo info = (*use)->GetAssertionInfo();
-            // Normally, we extend the assertions by calling optImpliedAssertions, but that
-            // doesn't seem to improve anything here, so we just add the assertion directly.
             BitVecOps::AddElemD(m_compiler->apTraits, *m_pAssertions, info.GetAssertionIndex() - 1);
         }
         return fgWalkResult::WALK_CONTINUE;
