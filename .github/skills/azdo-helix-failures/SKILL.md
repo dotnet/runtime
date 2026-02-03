@@ -308,9 +308,38 @@ These are critical for reproducing the failure locally.
 
 ## Tips
 
-1. **Check if it's a known flaky test**: Search for existing issues with the test name
-2. **Compare with main branch**: Check if the same test is failing on main before assuming it's transient
-3. **Look at the specific platform**: Failures may be platform-specific (Mono, NativeAOT, WASM, etc.)
-4. **Check for `[ActiveIssue]` attributes**: Tests may need to be skipped for known issues
-5. **Don't assume transient**: Even failures marked "may be transient" should be verified - check recent CI history
-6. **Check Build Analysis**: Look for issues with the "Known Build Error" label before retrying
+1. **Read the PR description and comments first**: The PR may be a validation build for another repo, a codeflow PR, or have known issues discussed in comments. This context is essential for accurate analysis.
+2. **Check if it's a known flaky test**: Search for existing issues with the test name
+3. **Compare with main branch**: Check if the same test is failing on main before assuming it's transient
+4. **Look at the specific platform**: Failures may be platform-specific (Mono, NativeAOT, WASM, etc.)
+5. **Check for `[ActiveIssue]` attributes**: Tests may need to be skipped for known issues
+6. **Don't assume transient**: Even failures marked "may be transient" should be verified - check recent CI history
+7. **Check Build Analysis**: Look for issues with the "Known Build Error" label before retrying
+
+## Analysis Workflow
+
+When analyzing CI failures, follow this workflow for best results:
+
+1. **Get PR context first**
+   - Read the PR title and description
+   - Check if it's a validation build for another PR (common in dotnet/dotnet VMR)
+   - Read any comments discussing build issues
+
+2. **Run the failure analysis script**
+   ```powershell
+   .\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -PRNumber 12345 -Repository owner/repo
+   ```
+
+3. **Interpret results with context**
+   - Are failures in areas the PR modifies?
+   - Is this a codeflow/dependency update that could bring in breaking changes?
+   - Check if the same failures appear on main branch
+
+4. **Check for known issues**
+   - The script searches for issues with "Known Build Error" label
+   - Also search manually if the test name is generic
+
+5. **Determine actionability**
+   - Real bug: Needs fix in PR
+   - Infrastructure: May be transient, verify before retrying
+   - Pre-existing: Unrelated to PR, may need separate issue
