@@ -87,7 +87,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [PlatformSpecific(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Browser)]
         public void OpenStandardInputHandle_ThrowsOnUnsupportedPlatforms()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Console.OpenStandardInputHandle());
