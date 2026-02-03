@@ -40,6 +40,13 @@
     <FeatureSharedLowLevelLock>true</FeatureSharedLowLevelLock>
   </PropertyGroup>
 
+  <!-- Enable runtime async for Native AOT -->
+  <PropertyGroup>
+    <Features>$(Features);runtime-async=on</Features>
+    <!-- Suppress warnings for using methods that require opting into preview features (AsyncHelpers.Await calls) -->
+    <NoWarn>$(NoWarn);CA2252</NoWarn>
+  </PropertyGroup>
+
   <!-- Sources -->
   <ItemGroup>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DehydratedData.cs">
