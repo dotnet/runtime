@@ -10317,7 +10317,7 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     EE_TO_JIT_TRANSITION();
 }
 
-MethodTable* getContinuationType(
+static MethodTable* getContinuationType(
     size_t dataSize,
     bool* objRefs,
     size_t objRefsSize,

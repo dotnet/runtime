@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Text;
 
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
