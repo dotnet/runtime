@@ -870,6 +870,21 @@ namespace System.IO.Compression.Tests
                 // The entry retains its original properties since it was never modified
                 Assert.Equal(0, entry.Length);
 
+                var extractedEntryStream = await OpenEntryStream(async, entry);
+                byte[] buffer = new byte[1];
+                int bytesRead;
+                if (async)
+                {
+                    bytesRead = await extractedEntryStream.ReadAsync(buffer, 0, buffer.Length);
+                }
+                else
+                {
+                    bytesRead = extractedEntryStream.Read(buffer, 0, buffer.Length);
+                }
+
+                Assert.Equal(0, bytesRead);
+
+                await DisposeStream(async, extractedEntryStream);
                 await DisposeZipArchive(async, zip);
             }
         }

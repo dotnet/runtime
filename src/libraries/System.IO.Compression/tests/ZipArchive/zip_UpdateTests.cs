@@ -1302,7 +1302,11 @@ namespace System.IO.Compression.Tests
             byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
             byte[] sampleZipFile = await CreateZipFile(3, sampleEntryContents, async);
             long originalLength = sampleZipFile.Length;
-
+            
+            // Keep a copy of the original contents to verify no in-place rewrite occurred
+            byte[] originalContents = new byte[sampleZipFile.Length];
+            Array.Copy(sampleZipFile, originalContents, sampleZipFile.Length);
+            
             // Use a non-expandable MemoryStream (fixed buffer)
             // This would throw NotSupportedException if Dispose tries to write/grow the stream
             using (MemoryStream ms = new MemoryStream(sampleZipFile, writable: true))
@@ -1310,7 +1314,7 @@ namespace System.IO.Compression.Tests
                 ZipArchive archive = async
                     ? await ZipArchive.CreateAsync(ms, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding: null)
                     : new ZipArchive(ms, ZipArchiveMode.Update, leaveOpen: true);
-
+                
                 // Open an entry and read it without writing
                 ZipArchiveEntry entry = archive.Entries[0];
                 Stream entryStream = async ? await entry.OpenAsync() : entry.Open();
@@ -1318,24 +1322,24 @@ namespace System.IO.Compression.Tests
                 int bytesRead = async
                     ? await entryStream.ReadAsync(buffer)
                     : entryStream.Read(buffer, 0, buffer.Length);
-
                 Assert.InRange(bytesRead, 1, buffer.Length);
-
+                
                 // Close the entry stream without writing anything
                 if (async)
                     await entryStream.DisposeAsync();
                 else
                     entryStream.Dispose();
-
+                
                 // Dispose should not throw NotSupportedException because no writes occurred
-                // and the archive should not try to grow the stream
+                // and the archive should not try to rewrite the stream
                 if (async)
                     await archive.DisposeAsync();
                 else
                     archive.Dispose();
-
-                // Verify the stream was not modified
+                
+                // Verify the stream was not modified - neither length nor contents
                 Assert.Equal(originalLength, ms.Length);
+                Assert.Equal(originalContents, sampleZipFile);
             }
         }
 
