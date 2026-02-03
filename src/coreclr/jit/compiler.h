@@ -7775,12 +7775,6 @@ public:
 
     struct AssertionDsc
     {
-        struct ArrBnd
-        {
-            ValueNum vnIdx;
-            ValueNum vnLen;
-        };
-
         struct AssertionDscOp1
         {
             friend struct AssertionDsc;
@@ -7791,12 +7785,17 @@ public:
             union
             {
                 unsigned lclNum;
-                ArrBnd   bnd;
+                struct ArrBnd
+                {
+                    ValueNum vnIdx;
+                    ValueNum vnLen;
+                } bnd;
             };
 
         public:
             bool KindIs(optOp1Kind k) const
             {
+                assert(kind != O1K_INVALID);
                 return kind == k;
             }
 
@@ -7812,8 +7811,7 @@ public:
                 // Today it's used by both Local and Global AP.
                 assert(KindIs(O1K_LCLVAR, O1K_VN, O1K_BOUND_OPER_BND, O1K_BOUND_LOOP_BND, O1K_CONSTANT_LOOP_BND,
                               O1K_CONSTANT_LOOP_BND_UN, O1K_EXACT_TYPE, O1K_SUBTYPE));
-                // Basically, only O1K_ARR_BND doesn't use this property (it uses vnIdx and vnLen instead - TODO: we can
-                // optimize the layout here).
+                // Basically, only O1K_ARR_BND doesn't use this property (it uses vnIdx and vnLen instead).
 
                 assert(vn != ValueNumStore::NoVN);
                 return vn;
@@ -7826,12 +7824,18 @@ public:
                 return lclNum;
             }
 
-            ArrBnd GetArrBnd() const
+            ValueNum GetArrBndIndex() const
+            {
+                assert(KindIs(O1K_ARR_BND));
+                assert(bnd.vnIdx != ValueNumStore::NoVN);
+                return bnd.vnIdx;
+            }
+
+            ValueNum GetArrBndLength() const
             {
                 assert(KindIs(O1K_ARR_BND));
                 assert(bnd.vnLen != ValueNumStore::NoVN);
-                assert(bnd.vnIdx != ValueNumStore::NoVN);
-                return bnd;
+                return bnd.vnLen;
             }
 
             optOp1Kind GetKind() const
@@ -7848,7 +7852,6 @@ public:
             optOp2Kind kind;
             uint16_t   m_encodedIconFlags; // encoded icon gtFlags, don't use directly
             ValueNum   vn;
-        public:
             struct IntVal
             {
                 ssize_t   iconVal;
@@ -7861,6 +7864,7 @@ public:
                 double        dconVal;
                 IntegralRange u2;
             };
+        public:
 
             bool KindIs(optOp2Kind k) const
             {
@@ -7871,6 +7875,39 @@ public:
             bool KindIs(optOp2Kind kind, T... rest) const
             {
                 return KindIs(kind) || KindIs(rest...);
+            }
+
+            unsigned GetLclNum() const
+            {
+                assert(KindIs(O2K_LCLVAR_COPY));
+                return lclNum;
+            }
+
+            double GetDoubleConstant() const
+            {
+                assert(KindIs(O2K_CONST_DOUBLE));
+                return dconVal;
+            }
+
+            ssize_t GetIntConstant() const
+            {
+                assert(KindIs(O2K_CONST_INT));
+                return u1.iconVal;
+            }
+
+            IntegralRange GetIntegralRange() const
+            {
+                assert(KindIs(O2K_SUBRANGE));
+                return u2;
+            }
+
+            bool IsNullConstant() const
+            {
+                assert(KindIs(O2K_CONST_INT));
+
+                // Even for local prop we use ValueNumStore::VNForNull as a hint of nullness.
+                // Otherwise, we'd have to validate op1.lclNum's real type every time.
+                return vn == ValueNumStore::VNForNull();
             }
 
             ValueNum GetVN() const
@@ -7887,14 +7924,14 @@ public:
 
             bool HasIconFlag() const
             {
-                assert(kind == O2K_CONST_INT);
+                assert(KindIs(O2K_CONST_INT));
                 assert(m_encodedIconFlags <= 0xFF);
                 return m_encodedIconFlags != 0;
             }
 
             GenTreeFlags GetIconFlag() const
             {
-                assert(kind == O2K_CONST_INT);
+                assert(KindIs(O2K_CONST_INT));
                 // number of trailing zeros in GTF_ICON_HDL_MASK
                 const uint16_t iconMaskTzc = 24;
                 static_assert((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> iconMaskTzc) == 0xFF);
@@ -7906,11 +7943,17 @@ public:
 
             void SetIconFlag(GenTreeFlags flags, FieldSeq* fieldSeq = nullptr)
             {
-                assert(kind == O2K_CONST_INT);
+                assert(KindIs(O2K_CONST_INT));
                 const uint16_t iconMaskTzc = 24;
                 assert((flags & ~GTF_ICON_HDL_MASK) == 0);
                 m_encodedIconFlags = flags >> iconMaskTzc;
                 u1.fieldSeq        = fieldSeq;
+            }
+
+            FieldSeq* GetIconFieldSeq() const
+            {
+                assert(KindIs(O2K_CONST_INT));
+                return u1.fieldSeq;
             }
         };
 
@@ -7965,7 +8008,7 @@ public:
         bool CanPropNonNull() const
         {
             return assertionKind == OAK_NOT_EQUAL && op1.KindIs(O1K_LCLVAR, O1K_VN) && op2.KindIs(O2K_CONST_INT) &&
-                   (op2.u1.iconVal == 0);
+                   op2.IsNullConstant();
         }
 
         bool CanPropBndsCheck() const
@@ -8009,8 +8052,8 @@ public:
             else if (op1.KindIs(O1K_ARR_BND))
             {
                 assert(vnBased);
-                return (op1.GetArrBnd().vnIdx == that.op1.GetArrBnd().vnIdx) &&
-                       (op1.GetArrBnd().vnLen == that.op1.GetArrBnd().vnLen);
+                return (op1.GetArrBndIndex() == that.op1.GetArrBndIndex()) &&
+                       (op1.GetArrBndLength() == that.op1.GetArrBndLength());
             }
             else if (op1.KindIs(O1K_VN))
             {
@@ -8034,7 +8077,8 @@ public:
             switch (op2.GetKind())
             {
                 case O2K_CONST_INT:
-                    return ((op2.u1.iconVal == that.op2.u1.iconVal) && (op2.GetIconFlag() == that.op2.GetIconFlag()));
+                    return ((op2.GetIntConstant() == that.op2.GetIntConstant()) &&
+                            (op2.GetIconFlag() == that.op2.GetIconFlag()));
 
                 case O2K_CONST_DOUBLE:
                     // exact match because of positive and negative zero.
@@ -8044,10 +8088,10 @@ public:
                     return true;
 
                 case O2K_LCLVAR_COPY:
-                    return op2.lclNum == that.op2.lclNum;
+                    return op2.GetLclNum() == that.op2.GetLclNum();
 
                 case O2K_SUBRANGE:
-                    return op2.u2.Equals(that.op2.u2);
+                    return op2.GetIntegralRange().Equals(that.op2.GetIntegralRange());
 
                 case O2K_INVALID:
                 default:
@@ -8106,8 +8150,19 @@ public:
                 // TODO-Cleanup: We need to introduce getters for op1.vn and op2.vn that validate that we don't use
                 // these outside of their intended context (only certain kinds of assertions and only in global-AP).
                 dsc.op1.vn     = ValueNumStore::NoVN;
-                dsc.op2.vn     = ValueNumStore::NoVN;
                 dsc.op1.lclNum = lclNum;
+
+                // We use ValueNumStore::VNForNull() as a hint of nullness. This allows us to avoid looking up the
+                // real type of the local variable to confirm we deal with a pointer-sized local (not its small-int
+                // part with the same lclnum).
+                if (cnsVN == ValueNumStore::VNForNull())
+                {
+                    dsc.op2.vn = ValueNumStore::VNForNull();
+                }
+                else
+                {
+                    dsc.op2.vn = ValueNumStore::NoVN;
+                }
             }
             else
             {

@@ -12620,7 +12620,7 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
             {
                 const AssertionDsc& curAssertion = optGetAssertion(index);
                 noway_assert((curAssertion.op1.GetLclNum() == lclNum) ||
-                             (curAssertion.op2.KindIs(O2K_LCLVAR_COPY) && (curAssertion.op2.lclNum == lclNum)));
+                             (curAssertion.op2.KindIs(O2K_LCLVAR_COPY) && (curAssertion.op2.GetLclNum() == lclNum)));
                 if (verbose)
                 {
                     printf("\nThe store ");
@@ -12747,7 +12747,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
 
             if (varTypeIsIntegral(lclDsc->TypeGet()))
             {
-                ssize_t iconVal = assertion.op2.u1.iconVal;
+                ssize_t iconVal = assertion.op2.GetIntConstant();
                 if ((iconVal == 0) || (iconVal == 1))
                 {
                     auto         range          = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);

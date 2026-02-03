@@ -3802,7 +3802,7 @@ inline void Compiler::optAssertionReset()
             //
             //  op2.lclNum no longer depends upon this assertion
             //
-            lclNum = curAssertion.op2.lclNum;
+            lclNum = curAssertion.op2.GetLclNum();
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum, /*mustExist*/ true), index - 1);
         }
     }

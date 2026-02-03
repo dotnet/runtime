@@ -995,7 +995,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 continue;
             }
 
-            int cnstLimit = (int)curAssertion.op2.u1.iconVal;
+            int cnstLimit = (int)curAssertion.op2.GetIntConstant();
             assert(cnstLimit == comp->vnStore->CoercedConstantValue<int>(curAssertion.op2.GetVN()));
 
             if ((cnstLimit == 0) && (curAssertion.assertionKind == Compiler::OAK_NOT_EQUAL) && canUseCheckedBounds &&
@@ -1041,8 +1041,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         // Current assertion asserts a bounds check does not throw
         else if (curAssertion.IsBoundsCheckNoThrow())
         {
-            ValueNum indexVN = curAssertion.op1.GetArrBnd().vnIdx;
-            ValueNum lenVN   = curAssertion.op1.GetArrBnd().vnLen;
+            ValueNum indexVN = curAssertion.op1.GetArrBndIndex();
+            ValueNum lenVN   = curAssertion.op1.GetArrBndLength();
             if (normalLclVN == indexVN)
             {
                 if (canUseCheckedBounds)
