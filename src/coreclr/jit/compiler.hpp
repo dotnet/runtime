@@ -3484,7 +3484,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 inline void RegSet::tmpEnd()
 {
 #ifdef DEBUG
-    if (m_rsCompiler->verbose && (tmpCount > 0))
+    if (m_compiler->verbose && (tmpCount > 0))
     {
         printf("%d tmps used\n", tmpCount);
     }
