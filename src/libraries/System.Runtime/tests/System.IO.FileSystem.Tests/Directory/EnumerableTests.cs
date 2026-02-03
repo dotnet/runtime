@@ -66,7 +66,7 @@ namespace System.IO.Tests
             DirectoryInfo rootDirectory = new DirectoryInfo(rootDrive);
 
             // Create a unique test folder name to avoid conflicts
-            string testFolderName = $"TestFolder_{Guid.NewGuid():N}";
+            string testFolderName = GetTestFileName();
 
             try
             {
