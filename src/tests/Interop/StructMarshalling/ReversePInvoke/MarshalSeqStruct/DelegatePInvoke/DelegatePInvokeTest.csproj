@@ -3,11 +3,16 @@
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- https://github.com/dotnet/runtimelab/issues/180 -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DelegatePInvokeTest.cs" />
     <Compile Include="..\..\Helper.cs" />
     <Compile Include="..\..\Struct.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
     <CMakeProjectReference Include="..\CMakeLists.txt" />

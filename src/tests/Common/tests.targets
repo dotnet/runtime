@@ -11,15 +11,15 @@
       <__TestRunXmlLog Condition="'$(__TestRunXmlLog)' == ''">$(__LogsDir)\TestRun.xml</__TestRunXmlLog>
   </PropertyGroup>
 
-  <Target Name="FindLegacyTestDirectories">
-    <ItemGroup>
-      <LegacyTestAssemblies Include="$(BaseOutputPathWithConfig)\**\*.XUnitWrapper.dll" />
-      <TestAssemblies Include="@(LegacyTestAssemblies)" Exclude="@(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')" />
-    </ItemGroup>
 
-    <Message Text= "LegacyTestAssemblies= @(LegacyTestAssemblies)"/>
-    <Message Text= "TestAssemblies= @(TestAssemblies)"/>
-    <Message Text= "_SkipTestAssemblies= @(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')"/>
+  <Target Name="FindBuildAllTestsAsStandaloneRunnerScripts">
+    <ItemGroup>
+      <_StandaloneRunnerMarker Include="$(BaseOutputPathWithConfig)\**\*.StandaloneTestRunner" />
+      <StandaloneRunnerScripts Include="$([System.IO.Path]::ChangeExtension('%(_StandaloneRunnerMarker.Identity)', '.$(TestScriptExtension)'))" />
+      <MergedTestWrapperScripts Update="@(MergedTestWrapperScripts)">
+        <RedirectOutputToFile>$([System.IO.Path]::ChangeExtension('%(MergedTestWrapperScripts.Identity)', '.log'))</RedirectOutputToFile>
+      </MergedTestWrapperScripts>
+    </ItemGroup>
   </Target>
 
   <Target Name="FindMergedTestDirectories">
@@ -38,44 +38,11 @@
   </Target>
 
   <Target Name="PrepareTestsToRun"
-          DependsOnTargets="FindLegacyTestDirectories;FindMergedTestDirectories">
-
-    <Error  Text=" The wrappers must be compiled and placed at $(TestAssemblyDir)\*\ before they can be run, Do a clean Test Run"
-            Condition="'@(LegacyTestAssemblies)' == '' and '@(MergedTestWrapperScripts)' == ''" />
-
-    <PropertyGroup>
-      <ExcludeTraits Condition="'$(ExcludeTraits)'==''">category=outerloop;category=failing</ExcludeTraits>
-      <!-- Run one assembly at a time to avoid excessive parallelism leading to test timeouts -->
-      <ParallelRun Condition="'$(ParallelRun)'==''">collections</ParallelRun>
-    </PropertyGroup>
-    <ItemGroup>
-      <IncludeTraitsItems Include="$(IncludeTraits)" />
-      <ExcludeTraitsItems Include="$(ExcludeTraits)" />
-    </ItemGroup>
-
-    <Error Condition="'$(CORE_ROOT)' == ''" Text="CORE_ROOT is not set." />
-    <PropertyGroup>
-      <XunitConsoleRunner>$(CORE_ROOT)\xunit\xunit.console.dll</XunitConsoleRunner>
-
-      <XunitArgs Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'iossimulator'">-parallel none</XunitArgs>
-      <XunitArgs Condition="'$(TargetOS)' != 'android' and '$(TargetOS)' != 'iossimulator'">-parallel $(ParallelRun)</XunitArgs>
-      <XunitArgs>$(XunitArgs) -html $(__TestRunHtmlLog)</XunitArgs>
-      <XunitArgs>$(XunitArgs) -xml $(__TestRunXmlLog)</XunitArgs>
-      <XunitArgs>$(XunitArgs) @(IncludeTraitsItems->'-trait %(Identity)', ' ')</XunitArgs>
-      <XunitArgs>$(XunitArgs) @(ExcludeTraitsItems->'-notrait %(Identity)', ' ')</XunitArgs>
-
-      <!-- Color output doesn't work well when capturing the output in the CI system -->
-      <XunitArgs>$(XunitArgs) -nocolor</XunitArgs>
-    </PropertyGroup>
-
-    <!-- Work around cmd command length limit by using relative paths
-         from working directory instead of full paths (see
-         https://github.com/Microsoft/msbuild/issues/2530) -->
-    <ItemGroup Condition="'$(RunningOnUnix)' != 'true'">
-      <_TestAssembliesRelative Include="@(TestAssemblies -> Replace('$(BaseOutputPathWithConfig)', '.\'))" />
-      <TestAssemblies Remove="@(TestAssemblies)" />
-      <TestAssemblies Include="@(_TestAssembliesRelative)" />
-    </ItemGroup>
+          DependsOnTargets="FindBuildAllTestsAsStandaloneRunnerScripts;FindMergedTestDirectories">
+    <Error  Text="Tests must be built to do a test run."
+            Condition="'@(StandaloneRunnerScripts)' == '' and '@(MergedTestWrapperScripts)' == ''" />
+    <Error  Text="Cannot run tests when both StandaloneRunnerScripts and MergedTestWrapperScripts are present. Either build the test tree as normal (merged runner) or with BuildAllTestsAsStandalone=true."
+            Condition="'@(StandaloneRunnerScripts)' != '' and '@(MergedTestWrapperScripts)' != ''" />
   </Target>
 
   <Target Name="RunSingleMergedTest">
@@ -97,20 +64,43 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="RunSingleMergedTest" BuildInParallel="true" Condition="'@(MergedTestWrapperScripts)' != ''" />
   </Target>
 
-  <Target Name="RunLegacyTests" DependsOnTargets="PrepareTestsToRun">
-      <!-- Run xunit with dotnet.
-           We set roll-forward LatestMajor so that dotnet doesn't choose some old runtime that comes from
-           the era when xunit.console.dll was built. -->
-    <PropertyGroup>
-      <XunitCommandLine>$(DotNetCli) --roll-forward latestmajor $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
-    </PropertyGroup>
+  <!--
+    Inputs: StandaloneRunnerScript property pointing to the script to run the test.
+    Returns: Item with script path and result.
+  -->
+  <Target Name="RunOneStandaloneRunnerTest" Returns="@(StandaloneRunnerResult)">
 
-    <Exec Command="$(XunitCommandLine)"
-          WorkingDirectory="$(BaseOutputPathWithConfig)"
-          Condition="'@(TestAssemblies)' != ''" />
+    <Exec Command="chmod +x $(StandaloneRunnerScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" EchoOff="true" Condition="'$(TargetOS)' != 'windows'" />
+
+    <Exec Command="$(StandaloneRunnerScript) -usewatcher &gt;$(StandaloneRunnerScript).log 2&gt;&amp;1" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="StandaloneRunnerExitCode" />
+    </Exec>
+
+    <ItemGroup>
+      <StandaloneRunnerResult Include="$(StandaloneRunnerScript)">
+        <Result Condition="'$(StandaloneRunnerExitCode)' == '0'">Pass</Result>
+        <Result Condition="'$(StandaloneRunnerExitCode)' != '0'">Fail</Result>
+      </StandaloneRunnerResult>
+    </ItemGroup>
   </Target>
 
-  <Target Name="RunTests" DependsOnTargets="RunMergedTests;RunLegacyTests" Condition="'$(SkipTests)' != 'True'">
+  <Target Name="RunStandaloneRunnerTests" DependsOnTargets="FindBuildAllTestsAsStandaloneRunnerScripts">
+    <ItemGroup>
+      <_StandaloneProjectsToBuild Include="$(MSBuildThisFileFullPath)">
+        <AdditionalProperties>StandaloneRunnerScript=%(StandaloneRunnerScripts.Identity)</AdditionalProperties>
+      </_StandaloneProjectsToBuild>
+    </ItemGroup>
+
+    <MSBuild Projects="@(_StandaloneProjectsToBuild)" Targets="RunOneStandaloneRunnerTest" BuildInParallel="true" Condition="'@(StandaloneRunnerScripts)' != ''">
+      <Output TaskParameter="TargetOutputs" ItemName="StandaloneRunnerResults" />
+    </MSBuild>
+
+    <WriteLinesToFile File="$(__LogsDir)\StandaloneRunnerTestResults.testrun.log"
+                      Lines="@(StandaloneRunnerResults -> '%(Identity): %(Result)')"
+                      Overwrite="true" />
+  </Target>
+
+  <Target Name="RunTests" DependsOnTargets="RunMergedTests;RunStandaloneRunnerTests" Condition="'$(SkipTests)' != 'True'">
     <!-- TODO - merged reporting? -->
   </Target>
 </Project>

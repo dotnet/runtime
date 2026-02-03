@@ -381,7 +381,7 @@ namespace Internal.JitInterface
             {
                 ThrowHelper.ThrowInvalidProgramException();
             }
-            if (result == CorJitResult.CORJIT_IMPLLIMITATION)
+            if (result == CorJitResult.CORJIT_IMPLLIMITATION || result == CorJitResult.CORJIT_R2R_UNSUPPORTED)
             {
 #if READYTORUN
                 throw new RequiresRuntimeJitException("JIT implementation limitation");
@@ -1339,13 +1339,6 @@ namespace Internal.JitInterface
 
             // Transform from the unboxing thunk to the normal method
             decl = decl.IsUnboxingThunk() ? decl.GetUnboxedMethod() : decl;
-
-            if (decl.HasInstantiation)
-            {
-                // We cannot devirtualize generic virtual methods in AOT yet
-                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL;
-                return false;
-            }
 
             if ((info->context != null) && decl.OwningType.IsInterface)
             {

@@ -9,4 +9,7 @@
     <ProjectReference Include="Accessor.csproj" />
     <Compile Include="CollectibleStatics.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>
