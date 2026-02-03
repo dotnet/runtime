@@ -8,11 +8,11 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
-    internal sealed class WasmConsoleStream : ConsoleStream
+    internal sealed class BrowserConsoleStream : ConsoleStream
     {
         private readonly SafeFileHandle _handle;
 
-        internal WasmConsoleStream(SafeFileHandle handle, FileAccess access)
+        internal BrowserConsoleStream(SafeFileHandle handle, FileAccess access)
             : base(access)
         {
             _handle = handle;
@@ -83,12 +83,12 @@ namespace System
 
         public static Stream OpenStandardOutput()
         {
-            return new WasmConsoleStream(OpenStandardOutputHandle(), FileAccess.Write);
+            return new BrowserConsoleStream(OpenStandardOutputHandle(), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new WasmConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
+            return new BrowserConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
         }
 
         public static SafeFileHandle OpenStandardInputHandle() => throw new PlatformNotSupportedException();

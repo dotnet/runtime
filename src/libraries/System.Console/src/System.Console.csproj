@@ -58,7 +58,7 @@
 
   <!-- Browser -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
-    <Compile Include="System\ConsolePal.WebAssembly.cs" />
+    <Compile Include="System\ConsolePal.Browser.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Dup.cs"
              Link="Common\Interop\Unix\Interop.Dup.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs"
