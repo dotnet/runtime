@@ -46,8 +46,8 @@
 .PARAMETER NoCache
     Bypass cache and fetch fresh data for all API calls.
 
-.PARAMETER CacheTTLMinutes
-    Cache lifetime in minutes. Default: 60
+.PARAMETER CacheTTLSeconds
+    Cache lifetime in seconds. Default: 30
 
 .PARAMETER ClearCache
     Clear all cached files and exit.
@@ -97,7 +97,7 @@ param(
     [int]$TimeoutSec = 30,
     [int]$ContextLines = 0,
     [switch]$NoCache,
-    [int]$CacheTTLMinutes = 60,
+    [int]$CacheTTLSeconds = 30,
     [switch]$ContinueOnError
 )
 
@@ -155,10 +155,10 @@ if (-not (Test-Path $script:CacheDir)) {
 
 # Clean up expired cache files on startup (files older than 2x TTL)
 function Clear-ExpiredCache {
-    param([int]$TTLMinutes = $CacheTTLMinutes)
+    param([int]$TTLSeconds = $CacheTTLSeconds)
 
-    $maxAge = $TTLMinutes * 2
-    $cutoff = (Get-Date).AddMinutes(-$maxAge)
+    $maxAge = $TTLSeconds * 2
+    $cutoff = (Get-Date).AddSeconds(-$maxAge)
 
     Get-ChildItem -Path $script:CacheDir -File -ErrorAction SilentlyContinue | Where-Object {
         $_.LastWriteTime -lt $cutoff
@@ -170,13 +170,13 @@ function Clear-ExpiredCache {
 
 # Run cache cleanup at startup (non-blocking)
 if (-not $NoCache) {
-    Clear-ExpiredCache -TTLMinutes $CacheTTLMinutes
+    Clear-ExpiredCache -TTLSeconds $CacheTTLSeconds
 }
 
 function Get-CachedResponse {
     param(
         [string]$Url,
-        [int]$TTLMinutes = $CacheTTLMinutes
+        [int]$TTLSeconds = $CacheTTLSeconds
     )
 
     if ($NoCache) { return $null }
@@ -194,8 +194,8 @@ function Get-CachedResponse {
         $cacheInfo = Get-Item $cacheFile
         $age = (Get-Date) - $cacheInfo.LastWriteTime
 
-        if ($age.TotalMinutes -lt $TTLMinutes) {
-            Write-Verbose "Cache hit for $Url (age: $([int]$age.TotalMinutes) min)"
+        if ($age.TotalSeconds -lt $TTLSeconds) {
+            Write-Verbose "Cache hit for $Url (age: $([int]$age.TotalSeconds) sec)"
             return Get-Content $cacheFile -Raw
         }
         else {
@@ -820,164 +820,7 @@ function Extract-HelixLogUrls {
 
 #endregion Log Parsing Functions
 
-#region Failure Classification
-
-function Get-FailureClassification {
-    param([string[]]$Errors)
-
-    $errorText = $Errors -join "`n"
-
-    # Known failure patterns with classifications - ordered from most specific to general
-    # NOTE: "Transient" means this failure pattern CAN be transient, not that it always is.
-    # Users should verify before assuming a retry will help.
-    $knownPatterns = @(
-        @{
-            Pattern = '\.pcm: No such file or directory|clang/ModuleCache'
-            Type = 'Infrastructure'
-            Summary = '[!] macOS clang module cache issue (dsymutil failure)'
-            Action = 'Apply StripSymbols=false workaround or wait for SDK fix'
-            Transient = $false
-        },
-        @{
-            Pattern = 'File size is not in the expected range|Size of the executable'
-            Type = 'SizeRegression'
-            Summary = '[Size] NativeAOT binary size regression'
-            Action = 'Investigate size increase or update thresholds'
-            Transient = $false
-        },
-        @{
-            Pattern = 'error NU1102: Unable to find package'
-            Type = 'Infrastructure'
-            Summary = '[Pkg] Missing NuGet package'
-            Action = 'Check if package exists in feeds; if recently published, may need time to propagate'
-            Transient = $true
-        },
-        @{
-            Pattern = 'DEVICE_NOT_FOUND|exit code 81|device unauthorized'
-            Type = 'Infrastructure'
-            Summary = '[Device] Android/iOS device infrastructure issue'
-            Action = 'Check if this leg passes on main branch; if so, may be transient device issue'
-            Transient = $true
-        },
-        @{
-            Pattern = 'Helix work item timed out|timed out after'
-            Type = 'Infrastructure'
-            Summary = '[Timeout] Helix timeout'
-            Action = 'Check if test is slow or hanging; compare with main branch timing'
-            Transient = $true
-        },
-        @{
-            Pattern = 'error CS\d+:'
-            Type = 'Build'
-            Summary = '[Build] C# compilation error'
-            Action = 'Fix the code - this is a real build failure'
-            Transient = $false
-        },
-        @{
-            Pattern = 'error MSB\d+:'
-            Type = 'Build'
-            Summary = '[Build] MSBuild error'
-            Action = 'Check build configuration and dependencies'
-            Transient = $false
-        },
-        @{
-            Pattern = 'OutOfMemoryException|out of memory'
-            Type = 'Infrastructure'
-            Summary = '[OOM] Out of memory failure'
-            Action = 'Check if test has memory leak; may be transient if Helix machine was under pressure'
-            Transient = $true
-        },
-        @{
-            Pattern = 'StackOverflowException'
-            Type = 'Test'
-            Summary = '[Test] Stack overflow in test'
-            Action = 'Investigate infinite recursion or deep call stack'
-            Transient = $false
-        },
-        @{
-            Pattern = 'Assert\.\w+\(\)\s+Failure|Expected:.*but was:'
-            Type = 'Test'
-            Summary = '[Test] Assertion failure'
-            Action = 'Fix the test or the code under test'
-            Transient = $false
-        },
-        @{
-            Pattern = 'System\.TimeoutException|did not complete within'
-            Type = 'Test'
-            Summary = '[Test] Test timeout'
-            Action = 'Check if test is consistently slow; may indicate perf regression or test issue'
-            Transient = $true
-        },
-        @{
-            Pattern = 'Connection refused|ECONNREFUSED|network.+unreachable'
-            Type = 'Infrastructure'
-            Summary = '[Network] Network connectivity issue'
-            Action = 'Check if this passes on main branch; may be transient network issue'
-            Transient = $true
-        },
-        @{
-            Pattern = 'Unable to pull image|docker.+pull.+failed|Exit Code:-4'
-            Type = 'Infrastructure'
-            Summary = '[Docker] Container image pull failure'
-            Action = 'Check container registry availability; may be transient'
-            Transient = $true
-        },
-        @{
-            Pattern = 'XUnit.*error.*Tests failed:'
-            Type = 'Test'
-            Summary = '[Test] Local xUnit test failure'
-            Action = 'Check test run URL for specific failed test details'
-            Transient = $false
-        },
-        @{
-            Pattern = '\[FAIL\]'
-            Type = 'Test'
-            Summary = '[Test] Helix test failure'
-            Action = 'Check console log for failure details'
-            Transient = $false
-        },
-        @{
-            Pattern = "error: use of undeclared identifier|error: member initializer .* does not name|error: no member named|error: unknown type name"
-            Type = 'Build'
-            Summary = '[C++] Clang/GCC compilation error'
-            Action = 'Fix C++ code - likely missing or renamed identifier'
-            Transient = $false
-        },
-        @{
-            Pattern = 'undefined reference to|collect2: error:'
-            Type = 'Build'
-            Summary = '[C++] Linker error - undefined reference'
-            Action = 'Check for missing object files or libraries'
-            Transient = $false
-        },
-        @{
-            Pattern = 'fatal error:.*file not found|fatal error:.*No such file'
-            Type = 'Build'
-            Summary = '[C++] Missing header or file'
-            Action = 'Check include paths and file existence'
-            Transient = $false
-        }
-    )
-
-    foreach ($known in $knownPatterns) {
-        if ($errorText -match $known.Pattern) {
-            return @{
-                Type = $known.Type
-                Summary = $known.Summary
-                Action = $known.Action
-                Transient = $known.Transient
-            }
-        }
-    }
-
-    # Unknown failure
-    return @{
-        Type = 'Unknown'
-        Summary = '[?] Unknown failure type'
-        Action = 'Manual investigation required'
-        Transient = $false
-    }
-}
+#region Known Issues Search
 
 function Search-KnownIssues {
     param(
@@ -1094,30 +937,18 @@ function Search-KnownIssues {
     }
 }
 
-function Show-ClassificationWithKnownIssues {
+function Show-KnownIssues {
     param(
-        [hashtable]$Classification,
         [string]$TestName = "",
         [string]$ErrorMessage = "",
         [string]$Repository = $script:Repository
     )
 
-    if (-not $Classification) { return }
-
-    # Show classification
-    Write-Host "`n  Classification: $($Classification.Summary)" -ForegroundColor Yellow
-    if ($Classification.Action) {
-        Write-Host "  Suggested action: $($Classification.Action)" -ForegroundColor Green
-    }
-    if ($Classification.Transient) {
-        Write-Host "  (This failure pattern can be transient - check main branch before retrying)" -ForegroundColor Cyan
-    }
-
     # Search for known issues if we have a test name or error
     if ($TestName -or $ErrorMessage) {
         $knownIssues = Search-KnownIssues -TestName $TestName -ErrorMessage $ErrorMessage -Repository $Repository
         if ($knownIssues -and $knownIssues.Count -gt 0) {
-            Write-Host "  Known Issues:" -ForegroundColor Magenta
+            Write-Host "`n  Known Issues:" -ForegroundColor Magenta
             foreach ($issue in $knownIssues) {
                 Write-Host "    #$($issue.Number): $($issue.Title)" -ForegroundColor Magenta
                 Write-Host "    $($issue.Url)" -ForegroundColor Gray
@@ -1126,7 +957,7 @@ function Show-ClassificationWithKnownIssues {
     }
 }
 
-#endregion Failure Classification
+#endregion Known Issues Search
 
 #region Test Results Functions
 
@@ -1465,9 +1296,8 @@ try {
                     if ($failureInfo) {
                         Write-Host $failureInfo -ForegroundColor White
 
-                        # Classify the failure and search for known issues
-                        $classification = Get-FailureClassification -Errors @($failureInfo)
-                        Show-ClassificationWithKnownIssues -Classification $classification -TestName $WorkItem -ErrorMessage $failureInfo
+                        # Search for known issues
+                        Show-KnownIssues -TestName $WorkItem -ErrorMessage $failureInfo
                     }
                     else {
                         # Show last 50 lines if no failure pattern detected
@@ -1643,13 +1473,10 @@ try {
                             Show-TestRunResults -TestRunUrls $additionalRuns -Org "https://dev.azure.com/$Organization"
                         }
 
-                        # Classify the failure
+                        # Search for known issues
                         $buildErrors = Extract-BuildErrors -LogContent $logContent
                         if ($buildErrors.Count -gt 0) {
-                            $classification = Get-FailureClassification -Errors $buildErrors
-                            if ($classification -and $classification.Type -ne 'Unknown') {
-                                Show-ClassificationWithKnownIssues -Classification $classification -ErrorMessage ($buildErrors -join "`n")
-                            }
+                            Show-KnownIssues -ErrorMessage ($buildErrors -join "`n")
                         }
                     }
                 }
@@ -1728,11 +1555,8 @@ try {
                                         if ($failureInfo) {
                                             Write-Host $failureInfo -ForegroundColor White
 
-                                            # Classify the Helix failure and search for known issues
-                                            $classification = Get-FailureClassification -Errors @($failureInfo)
-                                            if ($classification -and $classification.Type -ne 'Unknown') {
-                                                Show-ClassificationWithKnownIssues -Classification $classification -TestName $workItemName -ErrorMessage $failureInfo
-                                            }
+                                            # Search for known issues
+                                            Show-KnownIssues -TestName $workItemName -ErrorMessage $failureInfo
                                         }
                                     }
                                 }
@@ -1798,11 +1622,8 @@ try {
                                     }
                                 }
 
-                                # Classify the failure and search for known issues
-                                $classification = Get-FailureClassification -Errors $buildErrors
-                                if ($classification) {
-                                    Show-ClassificationWithKnownIssues -Classification $classification -ErrorMessage ($buildErrors -join "`n")
-                                }
+                                # Search for known issues
+                                Show-KnownIssues -ErrorMessage ($buildErrors -join "`n")
                             }
                             else {
                                 Write-Host "  (No specific errors extracted from log)" -ForegroundColor Gray

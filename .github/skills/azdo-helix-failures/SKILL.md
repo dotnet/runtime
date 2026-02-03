@@ -91,8 +91,8 @@ The script caches API responses to speed up repeated analysis. Cache files are s
 # Clear all cached files
 .\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -ClearCache
 
-# Set custom cache lifetime (default: 60 minutes)
-.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -CacheTTLMinutes 30
+# Set custom cache lifetime (default: 30 seconds)
+.\.github\skills\azdo-helix-failures\Get-HelixFailures.ps1 -BuildId 1276327 -CacheTTLSeconds 60
 ```
 
 **Note:** In-progress build status and timelines are not cached, ensuring you always see current failure state.
@@ -199,9 +199,6 @@ Found 2 failed job(s):
 
   Helix logs available (use -ShowLogs to fetch):
     https://helix.dot.net/api/2019-06-17/jobs/216ee994-0f0f-4568-949c-c0fa97892e89/workitems/Workloads-ST-Wasm.Build.Tests/console
-
-  Classification: [Test] Helix test failure
-  Suggested action: Check console log for failure details
 ```
 
 ### Local Tests (Non-Helix)
@@ -221,36 +218,7 @@ Build: https://dev.azure.com/dnceng-public/cbb18261-c48f-4abb-8651-8cdcb5474649/
 
   Test Results:
     Run 35626548: https://dev.azure.com/dnceng-public/public/_TestManagement/Runs?runId=35626548
-
-  Classification: [Test] Local xUnit test failure
-  Suggested action: Check test run URL for specific failed test details
 ```
-
-## Failure Classification
-
-The script automatically classifies failures and suggests actions:
-
-| Pattern | Type | May Be Transient | Suggested Action |
-|---------|------|------------------|------------------|
-| `.pcm: No such file` | Infrastructure | No | Apply StripSymbols=false workaround |
-| `Size of the executable` | Size Regression | No | Investigate size increase |
-| `Unable to find package` | Infrastructure | Yes | Check if package exists in feeds |
-| `DEVICE_NOT_FOUND` | Infrastructure | Yes | Check if leg passes on main branch |
-| `timed out` | Infrastructure | Yes | Check if test is slow or hanging |
-| `error CS####` | Build | No | Fix C# compilation error |
-| `error MSB####` | Build | No | Check build configuration |
-| `': error:'` (clang/gcc) | Build | No | Fix C++/native compilation error |
-| `undefined reference` | Build | No | Fix linker error - missing symbol |
-| `fatal error:.*not found` | Build | No | Fix missing header include |
-| `collect2: error:` | Build | No | Fix linker errors |
-| `OutOfMemoryException` | Infrastructure | Yes | Check for memory leaks in test |
-| `Assert.Equal() Failure` | Test | No | Fix test or code |
-| `Unable to pull image` | Infrastructure | Yes | Check container registry availability |
-| `Connection refused` | Infrastructure | Yes | Check if passes on main branch |
-| `XUnit...Tests failed` | Test | No | Check test run URL for details |
-| `[FAIL]` | Test | No | Helix test failure - check console log |
-
-**Note:** "May Be Transient" means this failure pattern *can* be caused by transient infrastructure issues, but is not guaranteed to be. Always verify by checking if the same test passes on the main branch or in recent CI runs before assuming a retry will help.
 
 ## Known Issue Search
 
@@ -265,8 +233,6 @@ The script automatically searches for known issues when failures are detected. I
 ### Example Output
 
 ```
-  Classification: [Test] Helix test failure
-  Suggested action: Check console log for failure details
   Known Issues:
     #103584: Failing test due to no detected IO events in 'FileSystemWatcherTest.ExecuteAndVerifyEvents'
     https://github.com/dotnet/runtime/issues/103584
