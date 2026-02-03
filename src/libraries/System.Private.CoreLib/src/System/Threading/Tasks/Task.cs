@@ -220,13 +220,13 @@ namespace System.Threading.Tasks
         }
 
 #if !MONO
-        internal static void SetRuntimeAsyncContinuationTickCount(Continuation continuation, long tickCount)
+        internal static void SetRuntimeAsyncContinuationTimestamp(Continuation continuation, long tickCount)
         {
             s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, long>(ContinuationEqualityComparer.Instance);
             s_runtimeAsyncContinuationTicks.TryAdd(continuation, tickCount);
         }
 
-        internal static bool GetRuntimeAsyncContinuationTickCount(Continuation continuation, out long tickCount)
+        internal static bool GetRuntimeAsyncContinuationTimestamp(Continuation continuation, out long tickCount)
         {
             if (s_runtimeAsyncContinuationTicks != null && s_runtimeAsyncContinuationTicks.TryGetValue(continuation, out tickCount))
             {
@@ -236,18 +236,18 @@ namespace System.Threading.Tasks
             return false;
         }
 
-        internal static void UpdateRuntimeAsyncContinuationTickCount(Continuation continuation, long tickCount)
+        internal static void UpdateRuntimeAsyncContinuationTimestamp(Continuation continuation, long tickCount)
         {
             s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, long>(ContinuationEqualityComparer.Instance);
             s_runtimeAsyncContinuationTicks[continuation] = tickCount;
         }
 
-        internal static void RemoveRuntimeAsyncContinuationTickCount(Continuation continuation)
+        internal static void RemoveRuntimeAsyncContinuationTimestamp(Continuation continuation)
         {
             s_runtimeAsyncContinuationTicks?.Remove(continuation, out _);
         }
 
-        internal static void UpdateRuntimeAsyncTaskTickCount(Task task, long inflightTickCount)
+        internal static void UpdateRuntimeAsyncTaskTimestamp(Task task, long inflightTickCount)
         {
             if (s_asyncDebuggingEnabled)
             {
@@ -256,7 +256,7 @@ namespace System.Threading.Tasks
             }
         }
 
-        internal static void RemoveRuntimeAsyncTaskTickCount(Task task)
+        internal static void RemoveRuntimeAsyncTaskTimestamp(Task task)
         {
             s_runtimeAsyncTaskTicks?.Remove(task.Id, out _);
         }

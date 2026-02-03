@@ -404,8 +404,8 @@ namespace System.Runtime.CompilerServices
                 {
                     while (nc != null)
                     {
-                        // On suspension we set tick info for all continuations that have not yet had it set.
-                        Task.SetRuntimeAsyncContinuationTickCount(nc, Stopwatch.GetTimestamp());
+                        // On suspension we set timestamp for all continuations that have not yet had it set.
+                        Task.SetRuntimeAsyncContinuationTimestamp(nc, Stopwatch.GetTimestamp());
                         nc = nc.Next;
                     }
                 }
@@ -502,23 +502,23 @@ namespace System.Runtime.CompilerServices
                         asyncDispatcherInfo.NextContinuation = nextContinuation;
 
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
-                        long tickCount = 0;
+                        long timestamp = 0;
                         if (Task.s_asyncDebuggingEnabled)
                         {
-                            tickCount = Task.GetRuntimeAsyncContinuationTickCount(curContinuation, out long tickCountVal) ? tickCountVal : Stopwatch.GetTimestamp();
+                            timestamp = Task.GetRuntimeAsyncContinuationTimestamp(curContinuation, out long timestampVal) ? timestampVal : Stopwatch.GetTimestamp();
                             // we have dequeued curContinuation; update task tick info so that we can track its start time from a debugger
-                            Task.UpdateRuntimeAsyncTaskTickCount(this, tickCount);
+                            Task.UpdateRuntimeAsyncTaskTimestamp(this, timestamp);
                         }
                         Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
 
                         if (Task.s_asyncDebuggingEnabled)
-                            Task.RemoveRuntimeAsyncContinuationTickCount(curContinuation);
+                            Task.RemoveRuntimeAsyncContinuationTimestamp(curContinuation);
 
                         if (newContinuation != null)
                         {
                             // we have a new Continuation that belongs to the same logical invocation as the previous; propagate debug info from previous continuation
                             if (Task.s_asyncDebuggingEnabled)
-                                Task.UpdateRuntimeAsyncContinuationTickCount(newContinuation, tickCount);
+                                Task.UpdateRuntimeAsyncContinuationTimestamp(newContinuation, timestamp);
                             newContinuation.Next = nextContinuation;
                             HandleSuspended();
                             contexts.Pop();
@@ -561,7 +561,7 @@ namespace System.Runtime.CompilerServices
                         if (Task.s_asyncDebuggingEnabled)
                         {
                             Task.RemoveFromActiveTasks(this);
-                            Task.RemoveRuntimeAsyncTaskTickCount(this);
+                            Task.RemoveRuntimeAsyncTaskTimestamp(this);
                         }
                         bool successfullySet = TrySetResult(m_result);
 
@@ -599,7 +599,7 @@ namespace System.Runtime.CompilerServices
                     if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
                         return continuation;
                     if (Task.s_asyncDebuggingEnabled)
-                        Task.RemoveRuntimeAsyncContinuationTickCount(continuation);
+                        Task.RemoveRuntimeAsyncContinuationTimestamp(continuation);
                     continuation = continuation.Next;
                 }
             }
