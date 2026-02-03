@@ -87,9 +87,36 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Cross-platform temp directory detection
+function Get-TempDirectory {
+    # Try common environment variables in order of preference
+    $tempPath = $env:TEMP
+    if (-not $tempPath) { $tempPath = $env:TMP }
+    if (-not $tempPath) { $tempPath = $env:TMPDIR }  # macOS
+    if (-not $tempPath -and $IsLinux) { $tempPath = "/tmp" }
+    if (-not $tempPath -and $IsMacOS) { $tempPath = "/tmp" }
+    if (-not $tempPath) {
+        # Fallback: use .cache in user's home directory
+        $home = $env:HOME
+        if (-not $home) { $home = $env:USERPROFILE }
+        if ($home) {
+            $tempPath = Join-Path $home ".cache"
+            if (-not (Test-Path $tempPath)) {
+                New-Item -ItemType Directory -Path $tempPath -Force | Out-Null
+            }
+        }
+    }
+    if (-not $tempPath) {
+        throw "Could not determine temp directory. Set TEMP, TMP, or TMPDIR environment variable."
+    }
+    return $tempPath
+}
+
+$script:TempDir = Get-TempDirectory
+
 # Handle -ClearCache parameter
 if ($ClearCache) {
-    $cacheDir = Join-Path $env:TEMP "helix-failures-cache"
+    $cacheDir = Join-Path $script:TempDir "helix-failures-cache"
     if (Test-Path $cacheDir) {
         $files = Get-ChildItem -Path $cacheDir -File
         $count = $files.Count
@@ -103,7 +130,7 @@ if ($ClearCache) {
 }
 
 # Setup caching
-$script:CacheDir = Join-Path $env:TEMP "helix-failures-cache"
+$script:CacheDir = Join-Path $script:TempDir "helix-failures-cache"
 if (-not (Test-Path $script:CacheDir)) {
     New-Item -ItemType Directory -Path $script:CacheDir -Force | Out-Null
 }
