@@ -275,31 +275,48 @@ function Get-AzDOBuildIdFromPR {
         throw "GitHub CLI (gh) is required for PR lookup. Install from https://cli.github.com/ or use -BuildId instead."
     }
 
-    Write-Host "Finding build for PR #$PR in $Repository..." -ForegroundColor Cyan
+    Write-Host "Finding builds for PR #$PR in $Repository..." -ForegroundColor Cyan
     Write-Verbose "Running: gh pr checks $PR --repo $Repository"
 
     # Use gh cli to get the checks
     $checksOutput = gh pr checks $PR --repo $Repository 2>&1
 
-    # Find the runtime build URL
-    $runtimeCheck = $checksOutput | Select-String -Pattern "runtime\s+fail.*buildId=(\d+)" | Select-Object -First 1
-    if ($runtimeCheck) {
-        $buildIdMatch = [regex]::Match($runtimeCheck.ToString(), "buildId=(\d+)")
-        if ($buildIdMatch.Success) {
-            return [int]$buildIdMatch.Groups[1].Value
+    # Find ALL failing Azure DevOps builds
+    $failingBuilds = @{}
+    foreach ($line in $checksOutput) {
+        if ($line -match 'fail.*buildId=(\d+)') {
+            $buildId = $Matches[1]
+            # Extract pipeline name (first column before 'fail')
+            $pipelineName = ($line -split '\s+fail')[0].Trim()
+            if (-not $failingBuilds.ContainsKey($buildId)) {
+                $failingBuilds[$buildId] = $pipelineName
+            }
         }
     }
 
-    # Try to find any failing build
-    $anyBuild = $checksOutput | Select-String -Pattern "buildId=(\d+)" | Select-Object -First 1
-    if ($anyBuild) {
-        $anyBuildMatch = [regex]::Match($anyBuild.ToString(), "buildId=(\d+)")
-        if ($anyBuildMatch.Success) {
-            return [int]$anyBuildMatch.Groups[1].Value
+    if ($failingBuilds.Count -eq 0) {
+        # No failing builds - try to find any build
+        $anyBuild = $checksOutput | Select-String -Pattern "buildId=(\d+)" | Select-Object -First 1
+        if ($anyBuild) {
+            $anyBuildMatch = [regex]::Match($anyBuild.ToString(), "buildId=(\d+)")
+            if ($anyBuildMatch.Success) {
+                return @([int]$anyBuildMatch.Groups[1].Value)
+            }
+        }
+        throw "Could not find Azure DevOps build for PR #$PR in $Repository"
+    }
+
+    # Return all unique failing build IDs
+    $buildIds = $failingBuilds.Keys | ForEach-Object { [int]$_ } | Sort-Object -Unique
+
+    if ($buildIds.Count -gt 1) {
+        Write-Host "Found $($buildIds.Count) failing builds:" -ForegroundColor Yellow
+        foreach ($id in $buildIds) {
+            Write-Host "  - Build $id ($($failingBuilds[$id.ToString()]))" -ForegroundColor Gray
         }
     }
 
-    throw "Could not find Azure DevOps build for PR #$PR in $Repository"
+    return $buildIds
 }
 
 function Get-AzDOBuildStatus {
@@ -1266,142 +1283,151 @@ try {
         exit 0
     }
 
-    # Get build ID if using PR number
+    # Get build ID(s) if using PR number
+    $buildIds = @()
     if ($PSCmdlet.ParameterSetName -eq 'PRNumber') {
-        $BuildId = Get-AzDOBuildIdFromPR -PR $PRNumber
-        Write-Host "Found build ID: $BuildId" -ForegroundColor Green
+        $buildIds = @(Get-AzDOBuildIdFromPR -PR $PRNumber)
+    }
+    else {
+        $buildIds = @($BuildId)
     }
 
-    Write-Host "`n=== Azure DevOps Build $BuildId ===" -ForegroundColor Yellow
-    Write-Host "URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Gray
+    # Process each build
+    $totalFailedJobs = 0
+    $totalLocalFailures = 0
 
-    # Get and display build status
-    $buildStatus = Get-AzDOBuildStatus -Build $BuildId
-    if ($buildStatus) {
-        $statusColor = switch ($buildStatus.Status) {
-            "inProgress" { "Cyan" }
-            "completed" { if ($buildStatus.Result -eq "succeeded") { "Green" } else { "Red" } }
-            default { "Gray" }
-        }
-        $statusText = $buildStatus.Status
-        if ($buildStatus.Status -eq "completed" -and $buildStatus.Result) {
-            $statusText = "$($buildStatus.Status) ($($buildStatus.Result))"
-        }
-        elseif ($buildStatus.Status -eq "inProgress") {
-            $statusText = "IN PROGRESS - showing failures so far"
-        }
-        Write-Host "Status: $statusText" -ForegroundColor $statusColor
-    }
+    foreach ($currentBuildId in $buildIds) {
+        Write-Host "`n=== Azure DevOps Build $currentBuildId ===" -ForegroundColor Yellow
+        Write-Host "URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId" -ForegroundColor Gray
 
-    # Get timeline
-    $isInProgress = $buildStatus -and $buildStatus.Status -eq "inProgress"
-    $timeline = Get-AzDOTimeline -Build $BuildId -BuildInProgress:$isInProgress
-
-    # Handle timeline fetch failure
-    if (-not $timeline) {
-        Write-Host "`nCould not fetch build timeline" -ForegroundColor Red
-        Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Gray
-        exit 1
-    }
-
-    # Get failed jobs
-    $failedJobs = Get-FailedJobs -Timeline $timeline
-
-    # Also check for local test failures (non-Helix)
-    $localTestFailures = Get-LocalTestFailures -Timeline $timeline -BuildId $BuildId
-
-    if ((-not $failedJobs -or $failedJobs.Count -eq 0) -and $localTestFailures.Count -eq 0) {
-        if ($buildStatus -and $buildStatus.Status -eq "inProgress") {
-            Write-Host "`nNo failures yet - build still in progress" -ForegroundColor Cyan
-            Write-Host "Run again later to check for failures, or use -NoCache to get fresh data" -ForegroundColor Gray
-        }
-        else {
-            Write-Host "`nNo failed jobs found in build $BuildId" -ForegroundColor Green
-        }
-        exit 0
-    }
-
-    # Report local test failures first (these may exist even without failed jobs)
-    if ($localTestFailures.Count -gt 0) {
-        Write-Host "`n=== Local Test Failures (non-Helix) ===" -ForegroundColor Yellow
-        Write-Host "Build: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Gray
-
-        foreach ($failure in $localTestFailures) {
-            Write-Host "`n--- $($failure.TaskName) ---" -ForegroundColor Cyan
-
-            # Show build and log links
-            $jobLogUrl = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId&view=logs&j=$($failure.ParentJobId)"
-            if ($failure.TaskId) {
-                $jobLogUrl += "&t=$($failure.TaskId)"
+        # Get and display build status
+        $buildStatus = Get-AzDOBuildStatus -Build $currentBuildId
+        if ($buildStatus) {
+            $statusColor = switch ($buildStatus.Status) {
+                "inProgress" { "Cyan" }
+                "completed" { if ($buildStatus.Result -eq "succeeded") { "Green" } else { "Red" } }
+                default { "Gray" }
             }
-            Write-Host "  Log: $jobLogUrl" -ForegroundColor Gray
-
-            # Show issues
-            foreach ($issue in $failure.Issues) {
-                Write-Host "  $($issue.message)" -ForegroundColor Red
+            $statusText = $buildStatus.Status
+            if ($buildStatus.Status -eq "completed" -and $buildStatus.Result) {
+                $statusText = "$($buildStatus.Status) ($($buildStatus.Result))"
             }
-
-            # Show test run URLs if available
-            if ($failure.TestRunUrls.Count -gt 0) {
-                Show-TestRunResults -TestRunUrls $failure.TestRunUrls -Org "https://dev.azure.com/$Organization"
+            elseif ($buildStatus.Status -eq "inProgress") {
+                $statusText = "IN PROGRESS - showing failures so far"
             }
+            Write-Host "Status: $statusText" -ForegroundColor $statusColor
+        }
 
-            # Try to get more details from the task log
-            if ($failure.LogId) {
-                $logContent = Get-BuildLog -Build $BuildId -LogId $failure.LogId
-                if ($logContent) {
-                    # Extract test run URLs from this log too
-                    $additionalRuns = Extract-TestRunUrls -LogContent $logContent
-                    if ($additionalRuns.Count -gt 0 -and $failure.TestRunUrls.Count -eq 0) {
-                        Show-TestRunResults -TestRunUrls $additionalRuns -Org "https://dev.azure.com/$Organization"
-                    }
+        # Get timeline
+        $isInProgress = $buildStatus -and $buildStatus.Status -eq "inProgress"
+        $timeline = Get-AzDOTimeline -Build $currentBuildId -BuildInProgress:$isInProgress
 
-                    # Classify the failure
-                    $buildErrors = Extract-BuildErrors -LogContent $logContent
-                    if ($buildErrors.Count -gt 0) {
-                        $classification = Get-FailureClassification -Errors $buildErrors
-                        if ($classification -and $classification.Type -ne 'Unknown') {
-                            Show-ClassificationWithKnownIssues -Classification $classification -ErrorMessage ($buildErrors -join "`n")
+        # Handle timeline fetch failure
+        if (-not $timeline) {
+            Write-Host "`nCould not fetch build timeline" -ForegroundColor Red
+            Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId" -ForegroundColor Gray
+            continue
+        }
+
+        # Get failed jobs
+        $failedJobs = Get-FailedJobs -Timeline $timeline
+
+        # Also check for local test failures (non-Helix)
+        $localTestFailures = Get-LocalTestFailures -Timeline $timeline -BuildId $currentBuildId
+
+        if ((-not $failedJobs -or $failedJobs.Count -eq 0) -and $localTestFailures.Count -eq 0) {
+            if ($buildStatus -and $buildStatus.Status -eq "inProgress") {
+                Write-Host "`nNo failures yet - build still in progress" -ForegroundColor Cyan
+                Write-Host "Run again later to check for failures, or use -NoCache to get fresh data" -ForegroundColor Gray
+            }
+            else {
+                Write-Host "`nNo failed jobs found in build $currentBuildId" -ForegroundColor Green
+            }
+            continue
+        }
+
+        # Report local test failures first (these may exist even without failed jobs)
+        if ($localTestFailures.Count -gt 0) {
+            Write-Host "`n=== Local Test Failures (non-Helix) ===" -ForegroundColor Yellow
+            Write-Host "Build: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId" -ForegroundColor Gray
+
+            foreach ($failure in $localTestFailures) {
+                Write-Host "`n--- $($failure.TaskName) ---" -ForegroundColor Cyan
+
+                # Show build and log links
+                $jobLogUrl = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId&view=logs&j=$($failure.ParentJobId)"
+                if ($failure.TaskId) {
+                    $jobLogUrl += "&t=$($failure.TaskId)"
+                }
+                Write-Host "  Log: $jobLogUrl" -ForegroundColor Gray
+
+                # Show issues
+                foreach ($issue in $failure.Issues) {
+                    Write-Host "  $($issue.message)" -ForegroundColor Red
+                }
+
+                # Show test run URLs if available
+                if ($failure.TestRunUrls.Count -gt 0) {
+                    Show-TestRunResults -TestRunUrls $failure.TestRunUrls -Org "https://dev.azure.com/$Organization"
+                }
+
+                # Try to get more details from the task log
+                if ($failure.LogId) {
+                    $logContent = Get-BuildLog -Build $currentBuildId -LogId $failure.LogId
+                    if ($logContent) {
+                        # Extract test run URLs from this log too
+                        $additionalRuns = Extract-TestRunUrls -LogContent $logContent
+                        if ($additionalRuns.Count -gt 0 -and $failure.TestRunUrls.Count -eq 0) {
+                            Show-TestRunResults -TestRunUrls $additionalRuns -Org "https://dev.azure.com/$Organization"
+                        }
+
+                        # Classify the failure
+                        $buildErrors = Extract-BuildErrors -LogContent $logContent
+                        if ($buildErrors.Count -gt 0) {
+                            $classification = Get-FailureClassification -Errors $buildErrors
+                            if ($classification -and $classification.Type -ne 'Unknown') {
+                                Show-ClassificationWithKnownIssues -Classification $classification -ErrorMessage ($buildErrors -join "`n")
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
-    if (-not $failedJobs -or $failedJobs.Count -eq 0) {
-        Write-Host "`n=== Summary ===" -ForegroundColor Yellow
-        Write-Host "Local test failures: $($localTestFailures.Count)" -ForegroundColor Red
-        Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Cyan
-        exit 0
-    }
-
-    Write-Host "`nFound $($failedJobs.Count) failed job(s):" -ForegroundColor Red
-
-    $processedJobs = 0
-    $errorCount = 0
-    foreach ($job in $failedJobs) {
-        if ($processedJobs -ge $MaxJobs) {
-            Write-Host "`n... and $($failedJobs.Count - $MaxJobs) more failed jobs (use -MaxJobs to see more)" -ForegroundColor Yellow
-            break
+        if (-not $failedJobs -or $failedJobs.Count -eq 0) {
+            Write-Host "`n=== Summary ===" -ForegroundColor Yellow
+            Write-Host "Local test failures: $($localTestFailures.Count)" -ForegroundColor Red
+            Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId" -ForegroundColor Cyan
+            $totalLocalFailures += $localTestFailures.Count
+            continue
         }
 
-        try {
-            Write-Host "`n--- $($job.name) ---" -ForegroundColor Cyan
-            Write-Host "  Build: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId&view=logs&j=$($job.id)" -ForegroundColor Gray
+        Write-Host "`nFound $($failedJobs.Count) failed job(s):" -ForegroundColor Red
 
-            # Get Helix tasks for this job
-            $helixTasks = Get-HelixJobInfo -Timeline $timeline -JobId $job.id
+        $processedJobs = 0
+        $errorCount = 0
+        foreach ($job in $failedJobs) {
+            if ($processedJobs -ge $MaxJobs) {
+                Write-Host "`n... and $($failedJobs.Count - $MaxJobs) more failed jobs (use -MaxJobs to see more)" -ForegroundColor Yellow
+                break
+            }
 
-            if ($helixTasks) {
-                foreach ($task in $helixTasks) {
-                    if ($task.log) {
-                        Write-Host "  Fetching Helix task log..." -ForegroundColor Gray
-                        $logContent = Get-BuildLog -Build $BuildId -LogId $task.log.id
+            try {
+                Write-Host "`n--- $($job.name) ---" -ForegroundColor Cyan
+                Write-Host "  Build: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId&view=logs&j=$($job.id)" -ForegroundColor Gray
 
-                        if ($logContent) {
-                            # Extract test failures
-                            $failures = Extract-TestFailures -LogContent $logContent
+                # Get Helix tasks for this job
+                $helixTasks = Get-HelixJobInfo -Timeline $timeline -JobId $job.id
+
+                if ($helixTasks) {
+                    foreach ($task in $helixTasks) {
+                        if ($task.log) {
+                            Write-Host "  Fetching Helix task log..." -ForegroundColor Gray
+                            $logContent = Get-BuildLog -Build $currentBuildId -LogId $task.log.id
+
+                            if ($logContent) {
+                                # Extract test failures
+                                $failures = Extract-TestFailures -LogContent $logContent
 
                             if ($failures.Count -gt 0) {
                                 Write-Host "  Failed tests:" -ForegroundColor Red
@@ -1461,9 +1487,9 @@ try {
 
                     # Fetch and parse the build log for actual errors
                     if ($task.log) {
-                        $logUrl = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId&view=logs&j=$($job.id)&t=$($task.id)"
+                        $logUrl = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId&view=logs&j=$($job.id)&t=$($task.id)"
                         Write-Host "  Log: $logUrl" -ForegroundColor Gray
-                        $logContent = Get-BuildLog -Build $BuildId -LogId $task.log.id
+                        $logContent = Get-BuildLog -Build $currentBuildId -LogId $task.log.id
 
                         if ($logContent) {
                             $buildErrors = Extract-BuildErrors -LogContent $logContent
@@ -1519,15 +1545,27 @@ try {
         $processedJobs++
     }
 
-    Write-Host "`n=== Summary ===" -ForegroundColor Yellow
-    Write-Host "Total failed jobs: $($failedJobs.Count)" -ForegroundColor Red
+    $totalFailedJobs += $failedJobs.Count
+    $totalLocalFailures += $localTestFailures.Count
+
+    Write-Host "`n=== Build $currentBuildId Summary ===" -ForegroundColor Yellow
+    Write-Host "Failed jobs: $($failedJobs.Count)" -ForegroundColor Red
     if ($localTestFailures.Count -gt 0) {
         Write-Host "Local test failures: $($localTestFailures.Count)" -ForegroundColor Red
     }
     if ($errorCount -gt 0) {
         Write-Host "API errors (partial results): $errorCount" -ForegroundColor Yellow
     }
-    Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$BuildId" -ForegroundColor Cyan
+    Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId" -ForegroundColor Cyan
+}
+
+# Overall summary if multiple builds
+if ($buildIds.Count -gt 1) {
+    Write-Host "`n=== Overall Summary ===" -ForegroundColor Magenta
+    Write-Host "Analyzed $($buildIds.Count) builds" -ForegroundColor White
+    Write-Host "Total failed jobs: $totalFailedJobs" -ForegroundColor Red
+    Write-Host "Total local test failures: $totalLocalFailures" -ForegroundColor Red
+}
 
 }
 catch {
