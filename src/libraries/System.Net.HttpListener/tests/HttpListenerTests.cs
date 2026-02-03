@@ -171,37 +171,12 @@ namespace System.Net.Tests
             await listenerTask.WaitAsync(TimeSpan.FromSeconds(10));
         }
 
-        [Fact]
+        [Theory]
         [OuterLoop]
-        public async Task GetContext_StopIsCalled_ThrowsHttpListenerExceptionWithOperationAborted()
-        {
-            using var listenerFactory = new HttpListenerFactory();
-            var listener = listenerFactory.GetListener();
-            listener.Start();
-
-            using var cts = new CancellationTokenSource();
-            var getContextStarted = new TaskCompletionSource<bool>();
-
-            var listenerTask = Task.Run(() =>
-            {
-                // Signal that we're about to call GetContext
-                getContextStarted.SetResult(true);
-                HttpListenerException exception = Assert.Throws<HttpListenerException>(() => listener.GetContext());
-                Assert.Equal((int)SocketError.OperationAborted, exception.ErrorCode);
-                return exception;
-            });
-
-            // Wait until GetContext is called before stopping
-            await getContextStarted.Task;
-            await Task.Delay(100); // Small delay to ensure GetContext is blocking
-            listener.Stop();
-            listener.Close();
-            await listenerTask.WaitAsync(TimeSpan.FromSeconds(10));
-        }
-
-        [Fact]
-        [OuterLoop]
-        public async Task GetContext_AbortIsCalled_ThrowsHttpListenerExceptionWithOperationAborted()
+        [InlineData("Stop")]
+        [InlineData("Abort")]
+        [InlineData("Close")]
+        public async Task GetContext_TerminationMethodCalled_ThrowsHttpListenerExceptionWithOperationAborted(string terminationMethod)
         {
             using var listenerFactory = new HttpListenerFactory();
             var listener = listenerFactory.GetListener();
@@ -218,36 +193,24 @@ namespace System.Net.Tests
                 return exception;
             });
 
-            // Wait until GetContext is called before aborting
+            // Wait until GetContext is called before terminating
             await getContextStarted.Task;
             await Task.Delay(100); // Small delay to ensure GetContext is blocking
-            listener.Abort();
-            await listenerTask.WaitAsync(TimeSpan.FromSeconds(10));
-        }
-
-        [Fact]
-        [OuterLoop]
-        public async Task GetContext_CloseIsCalled_ThrowsHttpListenerExceptionWithOperationAborted()
-        {
-            using var listenerFactory = new HttpListenerFactory();
-            var listener = listenerFactory.GetListener();
-            listener.Start();
-
-            var getContextStarted = new TaskCompletionSource<bool>();
-
-            var listenerTask = Task.Run(() =>
+            
+            switch (terminationMethod)
             {
-                // Signal that we're about to call GetContext
-                getContextStarted.SetResult(true);
-                HttpListenerException exception = Assert.Throws<HttpListenerException>(() => listener.GetContext());
-                Assert.Equal((int)SocketError.OperationAborted, exception.ErrorCode);
-                return exception;
-            });
-
-            // Wait until GetContext is called before closing
-            await getContextStarted.Task;
-            await Task.Delay(100); // Small delay to ensure GetContext is blocking
-            listener.Close();
+                case "Stop":
+                    listener.Stop();
+                    listener.Close();
+                    break;
+                case "Abort":
+                    listener.Abort();
+                    break;
+                case "Close":
+                    listener.Close();
+                    break;
+            }
+            
             await listenerTask.WaitAsync(TimeSpan.FromSeconds(10));
         }
     }
