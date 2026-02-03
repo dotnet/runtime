@@ -3764,6 +3764,17 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genFtnEntry: emits address of the current function being compiled
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    NYI_ARM64("FTN_ENTRY");
+}
+
+//------------------------------------------------------------------------
 // genLockedInstructions: Generate code for a GT_XADD, GT_XAND, GT_XORR or GT_XCHG node.
 //
 // Arguments:

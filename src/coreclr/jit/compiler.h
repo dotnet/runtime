@@ -11933,6 +11933,7 @@ public:
             case GT_ASYNC_RESUME_INFO:
             case GT_LABEL:
             case GT_FTN_ADDR:
+            case GT_FTN_ENTRY:
             case GT_RET_EXPR:
             case GT_CNS_INT:
             case GT_CNS_LNG:
@@ -12006,6 +12007,7 @@ public:
             case GT_FIELD_ADDR:
             case GT_RETURN:
             case GT_RETURN_SUSPEND:
+            case GT_NONLOCAL_JMP:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
             case GT_ARR_ADDR:
