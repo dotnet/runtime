@@ -9,7 +9,6 @@ import GitHash from "consts:gitHash";
 
 import { runMain, runMainAndExit, initializeCoreCLR } from "./host";
 import { registerPdbBytes, registerDllBytes, installVfsFile, loadIcuData, instantiateWasm, } from "./assets";
-import { Module } from "./cross-module";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
@@ -65,10 +64,10 @@ function setupEmscripten() {
         _ems_.ENV[key] = loaderConfig.environmentVariables[key];
     }
 
-    Module.preInit = [() => {
+    _ems_.Module.preInit = [() => {
         _ems_.FS.createPath("/", loaderConfig.virtualWorkingDirectory!, true, true);
         _ems_.FS.chdir(loaderConfig.virtualWorkingDirectory!);
-    }, ...(Module.preInit || [])];
+    }, ...(_ems_.Module.preInit || [])];
 
 }
 
