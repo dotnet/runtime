@@ -549,8 +549,8 @@ bool deps_resolver_t::resolve_tpa_list(
     // application, then add them to the mix as well.
     for (const auto& additional_deps : m_additional_deps)
     {
-        auto additional_deps_entries = additional_deps->get_entries(deps_entry_t::asset_types::runtime);
-        for (auto entry : additional_deps_entries)
+        const auto& additional_deps_entries = additional_deps->get_entries(deps_entry_t::asset_types::runtime);
+        for (const auto& entry : additional_deps_entries)
         {
             if (!process_entry(m_app_dir, entry, 0))
             {
@@ -665,7 +665,7 @@ void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps
                 std::vector<pal::string_t> deps_dirs;
                 pal::readdir_onlydirectories(additional_deps_path_fx, &deps_dirs);
 
-                for (pal::string_t dir : deps_dirs)
+                for (const pal::string_t& dir : deps_dirs)
                 {
                     fx_ver_t ver;
                     if (fx_ver_t::parse(dir, &ver))
@@ -693,7 +693,7 @@ void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps
                     // The resulting list will be empty if 'additional_deps_path_fx' is not a valid directory path
                     std::vector<pal::string_t> list;
                     pal::readdir(additional_deps_path_fx, _X("*.deps.json"), &list);
-                    for (pal::string_t json_file : list)
+                    for (const pal::string_t& json_file : list)
                     {
                         pal::string_t json_full_path = additional_deps_path_fx;
                         append_path(&json_full_path, json_file.c_str());
