@@ -3461,6 +3461,7 @@ void Compiler::fgCreateThrowHelperBlock(AddCodeDsc* add)
 {
     if (add->acdDstBlk != nullptr)
     {
+        assert(add->acdDstBlk->HasFlag(BBF_THROW_HELPER));
         return;
     }
 
@@ -3484,6 +3485,8 @@ void Compiler::fgCreateThrowHelperBlock(AddCodeDsc* add)
     BasicBlock* const newBlk      = fgNewBBinRegion(jumpKinds[add->acdKind], add->acdTryIndex, add->acdHndIndex,
                                                     /* nearBlk */ nullptr, putInFilter,
                                                     /* runRarely */ true, /* insertAtEnd */ true);
+
+    newBlk->SetFlags(BBF_THROW_HELPER);
 
     // Update the descriptor so future lookups can find the block
     //
@@ -3668,6 +3671,11 @@ Compiler::AddCodeDsc* Compiler::fgGetExcptnTarget(SpecialCodeKind kind, BasicBlo
         {
             fgCreateThrowHelperBlock(add);
         }
+    }
+
+    if (add->acdDstBlk != nullptr)
+    {
+        assert(add->acdDstBlk->HasFlag(BBF_THROW_HELPER));
     }
 
     return add;
