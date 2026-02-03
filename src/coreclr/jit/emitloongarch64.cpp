@@ -1982,33 +1982,6 @@ void emitter::emitIns_R_C(
     assert(offs >= 0);
     assert(instrDesc::fitsInSmallCns(offs)); // can optimize.
 
-    // Handle FLD_FTN_ENTRY specially - emit as label reference to function entry (prolog)
-    if (fldHnd == FLD_FTN_ENTRY)
-    {
-        assert(ins == INS_lea);
-        assert(emitPrologIG != nullptr);
-
-        // Emit instruction sequence targeting the prolog
-        instrDesc* id = emitNewInstr(attr);
-        id->idIns(ins);
-        id->idInsOpt(INS_OPTS_RL);
-        id->idAddr()->iiaIGlabel = emitPrologIG;
-
-        if (emitComp->opts.compReloc)
-        {
-            id->idSetIsDspReloc();
-            id->idCodeSize(8);
-        }
-        else
-        {
-            id->idCodeSize(12);
-        }
-
-        id->idReg1(reg);
-        appendToCurIG(id);
-        return;
-    }
-
     // when id->idIns == bl, for reloc! 4-ins.
     //   pcaddu12i reg, off-hi-20bits
     //   addi_d  reg, reg, off-lo-12bits
@@ -2185,6 +2158,47 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
         id->idDebugOnlyInfo()->idCatchRet = true;
     }
 #endif // DEBUG
+
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add a label instruction referencing an instruction group directly.
+ *  This is used by genFtnEntry to load the address of the function entry point
+ *  (prolog) into a register.
+ */
+
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(dst != nullptr);
+
+    // if for reloc!  2-ins:
+    //   pcaddu12i reg, offset-hi20
+    //   addi_d  reg, reg, offset-lo12
+    //
+    // else:  3-ins:
+    //   lu12i_w r21, addr_bits[31:12]
+    //   ori     reg, r21, addr_bits[11:0]
+    //   lu32i_d reg, addr_bits[50:32]
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idInsOpt(INS_OPTS_RL);
+    id->idAddr()->iiaIGlabel = dst;
+
+    if (emitComp->opts.compReloc)
+    {
+        id->idSetIsDspReloc();
+        id->idCodeSize(8);
+    }
+    else
+    {
+        id->idCodeSize(12);
+    }
+
+    id->idReg1(reg);
 
     appendToCurIG(id);
 }

@@ -1215,27 +1215,6 @@ void emitter::emitIns_R_R_R_R(
 void emitter::emitIns_R_C(
     instruction ins, emitAttr attr, regNumber destReg, regNumber addrReg, CORINFO_FIELD_HANDLE fldHnd)
 {
-    // Handle FLD_FTN_ENTRY specially - emit as label reference to function entry (prolog)
-    if (fldHnd == FLD_FTN_ENTRY)
-    {
-        assert(ins == INS_lea);
-        assert(emitPrologIG != nullptr);
-
-        // Emit auipc + addi sequence targeting the prolog
-        instrDesc* id = emitNewInstr(attr);
-        id->idIns(ins);
-        id->idInsOpt(INS_OPTS_RL);
-        id->idAddr()->iiaIGlabel = emitPrologIG;
-
-        if (emitComp->opts.compReloc)
-            id->idSetIsDspReloc();
-
-        id->idCodeSize(2 * sizeof(code_t));
-        id->idReg1(destReg);
-        appendToCurIG(id);
-        return;
-    }
-
     instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
     assert(destReg != REG_R0); // for special. reg Must not be R0.
@@ -1364,6 +1343,36 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
         id->idDebugOnlyInfo()->idCatchRet = true;
     }
 #endif // DEBUG
+
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add a label instruction referencing an instruction group directly.
+ *  This is used by genFtnEntry to load the address of the function entry point
+ *  (prolog) into a register.
+ */
+
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(dst != nullptr);
+
+    // 2-ins:
+    //   auipc reg, offset-hi20
+    //   addi  reg, reg, offset-lo12
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idInsOpt(INS_OPTS_RL);
+    id->idAddr()->iiaIGlabel = dst;
+
+    if (emitComp->opts.compReloc)
+        id->idSetIsDspReloc();
+
+    id->idCodeSize(2 * sizeof(code_t));
+    id->idReg1(reg);
 
     appendToCurIG(id);
 }

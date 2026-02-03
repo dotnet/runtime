@@ -3769,10 +3769,17 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 // Parameters:
 //   treeNode - the GT_FTN_ENTRY node
 //
+// Notes:
+//   Unlike xarch which uses FLD_FTN_ENTRY in emitIns_R_C and resolves it later
+//   in emitOutputCV, ARM64 uses emitIns_R_L directly with the prolog instruction
+//   group. This is cleaner because ARM64's adr instruction is inherently a
+//   PC-relative label reference, which fits naturally with the existing
+//   emitIns_R_L mechanism that already handles IF_LARGEADR format and jump
+//   list management for label-to-register operations.
+//
 void CodeGen::genFtnEntry(GenTree* treeNode)
 {
-    // Use FLD_FTN_ENTRY pseudo handle to get the actual function entry point (before prolog)
-    GetEmitter()->emitIns_R_C(INS_adr, EA_PTRSIZE, treeNode->GetRegNum(), REG_NA, FLD_FTN_ENTRY, 0);
+    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
     genProduceReg(treeNode);
 }
 

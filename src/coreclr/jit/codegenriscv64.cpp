@@ -2281,10 +2281,14 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 // Parameters:
 //   treeNode - the GT_FTN_ENTRY node
 //
+// Notes:
+//   Uses emitIns_R_L directly with the prolog instruction group, consistent
+//   with ARM64. This is cleaner than using FLD_FTN_ENTRY in emitIns_R_C
+//   because the lea instruction is naturally a PC-relative label reference.
+//
 void CodeGen::genFtnEntry(GenTree* treeNode)
 {
-    // Use FLD_FTN_ENTRY pseudo handle to get the actual function entry point (before prolog)
-    GetEmitter()->emitIns_R_C(INS_lea, EA_PTRSIZE, treeNode->GetRegNum(), REG_NA, FLD_FTN_ENTRY);
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
     genProduceReg(treeNode);
 }
 

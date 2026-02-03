@@ -8541,31 +8541,6 @@ void emitter::emitIns_R_C(
     assert(offs >= 0);
     assert(instrDesc::fitsInSmallCns(offs));
 
-    // Handle FLD_FTN_ENTRY specially - emit as label reference to function entry (prolog)
-    if (fldHnd == FLD_FTN_ENTRY)
-    {
-        assert(ins == INS_adr);
-        assert(emitPrologIG != nullptr);
-
-        instrDescJmp* id = emitNewInstrJmp();
-        id->idIns(ins);
-        id->idInsFmt(IF_LARGEADR);
-        id->idjShort             = false;
-        id->idAddr()->iiaIGlabel = emitPrologIG;
-        id->idReg1(reg);
-        id->idOpSize(EA_PTRSIZE);
-        id->idjKeepLong = false;
-
-        id->idjIG        = emitCurIG;
-        id->idjOffs      = emitCurIGsize;
-        id->idjNext      = emitCurIGjmpList;
-        emitCurIGjmpList = id;
-
-        dispIns(id);
-        appendToCurIG(id);
-        return;
-    }
-
     emitAttr      size = EA_SIZE(attr);
     insFormat     fmt  = IF_NONE;
     instrDescJmp* id   = emitNewInstrJmp();
@@ -8894,6 +8869,63 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 #endif // DEBUG
 
     id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+
+#ifdef DEBUG
+    if (emitComp->opts.compLongAddress)
+        id->idjKeepLong = 1;
+#endif // DEBUG
+
+    /* Record the jump's IG and offset within it */
+
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+
+    /* Append this jump to this IG's jump list */
+
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+
+#if EMITTER_STATS
+    emitTotalIGjmps++;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add a label instruction referencing an instruction group directly.
+ *  This is used by genFtnEntry to load the address of the function entry point
+ *  (prolog) into a register, avoiding the need for FLD_FTN_ENTRY handling in
+ *  emitIns_R_C. ARM64's adr instruction is naturally a PC-relative label
+ *  reference, so using the existing label mechanism is cleaner.
+ */
+
+void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg)
+{
+    assert(dst != nullptr);
+
+    insFormat fmt = IF_NONE;
+
+    switch (ins)
+    {
+        case INS_adr:
+            fmt = IF_LARGEADR;
+            break;
+        default:
+            unreached();
+    }
+
+    instrDescJmp* id = emitNewInstrJmp();
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idjShort             = false;
+    id->idAddr()->iiaIGlabel = dst;
+    id->idReg1(reg);
+    id->idOpSize(EA_PTRSIZE);
+    id->idjKeepLong = false;
 
 #ifdef DEBUG
     if (emitComp->opts.compLongAddress)
