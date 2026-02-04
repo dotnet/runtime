@@ -8327,6 +8327,7 @@ protected:
     AssertionDsc*  optAssertionTabPrivate;                // table that holds info about assertions
     AssertionIndex optAssertionCount = 0;                 // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
+    VNSet*         optAssertionVNsMap;
     bool           optCrossBlockLocalAssertionProp;
     unsigned       optAssertionOverflow;
     bool           optCanPropLclVar;
@@ -8389,6 +8390,7 @@ public:
     void optCreateComplementaryAssertion(AssertionIndex assertionIndex, GenTree* op1, GenTree* op2);
 
     AssertionIndex optAddAssertion(const AssertionDsc& assertion);
+    bool           optAssertionHasAssertionsForVN(ValueNum vn);
 
     // Used for respective assertion propagations.
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);

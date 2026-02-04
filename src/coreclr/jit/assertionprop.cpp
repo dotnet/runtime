@@ -724,23 +724,14 @@ void Compiler::optAssertionInit(bool isLocalProp)
         //
         optLocalAssertionProp           = false;
         optCrossBlockLocalAssertionProp = false;
-
-        // Use a function countFunc to determine a proper maximum assertion count for the
-        // method being compiled. The function is linear to the IL size for small and
-        // moderate methods. For large methods, considering throughput impact, we track no
-        // more than 64 assertions.
-        // Note this tracks at most only 256 assertions.
-        //
-        static const AssertionIndex countFunc[] = {64, 128, 256, 128, 64};
-        static const unsigned       upperBound  = ArrLen(countFunc) - 1;
-        const unsigned              codeSize    = info.compILCodeSize / 512;
-        optMaxAssertionCount                    = countFunc[min(upperBound, codeSize)];
+        optMaxAssertionCount            = 256;
 
         optComplementaryAssertionMap = new (this, CMK_AssertionProp)
             AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
     }
 
     optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
+    optAssertionVNsMap     = new (this, CMK_AssertionProp) VNSet(getAllocator(CMK_AssertionProp));
     optAssertionTraitsInit(optMaxAssertionCount);
 
     optAssertionCount      = 0;
@@ -1345,6 +1336,8 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
  */
 AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
 {
+    const bool canAddNewAssertions = optAssertionCount < optMaxAssertionCount;
+
     // See if we already have this assertion in the table.
     //
     // For local assertion prop we can speed things up by checking the dep vector.
@@ -1371,21 +1364,47 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
     }
     else
     {
-        // For global prop we search the entire table.
-        //
-        // Check if exists already, so we can skip adding new one. Search backwards.
-        for (AssertionIndex index = optAssertionCount; index >= 1; index--)
+        bool mayHaveDuplicates = true;
+        // OAK_NO_THROW doesn't use Op1().GetVN(). We can also register its vnLen and vnIdx, but it doesn't
+        // seem worth the effort.
+        if (!newAssertion.KindIs(OAK_NO_THROW))
         {
-            const AssertionDsc& curAssertion = optGetAssertion(index);
-            if (curAssertion.Equals(newAssertion, /* vnBased */ true))
+            if (canAddNewAssertions)
             {
-                return index;
+                // Check if we have seen this VN before and add it if not.
+                bool* pVal = optAssertionVNsMap->LookupPointerOrAdd(newAssertion.GetOp1().GetVN(), false);
+                // pVal is false if this is the first time we've seen this VN - change the value to true
+                if (!*pVal)
+                {
+                    *pVal             = true;
+                    mayHaveDuplicates = false;
+                }
+            }
+            else
+            {
+                // We're no longer adding new assertions, so don't add new VN entries.
+                mayHaveDuplicates = optAssertionVNsMap->Lookup(newAssertion.GetOp1().GetVN());
+            }
+        }
+
+        if (mayHaveDuplicates)
+        {
+            // For global prop we search the entire table.
+            //
+            // Check if exists already, so we can skip adding new one. Search backwards.
+            for (AssertionIndex index = optAssertionCount; index >= 1; index--)
+            {
+                const AssertionDsc& curAssertion = optGetAssertion(index);
+                if (curAssertion.Equals(newAssertion, /* vnBased */ true))
+                {
+                    return index;
+                }
             }
         }
     }
 
     // Check if we are within max count.
-    if (optAssertionCount >= optMaxAssertionCount)
+    if (!canAddNewAssertions)
     {
         optAssertionOverflow++;
         return NO_ASSERTION_INDEX;
@@ -1430,6 +1449,13 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
     optDebugCheckAssertions(optAssertionCount);
 #endif
     return optAssertionCount;
+}
+
+bool Compiler::optAssertionHasAssertionsForVN(ValueNum vn)
+{
+    assert(!optLocalAssertionProp);
+    assert(optAssertionVNsMap != nullptr);
+    return optAssertionVNsMap->Lookup(vn);
 }
 
 #ifdef DEBUG
@@ -2095,6 +2121,9 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 {
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        bvIndex = 0;
+
+    ValueNum treeVN = optConservativeNormalVN(tree);
+
     while (iter.NextElem(&bvIndex))
     {
         AssertionIndex const index        = GetAssertionIndex(bvIndex);
@@ -2110,11 +2139,13 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
             continue;
         }
 
-        if ((curAssertion.GetOp1().GetVN() != vnStore->VNConservativeNormalValue(tree->gtVNPair) ||
-             !curAssertion.GetOp2().KindIs(O2K_CONST_INT)))
+        if (curAssertion.GetOp1().GetVN() != treeVN)
         {
             continue;
         }
+
+        // O1K_SUBTYPE and O1K_EXACT_TYPE always have O2K_CONST_INT on the right hand side
+        assert(curAssertion.GetOp2().KindIs(O2K_CONST_INT));
 
         ssize_t      methodTableVal = 0;
         GenTreeFlags iconFlags      = GTF_EMPTY;
@@ -3225,6 +3256,12 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
+    ValueNum treeVN = optConservativeNormalVN(tree);
+    if (!optLocalAssertionProp && !optAssertionHasAssertionsForVN(treeVN))
+    {
+        return nullptr;
+    }
+
     // For local assertion prop we can filter the assertion set down.
     //
     const unsigned lclNum = tree->GetLclNum();
@@ -3295,7 +3332,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         else
         {
             // Check VN in Global Assertion Prop
-            if (curAssertion.GetOp1().GetVN() == vnStore->VNConservativeNormalValue(tree->gtVNPair))
+            if (curAssertion.GetOp1().GetVN() == treeVN)
             {
                 return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
             }
@@ -3790,6 +3827,10 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
     {
         return NO_ASSERTION_INDEX;
     }
+
+    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    ValueNum op2VN = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
@@ -3805,8 +3846,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
             continue;
         }
 
-        if ((curAssertion.GetOp1().GetVN() == vnStore->VNConservativeNormalValue(op1->gtVNPair)) &&
-            (curAssertion.GetOp2().GetVN() == vnStore->VNConservativeNormalValue(op2->gtVNPair)))
+        if ((curAssertion.GetOp1().GetVN() == op1VN) && (curAssertion.GetOp2().GetVN() == op2VN))
         {
             return assertionIndex;
         }
@@ -3818,12 +3858,11 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
         //   Assertion: 'myObj's type is exactly MyType
         //
         if (curAssertion.KindIs(OAK_EQUAL) && curAssertion.GetOp1().KindIs(O1K_EXACT_TYPE) &&
-            (curAssertion.GetOp2().GetVN() == vnStore->VNConservativeNormalValue(op2->gtVNPair)) &&
-            op1->TypeIs(TYP_I_IMPL))
+            (curAssertion.GetOp2().GetVN() == op2VN) && op1->TypeIs(TYP_I_IMPL))
         {
             VNFuncApp funcApp;
-            if (vnStore->GetVNFunc(vnStore->VNConservativeNormalValue(op1->gtVNPair), &funcApp) &&
-                (funcApp.m_func == VNF_InvariantNonNullLoad) && (curAssertion.GetOp1().GetVN() == funcApp.m_args[0]))
+            if (vnStore->GetVNFunc(op1VN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad) &&
+                (curAssertion.GetOp1().GetVN() == funcApp.m_args[0]))
             {
                 return assertionIndex;
             }
@@ -3844,6 +3883,15 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_T
     {
         return NO_ASSERTION_INDEX;
     }
+
+    ValueNum op1VN = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    if (!optAssertionHasAssertionsForVN(op1VN))
+    {
+        return NO_ASSERTION_INDEX;
+    }
+
+    ValueNum zeroVN = vnStore->VNZeroForType(op1->TypeGet());
+
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
@@ -3859,8 +3907,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_T
             continue;
         }
 
-        if ((curAssertion.GetOp1().GetVN() == vnStore->VNConservativeNormalValue(op1->gtVNPair)) &&
-            (curAssertion.GetOp2().GetVN() == vnStore->VNZeroForType(op1->TypeGet())))
+        if ((curAssertion.GetOp1().GetVN() == op1VN) && (curAssertion.GetOp2().GetVN() == zeroVN))
         {
             return assertionIndex;
         }
@@ -4538,6 +4585,12 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
         target_ssize_t offset = 0;
         vnStore->PeelOffsets(&vnBase, &offset);
 
+        // If we have no assertions for either vnBase or vn, bail.
+        if (!optAssertionHasAssertionsForVN(vnBase) && ((vnBase == vn) || !optAssertionHasAssertionsForVN(vn)))
+        {
+            return false;
+        }
+
         // Check each assertion to find if we have a vn != null assertion.
         //
         BitVecOps::Iter iter(apTraits, assertions);
@@ -4599,7 +4652,7 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
         return true;
     }
 
-    if (!BitVecOps::MayBeUninit(assertions))
+    if (!BitVecOps::MayBeUninit(assertions) && optAssertionHasAssertionsForVN(vn))
     {
         BitVecOps::Iter iter(apTraits, assertions);
         unsigned        index = 0;
