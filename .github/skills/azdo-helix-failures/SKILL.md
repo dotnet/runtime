@@ -69,6 +69,8 @@ Use this skill when:
 
 **Helix failures**: Test failures on distributed infrastructure.
 
+**Local test failures**: Some repos (e.g., dotnet/sdk) run tests directly on build agents. These can also match known issues - search for the test name with the "Known Build Error" label.
+
 ## Retry Recommendations
 
 The script provides a smart recommendation at the end:

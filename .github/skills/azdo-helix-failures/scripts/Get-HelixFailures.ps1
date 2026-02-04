@@ -1656,10 +1656,14 @@ try {
                             Show-TestRunResults -TestRunUrls $additionalRuns -Org "https://dev.azure.com/$Organization"
                         }
 
-                        # Search for known issues
+                        # Search for known issues based on build errors and task name
                         $buildErrors = Extract-BuildErrors -LogContent $logContent
                         if ($buildErrors.Count -gt 0) {
                             Show-KnownIssues -ErrorMessage ($buildErrors -join "`n") -IncludeMihuBot:$SearchMihuBot
+                        }
+                        elseif ($failure.TaskName) {
+                            # If no specific errors, try searching by task name
+                            Show-KnownIssues -TestName $failure.TaskName -IncludeMihuBot:$SearchMihuBot
                         }
                     }
                 }
