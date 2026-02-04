@@ -134,7 +134,7 @@ static BSTR GetExceptionDescription(OBJECTREF objException)
         PRECONDITION( IsException(objException->GetMethodTable()) );
     }
     CONTRACTL_END;
-    
+
     BSTR bstrDescription;
 
     GCPROTECT_BEGIN(objException)
