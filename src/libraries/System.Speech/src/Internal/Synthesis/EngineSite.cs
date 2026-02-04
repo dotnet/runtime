@@ -480,17 +480,17 @@ namespace System.Speech.Internal.Synthesis
             // Retain any other information based on the first TTS phoneme event.
             //
             TTSEvent ttsEvent, targetEvent, basePhonemeEvent = null;
-            long totalTicks = 0;
+            long totalDurationTicks = 0;
             basePhonemeEvent = (TTSEvent)_phonemeQueue.Peek();
             for (int i = 0; i < _lastComplete;)
             {
                 ttsEvent = (TTSEvent)_phonemeQueue.Dequeue();
-                totalTicks += ttsEvent.PhonemeDuration.Ticks;
+                totalDurationTicks += ttsEvent.PhonemeDuration.Ticks;
                 i += ttsEvent.Phoneme.Length;
             }
 
             targetEvent = TTSEvent.CreatePhonemeEvent(new string(target), "",
-                                                      TimeSpan.FromTicks(totalTicks),
+                                                      TimeSpan.FromTicks(totalDurationTicks),
                                                       basePhonemeEvent.PhonemeEmphasis,
                                                       basePhonemeEvent.Prompt,
                                                       basePhonemeEvent.AudioPosition);
