@@ -1996,18 +1996,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("PERSONALITY_ROUTINE_FILTER_FUNCLET");
                     break;
 
-                case ReadyToRunHelper.AllocContinuation:
-                    builder.Append("ALLOC_CONTINUATION");
-                    break;
-
-                case ReadyToRunHelper.AllocContinuationMethod:
-                    builder.Append("ALLOC_CONTINUATION_METHOD");
-                    break;
-
-                case ReadyToRunHelper.AllocContinuationClass:
-                    builder.Append("ALLOC_CONTINUATION_CLASS");
-                    break;
-
                 //
                 // Deprecated/legacy
                 //
