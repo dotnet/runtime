@@ -25,6 +25,14 @@ struct InterpDispatchCacheEntry
     MethodDesc* pTargetMD;
     // Used for linking dead entries for cleanup during GC
     InterpDispatchCacheEntry* pNextDead;
+
+    InterpDispatchCacheEntry(MethodTable* pMT, size_t dispatchToken, MethodDesc* pTargetMD)
+    {
+        this->pMT = pMT;
+        this->dispatchToken = dispatchToken;
+        this->pTargetMD = pTargetMD;
+        pNextDead = nullptr;
+    }
 };
 
 #define DISPATCH_CACHE_BITS 12
@@ -60,15 +68,9 @@ struct InterpDispatchCache
 
         size_t idx = Hash(dispatchToken, pMT, dispatchTokenHash);
 
-        InterpDispatchCacheEntry* pNewEntry = new (nothrow) InterpDispatchCacheEntry();
+        InterpDispatchCacheEntry* pNewEntry = new (nothrow) InterpDispatchCacheEntry(pMT, dispatchToken, pTargetMD);
         if (pNewEntry == nullptr)
             return;
-
-        // Except pNextDead, these fields never change
-        pNewEntry->pMT = pMT;
-        pNewEntry->dispatchToken = dispatchToken;
-        pNewEntry->pTargetMD = pTargetMD;
-        pNewEntry->pNextDead = nullptr;
 
         // CAS has release semantics, so the fields of the entry have correct
         // values once the entry is published. If CAS succeeds, we own the old
@@ -152,6 +154,16 @@ static InterpDispatchCache g_InterpDispatchCache;
 // Called during GC, when we are guaranteed no entry is being used by any thread.
 void InterpDispatchCache_ReclaimAll()
 {
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        // Should only be called during a GC suspension
+        PRECONDITION(Debug_IsLockedViaThreadSuspension());
+    }
+    CONTRACTL_END;
+
     g_InterpDispatchCache.ReclaimDeadEntries();
 }
 

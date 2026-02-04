@@ -5189,7 +5189,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             // Reserved slots for caching DispatchToken and its hash
             m_pLastNewIns->data[1] = GetNewDataItemIndex(nullptr);
             int32_t secondCache = GetNewDataItemIndex(nullptr);
+#ifdef DEBUG
             assert(secondCache == (m_pLastNewIns->data[1] + 1));
+#endif
             break;
         }
         case CORINFO_VIRTUALCALL_LDVIRTFTN:
@@ -5224,7 +5226,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
                 m_pLastNewIns->data[1] = GetNewDataItemIndex(nullptr);
                 int32_t secondCache = GetNewDataItemIndex(nullptr);
+#ifdef DEBUG
                 assert(secondCache == (m_pLastNewIns->data[1] + 1));
+#endif
             }
             break;
 
