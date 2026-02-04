@@ -396,7 +396,7 @@ LOCAL_LABEL(NotHijacked):
         // a1: ExInfo*
         call C_FUNC(RhThrowEx)
 
-    ALTERNATE_ENTRY RhpThrowEx2
+    ALTERNATE_ENTRY RhpThrowExImpl2
 
         // No return
         EMIT_BREAKPOINT

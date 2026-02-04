@@ -176,7 +176,7 @@ NESTED_ENTRY RhpThrowExImpl, _TEXT, NoHandler
         // rsi contains the address of the ExInfo
         call    EXTERNAL_C_FUNC(RhThrowEx)
 
-ALTERNATE_ENTRY RhpThrowEx2
+ALTERNATE_ENTRY RhpThrowExImpl2
 
         // no return
         int 3

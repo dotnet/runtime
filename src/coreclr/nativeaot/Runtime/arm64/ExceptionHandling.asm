@@ -357,7 +357,7 @@ NotHijacked
         ;; x1: ExInfo*
         bl          RhThrowEx
 
-    ALTERNATE_ENTRY RhpThrowEx2
+    ALTERNATE_ENTRY RhpThrowExImpl2
 
         ;; no return
         EMIT_BREAKPOINT

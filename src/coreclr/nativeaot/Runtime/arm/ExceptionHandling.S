@@ -198,7 +198,7 @@ LOCAL_LABEL(NotHiJacked):
         // r1 contains the address of the new ExInfo
         bl          C_FUNC(RhThrowEx)
 
-GLOBAL_LABEL RhpThrowEx2
+GLOBAL_LABEL RhpThrowExImpl2
 
         // no return
         EMIT_BREAKPOINT

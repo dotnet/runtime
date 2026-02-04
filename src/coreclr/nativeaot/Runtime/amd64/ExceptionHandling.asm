@@ -221,7 +221,7 @@ NESTED_ENTRY RhpThrowExImpl, _TEXT
         ;; rdx contains the address of the ExInfo
         call    RhThrowEx
 
-ALTERNATE_ENTRY RhpThrowEx2
+ALTERNATE_ENTRY RhpThrowExImpl2
 
         ;; no return
         int 3

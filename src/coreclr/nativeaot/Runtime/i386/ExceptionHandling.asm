@@ -123,7 +123,7 @@ FASTCALL_FUNC  RhpThrowEx, 4
 
 FASTCALL_ENDFUNC
 
-FASTCALL_FUNC  RhpThrowExImpl, 0
+FASTCALL_FUNC  RhpThrowExImpl, 8
         esp_offsetof_ExInfo     textequ %0
         esp_offsetof_Context    textequ %SIZEOF__ExInfo
 
@@ -184,7 +184,7 @@ FASTCALL_FUNC  RhpThrowExImpl, 0
         ;; edx contains the address of the ExInfo
         call    RhThrowEx
 
-ALTERNATE_ENTRY _RhpThrowEx2
+ALTERNATE_ENTRY _RhpThrowExImpl2
 
         ;; no return
         int 3
