@@ -41,7 +41,7 @@ Each repository has its own build definition IDs. Here are common ones for dotne
 
 Override with:
 ```powershell
-scripts/Get-HelixFailures.ps1 -BuildId 1276327 -Organization "dnceng" -Project "internal-project-guid"
+./scripts/Get-HelixFailures.ps1 -BuildId 1276327 -Organization "dnceng" -Project "internal-project-guid"
 ```
 
 ## Common Pipeline Names (Example: dotnet/runtime)

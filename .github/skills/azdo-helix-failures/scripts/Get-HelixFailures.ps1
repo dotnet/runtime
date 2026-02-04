@@ -190,11 +190,15 @@ function Get-CachedResponse {
     if ($NoCache) { return $null }
 
     # Create a hash of the URL for the cache filename
-    $hash = [System.BitConverter]::ToString(
-        [System.Security.Cryptography.SHA256]::Create().ComputeHash(
-            [System.Text.Encoding]::UTF8.GetBytes($Url)
-        )
-    ).Replace("-", "").Substring(0, 16)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hash = [System.BitConverter]::ToString(
+            $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Url))
+        ).Replace("-", "").Substring(0, 16)
+    }
+    finally {
+        if ($null -ne $sha256) { $sha256.Dispose() }
+    }
 
     $cacheFile = Join-Path $script:CacheDir "$hash.json"
 
@@ -222,11 +226,15 @@ function Set-CachedResponse {
 
     if ($NoCache) { return }
 
-    $hash = [System.BitConverter]::ToString(
-        [System.Security.Cryptography.SHA256]::Create().ComputeHash(
-            [System.Text.Encoding]::UTF8.GetBytes($Url)
-        )
-    ).Replace("-", "").Substring(0, 16)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hash = [System.BitConverter]::ToString(
+            $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Url))
+        ).Replace("-", "").Substring(0, 16)
+    }
+    finally {
+        if ($null -ne $sha256) { $sha256.Dispose() }
+    }
 
     $cacheFile = Join-Path $script:CacheDir "$hash.json"
     $Content | Set-Content $cacheFile -Force
@@ -993,11 +1001,11 @@ function Search-KnownIssues {
             Write-Verbose "Searching for known issues with term: $term"
 
             # Search for open issues with the "Known Build Error" label
-            $results = gh issue list `
+            $results = & gh issue list `
                 --repo $Repository `
                 --label "Known Build Error" `
                 --state open `
-                --search "$term" `
+                --search $term `
                 --limit 3 `
                 --json number,title,url 2>$null | ConvertFrom-Json
 
