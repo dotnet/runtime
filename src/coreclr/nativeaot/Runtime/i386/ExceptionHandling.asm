@@ -22,7 +22,6 @@ ALTERNATE_ENTRY _RhpCall&SUFFIX&Funclet2
         pop     ebp
 endm
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; RhpThrowHwEx
@@ -119,8 +118,11 @@ FASTCALL_ENDFUNC
 FASTCALL_FUNC  RhpThrowEx, 4
 
         mov         edx, 1                  ;; edx = ExKind.Throw
+        jmp         RhpThrowExImpl
 
-RhpThrowExImpl::
+FASTCALL_ENDFUNC
+
+FASTCALL_FUNC  RhpThrowExImpl, 0
         esp_offsetof_ExInfo     textequ %0
         esp_offsetof_Context    textequ %SIZEOF__ExInfo
 

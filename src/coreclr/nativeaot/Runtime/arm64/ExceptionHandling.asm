@@ -277,11 +277,14 @@
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    NESTED_ENTRY RhpThrowEx
+    LEAF_ENTRY RhpThrowEx
 
         mov         w4, #1                                          ;; w4 = ExKind.Throw
+        b           RhpThrowExImpl
 
-RhpThrowExImpl
+    LEAF_END RhpThrowEx
+
+    NESTED_ENTRY RhpThrowExImpl
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
@@ -358,7 +361,7 @@ NotHijacked
 
         ;; no return
         EMIT_BREAKPOINT
-    NESTED_END RhpThrowEx
+    NESTED_END RhpThrowExImpl
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

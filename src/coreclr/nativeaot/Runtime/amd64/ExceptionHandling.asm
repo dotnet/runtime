@@ -132,11 +132,14 @@ LEAF_END RhpThrowExact, _TEXT
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpThrowEx, _TEXT
+LEAF_ENTRY RhpThrowEx, _TEXT
 
         mov     r9d, 1                  ;; r9d = ExKind.Throw
+        jmp     RhpThrowExImpl
+LEAF_END RhpThrowEx, _TEXT
 
-RhpThrowExImpl::
+
+NESTED_ENTRY RhpThrowExImpl, _TEXT
 
         SIZEOF_XmmSaves equ SIZEOF__PAL_LIMITED_CONTEXT - OFFSETOF__PAL_LIMITED_CONTEXT__Xmm6
         STACKSIZEOF_ExInfo equ ((SIZEOF__ExInfo + 15) AND (NOT 15))
@@ -223,7 +226,7 @@ ALTERNATE_ENTRY RhpThrowEx2
         ;; no return
         int 3
 
-NESTED_END RhpThrowEx, _TEXT
+NESTED_END RhpThrowExImpl, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

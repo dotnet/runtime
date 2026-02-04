@@ -105,11 +105,14 @@ LEAF_END RhpThrowExact, _TEXT
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+LEAF_ENTRY RhpThrowEx, _TEXT
 
         mov     r8d, 1                  // r8d = ExKind.Throw
+        jmp     RhpThrowExImpl
 
-ALTERNATE_ENTRY RhpThrowExImpl
+LEAF_END RhpThrowEx, _TEXT
+
+NESTED_ENTRY RhpThrowExImpl, _TEXT, NoHandler
 
         STACKSIZEOF_ExInfo      = ((SIZEOF__ExInfo + 15) & (~ 15))
         rsp_offsetof_Context    = STACKSIZEOF_ExInfo
@@ -178,7 +181,7 @@ ALTERNATE_ENTRY RhpThrowEx2
         // no return
         int 3
 
-NESTED_END RhpThrowEx, _TEXT
+NESTED_END RhpThrowExImpl, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //

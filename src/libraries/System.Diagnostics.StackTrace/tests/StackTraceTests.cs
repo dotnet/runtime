@@ -626,6 +626,7 @@ namespace System.Diagnostics.Tests
             yield return new object[] { () => V2Methods.Bux(), MethodExceptionStrings["Bux"] };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123979", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
         [MemberData(nameof(Ctor_Async_TestData))]
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

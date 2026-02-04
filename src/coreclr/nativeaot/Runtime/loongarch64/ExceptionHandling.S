@@ -293,11 +293,14 @@
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+    LEAF_ENTRY RhpThrowEx, _TEXT
 
         ori  $a4, $zero, 1                               // a4 = ExKind.Throw
+        b  RhpThrowExImpl
 
-ALTERNATE_ENTRY RhpThrowExImpl
+    LEAF_END RhpThrowEx, _TEXT
+
+    NESTED_ENTRY RhpThrowExImpl, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
@@ -371,7 +374,7 @@ LOCAL_LABEL(NotHijacked):
 
         // no return
         EMIT_BREAKPOINT
-    NESTED_END RhpThrowEx, _TEXT
+    NESTED_END RhpThrowExImpl, _TEXT
 
 //
 // void FASTCALL RhpRethrow()

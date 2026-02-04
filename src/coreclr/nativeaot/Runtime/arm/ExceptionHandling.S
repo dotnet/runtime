@@ -106,11 +106,13 @@ LEAF_END RhpThrowExact, _TEXT
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+LEAF_ENTRY RhpThrowEx, _TEXT
 
         mov         r2, #1                                          // r2 = ExKind.Throw
+        b           RhpThrowExImpl
+LEAF_END RhpThrowEx, _TEXT
 
-ALTERNATE_ENTRY RhpThrowExImpl
+NESTED_ENTRY RhpThrowExImpl, _TEXT, NoHandler
 
         // Setup a PAL_LIMITED_CONTEXT on the stack {
         PROLOG_VPUSH {d8-d15}
@@ -201,7 +203,7 @@ GLOBAL_LABEL RhpThrowEx2
         // no return
         EMIT_BREAKPOINT
 
-NESTED_END RhpThrowEx, _TEXT
+NESTED_END RhpThrowExImpl, _TEXT
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
