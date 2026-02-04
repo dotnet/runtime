@@ -9,82 +9,28 @@ namespace System.Net.NetworkInformation.Tests
 {
     public class DnsParsingTests : FileCleanupTestBase
     {
-        [InlineData("NetworkFiles/resolv.conf")]
-        [InlineData("NetworkFiles/resolv_nonewline.conf")]
         [Theory]
-        public void DnsSuffixParsing(string file)
+        [InlineData("NetworkFiles/resolv.conf", "fake.suffix.net")]
+        [InlineData("NetworkFiles/resolv_nonewline.conf", "fake.suffix.net")]
+        [InlineData("NetworkFiles/resolv_domain.conf", "domain.suffix.net")]
+        [InlineData("NetworkFiles/resolv_domain_before_search.conf", "search.suffix.net")]
+        [InlineData("NetworkFiles/resolv_search_before_domain.conf", "domain.suffix.net")]
+        [InlineData("NetworkFiles/resolv_multiple_search.conf", "last.suffix.net")]
+        [InlineData("NetworkFiles/resolv_multiple_domains_search.conf", "last.suffix.net")]
+        [InlineData("NetworkFiles/resolv_subdomain_comment.conf", "correct.domain.net")]
+        [InlineData("NetworkFiles/resolv_search_multiple_domains.conf", "foo3.com")]
+        public void DnsSuffixParsing(string file, string expectedSuffix)
         {
             string fileName = GetTestFilePath();
             FileUtil.NormalizeLineEndings(file, fileName);
 
             string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
-            Assert.Equal("fake.suffix.net", suffix);
+            Assert.Equal(expectedSuffix, suffix);
         }
 
-        [Fact]
-        public void DnsSuffixParsing_DomainKeyword()
-        {
-            string fileName = GetTestFilePath();
-            FileUtil.NormalizeLineEndings("NetworkFiles/resolv_domain.conf", fileName);
-
-            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
-            Assert.Equal("domain.suffix.net", suffix);
-        }
-
-        [Fact]
-        public void DnsSuffixParsing_DomainBeforeSearch_SearchWins()
-        {
-            string fileName = GetTestFilePath();
-            FileUtil.NormalizeLineEndings("NetworkFiles/resolv_domain_before_search.conf", fileName);
-
-            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
-            Assert.Equal("search.suffix.net", suffix);
-        }
-
-        [Fact]
-        public void DnsSuffixParsing_SearchBeforeDomain_DomainWins()
-        {
-            string fileName = GetTestFilePath();
-            FileUtil.NormalizeLineEndings("NetworkFiles/resolv_search_before_domain.conf", fileName);
-
-            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
-            Assert.Equal("domain.suffix.net", suffix);
-        }
-
-        [Fact]
-        public void DnsSuffixParsing_MultipleSearchDirectives_LastWins()
-        {
-            string fileName = GetTestFilePath();
-            FileUtil.NormalizeLineEndings("NetworkFiles/resolv_multiple_search.conf", fileName);
-
-            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
-            Assert.Equal("last.suffix.net", suffix);
-        }
-
-        [Fact]
-        public void DnsSuffixParsing_MultipleDomainAndSearch_LastWins()
-        {
-            string fileName = GetTestFilePath();
-            FileUtil.NormalizeLineEndings("NetworkFiles/resolv_multiple_domains_search.conf", fileName);
-
-            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
-            Assert.Equal("last.suffix.net", suffix);
-        }
-
-        [Fact]
-        public void DnsSuffixParsing_DomainKeywordInComment_NotMatched()
-        {
-            // Ensure that "domain" appearing as part of other words (like "subdomain") is not matched
-            string fileName = GetTestFilePath();
-            FileUtil.NormalizeLineEndings("NetworkFiles/resolv_subdomain_comment.conf", fileName);
-
-            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
-            Assert.Equal("correct.domain.net", suffix);
-        }
-
+        [Theory]
         [InlineData("NetworkFiles/resolv.conf")]
         [InlineData("NetworkFiles/resolv_nonewline.conf")]
-        [Theory]
         public void DnsAddressesParsing(string file)
         {
             string fileName = GetTestFilePath();
