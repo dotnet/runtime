@@ -58,7 +58,9 @@ namespace System.IO.Compression
             else
             {
                 if (salt.Length != saltSize)
+                {
                     throw new ArgumentException($"Salt must be {saltSize} bytes for AES-{keySizeBits}.", nameof(salt));
+                }
                 saltBytes = salt;
             }
 
@@ -259,7 +261,9 @@ namespace System.IO.Compression
             Debug.Assert(_hmac is not null, "HMAC should have been initialized");
 
             if (_authCodeValidated)
+            {
                 return;
+            }
 
             // Finalize HMAC computation
             byte[] expectedAuth = _hmac.GetHashAndReset();
@@ -278,7 +282,9 @@ namespace System.IO.Compression
 
             // Compare the first 10 bytes of the expected hash
             if (!storedAuth.AsSpan().SequenceEqual(expectedAuth.AsSpan(0, 10)))
-                throw new InvalidDataException(SR.WinZipAuthCodeMismatch);
+            {
+                throw new InvalidDataException(SR.UnexpectedEndOfStream);
+            }
 
             _authCodeValidated = true;
         }
@@ -303,8 +309,10 @@ namespace System.IO.Compression
 
         private async Task WriteHeaderCoreAsync(bool isAsync, CancellationToken cancellationToken)
         {
-            if (_headerWritten) return;
-
+            if (_headerWritten)
+            {
+                return;
+            }
             Debug.Assert(_salt is not null && _passwordVerifier is not null, "Keys should have been generated before writing header");
 
             if (isAsync)
@@ -409,7 +417,9 @@ namespace System.IO.Compression
             for (int i = 0; i < 16; i++)
             {
                 if (++_counterBlock[i] != 0)
+                {
                     break;
+                }
             }
         }
 
@@ -419,7 +429,9 @@ namespace System.IO.Compression
             Debug.Assert(_hmac is not null, "HMAC should have been initialized");
 
             if (_authCodeValidated)
+            {
                 return;
+            }
 
             byte[] authCode = _hmac.GetHashAndReset();
 
@@ -442,13 +454,17 @@ namespace System.IO.Compression
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (_encrypting)
+            {
                 throw new NotSupportedException(SR.ReadingNotSupported);
+            }
         }
 
         private int GetBytesToRead(int requestedCount)
         {
             if (_encryptedDataRemaining <= 0)
+            {
                 return 0;
+            }
 
             return (int)Math.Min(requestedCount, _encryptedDataRemaining);
         }
@@ -489,9 +505,10 @@ namespace System.IO.Compression
                     ValidateAuthCode();
                 }
             }
-            else
+            else if (_encryptedDataRemaining > 0)
             {
-                ValidateAuthCode();
+                // Base stream returned 0 bytes but we expected more encrypted data - stream is truncated
+                throw new InvalidDataException(SR.UnexpectedEndOfStream);
             }
 
             return bytesRead;
@@ -592,7 +609,9 @@ namespace System.IO.Compression
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (!_encrypting)
+            {
                 throw new NotSupportedException(SR.WritingNotSupported);
+            }
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -700,7 +719,10 @@ namespace System.IO.Compression
 
         protected override void Dispose(bool disposing)
         {
-            if (_disposed) return;
+            if (_disposed)
+            {
+                return;
+            }
 
             if (disposing)
             {
@@ -720,7 +742,10 @@ namespace System.IO.Compression
                         // Write Auth Code
                         WriteAuthCodeCoreAsync(false, CancellationToken.None).GetAwaiter().GetResult();
 
-                        if (_baseStream.CanWrite) _baseStream.Flush();
+                        if (_baseStream.CanWrite)
+                        {
+                            _baseStream.Flush();
+                        }
                     }
                 }
                 finally
@@ -729,7 +754,10 @@ namespace System.IO.Compression
                     _aes.Dispose();
                     _hmac?.Dispose();
 
-                    if (!_leaveOpen) _baseStream.Dispose();
+                    if (!_leaveOpen)
+                    {
+                        _baseStream.Dispose();
+                    }
                 }
             }
 
@@ -739,7 +767,10 @@ namespace System.IO.Compression
 
         public override async ValueTask DisposeAsync()
         {
-            if (_disposed) return;
+            if (_disposed)
+            {
+                return;
+            }
 
             try
             {
@@ -757,7 +788,10 @@ namespace System.IO.Compression
                     // Write Auth Code
                     await WriteAuthCodeCoreAsync(true, CancellationToken.None).ConfigureAwait(false);
 
-                    if (_baseStream.CanWrite) await _baseStream.FlushAsync().ConfigureAwait(false);
+                    if (_baseStream.CanWrite)
+                    {
+                        await _baseStream.FlushAsync().ConfigureAwait(false);
+                    }
                 }
             }
             finally

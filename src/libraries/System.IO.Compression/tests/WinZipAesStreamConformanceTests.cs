@@ -10,27 +10,27 @@ using Xunit;
 namespace System.IO.Compression.Tests
 {
     /// <summary>
-    /// Conformance tests for WinZipAesStream encryption (AES-128, write-only stream).
+    /// Conformance tests for WinZipAesStream (AES-128).
     /// </summary>
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
-    public sealed class WinZipAes128EncryptionStreamConformanceTests : WinZipAesEncryptionStreamConformanceTests
+    public sealed class WinZipAes128StreamConformanceTests : WinZipAesStreamConformanceTests
     {
         protected override int KeySizeBits => 128;
     }
 
     /// <summary>
-    /// Conformance tests for WinZipAesStream encryption (AES-256, write-only stream).
+    /// Conformance tests for WinZipAesStream (AES-256).
     /// </summary>
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
-    public sealed class WinZipAes256EncryptionStreamConformanceTests : WinZipAesEncryptionStreamConformanceTests
+    public sealed class WinZipAes256StreamConformanceTests : WinZipAesStreamConformanceTests
     {
         protected override int KeySizeBits => 256;
     }
 
     /// <summary>
-    /// Base class for WinZipAesStream encryption conformance tests.
+    /// Base class for WinZipAesStream conformance tests.
     /// </summary>
-    public abstract class WinZipAesEncryptionStreamConformanceTests : StandaloneStreamConformanceTests
+    public abstract class WinZipAesStreamConformanceTests : StandaloneStreamConformanceTests
     {
         private const string TestPassword = "test-password";
 
@@ -39,8 +39,9 @@ namespace System.IO.Compression.Tests
         private static readonly MethodInfo s_createMethod;
 
         protected abstract int KeySizeBits { get; }
+        protected int SaltSize => KeySizeBits / 16;
 
-        static WinZipAesEncryptionStreamConformanceTests()
+        static WinZipAesStreamConformanceTests()
         {
             var assembly = typeof(ZipArchive).Assembly;
             s_winZipAesStreamType = assembly.GetType("System.IO.Compression.WinZipAesStream", throwOnError: true)!;
@@ -60,11 +61,8 @@ namespace System.IO.Compression.Tests
 
         protected override bool CanSeek => false;
 
-        protected override Task<Stream?> CreateReadOnlyStreamCore(byte[]? initialData) =>
-            Task.FromResult<Stream?>(null); // Encryption stream is write-only
-
         protected override Task<Stream?> CreateReadWriteStreamCore(byte[]? initialData) =>
-            Task.FromResult<Stream?>(null); // Encryption stream is write-only
+            Task.FromResult<Stream?>(null); // WinZipAesStream is either read-only or write-only
 
         protected override Task<Stream?> CreateWriteOnlyStreamCore(byte[]? initialData)
         {
@@ -86,65 +84,6 @@ namespace System.IO.Compression.Tests
 
             return Task.FromResult<Stream?>(encryptStream);
         }
-    }
-
-    /// <summary>
-    /// Conformance tests for WinZipAesStream decryption (AES-128, read-only stream).
-    /// </summary>
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
-    public sealed class WinZipAes128DecryptionStreamConformanceTests : WinZipAesDecryptionStreamConformanceTests
-    {
-        protected override int KeySizeBits => 128;
-    }
-
-    /// <summary>
-    /// Conformance tests for WinZipAesStream decryption (AES-256, read-only stream).
-    /// </summary>
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
-    public sealed class WinZipAes256DecryptionStreamConformanceTests : WinZipAesDecryptionStreamConformanceTests
-    {
-        protected override int KeySizeBits => 256;
-    }
-
-    /// <summary>
-    /// Base class for WinZipAesStream decryption conformance tests.
-    /// </summary>
-    public abstract class WinZipAesDecryptionStreamConformanceTests : StandaloneStreamConformanceTests
-    {
-        private const string TestPassword = "test-password";
-
-        private static readonly Type s_winZipAesStreamType;
-        private static readonly MethodInfo s_createKeyMethod;
-        private static readonly MethodInfo s_createMethod;
-
-        protected abstract int KeySizeBits { get; }
-        protected int SaltSize => KeySizeBits / 16;
-
-        static WinZipAesDecryptionStreamConformanceTests()
-        {
-            var assembly = typeof(ZipArchive).Assembly;
-            s_winZipAesStreamType = assembly.GetType("System.IO.Compression.WinZipAesStream", throwOnError: true)!;
-
-            s_createKeyMethod = s_winZipAesStreamType.GetMethod("CreateKey",
-                BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
-                null,
-                new[] { typeof(ReadOnlyMemory<char>), typeof(byte[]), typeof(int) },
-                null)!;
-
-            s_createMethod = s_winZipAesStreamType.GetMethod("Create",
-                BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
-                null,
-                new[] { typeof(Stream), typeof(byte[]), typeof(int), typeof(long), typeof(bool), typeof(bool) },
-                null)!;
-        }
-
-        protected override bool CanSeek => false;
-
-        protected override Task<Stream?> CreateWriteOnlyStreamCore(byte[]? initialData) =>
-            Task.FromResult<Stream?>(null); // Decryption stream is read-only
-
-        protected override Task<Stream?> CreateReadWriteStreamCore(byte[]? initialData) =>
-            Task.FromResult<Stream?>(null); // Decryption stream is read-only
 
         protected override Task<Stream?> CreateReadOnlyStreamCore(byte[]? initialData)
         {

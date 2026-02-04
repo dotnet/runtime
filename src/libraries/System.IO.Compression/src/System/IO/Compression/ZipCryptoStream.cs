@@ -218,18 +218,18 @@ namespace System.IO.Compression
             uint key2 = BinaryPrimitives.ReadUInt32LittleEndian(keyBytes.AsSpan(8, 4));
 
             byte[] hdr = new byte[12];
-            try
+            int bytesRead;
+
+            if (isAsync)
             {
-                if (isAsync)
-                {
-                    await baseStream.ReadExactlyAsync(hdr, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    baseStream.ReadExactly(hdr);
-                }
+                bytesRead = await baseStream.ReadAtLeastAsync(hdr, hdr.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
             }
-            catch (EndOfStreamException)
+            else
+            {
+                bytesRead = baseStream.ReadAtLeast(hdr, hdr.Length, throwOnEndOfStream: false);
+            }
+
+            if (bytesRead < hdr.Length)
             {
                 throw new InvalidDataException(SR.TruncatedZipCryptoHeader);
             }
@@ -292,14 +292,15 @@ namespace System.IO.Compression
 
         public override int Read(Span<byte> destination)
         {
-            if (!_encrypting)
+            if (_encrypting)
             {
-                int n = _base.Read(destination);
-                for (int i = 0; i < n; i++)
-                    destination[i] = DecryptAndUpdateKeys(destination[i]);
-                return n;
+                throw new NotSupportedException(SR.ReadingNotSupported);
             }
-            throw new NotSupportedException(SR.ReadingNotSupported);
+            int n = _base.Read(destination);
+            for (int i = 0; i < n; i++)
+                destination[i] = DecryptAndUpdateKeys(destination[i]);
+            return n;
+
         }
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
@@ -343,10 +344,14 @@ namespace System.IO.Compression
             {
                 // If encrypted empty entry (no payload written), still must emit 12-byte header:
                 if (_encrypting && !_headerWritten)
+                {
                     EnsureHeader();
+                }
 
                 if (!_leaveOpen)
+                {
                     _base.Dispose();
+                }
             }
             base.Dispose(disposing);
         }
@@ -361,9 +366,13 @@ namespace System.IO.Compression
 
             // If encrypted empty entry (no payload written), still must emit 12-byte header:
             if (_encrypting && !_headerWritten)
+            {
                 await EnsureHeaderAsync(CancellationToken.None).ConfigureAwait(false);
+            }
             if (!_leaveOpen)
+            {
                 await _base.DisposeAsync().ConfigureAwait(false);
+            }
 
             // Don't call base.DisposeAsync() as it would call Dispose() synchronously,
             // which could fail on async-only streams. We've already handled all cleanup.
@@ -377,17 +386,19 @@ namespace System.IO.Compression
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            if (!_encrypting)
+            if (_encrypting)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                int n = await _base.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
-                Span<byte> span = buffer.Span;
-                for (int i = 0; i < n; i++)
-                    span[i] = DecryptAndUpdateKeys(span[i]);
-                return n;
+                throw new NotSupportedException(SR.ReadingNotSupported);
             }
-            throw new NotSupportedException(SR.ReadingNotSupported);
+
+            cancellationToken.ThrowIfCancellationRequested();
+            int n = await _base.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            Span<byte> span = buffer.Span;
+
+            for (int i = 0; i < n; i++)
+                span[i] = DecryptAndUpdateKeys(span[i]);
+
+            return n;
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)

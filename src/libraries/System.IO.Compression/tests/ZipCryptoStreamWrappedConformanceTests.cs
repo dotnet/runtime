@@ -24,6 +24,7 @@ namespace System.IO.Compression.Tests
         private static readonly MethodInfo s_createKeyMethod;
         private static readonly MethodInfo s_createEncryptionMethod;
         private static readonly MethodInfo s_createDecryptionMethod;
+        private static readonly MethodInfo s_createAsyncMethod;
 
         static ZipCryptoStreamWrappedConformanceTests()
         {
@@ -47,13 +48,17 @@ namespace System.IO.Compression.Tests
                 null,
                 new[] { typeof(Stream), typeof(byte[]), typeof(byte), typeof(bool), typeof(bool) },
                 null)!;
+
+            s_createAsyncMethod = s_zipCryptoStreamType.GetMethod("CreateAsync",
+               BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
+               null,
+               new[] { typeof(Stream), typeof(byte[]), typeof(byte), typeof(bool), typeof(CancellationToken), typeof(bool) },
+               null);
         }
 
         // ZipCryptoStream doesn't support seeking
         protected override bool CanSeek => false;
 
-        // The encryption header is written lazily, so flush is required
-        protected override bool FlushRequiredToWriteData => true;
         protected override bool FlushGuaranteesAllDataWritten => true;
 
         // ZipCrypto uses streaming cipher - blocks on zero byte reads
@@ -108,33 +113,18 @@ namespace System.IO.Compression.Tests
             var assembly = typeof(ZipArchive).Assembly;
             var zipCryptoStreamType = assembly.GetType("System.IO.Compression.ZipCryptoStream", throwOnError: true)!;
 
-            // Try to use CreateAsync first for proper async support
-            // Signature: CreateAsync(Stream, byte[], byte, bool encrypting, CancellationToken, bool leaveOpen)
-            var createAsyncMethod = zipCryptoStreamType.GetMethod("CreateAsync",
-                BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
-                null,
-                new[] { typeof(Stream), typeof(byte[]), typeof(byte), typeof(bool), typeof(CancellationToken), typeof(bool) },
-                null);
 
-            if (createAsyncMethod != null)
+            // CreateAsync returns Task<ZipCryptoStream>, await it and get the result
+            var task = (Task)s_createAsyncMethod.Invoke(null, new object[]
             {
-                // CreateAsync returns Task<ZipCryptoStream>, await it and get the result
-                var task = (Task)createAsyncMethod.Invoke(null, new object[]
-                {
                     baseStream, keyBytes, expectedCheckByte, false /* encrypting */, CancellationToken.None, leaveOpen
-                })!;
-                await task.ConfigureAwait(false);
-
-                // Get the Result property from the completed task
-                var resultProperty = task.GetType().GetProperty("Result")!;
-                return (Stream)resultProperty.GetValue(task)!;
-            }
-
-            // Fall back to sync method if async not available
-            return (Stream)s_createDecryptionMethod.Invoke(null, new object[]
-            {
-                baseStream, keyBytes, expectedCheckByte, false /* encrypting */, leaveOpen
             })!;
+            await task.ConfigureAwait(false);
+
+            // Get the Result property from the completed task
+            var resultProperty = task.GetType().GetProperty("Result")!;
+            return (Stream)resultProperty.GetValue(task)!;
+
         }
     }
 }
