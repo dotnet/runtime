@@ -179,7 +179,31 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
     dispIns(id);
     appendToCurIG(id);
-    // emitLastMemBarrier = nullptr; // Cannot optimize away future memory barriers
+}
+
+//------------------------------------------------------------------------
+// GetWasmArgsCount: Get WASM argument count for the root method.
+//
+// Arguments:
+//    compiler - The compiler object
+//
+// Return Value:
+//    The number of arguments in the WASM signature of the method being compiled.
+//
+static unsigned GetWasmArgsCount(Compiler* compiler)
+{
+    assert(compiler->funCurrentFunc()->funKind == FUNC_ROOT);
+
+    unsigned count = 0;
+    for (unsigned argLclNum = 0; argLclNum < compiler->info.compArgsCount; argLclNum++)
+    {
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(argLclNum);
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
+        {
+            count = max(count, WasmRegToIndex(segment.GetRegister()) + 1);
+        }
+    }
+    return count;
 }
 
 //-----------------------------------------------------------------------------
@@ -206,7 +230,7 @@ emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr      attr,
 
     if (m_debugInfoSize > 0)
     {
-        id->idDebugOnlyInfo()->lclOffset = lclOffset;
+        id->idDebugOnlyInfo()->lclBaseIndex = GetWasmArgsCount(m_compiler) + lclOffset;
     }
 
     return id;
@@ -221,7 +245,9 @@ emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr      attr,
 //   ins      - instruction to emit
 //   imm      - immediate value (local count)
 //   valType  - value type of the local variable
-//   offs     - local variable offset (= count of preceding locals) for debug info
+//   offs     - local variable offset (= count of preceding locals) for debug info,
+//              only includes locals declared explicitly (not args)
+//
 void emitter::emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valType, int offs)
 {
     instrDesc* id  = emitNewInstrLclVarDecl(EA_8BYTE, imm, valType, offs);
@@ -700,7 +726,7 @@ void emitter::emitDispIns(
             if (m_debugInfoSize > 0)
             {
                 // With debug info: print the local offsets being declared
-                int offs = id->idDebugOnlyInfo()->lclOffset;
+                int offs = id->idDebugOnlyInfo()->lclBaseIndex;
                 if (count > 1)
                 {
                     printf("[%u..%u] type=%s", offs, offs + count - 1, WasmValueTypeName(valType));

@@ -4131,7 +4131,8 @@ public:
     void lvaInitAsyncContinuation(unsigned* curVarNum);
 
 #if defined(TARGET_WASM)
-    void lvaInitWasmStackPtr(unsigned* curVarNum);
+    void lvaInitWasmStackPtrArg(unsigned* curVarNum);
+    void lvaAllocWasmStackPtr();
     void lvaInitWasmPortableEntryPtr(unsigned* curVarNum);
 #endif // defined(TARGET_WASM)
 

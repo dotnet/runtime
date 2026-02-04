@@ -374,6 +374,16 @@ public:
 
 #endif // !DOUBLE_ALIGN
 
+#ifdef TARGET_WASM
+    struct WasmLocalsDecl
+    {
+        WasmValueType Type;
+        unsigned      Count;
+    };
+
+    jitstd::vector<WasmLocalsDecl> WasmLocalsDecls;
+#endif
+
 #ifdef DEBUG
     // The following is used to make sure the value of 'GetInterruptible()' isn't
     // changed after it's been used by any logic that depends on its value.

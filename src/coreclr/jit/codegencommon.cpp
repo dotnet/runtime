@@ -201,6 +201,9 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
 #endif // HAS_FIXED_REGISTER_SET
     , m_compiler(theCompiler)
     , treeLifeUpdater(nullptr)
+#ifdef TARGET_WASM
+    , WasmLocalsDecls(theCompiler->getAllocator(CMK_Codegen))
+#endif
 {
 }
 
