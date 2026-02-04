@@ -695,7 +695,7 @@ function Extract-HelixUrls {
     $normalizedContent = $LogContent -replace "`r`n", "" -replace "`n", ""
 
     # Match Helix console log URLs - workitem names can contain dots, dashes, and other chars
-    $urlMatches = [regex]::Matches($normalizedContent, 'https://helix\.dot\.net/api/[^/]+/jobs/[a-f0-9-]+/workitems/[^/\s\]]+/console')
+    $urlMatches = [regex]::Matches($normalizedContent, 'https://helix\.dot\.net/api/[^/]+/jobs/[a-f0-9-]+/workitems/[^/\s]+/console')
     foreach ($match in $urlMatches) {
         $urls += $match.Value
     }
@@ -709,7 +709,7 @@ function Extract-TestFailures {
 
     $failures = @()
 
-    # Match test failure patterns from MSBuild output (use $failureMatches to avoid shadowing automatic $Matches variable)
+    # Match test failure patterns from MSBuild output
     $pattern = 'error\s*:\s*.*Test\s+(\S+)\s+has failed'
     $failureMatches = [regex]::Matches($LogContent, $pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
@@ -814,7 +814,7 @@ function Extract-HelixLogUrls {
 
     # Match Helix console log URLs from log content
     # Pattern: https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems/{workItemName}/console
-    $pattern = 'https://helix\.dot\.net/api/[^/]+/jobs/([a-f0-9-]+)/workitems/([^/\s\]]+)/console'
+    $pattern = 'https://helix\.dot\.net/api/[^/]+/jobs/([a-f0-9-]+)/workitems/([^/\s]+)/console'
     $urlMatches = [regex]::Matches($LogContent, $pattern)
 
     foreach ($match in $urlMatches) {
@@ -979,7 +979,7 @@ function Search-KnownIssues {
         # Third priority: Extract specific exception patterns (but not generic TimeoutException)
         if ($ErrorMessage -and $searchTerms.Count -eq 0) {
             # Look for specific exception types
-            if ($ErrorMessage -match '(System\.(?:InvalidOperation|ArgumentNull|FormatProvider)\w*Exception)') {
+            if ($ErrorMessage -match '(System\.(?:InvalidOperation|ArgumentNull|Format)\w*Exception)') {
                 $searchTerms += $Matches[1]
             }
         }
@@ -1004,7 +1004,7 @@ function Search-KnownIssues {
             if ($results) {
                 foreach ($issue in $results) {
                     # Check if the title actually contains our search term (avoid false positives)
-                    if ($issue.title -match [regex]::Escape($term) -or $term.Length -gt 20) {
+                    if ($issue.title -match [regex]::Escape($term)) {
                         $knownIssues += @{
                             Number = $issue.number
                             Title = $issue.title

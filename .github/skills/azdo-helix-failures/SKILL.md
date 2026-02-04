@@ -1,11 +1,19 @@
 ---
 name: azdo-helix-failures
-description: Retrieve and analyze test failures from Azure DevOps builds and Helix test runs. Use this when investigating CI failures, checking why a PR's tests are failing, debugging Helix test issues, or analyzing build errors for any dotnet repository (runtime, sdk, aspnetcore, roslyn, etc.). Triggers include questions like "why is this PR failing", "analyze the CI failures", "what's wrong with this build", or any URL containing dev.azure.com, helix.dot.net, or GitHub PR links with failing checks.
+description: Retrieve and analyze test failures from Azure DevOps builds and Helix test runs for dotnet repositories.
 ---
 
 # Azure DevOps and Helix Failure Analysis
 
 Analyze CI test failures in Azure DevOps and Helix for dotnet repositories (runtime, sdk, aspnetcore, roslyn, and more).
+
+## When to Use This Skill
+
+Use this skill when:
+- Investigating CI failures or checking why a PR's tests are failing
+- Debugging Helix test issues or analyzing build errors
+- Given URLs containing `dev.azure.com`, `helix.dot.net`, or GitHub PR links with failing checks
+- Asked questions like "why is this PR failing", "analyze the CI failures", or "what's wrong with this build"
 
 ## Quick Start
 
