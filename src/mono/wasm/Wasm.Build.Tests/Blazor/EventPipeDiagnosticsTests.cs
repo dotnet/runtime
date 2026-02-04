@@ -355,7 +355,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
     private async Task ClickAndCollect(IPage page)
     {
-        await page.EvaluateAsync(@"globalThis.upload;");
+        await page.EvaluateAsync(@"var ignoredPromise = globalThis.upload();");
 
         // Click the button a few times
         for (int i = 0; i < 5; i++)
