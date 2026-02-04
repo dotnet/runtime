@@ -165,7 +165,7 @@ namespace System.IO
             _stream = Stream.Null;
             _encoding = UTF8NoBOM;
             _encoder = null!;
-            _charBuffer = Array.Empty<char>();
+            _charBuffer = [];
         }
 
         private static FileStream ValidateArgsAndOpenPath(string path, FileStreamOptions options)

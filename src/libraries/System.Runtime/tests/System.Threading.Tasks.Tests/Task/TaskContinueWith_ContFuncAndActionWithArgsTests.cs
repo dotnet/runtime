@@ -222,7 +222,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 c2.Wait();
-                Assert.Fail(string.Format("RunContinueWithPreCancelTests_State:  Expected c2.Wait to throw AE/TCE"));
+                Assert.Fail("RunContinueWithPreCancelTests_State:  Expected c2.Wait to throw AE/TCE");
             }
             catch (Exception ex)
             {
@@ -237,7 +237,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 c4.Wait();
-                Assert.Fail(string.Format("RunContinueWithPreCancelTests_State:  Expected c4.Wait to throw AE/TCE"));
+                Assert.Fail("RunContinueWithPreCancelTests_State:  Expected c4.Wait to throw AE/TCE");
             }
             catch (Exception ex)
             {
@@ -318,7 +318,7 @@ namespace System.Threading.Tasks.Tests
             }
             catch
             {
-                Assert.Fail(string.Format("RunContinueWithOnDisposedTaskTest_State:    > FAILED!  should NOT have seen an exception."));
+                Assert.Fail("RunContinueWithOnDisposedTaskTest_State:    > FAILED!  should NOT have seen an exception.");
             }
         }
 
@@ -355,20 +355,20 @@ namespace System.Threading.Tasks.Tests
 
             if (c1b.Status != TaskStatus.Canceled)
             {
-                Assert.Fail(string.Format("RunContinueWithParamsTest_State    > FAILED.  Continuation task w/NotOnCanceled should have been canceled when antecedent was canceled."));
+                Assert.Fail("RunContinueWithParamsTest_State    > FAILED.  Continuation task w/NotOnCanceled should have been canceled when antecedent was canceled.");
             }
             if (c1c.Status != TaskStatus.RanToCompletion)
             {
-                Assert.Fail(string.Format("RunContinueWithParamsTest_State    > FAILED.  Continuation task w/ canceled antecedent should have run to completion."));
+                Assert.Fail("RunContinueWithParamsTest_State    > FAILED.  Continuation task w/ canceled antecedent should have run to completion.");
             }
             if (c2b.Status != TaskStatus.Canceled)
             {
-                Assert.Fail(string.Format("RunContinueWithParamsTest_State    > FAILED.  Continuation task w/NotOnRanToCompletion should have been canceled when antecedent completed."));
+                Assert.Fail("RunContinueWithParamsTest_State    > FAILED.  Continuation task w/NotOnRanToCompletion should have been canceled when antecedent completed.");
             }
             c2c.Wait();
             if (c2c.Status != TaskStatus.RanToCompletion)
             {
-                Assert.Fail(string.Format("RunContinueWithParamsTest_State    > FAILED.  Continuation task w/ completed antecedent should have run to completion."));
+                Assert.Fail("RunContinueWithParamsTest_State    > FAILED.  Continuation task w/ completed antecedent should have run to completion.");
             }
         }
 
@@ -381,14 +381,14 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 Task t2 = t1.ContinueWith((ooo, obj) => { }, stateParam, (TaskContinuationOptions)0x1000000);
-                Assert.Fail(string.Format("RunContinueWithParamsTest_State    > FAILED.  Should have seen exception from illegal continuation options."));
+                Assert.Fail("RunContinueWithParamsTest_State    > FAILED.  Should have seen exception from illegal continuation options.");
             }
             catch { }
 
             try
             {
                 Task t2 = t1.ContinueWith((ooo, obj) => { }, stateParam, TaskContinuationOptions.LongRunning | TaskContinuationOptions.ExecuteSynchronously);
-                Assert.Fail(string.Format("RunContinueWithParamsTest_State    > FAILED.  Should have seen exception when combining LongRunning and ExecuteSynchronously"));
+                Assert.Fail("RunContinueWithParamsTest_State    > FAILED.  Should have seen exception when combining LongRunning and ExecuteSynchronously");
             }
             catch { }
 
@@ -398,7 +398,7 @@ namespace System.Threading.Tasks.Tests
                             TaskContinuationOptions.NotOnRanToCompletion |
                             TaskContinuationOptions.NotOnFaulted |
                             TaskContinuationOptions.NotOnCanceled);
-                Assert.Fail(string.Format("RunContinueWithParamsTest_State    > FAILED.  Should have seen exception from illegal NotOnAny continuation options."));
+                Assert.Fail("RunContinueWithParamsTest_State    > FAILED.  Should have seen exception from illegal NotOnAny continuation options.");
             }
             catch (Exception)
             {
