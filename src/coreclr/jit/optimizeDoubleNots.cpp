@@ -141,7 +141,7 @@ PhaseStatus Compiler::optOptimizeDoubleNots()
                                 {
                                     if (candidateStmt->GetRootNode() == defNode)
                                     {
-                                        defStmt  = candidateStmt;
+                                        defStmt = candidateStmt;
                                         JITDUMP("  - Found definition in DefBlock: " FMT_BB ", " FMT_STMT "\n",
                                                 defBlock->bbNum, defStmt->GetID());
                                         break;
@@ -166,7 +166,8 @@ PhaseStatus Compiler::optOptimizeDoubleNots()
                                     GenTree* baseExpr = defRhs->AsOp()->gtOp1;
                                     if (baseExpr == nullptr)
                                     {
-                                        JITDUMP("  - Empty base expression in " FMT_BB " - skipping\n", defBlock->bbNum);
+                                        JITDUMP("  - Empty base expression in " FMT_BB " - skipping\n",
+                                                defBlock->bbNum);
                                         continue;
                                     }
                                     GenTree* replacement = gtCloneExpr(baseExpr);
