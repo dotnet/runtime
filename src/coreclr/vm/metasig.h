@@ -524,6 +524,7 @@ DEFINE_METASIG(SM(Str_RetArrStr, s, a(s)))
 
 // Exception
 DEFINE_METASIG(IM(RefUInt_RetStr, r(K), s))
+DEFINE_METASIG_T(SM(PtrException_PtrIntPtr_PtrException_RetVoid, P(C(EXCEPTION)) P(I) P(C(EXCEPTION)), v))
 
 #ifdef FEATURE_COMINTEROP
 // The signature of the method System.Runtime.InteropServices.ICustomQueryInterface.GetInterface

@@ -257,6 +257,27 @@ namespace System
             return true;
         }
 
+#if FEATURE_COMINTEROP
+        // used by vm
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetDescriptionBstr(Exception* obj, IntPtr* bstr, Exception* pException)
+        {
+            try
+            {
+                string message = obj->Message;
+                if (string.IsNullOrEmpty(message))
+                    message = obj->GetClassName();
+
+                // Allocate the description BSTR.
+                *bstr = Interop.OleAut32.SysAllocStringLen(message, (uint)message.Length);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
+
         // used by vm
         internal string? GetHelpContext(out uint helpContext)
         {
