@@ -156,7 +156,6 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public async Task SslStream_WriteAfterRemoteCloseNotify_ThrowsIOException(bool useAsync)
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -166,34 +165,27 @@ namespace System.Net.Security.Tests
             using (var server = new SslStream(serverStream))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
-                await server.AuthenticateAsServerAsync(certificate);
-                await client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false));
+                await server.AuthenticateAsServerAsync(certificate).WaitAsync(TestConfiguration.PassingTestTimeout);
+                await client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false)).WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 var buffer = new byte[1024];
 
                 // Server initiates shutdown
-                await server.ShutdownAsync();
+                await server.ShutdownAsync().WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 // Client reads the close_notify
-                int bytesRead = await client.ReadAsync(buffer, 0, buffer.Length);
+                int bytesRead = await client.ReadAsync(buffer, 0, buffer.Length).WaitAsync(TestConfiguration.PassingTestTimeout);
                 Assert.Equal(0, bytesRead);
 
                 // Client attempts to write after receiving close_notify
-                // This tests the fix for handling errSSLClosedGraceful from SSLWrite.
-                // Before the fix: Would get IOException with "Bad address" Win32Exception (error code 14)
-                // After the fix: Should get IOException with SecurityStatusPalErrorCode.ContextExpired
-                IOException ex;
                 if (useAsync)
                 {
-                    ex = await Assert.ThrowsAsync<IOException>(() => client.WriteAsync(buffer, 0, buffer.Length));
+                    await Assert.ThrowsAsync<IOException>(() => client.WriteAsync(buffer, 0, buffer.Length)).WaitAsync(TestConfiguration.PassingTestTimeout);
                 }
                 else
                 {
-                    ex = Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
+                    Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
                 }
-
-                // Verify we get an IOException (the framework translates ContextExpired to IOException)
-                Assert.NotNull(ex);
             }
         }
 
