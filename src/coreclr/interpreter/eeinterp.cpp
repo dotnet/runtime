@@ -224,13 +224,15 @@ const char* const InterpMemKindTraits::Names[] = {
 #include "interpmemkind.h"
 };
 
-// The interpreter always uses direct malloc/free, so this returns false.
+// The interpreter normally uses the host allocator (allocateSlab/freeSlab). In DEBUG
+// builds, when InterpDirectAlloc is enabled, allocations bypass the host allocator
+// and go directly to the OS, so this may return true.
 bool InterpMemKindTraits::bypassHostAllocator()
 {
 #if defined(DEBUG)
-    // When JitDirectAlloc is set, all JIT allocations requests are forwarded
+    // When InterpDirectAlloc is set, interpreter allocation requests are forwarded
     // directly to the OS. This allows taking advantage of pageheap and other gflag
-    // knobs for ensuring that we do not have buffer overruns in the JIT.
+    // knobs for ensuring that we do not have buffer overruns in the interpreter.
 
     return InterpConfig.InterpDirectAlloc() != 0;
 #else  // defined(DEBUG)
