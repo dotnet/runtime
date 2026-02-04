@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -199,9 +200,12 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        byte[] arrayPoolArray = ArrayPool<byte>.Shared.Rent(ReadCentralDirectoryReadBufferSize);
         try
         {
-            ReadCentralDirectoryInitialize(out byte[] fileBuffer, out long numberOfEntries, out bool saveExtraFieldsAndComments, out bool continueReadingCentralDirectory, out int bytesRead, out int currPosition, out int bytesConsumed);
+            Memory<byte> fileBuffer = arrayPoolArray;
+
+            ReadCentralDirectoryInitialize(out long numberOfEntries, out bool saveExtraFieldsAndComments, out bool continueReadingCentralDirectory, out int bytesRead, out int currPosition, out int bytesConsumed);
 
             // read the central directory
             while (continueReadingCentralDirectory)
@@ -209,13 +213,13 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                 // the buffer read must always be large enough to fit the constant section size of at least one header
                 int currBytesRead = await _archiveStream.ReadAtLeastAsync(fileBuffer, ZipCentralDirectoryFileHeader.BlockConstantSectionSize, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
 
-                byte[] sizedFileBuffer = fileBuffer[0..currBytesRead];
+                ReadOnlyMemory<byte> sizedFileBuffer = fileBuffer[0..currBytesRead];
                 continueReadingCentralDirectory = currBytesRead >= ZipCentralDirectoryFileHeader.BlockConstantSectionSize;
 
                 while (currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize <= currBytesRead)
                 {
                     (bool result, bytesConsumed, ZipCentralDirectoryFileHeader? currentHeader) =
-                        await ZipCentralDirectoryFileHeader.TryReadBlockAsync(sizedFileBuffer.AsMemory(currPosition), _archiveStream, saveExtraFieldsAndComments, cancellationToken).ConfigureAwait(false);
+                        await ZipCentralDirectoryFileHeader.TryReadBlockAsync(sizedFileBuffer.Slice(currPosition), _archiveStream, saveExtraFieldsAndComments, cancellationToken).ConfigureAwait(false);
 
                     if (!ReadCentralDirectoryEndOfInnerLoopWork(result, currentHeader, bytesConsumed, ref continueReadingCentralDirectory, ref numberOfEntries, ref currPosition, ref bytesRead))
                     {
@@ -223,14 +227,18 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     }
                 }
 
-                ReadCentralDirectoryEndOfOuterLoopWork(ref currPosition, sizedFileBuffer);
+                ReadCentralDirectoryEndOfOuterLoopWork(ref currPosition, sizedFileBuffer.Span);
             }
 
             ReadCentralDirectoryPostOuterLoopWork(numberOfEntries);
         }
         catch (EndOfStreamException ex)
         {
-            throw new InvalidDataException(SR.Format(SR.CentralDirectoryInvalid, ex));
+            throw new InvalidDataException(SR.CentralDirectoryInvalid, ex);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(arrayPoolArray);
         }
     }
 

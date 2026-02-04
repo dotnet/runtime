@@ -287,6 +287,19 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComA
     return result;
 }
 
+static MethodDesc* MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, int32_t arg2, void * arg3)
+{
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid)
+    {
+        LookupMethodByName("System.AppContext, System.Private.CoreLib", "Setup", &MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid);
+}
+
 static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid = nullptr;
 static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid(void * arg0)
 {
@@ -356,6 +369,7 @@ extern const ReverseThunkMapEntry g_ReverseThunks[] =
     { 2644339378, 343912841, { &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32 } } /* alternate key source: NewExternalTypeEntry#2:System.Private.CoreLib:System.Runtime.InteropServices:TypeMapLazyDictionary */,
     { 2644339379, 3327247096, { &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32 } } /* alternate key source: NewProxyTypeEntry#2:System.Private.CoreLib:System.Runtime.InteropServices:TypeMapLazyDictionary */,
     { 2644360526, 4239234100, { &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_RegisterClassForTypeInternal_I32_RetI32, (void*)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_RegisterClassForTypeInternal_I32_RetI32 } } /* alternate key source: RegisterClassForTypeInternal#1:System.Private.CoreLib:Internal.Runtime.InteropServices:ComActivator */,
+    { 2644317642, 1963568864, { &MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid } } /* alternate key source: Setup#4:System.Private.CoreLib:System:AppContext */,
     { 3685901981, 1403522766, { &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid, (void*)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid } } /* alternate key source: ReleaseJSOwnedObjectByGCHandle#1:System.Runtime.InteropServices.JavaScript:System.Runtime.InteropServices.JavaScript:JavaScriptExports */,
     { 2644321735, 167179540, { &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid } } /* alternate key source: TimerHandler#0:System.Private.CoreLib:System.Threading:TimerQueue */,
     { 2644360527, 2150642223, { &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_UnregisterClassForTypeInternal_I32_RetI32, (void*)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_UnregisterClassForTypeInternal_I32_RetI32 } } /* alternate key source: UnregisterClassForTypeInternal#1:System.Private.CoreLib:Internal.Runtime.InteropServices:ComActivator */

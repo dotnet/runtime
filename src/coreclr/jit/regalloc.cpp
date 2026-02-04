@@ -331,7 +331,7 @@ bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
     {
         return false;
     }
-    Compiler* compiler = GetCompiler();
+    Compiler* compiler = m_compiler;
     assert(compiler->compEnregLocals());
 
     if (!varDsc->lvTracked)
