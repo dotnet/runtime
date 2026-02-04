@@ -711,22 +711,18 @@ PhaseStatus AsyncTransformation::Run()
 #endif
 
     // Compute liveness to be used for determining what must be captured on
-    // suspension. In unoptimized codegen we capture everything.
-    if (true)//m_compiler->opts.OptimizationEnabled())
+    // suspension.
+    if (m_compiler->m_dfsTree == nullptr)
     {
-        if (m_compiler->m_dfsTree == nullptr)
-        {
-            m_compiler->m_dfsTree = m_compiler->fgComputeDfs<false>();
-        }
-
-        m_compiler->m_asyncLiveness = true;
-        m_compiler->lvaComputeRefCounts(true, false);
-        m_compiler->fgLocalVarLiveness();
-        INDEBUG(m_compiler->mostRecentlyActivePhase = PHASE_ASYNC);
-        VarSetOps::AssignNoCopy(m_comp, m_compiler->compCurLife, VarSetOps::MakeEmpty(m_comp));
+        m_compiler->m_dfsTree = m_compiler->fgComputeDfs<false>();
     }
 
-    AsyncLiveness liveness(m_comp, true); // m_compiler->opts.OptimizationEnabled());
+    m_compiler->lvaComputePreciseRefCounts(/* isRecompute */ true, /* setSlotNumbers */ false);
+    m_compiler->fgAsyncLiveness();
+    INDEBUG(m_compiler->mostRecentlyActivePhase = PHASE_ASYNC);
+    VarSetOps::AssignNoCopy(m_compiler, m_compiler->compCurLife, VarSetOps::MakeEmpty(m_compiler));
+
+    AsyncLiveness liveness(m_compiler, true); // m_compiler->opts.OptimizationEnabled());
 
     // Now walk the IR for all the blocks that contain async calls. Keep track
     // of liveness and outstanding LIR edges as we go; the LIR edges that cross

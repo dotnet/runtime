@@ -4216,6 +4216,7 @@ public:
 
     PhaseStatus lvaMarkLocalVars(); // Local variable ref-counting
     void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
+    void lvaComputePreciseRefCounts(bool isRecompute, bool setSlotNumbers);
     void lvaMarkLocalVars(BasicBlock* block);
 
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
@@ -5257,7 +5258,6 @@ public:
     // 1. All loops have preheaders (single entry blocks that always enter the loop)
     // 2. All loop exits where bbIsHandlerBeg(exit) is false have only loop predecessors.
     //
-    bool m_asyncLiveness = false;
     bool optLoopsCanonical = false;
 
     bool fgBBVarSetsInited = false;
@@ -5593,15 +5593,6 @@ public:
     GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper, uint32_t typeIndex = 0);
 
     GenTreeCall* fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls);
-
-    bool backendRequiresLocalVarLifetimes()
-    {
-        return !opts.MinOpts() || m_regAlloc->willEnregisterLocalVars();
-    }
-
-    void fgLocalVarLiveness();
-
-    void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
 
     // Blocks: convenience methods for enabling range-based `for` iteration over the function's blocks, e.g.:
     // 1.   for (BasicBlock* const block : compiler->Blocks()) ...
@@ -6704,7 +6695,17 @@ public:
 
     bool byrefStatesMatchGcHeapStates; // True iff GcHeap and ByrefExposed memory have all the same def points.
 
+    bool backendRequiresLocalVarLifetimes()
+    {
+        return !opts.MinOpts() || m_regAlloc->willEnregisterLocalVars();
+    }
+
+    void fgSsaLiveness();
+    void fgAsyncLiveness();
+    void fgPostLowerLiveness();
     PhaseStatus fgEarlyLiveness();
+
+    void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
 
     //-------------------------------------------------------------------------
     //

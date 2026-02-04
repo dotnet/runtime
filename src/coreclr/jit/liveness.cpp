@@ -46,6 +46,7 @@ protected:
         SsaLiveness           = false,
         ComputeMemoryLiveness = false,
         IsLIR                 = false,
+        EliminateDeadCode     = false,
     };
 
     Liveness(Compiler* compiler)
@@ -2402,7 +2403,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                 GenTreeLclVarCommon* const lclVarNode = node->AsLclVarCommon();
                 LclVarDsc&                 varDsc     = m_compiler->lvaTable[lclVarNode->GetLclNum()];
 
-                if (opts.OptimizationEnabled() && node->IsUnusedValue())
+                if (m_compiler->opts.OptimizationEnabled() && node->IsUnusedValue())
                 {
                     JITDUMP("Removing dead LclVar use:\n");
                     DISPNODE(lclVarNode);
@@ -2425,7 +2426,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             }
 
             case GT_LCL_ADDR:
-                if (opts.OptimizationEnabled() && node->IsUnusedValue())
+                if (m_compiler->opts.OptimizationEnabled() && node->IsUnusedValue())
                 {
                     JITDUMP("Removing dead LclVar address:\n");
                     DISPNODE(node);
@@ -2518,7 +2519,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
 #endif // FEATURE_MASKED_HW_INTRINSICS
             case GT_PHYSREG:
                 // These are all side-effect-free leaf nodes.
-                if (opts.OptimizationEnabled() && node->IsUnusedValue())
+                if (m_compiler->opts.OptimizationEnabled() && node->IsUnusedValue())
                 {
                     JITDUMP("Removing dead node:\n");
                     DISPNODE(node);
@@ -2722,7 +2723,7 @@ bool Liveness<TLiveness>::TryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCom
 template <typename TLiveness>
 bool Liveness<TLiveness>::TryRemoveNonLocalLIR(GenTree* node, LIR::Range* blockRange)
 {
-    if (opts.OptimizationDisabled())
+    if (m_compiler->opts.OptimizationDisabled())
         return false;
 
     assert(!node->OperIsLocal());
@@ -2835,48 +2836,79 @@ GenTree* Liveness<TLiveness>::TryRemoveDeadStoreEarly(Statement* stmt, GenTreeLc
     }
 }
 
-void Compiler::fgLocalVarLiveness()
+//------------------------------------------------------------------------
+// fgSsaLiveness: Run SSA liveness.
+//
+void Compiler::fgSsaLiveness()
 {
-    if (compRationalIRForm)
+    struct SsaLivenessClass : public Liveness<SsaLivenessClass>
     {
-        struct LIRLiveness : public Liveness<LIRLiveness>
+        enum
         {
-            enum
-            {
-                SsaLiveness           = false,
-                ComputeMemoryLiveness = false,
-                IsLIR                 = true,
-            };
-
-            LIRLiveness(Compiler* comp)
-                : Liveness(comp)
-            {
-            }
+            SsaLiveness           = true,
+            ComputeMemoryLiveness = true,
+            IsLIR                 = false,
+            EliminateDeadCode     = true,
         };
 
-        LIRLiveness liveness(this);
-        liveness.Run();
-    }
-    else
-    {
-        struct HIRLiveness : public Liveness<HIRLiveness>
+        SsaLivenessClass(Compiler* comp)
+            : Liveness(comp)
         {
-            enum
-            {
-                SsaLiveness           = true,
-                ComputeMemoryLiveness = true,
-                IsLIR                 = false,
-            };
+        }
+    };
 
-            HIRLiveness(Compiler* comp)
-                : Liveness(comp)
-            {
-            }
+    SsaLivenessClass liveness(this);
+    liveness.Run();
+}
+
+//------------------------------------------------------------------------
+// fgAsyncLiveness: Run async liveness.
+//
+void Compiler::fgAsyncLiveness()
+{
+    struct AsyncLiveness : public Liveness<AsyncLiveness>
+    {
+        enum
+        {
+            SsaLiveness = false,
+            ComputeMemoryLiveness = false,
+            IsLIR = true,
+            EliminateDeadCode = false,
         };
 
-        HIRLiveness liveness(this);
-        liveness.Run();
-    }
+        AsyncLiveness(Compiler* comp)
+            : Liveness(comp)
+        {
+        }
+    };
+
+    AsyncLiveness liveness(this);
+    liveness.Run();
+}
+
+//------------------------------------------------------------------------
+// fgPostLowerLiveness: Run post-lower liveness.
+//
+void Compiler::fgPostLowerLiveness()
+{
+    struct PostLowerLiveness : public Liveness<PostLowerLiveness>
+    {
+        enum
+        {
+            SsaLiveness           = false,
+            ComputeMemoryLiveness = false,
+            IsLIR                 = true,
+            EliminateDeadCode     = true,
+        };
+
+        PostLowerLiveness(Compiler* comp)
+            : Liveness(comp)
+        {
+        }
+    };
+
+    PostLowerLiveness liveness(this);
+    liveness.Run();
 }
 
 //------------------------------------------------------------------------
