@@ -264,7 +264,7 @@
     LEAF_ENTRY RhpThrowExact
 
         mov         w4, #4                                          ;; w4 = ExKind.RethrowFlag
-        b           RhpThrowExImpl
+        b           RhpThrowImpl
 
     LEAF_END RhpThrowExact
 
@@ -280,11 +280,11 @@
     LEAF_ENTRY RhpThrowEx
 
         mov         w4, #1                                          ;; w4 = ExKind.Throw
-        b           RhpThrowExImpl
+        b           RhpThrowImpl
 
     LEAF_END RhpThrowEx
 
-    NESTED_ENTRY RhpThrowExImpl
+    NESTED_ENTRY RhpThrowImpl
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
@@ -357,11 +357,11 @@ NotHijacked
         ;; x1: ExInfo*
         bl          RhThrowEx
 
-    ALTERNATE_ENTRY RhpThrowExImpl2
+    ALTERNATE_ENTRY RhpThrowImpl2
 
         ;; no return
         EMIT_BREAKPOINT
-    NESTED_END RhpThrowExImpl
+    NESTED_END RhpThrowImpl
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

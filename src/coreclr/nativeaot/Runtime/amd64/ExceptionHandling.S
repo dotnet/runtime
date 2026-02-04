@@ -92,7 +92,7 @@ NESTED_END RhpThrowHwEx, _TEXT
 LEAF_ENTRY RhpThrowExact, _TEXT
 
         mov     r8d, 4                  // r8d = ExKind.RethrowFlag
-        jmp     RhpThrowExImpl
+        jmp     C_FUNC(RhpThrowImpl)
 
 LEAF_END RhpThrowExact, _TEXT
 
@@ -108,11 +108,11 @@ LEAF_END RhpThrowExact, _TEXT
 LEAF_ENTRY RhpThrowEx, _TEXT
 
         mov     r8d, 1                  // r8d = ExKind.Throw
-        jmp     RhpThrowExImpl
+        jmp     C_FUNC(RhpThrowImpl)
 
 LEAF_END RhpThrowEx, _TEXT
 
-NESTED_ENTRY RhpThrowExImpl, _TEXT, NoHandler
+NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
 
         STACKSIZEOF_ExInfo      = ((SIZEOF__ExInfo + 15) & (~ 15))
         rsp_offsetof_Context    = STACKSIZEOF_ExInfo
@@ -176,12 +176,12 @@ NESTED_ENTRY RhpThrowExImpl, _TEXT, NoHandler
         // rsi contains the address of the ExInfo
         call    EXTERNAL_C_FUNC(RhThrowEx)
 
-ALTERNATE_ENTRY RhpThrowExImpl2
+ALTERNATE_ENTRY RhpThrowImpl2
 
         // no return
         int 3
 
-NESTED_END RhpThrowExImpl, _TEXT
+NESTED_END RhpThrowImpl, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //

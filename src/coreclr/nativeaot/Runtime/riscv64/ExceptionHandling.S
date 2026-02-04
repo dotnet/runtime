@@ -316,7 +316,7 @@
     LEAF_ENTRY RhpThrowExact, _TEXT
 
         li  a4, 4                                       // a4 = ExKind.RethrowFlag
-        j   RhpThrowExImpl
+        j   C_FUNC(RhpThrowImpl)
 
     LEAF_END RhpThrowExact, _TEXT
 
@@ -331,11 +331,11 @@
     LEAF_ENTRY RhpThrowEx, _TEXT
 
         li  a4, 1                                       // a4 = ExKind.Throw
-        j   RhpThrowExImpl
+        j   C_FUNC(RhpThrowImpl)
     
     LEAF_END RhpThrowEx, _TEXT
 
-    NESTED_ENTRY RhpThrowExImpl, _TEXT, NoHandler
+    NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
@@ -396,12 +396,12 @@ LOCAL_LABEL(NotHijacked):
         // a1: ExInfo*
         call C_FUNC(RhThrowEx)
 
-    ALTERNATE_ENTRY RhpThrowExImpl2
+    ALTERNATE_ENTRY RhpThrowImpl2
 
         // No return
         EMIT_BREAKPOINT
 
-    NESTED_END RhpThrowExImpl, _TEXT
+    NESTED_END RhpThrowImpl, _TEXT
 
 //
 // void FASTCALL RhpRethrow()

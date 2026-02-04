@@ -103,7 +103,7 @@ FASTCALL_ENDFUNC
 FASTCALL_FUNC  RhpThrowExact, 4
 
         mov         edx, 4                  ;; edx = ExKind.RethrowFlag
-        jmp         RhpThrowExImpl
+        jmp         RhpThrowImpl
 
 FASTCALL_ENDFUNC
 
@@ -119,11 +119,11 @@ FASTCALL_ENDFUNC
 FASTCALL_FUNC  RhpThrowEx, 4
 
         mov         edx, 1                  ;; edx = ExKind.Throw
-        jmp         RhpThrowExImpl
+        jmp         RhpThrowImpl
 
 FASTCALL_ENDFUNC
 
-FASTCALL_FUNC  RhpThrowExImpl, 8
+FASTCALL_FUNC  RhpThrowImpl, 8
         esp_offsetof_ExInfo     textequ %0
         esp_offsetof_Context    textequ %SIZEOF__ExInfo
 
@@ -184,7 +184,7 @@ FASTCALL_FUNC  RhpThrowExImpl, 8
         ;; edx contains the address of the ExInfo
         call    RhThrowEx
 
-ALTERNATE_ENTRY _RhpThrowExImpl2
+ALTERNATE_ENTRY _RhpThrowImpl2
 
         ;; no return
         int 3

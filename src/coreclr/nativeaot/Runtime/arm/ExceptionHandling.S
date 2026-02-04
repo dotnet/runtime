@@ -93,7 +93,7 @@ NESTED_END RhpThrowHwEx
 LEAF_ENTRY RhpThrowExact, _TEXT
 
         mov         r2, #4                                          // r2 = ExKind.RethrowFlag
-        b           RhpThrowExImpl
+        b           C_FUNC(RhpThrowImpl)
 
 LEAF_END RhpThrowExact, _TEXT
 
@@ -109,10 +109,10 @@ LEAF_END RhpThrowExact, _TEXT
 LEAF_ENTRY RhpThrowEx, _TEXT
 
         mov         r2, #1                                          // r2 = ExKind.Throw
-        b           RhpThrowExImpl
+        b           C_FUNC(RhpThrowImpl)
 LEAF_END RhpThrowEx, _TEXT
 
-NESTED_ENTRY RhpThrowExImpl, _TEXT, NoHandler
+NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
 
         // Setup a PAL_LIMITED_CONTEXT on the stack {
         PROLOG_VPUSH {d8-d15}
@@ -198,12 +198,12 @@ LOCAL_LABEL(NotHiJacked):
         // r1 contains the address of the new ExInfo
         bl          C_FUNC(RhThrowEx)
 
-GLOBAL_LABEL RhpThrowExImpl2
+GLOBAL_LABEL RhpThrowImpl2
 
         // no return
         EMIT_BREAKPOINT
 
-NESTED_END RhpThrowExImpl, _TEXT
+NESTED_END RhpThrowImpl, _TEXT
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -119,7 +119,7 @@ NESTED_END RhpThrowHwEx, _TEXT
 LEAF_ENTRY RhpThrowExact, _TEXT
 
         mov     r9d, 4                  ;; r9d = ExKind.RethrowFlag
-        jmp     RhpThrowExImpl
+        jmp     RhpThrowImpl
 
 LEAF_END RhpThrowExact, _TEXT
 
@@ -135,11 +135,11 @@ LEAF_END RhpThrowExact, _TEXT
 LEAF_ENTRY RhpThrowEx, _TEXT
 
         mov     r9d, 1                  ;; r9d = ExKind.Throw
-        jmp     RhpThrowExImpl
+        jmp     RhpThrowImpl
 LEAF_END RhpThrowEx, _TEXT
 
 
-NESTED_ENTRY RhpThrowExImpl, _TEXT
+NESTED_ENTRY RhpThrowImpl, _TEXT
 
         SIZEOF_XmmSaves equ SIZEOF__PAL_LIMITED_CONTEXT - OFFSETOF__PAL_LIMITED_CONTEXT__Xmm6
         STACKSIZEOF_ExInfo equ ((SIZEOF__ExInfo + 15) AND (NOT 15))
@@ -221,12 +221,12 @@ NESTED_ENTRY RhpThrowExImpl, _TEXT
         ;; rdx contains the address of the ExInfo
         call    RhThrowEx
 
-ALTERNATE_ENTRY RhpThrowExImpl2
+ALTERNATE_ENTRY RhpThrowImpl2
 
         ;; no return
         int 3
 
-NESTED_END RhpThrowExImpl, _TEXT
+NESTED_END RhpThrowImpl, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
