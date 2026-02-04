@@ -32,13 +32,14 @@
 // These are error codes returned by CompileMethod
 enum CorJitResult
 {
-    CORJIT_OK            =     0,
-    CORJIT_BADCODE       =     (JITINTERFACE_HRESULT)0x80000001,
-    CORJIT_OUTOFMEM      =     (JITINTERFACE_HRESULT)0x80000002,
-    CORJIT_INTERNALERROR =     (JITINTERFACE_HRESULT)0x80000003,
-    CORJIT_SKIPPED       =     (JITINTERFACE_HRESULT)0x80000004,
-    CORJIT_RECOVERABLEERROR =  (JITINTERFACE_HRESULT)0x80000005,
-    CORJIT_IMPLLIMITATION=     (JITINTERFACE_HRESULT)0x80000006,
+    CORJIT_OK               = 0,
+    CORJIT_BADCODE          = (JITINTERFACE_HRESULT)0x80000001,
+    CORJIT_OUTOFMEM         = (JITINTERFACE_HRESULT)0x80000002,
+    CORJIT_INTERNALERROR    = (JITINTERFACE_HRESULT)0x80000003,
+    CORJIT_SKIPPED          = (JITINTERFACE_HRESULT)0x80000004,
+    CORJIT_RECOVERABLEERROR = (JITINTERFACE_HRESULT)0x80000005,
+    CORJIT_IMPLLIMITATION   = (JITINTERFACE_HRESULT)0x80000006,
+    CORJIT_R2R_UNSUPPORTED  = (JITINTERFACE_HRESULT)0x80000007,
 };
 
 /*****************************************************************************/
@@ -46,12 +47,10 @@ enum CorJitResult
 // to guide the memory allocation for the code, readonly data, and read-write data
 enum CorJitAllocMemFlag
 {
-    CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will use the normal alignment
-    CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN   = 0x00000001, // The code will be 16-byte aligned
-    CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
-    CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
-    CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN = 0x00000008, // The read-only data will be 32-byte aligned
-    CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN = 0x00000010, // The read-only data will be 64-byte aligned
+    CORJIT_ALLOCMEM_HOT_CODE = 1,
+    CORJIT_ALLOCMEM_COLD_CODE = 2,
+    CORJIT_ALLOCMEM_READONLY_DATA = 4,
+    CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE = 8,
 };
 
 inline CorJitAllocMemFlag operator |(CorJitAllocMemFlag a, CorJitAllocMemFlag b)
@@ -77,22 +76,28 @@ enum CheckedWriteBarrierKinds {
     CWBKind_AddrOfLocal,     // Store through the address of a local (arguably a bug that this happens at all).
 };
 
+struct AllocMemChunk
+{
+    // Alignment of the chunk. Must be a power of two with the following restrictions:
+    // - For the hot code chunk the max supported alignment is 32.
+    // - For the cold code chunk the value must always be 1.
+    // - For read-only data chunks the max supported alignment is 64.
+    uint32_t alignment;
+    uint32_t size;
+    CorJitAllocMemFlag flags;
+
+    // out
+    uint8_t* block;
+    uint8_t* blockRW;
+};
+
 struct AllocMemArgs
 {
-    // Input arguments
-    uint32_t hotCodeSize;
-    uint32_t coldCodeSize;
-    uint32_t roDataSize;
+    // Chunks to allocate. Supports one hot code chunk, one cold code chunk,
+    // and an arbitrary number of data chunks.
+    AllocMemChunk* chunks;
+    unsigned chunksCount;
     uint32_t xcptnsCount;
-    CorJitAllocMemFlag flag;
-
-    // Output arguments
-    void* hotCodeBlock;
-    void* hotCodeBlockRW;
-    void* coldCodeBlock;
-    void* coldCodeBlockRW;
-    void* roDataBlock;
-    void* roDataBlockRW;
 };
 
 #include "corjithost.h"

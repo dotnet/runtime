@@ -9,6 +9,9 @@
     <Compile Include="SameNameDifferentAssembly.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
     <ProjectReference Include="CustomMarshaler.csproj" />
     <ProjectReference Include="CustomMarshaler2.csproj" />

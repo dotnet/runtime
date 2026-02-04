@@ -12,6 +12,8 @@
   .ver 8:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern xunit.assert
 {
   .publickeytoken = (8D 05 B1 BB 7A 6F DB 6C )                         // ....zo.l
@@ -19,19 +21,19 @@
 }
 .assembly AmbiguousImplementationException
 {
-  .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
                                                                                                                    63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
 
   // --- The following custom attribute is added automatically, do not uncomment -------
-  //  .custom instance void [System.Runtime]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
+  //  .custom instance void [System.Runtime]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
 
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
 .module AmbiguousImplementationException.dll
 // MVID: {bfdbf727-e737-4c32-8ddd-926f5f4d7f5b}
-.custom instance void [System.Runtime]System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(int32) = ( 01 00 0B 00 00 00 00 00 ) 
+.custom instance void [System.Runtime]System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(int32) = ( 01 00 0B 00 00 00 00 00 )
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -47,7 +49,7 @@
 {
   .class interface abstract auto ansi nested private IFoo
   {
-    .method public hidebysig static virtual 
+    .method public hidebysig static virtual
             void  Frob() cil managed
     {
       // Code size       2 (0x2)
@@ -56,7 +58,7 @@
       IL_0001:  throw
     } // end of method IFoo::Frob
 
-    .method public hidebysig static virtual 
+    .method public hidebysig static virtual
             void  Frob<Z>() cil managed
     {
       // Code size       2 (0x2)
@@ -70,7 +72,7 @@
   .class interface abstract auto ansi nested private IBar
          implements VirtualStaticMethodReabstraction/IFoo
   {
-    .method private hidebysig static void 
+    .method private hidebysig static void
             VirtualStaticMethodReabstraction.IFoo.Frob() cil managed
     {
       .override VirtualStaticMethodReabstraction/IFoo::Frob
@@ -80,7 +82,7 @@
       IL_0001:  throw
     } // end of method IBar::VirtualStaticMethodReabstraction.IFoo.Frob
 
-    .method private hidebysig static void 
+    .method private hidebysig static void
             VirtualStaticMethodReabstraction.IFoo.Frob<Z>() cil managed
     {
       .override VirtualStaticMethodReabstraction/IFoo::Frob
@@ -95,7 +97,7 @@
   .class interface abstract auto ansi nested private IBaz
          implements VirtualStaticMethodReabstraction/IFoo
   {
-    .method private hidebysig static void 
+    .method private hidebysig static void
             VirtualStaticMethodReabstraction.IFoo.Frob() cil managed
     {
       .override VirtualStaticMethodReabstraction/IFoo::Frob
@@ -105,7 +107,7 @@
       IL_0001:  throw
     } // end of method IBaz::VirtualStaticMethodReabstraction.IFoo.Frob
 
-    .method private hidebysig static void 
+    .method private hidebysig static void
             VirtualStaticMethodReabstraction.IFoo.Frob<Z>() cil managed
     {
       .override VirtualStaticMethodReabstraction/IFoo::Frob
@@ -127,7 +129,7 @@
                     VirtualStaticMethodReabstraction/IFoo,
                     VirtualStaticMethodReabstraction/IBaz
   {
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       // Code size       8 (0x8)
@@ -153,7 +155,7 @@
   .class auto ansi serializable sealed nested private beforefieldinit '<>c'
          extends [System.Runtime]System.Object
   {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 )
     .field public static initonly class VirtualStaticMethodReabstraction/'<>c' '<>9'
     .field public static class [System.Runtime]System.Action '<>9__0_0'
     .field public static class [System.Runtime]System.Action '<>9__0_1'
@@ -167,7 +169,7 @@
     .field public static class [System.Runtime]System.Action '<>9__0_9'
     .field public static class [System.Runtime]System.Action '<>9__0_10'
     .field public static class [System.Runtime]System.Action '<>9__0_11'
-    .method private hidebysig specialname rtspecialname static 
+    .method private hidebysig specialname rtspecialname static
             void  .cctor() cil managed
     {
       // Code size       11 (0xb)
@@ -177,7 +179,7 @@
       IL_000a:  ret
     } // end of method '<>c'::.cctor
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       // Code size       8 (0x8)
@@ -188,7 +190,7 @@
       IL_0007:  ret
     } // end of method '<>c'::.ctor
 
-    .method assembly hidebysig instance void 
+    .method assembly hidebysig instance void
             '<Main>b__0_0'() cil managed
     {
       // Code size       8 (0x8)
@@ -199,7 +201,7 @@
       IL_0007:  ret
     } // end of method '<>c'::'<Main>b__0_0'
 
-    .method assembly hidebysig instance void 
+    .method assembly hidebysig instance void
             '<Main>b__0_1'() cil managed
     {
       // Code size       8 (0x8)
@@ -210,7 +212,7 @@
       IL_0007:  ret
     } // end of method '<>c'::'<Main>b__0_1'
 
-    .method assembly hidebysig instance void 
+    .method assembly hidebysig instance void
             '<Main>b__0_2'() cil managed
     {
       // Code size       8 (0x8)
@@ -221,7 +223,7 @@
       IL_0007:  ret
     } // end of method '<>c'::'<Main>b__0_2'
 
-    .method assembly hidebysig instance void 
+    .method assembly hidebysig instance void
             '<Main>b__0_3'() cil managed
     {
       // Code size       8 (0x8)
@@ -232,7 +234,7 @@
       IL_0007:  ret
     } // end of method '<>c'::'<Main>b__0_3'
 
-    .method assembly hidebysig instance void 
+    .method assembly hidebysig instance void
             '<Main>b__0_4'() cil managed
     {
       // Code size       8 (0x8)
@@ -243,7 +245,7 @@
       IL_0007:  ret
     } // end of method '<>c'::'<Main>b__0_4'
 
-    .method assembly hidebysig instance void 
+    .method assembly hidebysig instance void
             '<Main>b__0_5'() cil managed
     {
       // Code size       8 (0x8)
@@ -254,7 +256,7 @@
       IL_0007:  ret
     } // end of method '<>c'::'<Main>b__0_5'
 
-    .method assembly hidebysig instance void 
+    .method assembly hidebysig instance void
             '<Main>b__0_6'() cil managed
     {
       // Code size       13 (0xd)
@@ -266,7 +268,7 @@
       IL_000c:  ret
     } // end of method '<>c'::'<Main>b__0_6'
 
-    .method assembly hidebysig instance void 
+    .method assembly hidebysig instance void
             '<Main>b__0_7'() cil managed
     {
       // Code size       13 (0xd)
@@ -278,7 +280,7 @@
       IL_000c:  ret
     } // end of method '<>c'::'<Main>b__0_7'
 
-    .method assembly hidebysig instance void 
+    .method assembly hidebysig instance void
             '<Main>b__0_8'() cil managed
     {
       // Code size       13 (0xd)
@@ -290,7 +292,7 @@
       IL_000c:  ret
     } // end of method '<>c'::'<Main>b__0_8'
 
-    .method assembly hidebysig instance void 
+    .method assembly hidebysig instance void
             '<Main>b__0_9'() cil managed
     {
       // Code size       13 (0xd)
@@ -302,7 +304,7 @@
       IL_000c:  ret
     } // end of method '<>c'::'<Main>b__0_9'
 
-    .method assembly hidebysig instance void 
+    .method assembly hidebysig instance void
             '<Main>b__0_10'() cil managed
     {
       // Code size       13 (0xd)
@@ -314,7 +316,7 @@
       IL_000c:  ret
     } // end of method '<>c'::'<Main>b__0_10'
 
-    .method assembly hidebysig instance void 
+    .method assembly hidebysig instance void
             '<Main>b__0_11'() cil managed
     {
       // Code size       13 (0xd)
@@ -331,23 +333,24 @@
   .class abstract auto ansi sealed nested private beforefieldinit '<GetAction>O__3_0`1'<(VirtualStaticMethodReabstraction/IFoo) T>
          extends [System.Runtime]System.Object
   {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 )
     .field public static class [System.Runtime]System.Action '<0>__Frob'
   } // end of class '<GetAction>O__3_0`1'
 
   .class abstract auto ansi sealed nested private beforefieldinit '<GetAction>O__4_0`2'<(VirtualStaticMethodReabstraction/IFoo) T,U>
          extends [System.Runtime]System.Object
   {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 )
     .field public static class [System.Runtime]System.Action '<0>__Frob'
   } // end of class '<GetAction>O__4_0`2'
 
-  .method public hidebysig static int32 
+  .method public hidebysig static int32
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [System.Runtime]System.Type, string[]) = {string('https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
     .entrypoint
     // Code size       452 (0x1c4)
     .maxstack  2
@@ -537,7 +540,7 @@
     IL_000c:  ret
   } // end of method VirtualStaticMethodReabstraction::Call
 
-  .method private hidebysig static class [System.Runtime]System.Action 
+  .method private hidebysig static class [System.Runtime]System.Action
           GetAction<(VirtualStaticMethodReabstraction/IFoo) T>() cil managed
   {
     // Code size       34 (0x22)
@@ -557,7 +560,7 @@
     IL_0021:  ret
   } // end of method VirtualStaticMethodReabstraction::GetAction
 
-  .method private hidebysig static class [System.Runtime]System.Action 
+  .method private hidebysig static class [System.Runtime]System.Action
           GetAction<(VirtualStaticMethodReabstraction/IFoo) T,U>() cil managed
   {
     // Code size       34 (0x22)
@@ -577,7 +580,7 @@
     IL_0021:  ret
   } // end of method VirtualStaticMethodReabstraction::GetAction
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
