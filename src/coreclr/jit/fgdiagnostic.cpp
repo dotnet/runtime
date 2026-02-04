@@ -1197,14 +1197,14 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 
             public:
                 RegionGraph(Compiler* comp, unsigned* blkMap, unsigned blkMapSize)
-                    : m_comp(comp)
+                    : m_compiler(comp)
                     , m_rgnRoot(nullptr)
                     , m_blkMap(blkMap)
                     , m_blkMapSize(blkMapSize)
                 {
                     // Create a root region that encompasses the whole function.
-                    m_rgnRoot =
-                        new (m_comp, CMK_DebugOnly) Region(RegionType::Root, "Root", comp->fgFirstBB, comp->fgLastBB);
+                    m_rgnRoot = new (m_compiler, CMK_DebugOnly)
+                        Region(RegionType::Root, "Root", comp->fgFirstBB, comp->fgLastBB);
                 }
 
                 //------------------------------------------------------------------------
@@ -1224,7 +1224,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     assert(start != nullptr);
                     assert(end != nullptr);
 
-                    Region*  newRgn          = new (m_comp, CMK_DebugOnly) Region(rgnType, name, start, end);
+                    Region*  newRgn          = new (m_compiler, CMK_DebugOnly) Region(rgnType, name, start, end);
                     unsigned newStartOrdinal = m_blkMap[start->bbNum];
                     unsigned newEndOrdinal   = m_blkMap[end->bbNum];
 
@@ -1456,7 +1456,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 //
                 void Verify()
                 {
-                    assert(m_comp != nullptr);
+                    assert(m_compiler != nullptr);
                     assert(m_blkMap != nullptr);
                     for (unsigned i = 0; i < m_blkMapSize; i++)
                     {
@@ -1586,7 +1586,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     assert(childCount == totalChildren);
                 }
 
-                Compiler* m_comp;
+                Compiler* m_compiler;
                 Region*   m_rgnRoot;
                 unsigned* m_blkMap;
                 unsigned  m_blkMapSize;
@@ -2540,7 +2540,7 @@ void Compiler::fgDumpBlockMemorySsaOut(BasicBlock* block)
 Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree*  tree  = *pTree;
-    Compiler* pComp = data->compiler;
+    Compiler* pComp = data->m_compiler;
 
     if (!tree->OperIs(GT_MUL) || !tree->TypeIs(TYP_INT) || (tree->gtOverflow()))
     {
@@ -2580,7 +2580,7 @@ class BBPredsChecker
 {
 public:
     BBPredsChecker(Compiler* compiler)
-        : comp(compiler)
+        : m_compiler(compiler)
     {
     }
 
@@ -2593,7 +2593,7 @@ private:
     bool CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block);
 
 private:
-    Compiler* comp;
+    Compiler* m_compiler;
 };
 
 //------------------------------------------------------------------------
@@ -2613,7 +2613,7 @@ private:
 //   the number of incoming edges for the block.
 unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalStamp)
 {
-    if (!comp->fgPredsComputed)
+    if (!m_compiler->fgPredsComputed)
     {
         assert(block->bbPreds == nullptr);
         return 0;
@@ -2629,13 +2629,13 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
         // Make sure this pred is part of the BB list.
         assert(blockPred->bbTraversalStamp == curTraversalStamp);
 
-        EHblkDsc* ehTryDsc = comp->ehGetBlockTryDsc(block);
+        EHblkDsc* ehTryDsc = m_compiler->ehGetBlockTryDsc(block);
         if (ehTryDsc != nullptr)
         {
             assert(CheckEhTryDsc(block, blockPred, ehTryDsc));
         }
 
-        EHblkDsc* ehHndDsc = comp->ehGetBlockHndDsc(block);
+        EHblkDsc* ehHndDsc = m_compiler->ehGetBlockHndDsc(block);
         if (ehHndDsc != nullptr)
         {
             assert(CheckEhHndDsc(block, blockPred, ehHndDsc));
@@ -2664,13 +2664,13 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     }
 
     // You can jump within the same try region
-    if (comp->bbInTryRegions(block->getTryIndex(), blockPred))
+    if (m_compiler->bbInTryRegions(block->getTryIndex(), blockPred))
     {
         return true;
     }
 
     // The catch block can jump back into the middle of the try
-    if (comp->bbInCatchHandlerRegions(block, blockPred))
+    if (m_compiler->bbInCatchHandlerRegions(block, blockPred))
     {
         return true;
     }
@@ -2688,7 +2688,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     // If this is an OSR method and we haven't run post-importation cleanup, we may see a branch
     // from fgFirstBB to the middle of a try. Those get fixed during cleanup. Tolerate.
     //
-    if (comp->opts.IsOSR() && !comp->compPostImportationCleanupDone && (blockPred == comp->fgFirstBB))
+    if (m_compiler->opts.IsOSR() && !m_compiler->compPostImportationCleanupDone && (blockPred == m_compiler->fgFirstBB))
     {
         return true;
     }
@@ -2716,13 +2716,13 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
 
     // Our try block can call our finally block
     if ((block->bbCatchTyp == BBCT_FINALLY) && blockPred->KindIs(BBJ_CALLFINALLY) &&
-        comp->ehCallFinallyInCorrectRegion(blockPred, block->getHndIndex()))
+        m_compiler->ehCallFinallyInCorrectRegion(blockPred, block->getHndIndex()))
     {
         return true;
     }
 
     // You can jump within the same handler region
-    if (comp->bbInHandlerRegions(block->getHndIndex(), blockPred))
+    if (m_compiler->bbInHandlerRegions(block->getHndIndex(), blockPred))
     {
         return true;
     }
@@ -2786,7 +2786,7 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
 
         case BBJ_LEAVE:
             // We may see BBJ_LEAVE preds if we haven't done cleanup yet.
-            if (!comp->compPostImportationCleanupDone)
+            if (!m_compiler->compPostImportationCleanupDone)
             {
                 return true;
             }
@@ -2819,15 +2819,15 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
     assert(found && "BBJ_EHFINALLYRET successor not found");
 
     unsigned    hndIndex = blockPred->getHndIndex();
-    EHblkDsc*   ehDsc    = comp->ehGetDsc(hndIndex);
+    EHblkDsc*   ehDsc    = m_compiler->ehGetDsc(hndIndex);
     BasicBlock* finBeg   = ehDsc->ebdHndBeg;
 
     BasicBlock* firstBlock;
     BasicBlock* lastBlock;
-    comp->ehGetCallFinallyBlockRange(hndIndex, &firstBlock, &lastBlock);
+    m_compiler->ehGetCallFinallyBlockRange(hndIndex, &firstBlock, &lastBlock);
 
     found = false;
-    for (BasicBlock* const bcall : comp->Blocks(firstBlock, lastBlock))
+    for (BasicBlock* const bcall : m_compiler->Blocks(firstBlock, lastBlock))
     {
         if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->TargetIs(finBeg) && bcall->NextIs(block))
         {
@@ -2836,17 +2836,17 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
         }
     }
 
-    if (!found && comp->fgFuncletsCreated)
+    if (!found && m_compiler->fgFuncletsCreated)
     {
         // There is no easy way to search just the funclets that were pulled out of
         // the corresponding try body, so instead we search all the funclets, and if
         // we find a potential 'hit' we check if the funclet we're looking at is
         // from the correct try region.
 
-        for (BasicBlock* const bcall : comp->Blocks(comp->fgFirstFuncletBB))
+        for (BasicBlock* const bcall : m_compiler->Blocks(m_compiler->fgFirstFuncletBB))
         {
             if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->TargetIs(finBeg) && bcall->NextIs(block) &&
-                comp->ehCallFinallyInCorrectRegion(bcall, hndIndex))
+                m_compiler->ehCallFinallyInCorrectRegion(bcall, hndIndex))
             {
                 found = true;
                 break;
@@ -3423,10 +3423,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                     case NI_Sve_Prefetch64Bit:
                     case NI_Sve_Prefetch8Bit:
                     case NI_Sve_GetFfrByte:
+                    case NI_Sve_GetFfrDouble:
                     case NI_Sve_GetFfrInt16:
                     case NI_Sve_GetFfrInt32:
                     case NI_Sve_GetFfrInt64:
                     case NI_Sve_GetFfrSByte:
+                    case NI_Sve_GetFfrSingle:
                     case NI_Sve_GetFfrUInt16:
                     case NI_Sve_GetFfrUInt32:
                     case NI_Sve_GetFfrUInt64:
@@ -3952,7 +3954,7 @@ class UniquenessCheckWalker
 {
 public:
     UniquenessCheckWalker(Compiler* comp)
-        : comp(comp)
+        : m_compiler(comp)
         , nodesVecTraits(comp->compGenTreeID, comp)
         , uniqueNodes(BitVecOps::MakeEmpty(&nodesVecTraits))
     {
@@ -3986,7 +3988,7 @@ public:
     {
         if (BitVecOps::IsMember(&nodesVecTraits, uniqueNodes, gtTreeID))
         {
-            if (comp->verbose)
+            if (m_compiler->verbose)
             {
                 printf("Duplicate gtTreeID was found: %d\n", gtTreeID);
             }
@@ -3999,7 +4001,7 @@ public:
     }
 
 private:
-    Compiler*    comp;
+    Compiler*    m_compiler;
     BitVecTraits nodesVecTraits;
     BitVec       uniqueNodes;
 };

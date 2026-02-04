@@ -79,7 +79,7 @@ void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, Basi
 void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
 {
     bool FPBased;
-    int  lclOffset = emitComp->lvaFrameAddress(varx, &FPBased);
+    int  lclOffset = m_compiler->lvaFrameAddress(varx, &FPBased);
     int  offset    = lclOffset + offs;
     noway_assert(offset >= 0); // WASM address modes are unsigned.
 
@@ -133,7 +133,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     assert((params.callType == EC_FUNC_TOKEN) || (params.addr == nullptr));
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
+    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
     {
         codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
     }
@@ -565,13 +565,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     }
 
 #ifdef DEBUG
-    bool dspOffs = emitComp->opts.dspGCtbls;
-    if (emitComp->opts.disAsm || emitComp->verbose)
+    bool dspOffs = m_compiler->opts.dspGCtbls;
+    if (m_compiler->opts.disAsm || m_compiler->verbose)
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
     }
 #else
-    if (emitComp->opts.disAsm)
+    if (m_compiler->opts.disAsm)
     {
         emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
     }
@@ -764,13 +764,13 @@ void emitter::emitDispInst(instruction ins)
 //
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
-    if (!emitComp->opts.disCodeBytes)
+    if (!m_compiler->opts.disCodeBytes)
     {
         return;
     }
 
     // We do not display the instruction hex if we want diff-able disassembly
-    if (!emitComp->opts.disDiffable && (sz != 0))
+    if (!m_compiler->opts.disDiffable && (sz != 0))
     {
         static const int PAD_WIDTH = 28; // From wasm-objdump output.
 

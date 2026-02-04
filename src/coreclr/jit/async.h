@@ -58,7 +58,7 @@ class AsyncTransformation
 {
     friend class AsyncLiveness;
 
-    Compiler*                     m_comp;
+    Compiler*                     m_compiler;
     jitstd::vector<LiveLocalInfo> m_liveLocalsScratch;
     CORINFO_ASYNC_INFO*           m_asyncInfo;
     jitstd::vector<BasicBlock*>   m_resumptionBBs;
@@ -145,7 +145,7 @@ class AsyncTransformation
 
 public:
     AsyncTransformation(Compiler* comp)
-        : m_comp(comp)
+        : m_compiler(comp)
         , m_liveLocalsScratch(comp->getAllocator(CMK_Async))
         , m_resumptionBBs(comp->getAllocator(CMK_Async))
     {

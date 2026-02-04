@@ -106,7 +106,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_STORE_LCL_VAR:
             if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
             {
-                dstCount = compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
+                dstCount = m_compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
             }
             FALLTHROUGH;
 
@@ -291,7 +291,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_BIT_SET:
         case GT_BIT_CLEAR:
         case GT_BIT_INVERT:
-            if (tree->OperIs(GT_ROR, GT_ROL) && !compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
+            if (tree->OperIs(GT_ROR, GT_ROL) && !m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
                 buildInternalIntRegisterDefForNode(tree);
             srcCount = BuildBinaryUses(tree->AsOp());
             buildInternalRegisterUses();
@@ -305,7 +305,7 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(tree->gtGetOp1());
             srcCount = 1;
             assert(dstCount == 0);
-            killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             BuildKills(tree, killMask);
             break;
 
@@ -329,7 +329,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
             GenTree* divisorOp = tree->gtGetOp2();
 
-            ExceptionSetFlags exceptions = tree->OperExceptions(compiler);
+            ExceptionSetFlags exceptions = tree->OperExceptions(m_compiler);
 
             if (!varTypeIsFloating(tree->TypeGet()) &&
                 !((exceptions & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None &&
@@ -398,7 +398,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 case NI_System_Math_Max:
                 case NI_System_Math_MinUnsigned:
                 case NI_System_Math_MaxUnsigned:
-                    assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                    assert(m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
                     assert(op2 != nullptr);
                     assert(op2->TypeIs(tree->TypeGet()));
                     assert(op1->TypeIs(tree->TypeGet()));
@@ -409,7 +409,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 case NI_PRIMITIVE_LeadingZeroCount:
                 case NI_PRIMITIVE_TrailingZeroCount:
                 case NI_PRIMITIVE_PopCount:
-                    assert(compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                    assert(m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
                     assert(op2 == nullptr);
                     assert(varTypeIsIntegral(op1));
                     assert(varTypeIsIntegral(tree));
@@ -604,7 +604,7 @@ int LinearScan::BuildNode(GenTree* tree)
             //   Non-const                  No              2
             //
 
-            bool needExtraTemp = (compiler->lvaOutgoingArgSpaceSize > 0);
+            bool needExtraTemp = (m_compiler->lvaOutgoingArgSpaceSize > 0);
 
             GenTree* size = tree->gtGetOp1();
             if (size->IsCnsIntOrI())
@@ -627,10 +627,10 @@ int LinearScan::BuildNode(GenTree* tree)
                     {
                         // Need no internal registers
                     }
-                    else if (!compiler->info.compInitMem)
+                    else if (!m_compiler->info.compInitMem)
                     {
                         // No need to initialize allocated stack space.
-                        if (sizeVal < compiler->eeGetPageSize())
+                        if (sizeVal < m_compiler->eeGetPageSize())
                         {
                             ssize_t imm = -(ssize_t)sizeVal;
                             needExtraTemp |= !emitter::isValidSimm12(imm);
@@ -648,7 +648,7 @@ int LinearScan::BuildNode(GenTree* tree)
             else
             {
                 srcCount = 1;
-                if (!compiler->info.compInitMem)
+                if (!m_compiler->info.compInitMem)
                 {
                     buildInternalIntRegisterDefForNode(tree);
                     buildInternalIntRegisterDefForNode(tree);
@@ -721,7 +721,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 0);
 
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
+            if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
             {
                 srcCount = BuildGCWriteBarrier(tree);
                 break;
@@ -777,7 +777,7 @@ int LinearScan::BuildNode(GenTree* tree)
     assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsUnusedValue() || (dstCount != 0));
-    assert(dstCount == tree->GetRegisterDstCount(compiler));
+    assert(dstCount == tree->GetRegisterDstCount(m_compiler));
     return srcCount;
 }
 
@@ -837,7 +837,8 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     {
         if (addr->OperIs(GT_CNS_INT))
         {
-            bool needsReloc = addr->AsIntCon()->FitsInAddrBase(compiler) && addr->AsIntCon()->AddrNeedsReloc(compiler);
+            bool needsReloc =
+                addr->AsIntCon()->FitsInAddrBase(m_compiler) && addr->AsIntCon()->AddrNeedsReloc(m_compiler);
             if (needsReloc || !emitter::isValidSimm12(indirTree->Offset()))
             {
                 bool needTemp = indirTree->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeIsFloating(indirTree);
@@ -932,9 +933,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be overridden by epilog sequence.
             ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH.GetIntRegSet();
-            if (compiler->getNeedsGSSecurityCookie())
+            if (m_compiler->getNeedsGSSecurityCookie())
             {
-                ctrlExprCandidates &= ~compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true).GetIntRegSet();
+                ctrlExprCandidates &= ~m_compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true).GetIntRegSet();
             }
             assert(ctrlExprCandidates != RBM_NONE);
         }
@@ -990,7 +991,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
-    if (call->IsAsync() && compiler->compIsAsync() && !call->IsFastTailCall())
+    if (call->IsAsync() && m_compiler->compIsAsync() && !call->IsFastTailCall())
     {
         MarkAsyncContinuationBusyForCall(call);
     }

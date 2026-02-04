@@ -5748,11 +5748,11 @@ ASSERT_TP* Compiler::optInitAssertionDataflowFlags()
 // Callback data for the VN based constant prop visitor.
 struct VNAssertionPropVisitorInfo
 {
-    Compiler*   pThis;
+    Compiler*   m_compiler;
     Statement*  stmt;
     BasicBlock* block;
     VNAssertionPropVisitorInfo(Compiler* pThis, BasicBlock* block, Statement* stmt)
-        : pThis(pThis)
+        : m_compiler(pThis)
         , stmt(stmt)
         , block(block)
     {
@@ -5996,7 +5996,7 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTr
 Compiler::fgWalkResult Compiler::optVNAssertionPropCurStmtVisitor(GenTree** ppTree, fgWalkData* data)
 {
     VNAssertionPropVisitorInfo* pData = (VNAssertionPropVisitorInfo*)data->pCallbackData;
-    Compiler*                   pThis = pData->pThis;
+    Compiler*                   pThis = pData->m_compiler;
 
     pThis->optVnNonNullPropCurStmt(pData->block, pData->stmt, *ppTree);
 

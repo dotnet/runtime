@@ -3148,7 +3148,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePre(
 {
     fgWalkData walkData;
 
-    walkData.compiler      = this;
+    walkData.m_compiler    = this;
     walkData.wtprVisitorFn = visitor;
     walkData.pCallbackData = callBackData;
     walkData.parent        = nullptr;
@@ -3207,7 +3207,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePost(GenTree**     pTree,
 {
     fgWalkData walkData;
 
-    walkData.compiler      = this;
+    walkData.m_compiler    = this;
     walkData.wtpoVisitorFn = visitor;
     walkData.pCallbackData = callBackData;
     walkData.parent        = nullptr;
@@ -3247,7 +3247,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
 {
     fgWalkData walkData;
 
-    walkData.compiler      = this;
+    walkData.m_compiler    = this;
     walkData.wtprVisitorFn = preVisitor;
     walkData.wtpoVisitorFn = postVisitor;
     walkData.pCallbackData = callBackData;
@@ -3432,7 +3432,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 inline void RegSet::tmpEnd()
 {
 #ifdef DEBUG
-    if (m_rsCompiler->verbose && (tmpCount > 0))
+    if (m_compiler->verbose && (tmpCount > 0))
     {
         printf("%d tmps used\n", tmpCount);
     }
