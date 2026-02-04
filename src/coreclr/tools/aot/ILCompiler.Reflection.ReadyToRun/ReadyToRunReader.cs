@@ -1019,10 +1019,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     signaturePrefixes.Add("[Async]");
                 }
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_ResumptionStub) != 0)
-                {
-                    signaturePrefixes.Add("[Resume]");
-                }
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0)
                 {
                     throw new NotImplementedException("Crossgen2 should not emit code for Instantiating stubs.");
@@ -1153,10 +1149,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant) != 0)
                 {
                     signaturePrefixes.Add("[Async]");
-                }
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_ResumptionStub) != 0)
-                {
-                    signaturePrefixes.Add("[Resume]");
                 }
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0)
                 {
