@@ -104,7 +104,7 @@ export async function instantiateWasm(wasmPromise: Promise<Response>, imports: W
     let instance: WebAssembly.Instance;
     let module: WebAssembly.Module;
     const res = await checkResponseOk(wasmPromise);
-    if (!hasInstantiateStreaming || !isStreaming || !res.isMimeTypeOk) {
+    if (!hasInstantiateStreaming || !isStreaming || !res.isStreamingOk) {
         const data = await res.arrayBuffer();
         module = await WebAssembly.compile(data);
         instance = await WebAssembly.instantiate(module, imports);
@@ -119,19 +119,18 @@ export async function instantiateWasm(wasmPromise: Promise<Response>, imports: W
     }
     return { instance, module };
 
-    async function checkResponseOk(wasmPromise: Promise<Response> | undefined): Promise<Response & { isMimeTypeOk?: boolean }> {
+    async function checkResponseOk(wasmPromise: Promise<Response> | undefined): Promise<Response & { isStreamingOk?: boolean }> {
         _ems_.dotnetAssert.check(wasmPromise, "WASM binary promise was not initialized");
-        const res = (await wasmPromise) as Response & { isMimeTypeOk?: boolean };
+        const res = (await wasmPromise) as Response & { isStreamingOk?: boolean };
         if (!res || res.ok === false) {
             throw new Error(`Failed to load WebAssembly module. HTTP status: ${res?.status} ${res?.statusText}`);
         }
+        res.isStreamingOk = typeof globalThis.Response === "function" && res instanceof globalThis.Response;
         const contentType = res.headers && res.headers.get ? res.headers.get("Content-Type") : undefined;
-        res.isMimeTypeOk = true;
         if (ENVIRONMENT_IS_WEB && contentType !== "application/wasm") {
             _ems_.dotnetLogger.warn("WebAssembly resource does not have the expected content type \"application/wasm\", so falling back to slower ArrayBuffer instantiation.");
-            res.isMimeTypeOk = false;
+            res.isStreamingOk = false;
         }
         return res;
     }
 }
-
