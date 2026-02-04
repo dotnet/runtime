@@ -38,20 +38,36 @@ scripts/Get-HelixFailures.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
 
 1. Fetches Build Analysis for known issues
 2. Gets failed jobs from Azure DevOps timeline
-3. Extracts Helix work item failures
-4. Fetches console logs (with `-ShowLogs`)
-5. Searches for known issues with "Known Build Error" label
-6. Correlates failures with PR changes
+3. **Separates canceled jobs from failed jobs** (canceled = dependency failures)
+4. Extracts Helix work item failures
+5. Fetches console logs (with `-ShowLogs`)
+6. Searches for known issues with "Known Build Error" label
+7. Correlates failures with PR changes
+8. **Provides smart retry recommendations**
 
 ## Interpreting Results
 
-**Known Issues section**: Failures matching existing GitHub issues - likely transient/infrastructure.
+**Known Issues section**: Failures matching existing GitHub issues - these are tracked and being investigated.
+
+**Canceled jobs**: Jobs that were canceled (not failed) due to earlier stage failures or timeouts. These don't need separate investigation.
 
 **PR Change Correlation**: Files changed by PR appearing in failures - likely PR-related.
 
 **Build errors**: Compilation failures need code fixes.
 
 **Helix failures**: Test failures on distributed infrastructure.
+
+## Retry Recommendations
+
+The script provides a smart recommendation at the end:
+
+| Recommendation | Meaning |
+|----------------|---------|
+| **NO RETRY NEEDED** | All failures match known tracked issues. PR can proceed. |
+| **PARTIAL KNOWN ISSUES** | Some failures are known, but review others before retrying. |
+| **LIKELY PR-RELATED** | Failures correlate with PR changes. Fix issues first. |
+| **POSSIBLY TRANSIENT** | No clear cause - check main branch, search for issues. |
+| **REVIEW REQUIRED** | Could not auto-determine cause. Manual review needed. |
 
 ## Analysis Workflow
 

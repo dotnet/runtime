@@ -644,6 +644,16 @@ function Get-FailedJobs {
     return $failedJobs
 }
 
+function Get-CanceledJobs {
+    param($Timeline)
+
+    $canceledJobs = $Timeline.records | Where-Object {
+        $_.type -eq "Job" -and $_.result -eq "canceled"
+    }
+
+    return $canceledJobs
+}
+
 function Get-HelixJobInfo {
     param($Timeline, $JobId)
 
@@ -1565,6 +1575,9 @@ try {
         # Get failed jobs
         $failedJobs = Get-FailedJobs -Timeline $timeline
 
+        # Get canceled jobs (different from failed - typically due to dependency failures)
+        $canceledJobs = Get-CanceledJobs -Timeline $timeline
+
         # Also check for local test failures (non-Helix)
         $localTestFailures = Get-LocalTestFailures -Timeline $timeline -BuildId $currentBuildId
 
@@ -1575,6 +1588,17 @@ try {
             }
             else {
                 Write-Host "`nNo failed jobs found in build $currentBuildId" -ForegroundColor Green
+            }
+            # Still show canceled jobs if any
+            if ($canceledJobs -and $canceledJobs.Count -gt 0) {
+                Write-Host "`nNote: $($canceledJobs.Count) job(s) were canceled (not failed):" -ForegroundColor DarkYellow
+                foreach ($job in $canceledJobs | Select-Object -First 5) {
+                    Write-Host "  - $($job.name)" -ForegroundColor DarkGray
+                }
+                if ($canceledJobs.Count -gt 5) {
+                    Write-Host "  ... and $($canceledJobs.Count - 5) more" -ForegroundColor DarkGray
+                }
+                Write-Host "  (Canceled jobs are typically due to earlier stage failures or timeouts)" -ForegroundColor DarkGray
             }
             continue
         }
@@ -1643,6 +1667,17 @@ try {
         }
 
         Write-Host "`nFound $($failedJobs.Count) failed job(s):" -ForegroundColor Red
+
+        # Show canceled jobs if any (these are different from failed)
+        if ($canceledJobs -and $canceledJobs.Count -gt 0) {
+            Write-Host "Also $($canceledJobs.Count) job(s) were canceled (due to earlier failures/timeouts):" -ForegroundColor DarkYellow
+            foreach ($job in $canceledJobs | Select-Object -First 3) {
+                Write-Host "  - $($job.name)" -ForegroundColor DarkGray
+            }
+            if ($canceledJobs.Count -gt 3) {
+                Write-Host "  ... and $($canceledJobs.Count - 3) more" -ForegroundColor DarkGray
+            }
+        }
 
         $processedJobs = 0
         $errorCount = 0
@@ -1830,6 +1865,63 @@ if ($buildIds.Count -gt 1) {
             Write-Host "    $($issue.Url)" -ForegroundColor DarkGray
         }
     }
+}
+
+# Smart retry recommendation
+Write-Host "`n=== Recommendation ===" -ForegroundColor Magenta
+
+if ($knownIssuesFromBuildAnalysis.Count -gt 0) {
+    # All failures are known issues - no retry needed
+    $knownIssueCount = $knownIssuesFromBuildAnalysis.Count
+    if ($totalFailedJobs -le $knownIssueCount -or $totalFailedJobs -eq 0) {
+        Write-Host "NO RETRY NEEDED" -ForegroundColor Green
+        Write-Host "All failures match known tracked issues. These are already being investigated." -ForegroundColor White
+        Write-Host "The PR can proceed once a maintainer reviews the known issues." -ForegroundColor Gray
+    }
+    else {
+        # Some failures may be new
+        Write-Host "PARTIAL KNOWN ISSUES" -ForegroundColor Yellow
+        Write-Host "$knownIssueCount failure(s) match known issues, but there may be additional failures." -ForegroundColor White
+        Write-Host "Review the failures above to determine if any are PR-related before retrying." -ForegroundColor Gray
+    }
+}
+elseif ($totalFailedJobs -eq 0 -and $totalLocalFailures -eq 0) {
+    Write-Host "BUILD SUCCESSFUL" -ForegroundColor Green
+    Write-Host "No failures detected." -ForegroundColor White
+}
+elseif ($prChangedFiles.Count -gt 0 -and $allFailuresForCorrelation.Count -gt 0) {
+    # Check if failures correlate with PR changes
+    $hasCorrelation = $false
+    foreach ($failure in $allFailuresForCorrelation) {
+        $failureText = ($failure.Errors + $failure.HelixLogs + $failure.FailedTests) -join " "
+        foreach ($file in $prChangedFiles) {
+            $fileName = [System.IO.Path]::GetFileNameWithoutExtension($file)
+            if ($failureText -match [regex]::Escape($fileName)) {
+                $hasCorrelation = $true
+                break
+            }
+        }
+        if ($hasCorrelation) { break }
+    }
+    
+    if ($hasCorrelation) {
+        Write-Host "LIKELY PR-RELATED" -ForegroundColor Red
+        Write-Host "Failures appear to correlate with files changed in this PR." -ForegroundColor White
+        Write-Host "Review the 'PR Change Correlation' section above and fix the issues before retrying." -ForegroundColor Gray
+    }
+    else {
+        Write-Host "POSSIBLY TRANSIENT" -ForegroundColor Yellow
+        Write-Host "No known issues matched, but failures don't clearly correlate with PR changes." -ForegroundColor White
+        Write-Host "Consider:" -ForegroundColor Gray
+        Write-Host "  1. Check if same tests are failing on main branch" -ForegroundColor Gray
+        Write-Host "  2. Search for existing issues: gh issue list --label 'Known Build Error' --search '<test name>'" -ForegroundColor Gray
+        Write-Host "  3. If infrastructure-related (device not found, network errors), retry may help" -ForegroundColor Gray
+    }
+}
+else {
+    Write-Host "REVIEW REQUIRED" -ForegroundColor Yellow
+    Write-Host "Could not automatically determine failure cause." -ForegroundColor White
+    Write-Host "Review the failures above to determine if they are PR-related or infrastructure issues." -ForegroundColor Gray
 }
 
 }
