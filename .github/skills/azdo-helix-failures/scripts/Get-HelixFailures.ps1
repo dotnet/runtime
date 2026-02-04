@@ -181,6 +181,20 @@ if (-not $NoCache) {
     Clear-ExpiredCache -TTLSeconds $CacheTTLSeconds
 }
 
+function Get-UrlHash {
+    param([string]$Url)
+    
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return [System.BitConverter]::ToString(
+            $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Url))
+        ).Replace("-", "").Substring(0, 16)
+    }
+    finally {
+        $sha256.Dispose()
+    }
+}
+
 function Get-CachedResponse {
     param(
         [string]$Url,
@@ -189,17 +203,7 @@ function Get-CachedResponse {
 
     if ($NoCache) { return $null }
 
-    # Create a hash of the URL for the cache filename
-    $sha256 = [System.Security.Cryptography.SHA256]::Create()
-    try {
-        $hash = [System.BitConverter]::ToString(
-            $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Url))
-        ).Replace("-", "").Substring(0, 16)
-    }
-    finally {
-        if ($null -ne $sha256) { $sha256.Dispose() }
-    }
-
+    $hash = Get-UrlHash -Url $Url
     $cacheFile = Join-Path $script:CacheDir "$hash.json"
 
     if (Test-Path $cacheFile) {
@@ -226,16 +230,7 @@ function Set-CachedResponse {
 
     if ($NoCache) { return }
 
-    $sha256 = [System.Security.Cryptography.SHA256]::Create()
-    try {
-        $hash = [System.BitConverter]::ToString(
-            $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Url))
-        ).Replace("-", "").Substring(0, 16)
-    }
-    finally {
-        if ($null -ne $sha256) { $sha256.Dispose() }
-    }
-
+    $hash = Get-UrlHash -Url $Url
     $cacheFile = Join-Path $script:CacheDir "$hash.json"
     $Content | Set-Content $cacheFile -Force
     Write-Verbose "Cached response for $Url"
@@ -1830,6 +1825,8 @@ try {
                     }
                 }
             }
+
+            $processedJobs++
         }
         catch {
             $errorCount++
@@ -1837,11 +1834,9 @@ try {
                 Write-Warning "  Error processing job '$($job.name)': $_"
             }
             else {
-                throw
+                throw [System.Exception]::new("Error processing job '$($job.name)': $($_.Exception.Message)", $_.Exception)
             }
         }
-
-        $processedJobs++
     }
 
     $totalFailedJobs += $failedJobs.Count
@@ -1883,19 +1878,10 @@ if ($buildIds.Count -gt 1) {
 Write-Host "`n=== Recommendation ===" -ForegroundColor Magenta
 
 if ($knownIssuesFromBuildAnalysis.Count -gt 0) {
-    # All failures are known issues - no retry needed
     $knownIssueCount = $knownIssuesFromBuildAnalysis.Count
-    if ($totalFailedJobs -le $knownIssueCount -or $totalFailedJobs -eq 0) {
-        Write-Host "NO RETRY NEEDED" -ForegroundColor Green
-        Write-Host "All failures match known tracked issues. These are already being investigated." -ForegroundColor White
-        Write-Host "The PR can proceed once a maintainer reviews the known issues." -ForegroundColor Gray
-    }
-    else {
-        # Some failures may be new
-        Write-Host "PARTIAL KNOWN ISSUES" -ForegroundColor Yellow
-        Write-Host "$knownIssueCount failure(s) match known issues, but there may be additional failures." -ForegroundColor White
-        Write-Host "Review the failures above to determine if any are PR-related before retrying." -ForegroundColor Gray
-    }
+    Write-Host "KNOWN ISSUES DETECTED" -ForegroundColor Yellow
+    Write-Host "$knownIssueCount tracked issue(s) found that may correlate with failures above." -ForegroundColor White
+    Write-Host "Review the failure details and linked issues to determine if retry is needed." -ForegroundColor Gray
 }
 elseif ($totalFailedJobs -eq 0 -and $totalLocalFailures -eq 0) {
     Write-Host "BUILD SUCCESSFUL" -ForegroundColor Green

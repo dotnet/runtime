@@ -73,12 +73,11 @@ Use this skill when:
 
 ## Retry Recommendations
 
-The script provides a smart recommendation at the end:
+The script provides a recommendation at the end:
 
 | Recommendation | Meaning |
 |----------------|---------|
-| **NO RETRY NEEDED** | All failures match known tracked issues. PR can proceed. |
-| **PARTIAL KNOWN ISSUES** | Some failures are known, but review others before retrying. |
+| **KNOWN ISSUES DETECTED** | Tracked issues found that may correlate with failures. Review details. |
 | **LIKELY PR-RELATED** | Failures correlate with PR changes. Fix issues first. |
 | **POSSIBLY TRANSIENT** | No clear cause - check main branch, search for issues. |
 | **REVIEW REQUIRED** | Could not auto-determine cause. Manual review needed. |
