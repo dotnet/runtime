@@ -71,7 +71,10 @@ namespace System.IO.Compression
 
             if (overwrite && File.Exists(destinationFileName))
             {
-                tempPath = Path.Combine(Path.GetDirectoryName(destinationFileName)!, Path.GetRandomFileName());
+                string? directory = Path.GetDirectoryName(destinationFileName);
+                if (string.IsNullOrEmpty(directory))
+                    directory = ".";
+                tempPath = Path.Combine(directory, Path.GetRandomFileName());
                 extractPath = tempPath;
             }
 
@@ -96,7 +99,7 @@ namespace System.IO.Compression
                 // Clean up the temporary file if extraction failed
                 if (tempPath is not null && File.Exists(tempPath))
                 {
-                    try { File.Delete(tempPath); } catch { }
+                    try { File.Delete(tempPath); } catch (IOException) { } catch (UnauthorizedAccessException) { }
                 }
                 throw;
             }
