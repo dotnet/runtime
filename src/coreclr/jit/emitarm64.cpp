@@ -8923,7 +8923,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumb
     id->idInsFmt(fmt);
     id->idjShort             = false;
     id->idAddr()->iiaIGlabel = dst;
-    id->idSetIsBound();  // Mark as bound since we already have the target insGroup directly
+    id->idSetIsBound(); // Mark as bound since we already have the target insGroup directly
     id->idReg1(reg);
     id->idOpSize(EA_PTRSIZE);
     id->idjKeepLong = false;

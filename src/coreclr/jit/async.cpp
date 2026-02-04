@@ -2441,7 +2441,7 @@ void AsyncTransformation::CreateResumptionSwitch()
         GenTree* osrAddress         = LoadFromOffset(continuationArg, offsetOfOSRAddress, TYP_I_IMPL);
         unsigned osrAddressLclNum   = m_compiler->lvaGrabTemp(false DEBUGARG("OSR address for tier0 OSR method"));
         m_compiler->lvaGetDesc(osrAddressLclNum)->lvType = TYP_I_IMPL;
-        GenTree* storeOsrAddress                     = m_compiler->gtNewStoreLclVarNode(osrAddressLclNum, osrAddress);
+        GenTree* storeOsrAddress = m_compiler->gtNewStoreLclVarNode(osrAddressLclNum, osrAddress);
         LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeOsrAddress));
 
         osrAddress      = m_compiler->gtNewLclvNode(osrAddressLclNum, TYP_I_IMPL);

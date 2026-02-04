@@ -9131,7 +9131,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumb
     id->idInsFmt(IF_RWR_LABEL);
     id->idOpSize(EA_SIZE(attr));
     id->idAddr()->iiaIGlabel = dst;
-    id->idSetIsBound();  // Mark as bound since we already have the target insGroup directly
+    id->idSetIsBound(); // Mark as bound since we already have the target insGroup directly
 
     /* The label reference is always long */
 
