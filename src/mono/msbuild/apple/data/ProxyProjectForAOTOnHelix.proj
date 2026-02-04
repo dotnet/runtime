@@ -7,10 +7,18 @@
     <ExtraFilesPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'extraFiles'))</ExtraFilesPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'obj'))</BaseIntermediateOutputPath>
 
-    <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
+    <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;_RunR2RCompilationOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
     <!-- Forced by ILLink targets -->
     <SelfContained>true</SelfContained>
     <PublishDir>$(OriginalPublishDir)</PublishDir>
+  </PropertyGroup>
+
+  <!-- CoreCLR R2R compilation settings -->
+  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
+    <!-- Crossgen2 path on Helix - uploaded to build/crossgen2 in correlation payload -->
+    <Crossgen2InBuildDir Condition="'$(HELIX_CORRELATION_PAYLOAD)' != '' and '$(Crossgen2InBuildDir)' == ''">$([MSBuild]::NormalizeDirectory($(HELIX_CORRELATION_PAYLOAD), 'build', 'crossgen2'))</Crossgen2InBuildDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
@@ -94,6 +102,76 @@
       <RuntimeComponents Include="diagnostics_tracing" />
       <RuntimeComponents Include="marshal-ilgen" />
     </ItemGroup>
+  </Target>
+
+  <!-- Run R2R compilation on Helix for CoreCLR builds -->
+  <Target Name="_RunR2RCompilationOnHelix"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'"
+          DependsOnTargets="_PrepareForAppleBuildAppOnHelix">
+    <Message Text="** Running R2R compilation on Helix for CoreCLR test app **" Importance="High" />
+
+    <PropertyGroup>
+      <_R2RIntermediateDir>$([MSBuild]::NormalizeDirectory($(BaseIntermediateOutputPath), 'R2R'))</_R2RIntermediateDir>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_R2RIntermediateDir)" />
+
+    <!-- Build list of assemblies to R2R compile (test assemblies, not runtime pack assemblies) -->
+    <ItemGroup>
+      <_AssembliesToR2R Include="$(OriginalPublishDir)*.dll"
+                        Exclude="$(OriginalPublishDir)*.resources.dll" />
+      <!-- Exclude runtime pack assemblies - they are already R2R compiled -->
+      <_AssembliesToR2R Remove="@(_AppleUsedRuntimePackFiles->'$(OriginalPublishDir)%(FileName)%(Extension)')" />
+    </ItemGroup>
+
+    <!-- Add all DLLs as reference assemblies for crossgen2 -->
+    <ItemGroup>
+      <_R2RReferenceAssemblies Include="$(OriginalPublishDir)*.dll" />
+      <_R2RReferenceAssemblies Include="$(MicrosoftNetCoreAppRuntimePackLibDir)*.dll" Condition="Exists('$(MicrosoftNetCoreAppRuntimePackLibDir)')" />
+    </ItemGroup>
+
+    <Message Text="R2R compiling @(_AssembliesToR2R->Count()) assemblies..." Importance="High" />
+
+    <!-- Run crossgen2 for each assembly -->
+    <PropertyGroup>
+      <_Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2'))</_Crossgen2Path>
+      <_R2RTargetArch Condition="'$(TargetArchitecture)' == 'arm64'">arm64</_R2RTargetArch>
+      <_R2RTargetArch Condition="'$(TargetArchitecture)' == 'x64'">x64</_R2RTargetArch>
+
+      <!-- Determine Apple SDK name based on target OS -->
+      <_AppleSdkName Condition="'$(TargetOS)' == 'ios'">iphoneos</_AppleSdkName>
+      <_AppleSdkName Condition="'$(TargetOS)' == 'iossimulator'">iphonesimulator</_AppleSdkName>
+      <_AppleSdkName Condition="'$(TargetOS)' == 'tvos'">appletvos</_AppleSdkName>
+      <_AppleSdkName Condition="'$(TargetOS)' == 'tvossimulator'">appletvsimulator</_AppleSdkName>
+      <_AppleSdkName Condition="'$(TargetOS)' == 'maccatalyst'">macosx</_AppleSdkName>
+
+      <!-- Determine target triple -->
+      <_AppleTripleOS Condition="$(TargetOS.StartsWith('ios'))">ios</_AppleTripleOS>
+      <_AppleTripleOS Condition="$(TargetOS.StartsWith('tvos'))">tvos</_AppleTripleOS>
+      <_AppleTripleOS Condition="'$(TargetOS)' == 'maccatalyst'">ios</_AppleTripleOS>
+
+      <_AppleTripleAbi Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'"></_AppleTripleAbi>
+      <_AppleTripleAbi Condition="'$(TargetOS)' == 'maccatalyst'">-macabi</_AppleTripleAbi>
+      <_AppleTripleAbi Condition="$(TargetOS.EndsWith('simulator'))">-simulator</_AppleTripleAbi>
+
+      <_R2RTargetTriple>$(_R2RTargetArch)-apple-$(_AppleTripleOS)13.0$(_AppleTripleAbi)</_R2RTargetTriple>
+      <!-- Name based on assembly name with .r2r.dylib suffix, matching SDK behavior -->
+      <_R2ROutputName>$(AssemblyName).r2r</_R2ROutputName>
+    </PropertyGroup>
+
+    <Exec Condition="'@(_AssembliesToR2R)' != ''"
+          Command="&quot;$(_Crossgen2Path)&quot; --composite --targetarch $(_R2RTargetArch) --targetos $(TargetOS) -O --out &quot;$(_R2RIntermediateDir)$(_R2ROutputName).o&quot; @(_R2RReferenceAssemblies->'--reference:&quot;%(Identity)&quot;', ' ') @(_AssembliesToR2R->'&quot;%(Identity)&quot;', ' ')"
+          WorkingDirectory="$(OriginalPublishDir)"
+          IgnoreExitCode="false" />
+
+    <!-- Link the object file into a dylib using clang -->
+    <Exec Condition="'@(_AssembliesToR2R)' != '' and Exists('$(_R2RIntermediateDir)$(_R2ROutputName).o')"
+          Command="xcrun --sdk $(_AppleSdkName) clang -dynamiclib -Wl,-dead_strip -target $(_R2RTargetTriple) &quot;$(_R2RIntermediateDir)$(_R2ROutputName).o&quot; -o &quot;$(OriginalPublishDir)$(_R2ROutputName).dylib&quot;"
+          WorkingDirectory="$(OriginalPublishDir)"
+          IgnoreExitCode="false" />
+
+    <Message Condition="Exists('$(OriginalPublishDir)$(_R2ROutputName).dylib')"
+             Text="R2R compilation completed: $(OriginalPublishDir)$(_R2ROutputName).dylib" Importance="High" />
   </Target>
 
   <Target Name="_PublishRuntimePack"

@@ -18,6 +18,8 @@
     <!-- The command below sets default properties for runtime and library tests -->
     <_AOTBuildCommand>$(_AOTBuildCommand) /p:XHARNESS_EXECUTION_DIR=&quot;$XHARNESS_EXECUTION_DIR&quot; /p:RunAOTCompilation=$(RunAOTCompilation) /p:UseNativeAOTRuntime=$(UseNativeAOTRuntime) /p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:UseMonoRuntime=$(UseMonoRuntime) /p:MonoForceInterpreter=$(MonoForceInterpreter) /p:MonoEnableLLVM=true /p:DevTeamProvisioning=$(DevTeamProvisioning) /p:UsePortableRuntimePack=$(UsePortableRuntimePack) /p:Configuration=$(Configuration)</_AOTBuildCommand>
     <_AOTBuildCommand Condition="'$(NativeLib)' != ''">$(_AOTBuildCommand) /p:NativeLib=$(NativeLib) /p:BundlesResources=$(BundlesResources) /p:ForceLibraryModeGenerateAppBundle=$(ForceLibraryModeGenerateAppBundle)</_AOTBuildCommand>
+    <!-- Pass R2R properties for CoreCLR builds that deferred R2R to Helix -->
+    <_AOTBuildCommand Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">$(_AOTBuildCommand) /p:PublishReadyToRun=true /p:PublishReadyToRunComposite=true /p:PublishReadyToRunContainerFormat=macho</_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) </_AOTBuildCommand>
 
     <_ResetSimulatorSwitch Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') and '$(IncludesTestRunner)' == 'true'">--reset-simulator</_ResetSimulatorSwitch>
@@ -134,6 +136,11 @@
       <!-- Globalization properties -->
       <_ApplePropertyNames Include="HybridGlobalization" />
       <_ApplePropertyNames Include="InvariantGlobalization" />
+
+      <!-- R2R properties for CoreCLR builds - needed for R2R compilation on Helix -->
+      <_ApplePropertyNames Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'" Include="Crossgen2InBuildDir" />
+      <_ApplePropertyNames Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'" Include="Crossgen2SdkOverridePropsPath" />
+      <_ApplePropertyNames Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'" Include="Crossgen2SdkOverrideTargetsPath" />
 
       <_AppleUsedRuntimePackFiles
                          Include="@(_UsedRuntimePackFiles->'%(FileName)%(Extension)')"
