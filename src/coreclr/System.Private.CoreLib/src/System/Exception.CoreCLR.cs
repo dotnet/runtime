@@ -294,10 +294,8 @@ namespace System
                 *pException = ex;
             }
         }
-#endif
 
-        // used by vm
-        internal string? GetHelpContext(out uint helpContext)
+        private string? GetHelpContext(out uint helpContext)
         {
             helpContext = 0;
             string? helpFile = HelpLink;
@@ -322,5 +320,24 @@ namespace System
 
             return helpFile;
         }
+
+        // used by vm
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetHelpContextBstr(Exception* obj, IntPtr* bstr, uint* helpContext, Exception* pException)
+        {
+            try
+            {
+                string? helpFile = obj->GetHelpContext(out *helpContext);
+
+                *bstr = helpFile != null
+                    ? Interop.OleAut32.SysAllocStringLen(helpFile, (uint)helpFile.Length)
+                    : IntPtr.Zero;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
     }
 }

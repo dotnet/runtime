@@ -208,20 +208,11 @@ static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD 
     }
     CONTRACTL_END;
 
-    *pdwHelpContext = 0;
-
-    GCPROTECT_BEGIN(objException);
-
-    // call managed code to parse help context
-    MethodDescCallSite getHelpContext(METHOD__EXCEPTION__GET_HELP_CONTEXT, &objException);
-
-    ARG_SLOT GetHelpContextArgs[] =
+    GCPROTECT_BEGIN(objException)
     {
-        ObjToArgSlot(objException),
-        PtrToArgSlot(pdwHelpContext)
-    };
-    *pbstrHelpFile = BStrFromString(getHelpContext.Call_RetSTRINGREF(GetHelpContextArgs));
-
+        UnmanagedCallersOnlyCaller getHelpContextBstr(METHOD__EXCEPTION__GET_HELP_CONTEXT_BSTR);
+        getHelpContextBstr.InvokeThrowing(&objException, &pbstrHelpFile, &pdwHelpContext);
+    }
     GCPROTECT_END();
 }
 
