@@ -417,8 +417,6 @@ DEFINE_METASIG_T(SM(IntPtr_AssemblyName_RetAssembly, I C(ASSEMBLY_NAME), C(ASSEM
 DEFINE_METASIG_T(SM(Str_AssemblyBase_IntPtr_RetIntPtr, s C(ASSEMBLYBASE) I, I))
 DEFINE_METASIG_T(SM(Str_AssemblyBase_Bool_UInt_RetIntPtr, s C(ASSEMBLYBASE) F K, I))
 
-// For FailFast
-
 // fields - e.g.:
 // DEFINE_METASIG(Fld(PtrVoid, P(v)))
 
