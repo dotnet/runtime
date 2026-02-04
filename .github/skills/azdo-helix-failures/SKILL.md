@@ -1,26 +1,28 @@
 ---
 name: azdo-helix-failures
-description: Retrieve and analyze test failures from Azure DevOps builds and Helix test runs. Use this when investigating CI failures, checking why a PR's tests are failing, debugging Helix test issues, analyzing build errors, or triaging dotnet/runtime test failures. Triggers include questions like "why is this PR failing", "analyze the CI failures", "what's wrong with this build", or any URL containing dev.azure.com, helix.dot.net, or GitHub PR links with failing checks.
+description: Retrieve and analyze test failures from Azure DevOps builds and Helix test runs. Use this when investigating CI failures, checking why a PR's tests are failing, debugging Helix test issues, or analyzing build errors for any dotnet repository (runtime, sdk, aspnetcore, roslyn, etc.). Triggers include questions like "why is this PR failing", "analyze the CI failures", "what's wrong with this build", or any URL containing dev.azure.com, helix.dot.net, or GitHub PR links with failing checks.
 ---
 
 # Azure DevOps and Helix Failure Analysis
 
-Analyze CI test failures in Azure DevOps and Helix for dotnet repositories.
+Analyze CI test failures in Azure DevOps and Helix for dotnet repositories (runtime, sdk, aspnetcore, roslyn, and more).
 
 ## Quick Start
 
 ```powershell
-# Analyze PR failures (most common)
+# Analyze PR failures (most common) - defaults to dotnet/runtime
 scripts/Get-HelixFailures.ps1 -PRNumber 123445 -ShowLogs
 
 # Analyze by build ID
 scripts/Get-HelixFailures.ps1 -BuildId 1276327 -ShowLogs
 
 # Query specific Helix work item
-scripts/Get-HelixFailures.ps1 -HelixJob "4b24b2c2-..." -WorkItem "iOS.Device.Aot.Test"
+scripts/Get-HelixFailures.ps1 -HelixJob "4b24b2c2-..." -WorkItem "System.Net.Http.Tests"
 
-# Other repositories
+# Other dotnet repositories
 scripts/Get-HelixFailures.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
+scripts/Get-HelixFailures.ps1 -PRNumber 67890 -Repository "dotnet/sdk"
+scripts/Get-HelixFailures.ps1 -PRNumber 11111 -Repository "dotnet/roslyn"
 ```
 
 ## Key Parameters
@@ -77,8 +79,10 @@ The script provides a smart recommendation at the end:
 4. **Correlate with PR changes** - Same files failing = likely PR-related
 5. **Interpret patterns**:
    - Same error across many jobs → Real code issue
-   - iOS/Android device failures → Often transient infrastructure
-   - Docker image pull failures → Infrastructure, check known issues
+   - Device failures (iOS/Android/tvOS) → Often transient infrastructure
+   - Docker/container image pull failures → Infrastructure issue
+   - Network timeouts, "host not found" → Transient infrastructure
+   - Test timeout but tests passed → Executor issue, not test failure
 
 ## References
 
