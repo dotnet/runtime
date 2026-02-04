@@ -21,25 +21,43 @@ curl -s "https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems/{workItemNa
 
 The `Files` array contains artifacts with `FileName` and `Uri` properties.
 
-## Common Artifact Types
+## Artifact Availability Varies
+
+**Not all test types produce the same artifacts.** What you see depends on the repo, test type, and configuration:
+
+- **Build/publish tests** (SDK, WASM) → Multiple binlogs
+- **AOT compilation tests** (iOS/Android) → `AOTBuild.binlog` plus device logs
+- **Standard unit tests** → Console logs only, no binlogs
+- **Crash failures** (exit code 134) → Core dumps may be present
+
+Always query the specific work item to see what's available rather than assuming a fixed structure.
+
+## Common Artifact Patterns
 
 | File Pattern | Purpose | When Useful |
 |--------------|---------|-------------|
 | `*.binlog` | MSBuild binary logs | AOT/build failures, MSB4018 errors |
-| `console.*.log` | Console output | General test output |
-| `run-*.log` | XHarness/test runner logs | Mobile test failures |
+| `console.*.log` | Console output | Always available, general output |
+| `run-*.log` | XHarness execution logs | Mobile test failures |
+| `device-*.log` | Device-specific logs | iOS/Android device issues |
 | `dotnetTestLog.*.log` | dotnet test output | Test framework issues |
+| `vstest.*.log` | VSTest output | aspnetcore/SDK test issues |
 | `core.*`, `*.dmp` | Core dumps | Crashes, hangs |
 | `testResults.xml` | Test results | Detailed pass/fail info |
 
+Artifacts may be at the root level or nested in subdirectories like `xharness-output/logs/`.
+
 ## Binlog Files
 
-### Types
+Binlogs are **only present for tests that invoke MSBuild** (build/publish tests, AOT compilation). Standard unit tests don't produce binlogs.
+
+### Common Names
 
 | File | Description |
 |------|-------------|
 | `build.msbuild.binlog` | Build phase |
 | `publish.msbuild.binlog` | Publish phase |
+| `AOTBuild.binlog` | AOT compilation |
 | `msbuild.binlog` | General MSBuild operations |
 | `msbuild0.binlog`, `msbuild1.binlog` | Per-test-run logs (numbered) |
 
@@ -53,18 +71,28 @@ The `Files` array contains artifacts with `FileName` and `Uri` properties.
 **Download and view locally:**
 ```bash
 curl -o build.binlog "https://helix.dot.net/api/jobs/{jobId}/workitems/{workItem}/files/build.msbuild.binlog?api-version=2019-06-17"
-# Open with MSBuild Structured Log Viewer or `dotnet msbuild -bl` tools
+# Open with MSBuild Structured Log Viewer
 ```
 
 **AI-assisted analysis:**
 Use the MSBuild MCP server to analyze binlogs for errors and warnings.
 
+## Core Dumps
+
+Core dumps appear when tests crash (typically exit code 134 on Linux/macOS):
+
+```
+core.1000.34   # Format: core.{uid}.{pid}
+```
+
 ## Mobile Test Artifacts (iOS/Android)
 
-Mobile test runs often include:
-- `run-*.log` - XHarness execution logs
-- `device-*.log` - Device-specific logs
-- Screenshots on failure
+Mobile device tests typically include XHarness orchestration logs:
+
+- `run-ios-device.log` / `run-android.log` - Execution log
+- `device-{machine}-*.log` - Device output
+- `list-ios-device-*.log` - Device discovery
+- `AOTBuild.binlog` - AOT compilation (when applicable)
 - `*.crash` - iOS crash reports
 
 ## Finding the Right Work Item
