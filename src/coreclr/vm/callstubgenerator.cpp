@@ -1096,7 +1096,7 @@ PCODE CallStubGenerator::GetFPReg32RangeRoutine(int x1, int x2)
 PCODE CallStubGenerator::GetRegRoutine_4B(int r1, int r2)
 {
 #if LOG_COMPUTE_CALL_STUB
-    printf("GetRegRoutine_4B\n");
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetRegRoutine_4B\n"));
 #endif
     static const PCODE GPRegLoadRoutines_4B[] = {
         (PCODE)0, (PCODE)Load_R0_R1_4B, (PCODE)0, (PCODE)Load_R0_R1_R2_R3_4B,
@@ -1118,7 +1118,7 @@ PCODE CallStubGenerator::GetRegRoutine_4B(int r1, int r2)
 PCODE CallStubGenerator::GetStackRoutine_4B()
 {
 #if LOG_COMPUTE_CALL_STUB
-    printf("GetStackRoutine_4B\n");
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetStackRoutine_4B\n"));
 #endif
     return m_interpreterToNative ? (PCODE)Load_Stack_4B : (PCODE)Store_Stack_4B;
 }
@@ -1127,7 +1127,7 @@ PCODE CallStubGenerator::GetStackRoutine_4B()
 PCODE CallStubGenerator::GetSwiftSelfRoutine()
 {
 #if LOG_COMPUTE_CALL_STUB
-    printf("GetSwiftSelfRoutine\n");
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetSwiftSelfRoutine\n"));
 #endif
     return (PCODE)Load_SwiftSelf;
 }
@@ -1135,7 +1135,7 @@ PCODE CallStubGenerator::GetSwiftSelfRoutine()
 PCODE CallStubGenerator::GetSwiftSelfByRefRoutine()
 {
 #if LOG_COMPUTE_CALL_STUB
-    printf("GetSwiftSelfByRefRoutine\n");
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetSwiftSelfByRefRoutine\n"));
 #endif
     return (PCODE)Load_SwiftSelf_ByRef;
 }
@@ -1143,7 +1143,7 @@ PCODE CallStubGenerator::GetSwiftSelfByRefRoutine()
 PCODE CallStubGenerator::GetSwiftErrorRoutine()
 {
 #if LOG_COMPUTE_CALL_STUB
-    printf("GetSwiftErrorRoutine\n");
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetSwiftErrorRoutine\n"));
 #endif
     return (PCODE)Load_SwiftError;
 }
@@ -1151,7 +1151,7 @@ PCODE CallStubGenerator::GetSwiftErrorRoutine()
 PCODE CallStubGenerator::GetSwiftIndirectResultRoutine()
 {
 #if LOG_COMPUTE_CALL_STUB
-    printf("GetSwiftIndirectResultRoutine\n");
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetSwiftIndirectResultRoutine\n"));
 #endif
     return (PCODE)Load_SwiftIndirectResult;
 }
@@ -2061,7 +2061,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     if (swiftIndirectResultCount > 0)
     {
 #if LOG_COMPUTE_CALL_STUB
-        printf("Emitting Load_SwiftIndirectResult routine\n");
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Emitting Load_SwiftIndirectResult routine\n"));
 #endif
         TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftIndirectResult, pRoutines);
         pRoutines[m_routineIndex++] = GetSwiftIndirectResultRoutine();
@@ -2791,7 +2791,7 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
                 m_hasSwiftReturnLowering = true;
                 m_swiftReturnLowering = lowering;
 #if LOG_COMPUTE_CALL_STUB
-                printf("Swift return lowering detected: %d elements\n", lowering.numLoweredElements);
+                LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift return lowering detected: %d elements\n", lowering.numLoweredElements));
 #endif
             }
         }
@@ -3039,7 +3039,7 @@ bool CallStubGenerator::ProcessSwiftSpecialArgument(MethodTable* pArgMT, int int
 #endif // DEBUG
 
 #if LOG_COMPUTE_CALL_STUB
-        printf("SwiftSelf<T> argument detected\n");
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "SwiftSelf<T> argument detected\n"));
 #endif
         TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftSelfByRef, pRoutines);
         m_currentRoutineType = RoutineType::SwiftSelfByRef;
@@ -3053,7 +3053,7 @@ bool CallStubGenerator::ProcessSwiftSpecialArgument(MethodTable* pArgMT, int int
     if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_SELF))
     {
 #if LOG_COMPUTE_CALL_STUB
-        printf("Swift Self argument detected\n");
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift Self argument detected\n"));
 #endif
 
         TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftSelf, pRoutines);
@@ -3065,7 +3065,7 @@ bool CallStubGenerator::ProcessSwiftSpecialArgument(MethodTable* pArgMT, int int
     if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_ERROR))
     {
 #if LOG_COMPUTE_CALL_STUB
-        printf("Swift Error argument detected\n");
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift Error argument detected\n"));
 #endif
 
         TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftError, pRoutines);
@@ -3089,8 +3089,8 @@ void CallStubGenerator::EmitSwiftLoweredElementRoutine(SwiftLoweringElement &ele
         PCODE packedData = (PCODE)elem.offset | ((PCODE)elem.structSize << 16);
         pRoutines[m_routineIndex++] = packedData;
 #if LOG_COMPUTE_CALL_STUB
-        printf("Swift lowered element to FP reg: offset=%d, structSize=%d, reg=d%d\n",
-               elem.offset, elem.structSize, regIndex);
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift lowered element to FP reg: offset=%d, structSize=%d, reg=d%d\n",
+               elem.offset, elem.structSize, regIndex));
 #endif
     }
     else if (!elem.isFloat && argLocDesc.m_cGenReg > 0)
@@ -3101,8 +3101,8 @@ void CallStubGenerator::EmitSwiftLoweredElementRoutine(SwiftLoweringElement &ele
         PCODE packedData = (PCODE)elem.offset | ((PCODE)elem.structSize << 16);
         pRoutines[m_routineIndex++] = packedData;
 #if LOG_COMPUTE_CALL_STUB
-        printf("Swift lowered element to GP reg: offset=%d, structSize=%d, reg=x%d\n",
-               elem.offset, elem.structSize, regIndex);
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift lowered element to GP reg: offset=%d, structSize=%d, reg=x%d\n",
+               elem.offset, elem.structSize, regIndex));
 #endif
     }
     else
@@ -3115,8 +3115,8 @@ void CallStubGenerator::EmitSwiftLoweredElementRoutine(SwiftLoweringElement &ele
                            ((PCODE)argLocDesc.m_byteStackIndex << 32);
         pRoutines[m_routineIndex++] = packedData;
 #if LOG_COMPUTE_CALL_STUB
-        printf("Swift lowered element to stack: offset=%d, structSize=%d, stackOffset=%d\n",
-               elem.offset, elem.structSize, argLocDesc.m_byteStackIndex);
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift lowered element to stack: offset=%d, structSize=%d, stackOffset=%d\n",
+               elem.offset, elem.structSize, argLocDesc.m_byteStackIndex));
 #endif
     }
 }
@@ -3140,7 +3140,7 @@ void CallStubGenerator::EmitSwiftReturnLoweringRoutines(PCODE *pRoutines)
             pRoutines[m_routineIndex++] = (PCODE)offset;
             fpRegIndex++;
 #if LOG_COMPUTE_CALL_STUB
-            printf("Swift return store FP d%d at offset %d\n", fpRegIndex - 1, offset);
+            LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift return store FP d%d at offset %d\n", fpRegIndex - 1, offset));
 #endif
         }
         else
@@ -3150,7 +3150,7 @@ void CallStubGenerator::EmitSwiftReturnLoweringRoutines(PCODE *pRoutines)
             pRoutines[m_routineIndex++] = (PCODE)offset;
             gpRegIndex++;
 #if LOG_COMPUTE_CALL_STUB
-            printf("Swift return store GP x%d at offset %d\n", gpRegIndex - 1, offset);
+            LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift return store GP x%d at offset %d\n", gpRegIndex - 1, offset));
 #endif
         }
     }
