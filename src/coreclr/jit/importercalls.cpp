@@ -6864,7 +6864,6 @@ void Compiler::impCheckForPInvokeCall(
 //    call        - The call
 //    opcode      - The IL opcode for the call
 //    prefixFlags - Flags containing context handling information from IL
-//    numILArgs   - The number of IL arguments for the call
 //    callDI      - Debug info for the async call
 //
 void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
