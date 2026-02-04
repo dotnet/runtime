@@ -29,6 +29,8 @@ class Liveness
     MemoryKindSet fgCurMemoryDef;   // True iff the current basic block modifies memory.
     MemoryKindSet fgCurMemoryHavoc; // True if  the current basic block is known to set memory to a "havoc" value.
 
+    bool m_livenessChanged = false;
+
 protected:
     enum
     {
@@ -122,18 +124,15 @@ void Liveness<TLiveness>::Run()
 
     m_compiler->EndPhase(PHASE_LCLVARLIVENESS_INIT);
 
-    m_compiler->fgLocalVarLivenessChanged = false;
     do
     {
-        /* Figure out use/def info for all basic blocks */
+        // Figure out use/def info for all basic blocks
         PerBlockLocalVarLiveness();
         m_compiler->EndPhase(PHASE_LCLVARLIVENESS_PERBLOCK);
 
-        /* Live variable analysis. */
-
-        m_compiler->fgStmtRemoved = false;
+        // Live variable analysis.
         InterBlockLocalVarLiveness();
-    } while (m_compiler->fgStmtRemoved && m_compiler->fgLocalVarLivenessChanged);
+    } while (m_compiler->fgStmtRemoved && m_livenessChanged);
 
     m_compiler->EndPhase(PHASE_LCLVARLIVENESS_INTERBLOCK);
 }
@@ -1133,7 +1132,7 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
     m_compiler->fgStmtRemoved = false;
 
     // keep track if a bbLiveIn changed due to dead store removal
-    m_compiler->fgLocalVarLivenessChanged = false;
+    m_livenessChanged = false;
 
     /* Compute the IN and OUT sets for tracked variables */
 
@@ -1393,7 +1392,7 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
 
             // We changed the liveIn of the block, which may affect liveOut of others,
             // which may expose more dead stores.
-            m_compiler->fgLocalVarLivenessChanged = true;
+            m_livenessChanged = true;
 
             noway_assert(VarSetOps::IsSubset(m_compiler, life, block->bbLiveIn));
 
