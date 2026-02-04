@@ -174,7 +174,7 @@ namespace System.Threading
 
         private bool WaitForSignal(int timeoutMs)
         {
-            Debug.Assert(timeoutMs > 0 || timeoutMs == -1);
+            Debug.Assert(timeoutMs >= -1);
 
             _onWait();
 
