@@ -736,8 +736,6 @@ void Compiler::optAssertionInit(bool isLocalProp)
         const unsigned              codeSize    = info.compILCodeSize / 512;
         optMaxAssertionCount                    = countFunc[min(upperBound, codeSize)];
 
-        optValueNumToAsserts =
-            new (getAllocator(CMK_AssertionProp)) ValueNumToAssertsMap(getAllocator(CMK_AssertionProp));
         optComplementaryAssertionMap = new (this, CMK_AssertionProp)
             AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
     }
@@ -1439,70 +1437,6 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
     return false;
 }
 
-#ifdef DEBUG
-/*****************************************************************************
- *
- * Print the assertions related to a VN for all VNs.
- *
- */
-void Compiler::optPrintVnAssertionMapping() const
-{
-    printf("\nVN Assertion Mapping\n");
-    printf("---------------------\n");
-    for (ValueNumToAssertsMap::Node* const iter : ValueNumToAssertsMap::KeyValueIteration(optValueNumToAsserts))
-    {
-        printf("(%d => %s)\n", iter->GetKey(), BitVecOps::ToString(apTraits, iter->GetValue()));
-    }
-}
-#endif
-
-/*****************************************************************************
- *
- * Maintain a map "optValueNumToAsserts" i.e., vn -> to set of assertions
- * about that VN. Given "assertions" about a "vn" add it to the previously
- * mapped assertions about that "vn."
- */
-void Compiler::optAddVnAssertionMapping(ValueNum vn, AssertionIndex index)
-{
-    ASSERT_TP* cur = optValueNumToAsserts->LookupPointer(vn);
-    if (cur == nullptr)
-    {
-        optValueNumToAsserts->Set(vn, BitVecOps::MakeSingleton(apTraits, index - 1));
-    }
-    else
-    {
-        BitVecOps::AddElemD(apTraits, *cur, index - 1);
-    }
-}
-
-/*****************************************************************************
- * Statically if we know that this assertion's VN involves a NaN don't bother
- * wasting an assertion table slot.
- */
-bool Compiler::optAssertionVnInvolvesNan(const AssertionDsc& assertion) const
-{
-    if (optLocalAssertionProp)
-    {
-        return false;
-    }
-
-    static const int SZ      = 2;
-    ValueNum         vns[SZ] = {assertion.op1.vn, assertion.op2.vn};
-    for (int i = 0; i < SZ; ++i)
-    {
-        if (vnStore->IsVNConstant(vns[i]))
-        {
-            var_types type = vnStore->TypeOfVN(vns[i]);
-            if ((type == TYP_FLOAT && FloatingPointUtils::isNaN(vnStore->ConstantValue<float>(vns[i])) != 0) ||
-                (type == TYP_DOUBLE && FloatingPointUtils::isNaN(vnStore->ConstantValue<double>(vns[i])) != 0))
-            {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 /*****************************************************************************
  *
  *  Given an assertion add it to the assertion table
@@ -1516,14 +1450,6 @@ bool Compiler::optAssertionVnInvolvesNan(const AssertionDsc& assertion) const
 AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
 {
     noway_assert(newAssertion.assertionKind != OAK_INVALID);
-
-    // Even though the propagation step takes care of NaN, just a check
-    // to make sure there is no slot involving a NaN.
-    if (optAssertionVnInvolvesNan(newAssertion))
-    {
-        JITDUMP("Assertion involved Nan not adding\n");
-        return NO_ASSERTION_INDEX;
-    }
 
     // See if we already have this assertion in the table.
     //
@@ -1605,15 +1531,6 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
             BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), optAssertionCount - 1);
         }
     }
-    else
-    // If global assertion prop, then add it to the dependents map.
-    {
-        optAddVnAssertionMapping(newAssertion.op1.vn, optAssertionCount);
-        if (newAssertion.op2.kind == O2K_LCLVAR_COPY)
-        {
-            optAddVnAssertionMapping(newAssertion.op2.vn, optAssertionCount);
-        }
-    }
 
 #ifdef DEBUG
     optDebugCheckAssertions(optAssertionCount);
@@ -1656,13 +1573,15 @@ void Compiler::optDebugCheckAssertion(const AssertionDsc& assertion) const
             break;
 
         case O2K_ZEROOBJ:
-        {
             // We only make these assertion for stores (not control flow).
             assert(assertion.assertionKind == OAK_EQUAL);
             // We use "optLocalAssertionIsEqualOrNotEqual" to find these.
             assert(assertion.op2.u1.iconVal == 0);
-        }
-        break;
+            break;
+
+        case O2K_CONST_DOUBLE:
+            assert(!FloatingPointUtils::isNaN(assertion.op2.dconVal));
+            break;
 
         default:
             // for all other 'assertion.op2.kind' values we don't check anything
@@ -5371,32 +5290,6 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 }
 
 //------------------------------------------------------------------------
-// optImpliedAssertions: Given an assertion this method computes the set
-//                       of implied assertions that are also true.
-//
-// Arguments:
-//      assertionIndex   : The id of the assertion.
-//      activeAssertions : The assertions that are already true at this point.
-//                         This method will add the discovered implied assertions
-//                         to this set.
-//
-void Compiler::optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions)
-{
-    noway_assert(!optLocalAssertionProp);
-    noway_assert(assertionIndex != 0);
-    noway_assert(assertionIndex <= optAssertionCount);
-
-    // Is curAssertion a constant store of a 32-bit integer?
-    // (i.e  GT_LVL_VAR X  == GT_CNS_INT)
-    const AssertionDsc& curAssertion = optGetAssertion(assertionIndex);
-    if ((curAssertion.assertionKind == OAK_EQUAL) && (curAssertion.op1.kind == O1K_LCLVAR) &&
-        (curAssertion.op2.kind == O2K_CONST_INT))
-    {
-        optImpliedByConstAssertion(curAssertion, activeAssertions);
-    }
-}
-
-//------------------------------------------------------------------------
 // optCreateJumpTableImpliedAssertions: Create assertions for the switch statement
 //     for each of its jump targets.
 //
@@ -5528,90 +5421,6 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
     return modified;
 }
 
-/*****************************************************************************
- *
- *   Given a set of active assertions this method computes the set
- *   of non-Null implied assertions that are also true
- */
-
-void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
-{
-    assert(!optLocalAssertionProp);
-
-    if (BitVecOps::IsEmpty(apTraits, activeAssertions))
-    {
-        return;
-    }
-
-    // Check each assertion in activeAssertions to see if it can be applied to constAssertion
-    BitVecOps::Iter chkIter(apTraits, activeAssertions);
-    unsigned        chkIndex = 0;
-    while (chkIter.NextElem(&chkIndex))
-    {
-        AssertionIndex chkAssertionIndex = GetAssertionIndex(chkIndex);
-        if (chkAssertionIndex > optAssertionCount)
-        {
-            break;
-        }
-        // chkAssertion must be Type/Subtype is equal assertion
-        const AssertionDsc& chkAssertion = optGetAssertion(chkAssertionIndex);
-        if ((chkAssertion.op1.kind != O1K_SUBTYPE && chkAssertion.op1.kind != O1K_EXACT_TYPE) ||
-            (chkAssertion.assertionKind != OAK_EQUAL))
-        {
-            continue;
-        }
-
-        // Search the assertion table for a non-null assertion on op1 that matches chkAssertion
-        for (AssertionIndex impIndex = 1; impIndex <= optAssertionCount; impIndex++)
-        {
-            const AssertionDsc& impAssertion = optGetAssertion(impIndex);
-
-            // The impAssertion must be different from the chkAssertion
-            if (impIndex == chkAssertionIndex)
-            {
-                continue;
-            }
-
-            // impAssertion must be a Non Null assertion on op1.vn
-            if ((impAssertion.assertionKind != OAK_NOT_EQUAL) || !impAssertion.CanPropNonNull() ||
-                (impAssertion.op1.vn != chkAssertion.op1.vn))
-            {
-                continue;
-            }
-
-            // The bit may already be in the result set
-            if (BitVecOps::TryAddElemD(apTraits, activeAssertions, impIndex - 1))
-            {
-                JITDUMP("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
-                        (chkAssertion.op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex, impIndex);
-            }
-
-            // There is at most one non-null assertion that is implied by the current chkIndex assertion
-            break;
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// optGetVnMappedAssertions: Given a value number, get the assertions
-//                           we have about the value number.
-//
-// Arguments:
-//      vn - The given value number.
-//
-// Return Value:
-//      The assertions we have about the value number.
-//
-ASSERT_VALRET_TP Compiler::optGetVnMappedAssertions(ValueNum vn)
-{
-    ASSERT_TP set = BitVecOps::UninitVal();
-    if (optValueNumToAsserts->Lookup(vn, &set))
-    {
-        return set;
-    }
-    return BitVecOps::UninitVal();
-}
-
 //------------------------------------------------------------------------
 // optGetEdgeAssertions: Given a block and its predecessor, get the assertions
 //                       the predecessor creates for the block.
@@ -5634,83 +5443,6 @@ ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const B
         return BitVecOps::MakeEmpty(apTraits);
     }
     return blockPred->bbAssertionOut;
-}
-
-/*****************************************************************************
- *
- *   Given a const assertion this method computes the set of implied assertions
- *   that are also true
- */
-
-void Compiler::optImpliedByConstAssertion(const AssertionDsc& constAssertion, ASSERT_TP& result)
-{
-    noway_assert(constAssertion.assertionKind == OAK_EQUAL);
-    noway_assert(constAssertion.op1.kind == O1K_LCLVAR);
-    noway_assert(constAssertion.op2.kind == O2K_CONST_INT);
-
-    ssize_t iconVal = constAssertion.op2.u1.iconVal;
-
-    const ASSERT_TP chkAssertions = optGetVnMappedAssertions(constAssertion.op1.vn);
-    if (chkAssertions == nullptr || BitVecOps::IsEmpty(apTraits, chkAssertions))
-    {
-        return;
-    }
-
-    // Check each assertion in chkAssertions to see if it can be applied to constAssertion
-    BitVecOps::Iter chkIter(apTraits, chkAssertions);
-    unsigned        chkIndex = 0;
-    while (chkIter.NextElem(&chkIndex))
-    {
-        AssertionIndex chkAssertionIndex = GetAssertionIndex(chkIndex);
-        if (chkAssertionIndex > optAssertionCount)
-        {
-            break;
-        }
-        // The impAssertion must be different from the const assertion.
-        const AssertionDsc& impAssertion = optGetAssertion(chkAssertionIndex);
-        if (impAssertion.Equals(constAssertion, !optLocalAssertionProp))
-        {
-            continue;
-        }
-
-        // The impAssertion must be an assertion about the same local var.
-        if (impAssertion.op1.vn != constAssertion.op1.vn)
-        {
-            continue;
-        }
-
-        bool usable = false;
-        switch (impAssertion.op2.kind)
-        {
-            case O2K_SUBRANGE:
-                // Is the const assertion's constant, within implied assertion's bounds?
-                usable = impAssertion.op2.u2.Contains(iconVal);
-                break;
-
-            case O2K_CONST_INT:
-                // Is the const assertion's constant equal/not equal to the implied assertion?
-                usable = ((impAssertion.assertionKind == OAK_EQUAL) && (impAssertion.op2.u1.iconVal == iconVal)) ||
-                         ((impAssertion.assertionKind == OAK_NOT_EQUAL) && (impAssertion.op2.u1.iconVal != iconVal));
-                break;
-
-            default:
-                // leave 'usable' = false;
-                break;
-        }
-
-        if (usable)
-        {
-            BitVecOps::AddElemD(apTraits, result, chkIndex);
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Compiler::optImpliedByConstAssertion ");
-                optPrintAssertion(constAssertion);
-                printf(" implies assertion #%02d\n", chkAssertionIndex);
-            }
-#endif
-        }
-    }
 }
 
 #include "dataflow.h"
@@ -5900,7 +5632,6 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
                 if (tree->GeneratesAssertion())
                 {
                     AssertionInfo info = tree->GetAssertionInfo();
-                    optImpliedAssertions(info.GetAssertionIndex(), valueGen);
                     BitVecOps::AddElemD(apTraits, valueGen, info.GetAssertionIndex() - 1);
                 }
             }
@@ -5931,14 +5662,12 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
                 if (valueAssertionIndex != NO_ASSERTION_INDEX)
                 {
                     // Update valueGen if we have an assertion for the bbNext edge
-                    optImpliedAssertions(valueAssertionIndex, valueGen);
                     BitVecOps::AddElemD(apTraits, valueGen, valueAssertionIndex - 1);
                 }
 
                 if (jumpDestAssertionIndex != NO_ASSERTION_INDEX)
                 {
                     // Update jumpDestValueGen if we have an assertion for the bbTarget edge
-                    optImpliedAssertions(jumpDestAssertionIndex, jumpDestValueGen);
                     BitVecOps::AddElemD(apTraits, jumpDestValueGen, jumpDestAssertionIndex - 1);
                 }
             }
@@ -6019,11 +5748,11 @@ ASSERT_TP* Compiler::optInitAssertionDataflowFlags()
 // Callback data for the VN based constant prop visitor.
 struct VNAssertionPropVisitorInfo
 {
-    Compiler*   pThis;
+    Compiler*   m_compiler;
     Statement*  stmt;
     BasicBlock* block;
     VNAssertionPropVisitorInfo(Compiler* pThis, BasicBlock* block, Statement* stmt)
-        : pThis(pThis)
+        : m_compiler(pThis)
         , stmt(stmt)
         , block(block)
     {
@@ -6267,7 +5996,7 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTr
 Compiler::fgWalkResult Compiler::optVNAssertionPropCurStmtVisitor(GenTree** ppTree, fgWalkData* data)
 {
     VNAssertionPropVisitorInfo* pData = (VNAssertionPropVisitorInfo*)data->pCallbackData;
-    Compiler*                   pThis = pData->pThis;
+    Compiler*                   pThis = pData->m_compiler;
 
     pThis->optVnNonNullPropCurStmt(pData->block, pData->stmt, *ppTree);
 
@@ -6424,12 +6153,6 @@ PhaseStatus Compiler::optAssertionPropMain()
     }
     flow.ForwardAnalysis(ap);
 
-    for (BasicBlock* const block : Blocks())
-    {
-        // Compute any implied non-Null assertions for block->bbAssertionIn
-        optImpliedByTypeOfAssertions(block->bbAssertionIn);
-    }
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -6504,7 +6227,6 @@ PhaseStatus Compiler::optAssertionPropMain()
                 if (tree->GeneratesAssertion())
                 {
                     AssertionInfo info = tree->GetAssertionInfo();
-                    optImpliedAssertions(info.GetAssertionIndex(), assertions);
                     BitVecOps::AddElemD(apTraits, assertions, info.GetAssertionIndex() - 1);
                 }
             }
