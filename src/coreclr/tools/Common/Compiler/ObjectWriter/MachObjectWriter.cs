@@ -459,7 +459,17 @@ namespace ILCompiler.ObjectWriter
                 case IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                 case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                 case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
-                    // Addend is handled through ARM64_RELOC_ADDEND
+                    // Read any value already embedded in the instruction and add it to the addend,
+                    // then zero out the instruction's immediate field.
+                    fixed (byte* pData = data)
+                    {
+                        long inlineValue = Relocation.ReadValue(relocType, (void*)pData);
+                        if (inlineValue != 0)
+                        {
+                            addend += inlineValue;
+                            Relocation.WriteValue(relocType, (void*)pData, 0);
+                        }
+                    }
                     break;
 
                 case IMAGE_REL_BASED_RELPTR32:
