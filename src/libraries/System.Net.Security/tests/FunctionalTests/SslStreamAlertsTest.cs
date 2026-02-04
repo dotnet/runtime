@@ -153,6 +153,48 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public async Task SslStream_WriteAfterRemoteCloseNotify_ThrowsIOException(bool useAsync)
+        {
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (var client = new SslStream(clientStream, true, AllowAnyServerCertificate))
+            using (var server = new SslStream(serverStream))
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            {
+                await server.AuthenticateAsServerAsync(certificate);
+                await client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false));
+
+                var buffer = new byte[1024];
+
+                // Server initiates shutdown
+                await server.ShutdownAsync();
+
+                // Client reads the close_notify
+                int bytesRead = await client.ReadAsync(buffer, 0, buffer.Length);
+                Assert.Equal(0, bytesRead);
+
+                // Client attempts to write after receiving close_notify - should throw IOException
+                IOException ex;
+                if (useAsync)
+                {
+                    ex = await Assert.ThrowsAsync<IOException>(() => client.WriteAsync(buffer, 0, buffer.Length));
+                }
+                else
+                {
+                    ex = Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
+                }
+
+                // The exception should be an IOException with an appropriate inner exception
+                // (not "Bad address" Win32Exception with error code 14)
+                Assert.NotNull(ex);
+            }
+        }
+
         private bool FailClientCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             return false;
