@@ -118,7 +118,6 @@ extends:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
                 parameters:
                   extraBuildArgs: -os browser
-                  configOverride: Checked
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
@@ -145,6 +144,10 @@ extends:
                 parameters:
                   testGroup: innerloop
                   liveLibrariesBuildConfig: Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+                parameters:
+                  testGroup: innerloop
             condition: >-
               or(
                 eq(variables['wasmDarcDependenciesChanged'], true),
