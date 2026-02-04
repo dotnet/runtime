@@ -684,7 +684,7 @@ namespace System.Runtime.Loader
             AssemblyLoad?.Invoke(AppDomain.CurrentDomain, new AssemblyLoadEventArgs(assembly));
         }
 
-        internal static RuntimeAssembly? OnResourceResolve(RuntimeAssembly assembly, string resourceName)
+        internal static RuntimeAssembly? OnResourceResolve(RuntimeAssembly? assembly, string resourceName)
         {
             return InvokeResolveEvent(ResourceResolve, assembly, resourceName);
         }
@@ -795,7 +795,7 @@ namespace System.Runtime.Loader
         {
             try
             {
-                AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
+                AssemblyLoadContext context = GCHandle<AssemblyLoadContext>.FromIntPtr(gchAssemblyLoadContext).Target;
                 *ppResult = context.ResolveUsingLoad(*pAssemblyName);
             }
             catch (Exception ex)
