@@ -110,5 +110,46 @@ namespace System.Formats.Tar.Tests
 
             AssertFileModeEquals(destination, TestPermission1);
         }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Archive_And_Extract_Executable_PreservesExecutableBit(TarEntryFormat format)
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string executableFileName = "testexecutable.sh";
+            string executableFilePath = Path.Join(root.Path, executableFileName);
+
+            File.WriteAllText(executableFilePath, "#!/bin/bash\necho 'test'\n");
+
+            UnixFileMode executableMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                                          UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                                          UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
+            File.SetUnixFileMode(executableFilePath, executableMode);
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, format, leaveOpen: true))
+            {
+                writer.WriteEntry(executableFilePath, executableFileName);
+            }
+
+            string extractedFileName = "extracted_executable.sh";
+            string extractedFilePath = Path.Join(root.Path, extractedFileName);
+
+            archiveStream.Seek(0, SeekOrigin.Begin);
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                TarEntry entry = reader.GetNextEntry();
+                Assert.NotNull(entry);
+                entry.ExtractToFile(extractedFilePath, overwrite: false);
+            }
+
+            UnixFileMode extractedMode = File.GetUnixFileMode(extractedFilePath);
+            Assert.True((extractedMode & UnixFileMode.UserExecute) != 0, "User execute bit should be set");
+            Assert.True((extractedMode & UnixFileMode.GroupExecute) != 0, "Group execute bit should be set");
+            Assert.True((extractedMode & UnixFileMode.OtherExecute) != 0, "Other execute bit should be set");
+        }
     }
 }

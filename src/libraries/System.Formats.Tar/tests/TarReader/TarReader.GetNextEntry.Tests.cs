@@ -413,5 +413,56 @@ namespace System.Formats.Tar.Tests
 
             Assert.Null(reader.GetNextEntry());
         }
+
+        [Theory]
+        [InlineData(TarEntryType.MultiVolume)]
+        [InlineData(TarEntryType.SparseFile)]
+        [InlineData(TarEntryType.TapeVolume)]
+        public void Read_Archive_With_Unsupported_EntryType(TarEntryType unsupportedType)
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+
+            byte[] header = new byte[512];
+
+            byte[] nameBytes = System.Text.Encoding.UTF8.GetBytes("unsupported_entry");
+            nameBytes.CopyTo(header.AsSpan(0, nameBytes.Length));
+
+            System.Text.Encoding.UTF8.GetBytes("0000644 ").CopyTo(header.AsSpan(100, 8));
+            System.Text.Encoding.UTF8.GetBytes("0000000 ").CopyTo(header.AsSpan(108, 8));
+            System.Text.Encoding.UTF8.GetBytes("0000000 ").CopyTo(header.AsSpan(116, 8));
+            System.Text.Encoding.UTF8.GetBytes("00000000000 ").CopyTo(header.AsSpan(124, 12));
+            System.Text.Encoding.UTF8.GetBytes("00000000000 ").CopyTo(header.AsSpan(136, 12));
+
+            header[156] = (byte)unsupportedType;
+
+            System.Text.Encoding.UTF8.GetBytes("ustar ").CopyTo(header.AsSpan(257, 6));
+            System.Text.Encoding.UTF8.GetBytes(" \0").CopyTo(header.AsSpan(263, 2));
+
+            for (int i = 148; i < 156; i++)
+            {
+                header[i] = (byte)' ';
+            }
+
+            int checksum = 0;
+            foreach (byte b in header)
+            {
+                checksum += b;
+            }
+
+            string checksumStr = Convert.ToString(checksum, 8).PadLeft(6, '0') + "\0 ";
+            System.Text.Encoding.UTF8.GetBytes(checksumStr).CopyTo(header.AsSpan(148, 8));
+
+            archiveStream.Write(header);
+            archiveStream.Write(new byte[1024]);
+
+            archiveStream.Seek(0, SeekOrigin.Begin);
+
+            using TarReader reader = new TarReader(archiveStream);
+            TarEntry entry = reader.GetNextEntry();
+
+            Assert.NotNull(entry);
+            Assert.Equal(unsupportedType, entry.EntryType);
+            Assert.Equal("unsupported_entry", entry.Name);
+        }
     }
 }
