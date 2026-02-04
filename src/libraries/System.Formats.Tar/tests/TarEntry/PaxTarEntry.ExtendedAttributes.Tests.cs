@@ -233,5 +233,38 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(newModificationTime, readEntry.ModificationTime);
             }
         }
+
+        [Fact]
+        public void Constructor_WithConflictingPathExtendedAttribute_ShouldThrow()
+        {
+            // Extended attribute path conflicts with entryName parameter
+            Dictionary<string, string> extendedAttributes = new Dictionary<string, string>
+            {
+                { "path", "different.txt" }
+            };
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(() =>
+                new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes));
+            
+            Assert.Contains("path", ex.Message);
+            Assert.Contains("different.txt", ex.Message);
+            Assert.Contains("test.txt", ex.Message);
+        }
+
+        [Fact]
+        public void Constructor_WithMatchingExtendedAttributes_ShouldSucceed()
+        {
+            // Extended attributes that match entryName should not throw
+            Dictionary<string, string> extendedAttributes = new Dictionary<string, string>
+            {
+                { "path", "test.txt" }
+            };
+
+            // This should not throw because path matches entryName
+            PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes);
+            
+            Assert.True(entry.ExtendedAttributes.ContainsKey("path"));
+            Assert.Equal("test.txt", entry.ExtendedAttributes["path"]);
+        }
     }
 }
