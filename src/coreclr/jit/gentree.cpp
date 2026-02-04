@@ -21988,19 +21988,19 @@ GenTree* Compiler::gtNewSimdCvtNode(
         switch (simdTargetBaseType)
         {
             case TYP_INT:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt32WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation;
                 break;
 
             case TYP_UINT:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt32WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation;
                 break;
 
             case TYP_LONG:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt64WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation;
                 break;
 
             case TYP_ULONG:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt64WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation;
                 break;
 
             default:
@@ -28837,10 +28837,12 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
             case NI_Sve_GetFfrByte:
+            case NI_Sve_GetFfrDouble:
             case NI_Sve_GetFfrInt16:
             case NI_Sve_GetFfrInt32:
             case NI_Sve_GetFfrInt64:
             case NI_Sve_GetFfrSByte:
+            case NI_Sve_GetFfrSingle:
             case NI_Sve_GetFfrUInt16:
             case NI_Sve_GetFfrUInt32:
             case NI_Sve_GetFfrUInt64:
@@ -29055,10 +29057,12 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
             case NI_Sve_Prefetch64Bit:
             case NI_Sve_Prefetch8Bit:
             case NI_Sve_GetFfrByte:
+            case NI_Sve_GetFfrDouble:
             case NI_Sve_GetFfrInt16:
             case NI_Sve_GetFfrInt32:
             case NI_Sve_GetFfrInt64:
             case NI_Sve_GetFfrSByte:
+            case NI_Sve_GetFfrSingle:
             case NI_Sve_GetFfrUInt16:
             case NI_Sve_GetFfrUInt32:
             case NI_Sve_GetFfrUInt64:
