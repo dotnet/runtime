@@ -14,12 +14,14 @@ static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
 static const instruction INS_I_sub   = INS_i64_sub;
 static const instruction INS_I_le_u  = INS_i64_le_u;
+static const instruction INS_I_ge_u  = INS_i64_ge_u;
 static const instruction INS_I_gt_u  = INS_i64_gt_u;
 #else  // !TARGET_64BIT
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
 static const instruction INS_I_sub   = INS_i32_sub;
 static const instruction INS_I_le_u  = INS_i32_le_u;
+static const instruction INS_I_ge_u  = INS_i32_ge_u;
 static const instruction INS_I_gt_u  = INS_i32_gt_u;
 #endif // !TARGET_64BIT
 
@@ -499,10 +501,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForNegNot(treeNode->AsOp());
             break;
 
-        case GT_NULLCHECK:
-            genCodeForNullCheck(treeNode->AsIndir());
-            break;
-
         case GT_IND:
             genCodeForIndir(treeNode->AsIndir());
             break;
@@ -513,6 +511,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_CALL:
             genCall(treeNode->AsCall());
+            break;
+
+        case GT_NULLCHECK:
+            genCodeForNullCheck(treeNode->AsIndir());
+            break;
+
+        case GT_BOUNDS_CHECK:
+            genRangeCheck(treeNode);
             break;
 
         default:
@@ -1201,10 +1207,6 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 // Arguments:
 //    tree - the GT_NULLCHECK node
 //
-// Notes:
-//    If throw helper calls are being emitted inline, we need
-//    to wrap the resulting codegen in a block/end pair.
-//
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
     genConsumeAddress(tree->Addr());
@@ -1213,12 +1215,6 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     if (compiler->fgUseThrowHelperBlocks())
     {
         Compiler::AddCodeDsc* const add = compiler->fgGetExcptnTarget(SCK_NULL_CHECK, compiler->compCurBB);
-
-        if (add == nullptr)
-        {
-            NYI_WASM("Missing null check demand");
-        }
-
         assert(add != nullptr);
         assert(add->acdUsed);
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
@@ -1230,8 +1226,37 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, compiler->compMaxUncheckedOffsetForNullObject);
         GetEmitter()->emitIns(INS_I_le_u);
         GetEmitter()->emitIns(INS_if);
-        // TODO-WASM: codegen for the call instead of unreachable
-        // genEmitHelperCall(compiler->acdHelper(SCK_NULL_CHECK), 0, EA_UNKNOWN);
+        genEmitHelperCall(compiler->acdHelper(SCK_NULL_CHECK), 0, EA_UNKNOWN);
+        GetEmitter()->emitIns(INS_unreachable);
+        GetEmitter()->emitIns(INS_end);
+    }
+}
+
+//------------------------------------------------------------------------
+// genRangeCheck - generate code for a GT_BOUNDS_CHECK node
+//
+// Arguments:
+//    tree - the GT_BOUNDS_CHECK node
+//
+void CodeGen::genRangeCheck(GenTree* tree)
+{
+    assert(tree->OperIs(GT_BOUNDS_CHECK));
+    genConsumeOperands(tree->AsOp());
+
+    if (compiler->fgUseThrowHelperBlocks())
+    {
+        Compiler::AddCodeDsc* const add = compiler->fgGetExcptnTarget(SCK_RNGCHK_FAIL, compiler->compCurBB);
+        assert(add != nullptr);
+        assert(add->acdUsed);
+
+        GetEmitter()->emitIns(INS_I_ge_u);
+        inst_JMP(EJ_jmpif, add->acdDstBlk);
+    }
+    else
+    {
+        GetEmitter()->emitIns(INS_I_ge_u);
+        GetEmitter()->emitIns(INS_if);
+        genEmitHelperCall(compiler->acdHelper(SCK_RNGCHK_FAIL), 0, EA_UNKNOWN);
         GetEmitter()->emitIns(INS_unreachable);
         GetEmitter()->emitIns(INS_end);
     }

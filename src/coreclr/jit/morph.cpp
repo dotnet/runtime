@@ -6509,7 +6509,12 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
     if (opts.OptimizationEnabled() && call->IsHelperCall(this, CORINFO_HELP_ARRADDR_ST))
     {
+#if defined(TARGET_WASM)
+        assert(call->gtArgs.CountArgs() == 4);
+#else
         assert(call->gtArgs.CountArgs() == 3);
+#endif
+
         GenTree* arr   = call->gtArgs.GetArgByIndex(0)->GetNode();
         GenTree* index = call->gtArgs.GetArgByIndex(1)->GetNode();
         GenTree* value = call->gtArgs.GetArgByIndex(2)->GetNode();

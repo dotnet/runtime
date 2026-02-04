@@ -6367,8 +6367,13 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     }
 
     assert(thisArgNode != nullptr);
+
+#if HAS_FIXED_REGISTGER_SET
     assert(thisArgNode->OperIs(GT_PUTARG_REG));
     GenTree* thisExpr = thisArgNode->AsOp()->gtOp1;
+#else
+    GenTree* thisExpr = thisArgNode;
+#endif
 
     // We're going to use the 'this' expression multiple times, so make a local to copy it.
 
@@ -6405,7 +6410,10 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // behavior (the NRE that would logically happen inside Delegate.Invoke
     // should happen after all args are evaluated). We must also move the
     // PUTARG_REG node ahead.
+#if HAS_FIXED_REGISTGER_SET
     thisArgNode->AsOp()->gtOp1 = newThis;
+#endif
+
     BlockRange().Remove(thisArgNode);
     BlockRange().InsertBefore(call, newThisAddr, newThis, thisArgNode);
 
