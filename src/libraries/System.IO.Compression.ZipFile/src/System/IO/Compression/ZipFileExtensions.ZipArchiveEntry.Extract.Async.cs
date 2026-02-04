@@ -112,6 +112,7 @@ public static partial class ZipFileExtensions
             // Clean up the temporary file if extraction failed
             if (tempPath is not null && File.Exists(tempPath))
             {
+                // Ignore exceptions during cleanup; the original exception is more important
                 try { File.Delete(tempPath); } catch (IOException) { } catch (UnauthorizedAccessException) { }
             }
             throw;

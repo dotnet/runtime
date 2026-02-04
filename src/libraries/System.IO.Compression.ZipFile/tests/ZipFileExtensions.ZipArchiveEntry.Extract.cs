@@ -93,7 +93,8 @@ namespace System.IO.Compression.Tests
                 ZipArchiveEntry entry = readArchive.Entries[0];
 
                 // Attempt to extract with overwrite=true, this should fail due to corrupted data
-                await Assert.ThrowsAnyAsync<Exception>(async () =>
+                // The corruption will cause InvalidDataException during decompression
+                await Assert.ThrowsAsync<InvalidDataException>(async () =>
                 {
                     await CallExtractToFile(async, entry, destinationFile, overwrite: true);
                 });
