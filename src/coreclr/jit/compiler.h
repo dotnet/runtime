@@ -10035,7 +10035,6 @@ public:
 #endif // DEBUG
 
     bool fgLocalVarLivenessDone         = false; // Note that this one is used outside of debug.
-    bool fgIsDoingEarlyLiveness         = false;
     bool fgDidEarlyLiveness             = false;
     bool compPostImportationCleanupDone = false;
     bool compRegAllocDone               = false;

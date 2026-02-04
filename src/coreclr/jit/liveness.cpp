@@ -22,12 +22,20 @@ class Liveness
 {
     Compiler* m_compiler;
 
-    VARSET_TP fgCurUseSet; // vars used     by block (before a def)
-    VARSET_TP fgCurDefSet; // vars assigned by block (before a use)
+    VARSET_TP     m_curUseSet;                         // vars used     by block (before a def)
+    VARSET_TP     m_curDefSet;                         // vars assigned by block (before a use)
+    MemoryKindSet m_curMemoryUse = emptyMemoryKindSet; // True iff the current basic block uses memory.
+    MemoryKindSet m_curMemoryDef = emptyMemoryKindSet; // True iff the current basic block modifies memory.
+    MemoryKindSet m_curMemoryHavoc =
+        emptyMemoryKindSet; // True if  the current basic block is known to set memory to a "havoc" value.
 
-    MemoryKindSet fgCurMemoryUse;   // True iff the current basic block uses memory.
-    MemoryKindSet fgCurMemoryDef;   // True iff the current basic block modifies memory.
-    MemoryKindSet fgCurMemoryHavoc; // True if  the current basic block is known to set memory to a "havoc" value.
+    VARSET_TP     m_liveIn;
+    VARSET_TP     m_liveOut;
+    VARSET_TP     m_ehHandlerLiveVars;
+    MemoryKindSet m_memoryLiveIn  = emptyMemoryKindSet;
+    MemoryKindSet m_memoryLiveOut = emptyMemoryKindSet;
+
+    bool m_livenessChanged = false;
 
     bool m_livenessChanged = false;
 
@@ -48,11 +56,17 @@ protected:
         SsaLiveness           = false,
         ComputeMemoryLiveness = false,
         IsLIR                 = false,
+        IsEarly               = false,
         EliminateDeadCode     = false,
     };
 
     Liveness(Compiler* compiler)
         : m_compiler(compiler)
+        , m_curUseSet(VarSetOps::UninitVal())
+        , m_curDefSet(VarSetOps::UninitVal())
+        , m_liveIn(VarSetOps::UninitVal())
+        , m_liveOut(VarSetOps::UninitVal())
+        , m_ehHandlerLiveVars(VarSetOps::UninitVal())
     {
     }
 
@@ -69,6 +83,7 @@ private:
 
     void                 InterBlockLocalVarLiveness();
     void                 DoLiveVarAnalysis();
+    bool                 PerBlockAnalysis(BasicBlock* block, bool keepAliveThis);
     void                 ComputeLife(VARSET_TP& tp,
                                      GenTree*   startNode,
                                      GenTree*   endNode,
@@ -541,7 +556,7 @@ void Liveness<TLiveness>::SelectTrackedLocals()
     // track everything.
     // TODO-TP: For early liveness we could do a partial sort for the large
     // case.
-    if (!m_compiler->fgIsDoingEarlyLiveness || (m_compiler->lvaTrackedCount < trackedCandidateCount))
+    if (!TLiveness::IsEarly || (m_compiler->lvaTrackedCount < trackedCandidateCount))
     {
         // Now sort the tracked variable table by ref-count
         if (m_compiler->compCodeOpt() == Compiler::SMALL_CODE)
@@ -610,8 +625,8 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
     unsigned livenessVarEpoch = m_compiler->GetCurLVEpoch();
 
     // Avoid allocations in the long case.
-    VarSetOps::AssignNoCopy(m_compiler, fgCurUseSet, VarSetOps::MakeEmpty(m_compiler));
-    VarSetOps::AssignNoCopy(m_compiler, fgCurDefSet, VarSetOps::MakeEmpty(m_compiler));
+    VarSetOps::AssignNoCopy(m_compiler, m_curUseSet, VarSetOps::MakeEmpty(m_compiler));
+    VarSetOps::AssignNoCopy(m_compiler, m_curDefSet, VarSetOps::MakeEmpty(m_compiler));
 
     // GC Heap and ByrefExposed can share states unless we see a def of byref-exposed
     // memory that is not a GC Heap def.
@@ -620,26 +635,27 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
     for (unsigned i = m_compiler->m_dfsTree->GetPostOrderCount(); i != 0; i--)
     {
         BasicBlock* block = m_compiler->m_dfsTree->GetPostOrder(i - 1);
-        VarSetOps::ClearD(m_compiler, fgCurUseSet);
-        VarSetOps::ClearD(m_compiler, fgCurDefSet);
+        VarSetOps::ClearD(m_compiler, m_curUseSet);
+        VarSetOps::ClearD(m_compiler, m_curDefSet);
 
         if (TLiveness::ComputeMemoryLiveness)
         {
-            fgCurMemoryUse   = emptyMemoryKindSet;
-            fgCurMemoryDef   = emptyMemoryKindSet;
-            fgCurMemoryHavoc = emptyMemoryKindSet;
+            m_curMemoryUse   = emptyMemoryKindSet;
+            m_curMemoryDef   = emptyMemoryKindSet;
+            m_curMemoryHavoc = emptyMemoryKindSet;
         }
 
         m_compiler->compCurBB = block;
-        if (block->IsLIR())
+        if (TLiveness::IsLIR)
         {
             for (GenTree* node : LIR::AsRange(block))
             {
                 PerNodeLocalVarLiveness(node);
             }
         }
-        else if (m_compiler->fgNodeThreading == NodeThreading::AllTrees)
+        else if (!TLiveness::IsEarly)
         {
+            assert(m_compiler->fgNodeThreading == NodeThreading::AllTrees);
             for (Statement* const stmt : block->NonPhiStatements())
             {
                 m_compiler->compCurStmt = stmt;
@@ -651,7 +667,7 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
         }
         else
         {
-            assert(m_compiler->fgIsDoingEarlyLiveness && (m_compiler->fgNodeThreading == NodeThreading::AllLocals));
+            assert(m_compiler->fgNodeThreading == NodeThreading::AllLocals);
 
             if (m_compiler->compQmarkUsed)
             {
@@ -722,17 +738,17 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
 
                     if (varDsc->lvTracked)
                     {
-                        if (!VarSetOps::IsMember(m_compiler, fgCurDefSet, varDsc->lvVarIndex))
+                        if (!VarSetOps::IsMember(m_compiler, m_curDefSet, varDsc->lvVarIndex))
                         {
-                            VarSetOps::AddElemD(m_compiler, fgCurUseSet, varDsc->lvVarIndex);
+                            VarSetOps::AddElemD(m_compiler, m_curUseSet, varDsc->lvVarIndex);
                         }
                     }
                 }
             }
         }
 
-        VarSetOps::Assign(m_compiler, block->bbVarUse, fgCurUseSet);
-        VarSetOps::Assign(m_compiler, block->bbVarDef, fgCurDefSet);
+        VarSetOps::Assign(m_compiler, block->bbVarUse, m_curUseSet);
+        VarSetOps::Assign(m_compiler, block->bbVarDef, m_curDefSet);
 
         /* also initialize the IN set, just in case we will do multiple DFAs */
 
@@ -740,9 +756,9 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
 
         if (TLiveness::ComputeMemoryLiveness)
         {
-            block->bbMemoryUse    = fgCurMemoryUse;
-            block->bbMemoryDef    = fgCurMemoryDef;
-            block->bbMemoryHavoc  = fgCurMemoryHavoc;
+            block->bbMemoryUse    = m_curMemoryUse;
+            block->bbMemoryDef    = m_curMemoryDef;
+            block->bbMemoryHavoc  = m_curMemoryHavoc;
             block->bbMemoryLiveIn = emptyMemoryKindSet;
         }
     }
@@ -797,7 +813,7 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
 
 //------------------------------------------------------------------------
 // PerNodeLocalVarLiveness:
-//   Set fgCurMemoryUse and fgCurMemoryDef when memory is read or updated
+//   Set m_curMemoryUse and m_curMemoryDef when memory is read or updated
 //   Call fgMarkUseDef for any Local variables encountered
 //
 // Template arguments:
@@ -853,10 +869,10 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
                 {
                     // For any Volatile indirection, we must handle it as a
                     // definition of the GcHeap/ByrefExposed
-                    fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+                    m_curMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
                 }
 
-                fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+                m_curMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
             }
             break;
 
@@ -869,9 +885,9 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
         case GT_CMPXCHG:
             if (TLiveness::ComputeMemoryLiveness)
             {
-                fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
-                fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
-                fgCurMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
+                m_curMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+                m_curMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+                m_curMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
             }
             break;
 
@@ -880,7 +896,7 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
         case GT_MEMORYBARRIER: // Similar to Volatile indirections, we must handle this as a memory def.
             if (TLiveness::ComputeMemoryLiveness)
             {
-                fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+                m_curMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
             }
             break;
 
@@ -912,9 +928,9 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
 
                 if (modHeap)
                 {
-                    fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
-                    fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
-                    fgCurMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
+                    m_curMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+                    m_curMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+                    m_curMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                 }
             }
 
@@ -937,9 +953,9 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
 
                     if (varDsc->lvTracked)
                     {
-                        if (!VarSetOps::IsMember(m_compiler, fgCurDefSet, varDsc->lvVarIndex))
+                        if (!VarSetOps::IsMember(m_compiler, m_curDefSet, varDsc->lvVarIndex))
                         {
-                            VarSetOps::AddElemD(m_compiler, fgCurUseSet, varDsc->lvVarIndex);
+                            VarSetOps::AddElemD(m_compiler, m_curUseSet, varDsc->lvVarIndex);
                         }
                     }
                 }
@@ -972,12 +988,12 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsi
         {
             // We currently handle this like a Volatile store or GT_MEMORYBARRIER
             // so it counts as a definition of GcHeap/ByrefExposed
-            fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+            m_curMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
         }
         else if (hwintrinsic->OperIsMemoryLoad())
         {
             // This instruction loads from memory and we need to record this information
-            fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+            m_curMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
         }
     }
 }
@@ -1040,16 +1056,16 @@ void Liveness<TLiveness>::MarkUseDef(GenTreeLclVarCommon* tree)
                    tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
         }
 
-        if (isUse && !VarSetOps::IsMember(m_compiler, fgCurDefSet, varDsc->lvVarIndex))
+        if (isUse && !VarSetOps::IsMember(m_compiler, m_curDefSet, varDsc->lvVarIndex))
         {
             // This is an exposed use; add it to the set of uses.
-            VarSetOps::AddElemD(m_compiler, fgCurUseSet, varDsc->lvVarIndex);
+            VarSetOps::AddElemD(m_compiler, m_curUseSet, varDsc->lvVarIndex);
         }
 
         if (TLiveness::SsaLiveness ? isDef : isFullDef)
         {
             // This is a def, add it to the set of defs.
-            VarSetOps::AddElemD(m_compiler, fgCurDefSet, varDsc->lvVarIndex);
+            VarSetOps::AddElemD(m_compiler, m_curDefSet, varDsc->lvVarIndex);
         }
     }
     else
@@ -1060,11 +1076,11 @@ void Liveness<TLiveness>::MarkUseDef(GenTreeLclVarCommon* tree)
 
             if (isUse)
             {
-                fgCurMemoryUse |= memoryKindSet(ByrefExposed);
+                m_curMemoryUse |= memoryKindSet(ByrefExposed);
             }
             if (isDef)
             {
-                fgCurMemoryDef |= memoryKindSet(ByrefExposed);
+                m_curMemoryDef |= memoryKindSet(ByrefExposed);
 
                 // We've found a store that modifies ByrefExposed
                 // memory but not GcHeap memory, so track their
@@ -1087,14 +1103,14 @@ void Liveness<TLiveness>::MarkUseDef(GenTreeLclVarCommon* tree)
                     }
 
                     unsigned varIndex = m_compiler->lvaTable[i].lvVarIndex;
-                    if (isUse && !VarSetOps::IsMember(m_compiler, fgCurDefSet, varIndex))
+                    if (isUse && !VarSetOps::IsMember(m_compiler, m_curDefSet, varIndex))
                     {
-                        VarSetOps::AddElemD(m_compiler, fgCurUseSet, varIndex);
+                        VarSetOps::AddElemD(m_compiler, m_curUseSet, varIndex);
                     }
 
                     if (TLiveness::SsaLiveness ? isDef : isFullDef)
                     {
-                        VarSetOps::AddElemD(m_compiler, fgCurDefSet, varIndex);
+                        VarSetOps::AddElemD(m_compiler, m_curDefSet, varIndex);
                     }
                 }
             }
@@ -1158,7 +1174,7 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
         }
     }
 
-    if (!m_compiler->fgIsDoingEarlyLiveness)
+    if (!TLiveness::IsEarly)
     {
         LclVarDsc* varDsc;
         unsigned   varNum;
@@ -1245,12 +1261,13 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
 
         /* Mark any interference we might have at the end of the block */
 
-        if (block->IsLIR())
+        if (TLiveness::IsLIR)
         {
             ComputeLifeLIR(life, block, keepAliveVars);
         }
-        else if (m_compiler->fgNodeThreading == NodeThreading::AllTrees)
+        else if (!TLiveness::IsEarly)
         {
+            assert(m_compiler->fgNodeThreading == NodeThreading::AllTrees);
             /* Get the first statement in the block */
 
             Statement* firstStmt = block->FirstNonPhiDef();
@@ -1299,7 +1316,7 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
         }
         else
         {
-            assert(m_compiler->fgIsDoingEarlyLiveness && (m_compiler->fgNodeThreading == NodeThreading::AllLocals));
+            assert(m_compiler->fgNodeThreading == NodeThreading::AllLocals);
             m_compiler->compCurStmt = nullptr;
 
             Statement* firstStmt = block->firstStmt();
@@ -1400,192 +1417,6 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
     m_compiler->fgLocalVarLivenessDone = true;
 }
 
-class LiveVarAnalysis
-{
-    Compiler* m_compiler;
-
-    unsigned  m_memoryLiveIn;
-    unsigned  m_memoryLiveOut;
-    VARSET_TP m_liveIn;
-    VARSET_TP m_liveOut;
-    VARSET_TP m_ehHandlerLiveVars;
-
-    LiveVarAnalysis(Compiler* compiler)
-        : m_compiler(compiler)
-        , m_memoryLiveIn(emptyMemoryKindSet)
-        , m_memoryLiveOut(emptyMemoryKindSet)
-        , m_liveIn(VarSetOps::MakeEmpty(compiler))
-        , m_liveOut(VarSetOps::MakeEmpty(compiler))
-        , m_ehHandlerLiveVars(VarSetOps::MakeEmpty(compiler))
-    {
-    }
-
-    bool PerBlockAnalysis(BasicBlock* block, bool keepAliveThis)
-    {
-        /* Compute the 'liveOut' set */
-        VarSetOps::ClearD(m_compiler, m_liveOut);
-        m_memoryLiveOut = emptyMemoryKindSet;
-        if (block->endsWithJmpMethod(m_compiler))
-        {
-            // A JMP uses all the arguments, so mark them all
-            // as live at the JMP instruction
-            //
-            const LclVarDsc* varDscEndParams = m_compiler->lvaTable + m_compiler->info.compArgsCount;
-            for (LclVarDsc* varDsc = m_compiler->lvaTable; varDsc < varDscEndParams; varDsc++)
-            {
-                noway_assert(!varDsc->lvPromoted);
-                if (varDsc->lvTracked)
-                {
-                    VarSetOps::AddElemD(m_compiler, m_liveOut, varDsc->lvVarIndex);
-                }
-            }
-        }
-
-        if (m_compiler->fgIsDoingEarlyLiveness && m_compiler->opts.IsOSR() && block->HasFlag(BBF_RECURSIVE_TAILCALL))
-        {
-            // Early liveness happens between import and morph where we may
-            // have identified a tailcall-to-loop candidate but not yet
-            // expanded it. In OSR compilations we need to model the potential
-            // backedge.
-            //
-            // Technically we would need to do this in normal compilations too,
-            // but given that the tailcall-to-loop optimization is sound we can
-            // rely on the call node we will see in this block having all the
-            // necessary dependencies. That's not the case in OSR where the OSR
-            // state index variable may be live at this point without appearing
-            // as an explicit use anywhere.
-            VarSetOps::UnionD(m_compiler, m_liveOut, m_compiler->fgEntryBB->bbLiveIn);
-        }
-
-        // Additionally, union in all the live-in tracked vars of regular
-        // successors. EH successors need to be handled more conservatively
-        // (their live-in state is live in this entire basic block). Those are
-        // handled below.
-        block->VisitRegularSuccs(m_compiler, [=](BasicBlock* succ) {
-            VarSetOps::UnionD(m_compiler, m_liveOut, succ->bbLiveIn);
-            m_memoryLiveOut |= succ->bbMemoryLiveIn;
-
-            return BasicBlockVisit::Continue;
-        });
-
-        /* For lvaKeepAliveAndReportThis methods, "this" has to be kept alive everywhere
-           Note that a function may end in a throw on an infinite loop (as opposed to a return).
-           "this" has to be alive everywhere even in such methods. */
-
-        if (keepAliveThis)
-        {
-            VarSetOps::AddElemD(m_compiler, m_liveOut, m_compiler->lvaTable[m_compiler->info.compThisArg].lvVarIndex);
-        }
-
-        /* Compute the 'm_liveIn'  set */
-        VarSetOps::LivenessD(m_compiler, m_liveIn, block->bbVarDef, block->bbVarUse, m_liveOut);
-
-        // Does this block have implicit exception flow to a filter or handler?
-        // If so, include the effects of that flow.
-        if (block->HasPotentialEHSuccs(m_compiler))
-        {
-            VarSetOps::ClearD(m_compiler, m_ehHandlerLiveVars);
-            m_compiler->fgAddHandlerLiveVars(block, m_ehHandlerLiveVars, m_memoryLiveOut);
-            VarSetOps::UnionD(m_compiler, m_liveIn, m_ehHandlerLiveVars);
-            VarSetOps::UnionD(m_compiler, m_liveOut, m_ehHandlerLiveVars);
-        }
-
-        // Even if block->bbMemoryDef is set, we must assume that it doesn't kill memory liveness from m_memoryLiveOut,
-        // since (without proof otherwise) the use and def may touch different memory at run-time.
-        m_memoryLiveIn = m_memoryLiveOut | block->bbMemoryUse;
-
-        // Has there been any change in either live set?
-
-        bool liveInChanged = !VarSetOps::Equal(m_compiler, block->bbLiveIn, m_liveIn);
-        if (liveInChanged || !VarSetOps::Equal(m_compiler, block->bbLiveOut, m_liveOut))
-        {
-            VarSetOps::Assign(m_compiler, block->bbLiveIn, m_liveIn);
-            VarSetOps::Assign(m_compiler, block->bbLiveOut, m_liveOut);
-        }
-
-        const bool memoryLiveInChanged = (block->bbMemoryLiveIn != m_memoryLiveIn);
-        if (memoryLiveInChanged || (block->bbMemoryLiveOut != m_memoryLiveOut))
-        {
-            block->bbMemoryLiveIn  = m_memoryLiveIn;
-            block->bbMemoryLiveOut = m_memoryLiveOut;
-        }
-
-        return liveInChanged || memoryLiveInChanged;
-    }
-
-    void Run()
-    {
-        const bool keepAliveThis =
-            m_compiler->lvaKeepAliveAndReportThis() && m_compiler->lvaTable[m_compiler->info.compThisArg].lvTracked;
-
-        const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
-        /* Live Variable Analysis - Backward dataflow */
-        bool changed;
-        do
-        {
-            changed = false;
-
-            /* Visit all blocks and compute new data flow values */
-
-            VarSetOps::ClearD(m_compiler, m_liveIn);
-            VarSetOps::ClearD(m_compiler, m_liveOut);
-
-            m_memoryLiveIn  = emptyMemoryKindSet;
-            m_memoryLiveOut = emptyMemoryKindSet;
-
-            for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
-            {
-                BasicBlock* block = dfsTree->GetPostOrder(i);
-                if (PerBlockAnalysis(block, keepAliveThis))
-                {
-                    changed = true;
-                }
-            }
-        } while (changed && dfsTree->HasCycle());
-
-        // If we had unremovable blocks that are not in the DFS tree then make
-        // the 'keepAlive' set live in them. This would normally not be
-        // necessary assuming those blocks are actually unreachable; however,
-        // throw helpers fall into this category because we do not model them
-        // correctly, and those will actually end up reachable. Fix that up
-        // here.
-        if (m_compiler->fgBBcount != dfsTree->GetPostOrderCount())
-        {
-            for (BasicBlock* block : m_compiler->Blocks())
-            {
-                if (dfsTree->Contains(block))
-                {
-                    continue;
-                }
-
-                VarSetOps::ClearD(m_compiler, block->bbLiveOut);
-                if (keepAliveThis)
-                {
-                    unsigned thisVarIndex = m_compiler->lvaGetDesc(m_compiler->info.compThisArg)->lvVarIndex;
-                    VarSetOps::AddElemD(m_compiler, block->bbLiveOut, thisVarIndex);
-                }
-
-                if (block->HasPotentialEHSuccs(m_compiler))
-                {
-                    block->VisitEHSuccs(m_compiler, [=](BasicBlock* succ) {
-                        VarSetOps::UnionD(m_compiler, block->bbLiveOut, succ->bbLiveIn);
-                        return BasicBlockVisit::Continue;
-                    });
-                }
-
-                VarSetOps::Assign(m_compiler, block->bbLiveIn, block->bbLiveOut);
-            }
-        }
-    }
-
-public:
-    static void Run(Compiler* compiler)
-    {
-        LiveVarAnalysis analysis(compiler);
-        analysis.Run();
-    }
-};
-
 /*****************************************************************************
  *
  *  This is the classic algorithm for Live Variable Analysis.
@@ -1594,7 +1425,71 @@ public:
 template <typename TLiveness>
 void Liveness<TLiveness>::DoLiveVarAnalysis()
 {
-    LiveVarAnalysis::Run(m_compiler);
+    m_liveIn            = VarSetOps::MakeEmpty(m_compiler);
+    m_liveOut           = VarSetOps::MakeEmpty(m_compiler);
+    m_ehHandlerLiveVars = VarSetOps::MakeEmpty(m_compiler);
+
+    const bool keepAliveThis =
+        m_compiler->lvaKeepAliveAndReportThis() && m_compiler->lvaTable[m_compiler->info.compThisArg].lvTracked;
+
+    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
+    /* Live Variable Analysis - Backward dataflow */
+    bool changed;
+    do
+    {
+        changed = false;
+
+        /* Visit all blocks and compute new data flow values */
+
+        VarSetOps::ClearD(m_compiler, m_liveIn);
+        VarSetOps::ClearD(m_compiler, m_liveOut);
+
+        m_memoryLiveIn  = emptyMemoryKindSet;
+        m_memoryLiveOut = emptyMemoryKindSet;
+
+        for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+        {
+            BasicBlock* block = dfsTree->GetPostOrder(i);
+            if (PerBlockAnalysis(block, keepAliveThis))
+            {
+                changed = true;
+            }
+        }
+    } while (changed && dfsTree->HasCycle());
+
+    // If we had unremovable blocks that are not in the DFS tree then make
+    // the 'keepAlive' set live in them. This would normally not be
+    // necessary assuming those blocks are actually unreachable; however,
+    // throw helpers fall into this category because we do not model them
+    // correctly, and those will actually end up reachable. Fix that up
+    // here.
+    if (m_compiler->fgBBcount != dfsTree->GetPostOrderCount())
+    {
+        for (BasicBlock* block : m_compiler->Blocks())
+        {
+            if (dfsTree->Contains(block))
+            {
+                continue;
+            }
+
+            VarSetOps::ClearD(m_compiler, block->bbLiveOut);
+            if (keepAliveThis)
+            {
+                unsigned thisVarIndex = m_compiler->lvaGetDesc(m_compiler->info.compThisArg)->lvVarIndex;
+                VarSetOps::AddElemD(m_compiler, block->bbLiveOut, thisVarIndex);
+            }
+
+            if (block->HasPotentialEHSuccs(m_compiler))
+            {
+                block->VisitEHSuccs(m_compiler, [=](BasicBlock* succ) {
+                    VarSetOps::UnionD(m_compiler, block->bbLiveOut, succ->bbLiveIn);
+                    return BasicBlockVisit::Continue;
+                });
+            }
+
+            VarSetOps::Assign(m_compiler, block->bbLiveIn, block->bbLiveOut);
+        }
+    }
 
 #ifdef DEBUG
     if (m_compiler->verbose)
@@ -1603,6 +1498,100 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
         m_compiler->fgDispBBLiveness();
     }
 #endif // DEBUG
+}
+
+template <typename TLiveness>
+bool Liveness<TLiveness>::PerBlockAnalysis(BasicBlock* block, bool keepAliveThis)
+{
+    /* Compute the 'liveOut' set */
+    VarSetOps::ClearD(m_compiler, m_liveOut);
+    m_memoryLiveOut = emptyMemoryKindSet;
+    if (block->endsWithJmpMethod(m_compiler))
+    {
+        // A JMP uses all the arguments, so mark them all
+        // as live at the JMP instruction
+        //
+        const LclVarDsc* varDscEndParams = m_compiler->lvaTable + m_compiler->info.compArgsCount;
+        for (LclVarDsc* varDsc = m_compiler->lvaTable; varDsc < varDscEndParams; varDsc++)
+        {
+            noway_assert(!varDsc->lvPromoted);
+            if (varDsc->lvTracked)
+            {
+                VarSetOps::AddElemD(m_compiler, m_liveOut, varDsc->lvVarIndex);
+            }
+        }
+    }
+
+    if (TLiveness::IsEarly && m_compiler->opts.IsOSR() && block->HasFlag(BBF_RECURSIVE_TAILCALL))
+    {
+        // Early liveness happens between import and morph where we may
+        // have identified a tailcall-to-loop candidate but not yet
+        // expanded it. In OSR compilations we need to model the potential
+        // backedge.
+        //
+        // Technically we would need to do this in normal compilations too,
+        // but given that the tailcall-to-loop optimization is sound we can
+        // rely on the call node we will see in this block having all the
+        // necessary dependencies. That's not the case in OSR where the OSR
+        // state index variable may be live at this point without appearing
+        // as an explicit use anywhere.
+        VarSetOps::UnionD(m_compiler, m_liveOut, m_compiler->fgEntryBB->bbLiveIn);
+    }
+
+    // Additionally, union in all the live-in tracked vars of regular
+    // successors. EH successors need to be handled more conservatively
+    // (their live-in state is live in this entire basic block). Those are
+    // handled below.
+    block->VisitRegularSuccs(m_compiler, [=](BasicBlock* succ) {
+        VarSetOps::UnionD(m_compiler, m_liveOut, succ->bbLiveIn);
+        m_memoryLiveOut |= succ->bbMemoryLiveIn;
+
+        return BasicBlockVisit::Continue;
+    });
+
+    /* For lvaKeepAliveAndReportThis methods, "this" has to be kept alive everywhere
+       Note that a function may end in a throw on an infinite loop (as opposed to a return).
+       "this" has to be alive everywhere even in such methods. */
+
+    if (keepAliveThis)
+    {
+        VarSetOps::AddElemD(m_compiler, m_liveOut, m_compiler->lvaTable[m_compiler->info.compThisArg].lvVarIndex);
+    }
+
+    /* Compute the 'm_liveIn'  set */
+    VarSetOps::LivenessD(m_compiler, m_liveIn, block->bbVarDef, block->bbVarUse, m_liveOut);
+
+    // Does this block have implicit exception flow to a filter or handler?
+    // If so, include the effects of that flow.
+    if (block->HasPotentialEHSuccs(m_compiler))
+    {
+        VarSetOps::ClearD(m_compiler, m_ehHandlerLiveVars);
+        m_compiler->fgAddHandlerLiveVars(block, m_ehHandlerLiveVars, m_memoryLiveOut);
+        VarSetOps::UnionD(m_compiler, m_liveIn, m_ehHandlerLiveVars);
+        VarSetOps::UnionD(m_compiler, m_liveOut, m_ehHandlerLiveVars);
+    }
+
+    // Even if block->bbMemoryDef is set, we must assume that it doesn't kill memory liveness from m_memoryLiveOut,
+    // since (without proof otherwise) the use and def may touch different memory at run-time.
+    m_memoryLiveIn = m_memoryLiveOut | block->bbMemoryUse;
+
+    // Has there been any change in either live set?
+
+    bool liveInChanged = !VarSetOps::Equal(m_compiler, block->bbLiveIn, m_liveIn);
+    if (liveInChanged || !VarSetOps::Equal(m_compiler, block->bbLiveOut, m_liveOut))
+    {
+        VarSetOps::Assign(m_compiler, block->bbLiveIn, m_liveIn);
+        VarSetOps::Assign(m_compiler, block->bbLiveOut, m_liveOut);
+    }
+
+    const bool memoryLiveInChanged = (block->bbMemoryLiveIn != m_memoryLiveIn);
+    if (memoryLiveInChanged || (block->bbMemoryLiveOut != m_memoryLiveOut))
+    {
+        block->bbMemoryLiveIn  = m_memoryLiveIn;
+        block->bbMemoryLiveOut = m_memoryLiveOut;
+    }
+
+    return liveInChanged || memoryLiveInChanged;
 }
 
 //------------------------------------------------------------------------
@@ -1679,7 +1668,7 @@ void Liveness<TLiveness>::ComputeLife(VARSET_TP&           life,
     // Don't kill vars in scope
     noway_assert(VarSetOps::IsSubset(m_compiler, keepAliveVars, life));
     noway_assert(endNode || (startNode == m_compiler->compCurStmt->GetRootNode()));
-    assert(!m_compiler->fgIsDoingEarlyLiveness);
+    assert(!TLiveness::IsEarly);
 
     for (GenTree* tree = startNode; tree != endNode; tree = tree->gtPrev)
     {
@@ -1990,7 +1979,7 @@ bool Liveness<TLiveness>::ComputeLifeTrackedLocalDef(VARSET_TP&           life,
             // stores to these sorts of variables to be removed at the cost of compile
             // time.
             return !varDsc.IsAddressExposed() &&
-                   !(varDsc.lvIsStructField && m_compiler->lvaTable[varDsc.lvParentLcl].IsAddressExposed());
+                !(varDsc.lvIsStructField && m_compiler->lvaTable[varDsc.lvParentLcl].IsAddressExposed());
         }
     }
 
@@ -2838,6 +2827,7 @@ void Compiler::fgSsaLiveness()
             SsaLiveness           = true,
             ComputeMemoryLiveness = true,
             IsLIR                 = false,
+            IsEarly               = false,
             EliminateDeadCode     = true,
         };
 
@@ -2863,6 +2853,7 @@ void Compiler::fgAsyncLiveness()
             SsaLiveness           = false,
             ComputeMemoryLiveness = false,
             IsLIR                 = true,
+            IsEarly               = false,
             EliminateDeadCode     = false,
         };
 
@@ -2888,6 +2879,7 @@ void Compiler::fgPostLowerLiveness()
             SsaLiveness           = false,
             ComputeMemoryLiveness = false,
             IsLIR                 = true,
+            IsEarly               = false,
             EliminateDeadCode     = true,
         };
 
@@ -2931,6 +2923,7 @@ PhaseStatus Compiler::fgEarlyLiveness()
             SsaLiveness           = false,
             ComputeMemoryLiveness = false,
             IsLIR                 = false,
+            IsEarly               = true,
             EliminateDeadCode     = true,
         };
 
@@ -2940,10 +2933,8 @@ PhaseStatus Compiler::fgEarlyLiveness()
         }
     };
 
-    fgIsDoingEarlyLiveness = true;
     EarlyLiveness liveness(this);
     liveness.Run();
-    fgIsDoingEarlyLiveness = false;
-    fgDidEarlyLiveness     = true;
+    fgDidEarlyLiveness = true;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
