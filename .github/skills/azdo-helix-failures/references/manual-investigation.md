@@ -56,7 +56,7 @@ curl -s "https://helix.dot.net/api/2019-06-17/jobs/JOB_ID/workitems/WORK_ITEM_NA
 
 ```powershell
 $workItem = Invoke-RestMethod -Uri "https://helix.dot.net/api/2019-06-17/jobs/$jobId/workitems/$workItemName"
-$workItem.Files | ForEach-Object { Write-Host "$($_.Name): $($_.Uri)" }
+$workItem.Files | ForEach-Object { Write-Host "$($_.FileName): $($_.Uri)" }
 ```
 
 Common artifacts:

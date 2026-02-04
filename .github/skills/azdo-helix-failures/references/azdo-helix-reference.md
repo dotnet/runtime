@@ -7,7 +7,7 @@ The script works with any dotnet repository that uses Azure DevOps and Helix:
 | Repository | Common Pipelines |
 |------------|-----------------|
 | `dotnet/runtime` | runtime, runtime-dev-innerloop, dotnet-linker-tests |
-| `dotnet/sdk` | dotnet-sdk (local tests, not Helix) |
+| `dotnet/sdk` | dotnet-sdk (mix of local and Helix tests) |
 | `dotnet/aspnetcore` | aspnetcore-ci |
 | `dotnet/roslyn` | roslyn-CI |
 | `dotnet/maui` | maui-public |
