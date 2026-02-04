@@ -184,11 +184,11 @@ namespace System.Formats.Tar
         // Only updates if the format is PAX and the ExtendedAttributes dictionary has been initialized.
         // Uses the same logic as CollectExtendedAttributesFromStandardFieldsIfNeeded to determine
         // whether to add or remove the attribute.
-        internal void SyncNumericExtendedAttribute(string key, int value, long maxOctalValue)
+        internal void SyncNumericExtendedAttribute(string key, int value)
         {
             if (_format == TarEntryFormat.Pax && _ea is not null)
             {
-                if (value > maxOctalValue)
+                if (value > Octal8ByteFieldMaxValue)
                 {
                     _ea[key] = value.ToString();
                 }

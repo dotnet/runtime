@@ -68,8 +68,7 @@ namespace System.Formats.Tar
                 }
 
                 _header._devMajor = value;
-                // Max value of 7 octal digits: (1 << (3 * 7)) - 1 = 2097151
-                _header.SyncNumericExtendedAttribute("devmajor", value, 2097151);
+                _header.SyncNumericExtendedAttribute("devmajor", value);
             }
         }
 
@@ -96,8 +95,7 @@ namespace System.Formats.Tar
                 }
 
                 _header._devMinor = value;
-                // Max value of 7 octal digits: (1 << (3 * 7)) - 1 = 2097151
-                _header.SyncNumericExtendedAttribute("devminor", value, 2097151);
+                _header.SyncNumericExtendedAttribute("devminor", value);
             }
         }
 
