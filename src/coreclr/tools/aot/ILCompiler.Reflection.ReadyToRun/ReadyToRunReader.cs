@@ -1015,17 +1015,17 @@ namespace ILCompiler.Reflection.ReadyToRun
                 }
 
                 List<string> signaturePrefixes = [];
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant) != 0)
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
                 {
-                    signaturePrefixes.Add("[ASYNC]");
+                    signaturePrefixes.Add("[UNBOX]");
                 }
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0)
                 {
                     signaturePrefixes.Add("[INST]");
                 }
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant) != 0)
                 {
-                    signaturePrefixes.Add("[UNBOX]");
+                    signaturePrefixes.Add("[ASYNC]");
                 }
 
                 int runtimeFunctionId;
@@ -1150,17 +1150,17 @@ namespace ILCompiler.Reflection.ReadyToRun
                 }
 
                 List<string> signaturePrefixes = [];
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant) != 0)
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
                 {
-                    signaturePrefixes.Add("[ASYNC]");
+                    signaturePrefixes.Add("[UNBOX]");
                 }
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0)
                 {
                     signaturePrefixes.Add("[INST]");
                 }
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant) != 0)
                 {
-                    signaturePrefixes.Add("[UNBOX]");
+                    signaturePrefixes.Add("[ASYNC]");
                 }
 
                 GetPgoOffsetAndVersion(decoder.Offset, out int pgoFormatVersion, out int pgoOffset);
