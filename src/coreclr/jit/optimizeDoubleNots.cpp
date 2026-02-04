@@ -44,8 +44,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 // Notes:
 //    This optimization relies on SSA to track value flow across blocks.
-//    It only handles cases where both NOTs are in the same block or where
-//    the definition block's SSA metadata is accurate.
+//    It handles cases where both NOTs are in different statements, either in the
+//    same block or different blocks where the definition block's SSA metadata
+//    is accurate.
 //
 //    CRITICAL DEPENDENCY ON JitOptRepeat:
 //    This optimization typically does NOT work on the first optimization pass
@@ -53,13 +54,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //    second opt-repeat iteration when:
 //    1. PHI nodes have been eliminated
 //    2. SSA form is valid and accurately tracks definitions
-//    3. The double NOT pattern is exposed in a linear form within a single block
 //
 //    Without JitOptRepeat, this phase will rarely find optimizable patterns.
 //
 //    Known limitations:
 //    - Does not handle PHI nodes with unreachable predecessors
-//    - Requires single-block or accurately tracked cross-block patterns
+//    - Requires accurately tracked cross-block patterns using SSA
 //    - May miss opportunities if SSA metadata is stale after block compaction
 //
 // Pattern matched:
@@ -79,7 +79,7 @@ PhaseStatus Compiler::optOptimizeDoubleNots()
 #endif
 
     // This optimization requires JitOptRepeat and should only run on the second iteration or later
-    // when assertion propagation has simplified PHI nodes
+    // when assertion propagation has no PHI nodes
     assert(opts.optRepeat && (opts.optRepeatIteration >= 2));
 
     PhaseStatus modified = PhaseStatus::MODIFIED_NOTHING;
@@ -98,14 +98,13 @@ PhaseStatus Compiler::optOptimizeDoubleNots()
                     GenTree* innerOp = value->AsOp()->gtOp1;
 
                     // Check if innerOp is a local that was assigned from NOT
-                    // Note: On first opt-repeat pass, this local often comes from a PHI
-                    // which prevents us from finding the defining NOT in the same block
                     if (innerOp->OperIs(GT_LCL_VAR))
                     {
                         unsigned lclNum = innerOp->AsLclVar()->GetLclNum();
                         unsigned ssaNum = innerOp->AsLclVar()->GetSsaNum();
 
-                        JITDUMP("  Checking NOT(V%02u), SSA#%u\n", lclNum, ssaNum);
+                        JITDUMP("  Checking NOT(V%02u), SSA#%u in " FMT_BB ", " FMT_STMT "\n", lclNum, ssaNum,
+                                block->bbNum, stmt->GetID());
 
                         if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
                         {
@@ -130,31 +129,30 @@ PhaseStatus Compiler::optOptimizeDoubleNots()
                             GenTree*      defNode  = ssaDef->GetDefNode();
                             BasicBlock*   defBlock = ssaDef->GetBlock();
 
-                            JITDUMP("  DefNode: %s, DefBlock: " FMT_BB "\n",
+                            JITDUMP("  - DefNode: %s, DefBlock: " FMT_BB "\n",
                                     defNode ? GenTree::OpName(defNode->OperGet()) : "null",
                                     defBlock ? defBlock->bbNum : 0);
 
-                            // Find the definition in the CURRENT block
+                            // Find the definition in the def block
                             Statement* defStmt = nullptr;
-                            if (defNode != nullptr)
+                            if (defNode != nullptr && defBlock != nullptr)
                             {
-                                for (Statement* const candidateStmt : block->Statements())
+                                for (Statement* const candidateStmt : defBlock->Statements())
                                 {
                                     if (candidateStmt->GetRootNode() == defNode)
                                     {
                                         defStmt  = candidateStmt;
-                                        defNode  = defStmt->GetRootNode(); // Update defNode to current Node
-                                        defBlock = block;                  // Update defBlock to current block
-                                        JITDUMP("  Found definition in current block!\n");
+                                        JITDUMP("  - Found definition in DefBlock: " FMT_BB ", " FMT_STMT "\n",
+                                                defBlock->bbNum, defStmt->GetID());
                                         break;
                                     }
                                 }
                             }
 
-                            // If not found in current block, skip
+                            // If not found, skip
                             if (defStmt == nullptr)
                             {
-                                JITDUMP("  Definition not in current block - skipping\n");
+                                JITDUMP("  Definition not in the def block - skipping\n");
                                 continue;
                             }
 
@@ -164,10 +162,11 @@ PhaseStatus Compiler::optOptimizeDoubleNots()
                                 if (defRhs->OperIs(GT_NOT))
                                 {
                                     // Found double NOT: eliminate it
-                                    JITDUMP("  FOUND DOUBLE NOT PATTERN! Optimizing...\n");
+                                    JITDUMP("  - FOUND DOUBLE NOT PATTERN! Optimizing...\n");
                                     GenTree* baseExpr = defRhs->AsOp()->gtOp1;
                                     if (baseExpr == nullptr)
                                     {
+                                        JITDUMP("  - Empty base expression in " FMT_BB " - skipping\n", defBlock->bbNum);
                                         continue;
                                     }
                                     GenTree* replacement = gtCloneExpr(baseExpr);
