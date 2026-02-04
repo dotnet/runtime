@@ -8929,7 +8929,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumb
     id->idjKeepLong = false;
 
 #ifdef DEBUG
-    if (emitComp->opts.compLongAddress)
+    if (m_compiler->opts.compLongAddress)
         id->idjKeepLong = 1;
 #endif // DEBUG
 
