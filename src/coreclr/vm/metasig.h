@@ -524,7 +524,7 @@ DEFINE_METASIG(SM(Str_RetArrStr, s, a(s)))
 
 // Exception
 DEFINE_METASIG(IM(RefUInt_RetStr, r(K), s))
-DEFINE_METASIG_T(SM(PtrException_PtrIntPtr_PtrException_RetVoid, P(C(EXCEPTION)) P(I) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrException_PtrException_RetIntPtr, P(C(EXCEPTION)) P(C(EXCEPTION)), I))
 DEFINE_METASIG_T(SM(PtrException_PtrIntPtr_PtrUInt_PtrException_RetVoid, P(C(EXCEPTION)) P(I) P(U) P(C(EXCEPTION)), v))
 
 #ifdef FEATURE_COMINTEROP

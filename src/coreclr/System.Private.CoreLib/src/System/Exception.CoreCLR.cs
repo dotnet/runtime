@@ -260,7 +260,7 @@ namespace System
 #if FEATURE_COMINTEROP
         // used by vm
         [UnmanagedCallersOnly]
-        internal static unsafe void GetDescriptionBstr(Exception* obj, IntPtr* bstr, Exception* pException)
+        internal static unsafe IntPtr GetDescriptionBstr(Exception* obj, Exception* pException)
         {
             try
             {
@@ -269,29 +269,31 @@ namespace System
                     message = obj->GetClassName();
 
                 // Allocate the description BSTR.
-                *bstr = Interop.OleAut32.SysAllocStringLen(message, (uint)message.Length);
+                return Interop.OleAut32.SysAllocStringLen(message, (uint)message.Length);
             }
             catch (Exception ex)
             {
                 *pException = ex;
+                return IntPtr.Zero;
             }
         }
 
         // used by vm
         [UnmanagedCallersOnly]
-        internal static unsafe void GetSourceBstr(Exception* obj, IntPtr* bstr, Exception* pException)
+        internal static unsafe IntPtr GetSourceBstr(Exception* obj, Exception* pException)
         {
             try
             {
                 string? source = obj->Source;
 
-                *bstr = source != null
+                return source != null
                     ? Interop.OleAut32.SysAllocStringLen(source, (uint)source.Length)
                     : IntPtr.Zero;
             }
             catch (Exception ex)
             {
                 *pException = ex;
+                return IntPtr.Zero;
             }
         }
 

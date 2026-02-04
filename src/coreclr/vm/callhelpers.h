@@ -736,6 +736,49 @@ public:
 
         GCPROTECT_END();
     }
+
+    template<typename Ret, typename... Args>
+    Ret InvokeThrowing_Ret(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        Ret ret;
+
+        struct
+        {
+            OBJECTREF Exception;
+        } gc;
+        gc.Exception = NULL;
+        GCPROTECT_BEGIN(gc);
+
+        {
+            GCX_PREEMP();
+
+            PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+            _ASSERTE(methodEntry != (PCODE)NULL);
+
+            // Cast the function pointer to the appropriate type.
+            // Note that we append the exception handle argument.
+            auto fptr = reinterpret_cast<Ret(*)(Args..., OBJECTREF*)>(methodEntry);
+
+            // The last argument is the implied exception handle for any exceptions.
+            ret = fptr(args..., &gc.Exception);
+        }
+
+        // If an exception was thrown, propagate it
+        if (gc.Exception != NULL)
+            COMPlusThrow(gc.Exception);
+
+        GCPROTECT_END();
+
+        return ret;
+    }
 };
 
 #endif //!DACCESS_COMPILE

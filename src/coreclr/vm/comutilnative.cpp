@@ -135,12 +135,12 @@ static BSTR GetExceptionDescription(OBJECTREF objException)
     }
     CONTRACTL_END;
     
-    BSTR bstrDescription = NULL;
+    BSTR bstrDescription;
 
     GCPROTECT_BEGIN(objException)
     {
         UnmanagedCallersOnlyCaller getDescriptionBstr(METHOD__EXCEPTION__GET_DESCRIPTION_BSTR);
-        getDescriptionBstr.InvokeThrowing(&objException, &bstrDescription);
+        bstrDescription = getDescriptionBstr.InvokeThrowing_Ret<BSTR>(&objException);
     }
     GCPROTECT_END();
 
@@ -158,12 +158,12 @@ static BSTR GetExceptionSource(OBJECTREF objException)
     }
     CONTRACTL_END;
     
-    BSTR bstrSource = NULL;
+    BSTR bstrSource;
 
     GCPROTECT_BEGIN(objException)
     {
         UnmanagedCallersOnlyCaller getSourceBstr(METHOD__EXCEPTION__GET_SOURCE_BSTR);
-        getSourceBstr.InvokeThrowing(&objException, &bstrSource);
+        bstrSource = getSourceBstr.InvokeThrowing_Ret<BSTR>(&objException);
     }
     GCPROTECT_END();
 
