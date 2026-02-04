@@ -53,6 +53,7 @@ protected:
         SsaLiveness           = false,
         ComputeMemoryLiveness = false,
         IsLIR                 = false,
+        IsEarly               = false,
     };
 
     Liveness(Compiler* compiler)
@@ -551,7 +552,7 @@ void Liveness<TLiveness>::SelectTrackedLocals()
     // track everything.
     // TODO-TP: For early liveness we could do a partial sort for the large
     // case.
-    if (!m_compiler->fgIsDoingEarlyLiveness || (m_compiler->lvaTrackedCount < trackedCandidateCount))
+    if (!TLiveness::IsEarly || (m_compiler->lvaTrackedCount < trackedCandidateCount))
     {
         // Now sort the tracked variable table by ref-count
         if (m_compiler->compCodeOpt() == Compiler::SMALL_CODE)
@@ -641,15 +642,16 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
         }
 
         m_compiler->compCurBB = block;
-        if (block->IsLIR())
+        if (TLiveness::IsLIR)
         {
             for (GenTree* node : LIR::AsRange(block))
             {
                 PerNodeLocalVarLiveness(node);
             }
         }
-        else if (m_compiler->fgNodeThreading == NodeThreading::AllTrees)
+        else if (!TLiveness::IsEarly)
         {
+            assert(m_compiler->fgNodeThreading == NodeThreading::AllTrees);
             for (Statement* const stmt : block->NonPhiStatements())
             {
                 m_compiler->compCurStmt = stmt;
@@ -661,7 +663,7 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
         }
         else
         {
-            assert(m_compiler->fgIsDoingEarlyLiveness && (m_compiler->fgNodeThreading == NodeThreading::AllLocals));
+            assert(m_compiler->fgNodeThreading == NodeThreading::AllLocals);
 
             if (m_compiler->compQmarkUsed)
             {
@@ -1168,7 +1170,7 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
         }
     }
 
-    if (!m_compiler->fgIsDoingEarlyLiveness)
+    if (!TLiveness::IsEarly)
     {
         LclVarDsc* varDsc;
         unsigned   varNum;
@@ -1255,12 +1257,13 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
 
         /* Mark any interference we might have at the end of the block */
 
-        if (block->IsLIR())
+        if (TLiveness::IsLIR)
         {
             ComputeLifeLIR(life, block, keepAliveVars);
         }
-        else if (m_compiler->fgNodeThreading == NodeThreading::AllTrees)
+        else if (!TLiveness::IsEarly)
         {
+            assert(m_compiler->fgNodeThreading == NodeThreading::AllTrees);
             /* Get the first statement in the block */
 
             Statement* firstStmt = block->FirstNonPhiDef();
@@ -1309,7 +1312,7 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
         }
         else
         {
-            assert(m_compiler->fgIsDoingEarlyLiveness && (m_compiler->fgNodeThreading == NodeThreading::AllLocals));
+            assert(m_compiler->fgNodeThreading == NodeThreading::AllLocals);
             m_compiler->compCurStmt = nullptr;
 
             Statement* firstStmt = block->firstStmt();
@@ -1515,7 +1518,7 @@ bool Liveness<TLiveness>::PerBlockAnalysis(BasicBlock* block, bool keepAliveThis
         }
     }
 
-    if (m_compiler->fgIsDoingEarlyLiveness && m_compiler->opts.IsOSR() && block->HasFlag(BBF_RECURSIVE_TAILCALL))
+    if (TLiveness::IsEarly && m_compiler->opts.IsOSR() && block->HasFlag(BBF_RECURSIVE_TAILCALL))
     {
         // Early liveness happens between import and morph where we may
         // have identified a tailcall-to-loop candidate but not yet
@@ -1661,7 +1664,7 @@ void Liveness<TLiveness>::ComputeLife(VARSET_TP&           life,
     // Don't kill vars in scope
     noway_assert(VarSetOps::IsSubset(m_compiler, keepAliveVars, life));
     noway_assert(endNode || (startNode == m_compiler->compCurStmt->GetRootNode()));
-    assert(!m_compiler->fgIsDoingEarlyLiveness);
+    assert(!TLiveness::IsEarly);
 
     for (GenTree* tree = startNode; tree != endNode; tree = tree->gtPrev)
     {
@@ -2811,7 +2814,7 @@ void Compiler::fgSsaLiveness()
             SsaLiveness           = true,
             ComputeMemoryLiveness = true,
             IsLIR                 = false,
-            EliminateDeadCode     = true,
+            IsEarly               = false,
         };
 
         SsaLivenessClass(Compiler* comp)
@@ -2836,6 +2839,7 @@ void Compiler::fgAsyncLiveness()
             SsaLiveness           = false,
             ComputeMemoryLiveness = false,
             IsLIR                 = true,
+            IsEarly               = false,
         };
 
         AsyncLiveness(Compiler* comp)
@@ -2860,7 +2864,7 @@ void Compiler::fgPostLowerLiveness()
             SsaLiveness           = false,
             ComputeMemoryLiveness = false,
             IsLIR                 = true,
-            EliminateDeadCode     = true,
+            IsEarly               = false,
         };
 
         PostLowerLiveness(Compiler* comp)
@@ -2903,6 +2907,7 @@ PhaseStatus Compiler::fgEarlyLiveness()
             SsaLiveness           = false,
             ComputeMemoryLiveness = false,
             IsLIR                 = false,
+            IsEarly               = true,
         };
 
         EarlyLiveness(Compiler* comp)
@@ -2911,10 +2916,8 @@ PhaseStatus Compiler::fgEarlyLiveness()
         }
     };
 
-    fgIsDoingEarlyLiveness = true;
     EarlyLiveness liveness(this);
     liveness.Run();
-    fgIsDoingEarlyLiveness = false;
     fgDidEarlyLiveness     = true;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
