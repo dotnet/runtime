@@ -521,6 +521,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genRangeCheck(treeNode);
             break;
 
+        case GT_KEEPALIVE:
+            // TODO-WASM-CQ: avoid generating anything here?
+            genConsumeRegs(treeNode->AsOp()->gtOp1);
+            GetEmitter()->emitIns(INS_drop);
+            break;
+
         default:
 #ifdef DEBUG
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
