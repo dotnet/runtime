@@ -307,6 +307,7 @@ DEFINE_PROPERTY(EXCEPTION,          MESSAGE,                Message,            
 DEFINE_PROPERTY(EXCEPTION,          SOURCE,                 Source,                     Str)
 DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT,       GetHelpContext,             IM_RefUInt_RetStr)
 DEFINE_METHOD(EXCEPTION,            GET_DESCRIPTION_BSTR,   GetDescriptionBstr,         SM_PtrException_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(EXCEPTION,            GET_SOURCE_BSTR,   GetSourceBstr,         SM_PtrException_PtrIntPtr_PtrException_RetVoid)
 
 
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)

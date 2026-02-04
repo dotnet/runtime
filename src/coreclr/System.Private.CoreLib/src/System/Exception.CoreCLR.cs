@@ -276,6 +276,24 @@ namespace System
                 *pException = ex;
             }
         }
+
+        // used by vm
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetSourceBstr(Exception* obj, IntPtr* bstr, Exception* pException)
+        {
+            try
+            {
+                string? source = obj->Source;
+
+                *bstr = source != null
+                    ? Interop.OleAut32.SysAllocStringLen(source, (uint)source.Length)
+                    : IntPtr.Zero;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
 #endif
 
         // used by vm

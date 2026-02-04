@@ -181,19 +181,17 @@ static BSTR GetExceptionSource(OBJECTREF objException)
         PRECONDITION( IsException(objException->GetMethodTable()) );
     }
     CONTRACTL_END;
+    
+    BSTR bstrSource = NULL;
 
-    STRINGREF refRetVal;
     GCPROTECT_BEGIN(objException)
-
-    // read Exception.Source property
-    MethodDescCallSite getSource(METHOD__EXCEPTION__GET_SOURCE, &objException);
-
-    ARG_SLOT GetSourceArgs[] = { ObjToArgSlot(objException)};
-
-    refRetVal = getSource.Call_RetSTRINGREF(GetSourceArgs);
-
+    {
+        UnmanagedCallersOnlyCaller getSourceBstr(METHOD__EXCEPTION__GET_SOURCE_BSTR);
+        getSourceBstr.InvokeThrowing(&objException, &bstrSource);
+    }
     GCPROTECT_END();
-    return BStrFromString(refRetVal);
+
+    return bstrSource;
 }
 
 static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD *pdwHelpContext)
