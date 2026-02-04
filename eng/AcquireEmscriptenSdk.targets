@@ -7,7 +7,7 @@
 -->
 <Project>
   <!-- Directory to provision and use emscripten if EMSDK_PATH env variable is not set -->
-  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or $(MonoGenerateOffsetsOSGroups.Contains('browser'))">
     <ProvisionEmscriptenDir>$([MSBuild]::NormalizeDirectory('$(MonoProjectRoot)', 'browser', 'emsdk'))</ProvisionEmscriptenDir>
     <ShouldProvisionEmscripten Condition="'$(EMSDK_PATH)' == '' and !Exists('$(ProvisionEmscriptenDir)')">true</ShouldProvisionEmscripten>
     <EMSDK_PATH Condition="Exists('$(ProvisionEmscriptenDir)') and '$(EMSDK_PATH)' == ''">$(ProvisionEmscriptenDir.Replace('\', '/'))</EMSDK_PATH>
@@ -199,6 +199,6 @@ JS_ENGINES = [NODE_JS]
   </Target>
 
   <Target Name="AcquireEmscriptenSdk"
-          Condition="'$(TargetsBrowser)' == 'true'"
+          Condition="'$(TargetsBrowser)' == 'true' or $(MonoGenerateOffsetsOSGroups.Contains('browser'))"
           DependsOnTargets="AcquireEmscriptenSdkUnconditional" />
 </Project>
