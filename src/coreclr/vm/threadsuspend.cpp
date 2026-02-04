@@ -2138,6 +2138,11 @@ void Thread::RareDisablePreemptiveGC()
 
         if (ThreadStore::IsTrappingThreadsForSuspension())
         {
+#ifdef FEATURE_PERFTRACING
+            // Save the GC mode so the sample profiler can determine this thread was in managed code.
+            SaveGCModeOnSuspension();
+#endif // FEATURE_PERFTRACING
+
             EnablePreemptiveGC();
 
 #ifdef PROFILING_SUPPORTED
@@ -2649,6 +2654,11 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
         _ASSERTE(reason == RedirectReason_GCSuspension ||
                     reason == RedirectReason_DebugSuspension ||
                     reason == RedirectReason_UserSuspension);
+
+#ifdef FEATURE_PERFTRACING
+        // Save the GC mode so the sample profiler can determine this thread was in managed code.
+        pThread->SaveGCModeOnSuspension();
+#endif // FEATURE_PERFTRACING
 
         // Actual self-suspension.
         // Leave and reenter COOP mode to be trapped on the way back.
