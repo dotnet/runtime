@@ -4773,6 +4773,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
             }
 
+            if (opts.OptimizationEnabled())
+            {
+                // Optimize Double NOT conditions
+                //
+                if (opts.optRepeat && (opts.optRepeatIteration >= 2))
+                {
+                    DoPhase(this, PHASE_OPTIMIZE_DOUBLE_NOTS, &Compiler::optOptimizeDoubleNots);
+                }
+            }
+
             if (doRangeAnalysis)
             {
                 // Bounds check elimination via range analysis

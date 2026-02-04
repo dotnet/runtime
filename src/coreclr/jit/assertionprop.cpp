@@ -5596,19 +5596,17 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, Stat
 }
 
 //------------------------------------------------------------------------
-// optAssertionProp: try and optimize a tree via assertion propagation
+// optAssertionProp: Given a tree and a set of available assertions, try to
+//                   propagate an assertion and modify the tree.
 //
 // Arguments:
-//   assertions  - set of live assertions
-//   tree        - tree to possibly optimize
-//   stmt        - statement containing the tree
-//   block       - block containing the statement
+//      assertions : The assertions available at this point.
+//      tree       : The tree to propagate assertions on.
+//      stmt       : The statement containing the tree (nullptr for local prop).
+//      block      : The basic block containing the statement (nullptr for local prop).
 //
 // Returns:
-//   The modified tree, or nullptr if no assertion prop took place.
-//
-// Notes:
-//   stmt may be nullptr during local assertion prop
+//      The modified tree, or nullptr if no assertion prop took place.
 //
 GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block)
 {

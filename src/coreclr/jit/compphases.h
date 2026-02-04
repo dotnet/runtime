@@ -86,6 +86,7 @@ CompPhaseNameMacro(PHASE_EMPTY_TRY_CATCH_FAULT_2,    "Remove empty try-catch-fau
 CompPhaseNameMacro(PHASE_HOIST_LOOP_CODE,            "Hoist loop code",                false, -1, false)
 CompPhaseNameMacro(PHASE_MARK_LOCAL_VARS,            "Mark local vars",                false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_BOOLS,             "Optimize bools",                 false, -1, false)
+CompPhaseNameMacro(PHASE_OPTIMIZE_DOUBLE_NOTS,       "Optimize double nots",           false, -1, false)
 CompPhaseNameMacro(PHASE_SWITCH_RECOGNITION,         "Recognize Switch",               false, -1, false)
 CompPhaseNameMacro(PHASE_FIND_OPER_ORDER,            "Find oper order",                false, -1, false)
 CompPhaseNameMacro(PHASE_SET_BLOCK_ORDER,            "Set block order",                false, -1, true)

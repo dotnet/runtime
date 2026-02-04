@@ -151,6 +151,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizebools.cpp
+  optimizeDoubleNots.cpp
   optimizemaskconversions.cpp
   optimizer.cpp
   patchpoint.cpp
