@@ -39,7 +39,13 @@ bool MCList::processArgAsMCL(char* input, int* count, int** list)
             foundDigit = false;
             while ((head <= tail) && (isdigit((unsigned char)*head)))
             {
-                scratch    = (scratch * 10) + ((*head) - '0');
+                unsigned digit = (*head) - '0';
+                if (scratch > (UINT_MAX - digit) / 10)
+                {
+                    LogError("Invalid int value in '%s'", input);
+                    return false;
+                }
+                scratch    = (scratch * 10) + digit;
                 foundDigit = true;
                 head++;
             }
@@ -85,7 +91,13 @@ bool MCList::processArgAsMCL(char* input, int* count, int** list)
             foundDigit = false;
             while ((head <= tail) && (isdigit((unsigned char)*head)))
             {
-                scratch    = (scratch * 10) + ((*head) - '0');
+                unsigned digit = (*head) - '0';
+                if (scratch > (UINT_MAX - digit) / 10)
+                {
+                    LogError("Invalid int value in '%s'", input);
+                    return false;
+                }
+                scratch    = (scratch * 10) + digit;
                 foundDigit = true;
                 head++;
             }
