@@ -1417,15 +1417,7 @@ bool DebuggerController::BindPatch(DebuggerControllerPatch *patch,
     // If we've jitted, map to a native offset.
     // If the patch already has a DJI, use it to avoid calling GetJitInfo which can trigger
     // a deadlock-prone code path through HashMap lookups that do GC mode transitions.
-    DebuggerJitInfo *info = NULL;
-    if (patch->HasDJI())
-    {
-        info = patch->GetDJI();
-    }
-    else
-    {
-        info = g_pDebugger->GetJitInfo(pMD, (const BYTE *)startAddr);
-    }
+    DebuggerJitInfo *info = patch->HasDJI() ? patch->GetDJI() : g_pDebugger->GetJitInfo(pMD, (const BYTE *)startAddr);
 
 #ifdef LOGGING
     if (info == NULL)
