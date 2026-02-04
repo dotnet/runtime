@@ -494,7 +494,6 @@ namespace System.Security.Cryptography.X509Certificates
             private int _count = -1;
             private Node? _head;
             private Node? _expire;
-            private DateTime _firstPurge;
 
             internal CachedCrlEntry AddOrUpdateAndUpRef(string key, CachedCrlEntry value)
             {
@@ -516,7 +515,6 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         new GCWatcher(this);
                         _count = 0;
-                        _firstPurge = DateTime.Now.AddMinutes(1);
                     }
 
                     bool ignore = false;
@@ -644,7 +642,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             private void PruneForGC()
             {
-                if (DateTime.Now < _firstPurge)
+                if (GC.GetGeneration(this) != GC.MaxGeneration)
                 {
                     return;
                 }
