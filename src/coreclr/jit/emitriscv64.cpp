@@ -3072,91 +3072,6 @@ void emitter::InstructionEncoder::EmitUType(instruction ins, regNumber rd, unsig
     dst += emit.emitOutput_UTypeInstr(dst, ins, rd, imm20);
 }
 
-BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins)
-{
-    assert(id->idAddr()->iiaIsJitDataOffset());
-    assert(id->idGCref() == GCT_NONE);
-
-    const int offset = id->idAddr()->iiaGetJitDataOffset();
-    assert(offset >= 0);
-    assert((UNATIVE_OFFSET)offset < emitDataSize());
-
-    *ins                 = id->idIns();
-    const regNumber reg1 = id->idReg1();
-    assert(reg1 != REG_ZERO);
-    assert(id->idCodeSize() == 2 * sizeof(code_t));
-    const ssize_t immediate = emitDataOffsetToPtr(offset) - dst;
-    assert((immediate > 0) && ((immediate & 0x01) == 0));
-    assert(isValidSimm32(immediate));
-
-    const regNumber tempReg = isFloatReg(reg1) ? codeGen->rsGetRsvdReg() : reg1;
-    dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
-    dst += emitOutput_ITypeInstr(dst, *ins, reg1, tempReg, LowerNBitsOfWord<12>(immediate));
-    return dst;
-}
-
-void emitter::InstructionFormatter::EmitBType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13)
-{
-    unsigned baseOpcode = emitInsCode(ins);
-
-    unsigned opcode = baseOpcode & kInstructionOpcodeMask;
-    unsigned funct3 = (baseOpcode & kInstructionFunct3Mask) >> 12;
-    unsigned _rs1   = castFloatOrIntegralReg(rs1);
-    unsigned _rs2   = castFloatOrIntegralReg(rs2);
-
-    code_t code = insEncodeBTypeInstr(opcode, funct3, _rs1, _rs2, imm13);
-    emit.emitDispInsName(code, id);
-}
-
-void emitter::InstructionFormatter::EmitBTypeInverted(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13)
-{
-    unsigned baseOpcode     = emitInsCode(ins);
-    unsigned invertedOpcode = baseOpcode ^ 0x1000;
-
-    unsigned opcode = invertedOpcode & kInstructionOpcodeMask;
-    unsigned funct3 = (invertedOpcode & kInstructionFunct3Mask) >> 12;
-    unsigned _rs1   = castFloatOrIntegralReg(rs1);
-    unsigned _rs2   = castFloatOrIntegralReg(rs2);
-
-    code_t code = insEncodeBTypeInstr(opcode, funct3, _rs1, _rs2, imm13);
-    emit.emitDispInsName(code, id);
-}
-
-void emitter::InstructionFormatter::EmitJType(instruction ins, regNumber rd, unsigned imm21)
-{
-    unsigned baseOpcode = emitInsCode(ins);
-
-    unsigned opcode = baseOpcode & kInstructionOpcodeMask;
-    unsigned _rd    = castFloatOrIntegralReg(rd);
-
-    code_t code = insEncodeJTypeInstr(opcode, _rd, imm21);
-    emit.emitDispInsName(code, id);
-}
-
-//--------------------------------------------
-//
-// InstructionEncoder::EmitXType: methods write RISC-V instructions to `dst`.
-//
-void emitter::InstructionEncoder::EmitRType(instruction ins, regNumber rd, regNumber rs1, regNumber rs2)
-{
-    dst += emit.emitOutput_RTypeInstr(dst, ins, rd, rs1, rs2);
-}
-
-void emitter::InstructionEncoder::EmitIType(instruction ins, regNumber rd, regNumber rs1, unsigned imm12)
-{
-    dst += emit.emitOutput_ITypeInstr(dst, ins, rd, rs1, imm12);
-}
-
-void emitter::InstructionEncoder::EmitSType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm12)
-{
-    dst += emit.emitOutput_STypeInstr(dst, ins, rs1, rs2, imm12);
-}
-
-void emitter::InstructionEncoder::EmitUType(instruction ins, regNumber rd, unsigned imm20)
-{
-    dst += emit.emitOutput_UTypeInstr(dst, ins, rd, imm20);
-}
-
 void emitter::InstructionEncoder::EmitBType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13)
 {
     dst += emit.emitOutput_BTypeInstr(dst, ins, rs1, rs2, imm13);
@@ -3360,13 +3275,13 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     const regNumber reg1 = id->idReg1();
     assert(reg1 != REG_ZERO);
     assert(id->idCodeSize() == 2 * sizeof(code_t));
-    const ssize_t immediate = (emitConsBlock - dst) + offset;
+    const ssize_t immediate = emitDataOffsetToPtr(offset) - dst;
     assert((immediate > 0) && ((immediate & 0x01) == 0));
     assert(isValidSimm32(immediate));
 
-    InstructionEncoder encoder(*this, dst);
-    EmitLogic_OptsRc(encoder, id, immediate);
-
+    const regNumber tempReg = isFloatReg(reg1) ? codeGen->rsGetRsvdReg() : reg1;
+    dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
+    dst += emitOutput_ITypeInstr(dst, *ins, reg1, tempReg, LowerNBitsOfWord<12>(immediate));
     return dst;
 }
 
@@ -5001,7 +4916,7 @@ void emitter::emitDispIns(
     {
         emitDispInsInstrNum(id);
 
-    bool willPrintLoadImmValue = (id->idInsOpt() == INS_OPTS_I) && !m_compiler->opts.disDiffable;
+        bool willPrintLoadImmValue = (id->idInsOpt() == INS_OPTS_I) && !m_compiler->opts.disDiffable;
 
         const BYTE* instr = pCode + writeableOffset;
         unsigned    instrSize;
@@ -5018,10 +4933,10 @@ void emitter::emitDispIns(
                 instrSize = 4;
             }
 #ifdef DEBUG
-        if (m_compiler->verbose && i != 0)
-        {
-            printf("        ");
-        }
+            if (m_compiler->verbose && i != 0)
+            {
+                printf("        ");
+            }
 #endif
             emitDispInsName(instruction, instr, doffs, offset, id, ig);
 
