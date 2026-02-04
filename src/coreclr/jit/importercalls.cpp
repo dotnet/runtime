@@ -403,7 +403,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (sig->isAsyncCall())
                 {
-                    impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, sig->totalILArgs(), di);
+                    impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
                 }
 
                 impPopCallArgs(sig, call->AsCall());
@@ -715,7 +715,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, sig->totalILArgs(), di);
+        impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
 
         if (lvaNextCallAsyncContinuation != BAD_VAR_NUM)
         {
