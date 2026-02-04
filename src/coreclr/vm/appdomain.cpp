@@ -3773,7 +3773,6 @@ AppDomain::RaiseAssemblyResolveEvent(
         }
 
         UnmanagedCallersOnlyCaller onAssemblyResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_RESOLVE);
-        _ASSERTE(ssName.IsNormalized()); // Verify Unicode normalization
         onAssemblyResolve.InvokeThrowing(&gc.AssemblyRef, ssName.GetUnicode(), &gc.ResultRef);
 
         if (gc.ResultRef != NULL)

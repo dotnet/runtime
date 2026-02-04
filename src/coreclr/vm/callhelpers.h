@@ -696,6 +696,9 @@ public:
         _pMD = CoreLibBinder::GetMethod(id);
         _ASSERTE(_pMD != NULL);
         _ASSERTE(_pMD->HasUnmanagedCallersOnlyAttribute());
+
+        _pMD->EnsureActive();
+        _pMD->PrepareForUseAsAFunctionPointer();
     }
 
     template<typename... Args>
