@@ -13734,7 +13734,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_JitNewLclArr:
         {
             generateUniqueVN  = true;
-            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(1)->GetNode()->gtVNPair);
+            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetUserArgByIndex(1)->GetNode()->gtVNPair);
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
@@ -13773,7 +13773,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_JitReadyToRunNewLclArr:
         {
             generateUniqueVN  = true;
-            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(0)->GetNode()->gtVNPair);
+            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetUserArgByIndex(0)->GetNode()->gtVNPair);
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
@@ -13833,6 +13833,18 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     }
 
     CallArg* curArg = args->Args().begin().GetArg();
+
+#if defined(TARGET_WASM)
+    if (curArg->GetWellKnownArg() == WellKnownArg::WasmShadowStackPointer)
+    {
+        // Ignore the Wasm shadow stack pointer argument.
+        //
+        // The Wasm shadow stack pointer is not counted in VNFuncArity
+        // so nArgs does not need adjusting.
+        curArg = curArg->GetNext();
+    }
+#endif // defined(TARGET_WASM)
+
     if (nArgs == 0)
     {
         if (generateUniqueVN)
@@ -13951,7 +13963,7 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
             assert(GetRuntimeHandleUnderlyingType() == TYP_I_IMPL);
 
             VNFuncApp bitcastFuncApp;
-            ValueNum  argVN = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
+            ValueNum  argVN = call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
             if (!vnStore->GetVNFunc(argVN, &bitcastFuncApp) || (bitcastFuncApp.m_func != VNF_BitCast))
             {
                 break;
@@ -14103,7 +14115,7 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
             unreached();
     }
 
-    ValueNumPair argVNP  = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair;
+    ValueNumPair argVNP  = call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair;
     ValueNumPair castVNP = vnStore->VNPairForCast(argVNP, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 
     call->SetVNs(castVNP);
@@ -14421,7 +14433,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         {
             // If RuntimeTypeHandle is just a wrapper around RuntimeType object, we can
             // just number it as BitCast<TYP_STRUCT>(nonGcRuntimeTypeObj);
-            const ValueNum argVN = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
+            const ValueNum argVN = call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
             if ((GetRuntimeHandleUnderlyingType() == TYP_REF) && vnStore->IsVNTypeHandle(argVN))
             {
                 CORINFO_CLASS_HANDLE  cls     = (CORINFO_CLASS_HANDLE)vnStore->ConstantValue<ssize_t>(argVN);

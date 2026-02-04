@@ -1705,15 +1705,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     // in the implementation of fast tail call.
     // *********** END NOTE *********
 
-#if defined(TARGET_WASM)
-    // On WASM, we need to add an initial hidden argument for the stack pointer for managed calls.
-    if (!call->IsUnmanaged())
-    {
-        GenTree* const stackPointer = comp->gtNewLclVarNode(comp->lvaWasmSpArg, TYP_I_IMPL);
-        PushFront(comp, NewCallArg::Primitive(stackPointer).WellKnown(WellKnownArg::WasmShadowStackPointer));
-    }
-#endif // defined(TARGET_WASM)
-
 #if defined(TARGET_ARM)
     // A non-standard calling convention using wrapper delegate invoke is used on ARM, only, for wrapper
     // delegates. It is used for VSD delegate calls where the VSD custom calling convention ABI requires passing
@@ -1840,8 +1831,14 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif
 
 #if defined(TARGET_WASM)
+    // On WASM, we need to add an initial argument for the stack pointer for managed calls.
+    if (!call->IsUnmanaged())
+    {
+        GenTree* const stackPointer = comp->gtNewLclVarNode(comp->lvaWasmSpArg, TYP_I_IMPL);
+        PushFront(comp, NewCallArg::Primitive(stackPointer).WellKnown(WellKnownArg::WasmShadowStackPointer));
+    }
     // TODO-WASM: pass the portable entry point as the last argument for managed calls
-#endif
+#endif // defined(TARGET_WASM)
 
     ClassifierInfo info;
     info.CallConv = call->GetUnmanagedCallConv();
