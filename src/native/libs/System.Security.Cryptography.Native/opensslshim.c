@@ -142,6 +142,12 @@ static void OpenLibraryOnce(void)
         DlOpen(MAKELIB("30"));
     }
 
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.5 from base as found in FreeBSD 15.0
+        DlOpen(MAKELIB("35"));
+    }
+
     // Fallbacks for OpenSSL 1.1.x
     if (libssl == NULL)
     {
