@@ -38,11 +38,15 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
         {
             retBuff = *SPECIAL_ARG_ADDR(1);
             *SPECIAL_ARG_ADDR(1) = *SPECIAL_ARG_ADDR(0);
-        } else {
+        }
+        else
+        {
             retBuff = *SPECIAL_ARG_ADDR(0);
         }
         args = (int8_t*)SPECIAL_ARG_ADDR(1);
-    } else {
+    }
+    else
+    {
         args = (int8_t*)pCallDescrData->pSrc;
         retBuff = pCallDescrData->returnValue;
     }

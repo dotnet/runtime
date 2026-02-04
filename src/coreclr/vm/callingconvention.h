@@ -1910,14 +1910,19 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     if (argType == ELEMENT_TYPE_VALUETYPE)
     {
         align = std::clamp(CEEInfo::getClassAlignmentRequirementStatic(thValueType.GetMethodTable()), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
-    } else {
+    }
+    else
+    {
         align = INTERP_STACK_SLOT_SIZE;
     }
 
-    if (HasRetBuffArg()) {
+    if (HasRetBuffArg())
+    {
         // the slot for retbuf arg will be removed before the actual call
         m_ofsStack = ALIGN_UP(m_ofsStack - INTERP_STACK_SLOT_SIZE, align) + INTERP_STACK_SLOT_SIZE;
-    } else {
+    }
+    else
+    {
         m_ofsStack = ALIGN_UP(m_ofsStack, align);
     }
 
