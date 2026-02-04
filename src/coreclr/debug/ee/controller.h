@@ -1212,8 +1212,7 @@ private:
 
     static bool BindPatch(DebuggerControllerPatch *patch,
                           MethodDesc *fd,
-                          CORDB_ADDRESS_TYPE *startAddr,
-                          DebuggerJitInfo *dji = NULL);
+                          CORDB_ADDRESS_TYPE *startAddr);
     static bool ApplyPatch(DebuggerControllerPatch *patch);
     static bool UnapplyPatch(DebuggerControllerPatch *patch);
     static bool IsPatched(CORDB_ADDRESS_TYPE *address, BOOL native);
