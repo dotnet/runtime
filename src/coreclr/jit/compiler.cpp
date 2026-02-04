@@ -4744,9 +4744,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     objectAllocator.Run();
 
     // Add any internal blocks/trees we may need
-    //
-    DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
 
+#ifndef TARGET_S390X
+	//disabled for the initial phase
+    DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
+#endif
 #ifdef SWIFT_SUPPORT
     // Transform GT_RETURN nodes into GT_SWIFT_ERROR_RET nodes if this method has Swift error handling
     //

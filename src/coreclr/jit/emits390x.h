@@ -19,19 +19,8 @@ static bool strictArmAsm;
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
 
-enum PredicateType
-{
-    PREDICATE_NONE = 0, // Predicate printed with no extensions
-    PREDICATE_MERGE,    // Predicate printed with /m
-    PREDICATE_ZERO,     // Predicate printed with /z
-    PREDICATE_SIZED,    // Predicate printed with element size
-    PREDICATE_N,        // Predicate printed as counter
-    PREDICATE_N_SIZED,  // Predicate printed as counter with element size
-};
-
 const char* emitSveRegName(regNumber reg) const;
 const char* emitVectorRegName(regNumber reg);
-const char* emitPredicateRegName(regNumber reg, PredicateType ptype);
 
 #ifdef DEBUG
 void emitInsSveSanityCheck(instrDesc* id);
@@ -74,10 +63,6 @@ void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, boo
 void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
 void emitDispSveConsecutiveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
-void emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
-void emitDispPredicateRegPair(regNumber reg, insOpts opt);
-void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
-void emitDispLowPredicateRegPair(regNumber reg, insOpts opt);
 void emitDispVectorLengthSpecifier(instrDesc* id);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
@@ -416,20 +401,6 @@ static code_t insEncodeReg_V(regNumber reg)
     return (ureg & mask) << lo;
 }
 
-// Returns an encoding for the specified 'P' register used in 'hi' thru 'lo' position.
-template <const size_t hi, const size_t lo>
-static code_t insEncodeReg_P(regNumber reg)
-{
-    // lo <= hi < 32
-    static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
-    assert(isPredicateRegister(reg));
-    code_t ureg = (code_t)reg - (code_t)REG_P0;
-
-    constexpr size_t bits = hi - lo + 1;
-    static_assert(bits <= 4);
-    constexpr size_t mask = (1 << bits) - 1;
-    return (ureg & mask) << lo;
-}
 
 // Returns an encoding for the specified 'R' register used in 'hi' thru 'lo' position.
 template <const size_t hi, const size_t lo>
@@ -602,10 +573,6 @@ static code_t insEncodeSveSmallFloatImm(ssize_t imm);
 // Returns the first register list size for the given SVE instruction.
 static int insGetSveReg1ListSize(instruction ins);
 
-// Returns the predicate type for the given SVE format.
-// Register position is required for instructions with multiple predicates.
-static PredicateType insGetPredicateType(insFormat fmt, int regpos = 0);
-
 // Returns true if the SVE instruction has a LSL addr.
 // This is for formats that have [<Xn|SP>, <Xm>, LSL #N], [<Xn|SP>{, <Xm>, LSL #N}]
 static bool insSveIsLslN(instruction ins, insFormat fmt);
@@ -773,7 +740,7 @@ static bool isIntegerRegister(regNumber reg)
 //  Returns true if reg encodes for REG_SP or REG_FP
 static bool isStackRegister(regNumber reg)
 {
-    return (reg == REG_ZR) || (reg == REG_FP);
+    return (reg == REG_SP) || (reg == REG_FP);
 } // ZR (R31) encodes the SP register
 
 // Returns true if 'value' is a legal unsigned immediate with 'bits' number of bits.
@@ -954,18 +921,6 @@ static bool isValidImmBSVal(size_t value, emitAttr size)
 {
     return (value >= 0) && (value < 0x800);
 } // any unsigned 11-bit immediate
-
-//  The return value replaces REG_ZR with REG_SP
-static regNumber encodingZRtoSP(regNumber reg)
-{
-    return (reg == REG_ZR) ? REG_SP : reg;
-} // ZR (R31) encodes the SP register
-
-//  The return value replaces REG_SP with REG_ZR
-static regNumber encodingSPtoZR(regNumber reg)
-{
-    return (reg == REG_SP) ? REG_ZR : reg;
-} // SP is encoded using ZR (R31)
 
 //  For the given 'ins' returns the reverse instruction, if one exists, otherwise returns INS_INVALID
 static instruction insReverse(instruction ins);
@@ -1164,13 +1119,8 @@ inline static bool isScalableVectorSize(emitAttr size)
 
 inline static bool isGeneralRegister(regNumber reg)
 {
-    return (reg >= REG_INT_FIRST) && (reg <= REG_LR);
+    return (reg >= REG_INT_FIRST) && (reg <= REG_INT_LAST);
 } // Excludes REG_ZR
-
-inline static bool isGeneralRegisterOrZR(regNumber reg)
-{
-    return (reg >= REG_INT_FIRST) && (reg <= REG_ZR);
-} // Includes REG_ZR
 
 inline static bool isGeneralRegisterOrSP(regNumber reg)
 {
@@ -1192,25 +1142,6 @@ inline static bool isFloatReg(regNumber reg)
     return isVectorRegister(reg);
 }
 
-inline static bool isPredicateRegister(regNumber reg)
-{
-    return (reg >= REG_PREDICATE_FIRST) && (reg <= REG_PREDICATE_LAST);
-}
-
-inline static bool isLowPredicateRegister(regNumber reg)
-{
-    return (reg >= REG_PREDICATE_FIRST) && (reg <= REG_PREDICATE_LOW_LAST);
-}
-
-inline static bool isHighPredicateRegister(regNumber reg)
-{
-    return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
-}
-
-inline static bool isMaskReg(regNumber reg)
-{
-    return isPredicateRegister(reg);
-}
 
 inline static bool isEvenRegister(regNumber reg)
 {
@@ -1221,11 +1152,6 @@ inline static bool isEvenRegister(regNumber reg)
     else if (isVectorRegister(reg))
     {
         return ((reg - REG_FP_FIRST) % 2) == 0;
-    }
-    else
-    {
-        assert(isPredicateRegister(reg));
-        return ((reg - REG_PREDICATE_FIRST) % 2) == 0;
     }
 }
 

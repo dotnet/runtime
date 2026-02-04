@@ -12472,7 +12472,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         }
 	EX_CATCH
 	{
-	//	interpreterFallback = true;
+		interpreterFallback = false;
          //       forceInterpreter = true;
         }
 	EX_END_CATCH(SwallowAllExceptions)
