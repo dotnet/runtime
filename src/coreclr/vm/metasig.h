@@ -473,7 +473,6 @@ DEFINE_METASIG(IM(VoidPtr_RetVoid, P(v), v))
 DEFINE_METASIG(SM(VoidPtr_RetObj, P(v), j))
 
 DEFINE_METASIG_T(IM(Str_RetModule, s, C(MODULE)))
-DEFINE_METASIG_T(SM(Assembly_Str_RetAssembly, C(ASSEMBLY) s, C(ASSEMBLY)))
 DEFINE_METASIG_T(SM(Str_Bool_RetAssembly, s F, C(ASSEMBLY)))
 DEFINE_METASIG(IM(Str_Str_Obj_RetVoid, s s j, v))
 DEFINE_METASIG(IM(Str_Str_Str_Obj_RetVoid, s s s j, v))
@@ -518,10 +517,6 @@ DEFINE_METASIG_T(SM(IntPtr_RetRuntimeType, I , C(CLASS)))
 
 DEFINE_METASIG_T(IM(RuntimeArgumentHandle_PtrVoid_RetVoid, g(ARGUMENT_HANDLE) P(v), v))
 
-DEFINE_METASIG_T(SM(Assembly_RetVoid, C(ASSEMBLY), v))
-DEFINE_METASIG_T(SM(Assembly_Str_RetArrAssembly, C(ASSEMBLY) s, a(C(ASSEMBLY))))
-DEFINE_METASIG(SM(Str_RetArrStr, s, a(s)))
-
 // Exception
 DEFINE_METASIG(IM(RefUInt_RetStr, r(K), s))
 
@@ -534,9 +529,13 @@ DEFINE_METASIG_T(IM(RefGuid_OutIntPtr_RetCustomQueryInterfaceResult, r(g(GUID)) 
 DEFINE_METASIG_T(SM(RefGuid_RefGuid_RetVoid, r(g(GUID)) r(g(GUID)) , v))
 DEFINE_METASIG_T(SM(RefGuid_RetVoid, r(g(GUID)), v))
 
-DEFINE_METASIG_T(SM(IntPtr_AssemblyName_RetAssembly, I C(ASSEMBLY_NAME), C(ASSEMBLY)))
 DEFINE_METASIG_T(SM(Str_AssemblyBase_IntPtr_RetIntPtr, s C(ASSEMBLYBASE) I, I))
 DEFINE_METASIG_T(SM(Str_AssemblyBase_Bool_UInt_RetIntPtr, s C(ASSEMBLYBASE) F K, I))
+
+DEFINE_METASIG_T(SM(PtrAssembly_PtrException_RetVoid, P(C(ASSEMBLY)) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrAssembly_PtrByte_PtrAssembly_PtrException_RetVoid, P(C(ASSEMBLY)) P(b) P(C(ASSEMBLY)) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrAssembly_PtrChar_PtrAssembly_PtrException_RetVoid, P(C(ASSEMBLY)) P(u) P(C(ASSEMBLY)) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(IntPtr_PtrAssemblyName_PtrAssemblyBase_PtrException_RetVoid, I P(C(ASSEMBLY_NAME)) P(C(ASSEMBLYBASE)) P(C(EXCEPTION)), v))
 
 // For FailFast
 DEFINE_METASIG(SM(Str_RetVoid, s, v))
