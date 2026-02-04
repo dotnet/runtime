@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security;
 using System.Threading;
 
@@ -745,6 +746,20 @@ namespace System.Runtime.Loader
             {
                 OnAssemblyLoad(*pAssembly);
             }
+            catch (Exception)
+            {
+                // The VM does not expect exceptions to propagate out of this callback
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnTypeResolve(RuntimeAssembly* pAssembly, byte* typeName, RuntimeAssembly* ppResult, Exception* pException)
+        {
+            try
+            {
+                string name = Utf8StringMarshaller.ConvertToManaged(typeName)!;
+                *ppResult = OnTypeResolve(*pAssembly, name);
+            }
             catch (Exception ex)
             {
                 *pException = ex;
@@ -752,24 +767,12 @@ namespace System.Runtime.Loader
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void OnTypeResolve(RuntimeAssembly* pAssembly, sbyte* typeName, RuntimeAssembly* ppResult, Exception* pException)
+        private static unsafe void OnResourceResolve(RuntimeAssembly* pAssembly, byte* resourceName, RuntimeAssembly* ppResult, Exception* pException)
         {
             try
             {
-                *ppResult = OnTypeResolve(*pAssembly, new string(typeName));
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static unsafe void OnResourceResolve(RuntimeAssembly* pAssembly, sbyte* resourceName, RuntimeAssembly* ppResult, Exception* pException)
-        {
-            try
-            {
-                *ppResult = OnResourceResolve(*pAssembly, new string(resourceName));
+                string name = Utf8StringMarshaller.ConvertToManaged(resourceName)!;
+                *ppResult = OnResourceResolve(*pAssembly, name);
             }
             catch (Exception ex)
             {
