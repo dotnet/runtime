@@ -443,10 +443,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
 
             StringBuilder sb = new StringBuilder();
-            if (signaturePrefixes != null)
+            if (signaturePrefixes is not null)
             {
-                SignaturePrefixes = signaturePrefixes;
-                foreach (var prefix in signaturePrefixes)
+                SignaturePrefixes = (string[])signaturePrefixes.Clone();
+                foreach (var prefix in SignaturePrefixes)
                 {
                     sb.Append(prefix);
                     sb.Append(" ");

@@ -1017,15 +1017,15 @@ namespace ILCompiler.Reflection.ReadyToRun
                 List<string> signaturePrefixes = [];
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant) != 0)
                 {
-                    signaturePrefixes.Add("[Async]");
+                    signaturePrefixes.Add("[ASYNC]");
                 }
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0)
                 {
-                    throw new NotImplementedException("Crossgen2 should not emit code for Instantiating stubs.");
+                    signaturePrefixes.Add("[INST]");
                 }
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
                 {
-                    throw new NotImplementedException("Crossgen2 should not emit code for Unboxing stubs.");
+                    signaturePrefixes.Add("[UNBOX]");
                 }
 
                 int runtimeFunctionId;
@@ -1152,15 +1152,15 @@ namespace ILCompiler.Reflection.ReadyToRun
                 List<string> signaturePrefixes = [];
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant) != 0)
                 {
-                    signaturePrefixes.Add("[Async]");
+                    signaturePrefixes.Add("[ASYNC]");
                 }
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0)
                 {
-                    throw new NotImplementedException("Crossgen2 should not emit code for Instantiating stubs.");
+                    signaturePrefixes.Add("[INST]");
                 }
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
                 {
-                    throw new NotImplementedException("Crossgen2 should not emit code for Unboxing stubs.");
+                    signaturePrefixes.Add("[UNBOX]");
                 }
 
                 GetPgoOffsetAndVersion(decoder.Offset, out int pgoFormatVersion, out int pgoOffset);
