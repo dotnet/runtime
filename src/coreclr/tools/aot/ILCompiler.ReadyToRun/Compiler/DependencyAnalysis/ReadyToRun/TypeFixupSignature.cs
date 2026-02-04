@@ -147,7 +147,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             flags |= ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment_Native;
 
             bool gcLayoutEmpty = true;
-            foreach(bool hasPointer in type.PointerMap)
+            foreach (bool hasPointer in type.PointerMap)
             {
                 if (hasPointer)
                 {

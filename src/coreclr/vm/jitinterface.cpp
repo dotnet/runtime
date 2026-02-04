@@ -13766,9 +13766,6 @@ MethodTable* GetContinuationTypeFromLayout(PCCOR_SIGNATURE pBlob, Module* curren
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
-    LoaderAllocator* allocator = currentModule->GetLoaderAllocator();
-    AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
-
     if (dwFlags & READYTORUN_LAYOUT_GCLayout_Empty)
     {
         // No GC references, don't read a bitmap
