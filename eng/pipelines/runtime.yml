@@ -144,7 +144,6 @@ extends:
                 parameters:
                   testGroup: innerloop
                   liveLibrariesBuildConfig: Release
-            extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
                 parameters:
                   testGroup: innerloop
