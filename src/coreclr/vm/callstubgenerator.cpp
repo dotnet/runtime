@@ -2104,6 +2104,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
             if (ProcessSwiftSpecialArgument(pArgMT, interpStackSlotSize, interpreterStackOffset, pRoutines))
             {
+                swiftArgIndex++;
                 continue;
             }
         }
@@ -2134,7 +2135,6 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
             interpStackSlotSize = ALIGN_UP(thArgTypeHandle.GetSize(), align);
         }
-        interpreterStackOffset += interpStackSlotSize;
 
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         if (isSwiftCallConv && m_interpreterToNative && swiftArgIndex < (int)swiftLoweringInfo.Size())
@@ -2144,11 +2144,17 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
             if (elem.isLowered)
             {
+                if (elem.structSize != 0)
+                {
+                    interpreterStackOffset += elem.structSize;
+                }
                 EmitSwiftLoweredElementRoutine(elem, argLocDesc, pRoutines);
                 continue;
             }
         }
 #endif // TARGET_APPLE && TARGET_ARM64
+
+        interpreterStackOffset += interpStackSlotSize;
 
 #ifdef UNIX_AMD64_ABI
         ArgLocDesc* argLocDescForStructInRegs = argIt.GetArgLocDescForStructInRegs();
@@ -2955,8 +2961,10 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
                         switch (lowering.loweredElements[i])
                         {
                             case CORINFO_TYPE_BYTE:
-                            case CORINFO_TYPE_UBYTE:
                                 swiftSigBuilder.AppendElementType(ELEMENT_TYPE_I1);
+                                break;
+                            case CORINFO_TYPE_UBYTE:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_U1);
                                 break;
                             case CORINFO_TYPE_SHORT:
                                 swiftSigBuilder.AppendElementType(ELEMENT_TYPE_I2);
