@@ -2930,6 +2930,7 @@ PhaseStatus Compiler::fgEarlyLiveness()
             SsaLiveness           = false,
             ComputeMemoryLiveness = false,
             IsLIR                 = false,
+            EliminateDeadCode     = true,
         };
 
         EarlyLiveness(Compiler* comp)

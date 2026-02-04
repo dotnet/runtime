@@ -401,7 +401,7 @@ class AsyncLiveness
     unsigned               m_numVars;
 
 public:
-    AsyncLiveness(Compiler* comp, bool hasLiveness)
+    AsyncLiveness(Compiler* comp)
         : m_compiler(comp)
         , m_updater(comp)
         , m_numVars(comp->lvaCount)
@@ -705,7 +705,7 @@ PhaseStatus AsyncTransformation::Run()
     INDEBUG(m_compiler->mostRecentlyActivePhase = PHASE_ASYNC);
     VarSetOps::AssignNoCopy(m_compiler, m_compiler->compCurLife, VarSetOps::MakeEmpty(m_compiler));
 
-    AsyncLiveness liveness(m_compiler, true); // m_compiler->opts.OptimizationEnabled());
+    AsyncLiveness liveness(m_compiler);
 
     // Now walk the IR for all the blocks that contain async calls. Keep track
     // of liveness and outstanding LIR edges as we go; the LIR edges that cross
@@ -772,6 +772,28 @@ PhaseStatus AsyncTransformation::Run()
     CreateResumptionSwitch();
 
     m_compiler->fgInvalidateDfsTree();
+
+    if (m_compiler->opts.OptimizationDisabled())
+    {
+        // Rest of the compiler does not expect that we started tracking locals, so reset that state.
+        for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
+        {
+            m_compiler->lvaGetDesc(m_compiler->lvaTrackedToVarNum[i])->lvTracked = false;
+        }
+
+        m_compiler->lvaCurEpoch++;
+        m_compiler->lvaTrackedCount             = 0;
+        m_compiler->lvaTrackedCountInSizeTUnits = 0;
+
+        for (BasicBlock* block : m_compiler->Blocks())
+        {
+            block->bbLiveIn = VarSetOps::UninitVal();
+            block->bbLiveOut = VarSetOps::UninitVal();
+            block->bbVarUse = VarSetOps::UninitVal();
+            block->bbVarDef = VarSetOps::UninitVal();
+        }
+        m_compiler->fgBBVarSetsInited = false;
+    }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
