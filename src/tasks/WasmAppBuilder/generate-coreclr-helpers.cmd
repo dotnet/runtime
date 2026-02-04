@@ -49,6 +49,12 @@ exit /b 0
 
 :done_args
 
+:: Validate configuration to prevent injection
+if /i not "%configuration%"=="Debug" if /i not "%configuration%"=="Release" if /i not "%configuration%"=="Checked" (
+    echo Error: Invalid configuration "%configuration%". Must be Debug, Release, or Checked.
+    exit /b 1
+)
+
 :: Get the repo root (script is in src/tasks/WasmAppBuilder)
 set "script_dir=%~dp0"
 pushd "%script_dir%..\..\..\"
@@ -73,11 +79,10 @@ if not exist "%scan_path%" (
 cd /d "%repo_root%"
 echo Scan path: %scan_path%
 
-:: Run the generator
+:: Run the generator - invoke directly without building a command string
 echo Running generator...
-set "generator_cmd=.\dotnet.cmd build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:GeneratorOutputPath=%repo_root%\src\coreclr\vm\wasm\ /p:AssembliesScanPath=%scan_path% src\tasks\WasmAppBuilder\WasmAppBuilder.csproj"
-echo %generator_cmd%
-%generator_cmd%
+echo .\dotnet.cmd build /t:RunGenerator /p:RuntimeFlavor=CoreCLR "/p:GeneratorOutputPath=%repo_root%\src\coreclr\vm\wasm\" "/p:AssembliesScanPath=%scan_path%" src\tasks\WasmAppBuilder\WasmAppBuilder.csproj
+.\dotnet.cmd build /t:RunGenerator /p:RuntimeFlavor=CoreCLR "/p:GeneratorOutputPath=%repo_root%\src\coreclr\vm\wasm\" "/p:AssembliesScanPath=%scan_path%" src\tasks\WasmAppBuilder\WasmAppBuilder.csproj
 
 if errorlevel 1 (
     echo Generator failed!

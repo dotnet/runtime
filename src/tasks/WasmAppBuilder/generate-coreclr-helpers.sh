@@ -36,6 +36,17 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Validate configuration to prevent injection (case-insensitive)
+config_lower="$(echo "$configuration" | tr '[:upper:]' '[:lower:]')"
+case "$config_lower" in
+    debug|release|checked)
+        ;;
+    *)
+        echo "Error: Invalid configuration \"$configuration\". Must be Debug, Release, or Checked."
+        exit 1
+        ;;
+esac
+
 # Get the repo root (script is in src/tasks/WasmAppBuilder)
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$script_dir/../../.." && pwd)"
@@ -58,10 +69,9 @@ fi
 cd "$repo_root"
 echo "Scan path: $scan_path"
 
-# Run the generator
+# Run the generator - invoke directly without building a command string
 echo "Running generator..."
-generator_cmd="./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:GeneratorOutputPath=$repo_root/src/coreclr/vm/wasm/ /p:AssembliesScanPath=$scan_path src/tasks/WasmAppBuilder/WasmAppBuilder.csproj"
-echo "$generator_cmd"
-$generator_cmd
+echo "./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:GeneratorOutputPath=$repo_root/src/coreclr/vm/wasm/ /p:AssembliesScanPath=$scan_path src/tasks/WasmAppBuilder/WasmAppBuilder.csproj"
+./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR "/p:GeneratorOutputPath=$repo_root/src/coreclr/vm/wasm/" "/p:AssembliesScanPath=$scan_path" src/tasks/WasmAppBuilder/WasmAppBuilder.csproj
 
 echo "Done!"
