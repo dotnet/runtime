@@ -18,9 +18,10 @@
 
 void emitter::emitIns(instruction ins)
 {
-    instrDesc* id = emitNewInstrSmall(EA_8BYTE);
+    instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
+    insFormat  fmt = emitInsFormat(ins);
     id->idIns(ins);
-    id->idInsFmt(IF_OPCODE);
+    id->idInsFmt(fmt);
 
     dispIns(id);
     appendToCurIG(id);
@@ -116,6 +117,71 @@ bool emitter::emitInsIsStore(instruction ins)
     return false;
 }
 
+/*****************************************************************************
+ *
+ *  Add a call instruction (direct or indirect).
+ *
+ * Unless callType is EC_FUNC_TOKEN, addr needs to be null.
+ *
+ */
+
+void emitter::emitIns_Call(const EmitCallParams& params)
+{
+    /* Sanity check the arguments depending on callType */
+
+    assert(params.callType < EC_COUNT);
+    assert((params.callType == EC_FUNC_TOKEN) || (params.addr == nullptr));
+
+    /* Managed RetVal: emit sequence point for the call */
+    if (emitComp->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
+    {
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
+    }
+
+    /*
+        We need to allocate the appropriate instruction descriptor based
+        on whether this is a direct/indirect call, and whether we need to
+        record an updated set of live GC variables.
+     */
+    instrDesc* id = nullptr;
+
+    instruction ins;
+
+    // FIXME-WASM: Currently while we're loading SP onto the stack we're not loading PEP, so generate one here.
+    emitIns_I(INS_i32_const, EA_4BYTE, 0);
+
+    switch (params.callType)
+    {
+        case EC_FUNC_TOKEN:
+            ins = params.isJump ? INS_return_call : INS_call;
+            id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: function index reloc */);
+            id->idIns(ins);
+            id->idInsFmt(IF_ULEB128);
+            break;
+        case EC_INDIR_R:
+            // Indirect load of actual ftn ptr from indirection cell (on the stack)
+            // TODO-WASM: temporary, move this into higher layers (lowering).
+            emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
+            ins = params.isJump ? INS_return_call_indirect : INS_call_indirect;
+            id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: type index reloc */);
+            id->idIns(ins);
+            id->idInsFmt(IF_CALL_INDIRECT);
+            break;
+        default:
+            unreached();
+    }
+
+    if (m_debugInfoSize > 0)
+    {
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
+    }
+
+    dispIns(id);
+    appendToCurIG(id);
+    // emitLastMemBarrier = nullptr; // Cannot optimize away future memory barriers
+}
+
 //-----------------------------------------------------------------------------
 // emitNewInstrLclVarDecl: Construct an instrDesc corresponding to a wasm local
 // declaration.
@@ -196,8 +262,8 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 
 static unsigned GetInsOpcode(instruction ins)
 {
-    static const uint8_t insOpcodes[] = {
-#define INST(id, nm, info, fmt, opcode) static_cast<uint8_t>(opcode),
+    static const uint16_t insOpcodes[] = {
+#define INST(id, nm, info, fmt, opcode) static_cast<uint16_t>(opcode),
 #include "instrs.h"
     };
 
@@ -275,9 +341,11 @@ unsigned emitter::instrDesc::idCodeSize() const
 #error WASM64
 #endif
 
-    // Currently, all our instructions have 1 byte opcode.
-    unsigned size = 1;
-    assert(FitsIn<uint8_t>(GetInsOpcode(idIns())));
+    unsigned int opcode = GetInsOpcode(idIns());
+
+    // Currently, all our instructions have 1 or 2 byte opcodes.
+    assert(FitsIn<uint8_t>(opcode) || FitsIn<uint16_t>(opcode));
+    unsigned size = FitsIn<uint8_t>(opcode) ? 1 : 2;
     switch (idInsFmt())
     {
         case IF_OPCODE:
@@ -302,6 +370,12 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_SLEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfSLEB128(emitGetInsSC(this));
             break;
+        case IF_CALL_INDIRECT:
+        {
+            size += SizeOfULEB128(emitGetInsSC(this));
+            size += SizeOfULEB128(0);
+            break;
+        }
         case IF_F32:
             size += 4;
             break;
@@ -377,6 +451,26 @@ size_t emitter::emitRawBytes(uint8_t* destination, const void* source, size_t co
     return count;
 }
 
+size_t emitter::emitOutputOpcode(BYTE* dst, instruction ins)
+{
+    size_t   sz     = 0;
+    unsigned opcode = GetInsOpcode(ins);
+
+    assert(FitsIn<uint16_t>(opcode));
+    if (FitsIn<uint8_t>(opcode))
+    {
+        emitOutputByte(dst, opcode);
+        sz += 1;
+    }
+    else if (FitsIn<uint16_t>(opcode))
+    {
+        dst += emitOutputByte(dst, opcode & 0xFF);
+        emitOutputByte(dst, opcode >> 8);
+        sz += 2;
+    }
+    return sz;
+}
+
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*       dst    = *dp;
@@ -388,29 +482,38 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     switch (insFmt)
     {
         case IF_OPCODE:
-            dst += emitOutputByte(dst, opcode);
+        {
+            dst += emitOutputOpcode(dst, ins);
             break;
+        }
         case IF_BLOCK:
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             dst += emitOutputByte(dst, 0x40 /* block type of void */);
             break;
         case IF_ULEB128:
         {
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             cnsval_ssize_t constant = emitGetInsSC(id);
             dst += emitOutputULEB128(dst, (uint64_t)constant);
             break;
         }
         case IF_SLEB128:
         {
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             cnsval_ssize_t constant = emitGetInsSC(id);
             dst += emitOutputSLEB128(dst, (int64_t)constant);
             break;
         }
-        case IF_F32:
+        case IF_CALL_INDIRECT:
         {
             dst += emitOutputByte(dst, opcode);
+            dst += emitOutputULEB128(dst, (uint64_t)emitGetInsSC(id));
+            dst += emitOutputULEB128(dst, 0);
+            break;
+        }
+        case IF_F32:
+        {
+            dst += emitOutputOpcode(dst, ins);
             // Reinterpret the bits as a double constant and then truncate it to f32,
             //  then finally copy the raw truncated f32 bits to the output.
             cnsval_ssize_t bits = emitGetInsSC(id);
@@ -423,7 +526,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_F64:
         {
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             // The int64 bits are actually a double constant we can copy directly
             //  to the output stream.
             cnsval_ssize_t bits = emitGetInsSC(id);
@@ -438,7 +541,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_MEMARG:
         {
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             uint64_t align  = emitGetAlignHintLog2(id);
             uint64_t offset = emitGetInsSC(id);
             assert(align <= UINT32_MAX); // spec says memarg alignment is u32
@@ -578,6 +681,13 @@ void emitter::emitDispIns(
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
             dispJumpTargetIfAny();
+        }
+        break;
+
+        case IF_CALL_INDIRECT:
+        {
+            cnsval_ssize_t imm = emitGetInsSC(id);
+            printf(" %llu 0", (uint64_t)imm);
         }
         break;
 

@@ -20,4 +20,7 @@
     <Compile Include="overflow\overflow04_mul.cs" />
     <Compile Include="overflow\overflow04_sub.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

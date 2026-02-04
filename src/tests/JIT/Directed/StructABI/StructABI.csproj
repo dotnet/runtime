@@ -15,6 +15,9 @@
     <Compile Include="StructABI.OSX.cs" Condition="'$(TargetOS)' == 'osx'" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>
