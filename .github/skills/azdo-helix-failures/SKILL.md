@@ -93,6 +93,16 @@ The script provides a recommendation at the end:
    - Network timeouts, "host not found" → Transient infrastructure
    - Test timeout but tests passed → Executor issue, not test failure
 
+## Presenting Results
+
+The script provides a recommendation at the end, but this is based on heuristics and may be incomplete. Before presenting conclusions to the user:
+
+1. Review the detailed failure information, not just the summary
+2. Look for patterns the script may have missed (e.g., related failures across jobs)
+3. Consider the PR context (what files changed, what the PR is trying to do)
+4. Present findings with appropriate caveats - state what is known vs. uncertain
+5. If the script's recommendation seems inconsistent with the details, trust the details
+
 ## References
 
 - **Helix artifacts & binlogs**: See [references/helix-artifacts.md](references/helix-artifacts.md)
