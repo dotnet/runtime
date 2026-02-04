@@ -1264,7 +1264,6 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
     ULONG              coldCodeSize_1;
     ULONG              roDataSize_1;
     ULONG              xcptnsCount_1;
-    CorJitAllocMemFlag flag_1;
     unsigned char*     hotCodeBlock_1;
     unsigned char*     coldCodeBlock_1;
     unsigned char*     roDataBlock_1;
@@ -1276,7 +1275,6 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
     ULONG              coldCodeSize_2;
     ULONG              roDataSize_2;
     ULONG              xcptnsCount_2;
-    CorJitAllocMemFlag flag_2;
     unsigned char*     hotCodeBlock_2;
     unsigned char*     coldCodeBlock_2;
     unsigned char*     roDataBlock_2;
@@ -1284,10 +1282,10 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
     void*              orig_coldCodeBlock_2;
     void*              orig_roDataBlock_2;
 
-    cr1->repAllocMem(&hotCodeSize_1, &coldCodeSize_1, &roDataSize_1, &xcptnsCount_1, &flag_1, &hotCodeBlock_1,
+    cr1->repAllocMem(&hotCodeSize_1, &coldCodeSize_1, &roDataSize_1, &xcptnsCount_1, &hotCodeBlock_1,
                      &coldCodeBlock_1, &roDataBlock_1, &orig_hotCodeBlock_1, &orig_coldCodeBlock_1,
                      &orig_roDataBlock_1);
-    cr2->repAllocMem(&hotCodeSize_2, &coldCodeSize_2, &roDataSize_2, &xcptnsCount_2, &flag_2, &hotCodeBlock_2,
+    cr2->repAllocMem(&hotCodeSize_2, &coldCodeSize_2, &roDataSize_2, &xcptnsCount_2, &hotCodeBlock_2,
                      &coldCodeBlock_2, &roDataBlock_2, &orig_hotCodeBlock_2, &orig_coldCodeBlock_2,
                      &orig_roDataBlock_2);
 
@@ -1320,11 +1318,11 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
         }
     }
 
-    LogDebug("HCS1 %d CCS1 %d RDS1 %d xcpnt1 %d flag1 %08X, HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_1,
-             coldCodeSize_1, roDataSize_1, xcptnsCount_1, flag_1, hotCodeBlock_1, coldCodeBlock_1, roDataBlock_1,
+    LogDebug("HCS1 %d CCS1 %d RDS1 %d xcpnt1 %d HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_1,
+             coldCodeSize_1, roDataSize_1, xcptnsCount_1, hotCodeBlock_1, coldCodeBlock_1, roDataBlock_1,
              orig_hotCodeBlock_1, orig_coldCodeBlock_1, orig_roDataBlock_1);
-    LogDebug("HCS2 %d CCS2 %d RDS2 %d xcpnt2 %d flag2 %08X, HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_2,
-             coldCodeSize_2, roDataSize_2, xcptnsCount_2, flag_2, hotCodeBlock_2, coldCodeBlock_2, roDataBlock_2,
+    LogDebug("HCS2 %d CCS2 %d RDS2 %d xcpnt2 %d HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_2,
+             coldCodeSize_2, roDataSize_2, xcptnsCount_2, hotCodeBlock_2, coldCodeBlock_2, roDataBlock_2,
              orig_hotCodeBlock_2, orig_coldCodeBlock_2, orig_roDataBlock_2);
 
     RelocContext rc;
