@@ -1138,9 +1138,9 @@ void InterpCompiler::EmitCode()
     int32_t codeSize = ComputeCodeSize();
     m_pMethodCode = (int32_t*)getAllocator(IMK_InterpCode).allocate<int32_t>(codeSize);
 
-    // This will eventually be freed by the VM, and they use the delete [] operator for the deletion.
+    // This will eventually be freed by the VM, using freeArray.
     // If we fail before handing them to the VM, there is logic in the InterpCompiler destructor to free it.
-    m_pILToNativeMap = new ICorDebugInfo::OffsetMapping[m_ILCodeSize];
+    m_pILToNativeMap = (ICorDebugInfo::OffsetMapping*)m_compHnd->allocateArray(m_ILCodeSize * sizeof(ICorDebugInfo::OffsetMapping));
 
     // For each BB, compute the number of EH clauses that overlap with it.
     for (unsigned int i = 0; i < getEHcount(m_methodInfo); i++)
@@ -1203,8 +1203,8 @@ void InterpCompiler::EmitCode()
 
     if (m_numILVars > 0)
     {
-        // This will eventually be freed by the VM, and it uses the delete [] operator for the deletion.
-        ICorDebugInfo::NativeVarInfo* eeVars = new ICorDebugInfo::NativeVarInfo[m_numILVars];
+        // This will eventually be freed by the VM, using freeArray.
+        ICorDebugInfo::NativeVarInfo* eeVars = (ICorDebugInfo::NativeVarInfo*)m_compHnd->allocateArray(m_numILVars * sizeof(ICorDebugInfo::NativeVarInfo));
 
         int j = 0;
         for (int i = 0; i < m_numILVars; i++)
@@ -1919,8 +1919,8 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 InterpCompiler::~InterpCompiler()
 {
     // Clean up allocated memory if non-null
-    if (m_pILToNativeMap != NULL)
-        delete[] m_pILToNativeMap;
+    if (m_pILToNativeMap != nullptr)
+        m_compHnd->freeArray(m_pILToNativeMap);
 }
 
 InterpMethod* InterpCompiler::CompileMethod()
