@@ -1843,67 +1843,67 @@ try {
                     }
                 }
             }
-            else {
-                # No Helix tasks - this is a build failure, extract actual errors
-                $buildTasks = $timeline.records | Where-Object {
-                    $_.parentId -eq $job.id -and $_.result -eq "failed"
-                }
+                else {
+                    # No Helix tasks - this is a build failure, extract actual errors
+                    $buildTasks = $timeline.records | Where-Object {
+                        $_.parentId -eq $job.id -and $_.result -eq "failed"
+                    }
 
-                foreach ($task in $buildTasks | Select-Object -First 3) {
-                    Write-Host "  Failed task: $($task.name)" -ForegroundColor Red
+                    foreach ($task in $buildTasks | Select-Object -First 3) {
+                        Write-Host "  Failed task: $($task.name)" -ForegroundColor Red
 
-                    # Fetch and parse the build log for actual errors
-                    if ($task.log) {
-                        $logUrl = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId&view=logs&j=$($job.id)&t=$($task.id)"
-                        Write-Host "  Log: $logUrl" -ForegroundColor Gray
-                        $logContent = Get-BuildLog -Build $currentBuildId -LogId $task.log.id
+                        # Fetch and parse the build log for actual errors
+                        if ($task.log) {
+                            $logUrl = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId&view=logs&j=$($job.id)&t=$($task.id)"
+                            Write-Host "  Log: $logUrl" -ForegroundColor Gray
+                            $logContent = Get-BuildLog -Build $currentBuildId -LogId $task.log.id
 
-                        if ($logContent) {
-                            $buildErrors = Extract-BuildErrors -LogContent $logContent
+                            if ($logContent) {
+                                $buildErrors = Extract-BuildErrors -LogContent $logContent
 
-                            if ($buildErrors.Count -gt 0) {
-                                # Collect for PR correlation
-                                $allFailuresForCorrelation += @{
-                                    TaskName = $task.name
-                                    JobName = $job.name
-                                    Errors = $buildErrors
-                                    HelixLogs = @()
-                                    FailedTests = @()
-                                }
-
-                                # Extract Helix log URLs from the full log content
-                                $helixLogUrls = Extract-HelixLogUrls -LogContent $logContent
-
-                                if ($helixLogUrls.Count -gt 0) {
-                                    Write-Host "  Helix failures ($($helixLogUrls.Count)):" -ForegroundColor Red
-                                    foreach ($helixLog in $helixLogUrls | Select-Object -First 5) {
-                                        Write-Host "    - $($helixLog.WorkItem)" -ForegroundColor White
-                                        Write-Host "      Log: $($helixLog.Url)" -ForegroundColor Gray
+                                if ($buildErrors.Count -gt 0) {
+                                    # Collect for PR correlation
+                                    $allFailuresForCorrelation += @{
+                                        TaskName = $task.name
+                                        JobName = $job.name
+                                        Errors = $buildErrors
+                                        HelixLogs = @()
+                                        FailedTests = @()
                                     }
-                                    if ($helixLogUrls.Count -gt 5) {
-                                        Write-Host "    ... and $($helixLogUrls.Count - 5) more" -ForegroundColor Gray
+
+                                    # Extract Helix log URLs from the full log content
+                                    $helixLogUrls = Extract-HelixLogUrls -LogContent $logContent
+
+                                    if ($helixLogUrls.Count -gt 0) {
+                                        Write-Host "  Helix failures ($($helixLogUrls.Count)):" -ForegroundColor Red
+                                        foreach ($helixLog in $helixLogUrls | Select-Object -First 5) {
+                                            Write-Host "    - $($helixLog.WorkItem)" -ForegroundColor White
+                                            Write-Host "      Log: $($helixLog.Url)" -ForegroundColor Gray
+                                        }
+                                        if ($helixLogUrls.Count -gt 5) {
+                                            Write-Host "    ... and $($helixLogUrls.Count - 5) more" -ForegroundColor Gray
+                                        }
                                     }
+                                    else {
+                                        Write-Host "  Build errors:" -ForegroundColor Red
+                                        foreach ($err in $buildErrors | Select-Object -First 5) {
+                                            Write-Host "    $err" -ForegroundColor White
+                                        }
+                                        if ($buildErrors.Count -gt 5) {
+                                            Write-Host "    ... and $($buildErrors.Count - 5) more errors" -ForegroundColor Gray
+                                        }
+                                    }
+
+                                    # Search for known issues
+                                    Show-KnownIssues -ErrorMessage ($buildErrors -join "`n") -IncludeMihuBot:$SearchMihuBot
                                 }
                                 else {
-                                    Write-Host "  Build errors:" -ForegroundColor Red
-                                    foreach ($err in $buildErrors | Select-Object -First 5) {
-                                        Write-Host "    $err" -ForegroundColor White
-                                    }
-                                    if ($buildErrors.Count -gt 5) {
-                                        Write-Host "    ... and $($buildErrors.Count - 5) more errors" -ForegroundColor Gray
-                                    }
+                                    Write-Host "  (No specific errors extracted from log)" -ForegroundColor Gray
                                 }
-
-                                # Search for known issues
-                                Show-KnownIssues -ErrorMessage ($buildErrors -join "`n") -IncludeMihuBot:$SearchMihuBot
-                            }
-                            else {
-                                Write-Host "  (No specific errors extracted from log)" -ForegroundColor Gray
                             }
                         }
                     }
                 }
-            }
 
             $processedJobs++
         }
