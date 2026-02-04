@@ -88,7 +88,12 @@ namespace System.Formats.Tar
         public int Gid
         {
             get => _header._gid;
-            set => _header._gid = value;
+            set
+            {
+                _header._gid = value;
+                // Max value of 7 octal digits: (1 << (3 * 7)) - 1 = 2097151
+                _header.SyncNumericExtendedAttribute("gid", value, 2097151);
+            }
         }
 
         /// <summary>
@@ -106,6 +111,7 @@ namespace System.Formats.Tar
                     ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimeOffset.UnixEpoch);
                 }
                 _header._mTime = value;
+                _header.SyncTimestampExtendedAttribute("mtime", value);
             }
         }
 
@@ -132,6 +138,7 @@ namespace System.Formats.Tar
                 }
                 ArgumentException.ThrowIfNullOrEmpty(value);
                 _header._linkName = value;
+                _header.SyncStringExtendedAttribute("linkpath", value);
             }
         }
 
@@ -164,6 +171,7 @@ namespace System.Formats.Tar
             {
                 ArgumentException.ThrowIfNullOrEmpty(value);
                 _header._name = value;
+                _header.SyncStringExtendedAttribute("path", value);
             }
         }
 
@@ -174,7 +182,12 @@ namespace System.Formats.Tar
         public int Uid
         {
             get => _header._uid;
-            set => _header._uid = value;
+            set
+            {
+                _header._uid = value;
+                // Max value of 7 octal digits: (1 << (3 * 7)) - 1 = 2097151
+                _header.SyncNumericExtendedAttribute("uid", value, 2097151);
+            }
         }
 
         /// <summary>

@@ -152,5 +152,51 @@ namespace System.Formats.Tar
         // if the archive stream is seekable. Otherwise, -1.
         private static void SetDataOffset(TarHeader header, Stream archiveStream) =>
             header._dataOffset = archiveStream.CanSeek ? archiveStream.Position : -1;
+
+        // Synchronizes the extended attributes dictionary with the value of a property.
+        // Only updates if the format is PAX and the ExtendedAttributes dictionary has been initialized.
+        internal void SyncStringExtendedAttribute(string key, string? value)
+        {
+            if (_format == TarEntryFormat.Pax && _ea is not null)
+            {
+                if (!string.IsNullOrEmpty(value))
+                {
+                    _ea[key] = value;
+                }
+                else
+                {
+                    _ea.Remove(key);
+                }
+            }
+        }
+
+        // Synchronizes the extended attributes dictionary with a timestamp property.
+        // Only updates if the format is PAX and the ExtendedAttributes dictionary has been initialized.
+        internal void SyncTimestampExtendedAttribute(string key, DateTimeOffset value)
+        {
+            if (_format == TarEntryFormat.Pax && _ea is not null)
+            {
+                _ea[key] = TarHelpers.GetTimestampStringFromDateTimeOffset(value);
+            }
+        }
+
+        // Synchronizes the extended attributes dictionary with a numeric property.
+        // Only updates if the format is PAX and the ExtendedAttributes dictionary has been initialized.
+        // Uses the same logic as CollectExtendedAttributesFromStandardFieldsIfNeeded to determine
+        // whether to add or remove the attribute.
+        internal void SyncNumericExtendedAttribute(string key, int value, long maxOctalValue)
+        {
+            if (_format == TarEntryFormat.Pax && _ea is not null)
+            {
+                if (value > maxOctalValue)
+                {
+                    _ea[key] = value.ToString();
+                }
+                else
+                {
+                    _ea.Remove(key);
+                }
+            }
+        }
     }
 }
