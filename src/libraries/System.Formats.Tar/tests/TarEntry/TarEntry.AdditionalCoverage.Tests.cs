@@ -195,8 +195,27 @@ namespace System.Formats.Tar.Tests
             
             // Verify atime and ctime are present (at positions 345 and 357)
             // These fields should not be all zeros since we set them
-            bool atimeAllZeros = headerBytes.AsSpan(345, 12).All(b => b == 0 || b == (byte)' ');
-            bool ctimeAllZeros = headerBytes.AsSpan(357, 12).All(b => b == 0 || b == (byte)' ');
+            ReadOnlySpan<byte> atimeBytes = headerBytes.AsSpan(345, 12);
+            bool atimeAllZeros = true;
+            foreach (byte b in atimeBytes)
+            {
+                if (b != 0 && b != (byte)' ')
+                {
+                    atimeAllZeros = false;
+                    break;
+                }
+            }
+            
+            ReadOnlySpan<byte> ctimeBytes = headerBytes.AsSpan(357, 12);
+            bool ctimeAllZeros = true;
+            foreach (byte b in ctimeBytes)
+            {
+                if (b != 0 && b != (byte)' ')
+                {
+                    ctimeAllZeros = false;
+                    break;
+                }
+            }
             
             Assert.False(atimeAllZeros, "AccessTime should be written to the header");
             Assert.False(ctimeAllZeros, "ChangeTime should be written to the header");
@@ -257,8 +276,15 @@ namespace System.Formats.Tar.Tests
             
             // Verify key fields are preserved
             // Name should match
-            string originalName = System.Text.Encoding.UTF8.GetString(originalHeader.AsSpan(0, 100).TrimEnd((byte)0));
-            string rewrittenName = System.Text.Encoding.UTF8.GetString(rewrittenHeader.AsSpan(0, 100).TrimEnd((byte)0));
+            ReadOnlySpan<byte> originalNameBytes = originalHeader.AsSpan(0, 100);
+            int originalNameEnd = originalNameBytes.IndexOf((byte)0);
+            if (originalNameEnd < 0) originalNameEnd = originalNameBytes.Length;
+            string originalName = System.Text.Encoding.UTF8.GetString(originalNameBytes.Slice(0, originalNameEnd));
+            
+            ReadOnlySpan<byte> rewrittenNameBytes = rewrittenHeader.AsSpan(0, 100);
+            int rewrittenNameEnd = rewrittenNameBytes.IndexOf((byte)0);
+            if (rewrittenNameEnd < 0) rewrittenNameEnd = rewrittenNameBytes.Length;
+            string rewrittenName = System.Text.Encoding.UTF8.GetString(rewrittenNameBytes.Slice(0, rewrittenNameEnd));
             Assert.Equal(originalName, rewrittenName);
             
             // Type flag should match
