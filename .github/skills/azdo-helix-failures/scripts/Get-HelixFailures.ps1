@@ -1433,20 +1433,20 @@ try {
                 # Show artifacts with binlogs highlighted
                 if ($workItemDetails.Files -and $workItemDetails.Files.Count -gt 0) {
                     Write-Host "`n  Artifacts:" -ForegroundColor Yellow
-                    $binlogs = $workItemDetails.Files | Where-Object { $_.Name -like "*.binlog" }
-                    $otherFiles = $workItemDetails.Files | Where-Object { $_.Name -notlike "*.binlog" }
+                    $binlogs = $workItemDetails.Files | Where-Object { $_.FileName -like "*.binlog" }
+                    $otherFiles = $workItemDetails.Files | Where-Object { $_.FileName -notlike "*.binlog" }
 
                     # Show binlogs first with special formatting
-                    foreach ($file in $binlogs) {
-                        Write-Host "    📋 $($file.Name): $($file.Uri)" -ForegroundColor Cyan
+                    foreach ($file in $binlogs | Select-Object -Unique FileName, Uri) {
+                        Write-Host "    📋 $($file.FileName): $($file.Uri)" -ForegroundColor Cyan
                     }
                     if ($binlogs.Count -gt 0) {
                         Write-Host "    (Tip: Use MSBuild MCP server or https://live.msbuildlog.com/ to analyze binlogs)" -ForegroundColor DarkGray
                     }
 
                     # Show other files
-                    foreach ($file in $otherFiles | Select-Object -First 10) {
-                        Write-Host "    $($file.Name): $($file.Uri)" -ForegroundColor Gray
+                    foreach ($file in $otherFiles | Select-Object -Unique FileName, Uri | Select-Object -First 10) {
+                        Write-Host "    $($file.FileName): $($file.Uri)" -ForegroundColor Gray
                     }
                 }
 
