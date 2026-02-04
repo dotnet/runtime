@@ -188,7 +188,7 @@ function Get-UrlHash {
     try {
         return [System.BitConverter]::ToString(
             $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Url))
-        ).Replace("-", "").Substring(0, 16)
+        ).Replace("-", "")
     }
     finally {
         $sha256.Dispose()
@@ -232,8 +232,21 @@ function Set-CachedResponse {
 
     $hash = Get-UrlHash -Url $Url
     $cacheFile = Join-Path $script:CacheDir "$hash.json"
-    $Content | Set-Content $cacheFile -Force
-    Write-Verbose "Cached response for $Url"
+    
+    # Use atomic write: write to temp file, then rename
+    $tempFile = Join-Path $script:CacheDir "$hash.tmp.$([System.Guid]::NewGuid().ToString('N'))"
+    try {
+        $Content | Set-Content -LiteralPath $tempFile -Force
+        Move-Item -LiteralPath $tempFile -Destination $cacheFile -Force
+        Write-Verbose "Cached response for $Url"
+    }
+    catch {
+        # Clean up temp file on failure
+        if (Test-Path $tempFile) {
+            Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue
+        }
+        Write-Verbose "Failed to cache response: $_"
+    }
 }
 
 function Invoke-CachedRestMethod {
@@ -250,9 +263,16 @@ function Invoke-CachedRestMethod {
         $cached = Get-CachedResponse -Url $Uri
         if ($cached) {
             if ($AsJson) {
-                return $cached | ConvertFrom-Json
+                try {
+                    return $cached | ConvertFrom-Json -ErrorAction Stop
+                }
+                catch {
+                    Write-Verbose "Failed to parse cached response as JSON, treating as cache miss: $_"
+                }
             }
-            return $cached
+            else {
+                return $cached
+            }
         }
     }
 
@@ -263,7 +283,7 @@ function Invoke-CachedRestMethod {
     # Cache the response (unless skipping write)
     if (-not $SkipCache -and -not $SkipCacheWrite) {
         if ($AsJson -or $response -is [PSCustomObject]) {
-            $content = $response | ConvertTo-Json -Depth 10 -Compress
+            $content = $response | ConvertTo-Json -Depth 100 -Compress
             Set-CachedResponse -Url $Uri -Content $content
         }
         else {
@@ -276,6 +296,30 @@ function Invoke-CachedRestMethod {
 
 #endregion Caching Functions
 
+#region Validation Functions
+
+function Test-RepositoryFormat {
+    param([string]$Repo)
+    
+    # Validate repository format to prevent command injection
+    $repoPattern = '^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$'
+    if ($Repo -notmatch $repoPattern) {
+        throw "Invalid repository format '$Repo'. Expected 'owner/repo' (e.g., 'dotnet/runtime')."
+    }
+    return $true
+}
+
+function Get-SafeSearchTerm {
+    param([string]$Term)
+    
+    # Sanitize search term to avoid passing unsafe characters to gh CLI
+    # Remove shell metacharacters but keep alphanumeric, spaces, dots, hyphens, colons, slashes
+    $safeTerm = $Term -replace '[^\w\s\-.:/]', ''
+    return $safeTerm.Trim()
+}
+
+#endregion Validation Functions
+
 #region Azure DevOps API Functions
 
 function Get-AzDOBuildIdFromPR {
@@ -286,11 +330,14 @@ function Get-AzDOBuildIdFromPR {
         throw "GitHub CLI (gh) is required for PR lookup. Install from https://cli.github.com/ or use -BuildId instead."
     }
 
+    # Validate repository format
+    Test-RepositoryFormat -Repo $Repository | Out-Null
+
     Write-Host "Finding builds for PR #$PR in $Repository..." -ForegroundColor Cyan
     Write-Verbose "Running: gh pr checks $PR --repo $Repository"
 
-    # Use gh cli to get the checks
-    $checksOutput = gh pr checks $PR --repo $Repository 2>&1
+    # Use gh cli to get the checks with splatted arguments
+    $checksOutput = & gh pr checks $PR --repo $Repository 2>&1
 
     # Find ALL failing Azure DevOps builds
     $failingBuilds = @{}
@@ -640,6 +687,10 @@ function Get-AzDOTimeline {
 function Get-FailedJobs {
     param($Timeline)
 
+    if ($null -eq $Timeline -or $null -eq $Timeline.records) {
+        return @()
+    }
+
     $failedJobs = $Timeline.records | Where-Object {
         $_.type -eq "Job" -and $_.result -eq "failed"
     }
@@ -650,6 +701,10 @@ function Get-FailedJobs {
 function Get-CanceledJobs {
     param($Timeline)
 
+    if ($null -eq $Timeline -or $null -eq $Timeline.records) {
+        return @()
+    }
+
     $canceledJobs = $Timeline.records | Where-Object {
         $_.type -eq "Job" -and $_.result -eq "canceled"
     }
@@ -659,6 +714,10 @@ function Get-CanceledJobs {
 
 function Get-HelixJobInfo {
     param($Timeline, $JobId)
+
+    if ($null -eq $Timeline -or $null -eq $Timeline.records) {
+        return @()
+    }
 
     # Find tasks in this job that mention Helix
     $helixTasks = $Timeline.records | Where-Object {
@@ -993,26 +1052,30 @@ function Search-KnownIssues {
         foreach ($term in $searchTerms) {
             if (-not $term) { continue }
 
-            Write-Verbose "Searching for known issues with term: $term"
+            # Sanitize the search term to avoid passing unsafe characters to gh CLI
+            $safeTerm = Get-SafeSearchTerm -Term $term
+            if (-not $safeTerm) { continue }
+
+            Write-Verbose "Searching for known issues with term: $safeTerm"
 
             # Search for open issues with the "Known Build Error" label
             $results = & gh issue list `
                 --repo $Repository `
                 --label "Known Build Error" `
                 --state open `
-                --search $term `
+                --search $safeTerm `
                 --limit 3 `
                 --json number,title,url 2>$null | ConvertFrom-Json
 
             if ($results) {
                 foreach ($issue in $results) {
                     # Check if the title actually contains our search term (avoid false positives)
-                    if ($issue.title -match [regex]::Escape($term)) {
+                    if ($issue.title -match [regex]::Escape($safeTerm)) {
                         $knownIssues += @{
                             Number = $issue.number
                             Title = $issue.title
                             Url = $issue.url
-                            SearchTerm = $term
+                            SearchTerm = $safeTerm
                         }
                     }
                 }
