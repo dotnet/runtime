@@ -8140,24 +8140,7 @@ public:
 
         bool Equals(const AssertionDsc& that, bool vnBased) const
         {
-            if (!KindIs(that.GetKind()))
-            {
-                return false;
-            }
-
-            if (!HasSameOp1(that, vnBased))
-            {
-                return false;
-            }
-
-            if (HasOp2())
-            {
-                return HasSameOp2(that, vnBased);
-            }
-
-            // OAK_NO_THROW is the only kind of assertion where m_op2 is unused.
-            assert(GetOp2().KindIs(O2K_INVALID));
-            return true;
+            return KindIs(that.GetKind()) && HasSameOp1(that, vnBased) && (!HasOp2() || HasSameOp2(that, vnBased));
         }
 
         //
