@@ -6903,25 +6903,6 @@ void Compiler::impSetupAsyncCall(
     }
 
     call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
-
-    if (opts.OptimizationDisabled())
-    {
-        // When not optimizing we take care to spill all IL entries that are
-        // live across the async call to locals that are marked specially. When
-        // we do not have liveness the async transformation will only preserve
-        // IL locals and these specifically marked temps; we rely on the fact
-        // that unoptimized codegen does not produce other long-lived temps.
-        assert(impStackHeight() >= numILArgs);
-        unsigned liveEntries = impStackHeight() - numILArgs;
-
-        for (unsigned i = 0; i < liveEntries; i++)
-        {
-            impSpillStackEntry(i, BAD_VAR_NUM DEBUGARG(false) DEBUGARG("Spill IL stack entries around async call"));
-            GenTree* node = stackState.esStack[i].val;
-            assert(node->OperIs(GT_LCL_VAR));
-            lvaGetDesc(node->AsLclVar())->lvLiveAcrossAsync = true;
-        }
-    }
 }
 
 //------------------------------------------------------------------------

@@ -491,50 +491,40 @@ void Liveness<TLiveness>::SelectTrackedLocals()
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
         }
 
-        //  Are we not optimizing and we have exception handlers?
-        //   if so mark all args and locals "do not enregister".
-        //
-        if (m_compiler->opts.MinOpts() && m_compiler->compHndBBtabCount > 0)
-        {
-            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-        }
-        else
-        {
-            var_types type = genActualType(varDsc->TypeGet());
+        var_types type = genActualType(varDsc->TypeGet());
 
-            switch (type)
-            {
-                case TYP_FLOAT:
-                case TYP_DOUBLE:
-                case TYP_INT:
-                case TYP_LONG:
-                case TYP_REF:
-                case TYP_BYREF:
+        switch (type)
+        {
+            case TYP_FLOAT:
+            case TYP_DOUBLE:
+            case TYP_INT:
+            case TYP_LONG:
+            case TYP_REF:
+            case TYP_BYREF:
 #ifdef FEATURE_SIMD
-                case TYP_SIMD8:
-                case TYP_SIMD12:
-                case TYP_SIMD16:
+            case TYP_SIMD8:
+            case TYP_SIMD12:
+            case TYP_SIMD16:
 #ifdef TARGET_XARCH
-                case TYP_SIMD32:
-                case TYP_SIMD64:
+            case TYP_SIMD32:
+            case TYP_SIMD64:
 #endif // TARGET_XARCH
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-                case TYP_MASK:
+            case TYP_MASK:
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
-                case TYP_STRUCT:
-                    break;
+            case TYP_STRUCT:
+                break;
 
-                case TYP_UNDEF:
-                case TYP_UNKNOWN:
-                    noway_assert(!"lvType not set correctly");
-                    varDsc->lvType = TYP_INT;
+            case TYP_UNDEF:
+            case TYP_UNKNOWN:
+                noway_assert(!"lvType not set correctly");
+                varDsc->lvType = TYP_INT;
 
-                    FALLTHROUGH;
+                FALLTHROUGH;
 
-                default:
-                    varDsc->lvTracked = 0;
-            }
+            default:
+                varDsc->lvTracked = 0;
         }
 
         if (varDsc->lvTracked)
@@ -1989,7 +1979,7 @@ bool Liveness<TLiveness>::ComputeLifeTrackedLocalDef(VARSET_TP&           life,
         // Dead store
         node->gtFlags |= GTF_VAR_DEATH;
 
-        if (!m_compiler->opts.MinOpts())
+        if (TLiveness::EliminateDeadCode)
         {
             // keepAliveVars always stay alive
             noway_assert(!VarSetOps::IsMember(m_compiler, keepAliveVars, varIndex));
@@ -2038,7 +2028,7 @@ bool Liveness<TLiveness>::ComputeLifeUntrackedLocal(VARSET_TP&           life,
 
     // We have accurate ref counts when running late liveness so we can eliminate
     // some stores if the lhs local has a ref count of 1.
-    if (isDef && TLiveness::IsLIR && (varDsc.lvRefCnt() == 1) && !varDsc.lvPinned)
+    if (TLiveness::EliminateDeadCode && TLiveness::IsLIR && isDef && (varDsc.lvRefCnt() == 1) && !varDsc.lvPinned)
     {
         if (varDsc.lvIsStructField)
         {
@@ -2110,7 +2100,7 @@ bool Liveness<TLiveness>::ComputeLifeUntrackedLocal(VARSET_TP&           life,
         }
     }
 
-    if (isDef && !anyFieldLive && !m_compiler->opts.MinOpts())
+    if (TLiveness::EliminateDeadCode && isDef && !anyFieldLive)
     {
         // Do not consider this store dead if the parent local variable is an address exposed local or
         // if the struct has any significant padding we must retain the value of.
@@ -2355,7 +2345,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_CALL:
             {
                 GenTreeCall* const call = node->AsCall();
-                if ((call->TypeIs(TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(m_compiler))
+                if (TLiveness::EliminateDeadCode && (call->TypeIs(TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(m_compiler))
                 {
                     JITDUMP("Removing dead call:\n");
                     DISPNODE(call);
@@ -2381,7 +2371,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
 
                     // Removing a call does not affect liveness unless it is a tail call in a method with P/Invokes or
                     // is itself a P/Invoke, in which case it may affect the liveness of the frame root variable.
-                    if (!m_compiler->opts.MinOpts() && !m_compiler->opts.ShouldUsePInvokeHelpers() &&
+                    if (!m_compiler->opts.ShouldUsePInvokeHelpers() &&
                         ((call->IsTailCall() && m_compiler->compMethodRequiresPInvokeFrame()) ||
                          (call->IsUnmanaged() && !call->IsSuppressGCTransition())) &&
                         m_compiler->lvaTable[m_compiler->info.compLvFrameListRoot].lvTracked)
@@ -2402,13 +2392,13 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                 GenTreeLclVarCommon* const lclVarNode = node->AsLclVarCommon();
                 LclVarDsc&                 varDsc     = m_compiler->lvaTable[lclVarNode->GetLclNum()];
 
-                if (m_compiler->opts.OptimizationEnabled() && node->IsUnusedValue())
+                if (TLiveness::EliminateDeadCode && node->IsUnusedValue())
                 {
                     JITDUMP("Removing dead LclVar use:\n");
                     DISPNODE(lclVarNode);
 
                     blockRange.Delete(m_compiler, block, node);
-                    if (varDsc.lvTracked && !m_compiler->opts.MinOpts())
+                    if (varDsc.lvTracked)
                     {
                         m_compiler->fgStmtRemoved = true;
                     }
@@ -2425,14 +2415,14 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             }
 
             case GT_LCL_ADDR:
-                if (m_compiler->opts.OptimizationEnabled() && node->IsUnusedValue())
+                if (TLiveness::EliminateDeadCode && node->IsUnusedValue())
                 {
                     JITDUMP("Removing dead LclVar address:\n");
                     DISPNODE(node);
 
                     const bool isTracked = m_compiler->lvaTable[node->AsLclVarCommon()->GetLclNum()].lvTracked;
                     blockRange.Delete(m_compiler, block, node);
-                    if (isTracked && !m_compiler->opts.MinOpts())
+                    if (isTracked)
                     {
                         m_compiler->fgStmtRemoved = true;
                     }
@@ -2450,7 +2440,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                     }
 
                     isDeadStore = ComputeLifeLocal(life, keepAliveVars, node);
-                    if (isDeadStore)
+                    if (TLiveness::EliminateDeadCode && isDeadStore)
                     {
                         LIR::Use addrUse;
                         if (blockRange.TryGetUse(node, &addrUse) && addrUse.User()->OperIs(GT_STOREIND, GT_STORE_BLK))
@@ -2491,7 +2481,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                     isDeadStore = ComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode);
                 }
 
-                if (isDeadStore && TryRemoveDeadStoreLIR(node, lclVarNode, block))
+                if (TLiveness::EliminateDeadCode && isDeadStore && TryRemoveDeadStoreLIR(node, lclVarNode, block))
                 {
                     GenTree* value = lclVarNode->Data();
                     value->SetUnusedValue();
@@ -2518,7 +2508,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
 #endif // FEATURE_MASKED_HW_INTRINSICS
             case GT_PHYSREG:
                 // These are all side-effect-free leaf nodes.
-                if (m_compiler->opts.OptimizationEnabled() && node->IsUnusedValue())
+                if (TLiveness::EliminateDeadCode && node->IsUnusedValue())
                 {
                     JITDUMP("Removing dead node:\n");
                     DISPNODE(node);
@@ -2681,8 +2671,6 @@ bool Liveness<TLiveness>::IsTrackedRetBufferAddress(LIR::Range& range, GenTree* 
 template <typename TLiveness>
 bool Liveness<TLiveness>::TryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block)
 {
-    assert(!m_compiler->opts.MinOpts());
-
     // We cannot remove stores to (tracked) TYP_STRUCT locals with GC pointers marked as "explicit init",
     // as said locals will be reported to the GC untracked, and deleting the explicit initializer risks
     // exposing uninitialized references.
@@ -2722,8 +2710,10 @@ bool Liveness<TLiveness>::TryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCom
 template <typename TLiveness>
 bool Liveness<TLiveness>::TryRemoveNonLocalLIR(GenTree* node, LIR::Range* blockRange)
 {
-    if (m_compiler->opts.OptimizationDisabled())
+    if (!TLiveness::EliminateDeadCode)
+    {
         return false;
+    }
 
     assert(!node->OperIsLocal());
     if (!node->IsValue() || node->IsUnusedValue())

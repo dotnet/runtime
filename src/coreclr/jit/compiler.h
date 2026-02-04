@@ -607,8 +607,6 @@ public:
     unsigned char lvDefinedViaAddress : 1; // True when this local may have LCL_ADDRs representing definitions
 #endif
 
-    unsigned char lvLiveAcrossAsync : 1; // Local is live across an async call in a MinOpts function
-
 #ifdef FEATURE_HFA_FIELDS_PRESENT
     CorInfoHFAElemType _lvHfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
 #endif                                     // FEATURE_HFA_FIELDS_PRESENT

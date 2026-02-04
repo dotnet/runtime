@@ -69,11 +69,9 @@ PhaseStatus Compiler::SaveAsyncContexts()
     // Create locals for ExecutionContext and SynchronizationContext
     lvaAsyncExecutionContextVar                                = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
     lvaGetDesc(lvaAsyncExecutionContextVar)->lvType            = TYP_REF;
-    lvaGetDesc(lvaAsyncExecutionContextVar)->lvLiveAcrossAsync = true;
 
     lvaAsyncSynchronizationContextVar                     = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
     lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
-    lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvLiveAcrossAsync = true;
 
     if (opts.IsOSR())
     {
@@ -399,14 +397,12 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
 class AsyncLiveness
 {
     Compiler*              m_compiler;
-    bool                   m_hasLiveness;
     TreeLifeUpdater<false> m_updater;
     unsigned               m_numVars;
 
 public:
     AsyncLiveness(Compiler* comp, bool hasLiveness)
         : m_compiler(comp)
-        , m_hasLiveness(hasLiveness)
         , m_updater(comp)
         , m_numVars(comp->lvaCount)
     {
@@ -432,9 +428,6 @@ private:
 //
 void AsyncLiveness::StartBlock(BasicBlock* block)
 {
-    if (!m_hasLiveness)
-        return;
-
     VarSetOps::Assign(m_compiler, m_compiler->compCurLife, block->bbLiveIn);
 }
 
@@ -448,9 +441,6 @@ void AsyncLiveness::StartBlock(BasicBlock* block)
 //
 void AsyncLiveness::Update(GenTree* node)
 {
-    if (!m_hasLiveness)
-        return;
-
     m_updater.UpdateLife(node);
 }
 
@@ -541,17 +531,10 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
         return false;
     }
 
-    if (!m_hasLiveness)
+    if (m_compiler->opts.compDbgCode && (lclNum < m_compiler->info.compLocalsCount))
     {
-#ifdef DEBUG
-        static ConfigMethodRange s_jitAsyncMinOptsLivenessRange;
-        s_jitAsyncMinOptsLivenessRange.EnsureInit(JitConfig.JitAsyncMinOptsLivenessRange());
-        if (!s_jitAsyncMinOptsLivenessRange.Contains(m_compiler->info.compMethodHash()))
-        {
-            return true;
-        }
-#endif
-        return (lclNum < m_compiler->info.compLocalsCount) || dsc->lvLiveAcrossAsync;
+        // Keep all IL locals in debug codegen
+        return true;
     }
 
     if (dsc->lvRefCnt(RCS_NORMAL) == 0)
