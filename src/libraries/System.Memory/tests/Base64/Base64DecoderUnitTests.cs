@@ -772,6 +772,134 @@ namespace System.Buffers.Text.Tests
         }
 
         [Fact]
+        public void DecodeFromCharsWithLargeSpan()
+        {
+            var rnd = new Random(42);
+            for (int i = 0; i < 5; i++)
+            {
+                int numBytes = rnd.Next(100, 1000 * 1000);
+                // Ensure we have a valid length (multiple of 4 for standard Base64)
+                numBytes = (numBytes / 4) * 4;
+
+                Span<char> source = new char[numBytes];
+                Base64TestHelper.InitializeDecodableChars(source, numBytes);
+
+                Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedLength(source.Length)];
+                Assert.Equal(OperationStatus.Done, Base64.DecodeFromChars(source, decodedBytes, out int consumed, out int decodedByteCount));
+                Assert.Equal(source.Length, consumed);
+
+                string sourceString = source.ToString();
+                byte[] expectedBytes = Convert.FromBase64String(sourceString);
+                Assert.True(expectedBytes.AsSpan().SequenceEqual(decodedBytes.Slice(0, decodedByteCount)));
+            }
+        }
+
+        [Theory]
+        [InlineData("\u5948cz/T", 0, 0)] // tests the scalar code-path with non-ASCII
+        [InlineData("z/Ta123\u5948", 4, 3)]
+        public void DecodeFromCharsNonAsciiInputInvalid(string inputString, int expectedConsumed, int expectedWritten)
+        {
+            Span<char> source = inputString.ToArray();
+            Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedLength(source.Length)];
+
+            Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromChars(source, decodedBytes, out int consumed, out int decodedByteCount));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, decodedByteCount);
+        }
+
+        [Fact]
+        public void DecodeFromUtf8_ArrayOverload()
+        {
+            byte[] utf8Input = Encoding.UTF8.GetBytes("dGVzdA=="); // "test" encoded
+            byte[] result = Base64.DecodeFromUtf8(utf8Input);
+            Assert.Equal(4, result.Length);
+            Assert.Equal("test", Encoding.UTF8.GetString(result));
+        }
+
+        [Fact]
+        public void DecodeFromUtf8_SpanOverload()
+        {
+            byte[] utf8Input = Encoding.UTF8.GetBytes("dGVzdA=="); // "test" encoded
+            Span<byte> destination = new byte[10];
+            int bytesWritten = Base64.DecodeFromUtf8(utf8Input, destination);
+            Assert.Equal(4, bytesWritten);
+            Assert.Equal("test", Encoding.UTF8.GetString(destination.Slice(0, bytesWritten)));
+        }
+
+        [Fact]
+        public void TryDecodeFromUtf8_Success()
+        {
+            byte[] utf8Input = Encoding.UTF8.GetBytes("dGVzdA==");
+            Span<byte> destination = new byte[10];
+            Assert.True(Base64.TryDecodeFromUtf8(utf8Input, destination, out int bytesWritten));
+            Assert.Equal(4, bytesWritten);
+            Assert.Equal("test", Encoding.UTF8.GetString(destination.Slice(0, bytesWritten)));
+        }
+
+        [Fact]
+        public void TryDecodeFromUtf8_DestinationTooSmall()
+        {
+            byte[] utf8Input = Encoding.UTF8.GetBytes("dGVzdA==");
+            Span<byte> destination = new byte[2]; // Too small
+            Assert.False(Base64.TryDecodeFromUtf8(utf8Input, destination, out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Fact]
+        public void DecodeFromChars_InvalidData()
+        {
+            string invalidInput = "@#$%";
+            byte[] destination = new byte[10];
+            Assert.Throws<FormatException>(() => Base64.DecodeFromChars(invalidInput, destination));
+            Assert.Throws<FormatException>(() => Base64.DecodeFromChars(invalidInput.AsSpan()));
+        }
+
+        [Fact]
+        public void DecodeFromChars_DestinationTooSmall()
+        {
+            string validInput = "dGVzdA=="; // "test" encoded
+            byte[] destination = new byte[2]; // Too small
+            Assert.Throws<ArgumentException>("destination", () => Base64.DecodeFromChars(validInput, destination));
+        }
+
+        [Fact]
+        public void TryDecodeFromChars_DestinationTooSmall()
+        {
+            string validInput = "dGVzdA=="; // "test" encoded
+            Span<byte> destination = new byte[2]; // Too small
+            Assert.False(Base64.TryDecodeFromChars(validInput, destination, out int bytesWritten));
+        }
+
+        [Fact]
+        public void DecodeFromChars_OperationStatus_DistinguishesBetweenInvalidAndDestinationTooSmall()
+        {
+            // This is the key use case from the issue - distinguishing between invalid data and destination too small
+            string validInput = "dGVzdA=="; // "test" encoded - produces 4 bytes
+            string invalidInput = "@#$%";
+            Span<byte> smallDestination = new byte[2];
+
+            // With destination too small, we should get DestinationTooSmall
+            OperationStatus status1 = Base64.DecodeFromChars(validInput, smallDestination, out int consumed1, out int written1);
+            Assert.Equal(OperationStatus.DestinationTooSmall, status1);
+            Assert.True(consumed1 > 0 || written1 >= 0); // Some progress was made or at least we know why it failed
+
+            // With invalid data, we should get InvalidData
+            OperationStatus status2 = Base64.DecodeFromChars(invalidInput, smallDestination, out int consumed2, out int written2);
+            Assert.Equal(OperationStatus.InvalidData, status2);
+            Assert.Equal(0, consumed2);
+            Assert.Equal(0, written2);
+        }
+
+        [Fact]
+        public void GetMaxDecodedLength_Matches_GetMaxDecodedFromUtf8Length()
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.Equal(Base64.GetMaxDecodedFromUtf8Length(i), Base64.GetMaxDecodedLength(i));
+            }
+        }
+
+        [Fact]
         public void DecodingWithWhiteSpaceIntoSmallDestination()
         {
             // Input "  zAww  " (8 bytes) contains "zAww" which decodes to 3 bytes.
@@ -874,6 +1002,189 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(input.Length, consumed4);
             Assert.Equal(4, written4);
             Assert.Equal(new byte[] { 1, 2, 3, 4 }, destination4);
+        }
+
+        [Theory]
+        [InlineData("AQ\r\nQ=")]
+        [InlineData("AQ\r\nQ=\r\n")]
+        [InlineData("AQ Q=")]
+        [InlineData("AQ\tQ=")]
+        public void DecodingWithWhiteSpaceSplitFinalQuantumAndIsFinalBlockFalse(string base64String)
+        {
+            // When a final quantum (containing padding) is split by whitespace and isFinalBlock=false,
+            // the decoder should not consume any bytes, allowing the caller to retry with isFinalBlock=true
+            ReadOnlySpan<byte> base64Data = Encoding.ASCII.GetBytes(base64String);
+            var output = new byte[10];
+
+            // First call with isFinalBlock=false should consume 0 bytes
+            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(OperationStatus.InvalidData, status);
+
+            // Second call with isFinalBlock=true should succeed
+            status = Base64.DecodeFromUtf8(base64Data, output, out bytesConsumed, out bytesWritten, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(base64Data.Length, bytesConsumed);
+            Assert.Equal(2, bytesWritten); // "AQQ=" decodes to 2 bytes: {1, 4}
+            Assert.Equal(new byte[] { 1, 4 }, output[..2]);
+        }
+
+        [Fact]
+        public void DecodingCompleteQuantumWithIsFinalBlockFalse()
+        {
+            // Complete quantum without padding should be decoded even when isFinalBlock=false
+            ReadOnlySpan<byte> base64Data = "AAAA"u8;
+            var output = new byte[10];
+
+            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(4, bytesConsumed);
+            Assert.Equal(3, bytesWritten);
+        }
+
+        [Fact]
+        public void DecodingPaddedQuantumWithIsFinalBlockFalse()
+        {
+            // Quantum with padding should not be decoded when isFinalBlock=false
+            ReadOnlySpan<byte> base64Data = "AAA="u8;
+            var output = new byte[10];
+
+            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(OperationStatus.InvalidData, status);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Theory]
+        [InlineData("AQIDBAUG AQ\r\nQ=", 9, 6, "AQ\r\nQ=")]          // Two complete blocks, then whitespace-split final quantum
+        [InlineData("AQID BAUG AQ\r\nQ=", 10, 6, "AQ\r\nQ=")]        // Two blocks with space, then whitespace-split final quantum
+        [InlineData("AQIDBAUG\r\nAQID AQ\r\nQ=", 15, 9, "AQ\r\nQ=")] // Multiple blocks with various whitespace patterns
+        public void DecodingWithValidDataBeforeWhiteSpaceSplitFinalQuantum(string base64String, int expectedBytesConsumedFirstCall, int expectedBytesWrittenFirstCall, string expectedRemainingAfterFirstCall)
+        {
+            // When there's valid data before a whitespace-split final quantum and isFinalBlock=false,
+            // verify the streaming scenario works correctly
+            ReadOnlySpan<byte> base64Data = Encoding.ASCII.GetBytes(base64String);
+            var output = new byte[100];
+
+            // First call with isFinalBlock=false should decode the valid complete blocks and stop before the incomplete final quantum
+            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+
+            Assert.Equal(OperationStatus.InvalidData, status);
+            Assert.Equal(expectedBytesConsumedFirstCall, bytesConsumed);
+            Assert.Equal(expectedBytesWrittenFirstCall, bytesWritten);
+
+            // Verify that only the final block remains
+            ReadOnlySpan<byte> remaining = base64Data.Slice(bytesConsumed);
+            string remainingString = Encoding.ASCII.GetString(remaining);
+            Assert.Equal(expectedRemainingAfterFirstCall, remainingString);
+
+            // Verify we can complete decoding by retrying with the FULL input and isFinalBlock=true
+            Array.Clear(output, 0, output.Length);
+            status = Base64.DecodeFromUtf8(base64Data, output, out bytesConsumed, out bytesWritten, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(base64Data.Length, bytesConsumed);
+            Assert.True(bytesWritten > 0, "Should have decoded data");
+        }
+
+        [Fact]
+        public void DecodingWithEmbeddedWhiteSpaceIntoSmallDestination_TrailingWhiteSpacesAreConsumed()
+        {
+            byte[] input = "        8J+N        i    f    C    f        jYk="u8.ToArray();
+
+            // The actual decoded data is 8 bytes long.
+            // If we provide a destination buffer with 6 bytes, we can decode two blocks (6 bytes) and leave 2 bytes undecoded.
+            // But even though there are 2 bytes left undecoded, we should still consume as much input as possible,
+            // such that all trailing whitespace are also consumed.
+
+            byte[] destination = new byte[6];
+            Assert.Equal(OperationStatus.DestinationTooSmall, Base64.DecodeFromUtf8(input, destination, out int consumed, out int written));
+            Assert.Equal((byte)'j', input[consumed]); // byte right after the spaces
+            Assert.Equal(destination.Length, written);
+            Assert.Equal(new byte[] { 240, 159, 141, 137, 240, 159 }, destination);
+        }
+
+        [Theory]
+        [InlineData("AQ\r\nQ=")]
+        [InlineData("AQ\r\nQ=\r\n")]
+        [InlineData("AQ Q=")]
+        [InlineData("AQ\tQ=")]
+        public void DecodingFromCharsWithWhiteSpaceSplitFinalQuantumAndIsFinalBlockFalse(string base64String)
+        {
+            // When a final quantum (containing padding) is split by whitespace and isFinalBlock=false,
+            // the decoder should not consume any bytes, allowing the caller to retry with isFinalBlock=true
+            ReadOnlySpan<char> base64Data = base64String.AsSpan();
+            var output = new byte[10];
+
+            // First call with isFinalBlock=false should consume 0 bytes
+            OperationStatus status = Base64.DecodeFromChars(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(OperationStatus.InvalidData, status);
+
+            // Second call with isFinalBlock=true should succeed
+            status = Base64.DecodeFromChars(base64Data, output, out bytesConsumed, out bytesWritten, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(base64Data.Length, bytesConsumed);
+            Assert.Equal(2, bytesWritten); // "AQQ=" decodes to 2 bytes: {1, 4}
+            Assert.Equal(new byte[] { 1, 4 }, output[..2]);
+        }
+
+        [Fact]
+        public void DecodingFromCharsCompleteQuantumWithIsFinalBlockFalse()
+        {
+            // Complete quantum without padding should be decoded even when isFinalBlock=false
+            ReadOnlySpan<char> base64Data = "AAAA".AsSpan();
+            var output = new byte[10];
+
+            OperationStatus status = Base64.DecodeFromChars(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(4, bytesConsumed);
+            Assert.Equal(3, bytesWritten);
+        }
+
+        [Fact]
+        public void DecodingFromCharsPaddedQuantumWithIsFinalBlockFalse()
+        {
+            // Quantum with padding should not be decoded when isFinalBlock=false
+            ReadOnlySpan<char> base64Data = "AAA=".AsSpan();
+            var output = new byte[10];
+
+            OperationStatus status = Base64.DecodeFromChars(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(OperationStatus.InvalidData, status);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Theory]
+        [InlineData("AQIDBAUG AQ\r\nQ=", 9, 6, "AQ\r\nQ=")]          // Two complete blocks, then whitespace-split final quantum
+        [InlineData("AQID BAUG AQ\r\nQ=", 10, 6, "AQ\r\nQ=")]        // Two blocks with space, then whitespace-split final quantum
+        [InlineData("AQIDBAUG\r\nAQID AQ\r\nQ=", 15, 9, "AQ\r\nQ=")] // Multiple blocks with various whitespace patterns
+        public void DecodingFromCharsWithValidDataBeforeWhiteSpaceSplitFinalQuantum(string base64String, int expectedBytesConsumedFirstCall, int expectedBytesWrittenFirstCall, string expectedRemainingAfterFirstCall)
+        {
+            // When there's valid data before a whitespace-split final quantum and isFinalBlock=false,
+            // verify the streaming scenario works correctly
+            ReadOnlySpan<char> base64Data = base64String.AsSpan();
+            var output = new byte[100];
+
+            // First call with isFinalBlock=false should decode the valid complete blocks and stop before the incomplete final quantum
+            OperationStatus status = Base64.DecodeFromChars(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+
+            Assert.Equal(OperationStatus.InvalidData, status);
+            Assert.Equal(expectedBytesConsumedFirstCall, bytesConsumed);
+            Assert.Equal(expectedBytesWrittenFirstCall, bytesWritten);
+
+            // Verify that only the final block remains
+            ReadOnlySpan<char> remaining = base64Data.Slice(bytesConsumed);
+            string remainingString = new string(remaining);
+            Assert.Equal(expectedRemainingAfterFirstCall, remainingString);
+
+            // Verify we can complete decoding by retrying with the FULL input and isFinalBlock=true
+            Array.Clear(output, 0, output.Length);
+            status = Base64.DecodeFromChars(base64Data, output, out bytesConsumed, out bytesWritten, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(base64Data.Length, bytesConsumed);
+            Assert.True(bytesWritten > 0, "Should have decoded data");
         }
     }
 }
