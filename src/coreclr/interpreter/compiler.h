@@ -1118,7 +1118,7 @@ int32_t InterpDataItemIndexMap::GetDataItemIndexForT(const T& lookup)
         _dataItems->Add(LookupAsPtrs[i]);
     }
 
-    VarSizedDataWithPayload<T>* pLookup = new (_compiler->getAllocator(InterpMemKind::IMK_VarSizedDataItem)) VarSizedDataWithPayload<T>();
+    VarSizedDataWithPayload<T>* pLookup = new (_compiler->getAllocator(IMK_VarSizedDataItem)) VarSizedDataWithPayload<T>();
     memcpy(&pLookup->payload, &lookup, sizeof(T));
 
     checkAddedNew(dn_simdhash_ght_try_insert(

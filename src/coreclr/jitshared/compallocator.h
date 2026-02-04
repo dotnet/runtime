@@ -96,13 +96,13 @@ public:
 // Global operator new overloads that work with CompAllocatorT
 
 template <typename TMemKindTraits>
-inline void* __cdecl operator new(size_t n, CompAllocatorT<TMemKindTraits> alloc)
+inline void* operator new(size_t n, CompAllocatorT<TMemKindTraits> alloc)
 {
     return alloc.template allocate<char>(n);
 }
 
 template <typename TMemKindTraits>
-inline void* __cdecl operator new[](size_t n, CompAllocatorT<TMemKindTraits> alloc)
+inline void* operator new[](size_t n, CompAllocatorT<TMemKindTraits> alloc)
 {
     return alloc.template allocate<char>(n);
 }
