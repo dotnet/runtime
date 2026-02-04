@@ -2402,14 +2402,26 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         }
                         break;
 
-                    case NI_Sve_CreateWhileLessThanMask8Bit:
-                    case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
-                    case NI_Sve_CreateWhileLessThanMask16Bit:
-                    case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
-                    case NI_Sve_CreateWhileLessThanMask32Bit:
-                    case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
-                    case NI_Sve_CreateWhileLessThanMask64Bit:
-                    case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
+                    case NI_Sve_CreateWhileLessThanMaskByte:
+                    case NI_Sve_CreateWhileLessThanMaskDouble:
+                    case NI_Sve_CreateWhileLessThanMaskInt16:
+                    case NI_Sve_CreateWhileLessThanMaskInt32:
+                    case NI_Sve_CreateWhileLessThanMaskInt64:
+                    case NI_Sve_CreateWhileLessThanMaskSByte:
+                    case NI_Sve_CreateWhileLessThanMaskSingle:
+                    case NI_Sve_CreateWhileLessThanMaskUInt16:
+                    case NI_Sve_CreateWhileLessThanMaskUInt32:
+                    case NI_Sve_CreateWhileLessThanMaskUInt64:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskByte:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskDouble:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskInt16:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskInt32:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskInt64:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskSByte:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskSingle:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskUInt16:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskUInt32:
+                    case NI_Sve_CreateWhileLessThanOrEqualMaskUInt64:
                         retNode->AsHWIntrinsic()->SetAuxiliaryJitType(sigReader.op1JitType);
                         break;
 

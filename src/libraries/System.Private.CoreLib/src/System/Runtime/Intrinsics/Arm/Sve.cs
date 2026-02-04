@@ -2669,55 +2669,28 @@ namespace System.Runtime.Intrinsics.Arm
         // While incrementing scalar is less than
 
         /// <summary>
-        ///   <para>svbool_t svwhilelt_b16[_s32](int32_t op1, int32_t op2)</para>
-        ///   <para>  WHILELT Presult.H, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b8[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.B, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanMask16Bit(int left, int right) => CreateWhileLessThanMask16Bit(left, right);
+        public static Vector<byte> CreateWhileLessThanMaskByte(int left, int right) => CreateWhileLessThanMaskByte(left, right);
 
         /// <summary>
-        ///   <para>svbool_t svwhilelt_b16[_s64](int64_t op1, int64_t op2)</para>
-        ///   <para>  WHILELT Presult.H, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b8[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.B, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanMask16Bit(long left, long right) => CreateWhileLessThanMask16Bit(left, right);
+        public static Vector<byte> CreateWhileLessThanMaskByte(long left, long right) => CreateWhileLessThanMaskByte(left, right);
 
         /// <summary>
-        ///   <para>svbool_t svwhilelt_b16[_u32](uint32_t op1, uint32_t op2)</para>
-        ///   <para>  WHILELO Presult.H, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b8[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.B, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanMask16Bit(uint left, uint right) => CreateWhileLessThanMask16Bit(left, right);
+        public static Vector<byte> CreateWhileLessThanMaskByte(uint left, uint right) => CreateWhileLessThanMaskByte(left, right);
 
         /// <summary>
-        ///   <para>svbool_t svwhilelt_b16[_u64](uint64_t op1, uint64_t op2)</para>
-        ///   <para>  WHILELO Presult.H, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b8[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.B, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanMask16Bit(ulong left, ulong right) => CreateWhileLessThanMask16Bit(left, right);
-
-
-        // While incrementing scalar is less than
-
-        /// <summary>
-        ///   <para>svbool_t svwhilelt_b32[_s32](int32_t op1, int32_t op2)</para>
-        ///   <para>  WHILELT Presult.S, Wop1, Wop2</para>
-        /// </summary>
-        public static Vector<uint> CreateWhileLessThanMask32Bit(int left, int right) => CreateWhileLessThanMask32Bit(left, right);
-
-        /// <summary>
-        ///   <para>svbool_t svwhilelt_b32[_s64](int64_t op1, int64_t op2)</para>
-        ///   <para>  WHILELT Presult.S, Xop1, Xop2</para>
-        /// </summary>
-        public static Vector<uint> CreateWhileLessThanMask32Bit(long left, long right) => CreateWhileLessThanMask32Bit(left, right);
-
-        /// <summary>
-        ///   <para>svbool_t svwhilelt_b32[_u32](uint32_t op1, uint32_t op2)</para>
-        ///   <para>  WHILELO Presult.S, Wop1, Wop2</para>
-        /// </summary>
-        public static Vector<uint> CreateWhileLessThanMask32Bit(uint left, uint right) => CreateWhileLessThanMask32Bit(left, right);
-
-        /// <summary>
-        ///   <para>svbool_t svwhilelt_b32[_u64](uint64_t op1, uint64_t op2)</para>
-        ///   <para>  WHILELO Presult.S, Xop1, Xop2</para>
-        /// </summary>
-        public static Vector<uint> CreateWhileLessThanMask32Bit(ulong left, ulong right) => CreateWhileLessThanMask32Bit(left, right);
+        public static Vector<byte> CreateWhileLessThanMaskByte(ulong left, ulong right) => CreateWhileLessThanMaskByte(left, right);
 
 
         // While incrementing scalar is less than
@@ -2726,25 +2699,106 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svwhilelt_b64[_s32](int32_t op1, int32_t op2)</para>
         ///   <para>  WHILELT Presult.D, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanMask64Bit(int left, int right) => CreateWhileLessThanMask64Bit(left, right);
+        public static Vector<double> CreateWhileLessThanMaskDouble(int left, int right) => CreateWhileLessThanMaskDouble(left, right);
 
         /// <summary>
         ///   <para>svbool_t svwhilelt_b64[_s64](int64_t op1, int64_t op2)</para>
         ///   <para>  WHILELT Presult.D, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanMask64Bit(long left, long right) => CreateWhileLessThanMask64Bit(left, right);
+        public static Vector<double> CreateWhileLessThanMaskDouble(long left, long right) => CreateWhileLessThanMaskDouble(left, right);
 
         /// <summary>
         ///   <para>svbool_t svwhilelt_b64[_u32](uint32_t op1, uint32_t op2)</para>
         ///   <para>  WHILELO Presult.D, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanMask64Bit(uint left, uint right) => CreateWhileLessThanMask64Bit(left, right);
+        public static Vector<double> CreateWhileLessThanMaskDouble(uint left, uint right) => CreateWhileLessThanMaskDouble(left, right);
 
         /// <summary>
         ///   <para>svbool_t svwhilelt_b64[_u64](uint64_t op1, uint64_t op2)</para>
         ///   <para>  WHILELO Presult.D, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanMask64Bit(ulong left, ulong right) => CreateWhileLessThanMask64Bit(left, right);
+        public static Vector<double> CreateWhileLessThanMaskDouble(ulong left, ulong right) => CreateWhileLessThanMaskDouble(left, right);
+
+
+        // While incrementing scalar is less than
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b16[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.H, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanMaskInt16(int left, int right) => CreateWhileLessThanMaskInt16(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b16[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanMaskInt16(long left, long right) => CreateWhileLessThanMaskInt16(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b16[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.H, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanMaskInt16(uint left, uint right) => CreateWhileLessThanMaskInt16(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b16[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanMaskInt16(ulong left, ulong right) => CreateWhileLessThanMaskInt16(left, right);
+
+
+        // While incrementing scalar is less than
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b32[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanMaskInt32(int left, int right) => CreateWhileLessThanMaskInt32(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b32[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanMaskInt32(long left, long right) => CreateWhileLessThanMaskInt32(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b32[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanMaskInt32(uint left, uint right) => CreateWhileLessThanMaskInt32(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b32[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanMaskInt32(ulong left, ulong right) => CreateWhileLessThanMaskInt32(left, right);
+
+
+        // While incrementing scalar is less than
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanMaskInt64(int left, int right) => CreateWhileLessThanMaskInt64(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanMaskInt64(long left, long right) => CreateWhileLessThanMaskInt64(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanMaskInt64(uint left, uint right) => CreateWhileLessThanMaskInt64(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanMaskInt64(ulong left, ulong right) => CreateWhileLessThanMaskInt64(left, right);
 
 
         // While incrementing scalar is less than
@@ -2753,106 +2807,133 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svwhilelt_b8[_s32](int32_t op1, int32_t op2)</para>
         ///   <para>  WHILELT Presult.B, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanMask8Bit(int left, int right) => CreateWhileLessThanMask8Bit(left, right);
+        public static Vector<sbyte> CreateWhileLessThanMaskSByte(int left, int right) => CreateWhileLessThanMaskSByte(left, right);
 
         /// <summary>
         ///   <para>svbool_t svwhilelt_b8[_s64](int64_t op1, int64_t op2)</para>
         ///   <para>  WHILELT Presult.B, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanMask8Bit(long left, long right) => CreateWhileLessThanMask8Bit(left, right);
+        public static Vector<sbyte> CreateWhileLessThanMaskSByte(long left, long right) => CreateWhileLessThanMaskSByte(left, right);
 
         /// <summary>
         ///   <para>svbool_t svwhilelt_b8[_u32](uint32_t op1, uint32_t op2)</para>
         ///   <para>  WHILELO Presult.B, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanMask8Bit(uint left, uint right) => CreateWhileLessThanMask8Bit(left, right);
+        public static Vector<sbyte> CreateWhileLessThanMaskSByte(uint left, uint right) => CreateWhileLessThanMaskSByte(left, right);
 
         /// <summary>
         ///   <para>svbool_t svwhilelt_b8[_u64](uint64_t op1, uint64_t op2)</para>
         ///   <para>  WHILELO Presult.B, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanMask8Bit(ulong left, ulong right) => CreateWhileLessThanMask8Bit(left, right);
+        public static Vector<sbyte> CreateWhileLessThanMaskSByte(ulong left, ulong right) => CreateWhileLessThanMaskSByte(left, right);
 
 
-        // While incrementing scalar is less than or equal to
-
-        /// <summary>
-        ///   <para>svbool_t svwhilele_b16[_s32](int32_t op1, int32_t op2)</para>
-        ///   <para>  WHILELE Presult.H, Wop1, Wop2</para>
-        /// </summary>
-        public static Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(int left, int right) => CreateWhileLessThanOrEqualMask16Bit(left, right);
+        // While incrementing scalar is less than
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b16[_s64](int64_t op1, int64_t op2)</para>
-        ///   <para>  WHILELE Presult.H, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.S, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(long left, long right) => CreateWhileLessThanOrEqualMask16Bit(left, right);
+        public static Vector<float> CreateWhileLessThanMaskSingle(int left, int right) => CreateWhileLessThanMaskSingle(left, right);
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b16[_u32](uint32_t op1, uint32_t op2)</para>
-        ///   <para>  WHILELS Presult.H, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.S, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(uint left, uint right) => CreateWhileLessThanOrEqualMask16Bit(left, right);
+        public static Vector<float> CreateWhileLessThanMaskSingle(long left, long right) => CreateWhileLessThanMaskSingle(left, right);
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b16[_u64](uint64_t op1, uint64_t op2)</para>
-        ///   <para>  WHILELS Presult.H, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.S, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(ulong left, ulong right) => CreateWhileLessThanOrEqualMask16Bit(left, right);
-
-
-        // While incrementing scalar is less than or equal to
+        public static Vector<float> CreateWhileLessThanMaskSingle(uint left, uint right) => CreateWhileLessThanMaskSingle(left, right);
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b32[_s32](int32_t op1, int32_t op2)</para>
-        ///   <para>  WHILELE Presult.S, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.S, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<uint> CreateWhileLessThanOrEqualMask32Bit(int left, int right) => CreateWhileLessThanOrEqualMask32Bit(left, right);
+        public static Vector<float> CreateWhileLessThanMaskSingle(ulong left, ulong right) => CreateWhileLessThanMaskSingle(left, right);
+
+
+        // While incrementing scalar is less than
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b32[_s64](int64_t op1, int64_t op2)</para>
-        ///   <para>  WHILELE Presult.S, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b16[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.H, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<uint> CreateWhileLessThanOrEqualMask32Bit(long left, long right) => CreateWhileLessThanOrEqualMask32Bit(left, right);
+        public static Vector<ushort> CreateWhileLessThanMaskUInt16(int left, int right) => CreateWhileLessThanMaskUInt16(left, right);
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b32[_u32](uint32_t op1, uint32_t op2)</para>
-        ///   <para>  WHILELS Presult.S, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b16[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.H, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<uint> CreateWhileLessThanOrEqualMask32Bit(uint left, uint right) => CreateWhileLessThanOrEqualMask32Bit(left, right);
+        public static Vector<ushort> CreateWhileLessThanMaskUInt16(long left, long right) => CreateWhileLessThanMaskUInt16(left, right);
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b32[_u64](uint64_t op1, uint64_t op2)</para>
-        ///   <para>  WHILELS Presult.S, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b16[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.H, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<uint> CreateWhileLessThanOrEqualMask32Bit(ulong left, ulong right) => CreateWhileLessThanOrEqualMask32Bit(left, right);
-
-
-        // While incrementing scalar is less than or equal to
+        public static Vector<ushort> CreateWhileLessThanMaskUInt16(uint left, uint right) => CreateWhileLessThanMaskUInt16(left, right);
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b64[_s32](int32_t op1, int32_t op2)</para>
-        ///   <para>  WHILELE Presult.D, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b16[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.H, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(int left, int right) => CreateWhileLessThanOrEqualMask64Bit(left, right);
+        public static Vector<ushort> CreateWhileLessThanMaskUInt16(ulong left, ulong right) => CreateWhileLessThanMaskUInt16(left, right);
+
+
+        // While incrementing scalar is less than
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b64[_s64](int64_t op1, int64_t op2)</para>
-        ///   <para>  WHILELE Presult.D, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.S, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(long left, long right) => CreateWhileLessThanOrEqualMask64Bit(left, right);
+        public static Vector<uint> CreateWhileLessThanMaskUInt32(int left, int right) => CreateWhileLessThanMaskUInt32(left, right);
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b64[_u32](uint32_t op1, uint32_t op2)</para>
-        ///   <para>  WHILELS Presult.D, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.S, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(uint left, uint right) => CreateWhileLessThanOrEqualMask64Bit(left, right);
+        public static Vector<uint> CreateWhileLessThanMaskUInt32(long left, long right) => CreateWhileLessThanMaskUInt32(left, right);
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b64[_u64](uint64_t op1, uint64_t op2)</para>
-        ///   <para>  WHILELS Presult.D, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.S, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(ulong left, ulong right) => CreateWhileLessThanOrEqualMask64Bit(left, right);
+        public static Vector<uint> CreateWhileLessThanMaskUInt32(uint left, uint right) => CreateWhileLessThanMaskUInt32(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b32[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<uint> CreateWhileLessThanMaskUInt32(ulong left, ulong right) => CreateWhileLessThanMaskUInt32(left, right);
+
+
+        // While incrementing scalar is less than
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanMaskUInt64(int left, int right) => CreateWhileLessThanMaskUInt64(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanMaskUInt64(long left, long right) => CreateWhileLessThanMaskUInt64(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanMaskUInt64(uint left, uint right) => CreateWhileLessThanMaskUInt64(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanMaskUInt64(ulong left, ulong right) => CreateWhileLessThanMaskUInt64(left, right);
 
 
         // While incrementing scalar is less than or equal to
@@ -2861,25 +2942,268 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svwhilele_b8[_s32](int32_t op1, int32_t op2)</para>
         ///   <para>  WHILELE Presult.B, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanOrEqualMask8Bit(int left, int right) => CreateWhileLessThanOrEqualMask8Bit(left, right);
+        public static Vector<byte> CreateWhileLessThanOrEqualMaskByte(int left, int right) => CreateWhileLessThanOrEqualMaskByte(left, right);
 
         /// <summary>
         ///   <para>svbool_t svwhilele_b8[_s64](int64_t op1, int64_t op2)</para>
         ///   <para>  WHILELE Presult.B, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanOrEqualMask8Bit(long left, long right) => CreateWhileLessThanOrEqualMask8Bit(left, right);
+        public static Vector<byte> CreateWhileLessThanOrEqualMaskByte(long left, long right) => CreateWhileLessThanOrEqualMaskByte(left, right);
 
         /// <summary>
         ///   <para>svbool_t svwhilele_b8[_u32](uint32_t op1, uint32_t op2)</para>
         ///   <para>  WHILELS Presult.B, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanOrEqualMask8Bit(uint left, uint right) => CreateWhileLessThanOrEqualMask8Bit(left, right);
+        public static Vector<byte> CreateWhileLessThanOrEqualMaskByte(uint left, uint right) => CreateWhileLessThanOrEqualMaskByte(left, right);
 
         /// <summary>
         ///   <para>svbool_t svwhilele_b8[_u64](uint64_t op1, uint64_t op2)</para>
         ///   <para>  WHILELS Presult.B, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanOrEqualMask8Bit(ulong left, ulong right) => CreateWhileLessThanOrEqualMask8Bit(left, right);
+        public static Vector<byte> CreateWhileLessThanOrEqualMaskByte(ulong left, ulong right) => CreateWhileLessThanOrEqualMaskByte(left, right);
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<double> CreateWhileLessThanOrEqualMaskDouble(int left, int right) => CreateWhileLessThanOrEqualMaskDouble(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<double> CreateWhileLessThanOrEqualMaskDouble(long left, long right) => CreateWhileLessThanOrEqualMaskDouble(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<double> CreateWhileLessThanOrEqualMaskDouble(uint left, uint right) => CreateWhileLessThanOrEqualMaskDouble(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<double> CreateWhileLessThanOrEqualMaskDouble(ulong left, ulong right) => CreateWhileLessThanOrEqualMaskDouble(left, right);
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.H, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanOrEqualMaskInt16(int left, int right) => CreateWhileLessThanOrEqualMaskInt16(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanOrEqualMaskInt16(long left, long right) => CreateWhileLessThanOrEqualMaskInt16(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.H, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanOrEqualMaskInt16(uint left, uint right) => CreateWhileLessThanOrEqualMaskInt16(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanOrEqualMaskInt16(ulong left, ulong right) => CreateWhileLessThanOrEqualMaskInt16(left, right);
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanOrEqualMaskInt32(int left, int right) => CreateWhileLessThanOrEqualMaskInt32(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanOrEqualMaskInt32(long left, long right) => CreateWhileLessThanOrEqualMaskInt32(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanOrEqualMaskInt32(uint left, uint right) => CreateWhileLessThanOrEqualMaskInt32(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanOrEqualMaskInt32(ulong left, ulong right) => CreateWhileLessThanOrEqualMaskInt32(left, right);
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanOrEqualMaskInt64(int left, int right) => CreateWhileLessThanOrEqualMaskInt64(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanOrEqualMaskInt64(long left, long right) => CreateWhileLessThanOrEqualMaskInt64(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanOrEqualMaskInt64(uint left, uint right) => CreateWhileLessThanOrEqualMaskInt64(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanOrEqualMaskInt64(ulong left, ulong right) => CreateWhileLessThanOrEqualMaskInt64(left, right);
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b8[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.B, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<sbyte> CreateWhileLessThanOrEqualMaskSByte(int left, int right) => CreateWhileLessThanOrEqualMaskSByte(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b8[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.B, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<sbyte> CreateWhileLessThanOrEqualMaskSByte(long left, long right) => CreateWhileLessThanOrEqualMaskSByte(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b8[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.B, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<sbyte> CreateWhileLessThanOrEqualMaskSByte(uint left, uint right) => CreateWhileLessThanOrEqualMaskSByte(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b8[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.B, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<sbyte> CreateWhileLessThanOrEqualMaskSByte(ulong left, ulong right) => CreateWhileLessThanOrEqualMaskSByte(left, right);
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<float> CreateWhileLessThanOrEqualMaskSingle(int left, int right) => CreateWhileLessThanOrEqualMaskSingle(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<float> CreateWhileLessThanOrEqualMaskSingle(long left, long right) => CreateWhileLessThanOrEqualMaskSingle(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<float> CreateWhileLessThanOrEqualMaskSingle(uint left, uint right) => CreateWhileLessThanOrEqualMaskSingle(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<float> CreateWhileLessThanOrEqualMaskSingle(ulong left, ulong right) => CreateWhileLessThanOrEqualMaskSingle(left, right);
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.H, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<ushort> CreateWhileLessThanOrEqualMaskUInt16(int left, int right) => CreateWhileLessThanOrEqualMaskUInt16(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<ushort> CreateWhileLessThanOrEqualMaskUInt16(long left, long right) => CreateWhileLessThanOrEqualMaskUInt16(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.H, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<ushort> CreateWhileLessThanOrEqualMaskUInt16(uint left, uint right) => CreateWhileLessThanOrEqualMaskUInt16(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<ushort> CreateWhileLessThanOrEqualMaskUInt16(ulong left, ulong right) => CreateWhileLessThanOrEqualMaskUInt16(left, right);
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<uint> CreateWhileLessThanOrEqualMaskUInt32(int left, int right) => CreateWhileLessThanOrEqualMaskUInt32(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<uint> CreateWhileLessThanOrEqualMaskUInt32(long left, long right) => CreateWhileLessThanOrEqualMaskUInt32(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<uint> CreateWhileLessThanOrEqualMaskUInt32(uint left, uint right) => CreateWhileLessThanOrEqualMaskUInt32(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<uint> CreateWhileLessThanOrEqualMaskUInt32(ulong left, ulong right) => CreateWhileLessThanOrEqualMaskUInt32(left, right);
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanOrEqualMaskUInt64(int left, int right) => CreateWhileLessThanOrEqualMaskUInt64(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanOrEqualMaskUInt64(long left, long right) => CreateWhileLessThanOrEqualMaskUInt64(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanOrEqualMaskUInt64(uint left, uint right) => CreateWhileLessThanOrEqualMaskUInt64(left, right);
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanOrEqualMaskUInt64(ulong left, ulong right) => CreateWhileLessThanOrEqualMaskUInt64(left, right);
 
 
         // Divide
