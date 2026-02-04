@@ -485,7 +485,7 @@ namespace System.Speech.Internal.Synthesis
             for (int i = 0; i < _lastComplete;)
             {
                 ttsEvent = (TTSEvent)_phonemeQueue.Dequeue();
-                totalDuration += ttsEvent.PhonemeDuration.Milliseconds;
+                totalDuration += (long)ttsEvent.PhonemeDuration.TotalMilliseconds;
                 i += ttsEvent.Phoneme.Length;
             }
 

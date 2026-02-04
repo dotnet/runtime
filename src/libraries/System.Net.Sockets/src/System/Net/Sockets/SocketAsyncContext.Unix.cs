@@ -1411,7 +1411,7 @@ namespace System.Net.Sockets
                     // Adjust timeout and try again.
                     if (timeout > 0)
                     {
-                        timeout -= (DateTime.UtcNow - waitStart).Milliseconds;
+                        timeout -= (int)(DateTime.UtcNow - waitStart).TotalMilliseconds;
 
                         if (timeout <= 0)
                         {
