@@ -518,7 +518,7 @@ namespace System.Runtime.CompilerServices
                         {
                             // we have a new Continuation that belongs to the same logical invocation as the previous; propagate debug info from previous continuation
                             if (Task.s_asyncDebuggingEnabled)
-                                Task.UpdateRuntimeAsyncContinuationTimestamp(newContinuation, timestamp);
+                                Task.SetRuntimeAsyncContinuationTimestamp(newContinuation, timestamp);
                             newContinuation.Next = nextContinuation;
                             HandleSuspended();
                             contexts.Pop();
@@ -539,6 +539,17 @@ namespace System.Runtime.CompilerServices
                             contexts.Pop();
 
                             AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
+
+                            if (isTplEnabled)
+                            {
+                                TplEventSource.Log.TraceOperationEnd(this.Id, ex is OperationCanceledException ? AsyncCausalityStatus.Canceled : AsyncCausalityStatus.Error);
+                            }
+
+                            if (Task.s_asyncDebuggingEnabled)
+                            {
+                                Task.RemoveFromActiveTasks(this);
+                                Task.RemoveRuntimeAsyncTaskTimestamp(this);
+                            }
 
                             if (!successfullySet)
                             {

@@ -180,11 +180,11 @@ namespace System.Threading.Tasks
 #if !MONO
         // Dictionary that relates a runtime-async Task's ID to the QPC tick count when the current inflight invocation started.
         // Needed because Continuations that are inflight have already been dequeued from the chain.
-        internal static System.Collections.Concurrent.ConcurrentDictionary<int, long>? s_runtimeAsyncTaskTicks;
+        private static Dictionary<int, long>? s_runtimeAsyncTaskTimestamps;
         // Dictionary to store debug info about runtime-async Continuations.
         // The TickCount field stores the QPC tick count when the logical invocation to which the Continuation belongs started.
         // The ID field stores a unique ID for the Continuation, similar to Task IDs.
-        internal static System.Collections.Concurrent.ConcurrentDictionary<Continuation, long>? s_runtimeAsyncContinuationTicks;
+        private static Dictionary<Continuation, long>? s_runtimeAsyncContinuationTimestamps;
 #endif
         // These methods are a way to access the dictionary both from this class and for other classes that also
         // activate dummy tasks. Specifically the AsyncTaskMethodBuilder and AsyncTaskMethodBuilder<>
@@ -222,43 +222,67 @@ namespace System.Threading.Tasks
 #if !MONO
         internal static void SetRuntimeAsyncContinuationTimestamp(Continuation continuation, long tickCount)
         {
-            s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, long>(ContinuationEqualityComparer.Instance);
-            s_runtimeAsyncContinuationTicks.TryAdd(continuation, tickCount);
+            Dictionary<Continuation, long> continuationTimestamps =
+                Volatile.Read(ref s_runtimeAsyncContinuationTimestamps) ??
+                Interlocked.CompareExchange(ref s_runtimeAsyncContinuationTimestamps, new Dictionary<Continuation, long>(ContinuationEqualityComparer.Instance), null) ??
+                s_runtimeAsyncContinuationTimestamps;
+
+            lock (continuationTimestamps)
+            {
+                continuationTimestamps.TryAdd(continuation, tickCount);
+            }
         }
 
         internal static bool GetRuntimeAsyncContinuationTimestamp(Continuation continuation, out long tickCount)
         {
-            if (s_runtimeAsyncContinuationTicks != null && s_runtimeAsyncContinuationTicks.TryGetValue(continuation, out tickCount))
+            Dictionary<Continuation, long>? continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            if (continuationTimestamps is null)
             {
-                return true;
+                tickCount = 0;
+                return false;
             }
-            tickCount = 0;
-            return false;
-        }
 
-        internal static void UpdateRuntimeAsyncContinuationTimestamp(Continuation continuation, long tickCount)
-        {
-            s_runtimeAsyncContinuationTicks ??= new Collections.Concurrent.ConcurrentDictionary<Continuation, long>(ContinuationEqualityComparer.Instance);
-            s_runtimeAsyncContinuationTicks[continuation] = tickCount;
+            lock (continuationTimestamps)
+            {
+                return continuationTimestamps.TryGetValue(continuation, out tickCount);
+            }
         }
 
         internal static void RemoveRuntimeAsyncContinuationTimestamp(Continuation continuation)
         {
-            s_runtimeAsyncContinuationTicks?.Remove(continuation, out _);
+            Dictionary<Continuation, long>? continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            if (continuationTimestamps is null)
+                return;
+
+            lock (continuationTimestamps)
+            {
+                continuationTimestamps.Remove(continuation);
+            }
         }
 
         internal static void UpdateRuntimeAsyncTaskTimestamp(Task task, long inflightTickCount)
         {
-            if (s_asyncDebuggingEnabled)
+            Dictionary<int, long> runtimeAsyncTaskTimestamps =
+                Volatile.Read(ref s_runtimeAsyncTaskTimestamps) ??
+                Interlocked.CompareExchange(ref s_runtimeAsyncTaskTimestamps, new Dictionary<int, long>(), null) ??
+                s_runtimeAsyncTaskTimestamps;
+
+            lock (runtimeAsyncTaskTimestamps)
             {
-                s_runtimeAsyncTaskTicks ??= [];
-                s_runtimeAsyncTaskTicks[task.Id] = inflightTickCount;
+                runtimeAsyncTaskTimestamps[task.Id] = inflightTickCount;
             }
         }
 
         internal static void RemoveRuntimeAsyncTaskTimestamp(Task task)
         {
-            s_runtimeAsyncTaskTicks?.Remove(task.Id, out _);
+            Dictionary<int, long>? runtimeAsyncTaskTimestamps = s_runtimeAsyncTaskTimestamps;
+            if (runtimeAsyncTaskTimestamps is null)
+                return;
+
+            lock (runtimeAsyncTaskTimestamps)
+            {
+                runtimeAsyncTaskTimestamps.Remove(task.Id);
+            }
         }
 #endif
 
