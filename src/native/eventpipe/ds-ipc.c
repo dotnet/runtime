@@ -358,7 +358,7 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 	if (ds_ipc_stream_factory_any_listen_ports ()) {
 		int fd = (int)syscall (__NR_memfd_create, "dotnet_ipc_created", (unsigned int)MFD_CLOEXEC);
 		if (fd >= 0) {
-			mmap (NULL, 1, PROT_EXEC | PROT_READ, MAP_PRIVATE, fd, 0);
+			mmap (NULL, 1, PROT_NONE, MAP_PRIVATE, fd, 0);
 			close (fd);
 		}
 	}
