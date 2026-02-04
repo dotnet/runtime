@@ -608,7 +608,7 @@ namespace System.Diagnostics.Tests
             { "Quuux", new[] {
                 @"Exception from Quuux2",
                 @"V2Methods\.Quuux2\(\).*Quuux2.*\.cs:line 4",
-                @"V2Methods\.Quuux\(\).*Quuux.*\.cs:line [3|5]" // if yield finishes before Task is awaited, line 3 else line 5. Either is ok.
+                @"V2Methods\.Quuux\(\).*Quuux.*\.cs:line [35]" // if yield finishes before Task is awaited, line 3 else line 5. Either is ok.
             }},
             {"Bux", new[] {
                 @"Exception from Baz method.",
