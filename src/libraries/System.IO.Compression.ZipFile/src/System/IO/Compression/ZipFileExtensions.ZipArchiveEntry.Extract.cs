@@ -64,13 +64,42 @@ namespace System.IO.Compression
         {
             ExtractToFileInitialize(source, destinationFileName, overwrite, out FileStreamOptions fileStreamOptions);
 
-            using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
+            // When overwriting, extract to a temporary file first to avoid corrupting the destination file
+            // if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
+            string extractPath = destinationFileName;
+            string? tempPath = null;
+
+            if (overwrite && File.Exists(destinationFileName))
             {
-                using (Stream es = source.Open())
-                    es.CopyTo(fs);
+                tempPath = Path.Combine(Path.GetDirectoryName(destinationFileName)!, Path.GetRandomFileName());
+                extractPath = tempPath;
             }
 
-            ExtractToFileFinalize(source, destinationFileName);
+            try
+            {
+                using (FileStream fs = new FileStream(extractPath, fileStreamOptions))
+                {
+                    using (Stream es = source.Open())
+                        es.CopyTo(fs);
+                }
+
+                // Move the temporary file to the destination only after successful extraction
+                if (tempPath is not null)
+                {
+                    File.Move(tempPath, destinationFileName, overwrite: true);
+                }
+
+                ExtractToFileFinalize(source, destinationFileName);
+            }
+            catch
+            {
+                // Clean up the temporary file if extraction failed
+                if (tempPath is not null && File.Exists(tempPath))
+                {
+                    try { File.Delete(tempPath); } catch { }
+                }
+                throw;
+            }
         }
 
         private static void ExtractToFileInitialize(ZipArchiveEntry source, string destinationFileName, bool overwrite, out FileStreamOptions fileStreamOptions)
