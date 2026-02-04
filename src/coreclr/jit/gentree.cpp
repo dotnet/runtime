@@ -2843,6 +2843,7 @@ AGAIN:
                     break;
 
                 // For the ones below no extra argument matters for comparison.
+                case GT_LCLHEAP:
                 case GT_BOX:
                 case GT_RUNTIMELOOKUP:
                 case GT_ARR_ADDR:
@@ -3416,6 +3417,7 @@ AGAIN:
                     break;
 
                 // For the ones below no extra argument matters for comparison.
+                case GT_LCLHEAP:
                 case GT_BOX:
                 case GT_ARR_ADDR:
                     break;
@@ -3462,6 +3464,7 @@ AGAIN:
                     break;
 
                 // For the ones below no extra argument matters for comparison.
+                case GT_LCLHEAP:
                 case GT_QMARK:
                 case GT_INDEX_ADDR:
                     break;
@@ -7808,6 +7811,15 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
     return result;
 }
 
+GenTreeOpWithILOffset* Compiler::gtNewLclHeapNode(GenTree* size, IL_OFFSET ilOffset)
+{
+    assert(size != nullptr);
+    GenTreeOpWithILOffset* node =
+        new (this, GT_LCLHEAP) GenTreeOpWithILOffset(GT_LCLHEAP, TYP_I_IMPL, size, nullptr, ilOffset);
+    node->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
+    return node;
+}
+
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
 {
     assert(genActualType(type) == type);
@@ -9890,6 +9902,11 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
 
             case GT_SWIFT_ERROR_RET:
                 copy = new (this, oper) GenTreeOp(oper, tree->TypeGet(), tree->gtGetOp1(), tree->gtGetOp2());
+                break;
+
+            case GT_LCLHEAP:
+                copy =
+                    new (this, GT_LCLHEAP) GenTreeOpWithILOffset(GT_LCLHEAP, TYP_I_IMPL, tree->gtGetOp1(), nullptr, 0);
                 break;
 
             default:
