@@ -97,6 +97,7 @@ The script provides a recommendation at the end:
 
 ## References
 
+- **Helix artifacts & binlogs**: See [references/helix-artifacts.md](references/helix-artifacts.md)
 - **Manual investigation steps**: See [references/manual-investigation.md](references/manual-investigation.md)
 - **AzDO/Helix details**: See [references/azdo-helix-reference.md](references/azdo-helix-reference.md)
 
