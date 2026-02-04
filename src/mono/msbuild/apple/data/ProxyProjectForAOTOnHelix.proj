@@ -18,7 +18,7 @@
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
     <!-- Crossgen2 path on Helix - uploaded to build/crossgen2 in correlation payload -->
-    <Crossgen2InBuildDir Condition="'$(HELIX_CORRELATION_PAYLOAD)' != '' and '$(Crossgen2InBuildDir)' == ''">$([MSBuild]::NormalizeDirectory($(HELIX_CORRELATION_PAYLOAD), 'build', 'crossgen2'))</Crossgen2InBuildDir>
+    <Crossgen2InBuildDir Condition="'$(HELIX_CORRELATION_PAYLOAD)' != ''">$([MSBuild]::NormalizeDirectory($(HELIX_CORRELATION_PAYLOAD), 'build', 'crossgen2'))</Crossgen2InBuildDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
