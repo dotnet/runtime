@@ -172,7 +172,12 @@ function Clear-ExpiredCache {
         $_.LastWriteTime -lt $cutoff
     } | ForEach-Object {
         Write-Verbose "Removing expired cache file: $($_.Name)"
-        Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+        try {
+            Remove-Item $_.FullName -Force -ErrorAction Stop
+        }
+        catch {
+            Write-Verbose "Failed to remove cache file '$($_.Name)': $($_.Exception.Message)"
+        }
     }
 }
 
@@ -313,7 +318,8 @@ function Get-SafeSearchTerm {
     param([string]$Term)
     
     # Sanitize search term to avoid passing unsafe characters to gh CLI
-    # Remove shell metacharacters but keep alphanumeric, spaces, dots, hyphens, colons, slashes
+    # Keep: alphanumeric, spaces, dots, hyphens, colons (for namespaces like System.Net),
+    # and slashes (for paths). These are safe for GitHub search and common in .NET names.
     $safeTerm = $Term -replace '[^\w\s\-.:/]', ''
     return $safeTerm.Trim()
 }
@@ -358,7 +364,11 @@ function Get-AzDOBuildIdFromPR {
         if ($anyBuild) {
             $anyBuildMatch = [regex]::Match($anyBuild.ToString(), "buildId=(\d+)")
             if ($anyBuildMatch.Success) {
-                return @([int]$anyBuildMatch.Groups[1].Value)
+                $buildIdStr = $anyBuildMatch.Groups[1].Value
+                $buildIdInt = 0
+                if ([int]::TryParse($buildIdStr, [ref]$buildIdInt)) {
+                    return @($buildIdInt)
+                }
             }
         }
         throw "Could not find Azure DevOps build for PR #$PR in $Repository"
@@ -393,6 +403,12 @@ function Get-BuildAnalysisKnownIssues {
         $headSha = gh pr view $PR --repo $Repository --json headRefOid --jq '.headRefOid' 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Verbose "Failed to get PR head SHA: $headSha"
+            return @()
+        }
+
+        # Validate headSha is a valid git SHA (40 hex characters)
+        if ($headSha -notmatch '^[a-fA-F0-9]{40}$') {
+            Write-Verbose "Invalid head SHA format: $headSha"
             return @()
         }
 
