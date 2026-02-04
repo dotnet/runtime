@@ -557,7 +557,11 @@
     </PropertyGroup>
     <Message Condition="'$(_MonoSkipCMakeConfigure)' == 'true'" Text="The CMake command line is the same as the last run. Skipping running CMake configure." Importance="High"/>
     <Message Condition="'$(_MonoSkipCMakeConfigure)' != 'true'" Text="Running '$(_MonoCMakeConfigureCommand)' in '$(MonoObjDir)'" Importance="High"/>
-    <Exec Condition="'$(_MonoSkipCMakeConfigure)' != 'true'" Command="$(_MonoCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(_MonoSkipCMakeConfigure)' != 'true'"
+      Command="$(_MonoCMakeConfigureCommand)"
+      EnvironmentVariables="EMSDK_PATH=$(EMSDK_PATH)"
+      IgnoreStandardErrorWarningFormat="true"
+      WorkingDirectory="$(MonoObjDir)"/>
     <WriteLinesToFile
       Condition="'$(_MonoSkipCMakeConfigure)' != 'true'"
       File="$(MonoObjDir)cmake_cmd_line.txt"
@@ -566,7 +570,11 @@
 
     <!-- build -->
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="Running '$(_MonoCMakeBuildCommand)' in '$(MonoObjDir)'" Importance="High"/>
-    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Command="$(_MonoCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
+    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'"
+      Command="$(_MonoCMakeBuildCommand)"
+      EnvironmentVariables="EMSDK_PATH=$(EMSDK_PATH)"
+      IgnoreStandardErrorWarningFormat="true"
+      WorkingDirectory="$(MonoObjDir)"/>
   </Target>
 
   <!-- Build AOT cross compiler (if available) -->
