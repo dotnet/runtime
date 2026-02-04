@@ -124,30 +124,6 @@ extern "C" void QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandl
 
 #ifdef FEATURE_COMINTEROP
 
-static BSTR BStrFromString(STRINGREF s)
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    WCHAR *wz;
-    int cch;
-    BSTR bstr;
-
-    if (s == NULL)
-        return NULL;
-
-    s->RefInterpretGetStringValuesDangerousForGC(&wz, &cch);
-
-    bstr = SysAllocString(wz);
-    if (bstr == NULL)
-        COMPlusThrowOM();
-
-    return bstr;
-}
-
 static BSTR GetExceptionDescription(OBJECTREF objException)
 {
     CONTRACTL
