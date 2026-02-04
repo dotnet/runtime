@@ -305,6 +305,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                     currentCount++;
                     if (currentCount > 4)
                     {
+                        await Task.Delay(500); // Ensure the upload has time to start before we exit
                         Console.WriteLine("WASM EXIT 0");
                     }
                     """
