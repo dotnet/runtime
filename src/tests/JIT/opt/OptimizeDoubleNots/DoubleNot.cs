@@ -17,22 +17,12 @@ public class DoubleNotTest
     [Fact]
     public static int TestEntryPoint()
     {
-        // Test Foo with IsFromEnd
         Index idx1 = new Index(5, fromEnd: true);
-        if (Foo(idx1) != ~5)
-        {
-            Console.WriteLine("FAIL: Foo(^5) returned " + Foo(idx1) + ", expected " + ~5);
-            return 101;
-        }
+        Assert.Equal(~5, Foo(idx1));   // integrated failure message from xUnit
 
         Index idx2 = new Index(5, fromEnd: false);
-        if (Foo(idx2) != 5)
-        {
-            Console.WriteLine("FAIL: Foo(5) returned " + Foo(idx2) + ", expected 5");
-            return 101;
-        }
+        Assert.Equal(5, Foo(idx2));
 
-        Console.WriteLine("PASS");
         return 100;
     }
 }
