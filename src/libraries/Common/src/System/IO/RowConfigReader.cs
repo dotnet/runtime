@@ -93,29 +93,25 @@ namespace System.IO
                 endOfLine += afterKey; // Adjust for the slice offset
             }
 
-            int lineLength = endOfLine - keyIndex; // keyIndex is the start of the line.
-            ReadOnlySpan<char> lineSpan = _buffer.Slice(keyIndex, lineLength);
-            int whitespaceBeforeValue = lineSpan.LastIndexOf('\t');
+            // Get the portion of the line from after the key to end of line
+            ReadOnlySpan<char> afterKeySpan = _buffer.Slice(afterKey, endOfLine - afterKey);
+
+            // Find the last whitespace in the span after the key
+            int whitespaceBeforeValue = afterKeySpan.LastIndexOf('\t');
             if (whitespaceBeforeValue == -1)
             {
-                whitespaceBeforeValue = lineSpan.LastIndexOf(' '); // try space as well
+                whitespaceBeforeValue = afterKeySpan.LastIndexOf(' ');
             }
 
-            int valueIndex = whitespaceBeforeValue + 1; // Get the first character after the whitespace.
-            int valueLength = lineLength - valueIndex;
-            if (valueIndex <= 0 || valueLength <= 0)
+            if (whitespaceBeforeValue == -1)
             {
-                // No value found after the key.
+                // No whitespace found after key, which means no value
                 value = default;
                 return false;
             }
 
-            // Trim trailing whitespace/newline from value
-            ReadOnlySpan<char> valueSpan = lineSpan.Slice(valueIndex, valueLength);
-            while (valueSpan.Length > 0 && (valueSpan[^1] == '\r' || valueSpan[^1] == '\n' || valueSpan[^1] == ' ' || valueSpan[^1] == '\t'))
-            {
-                valueSpan = valueSpan.Slice(0, valueSpan.Length - 1);
-            }
+            // Value starts right after the whitespace
+            ReadOnlySpan<char> valueSpan = afterKeySpan.Slice(whitespaceBeforeValue + 1).TrimEnd(" \t\r\n");
 
             if (valueSpan.IsEmpty)
             {
