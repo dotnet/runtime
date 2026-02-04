@@ -696,9 +696,6 @@ public:
         _pMD = CoreLibBinder::GetMethod(id);
         _ASSERTE(_pMD != NULL);
         _ASSERTE(_pMD->HasUnmanagedCallersOnlyAttribute());
-
-        _pMD->EnsureActive();
-        _pMD->PrepareForUseAsAFunctionPointer();
     }
 
     template<typename... Args>
@@ -711,6 +708,14 @@ public:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
+
+        // Sanity check - UnmanagedCallersOnly methods must be in CoreLib.
+        // See below load level override.
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        // We're invoking an CoreLib method, so lift the restriction on type load limits. These calls are
+        // limited to CoreLib and only into UnmanagedCallersOnly methods.
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
         struct
         {
