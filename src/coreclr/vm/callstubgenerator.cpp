@@ -765,47 +765,35 @@ extern "C" void Store_FA7();
 
 #endif // TARGET_RISCV64
 
-#define LOG_COMPUTE_CALL_STUB 0
-
 PCODE CallStubGenerator::GetStackRoutine()
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("Load_Stack\n");
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "Load_Stack\n"));
     return m_interpreterToNative ? (PCODE)Load_Stack : (PCODE)Store_Stack;
 }
 
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
 PCODE CallStubGenerator::GetStackRoutine_1B()
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("GetStackRoutine_1B\n");
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetStackRoutine_1B\n"));
     return m_interpreterToNative ? (PCODE)Load_Stack_1B : (PCODE)Store_Stack_1B;
 }
 
 PCODE CallStubGenerator::GetStackRoutine_2B()
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("GetStackRoutine_2B\n");
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetStackRoutine_2B\n"));
     return m_interpreterToNative ? (PCODE)Load_Stack_2B : (PCODE)Store_Stack_2B;
 }
 
 PCODE CallStubGenerator::GetStackRoutine_4B()
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("GetStackRoutine_4B\n");
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetStackRoutine_4B\n"));
     return m_interpreterToNative ? (PCODE)Load_Stack_4B : (PCODE)Store_Stack_4B;
 }
 #endif // TARGET_APPLE && TARGET_ARM64
 
 PCODE CallStubGenerator::GetGPRegRangeRoutine(int r1, int r2)
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("GetGPRegRangeRoutine %d %d\n", r1, r2);
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetGPRegRangeRoutine %d %d\n", r1, r2));
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
     static const PCODE GPRegsLoadRoutines[] = {
@@ -904,7 +892,7 @@ PCODE CallStubGenerator::GetGPRegRangeRoutine(int r1, int r2)
 PCODE CallStubGenerator::GetGPRegRefRoutine(int r)
 {
 #if LOG_COMPUTE_CALL_STUB
-    printf("GetGPRegRefRoutine %d\n", r);
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetGPRegRefRoutine %d\n", r));
 #endif
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
@@ -939,9 +927,7 @@ PCODE CallStubGenerator::GetGPRegRefRoutine(int r)
 
 PCODE CallStubGenerator::GetStackRefRoutine()
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("GetStackRefRoutine\n");
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetStackRefRoutine\n"));
     return m_interpreterToNative ? (PCODE)Load_Stack_Ref : (PCODE)Store_Stack_Ref;
 }
 
@@ -949,9 +935,7 @@ PCODE CallStubGenerator::GetStackRefRoutine()
 
 PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("GetFPRegRangeRoutine %d %d\n", x1, x2);
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetFPRegRangeRoutine %d %d\n", x1, x2));
 
 #ifdef TARGET_ARM
     _ASSERTE(!"Not support FP reg yet");
@@ -1047,7 +1031,7 @@ PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
 PCODE CallStubGenerator::GetFPReg128RangeRoutine(int x1, int x2)
 {
 #if LOG_COMPUTE_CALL_STUB
-    printf("GetFPReg128RangeRoutine %d %d\n", x1, x2);
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetFPReg128RangeRoutine %d %d\n", x1, x2));
 #endif
     static const PCODE FPRegs128LoadRoutines[] = {
         (PCODE)Load_Q0, (PCODE)Load_Q0_Q1, (PCODE)Load_Q0_Q1_Q2, (PCODE)Load_Q0_Q1_Q2_Q3, (PCODE)Load_Q0_Q1_Q2_Q3_Q4, (PCODE)Load_Q0_Q1_Q2_Q3_Q4_Q5, (PCODE)Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6, (PCODE)Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6_Q7,
@@ -1079,7 +1063,8 @@ PCODE CallStubGenerator::GetFPReg128RangeRoutine(int x1, int x2)
 PCODE CallStubGenerator::GetFPReg32RangeRoutine(int x1, int x2)
 {
 #if LOG_COMPUTE_CALL_STUB
-    printf("GetFPReg32RangeRoutine %d %d\n", x1, x2);
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetFPReg32RangeRoutine %d %d\n", x1, x2));
+
 #endif
     static const PCODE FPRegs32LoadRoutines[] = {
         (PCODE)Load_S0, (PCODE)Load_S0_S1, (PCODE)Load_S0_S1_S2, (PCODE)Load_S0_S1_S2_S3, (PCODE)Load_S0_S1_S2_S3_S4, (PCODE)Load_S0_S1_S2_S3_S4_S5, (PCODE)Load_S0_S1_S2_S3_S4_S5_S6, (PCODE)Load_S0_S1_S2_S3_S4_S5_S6_S7,
@@ -1315,11 +1300,7 @@ extern "C" void InterpreterStubRetFloatInt();
 extern "C" void InterpreterStubRetIntFloat();
 #endif // TARGET_RISCV64
 
-#if LOG_COMPUTE_CALL_STUB
-#define INVOKE_FUNCTION_PTR(functionPtrName) printf(#functionPtrName "\n"); return functionPtrName
-#else
-#define INVOKE_FUNCTION_PTR(functionPtrName) return functionPtrName
-#endif
+#define INVOKE_FUNCTION_PTR(functionPtrName) LOG2((LF2_INTERPRETER, LL_INFO10000, #functionPtrName "\n")); return functionPtrName
 
 CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallStubGenerator::ReturnType returnType)
 {
@@ -1441,11 +1422,7 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
     }
 }
 
-#if LOG_COMPUTE_CALL_STUB
-#define RETURN_TYPE_HANDLER(returnType) printf(#returnType "\n"); return (PCODE)returnType
-#else
-#define RETURN_TYPE_HANDLER(returnType) return (PCODE)returnType
-#endif
+#define RETURN_TYPE_HANDLER(returnType) LOG2((LF2_INTERPRETER, LL_INFO10000, #returnType "\n")); return (PCODE)returnType
 
 PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::ReturnType returnType)
 {
@@ -1577,9 +1554,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
 
     _ASSERTE(pMD != NULL);
 
-#if LOG_COMPUTE_CALL_STUB
-    printf("GenerateCallStub interpreterToNative=%d\n", interpreterToNative ? 1 : 0);
-#endif // LOG_COMPUTE_CALL_STUB
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GenerateCallStub interpreterToNative=%d\n", interpreterToNative ? 1 : 0));
     m_interpreterToNative = interpreterToNative;
 
     MetaSig sig(pMD);
@@ -1720,9 +1695,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     if (pCachedHeader != NULL)
     {
         // The stub is already cached, return the cached header
-#if LOG_COMPUTE_CALL_STUB
-        printf("CallStubHeader at %p\n", &pCachedHeader->Header);
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "CallStubHeader at %p\n", &pCachedHeader->Header));
         return &pCachedHeader->Header;
     }
     else
@@ -1737,9 +1710,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         amTracker.SuppressRelease();
 
         _ASSERTE(s_callStubCache->Lookup(cachedHeaderKey) == pHeader);
-#if LOG_COMPUTE_CALL_STUB
-        printf("CallStubHeader at %p\n", &pHeader->Header);
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "CallStubHeader at %p\n", &pHeader->Header));
         return &pHeader->Header;
     }
 };
@@ -1975,18 +1946,14 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     // in the places where it is needed such as computation of return buffers.
     if (sig.GetCallingConventionInfo() & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("Managed ExplicitThis to HasThis conversion needed\n");
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Managed ExplicitThis to HasThis conversion needed\n"));
         rewriteMetaSigFromExplicitThisToHasThis = true;
     }
 
     SigBuilder sigBuilder;
     if (rewriteMetaSigFromExplicitThisToHasThis)
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("Rewriting ExplicitThis to implicit this\n");
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Rewriting ExplicitThis to implicit this\n"));
         sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS);
         if ((sig.NumFixedArgs() == 0) || (sig.HasThis() && !sig.HasExplicitThis()))
         {
@@ -2056,16 +2023,12 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     m_s2 = 0;
     m_routineIndex = 0;
     m_totalStackSize = argIt.SizeOfArgStack();
-#if LOG_COMPUTE_CALL_STUB
-    printf("ComputeCallStub\n");
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "ComputeCallStub\n"));
     int numArgs = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0);
 
     if (argIt.HasThis())
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("HasThis\n");
-#endif
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "HasThis\n"));
         // The "this" argument register is not enumerated by the arg iterator, so
         // we need to "inject" it here.
         // CLR ABI specifies that unlike the native Windows x64 calling convention, it is passed in the first argument register.
@@ -2076,9 +2039,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
     if (argIt.HasParamType())
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("argIt.HasParamType\n");
-#endif
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "argIt.HasParamType\n"));
         // In the Interpreter calling convention the argument after the "this" pointer is the parameter type
         ArgLocDesc paramArgLocDesc;
         argIt.GetParamTypeLoc(&paramArgLocDesc);
@@ -2088,9 +2049,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
     if (argIt.HasAsyncContinuation())
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("argIt.HasAsyncContinuation\n");
-#endif
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "argIt.HasAsyncContinuation\n"));
         // In the Interpreter calling convention the argument after the param type is the async continuation
         ArgLocDesc asyncContinuationLocDesc;
         argIt.GetAsyncContinuationLoc(&asyncContinuationLocDesc);
@@ -2114,9 +2073,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     int ofs;
     while ((ofs = argIt.GetNextOffset()) != TransitionBlock::InvalidOffset)
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("Next argument\n");
-#endif
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Next argument\n"));
         ArgLocDesc argLocDesc;
         argIt.GetArgLoc(ofs, &argLocDesc);
 
@@ -2170,9 +2127,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
                 interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
                 pRoutines[m_routineIndex++] = (PCODE)InjectInterpStackAlign;
-#if LOG_COMPUTE_CALL_STUB
-                printf("Inject stack align argument\n");
-#endif
+                LOG2((LF2_INTERPRETER, LL_INFO10000, "Inject stack align argument\n"));
             }
 
             assert(interpreterStackOffset == ALIGN_UP(interpreterStackOffset, align));
@@ -2336,9 +2291,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
 
     if (argLocDesc.m_cGenReg != 0)
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("m_cGenReg=%d\n", (int)argLocDesc.m_cGenReg);
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "m_cGenReg=%d\n", (int)argLocDesc.m_cGenReg));
 #ifdef TARGET_ARM
         if (argLocDesc.m_cGenReg == 2)
         {
@@ -2373,9 +2326,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
 
     if (argLocDesc.m_cFloatReg != 0)
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("m_cFloatReg=%d\n", (int)argLocDesc.m_cFloatReg);
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "m_cFloatReg=%d\n", (int)argLocDesc.m_cFloatReg));
         if (m_x1 == NoRange) // No active range yet
         {
             // Start a new range
@@ -2424,9 +2375,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
 
     if (argLocDesc.m_byteStackSize != 0)
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("m_byteStackSize=%d\n", (int)argLocDesc.m_byteStackSize);
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "m_byteStackSize=%d\n", (int)argLocDesc.m_byteStackSize));
 #ifdef TARGET_ARM
         if (argLocDesc.m_byteStackSize >= 8)
         {
@@ -2442,13 +2391,14 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
-        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= TARGET_POINTER_SIZE)
+        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= TARGET_POINTER_SIZE) && IS_ALIGNED(m_s2 - m_s1 + 1, INTERP_STACK_SLOT_SIZE)
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
                  && (!pArgIt || !pArgIt->IsArgPassedByRef())
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
                 )
         {
-            // Extend an existing range, but only if the argument is at least pointer size large.
+            // Extend an existing range, but only if the argument is at least pointer size large and
+            // the existing range end was aligned to interpreter stack slot size.
             // The only case when this is not true is on Apple ARM64 OSes where primitive type smaller
             // than 8 bytes are passed on the stack in a packed manner. We process such arguments one by
             // one to avoid explosion of the number of pRoutines.

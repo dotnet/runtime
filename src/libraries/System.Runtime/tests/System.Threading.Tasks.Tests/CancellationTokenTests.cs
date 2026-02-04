@@ -178,7 +178,7 @@ namespace System.Threading.Tasks.Tests
             }
             catch
             {
-                Assert.Fail(string.Format("TokenSourceDispose:    > ctr.Dispose() failed when referring to a disposed CTS"));
+                Assert.Fail("TokenSourceDispose:    > ctr.Dispose() failed when referring to a disposed CTS");
             }
 
             bool cr = tokenSource.IsCancellationRequested; //this is ok after dispose.
@@ -863,7 +863,7 @@ namespace System.Threading.Tasks.Tests
             {
                 if (ex is ObjectDisposedException)
                 {
-                    Assert.Fail(string.Format("Bug901737_ODEWhenDisposingLinkedCTS:  - ODE Occurred!"));
+                    Assert.Fail("Bug901737_ODEWhenDisposingLinkedCTS:  - ODE Occurred!");
                 }
                 else
                 {
@@ -990,9 +990,9 @@ namespace System.Threading.Tasks.Tests
                     {
                         // Accessing the Token property should throw an ObjectDisposedException
                         if (c.Token.CanBeCanceled)
-                            Assert.Fail(string.Format("DerivedCancellationTokenSource: Accessing the Token property should throw an ObjectDisposedException, but it did not."));
+                            Assert.Fail("DerivedCancellationTokenSource: Accessing the Token property should throw an ObjectDisposedException, but it did not.");
                         else
-                            Assert.Fail(string.Format("DerivedCancellationTokenSource: Accessing the Token property should throw an ObjectDisposedException, but it did not."));
+                            Assert.Fail("DerivedCancellationTokenSource: Accessing the Token property should throw an ObjectDisposedException, but it did not.");
                     });
             }
         }
