@@ -1787,7 +1787,7 @@ typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, TestLabelAndNum> NodeToT
 // Represents a depth-first search tree of the flow graph.
 class FlowGraphDfsTree
 {
-    Compiler* m_comp;
+    Compiler* m_compiler;
 
     // Post-order that we saw reachable basic blocks in. This order can be
     // particularly useful to iterate in reverse, as reverse post-order ensures
@@ -1806,7 +1806,7 @@ class FlowGraphDfsTree
 
 public:
     FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, bool hasCycle, bool profileAware, bool forWasm = false)
-        : m_comp(comp)
+        : m_compiler(comp)
         , m_postOrder(postOrder)
         , m_postOrderCount(postOrderCount)
         , m_hasCycle(hasCycle)
@@ -1817,7 +1817,7 @@ public:
 
     Compiler* GetCompiler() const
     {
-        return m_comp;
+        return m_compiler;
     }
 
     BasicBlock** GetPostOrder() const
@@ -1838,7 +1838,7 @@ public:
 
     BitVecTraits PostOrderTraits() const
     {
-        return BitVecTraits(m_postOrderCount, m_comp);
+        return BitVecTraits(m_postOrderCount, m_compiler);
     }
 
     bool HasCycle() const
@@ -4221,7 +4221,7 @@ public:
 #ifdef DEBUG
     struct lvaStressLclFldArgs
     {
-        Compiler* m_pCompiler;
+        Compiler* m_compiler;
         bool      m_bFirstPass;
     };
 
@@ -4329,7 +4329,7 @@ public:
         void AdvanceSubTree(CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t maxTreeNodes, size_t* index);
 
     private:
-        Compiler*              compiler;
+        Compiler*              m_compiler;
         lvaStructPromotionInfo structPromotionInfo;
     };
 
@@ -5084,10 +5084,10 @@ private:
     // This class is used for implementing impReimportSpillClique part on each block within the spill clique
     class ReimportSpillClique : public SpillCliqueWalker
     {
-        Compiler* m_pComp;
+        Compiler* m_compiler;
 
     public:
-        ReimportSpillClique(Compiler* pComp) : m_pComp(pComp)
+        ReimportSpillClique(Compiler* pComp) : m_compiler(pComp)
         {
         }
         virtual void Visit(SpillCliqueDir predOrSucc, BasicBlock* blk);
@@ -5598,58 +5598,7 @@ public:
 
     void fgLocalVarLiveness();
 
-    void fgLocalVarLivenessInit();
-
-    template <bool lowered>
-    void fgPerNodeLocalVarLiveness(GenTree* node);
-    void fgPerBlockLocalVarLiveness();
-
-#if defined(FEATURE_HW_INTRINSICS)
-    void fgPerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic);
-#endif // FEATURE_HW_INTRINSICS
-
     void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
-
-    void fgLiveVarAnalysis();
-
-    GenTreeLclVarCommon* fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call);
-
-    void fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, GenTreeLclVarCommon* node);
-    bool fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
-                                      VARSET_VALARG_TP     keepAliveVars,
-                                      LclVarDsc&           varDsc,
-                                      GenTreeLclVarCommon* node);
-    bool fgComputeLifeUntrackedLocal(VARSET_TP&           life,
-                                     VARSET_VALARG_TP     keepAliveVars,
-                                     LclVarDsc&           varDsc,
-                                     GenTreeLclVarCommon* lclVarNode);
-    bool fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode);
-
-    GenTree* fgTryRemoveDeadStoreEarly(Statement* stmt, GenTreeLclVarCommon* dst);
-
-    void fgComputeLife(VARSET_TP&       life,
-                       GenTree*         startNode,
-                       GenTree*         endNode,
-                       VARSET_VALARG_TP keepAliveVars,
-                       bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
-
-    void fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP keepAliveVars);
-    bool fgIsTrackedRetBufferAddress(LIR::Range& range, GenTree* node);
-
-    bool fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange);
-
-    bool fgCanUncontainOrRemoveOperands(GenTree* node);
-
-    bool fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block);
-
-    bool fgRemoveDeadStore(GenTree**        pTree,
-                           LclVarDsc*       varDsc,
-                           VARSET_VALARG_TP life,
-                           bool*            doAgain,
-                           bool*            pStmtInfoDirty,
-                           bool* pStoreRemoved DEBUGARG(bool* treeModf));
-
-    void fgInterBlockLocalVarLiveness();
 
     // Blocks: convenience methods for enabling range-based `for` iteration over the function's blocks, e.g.:
     // 1.   for (BasicBlock* const block : compiler->Blocks()) ...
@@ -6214,7 +6163,7 @@ public:
         static bool EdgeCmp(const FlowEdge* left, const FlowEdge* right);
         static constexpr unsigned maxSwaps = 1000;
 
-        Compiler* compiler;
+        Compiler* m_compiler;
         PriorityQueue<FlowEdge*, decltype(&ThreeOptLayout::EdgeCmp)> cutPoints;
         BasicBlock** blockOrder;
         BasicBlock** tempOrder;
@@ -6364,7 +6313,7 @@ public:
 
     struct fgWalkData
     {
-        Compiler*     compiler;
+        Compiler*     m_compiler;
         fgWalkPreFn*  wtprVisitorFn;
         fgWalkPostFn* wtpoVisitorFn;
         void*         pCallbackData; // user-provided data
@@ -6747,21 +6696,12 @@ private:
 
     unsigned fgGetFieldMorphingTemp(GenTreeFieldAddr* fieldNode);
 
+public:
     //----------------------- Liveness analysis -------------------------------
-
-    VARSET_TP fgCurUseSet; // vars used     by block (before a def)
-    VARSET_TP fgCurDefSet; // vars assigned by block (before a use)
-
-    MemoryKindSet fgCurMemoryUse;   // True iff the current basic block uses memory.
-    MemoryKindSet fgCurMemoryDef;   // True iff the current basic block modifies memory.
-    MemoryKindSet fgCurMemoryHavoc; // True if  the current basic block is known to set memory to a "havoc" value.
 
     bool byrefStatesMatchGcHeapStates; // True iff GcHeap and ByrefExposed memory have all the same def points.
 
     PhaseStatus fgEarlyLiveness();
-
-    template<bool ssaLiveness>
-    void fgMarkUseDef(GenTreeLclVarCommon* tree);
 
     //-------------------------------------------------------------------------
     //
@@ -8260,9 +8200,7 @@ public:
     {
         return optAssertionCount;
     }
-    ASSERT_TP*                                                                     bbJtrueAssertionOut;
-    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, ASSERT_TP> ValueNumToAssertsMap;
-    ValueNumToAssertsMap*                                                          optValueNumToAsserts;
+    ASSERT_TP* bbJtrueAssertionOut;
 
     // Assertion prop helpers.
     ASSERT_TP&          GetAssertionDep(unsigned lclNum, bool mustExist = false);
@@ -8298,13 +8236,7 @@ public:
 
     void optCreateComplementaryAssertion(AssertionIndex assertionIndex, GenTree* op1, GenTree* op2);
 
-    bool           optAssertionVnInvolvesNan(const AssertionDsc& assertion) const;
     AssertionIndex optAddAssertion(const AssertionDsc& assertion);
-    void           optAddVnAssertionMapping(ValueNum vn, AssertionIndex index);
-#ifdef DEBUG
-    void optPrintVnAssertionMapping() const;
-#endif
-    ASSERT_TP optGetVnMappedAssertions(ValueNum vn);
 
     // Used for respective assertion propagations.
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
@@ -8368,11 +8300,7 @@ public:
                                           bool*            isKnownNonZero,
                                           bool*            isKnownNonNegative);
 
-    // Implied assertion functions.
-    void optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions);
-    void optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions);
     bool optCreateJumpTableImpliedAssertions(BasicBlock* switchBb);
-    void optImpliedByConstAssertion(const AssertionDsc& curAssertion, ASSERT_TP& result);
 
 #ifdef DEBUG
     void optPrintAssertion(const AssertionDsc& newAssertion, AssertionIndex assertionIndex = 0);
@@ -8769,6 +8697,8 @@ public:
 #endif // DEBUG
 
     // ICorJitInfo wrappers
+
+    bool eeDataWithCodePointersNeedsRelocs();
 
     void eeAllocMem(AllocMemChunk& codeChunk,
                     AllocMemChunk* coldCodeChunk,
@@ -11529,8 +11459,12 @@ private:
     static const char* JitTimeLogCsv();        // Retrieve the file name for CSV from ConfigDWORD.
     static const char* compJitTimeLogFilename; // If a log file for JIT time is desired, filename to write it to.
 #endif
+
+public:
     void BeginPhase(Phases phase); // Indicate the start of the given phase.
     void EndPhase(Phases phase);   // Indicate the end of the given phase.
+
+private:
 
 #if MEASURE_CLRAPI_CALLS
     // Thin wrappers that call into JitTimer (if present).
@@ -12277,7 +12211,7 @@ private:
 public:
     GenericTreeWalker(Compiler::fgWalkData* walkData)
         : GenTreeVisitor<GenericTreeWalker<doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>(
-              walkData->compiler)
+              walkData->m_compiler)
         , m_walkData(walkData)
     {
         assert(walkData != nullptr);
