@@ -385,7 +385,7 @@ namespace System.Text.Unicode.Tests
                 actualSurrogatePairCount = totalUtf16CodeUnitCount - actualRuneCount;
             }
 
-            int actualIndexOfInvalidSubsequence =  Utf8.IndexOfInvalidSubsequence(boundedMemory.Span);
+            int actualIndexOfInvalidSubsequence = Utf8.IndexOfInvalidSubsequence(boundedMemory.Span);
             bool actualIsValid = Utf8.IsValid(boundedMemory.Span);
 
             // Assert
