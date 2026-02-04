@@ -637,18 +637,20 @@ namespace System.Reflection.Emit.Tests
                 ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
                 TypeBuilder tb = mb.DefineType("IMethodWithModifiersImpl", TypeAttributes.Class | TypeAttributes.Public);
                 tb.AddInterfaceImplementation(typeof(IMethodWithModifiers));
+                MethodInfo mRun = typeof(IMethodWithModifiers).GetMethod(nameof(IMethodWithModifiers.Run))!;
                 MethodBuilder m = tb.DefineMethod("IMethodWithModifiers.Run",
                     MethodAttributes.Private | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
                     CallingConventions.Standard,
                     returnType: typeof(void),
                     returnTypeRequiredCustomModifiers: [],
                     returnTypeOptionalCustomModifiers: [],
-                    parameterTypes: [typeof(int).MakeByRefType()],
-                    parameterTypeRequiredCustomModifiers: [[typeof(InAttribute)]],
-                    parameterTypeOptionalCustomModifiers: [[]]);
+                    // typeof(delegate*<in long, void>) does not copy the modreq, so get the modified type from the interface method.
+                    parameterTypes: [typeof(int).MakeByRefType(), mRun.GetParameters()[1].GetModifiedParameterType()],
+                    parameterTypeRequiredCustomModifiers: [[typeof(InAttribute)], []],
+                    parameterTypeOptionalCustomModifiers: [[], []]);
                 // The method's parameter has a modreq; make sure it is added to the override's signature.
                 // See https://github.com/dotnet/runtime/issues/123857
-                tb.DefineMethodOverride(m, typeof(IMethodWithModifiers).GetMethod(nameof(IMethodWithModifiers.Run)));
+                tb.DefineMethodOverride(m, mRun);
                 ParameterBuilder pb = m.DefineParameter(1, ParameterAttributes.In, "x");
                 pb.SetCustomAttribute(new CustomAttributeBuilder(typeof(IsReadOnlyAttribute).GetConstructor(types: [])!, []));
                 m.GetILGenerator().Emit(OpCodes.Ret);
@@ -1029,7 +1031,7 @@ namespace System.Reflection.Emit.Tests
 
     public interface IMethodWithModifiers
     {
-        void Run(in int x);
+        unsafe void Run(in int x, delegate*<in long, void> f);
     }
 
     public struct EmptyStruct
