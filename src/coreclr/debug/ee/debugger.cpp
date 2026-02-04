@@ -4787,19 +4787,10 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
                 continue;
             }
 
-            // Do not bind breakpoints to async thunks unless they were specifically
-            // filtered to that method desc.
-            if (dcp->pMethodDescFilter == NULL && fd->IsAsyncThunkMethod())
+            // Apply default filtering policy (excludes async thunks) or explicit MethodDesc filter
+            if (!ShouldBindPatchToMethodDesc(fd, dcp->pMethodDescFilter))
             {
-                LOG((LF_CORDB,LL_INFO10000,"D::MABFP: Do not bind the breakpoint to the async thunk method by token and module\n"));
-                continue;
-            }
-
-            // If the patch only applies in certain generic instances, don't bind it
-            // elsewhere.
-            if(dcp->pMethodDescFilter != NULL && dcp->pMethodDescFilter != djiNew->m_nativeCodeVersion.GetMethodDesc())
-            {
-                LOG((LF_CORDB, LL_INFO10000, "D::MABFP: Patch not in this generic instance, filter %p\n", dcp->pMethodDescFilter));
+                LOG((LF_CORDB, LL_INFO10000, "D::MABFP: Skipping method due to filter policy\n"));
                 continue;
             }
 

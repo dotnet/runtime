@@ -65,6 +65,31 @@ bool DebuggerControllerPatch::IsSafeForStackTrace()
 
 }
 
+// Determines whether a breakpoint patch should be bound to a given MethodDesc.
+// When pMethodDescFilter is NULL, the default filtering policy is applied which
+// excludes async thunk methods (they should not have user breakpoints bound to them).
+// When pMethodDescFilter is non-NULL, the patch is explicitly targeting that specific
+// MethodDesc and no default filtering is applied.
+bool ShouldBindPatchToMethodDesc(MethodDesc* pMD, MethodDesc* pMethodDescFilter)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // If explicitly filtered to a specific MethodDesc, only bind to that one
+    if (pMethodDescFilter != NULL)
+    {
+        return pMD == pMethodDescFilter;
+    }
+
+    // Default filtering policy: exclude async thunk methods
+    // User breakpoints should bind to the actual async implementation, not the thunk
+    if (pMD->IsAsyncThunkMethod())
+    {
+        return false;
+    }
+
+    return true;
+}
+
 #ifndef DACCESS_COMPILE
 #ifndef FEATURE_EMULATE_SINGLESTEP
 
@@ -2141,18 +2166,17 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
                 DebuggerJitInfo *dji = it.Current();
                 _ASSERTE(dji->m_jitComplete);
 
-                // Do not bind breakpoints to async thunks unless they were specifically
-                // filtered to that method desc.
                 MethodDesc *pMD = dji->m_nativeCodeVersion.GetMethodDesc();
-                if (pMethodDescFilter == NULL && pMD->IsAsyncThunkMethod())
+
+                // Apply default filtering policy (excludes async thunks) or explicit MethodDesc filter
+                if (!ShouldBindPatchToMethodDesc(pMD, pMethodDescFilter))
                 {
-                    LOG((LF_CORDB, LL_INFO10000, "DC::AILP: Skipping async thunk method\n"));
+                    LOG((LF_CORDB, LL_INFO10000, "DC::AILP: Skipping method due to filter policy\n"));
                     it.Next();
                     continue;
                 }
 
-                if (dji->m_encVersion == encVersion &&
-                   (pMethodDescFilter == NULL || pMethodDescFilter == pMD))
+                if (dji->m_encVersion == encVersion)
                 {
                     fVersionMatch = TRUE;
 
