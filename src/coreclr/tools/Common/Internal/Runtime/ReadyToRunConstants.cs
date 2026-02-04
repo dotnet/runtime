@@ -353,8 +353,8 @@ namespace Internal.ReadyToRunConstants
         GetCurrentManagedThreadId   = 0x112,
 
         AllocContinuation           = 0x113,
-        AllocContinuationMethod     = 0x114,
-        AllocContinuationClass      = 0x115,
+        AllocContinuationClass      = 0x114,
+        AllocContinuationMethod     = 0x115,
 
         // **********************************************************************************************
         //
