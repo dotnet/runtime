@@ -41,7 +41,7 @@ public:
     // so it creates its own instance of Lowering to do so.
     void LowerRange(BasicBlock* block, LIR::ReadOnlyRange& range)
     {
-        Lowering lowerer(comp, m_regAlloc);
+        Lowering lowerer(m_compiler, m_regAlloc);
         lowerer.m_block = block;
 
         lowerer.LowerRange(range);
@@ -75,7 +75,7 @@ private:
 
     void InsertTreeBeforeAndContainCheck(GenTree* insertionPoint, GenTree* tree)
     {
-        LIR::Range range = LIR::SeqTree(comp, tree);
+        LIR::Range range = LIR::SeqTree(m_compiler, tree);
         ContainCheckRange(range);
         BlockRange().InsertBefore(insertionPoint, std::move(range));
     }
@@ -239,35 +239,35 @@ private:
 
     GenTree* Ind(GenTree* tree, var_types type = TYP_I_IMPL)
     {
-        return comp->gtNewIndir(type, tree);
+        return m_compiler->gtNewIndir(type, tree);
     }
 
     GenTree* PhysReg(regNumber reg, var_types type = TYP_I_IMPL)
     {
-        return comp->gtNewPhysRegNode(reg, type);
+        return m_compiler->gtNewPhysRegNode(reg, type);
     }
 
     GenTree* ThisReg(GenTreeCall* call)
     {
-        return PhysReg(comp->codeGen->genGetThisArgReg(call), TYP_REF);
+        return PhysReg(m_compiler->codeGen->genGetThisArgReg(call), TYP_REF);
     }
 
     GenTree* Offset(GenTree* base, unsigned offset)
     {
         var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
-        return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, nullptr, 0, offset);
+        return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, nullptr, 0, offset);
     }
 
     GenTree* OffsetByIndex(GenTree* base, GenTree* index)
     {
         var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
-        return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, index, 0, 0);
+        return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, index, 0, 0);
     }
 
     GenTree* OffsetByIndexWithScale(GenTree* base, GenTree* index, unsigned scale)
     {
         var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
-        return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, index, scale, 0);
+        return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, index, scale, 0);
     }
 
     // Replace the definition of the given use with a lclVar, allocating a new temp
@@ -278,7 +278,7 @@ private:
         if (!oldUseNode->OperIs(GT_LCL_VAR) || (tempNum != BAD_VAR_NUM))
         {
             GenTree* store;
-            use.ReplaceWithLclVar(comp, tempNum, &store);
+            use.ReplaceWithLclVar(m_compiler, tempNum, &store);
 
             GenTree* newUseNode = use.Def();
             ContainCheckRange(oldUseNode->gtNext, newUseNode);
@@ -543,7 +543,7 @@ public:
     // Similar to above, but allows bypassing a "transparent" parent.
     bool IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const;
 
-    static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);
+    static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compiler, BasicBlock* block);
 
 private:
     static bool NodesAreEquivalentLeaves(GenTree* candidate, GenTree* storeInd);
@@ -591,14 +591,14 @@ private:
     // This ensures that the local's value is valid on-stack as expected for a *LCL_FLD.
     void verifyLclFldDoNotEnregister(unsigned lclNum)
     {
-        LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
         // Do a couple of simple checks before setting lvDoNotEnregister.
         // This may not cover all cases in 'isRegCandidate()' but we don't want to
         // do an expensive check here. For non-candidates it is not harmful to set lvDoNotEnregister.
         if (varDsc->lvTracked && !varDsc->lvDoNotEnregister)
         {
             assert(!m_regAlloc->isRegCandidate(varDsc));
-            comp->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DoNotEnregisterReason::LocalField));
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DoNotEnregisterReason::LocalField));
         }
     }
 

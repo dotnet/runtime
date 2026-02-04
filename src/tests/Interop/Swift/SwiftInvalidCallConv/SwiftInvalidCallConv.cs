@@ -7,7 +7,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using System.Numerics;
 using Xunit;
+using TestLibrary;
 
+[PlatformSpecific(TestPlatforms.AnyApple)]
 public class InvalidCallingConvTests
 {
     // Dummy class with a dummy attribute
