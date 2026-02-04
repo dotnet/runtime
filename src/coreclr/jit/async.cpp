@@ -67,8 +67,8 @@ PhaseStatus Compiler::SaveAsyncContexts()
     }
 
     // Create locals for ExecutionContext and SynchronizationContext
-    lvaAsyncExecutionContextVar                                = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
-    lvaGetDesc(lvaAsyncExecutionContextVar)->lvType            = TYP_REF;
+    lvaAsyncExecutionContextVar                     = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
+    lvaGetDesc(lvaAsyncExecutionContextVar)->lvType = TYP_REF;
 
     lvaAsyncSynchronizationContextVar                     = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
     lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
@@ -787,10 +787,10 @@ PhaseStatus AsyncTransformation::Run()
 
         for (BasicBlock* block : m_compiler->Blocks())
         {
-            block->bbLiveIn = VarSetOps::UninitVal();
+            block->bbLiveIn  = VarSetOps::UninitVal();
             block->bbLiveOut = VarSetOps::UninitVal();
-            block->bbVarUse = VarSetOps::UninitVal();
-            block->bbVarDef = VarSetOps::UninitVal();
+            block->bbVarUse  = VarSetOps::UninitVal();
+            block->bbVarDef  = VarSetOps::UninitVal();
         }
         m_compiler->fgBBVarSetsInited = false;
     }

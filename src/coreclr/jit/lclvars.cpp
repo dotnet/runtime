@@ -3430,7 +3430,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             // and not tracked.
             for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
             {
-                LclVarDsc* varDsc = lvaGetDesc(lclNum);
+                LclVarDsc* varDsc                = lvaGetDesc(lclNum);
                 const bool isSpecialVarargsParam = varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum);
 
                 if (isSpecialVarargsParam)

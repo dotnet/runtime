@@ -2345,7 +2345,8 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_CALL:
             {
                 GenTreeCall* const call = node->AsCall();
-                if (TLiveness::EliminateDeadCode && (call->TypeIs(TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(m_compiler))
+                if (TLiveness::EliminateDeadCode && (call->TypeIs(TYP_VOID) || call->IsUnusedValue()) &&
+                    !call->HasSideEffects(m_compiler))
                 {
                     JITDUMP("Removing dead call:\n");
                     DISPNODE(call);
@@ -2859,10 +2860,10 @@ void Compiler::fgAsyncLiveness()
     {
         enum
         {
-            SsaLiveness = false,
+            SsaLiveness           = false,
             ComputeMemoryLiveness = false,
-            IsLIR = true,
-            EliminateDeadCode = false,
+            IsLIR                 = true,
+            EliminateDeadCode     = false,
         };
 
         AsyncLiveness(Compiler* comp)
