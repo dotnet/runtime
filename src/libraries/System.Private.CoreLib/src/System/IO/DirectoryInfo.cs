@@ -85,13 +85,6 @@ namespace System.IO
             ReadOnlySpan<char> trimmedNewPath = newPath.AsSpan().TrimEnd(Path.DirectorySeparator)
             ReadOnlySpan<char> trimmedCurrentPath = newPath.AsSpan().TrimEnd(Path.DirectorySeparator)
 
-
-            // If trimmedCurrentPath still has a trailing separator (root directory case like "C:\" or "/"),
-            // remove it for proper boundary checking
-            if (trimmedCurrentPath.Length > 0 && PathInternal.IsDirectorySeparator(trimmedCurrentPath[trimmedCurrentPath.Length - 1]))
-            {
-                trimmedCurrentPath = trimmedCurrentPath.Slice(0, trimmedCurrentPath.Length - 1);
-            }
             // We want to make sure the requested directory is actually under the subdirectory.
             if (trimmedNewPath.StartsWith(trimmedCurrentPath, PathInternal.StringComparison)
                 // Allow the exact same path, but prevent allowing "..\FooBar" through when the directory is "Foo"
