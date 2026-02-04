@@ -14,7 +14,7 @@ StackLevelSetter::StackLevelSetter(Compiler* compiler)
     , maxStackLevel(0)
     , memAllocator(compiler->getAllocator(CMK_CallArgs))
     , putArgNumSlots(memAllocator)
-    , throwHelperBlocksUsed(comp->fgUseThrowHelperBlocks())
+    , throwHelperBlocksUsed(m_compiler->fgUseThrowHelperBlocks())
 #if !FEATURE_FIXED_OUT_ARGS
     , framePointerRequired(compiler->codeGen->isFramePointerRequired())
 #endif // !FEATURE_FIXED_OUT_ARGS
@@ -37,7 +37,7 @@ PhaseStatus StackLevelSetter::DoPhase()
 #if !FEATURE_FIXED_OUT_ARGS
     if (framePointerRequired)
     {
-        comp->codeGen->setFramePointerRequired(true);
+        m_compiler->codeGen->setFramePointerRequired(true);
     }
 #endif // !FEATURE_FIXED_OUT_ARGS
 
@@ -50,20 +50,21 @@ PhaseStatus StackLevelSetter::DoPhase()
     //
     bool madeChanges = false;
 
-    comp->compUsesThrowHelper = false;
+    m_compiler->compUsesThrowHelper = false;
 
-    if (comp->fgHasAddCodeDscMap())
+    if (m_compiler->fgHasAddCodeDscMap())
     {
-        if (comp->opts.OptimizationEnabled())
+        if (m_compiler->opts.OptimizationEnabled())
         {
-            for (Compiler::AddCodeDsc* const add : Compiler::AddCodeDscMap::ValueIteration(comp->fgGetAddCodeDscMap()))
+            for (Compiler::AddCodeDsc* const add :
+                 Compiler::AddCodeDscMap::ValueIteration(m_compiler->fgGetAddCodeDscMap()))
             {
                 if (add->acdUsed)
                 {
                     // Create the helper call
                     //
-                    comp->fgCreateThrowHelperBlockCode(add);
-                    comp->compUsesThrowHelper = true;
+                    m_compiler->fgCreateThrowHelperBlockCode(add);
+                    m_compiler->compUsesThrowHelper = true;
                 }
                 else
                 {
@@ -73,7 +74,7 @@ PhaseStatus StackLevelSetter::DoPhase()
                     assert(block->isEmpty());
                     JITDUMP("Throw help block " FMT_BB " is unused\n", block->bbNum);
                     block->RemoveFlags(BBF_DONT_REMOVE);
-                    comp->fgRemoveBlock(block, /* unreachable */ true);
+                    m_compiler->fgRemoveBlock(block, /* unreachable */ true);
                 }
 
                 madeChanges = true;
@@ -83,18 +84,19 @@ PhaseStatus StackLevelSetter::DoPhase()
         {
             // Assume all helpers used. Fill in all helper block code.
             //
-            for (Compiler::AddCodeDsc* const add : Compiler::AddCodeDscMap::ValueIteration(comp->fgGetAddCodeDscMap()))
+            for (Compiler::AddCodeDsc* const add :
+                 Compiler::AddCodeDscMap::ValueIteration(m_compiler->fgGetAddCodeDscMap()))
             {
-                comp->compUsesThrowHelper = true;
-                add->acdUsed              = true;
-                comp->fgCreateThrowHelperBlockCode(add);
+                m_compiler->compUsesThrowHelper = true;
+                add->acdUsed                    = true;
+                m_compiler->fgCreateThrowHelperBlockCode(add);
                 madeChanges = true;
             }
         }
     }
 
     // We have added whatever throw helpers are needed, so set this flag
-    comp->fgRngChkThrowAdded = true;
+    m_compiler->fgRngChkThrowAdded = true;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -115,7 +117,7 @@ void StackLevelSetter::ProcessBlocks()
     }
 #endif
 
-    for (BasicBlock* const block : comp->Blocks())
+    for (BasicBlock* const block : m_compiler->Blocks())
     {
         ProcessBlock(block);
     }
@@ -188,7 +190,7 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
 
         if (checkForHelpers)
         {
-            if (((node->gtFlags & GTF_EXCEPT) != 0) && node->OperMayThrow(comp))
+            if (((node->gtFlags & GTF_EXCEPT) != 0) && node->OperMayThrow(m_compiler))
             {
                 SetThrowHelperBlocks(node, block);
             }
@@ -211,7 +213,7 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
 //
 void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 {
-    assert(node->OperMayThrow(comp));
+    assert(node->OperMayThrow(m_compiler));
 
     // Check that it uses throw block, find its kind, find the block, set level.
     switch (node->OperGet())
@@ -254,7 +256,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         case GT_UMOD:
 #endif
         {
-            ExceptionSetFlags exSetFlags = node->OperExceptions(comp);
+            ExceptionSetFlags exSetFlags = node->OperExceptions(m_compiler);
 
             if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
             {
@@ -309,7 +311,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 //
 void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* block)
 {
-    Compiler::AddCodeDsc* add = comp->fgGetExcptnTarget(kind, block, /* createIfNeeded */ true);
+    Compiler::AddCodeDsc* add = m_compiler->fgGetExcptnTarget(kind, block, /* createIfNeeded */ true);
     assert(add != nullptr);
 
     // We expect we'll actually need this helper.
@@ -451,24 +453,24 @@ void StackLevelSetter::CheckArgCnt()
     if (maxStackLevel >= MAX_PTRARG_OFS)
     {
 #ifdef DEBUG
-        if (comp->verbose)
+        if (m_compiler->verbose)
         {
             printf("Too many pushed arguments for fully interruptible encoding, marking method as partially "
                    "interruptible\n");
         }
 #endif
-        comp->SetInterruptible(false);
+        m_compiler->SetInterruptible(false);
     }
 
     if (maxStackLevel >= sizeof(unsigned))
     {
 #ifdef DEBUG
-        if (comp->verbose)
+        if (m_compiler->verbose)
         {
             printf("Too many pushed arguments for an ESP based encoding, forcing an EBP frame\n");
         }
 #endif
-        comp->codeGen->setFramePointerRequired(true);
+        m_compiler->codeGen->setFramePointerRequired(true);
     }
 #endif
 }
@@ -482,7 +484,7 @@ void StackLevelSetter::CheckArgCnt()
 void StackLevelSetter::CheckAdditionalArgs()
 {
 #if defined(TARGET_X86)
-    if (comp->compIsProfilerHookNeeded())
+    if (m_compiler->compIsProfilerHookNeeded())
     {
         if (maxStackLevel == 0)
         {
