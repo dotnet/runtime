@@ -2436,7 +2436,7 @@ void AsyncTransformation::CreateResumptionSwitch()
         jmpOSR->inheritWeightPercentage(checkILOffsetBB, 0);
 
         // We need to dispatch to the OSR version if the OSR address is non-zero.
-        continuationArg             = m_compiler->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+        continuationArg             = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
         unsigned offsetOfOSRAddress = OFFSETOF__CORINFO_Continuation__data;
         GenTree* osrAddress         = LoadFromOffset(continuationArg, offsetOfOSRAddress, TYP_I_IMPL);
         unsigned osrAddressLclNum   = m_compiler->lvaGrabTemp(false DEBUGARG("OSR address for tier0 OSR method"));
