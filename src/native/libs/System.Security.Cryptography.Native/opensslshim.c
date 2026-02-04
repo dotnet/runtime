@@ -132,6 +132,12 @@ static void OpenLibraryOnce(void)
     // The ports version of OpenSSL is used over base where possible
     if (libssl == NULL)
     {
+        // OpenSSL 3.5 from ports
+        DlOpen(MAKELIB("17"));
+    }
+
+    if (libssl == NULL)
+    {
         // OpenSSL 3.0 from ports
         DlOpen(MAKELIB("12"));
     }
