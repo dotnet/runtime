@@ -5,6 +5,7 @@ set(INTERPRETER_SOURCES
   compileropt.cpp
   intops.cpp
   interpconfig.cpp
+  interpmethoddata.cpp
   eeinterp.cpp
   stackmap.cpp
   naming.cpp
