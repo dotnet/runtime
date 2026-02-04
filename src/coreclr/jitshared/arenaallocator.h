@@ -122,8 +122,8 @@ public:
     ArenaAllocatorT()
         : m_firstPage(nullptr)
         , m_lastPage(nullptr)
-        , m_nextFreeByte(nullptr)
-        , m_lastFreeByte(nullptr)
+        , m_nextFreeByte((uint8_t*)&m_firstPage)
+        , m_lastFreeByte((uint8_t*)&m_firstPage)
     {
 #if MEASURE_MEM_ALLOC
         memset(&m_statsAllocators, 0, sizeof(m_statsAllocators));
