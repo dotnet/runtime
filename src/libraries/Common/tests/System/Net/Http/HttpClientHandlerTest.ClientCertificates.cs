@@ -21,6 +21,18 @@ namespace System.Net.Http.Functional.Tests
     using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
+    /// <summary>
+    /// Tests for client certificate functionality including Extended Key Usage (EKU) validation.
+    /// 
+    /// These tests verify that HttpClient properly filters client certificates based on their
+    /// Extended Key Usage extensions, ensuring compliance with industry security practices:
+    /// - Certificates with Client Authentication EKU (1.3.6.1.5.5.7.3.2) are accepted
+    /// - Certificates with no EKU extension are accepted (all usages permitted)
+    /// - Certificates with only Server Authentication EKU are rejected for client authentication
+    /// 
+    /// This behavior is critical as Certificate Authorities transition to separate hierarchies
+    /// for client and server authentication, removing Client Auth EKU from public TLS certificates.
+    /// </summary>
     public abstract class HttpClientHandler_ClientCertificates_Test : HttpClientHandlerTestBase
     {
         public HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
@@ -83,6 +95,14 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(3, false)]
         public async Task Manual_CertificateOnlySentWhenValid_Success(int certIndex, bool serverExpectsClientCertificate)
         {
+            // This test validates Extended Key Usage (EKU) filtering for client certificates.
+            // It ensures that certificates are only sent when they are valid for client authentication:
+            // - Certificates with Client Authentication EKU (1.3.6.1.5.5.7.3.2) should be sent
+            // - Certificates with no EKU extension should be sent (all usages permitted)
+            // - Certificates with only Server Authentication EKU should NOT be sent
+            // This behavior aligns with industry changes where CAs are removing Client Auth EKU
+            // from public TLS certificates to separate client and server authentication hierarchies.
+            //
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/69238")]
             if (IsWinHttpHandler) throw new SkipTestException("https://github.com/dotnet/runtime/issues/69238");
 
@@ -90,13 +110,14 @@ namespace System.Net.Http.Functional.Tests
 
             X509Certificate2 GetClientCertificate(int certIndex) => certIndex switch
             {
-                // This is a valid client cert since it has an EKU with a ClientAuthentication OID.
+                // Valid: Has Client Authentication EKU (OID 1.3.6.1.5.5.7.3.2)
                 1 => Configuration.Certificates.GetClientCertificate(),
 
-                // This is a valid client cert since it has no EKU thus all usages are permitted.
+                // Valid: Has no EKU extension, thus all usages are permitted
                 2 => Configuration.Certificates.GetNoEKUCertificate(),
 
-                // This is an invalid client cert since it has an EKU but is missing ClientAuthentication OID.
+                // Invalid: Has EKU extension with only Server Authentication OID (1.3.6.1.5.5.7.3.1),
+                // missing Client Authentication OID. Should NOT be selected for client auth.
                 3 => Configuration.Certificates.GetServerCertificate(),
                 _ => null
             };

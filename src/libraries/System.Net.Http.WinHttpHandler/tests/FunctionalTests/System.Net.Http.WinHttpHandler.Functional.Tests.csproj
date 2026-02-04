@@ -84,8 +84,6 @@
              Link="Common\System\Net\Http\HttpClientHandlerTest.Cancellation.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.ClientCertificates.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.ClientCertificates.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.ClientCertificateSelection.cs"
-             Link="Common\System\Net\Http\HttpClientHandlerTest.ClientCertificateSelection.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Cookies.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.Cookies.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Decompression.cs"
