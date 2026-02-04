@@ -83,7 +83,8 @@
     <MonoComponentsStatic Condition="'$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
+    <!-- this is here because of python -->
     <PackageReference Condition="'$(HostOS)' == 'windows'"
                       Include="Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-x64"
                       PrivateAssets="all"
