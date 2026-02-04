@@ -29,6 +29,8 @@ class Liveness
     MemoryKindSet fgCurMemoryDef;   // True iff the current basic block modifies memory.
     MemoryKindSet fgCurMemoryHavoc; // True if  the current basic block is known to set memory to a "havoc" value.
 
+    bool m_livenessChanged = false;
+
 protected:
     enum
     {
@@ -121,18 +123,15 @@ void Liveness<TLiveness>::Run()
 
     m_compiler->EndPhase(PHASE_LCLVARLIVENESS_INIT);
 
-    m_compiler->fgLocalVarLivenessChanged = false;
     do
     {
-        /* Figure out use/def info for all basic blocks */
+        // Figure out use/def info for all basic blocks
         PerBlockLocalVarLiveness();
         m_compiler->EndPhase(PHASE_LCLVARLIVENESS_PERBLOCK);
 
-        /* Live variable analysis. */
-
-        m_compiler->fgStmtRemoved = false;
+        // Live variable analysis.
         InterBlockLocalVarLiveness();
-    } while (m_compiler->fgStmtRemoved && m_compiler->fgLocalVarLivenessChanged);
+    } while (m_compiler->fgStmtRemoved && m_livenessChanged);
 
     m_compiler->EndPhase(PHASE_LCLVARLIVENESS_INTERBLOCK);
 }
@@ -491,50 +490,40 @@ void Liveness<TLiveness>::SelectTrackedLocals()
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
         }
 
-        //  Are we not optimizing and we have exception handlers?
-        //   if so mark all args and locals "do not enregister".
-        //
-        if (m_compiler->opts.MinOpts() && m_compiler->compHndBBtabCount > 0)
-        {
-            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-        }
-        else
-        {
-            var_types type = genActualType(varDsc->TypeGet());
+        var_types type = genActualType(varDsc->TypeGet());
 
-            switch (type)
-            {
-                case TYP_FLOAT:
-                case TYP_DOUBLE:
-                case TYP_INT:
-                case TYP_LONG:
-                case TYP_REF:
-                case TYP_BYREF:
+        switch (type)
+        {
+            case TYP_FLOAT:
+            case TYP_DOUBLE:
+            case TYP_INT:
+            case TYP_LONG:
+            case TYP_REF:
+            case TYP_BYREF:
 #ifdef FEATURE_SIMD
-                case TYP_SIMD8:
-                case TYP_SIMD12:
-                case TYP_SIMD16:
+            case TYP_SIMD8:
+            case TYP_SIMD12:
+            case TYP_SIMD16:
 #ifdef TARGET_XARCH
-                case TYP_SIMD32:
-                case TYP_SIMD64:
+            case TYP_SIMD32:
+            case TYP_SIMD64:
 #endif // TARGET_XARCH
 #ifdef FEATURE_MASKED_HW_INTRINSICS
-                case TYP_MASK:
+            case TYP_MASK:
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
-                case TYP_STRUCT:
-                    break;
+            case TYP_STRUCT:
+                break;
 
-                case TYP_UNDEF:
-                case TYP_UNKNOWN:
-                    noway_assert(!"lvType not set correctly");
-                    varDsc->lvType = TYP_INT;
+            case TYP_UNDEF:
+            case TYP_UNKNOWN:
+                noway_assert(!"lvType not set correctly");
+                varDsc->lvType = TYP_INT;
 
-                    FALLTHROUGH;
+                FALLTHROUGH;
 
-                default:
-                    varDsc->lvTracked = 0;
-            }
+            default:
+                varDsc->lvTracked = 0;
         }
 
         if (varDsc->lvTracked)
@@ -1132,7 +1121,7 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
     m_compiler->fgStmtRemoved = false;
 
     // keep track if a bbLiveIn changed due to dead store removal
-    m_compiler->fgLocalVarLivenessChanged = false;
+    m_livenessChanged = false;
 
     /* Compute the IN and OUT sets for tracked variables */
 
@@ -1392,7 +1381,7 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
 
             // We changed the liveIn of the block, which may affect liveOut of others,
             // which may expose more dead stores.
-            m_compiler->fgLocalVarLivenessChanged = true;
+            m_livenessChanged = true;
 
             noway_assert(VarSetOps::IsSubset(m_compiler, life, block->bbLiveIn));
 
@@ -1989,19 +1978,16 @@ bool Liveness<TLiveness>::ComputeLifeTrackedLocalDef(VARSET_TP&           life,
         // Dead store
         node->gtFlags |= GTF_VAR_DEATH;
 
-        if (!m_compiler->opts.MinOpts())
-        {
-            // keepAliveVars always stay alive
-            noway_assert(!VarSetOps::IsMember(m_compiler, keepAliveVars, varIndex));
+        // keepAliveVars always stay alive
+        noway_assert(!VarSetOps::IsMember(m_compiler, keepAliveVars, varIndex));
 
-            // Do not consider this store dead if the target local variable represents
-            // a promoted struct field of an address exposed local or if the address
-            // of the variable has been exposed. Improved alias analysis could allow
-            // stores to these sorts of variables to be removed at the cost of compile
-            // time.
-            return !varDsc.IsAddressExposed() &&
-                   !(varDsc.lvIsStructField && m_compiler->lvaTable[varDsc.lvParentLcl].IsAddressExposed());
-        }
+        // Do not consider this store dead if the target local variable represents
+        // a promoted struct field of an address exposed local or if the address
+        // of the variable has been exposed. Improved alias analysis could allow
+        // stores to these sorts of variables to be removed at the cost of compile
+        // time.
+        return !varDsc.IsAddressExposed() &&
+               !(varDsc.lvIsStructField && m_compiler->lvaTable[varDsc.lvParentLcl].IsAddressExposed());
     }
 
     return false;
@@ -2110,7 +2096,7 @@ bool Liveness<TLiveness>::ComputeLifeUntrackedLocal(VARSET_TP&           life,
         }
     }
 
-    if (isDef && !anyFieldLive && !m_compiler->opts.MinOpts())
+    if (isDef && !anyFieldLive)
     {
         // Do not consider this store dead if the parent local variable is an address exposed local or
         // if the struct has any significant padding we must retain the value of.
@@ -2381,7 +2367,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
 
                     // Removing a call does not affect liveness unless it is a tail call in a method with P/Invokes or
                     // is itself a P/Invoke, in which case it may affect the liveness of the frame root variable.
-                    if (!m_compiler->opts.MinOpts() && !m_compiler->opts.ShouldUsePInvokeHelpers() &&
+                    if (!m_compiler->opts.ShouldUsePInvokeHelpers() &&
                         ((call->IsTailCall() && m_compiler->compMethodRequiresPInvokeFrame()) ||
                          (call->IsUnmanaged() && !call->IsSuppressGCTransition())) &&
                         m_compiler->lvaTable[m_compiler->info.compLvFrameListRoot].lvTracked)
@@ -2681,8 +2667,6 @@ bool Liveness<TLiveness>::IsTrackedRetBufferAddress(LIR::Range& range, GenTree* 
 template <typename TLiveness>
 bool Liveness<TLiveness>::TryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block)
 {
-    assert(!m_compiler->opts.MinOpts());
-
     // We cannot remove stores to (tracked) TYP_STRUCT locals with GC pointers marked as "explicit init",
     // as said locals will be reported to the GC untracked, and deleting the explicit initializer risks
     // exposing uninitialized references.
@@ -2832,48 +2816,78 @@ GenTree* Liveness<TLiveness>::TryRemoveDeadStoreEarly(Statement* stmt, GenTreeLc
     }
 }
 
-void Compiler::fgLocalVarLiveness()
+//------------------------------------------------------------------------
+// fgSsaLiveness: Run SSA liveness.
+//
+void Compiler::fgSsaLiveness()
 {
-    if (compRationalIRForm)
+    struct SsaLivenessClass : public Liveness<SsaLivenessClass>
     {
-        struct LIRLiveness : public Liveness<LIRLiveness>
+        enum
         {
-            enum
-            {
-                SsaLiveness           = false,
-                ComputeMemoryLiveness = false,
-                IsLIR                 = true,
-            };
-
-            LIRLiveness(Compiler* comp)
-                : Liveness(comp)
-            {
-            }
+            SsaLiveness           = true,
+            ComputeMemoryLiveness = true,
+            IsLIR                 = false,
+            EliminateDeadCode     = true,
         };
 
-        LIRLiveness liveness(this);
-        liveness.Run();
-    }
-    else
-    {
-        struct HIRLiveness : public Liveness<HIRLiveness>
+        SsaLivenessClass(Compiler* comp)
+            : Liveness(comp)
         {
-            enum
-            {
-                SsaLiveness           = true,
-                ComputeMemoryLiveness = true,
-                IsLIR                 = false,
-            };
+        }
+    };
 
-            HIRLiveness(Compiler* comp)
-                : Liveness(comp)
-            {
-            }
+    SsaLivenessClass liveness(this);
+    liveness.Run();
+}
+
+//------------------------------------------------------------------------
+// fgAsyncLiveness: Run async liveness.
+//
+void Compiler::fgAsyncLiveness()
+{
+    struct AsyncLiveness : public Liveness<AsyncLiveness>
+    {
+        enum
+        {
+            SsaLiveness           = false,
+            ComputeMemoryLiveness = false,
+            IsLIR                 = true,
         };
 
-        HIRLiveness liveness(this);
-        liveness.Run();
-    }
+        AsyncLiveness(Compiler* comp)
+            : Liveness(comp)
+        {
+        }
+    };
+
+    AsyncLiveness liveness(this);
+    liveness.Run();
+}
+
+//------------------------------------------------------------------------
+// fgPostLowerLiveness: Run post-lower liveness.
+//
+void Compiler::fgPostLowerLiveness()
+{
+    struct PostLowerLiveness : public Liveness<PostLowerLiveness>
+    {
+        enum
+        {
+            SsaLiveness           = false,
+            ComputeMemoryLiveness = false,
+            IsLIR                 = true,
+            EliminateDeadCode     = true,
+        };
+
+        PostLowerLiveness(Compiler* comp)
+            : Liveness(comp)
+        {
+        }
+    };
+
+    PostLowerLiveness liveness(this);
+    liveness.Run();
 }
 
 //------------------------------------------------------------------------

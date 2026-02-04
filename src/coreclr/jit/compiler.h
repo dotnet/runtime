@@ -5591,15 +5591,6 @@ public:
 
     GenTreeCall* fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls);
 
-    bool backendRequiresLocalVarLifetimes()
-    {
-        return !opts.MinOpts() || m_regAlloc->willEnregisterLocalVars();
-    }
-
-    void fgLocalVarLiveness();
-
-    void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
-
     // Blocks: convenience methods for enabling range-based `for` iteration over the function's blocks, e.g.:
     // 1.   for (BasicBlock* const block : compiler->Blocks()) ...
     // 2.   for (BasicBlock* const block : compiler->Blocks(startBlock)) ...
@@ -6701,7 +6692,17 @@ public:
 
     bool byrefStatesMatchGcHeapStates; // True iff GcHeap and ByrefExposed memory have all the same def points.
 
+    bool backendRequiresLocalVarLifetimes()
+    {
+        return !opts.MinOpts() || m_regAlloc->willEnregisterLocalVars();
+    }
+
+    void fgSsaLiveness();
+    void fgAsyncLiveness();
+    void fgPostLowerLiveness();
     PhaseStatus fgEarlyLiveness();
+
+    void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
 
     //-------------------------------------------------------------------------
     //
@@ -10032,8 +10033,7 @@ public:
 
 #endif // DEBUG
 
-    bool fgLocalVarLivenessDone = false; // Note that this one is used outside of debug.
-    bool fgLocalVarLivenessChanged;
+    bool fgLocalVarLivenessDone         = false; // Note that this one is used outside of debug.
     bool fgIsDoingEarlyLiveness         = false;
     bool fgDidEarlyLiveness             = false;
     bool compPostImportationCleanupDone = false;
