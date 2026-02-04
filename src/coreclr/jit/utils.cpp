@@ -1846,8 +1846,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_ALLOC_CONTINUATION:
             case CORINFO_HELP_ALLOC_CONTINUATION_CLASS:
             case CORINFO_HELP_ALLOC_CONTINUATION_METHOD:
-                mutatesHeap   = true;
-                isAllocator   = true;
+                mutatesHeap = true;
+                isAllocator = true;
                 break;
 
             default:
