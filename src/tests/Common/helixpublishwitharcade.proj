@@ -564,7 +564,7 @@
   </Target>
 
   <Target Name="ZipMergedPayloadDirectory"
-          AfterTargets="PrepareMergedTestPayloadDirectories"
+          AfterTargets="PreparePayloadDirectories"
           Condition="'$(TargetsBrowser)' == 'true' or ('$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true')">
     <ItemGroup>
       <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
