@@ -71,10 +71,9 @@ namespace System.IO.Compression
 
             if (overwrite && File.Exists(destinationFileName))
             {
-                string? directory = Path.GetDirectoryName(destinationFileName);
-                if (string.IsNullOrEmpty(directory))
-                    directory = ".";
-                tempPath = Path.Combine(directory, Path.GetRandomFileName());
+                // Use GetTempFileName for a unique temp file in the system temp directory.
+                // This avoids conflicts and ensures cleanup by the OS if the process crashes.
+                tempPath = Path.GetTempFileName();
                 extractPath = tempPath;
             }
 
@@ -108,6 +107,11 @@ namespace System.IO.Compression
 
         private static void ExtractToFileInitialize(ZipArchiveEntry source, string destinationFileName, bool overwrite, out FileStreamOptions fileStreamOptions)
         {
+            ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: false, out fileStreamOptions);
+        }
+
+        private static void ExtractToFileInitialize(ZipArchiveEntry source, string destinationFileName, bool overwrite, bool useAsync, out FileStreamOptions fileStreamOptions)
+        {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(destinationFileName);
 
@@ -116,7 +120,8 @@ namespace System.IO.Compression
                 Access = FileAccess.Write,
                 Mode = overwrite ? FileMode.Create : FileMode.CreateNew,
                 Share = FileShare.None,
-                BufferSize = ZipFile.FileStreamBufferSize
+                BufferSize = ZipFile.FileStreamBufferSize,
+                Options = useAsync ? FileOptions.Asynchronous : FileOptions.None
             };
 
             const UnixFileMode OwnershipPermissions =

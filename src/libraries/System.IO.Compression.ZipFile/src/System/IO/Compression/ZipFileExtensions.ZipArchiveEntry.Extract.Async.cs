@@ -71,7 +71,7 @@ public static partial class ZipFileExtensions
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        ExtractToFileInitialize(source, destinationFileName, overwrite, out FileStreamOptions fileStreamOptions);
+        ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: true, out FileStreamOptions fileStreamOptions);
 
         // When overwriting, extract to a temporary file first to avoid corrupting the destination file
         // if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
@@ -80,20 +80,19 @@ public static partial class ZipFileExtensions
 
         if (overwrite && File.Exists(destinationFileName))
         {
-            string? directory = Path.GetDirectoryName(destinationFileName);
-            if (string.IsNullOrEmpty(directory))
-                directory = ".";
-            tempPath = Path.Combine(directory, Path.GetRandomFileName());
+            // Use GetTempFileName for a unique temp file in the system temp directory.
+            // This avoids conflicts and ensures cleanup by the OS if the process crashes.
+            tempPath = Path.GetTempFileName();
             extractPath = tempPath;
         }
 
         try
         {
             FileStream fs = new FileStream(extractPath, fileStreamOptions);
-            await using (fs)
+            await using (fs.ConfigureAwait(false))
             {
                 Stream es = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
-                await using (es)
+                await using (es.ConfigureAwait(false))
                 {
                     await es.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
                 }
