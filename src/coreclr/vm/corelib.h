@@ -303,8 +303,8 @@ DEFINE_CLASS(EXCEPTION,             System,                 Exception)
 DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(EXCEPTION,            GET_DESCRIPTION_BSTR,   GetDescriptionBstr,         SM_PtrException_PtrException_RetIntPtr)
-DEFINE_METHOD(EXCEPTION,            GET_SOURCE_BSTR,   GetSourceBstr,         SM_PtrException_PtrException_RetIntPtr)
-DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT_BSTR,   GetHelpContextBstr,         SM_PtrException_PtrIntPtr_PtrUInt_PtrException_RetVoid)
+DEFINE_METHOD(EXCEPTION,            GET_SOURCE_BSTR,        GetSourceBstr,              SM_PtrException_PtrException_RetIntPtr)
+DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT_BSTR,  GetHelpContextBstr,         SM_PtrException_PtrIntPtr_PtrUInt_PtrException_RetVoid)
 #endif // FEATURE_COMINTEROP
 
 
