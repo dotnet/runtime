@@ -14,7 +14,7 @@ The script works with any dotnet repository that uses Azure DevOps and Helix:
 
 Use `-Repository` to specify the target:
 ```powershell
-scripts/Get-HelixFailures.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
+./scripts/Get-HelixFailures.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
 ```
 
 ## Build Definition IDs (Example: dotnet/runtime)

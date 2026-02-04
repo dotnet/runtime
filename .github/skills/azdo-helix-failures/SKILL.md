@@ -17,22 +17,22 @@ Use this skill when:
 
 ## Quick Start
 
-**Note:** Examples assume running from the repository root. Adjust paths if running from elsewhere.
+**Note:** Examples use relative paths from the skill directory (`.github/skills/azdo-helix-failures/`).
 
 ```powershell
 # Analyze PR failures (most common) - defaults to dotnet/runtime
-.\.github\skills\azdo-helix-failures\scripts\Get-HelixFailures.ps1 -PRNumber 123445 -ShowLogs
+./scripts/Get-HelixFailures.ps1 -PRNumber 123445 -ShowLogs
 
 # Analyze by build ID
-.\.github\skills\azdo-helix-failures\scripts\Get-HelixFailures.ps1 -BuildId 1276327 -ShowLogs
+./scripts/Get-HelixFailures.ps1 -BuildId 1276327 -ShowLogs
 
 # Query specific Helix work item
-.\.github\skills\azdo-helix-failures\scripts\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-..." -WorkItem "System.Net.Http.Tests"
+./scripts/Get-HelixFailures.ps1 -HelixJob "4b24b2c2-..." -WorkItem "System.Net.Http.Tests"
 
 # Other dotnet repositories
-.\.github\skills\azdo-helix-failures\scripts\Get-HelixFailures.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
-.\.github\skills\azdo-helix-failures\scripts\Get-HelixFailures.ps1 -PRNumber 67890 -Repository "dotnet/sdk"
-.\.github\skills\azdo-helix-failures\scripts\Get-HelixFailures.ps1 -PRNumber 11111 -Repository "dotnet/roslyn"
+./scripts/Get-HelixFailures.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
+./scripts/Get-HelixFailures.ps1 -PRNumber 67890 -Repository "dotnet/sdk"
+./scripts/Get-HelixFailures.ps1 -PRNumber 11111 -Repository "dotnet/roslyn"
 ```
 
 ## Key Parameters
