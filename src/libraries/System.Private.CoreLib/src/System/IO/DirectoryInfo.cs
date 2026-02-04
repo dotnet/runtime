@@ -82,8 +82,9 @@ namespace System.IO
 
             string newPath = Path.GetFullPath(Path.Combine(FullPath, path));
 
-            ReadOnlySpan<char> trimmedNewPath = Path.TrimEndingDirectorySeparator(newPath.AsSpan());
-            ReadOnlySpan<char> trimmedCurrentPath = Path.TrimEndingDirectorySeparator(FullPath.AsSpan());
+            ReadOnlySpan<char> trimmedNewPath = newPath.AsSpan().TrimEnd(Path.DirectorySeparator)
+            ReadOnlySpan<char> trimmedCurrentPath = newPath.AsSpan().TrimEnd(Path.DirectorySeparator)
+
 
             // If trimmedCurrentPath still has a trailing separator (root directory case like "C:\" or "/"),
             // remove it for proper boundary checking
