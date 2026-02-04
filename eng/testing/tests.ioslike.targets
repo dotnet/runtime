@@ -138,7 +138,6 @@
       <_ApplePropertyNames Include="InvariantGlobalization" />
 
       <!-- R2R properties for CoreCLR builds - needed for R2R compilation on Helix -->
-      <_ApplePropertyNames Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'" Include="Crossgen2InBuildDir" />
       <_ApplePropertyNames Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'" Include="Crossgen2SdkOverridePropsPath" />
       <_ApplePropertyNames Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'" Include="Crossgen2SdkOverrideTargetsPath" />
 
