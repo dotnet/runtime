@@ -22,17 +22,18 @@ class Liveness
 {
     Compiler* m_compiler;
 
-    VARSET_TP m_curUseSet; // vars used     by block (before a def)
-    VARSET_TP m_curDefSet; // vars assigned by block (before a use)
-    MemoryKindSet m_curMemoryUse = emptyMemoryKindSet;   // True iff the current basic block uses memory.
-    MemoryKindSet m_curMemoryDef = emptyMemoryKindSet;   // True iff the current basic block modifies memory.
-    MemoryKindSet m_curMemoryHavoc = emptyMemoryKindSet; // True if  the current basic block is known to set memory to a "havoc" value.
+    VARSET_TP     m_curUseSet;                         // vars used     by block (before a def)
+    VARSET_TP     m_curDefSet;                         // vars assigned by block (before a use)
+    MemoryKindSet m_curMemoryUse = emptyMemoryKindSet; // True iff the current basic block uses memory.
+    MemoryKindSet m_curMemoryDef = emptyMemoryKindSet; // True iff the current basic block modifies memory.
+    MemoryKindSet m_curMemoryHavoc =
+        emptyMemoryKindSet; // True if  the current basic block is known to set memory to a "havoc" value.
 
-    VARSET_TP m_liveIn;
-    VARSET_TP m_liveOut;
-    VARSET_TP m_ehHandlerLiveVars;
-    MemoryKindSet  m_memoryLiveIn = emptyMemoryKindSet;
-    MemoryKindSet  m_memoryLiveOut = emptyMemoryKindSet;
+    VARSET_TP     m_liveIn;
+    VARSET_TP     m_liveOut;
+    VARSET_TP     m_ehHandlerLiveVars;
+    MemoryKindSet m_memoryLiveIn  = emptyMemoryKindSet;
+    MemoryKindSet m_memoryLiveOut = emptyMemoryKindSet;
 
     bool m_livenessChanged = false;
 
@@ -1421,8 +1422,8 @@ void Liveness<TLiveness>::InterBlockLocalVarLiveness()
 template <typename TLiveness>
 void Liveness<TLiveness>::DoLiveVarAnalysis()
 {
-    m_liveIn = VarSetOps::MakeEmpty(m_compiler);
-    m_liveOut = VarSetOps::MakeEmpty(m_compiler);
+    m_liveIn            = VarSetOps::MakeEmpty(m_compiler);
+    m_liveOut           = VarSetOps::MakeEmpty(m_compiler);
     m_ehHandlerLiveVars = VarSetOps::MakeEmpty(m_compiler);
 
     const bool keepAliveThis =
@@ -1496,7 +1497,7 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
 #endif // DEBUG
 }
 
-template<typename TLiveness>
+template <typename TLiveness>
 bool Liveness<TLiveness>::PerBlockAnalysis(BasicBlock* block, bool keepAliveThis)
 {
     /* Compute the 'liveOut' set */
@@ -2918,6 +2919,6 @@ PhaseStatus Compiler::fgEarlyLiveness()
 
     EarlyLiveness liveness(this);
     liveness.Run();
-    fgDidEarlyLiveness     = true;
+    fgDidEarlyLiveness = true;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
