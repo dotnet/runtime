@@ -6868,7 +6868,7 @@ void Compiler::impCheckForPInvokeCall(
 //    callDI      - Debug info for the async call
 //
 void Compiler::impSetupAsyncCall(
-    GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, unsigned numILArgs, const DebugInfo& callDI)
+    GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
 {
     AsyncCallInfo asyncInfo;
 
