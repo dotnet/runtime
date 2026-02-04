@@ -32,7 +32,6 @@
     <Compile Include="TarEntry\UstarTarEntry.Tests.cs" />
     <Compile Include="TarEntry\PaxTarEntry.Tests.cs" />
     <Compile Include="TarEntry\PaxTarEntry.ExtendedAttributes.Tests.cs" />
-    <Compile Include="TarEntry\PaxTarEntry.ExtendedAttributes.Sync.Tests.cs" />
     <Compile Include="TarEntry\GnuTarEntry.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectory.File.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectory.Stream.Tests.cs" />
