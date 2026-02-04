@@ -222,25 +222,6 @@ PhaseStatus Compiler::fgComputeDominators()
     return PhaseStatus::MODIFIED_NOTHING;
 }
 
-//-------------------------------------------------------------
-// fgInitBlockVarSets: Initialize the per-block variable sets (used for liveness analysis).
-//
-// Notes:
-//   Initializes:
-//      bbVarUse, bbVarDef, bbLiveIn, bbLiveOut,
-//      bbMemoryUse, bbMemoryDef, bbMemoryLiveIn, bbMemoryLiveOut,
-//      bbScope
-//
-void Compiler::fgInitBlockVarSets()
-{
-    for (BasicBlock* const block : Blocks())
-    {
-        block->InitVarSets(this);
-    }
-
-    fgBBVarSetsInited = true;
-}
-
 //------------------------------------------------------------------------
 // fgPostImportationCleanups: clean up flow graph after importation
 //
@@ -3225,7 +3206,7 @@ template <bool hasEH>
 //
 template <bool hasEH>
 Compiler::ThreeOptLayout<hasEH>::ThreeOptLayout(Compiler* comp, BasicBlock** initialLayout, unsigned numHotBlocks)
-    : compiler(comp)
+    : m_compiler(comp)
     , cutPoints(comp->getAllocator(CMK_FlowEdge), &ThreeOptLayout::EdgeCmp)
     , blockOrder(initialLayout)
     , tempOrder(comp->m_dfsTree->GetPostOrder())
@@ -3297,7 +3278,7 @@ weight_t Compiler::ThreeOptLayout<hasEH>::GetCost(BasicBlock* block, BasicBlock*
     assert(next != nullptr);
 
     const weight_t  maxCost         = block->bbWeight;
-    const FlowEdge* fallthroughEdge = compiler->fgGetPredForBlock(next, block);
+    const FlowEdge* fallthroughEdge = m_compiler->fgGetPredForBlock(next, block);
 
     if (fallthroughEdge != nullptr)
     {
@@ -3477,7 +3458,7 @@ bool Compiler::ThreeOptLayout<hasEH>::ConsiderEdge(FlowEdge* edge)
     }
 
     // Ignore cross-region branches, and don't try to change the region's entry block.
-    if (hasEH && (!BasicBlock::sameTryRegion(srcBlk, dstBlk) || compiler->bbIsTryBeg(dstBlk)))
+    if (hasEH && (!BasicBlock::sameTryRegion(srcBlk, dstBlk) || m_compiler->bbIsTryBeg(dstBlk)))
     {
         return false;
     }
@@ -3797,10 +3778,10 @@ bool Compiler::ThreeOptLayout<hasEH>::ReorderBlockList()
 
     if (hasEH)
     {
-        lastHotBlocks    = new (compiler, CMK_BasicBlock) BasicBlock* [compiler->compHndBBtabCount + 1] {};
-        lastHotBlocks[0] = compiler->fgFirstBB;
+        lastHotBlocks    = new (m_compiler, CMK_BasicBlock) BasicBlock* [m_compiler->compHndBBtabCount + 1] {};
+        lastHotBlocks[0] = m_compiler->fgFirstBB;
 
-        for (EHblkDsc* const HBtab : EHClauses(compiler))
+        for (EHblkDsc* const HBtab : EHClauses(m_compiler))
         {
             lastHotBlocks[HBtab->ebdTryBeg->bbTryIndex] = HBtab->ebdTryBeg;
         }
@@ -3818,8 +3799,8 @@ bool Compiler::ThreeOptLayout<hasEH>::ReorderBlockList()
         {
             if (!block->NextIs(blockToMove))
             {
-                compiler->fgUnlinkBlock(blockToMove);
-                compiler->fgInsertBBafter(block, blockToMove);
+                m_compiler->fgUnlinkBlock(blockToMove);
+                m_compiler->fgInsertBBafter(block, blockToMove);
                 modified = true;
             }
 
@@ -3836,7 +3817,7 @@ bool Compiler::ThreeOptLayout<hasEH>::ReorderBlockList()
         }
 
         // Only reorder blocks within the same try region. We don't want to make them non-contiguous.
-        if (compiler->bbIsTryBeg(blockToMove))
+        if (m_compiler->bbIsTryBeg(blockToMove))
         {
             continue;
         }
@@ -3865,15 +3846,15 @@ bool Compiler::ThreeOptLayout<hasEH>::ReorderBlockList()
             BasicBlock* const callFinallyRet = blockToMove->Next();
             if (callFinallyRet != insertionPoint)
             {
-                compiler->fgUnlinkRange(blockToMove, callFinallyRet);
-                compiler->fgMoveBlocksAfter(blockToMove, callFinallyRet, insertionPoint);
+                m_compiler->fgUnlinkRange(blockToMove, callFinallyRet);
+                m_compiler->fgMoveBlocksAfter(blockToMove, callFinallyRet, insertionPoint);
                 modified = true;
             }
         }
         else
         {
-            compiler->fgUnlinkBlock(blockToMove);
-            compiler->fgInsertBBafter(insertionPoint, blockToMove);
+            m_compiler->fgUnlinkBlock(blockToMove);
+            m_compiler->fgInsertBBafter(insertionPoint, blockToMove);
             modified = true;
         }
     }
@@ -3886,14 +3867,14 @@ bool Compiler::ThreeOptLayout<hasEH>::ReorderBlockList()
     // If we reordered within any try regions, make sure the EH table is up-to-date.
     if (modified)
     {
-        compiler->fgFindTryRegionEnds();
+        m_compiler->fgFindTryRegionEnds();
     }
 
     JITDUMP("Moving try regions\n");
 
     // We only ordered blocks within regions above.
     // Now, move entire try regions up to their ideal predecessors, if possible.
-    for (EHblkDsc* const HBtab : EHClauses(compiler))
+    for (EHblkDsc* const HBtab : EHClauses(m_compiler))
     {
         // If this try region isn't in the candidate span of blocks, don't consider it.
         // Also, if this try region's entry is also the method entry, don't move it.
@@ -3928,14 +3909,14 @@ bool Compiler::ThreeOptLayout<hasEH>::ReorderBlockList()
         }
 
         BasicBlock* const tryLast = HBtab->ebdTryLast;
-        compiler->fgUnlinkRange(tryBeg, tryLast);
-        compiler->fgMoveBlocksAfter(tryBeg, tryLast, insertionPoint);
+        m_compiler->fgUnlinkRange(tryBeg, tryLast);
+        m_compiler->fgMoveBlocksAfter(tryBeg, tryLast, insertionPoint);
         modified = true;
 
         // If we moved this region within another region, recompute the try region end blocks.
         if (parentIndex != EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            compiler->fgFindTryRegionEnds();
+            m_compiler->fgFindTryRegionEnds();
         }
     }
 
@@ -4028,7 +4009,7 @@ void Compiler::ThreeOptLayout<hasEH>::CompactHotJumps()
 
         // If this move will break up existing fallthrough into 'target', make sure it's worth it.
         assert(dstPos != 0);
-        FlowEdge* const fallthroughEdge = compiler->fgGetPredForBlock(target, blockOrder[dstPos - 1]);
+        FlowEdge* const fallthroughEdge = m_compiler->fgGetPredForBlock(target, blockOrder[dstPos - 1]);
         if ((fallthroughEdge != nullptr) && (fallthroughEdge->getLikelyWeight() >= edge->getLikelyWeight()))
         {
             continue;
