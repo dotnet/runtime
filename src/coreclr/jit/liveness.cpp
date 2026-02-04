@@ -22,12 +22,12 @@ class Liveness
 {
     Compiler* m_compiler;
 
-    VARSET_TP fgCurUseSet; // vars used     by block (before a def)
-    VARSET_TP fgCurDefSet; // vars assigned by block (before a use)
+    VARSET_TP m_curUseSet; // vars used     by block (before a def)
+    VARSET_TP m_curDefSet; // vars assigned by block (before a use)
 
-    MemoryKindSet fgCurMemoryUse;   // True iff the current basic block uses memory.
-    MemoryKindSet fgCurMemoryDef;   // True iff the current basic block modifies memory.
-    MemoryKindSet fgCurMemoryHavoc; // True if  the current basic block is known to set memory to a "havoc" value.
+    MemoryKindSet m_curMemoryUse;   // True iff the current basic block uses memory.
+    MemoryKindSet m_curMemoryDef;   // True iff the current basic block modifies memory.
+    MemoryKindSet m_curMemoryHavoc; // True if  the current basic block is known to set memory to a "havoc" value.
 
     bool m_livenessChanged = false;
 
@@ -609,8 +609,8 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
     unsigned livenessVarEpoch = m_compiler->GetCurLVEpoch();
 
     // Avoid allocations in the long case.
-    VarSetOps::AssignNoCopy(m_compiler, fgCurUseSet, VarSetOps::MakeEmpty(m_compiler));
-    VarSetOps::AssignNoCopy(m_compiler, fgCurDefSet, VarSetOps::MakeEmpty(m_compiler));
+    VarSetOps::AssignNoCopy(m_compiler, m_curUseSet, VarSetOps::MakeEmpty(m_compiler));
+    VarSetOps::AssignNoCopy(m_compiler, m_curDefSet, VarSetOps::MakeEmpty(m_compiler));
 
     // GC Heap and ByrefExposed can share states unless we see a def of byref-exposed
     // memory that is not a GC Heap def.
@@ -619,14 +619,14 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
     for (unsigned i = m_compiler->m_dfsTree->GetPostOrderCount(); i != 0; i--)
     {
         BasicBlock* block = m_compiler->m_dfsTree->GetPostOrder(i - 1);
-        VarSetOps::ClearD(m_compiler, fgCurUseSet);
-        VarSetOps::ClearD(m_compiler, fgCurDefSet);
+        VarSetOps::ClearD(m_compiler, m_curUseSet);
+        VarSetOps::ClearD(m_compiler, m_curDefSet);
 
         if (TLiveness::ComputeMemoryLiveness)
         {
-            fgCurMemoryUse   = emptyMemoryKindSet;
-            fgCurMemoryDef   = emptyMemoryKindSet;
-            fgCurMemoryHavoc = emptyMemoryKindSet;
+            m_curMemoryUse   = emptyMemoryKindSet;
+            m_curMemoryDef   = emptyMemoryKindSet;
+            m_curMemoryHavoc = emptyMemoryKindSet;
         }
 
         m_compiler->compCurBB = block;
@@ -721,17 +721,17 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
 
                     if (varDsc->lvTracked)
                     {
-                        if (!VarSetOps::IsMember(m_compiler, fgCurDefSet, varDsc->lvVarIndex))
+                        if (!VarSetOps::IsMember(m_compiler, m_curDefSet, varDsc->lvVarIndex))
                         {
-                            VarSetOps::AddElemD(m_compiler, fgCurUseSet, varDsc->lvVarIndex);
+                            VarSetOps::AddElemD(m_compiler, m_curUseSet, varDsc->lvVarIndex);
                         }
                     }
                 }
             }
         }
 
-        VarSetOps::Assign(m_compiler, block->bbVarUse, fgCurUseSet);
-        VarSetOps::Assign(m_compiler, block->bbVarDef, fgCurDefSet);
+        VarSetOps::Assign(m_compiler, block->bbVarUse, m_curUseSet);
+        VarSetOps::Assign(m_compiler, block->bbVarDef, m_curDefSet);
 
         /* also initialize the IN set, just in case we will do multiple DFAs */
 
@@ -739,9 +739,9 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
 
         if (TLiveness::ComputeMemoryLiveness)
         {
-            block->bbMemoryUse    = fgCurMemoryUse;
-            block->bbMemoryDef    = fgCurMemoryDef;
-            block->bbMemoryHavoc  = fgCurMemoryHavoc;
+            block->bbMemoryUse    = m_curMemoryUse;
+            block->bbMemoryDef    = m_curMemoryDef;
+            block->bbMemoryHavoc  = m_curMemoryHavoc;
             block->bbMemoryLiveIn = emptyMemoryKindSet;
         }
     }
@@ -796,7 +796,7 @@ void Liveness<TLiveness>::PerBlockLocalVarLiveness()
 
 //------------------------------------------------------------------------
 // PerNodeLocalVarLiveness:
-//   Set fgCurMemoryUse and fgCurMemoryDef when memory is read or updated
+//   Set m_curMemoryUse and m_curMemoryDef when memory is read or updated
 //   Call fgMarkUseDef for any Local variables encountered
 //
 // Template arguments:
@@ -852,10 +852,10 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
                 {
                     // For any Volatile indirection, we must handle it as a
                     // definition of the GcHeap/ByrefExposed
-                    fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+                    m_curMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
                 }
 
-                fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+                m_curMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
             }
             break;
 
@@ -868,9 +868,9 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
         case GT_CMPXCHG:
             if (TLiveness::ComputeMemoryLiveness)
             {
-                fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
-                fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
-                fgCurMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
+                m_curMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+                m_curMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+                m_curMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
             }
             break;
 
@@ -879,7 +879,7 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
         case GT_MEMORYBARRIER: // Similar to Volatile indirections, we must handle this as a memory def.
             if (TLiveness::ComputeMemoryLiveness)
             {
-                fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+                m_curMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
             }
             break;
 
@@ -911,9 +911,9 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
 
                 if (modHeap)
                 {
-                    fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
-                    fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
-                    fgCurMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
+                    m_curMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+                    m_curMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+                    m_curMemoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                 }
             }
 
@@ -936,9 +936,9 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
 
                     if (varDsc->lvTracked)
                     {
-                        if (!VarSetOps::IsMember(m_compiler, fgCurDefSet, varDsc->lvVarIndex))
+                        if (!VarSetOps::IsMember(m_compiler, m_curDefSet, varDsc->lvVarIndex))
                         {
-                            VarSetOps::AddElemD(m_compiler, fgCurUseSet, varDsc->lvVarIndex);
+                            VarSetOps::AddElemD(m_compiler, m_curUseSet, varDsc->lvVarIndex);
                         }
                     }
                 }
@@ -971,12 +971,12 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsi
         {
             // We currently handle this like a Volatile store or GT_MEMORYBARRIER
             // so it counts as a definition of GcHeap/ByrefExposed
-            fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+            m_curMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
         }
         else if (hwintrinsic->OperIsMemoryLoad())
         {
             // This instruction loads from memory and we need to record this information
-            fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+            m_curMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
         }
     }
 }
@@ -1039,16 +1039,16 @@ void Liveness<TLiveness>::MarkUseDef(GenTreeLclVarCommon* tree)
                    tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
         }
 
-        if (isUse && !VarSetOps::IsMember(m_compiler, fgCurDefSet, varDsc->lvVarIndex))
+        if (isUse && !VarSetOps::IsMember(m_compiler, m_curDefSet, varDsc->lvVarIndex))
         {
             // This is an exposed use; add it to the set of uses.
-            VarSetOps::AddElemD(m_compiler, fgCurUseSet, varDsc->lvVarIndex);
+            VarSetOps::AddElemD(m_compiler, m_curUseSet, varDsc->lvVarIndex);
         }
 
         if (TLiveness::SsaLiveness ? isDef : isFullDef)
         {
             // This is a def, add it to the set of defs.
-            VarSetOps::AddElemD(m_compiler, fgCurDefSet, varDsc->lvVarIndex);
+            VarSetOps::AddElemD(m_compiler, m_curDefSet, varDsc->lvVarIndex);
         }
     }
     else
@@ -1059,11 +1059,11 @@ void Liveness<TLiveness>::MarkUseDef(GenTreeLclVarCommon* tree)
 
             if (isUse)
             {
-                fgCurMemoryUse |= memoryKindSet(ByrefExposed);
+                m_curMemoryUse |= memoryKindSet(ByrefExposed);
             }
             if (isDef)
             {
-                fgCurMemoryDef |= memoryKindSet(ByrefExposed);
+                m_curMemoryDef |= memoryKindSet(ByrefExposed);
 
                 // We've found a store that modifies ByrefExposed
                 // memory but not GcHeap memory, so track their
@@ -1086,14 +1086,14 @@ void Liveness<TLiveness>::MarkUseDef(GenTreeLclVarCommon* tree)
                     }
 
                     unsigned varIndex = m_compiler->lvaTable[i].lvVarIndex;
-                    if (isUse && !VarSetOps::IsMember(m_compiler, fgCurDefSet, varIndex))
+                    if (isUse && !VarSetOps::IsMember(m_compiler, m_curDefSet, varIndex))
                     {
-                        VarSetOps::AddElemD(m_compiler, fgCurUseSet, varIndex);
+                        VarSetOps::AddElemD(m_compiler, m_curUseSet, varIndex);
                     }
 
                     if (TLiveness::SsaLiveness ? isDef : isFullDef)
                     {
-                        VarSetOps::AddElemD(m_compiler, fgCurDefSet, varIndex);
+                        VarSetOps::AddElemD(m_compiler, m_curDefSet, varIndex);
                     }
                 }
             }
