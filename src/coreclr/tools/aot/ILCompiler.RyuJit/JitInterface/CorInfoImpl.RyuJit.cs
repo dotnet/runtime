@@ -1048,6 +1048,9 @@ namespace Internal.JitInterface
                     case (int)MappingTypes.NO_MAPPING:
                         continue;
                 }
+                // Ignore these; see WalkILOffsetsCallback in src/coreclr/vm/debugdebugger.cpp.
+                if (nativeToILInfo->source == SourceTypes.CALL_INSTRUCTION)
+                    continue;
 
                 debugLocInfos.Add(new DebugLocInfo((int)nativeToILInfo->nativeOffset, ilOffset));
             }

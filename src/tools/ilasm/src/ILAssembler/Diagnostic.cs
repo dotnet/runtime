@@ -50,6 +50,7 @@ public static class DiagnosticIds
     public const string UnknownGenericParameter = "ILA0028";
     public const string ParameterIndexOutOfRange = "ILA0029";
     public const string DuplicateMethod = "ILA0030";
+    public const string MissingExportedTypeImplementation = "ILA0031";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -84,4 +85,5 @@ internal static class DiagnosticMessageTemplates
     public const string UnknownGenericParameter = "Unknown generic parameter '{0}'";
     public const string ParameterIndexOutOfRange = "Parameter index {0} is out of range";
     public const string DuplicateMethod = "Duplicate method definition";
+    public const string MissingExportedTypeImplementation = "Undefined implementation in ExportedType '{0}' -- ExportedType not emitted";
 }

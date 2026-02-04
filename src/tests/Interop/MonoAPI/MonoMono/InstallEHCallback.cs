@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 using Xunit;
+using TestLibrary;
 
 namespace MonoAPI.Tests.MonoMono.InstallEHCallback;
 
@@ -173,6 +174,7 @@ public class InstallEHCallback {
         return 0;
     }
 
+    [ActiveIssue("CoreCLR does not implement the mono embedding API", TestRuntimes.CoreCLR)]
     [Fact]
     public static void TestEntryPoint ()
     {
