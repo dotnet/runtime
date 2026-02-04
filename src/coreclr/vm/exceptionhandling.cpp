@@ -3114,16 +3114,6 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
     DWORD_PTR dwResumePC = 0;
     UINT_PTR callerTargetSp = 0;
 
-#ifdef FEATURE_INTERPRETER
-    if (GetControlPC(pvRegDisplay) == InterpreterFrame::DummyCallerIP)
-    {
-        // This is a case when we have unwound out of an interpreted filter funclet. The "Next" moves the
-        // REGDISPLAY to the native code context that was there before we started to iterate over the
-        // interpreted frames.
-        exInfo->m_frameIter.Next();
-    }
-#endif // FEATURE_INTERPRETER
-
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     size_t targetSSP = exInfo->m_frameIter.m_crawl.GetRegisterSet()->SSP;
     // Verify the SSP points to the slot that matches the ControlPC of the frame containing the catch funclet.
