@@ -1023,6 +1023,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     throw new NotImplementedException("Crossgen2 should not emit code for Instantiating stubs.");
                 }
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
+                {
+                    throw new NotImplementedException("Crossgen2 should not emit code for Unboxing stubs.");
+                }
 
                 int runtimeFunctionId;
                 int? fixupOffset;
@@ -1153,6 +1157,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0)
                 {
                     throw new NotImplementedException("Crossgen2 should not emit code for Instantiating stubs.");
+                }
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
+                {
+                    throw new NotImplementedException("Crossgen2 should not emit code for Unboxing stubs.");
                 }
 
                 GetPgoOffsetAndVersion(decoder.Offset, out int pgoFormatVersion, out int pgoOffset);
