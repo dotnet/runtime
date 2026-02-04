@@ -4,6 +4,10 @@
 import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
+    if (_ems_.ABORT) {
+        // runtime is shutting down
+        return;
+    }
     if (_ems_.DOTNET.lastScheduledTimerId) {
         globalThis.clearTimeout(_ems_.DOTNET.lastScheduledTimerId);
         _ems_.runtimeKeepalivePop();
@@ -26,6 +30,10 @@ export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
 }
 
 export function SystemJS_ScheduleBackgroundJob(): void {
+    if (_ems_.ABORT) {
+        // runtime is shutting down
+        return;
+    }
     if (_ems_.DOTNET.lastScheduledThreadPoolId) {
         globalThis.clearTimeout(_ems_.DOTNET.lastScheduledThreadPoolId);
         _ems_.runtimeKeepalivePop();
@@ -48,6 +56,10 @@ export function SystemJS_ScheduleBackgroundJob(): void {
 }
 
 export function SystemJS_ScheduleFinalization(): void {
+    if (_ems_.ABORT) {
+        // runtime is shutting down
+        return;
+    }
     if (_ems_.DOTNET.lastScheduledFinalizationId) {
         globalThis.clearTimeout(_ems_.DOTNET.lastScheduledFinalizationId);
         _ems_.runtimeKeepalivePop();

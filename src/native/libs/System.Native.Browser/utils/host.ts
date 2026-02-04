@@ -14,6 +14,10 @@ export function getExitStatus(): new (exitCode: number) => any {
 }
 
 export function runBackgroundTimers(): void {
+    if (_ems_.ABORT) {
+        // runtime is shutting down
+        return;
+    }
     try {
         _ems_._SystemJS_ExecuteTimerCallback();
         _ems_._SystemJS_ExecuteBackgroundJobCallback();

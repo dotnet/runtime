@@ -9,6 +9,7 @@ function libCoreRunFactory() {
         "$FS",
         "$NODEFS",
         "$NODERAWFS",
+        "corerun_shutdown"
     ];
     const mergeCoreRun = {
         $CORERUN: {
@@ -24,7 +25,24 @@ function libCoreRunFactory() {
                 }
 
                 ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
-
+                const originalExitJS = exitJS;
+                exitJS = (status, implicit) => {
+                    if (!implicit) {
+                        EXITSTATUS = status;
+                        ABORT = true;
+                        if (dotnetBrowserUtilsExports.abortBackgroundTimers) {
+                            dotnetBrowserUtilsExports.abortBackgroundTimers();
+                        }
+                    }
+                    if (!keepRuntimeAlive()) {
+                        ABORT = true;
+                        var latched = _corerun_shutdown(EXITSTATUS || 0);
+                        if (EXITSTATUS === undefined) {
+                            EXITSTATUS = latched;
+                        }
+                    }
+                    return originalExitJS(EXITSTATUS, implicit);
+                };
             },
         },
         $CORERUN__postset: "CORERUN.selfInitialize()",
