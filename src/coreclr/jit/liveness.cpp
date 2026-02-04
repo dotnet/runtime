@@ -37,8 +37,6 @@ class Liveness
 
     bool m_livenessChanged = false;
 
-    bool m_livenessChanged = false;
-
 protected:
     enum
     {
