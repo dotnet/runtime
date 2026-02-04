@@ -202,8 +202,6 @@ namespace System.Security.Cryptography.X509Certificates
                     return null;
                 }
 
-                // X509_STORE_add_crl will increase the refcount on the CRL object, so we should still
-                // dispose our copy.
                 SafeX509CrlHandle crl = Interop.Crypto.PemReadBioX509Crl(bio);
 
                 {
