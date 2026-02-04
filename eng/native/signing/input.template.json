@@ -21,9 +21,7 @@
           {
             "KeyCode": "CP-471322",
             "OperationCode": "SigntoolVerify",
-            "Parameters": {
-
-            },
+            "Parameters": {},
             "ToolName": "sign",
             "ToolVersion": "1.0"
           }
@@ -31,9 +29,7 @@
       },
       "SourceLocationType": "UNC",
       "DestinationLocationType": "UNC",
-      "SignRequestFiles": [
-
-      ]
+      "SignRequestFiles": []
     }
   ]
 }

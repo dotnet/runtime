@@ -11,13 +11,8 @@
     "lib": [
       "esnext"
     ],
-    "types": [
-
-    ],
-    "rootDirs": [
-      ".",
-      "../../../../artifacts/bin/native/generated"
-    ]
+    "types": [],
+    "rootDirs": [".", "../../../../artifacts/bin/native/generated"]
   },
   "exclude": [
     "dotnet.d.ts",
