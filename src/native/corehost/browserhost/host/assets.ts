@@ -4,7 +4,6 @@
 import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
 import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
 
-import { dotnetAssert, dotnetLogger } from "./cross-module";
 import { browserVirtualAppBase, ENVIRONMENT_IS_WEB } from "./per-module";
 
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
@@ -119,20 +118,20 @@ export async function instantiateWasm(wasmPromise: Promise<Response>, imports: W
         wasmMainTable = instance.exports.__indirect_function_table as WebAssembly.Table;
     }
     return { instance, module };
-}
 
-async function checkResponseOk(wasmPromise: Promise<Response> | undefined): Promise<Response & { isMimeTypeOk?: boolean }> {
-    dotnetAssert.check(wasmPromise, "WASM binary promise was not initialized");
-    const res = (await wasmPromise) as Response & { isMimeTypeOk?: boolean };
-    if (!res || res.ok === false) {
-        throw new Error(`Failed to load WebAssembly module. HTTP status: ${res?.status} ${res?.statusText}`);
+    async function checkResponseOk(wasmPromise: Promise<Response> | undefined): Promise<Response & { isMimeTypeOk?: boolean }> {
+        _ems_.dotnetAssert.check(wasmPromise, "WASM binary promise was not initialized");
+        const res = (await wasmPromise) as Response & { isMimeTypeOk?: boolean };
+        if (!res || res.ok === false) {
+            throw new Error(`Failed to load WebAssembly module. HTTP status: ${res?.status} ${res?.statusText}`);
+        }
+        const contentType = res.headers && res.headers.get ? res.headers.get("Content-Type") : undefined;
+        res.isMimeTypeOk = true;
+        if (ENVIRONMENT_IS_WEB && contentType !== "application/wasm") {
+            _ems_.dotnetLogger.warn("WebAssembly resource does not have the expected content type \"application/wasm\", so falling back to slower ArrayBuffer instantiation.");
+            res.isMimeTypeOk = false;
+        }
+        return res;
     }
-    const contentType = res.headers && res.headers.get ? res.headers.get("Content-Type") : undefined;
-    res.isMimeTypeOk = true;
-    if (ENVIRONMENT_IS_WEB && contentType !== "application/wasm") {
-        dotnetLogger.warn("WebAssembly resource does not have the expected content type \"application/wasm\", so falling back to slower ArrayBuffer instantiation.");
-        res.isMimeTypeOk = false;
-    }
-    return res;
 }
 
