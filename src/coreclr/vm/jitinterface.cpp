@@ -13741,7 +13741,6 @@ void ComputeGCRefMap(MethodTable * pMT, BYTE * pGCRefMap, size_t cbGCRefMap)
     } while (cur >= last);
 }
 
-
 MethodTable* GetContinuationTypeFromLayout(PCCOR_SIGNATURE pBlob, Module* currentModule)
 {
     STANDARD_VM_CONTRACT;
@@ -13756,14 +13755,11 @@ MethodTable* GetContinuationTypeFromLayout(PCCOR_SIGNATURE pBlob, Module* curren
     uint32_t dwExpectedSize;
     IfFailThrow(p.GetData(&dwExpectedSize));
 
-    if (!(dwFlags & READYTORUN_LAYOUT_GCLayout))
+    if (((dwFlags & READYTORUN_LAYOUT_GCLayout) == 0)
+        || ((dwFlags & READYTORUN_LAYOUT_Alignment_Native) == 0)
+        || ((dwExpectedSize % TARGET_POINTER_SIZE) != 0))
     {
         return nullptr;
-    }
-
-    if ((dwExpectedSize % TARGET_POINTER_SIZE) != 0)
-    {
-        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
     if (dwFlags & READYTORUN_LAYOUT_GCLayout_Empty)
@@ -14265,15 +14261,13 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     case READYTORUN_FIXUP_Continuation_Layout:
         {
             MethodTable* continuationTypeMethodTable = GetContinuationTypeFromLayout(pBlob, currentModule);
-            if (continuationTypeMethodTable != NULL)
+            if (continuationTypeMethodTable == NULL)
             {
-                TypeHandle th = TypeHandle(continuationTypeMethodTable);
-                result = (size_t)th.AsPtr();
+                return FALSE;
             }
-            else
-            {
-                result = 0;
-            }
+
+            TypeHandle th = TypeHandle(continuationTypeMethodTable);
+            result = (size_t)th.AsPtr();
         }
         break;
 
