@@ -1716,21 +1716,21 @@ try {
                                 # Extract test failures
                                 $failures = Extract-TestFailures -LogContent $logContent
 
-                            if ($failures.Count -gt 0) {
-                                Write-Host "  Failed tests:" -ForegroundColor Red
-                                foreach ($failure in $failures) {
-                                    Write-Host "    - $($failure.TestName)" -ForegroundColor White
-                                }
+                                if ($failures.Count -gt 0) {
+                                    Write-Host "  Failed tests:" -ForegroundColor Red
+                                    foreach ($failure in $failures) {
+                                        Write-Host "    - $($failure.TestName)" -ForegroundColor White
+                                    }
 
-                                # Collect for PR correlation
-                                $allFailuresForCorrelation += @{
-                                    TaskName = $task.name
-                                    JobName = $job.name
-                                    Errors = @()
-                                    HelixLogs = @()
-                                    FailedTests = $failures | ForEach-Object { $_.TestName }
+                                    # Collect for PR correlation
+                                    $allFailuresForCorrelation += @{
+                                        TaskName = $task.name
+                                        JobName = $job.name
+                                        Errors = @()
+                                        HelixLogs = @()
+                                        FailedTests = $failures | ForEach-Object { $_.TestName }
+                                    }
                                 }
-                            }
 
                             # Extract and optionally fetch Helix URLs
                             $helixUrls = Extract-HelixUrls -LogContent $logContent
