@@ -2138,10 +2138,9 @@ void Thread::RareDisablePreemptiveGC()
 
         if (ThreadStore::IsTrappingThreadsForSuspension())
         {
-#ifdef FEATURE_PERFTRACING
-            // Save the GC mode so the sample profiler can determine this thread was in managed code.
-            SaveGCModeOnSuspension();
-#endif // FEATURE_PERFTRACING
+            // Mark that this thread is trapped for suspension.
+            // Used by the sample profiler to determine this thread was in managed code.
+            SetThreadState(TS_SuspensionTrapped);
 
             EnablePreemptiveGC();
 
@@ -2181,6 +2180,9 @@ void Thread::RareDisablePreemptiveGC()
 
             // disable preemptive gc.
             m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+
+            // Clear the suspension trapped flag now that we're resuming.
+            ResetThreadState(TS_SuspensionTrapped);
 
             // check again if we have something to do
             continue;
