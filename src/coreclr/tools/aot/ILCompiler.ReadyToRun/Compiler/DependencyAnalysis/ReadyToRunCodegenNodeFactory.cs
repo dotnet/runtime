@@ -1074,9 +1074,26 @@ namespace ILCompiler.DependencyAnalysis
             return default;
         }
 
+        private struct WasmTypeNodeKey : IEquatable<WasmTypeNodeKey>
+        {
+            public readonly CorInfoWasmType[] Types;
+
+            public WasmTypeNodeKey(CorInfoWasmType[] types)
+            {
+                Types = types;
+            }
+
+            public bool Equals(WasmTypeNodeKey other) => Types.SequenceEqual(other.Types);
+            public override bool Equals(object obj) => obj is WasmTypeNodeKey wtnk && Equals(wtnk);
+            public override int GetHashCode()
+                => Types.Length; // TODO-WASM: Hash all the types
+        }
+
+        private NodeCache<WasmTypeNodeKey, WasmTypeNode> _wasmTypeNodes = new((key) => new WasmTypeNode(key.Types));
+
         public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
         {
-            return new WasmTypeNode(types);
+            return _wasmTypeNodes.GetOrAdd(new WasmTypeNodeKey(types));
         }
     }
 }
