@@ -122,6 +122,26 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
+      # Build CoreCLR CoreLib and tools with analyzers and linker
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - linux_x64_dev_innerloop
+          jobParameters:
+            nameSuffix: CoreClr_and_Tools_AllConfigurations
+            buildArgs: -subset clr.corelib+tools -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
+            timeoutInMinutes: 120
+            condition:
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdac.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
       # Build Repo SourceBuild
       #
       - template: /eng/common/templates/jobs/source-build.yml
