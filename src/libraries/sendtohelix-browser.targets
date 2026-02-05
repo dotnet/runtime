@@ -51,8 +51,6 @@
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
 
-    <!-- EMSDK_PATH is set by AcquireEmscriptenSdk.targets, fallback to ProvisionEmscriptenDir -->
-    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == ''">$(ProvisionEmscriptenDir)</EMSDK_PATH>
     <EmSdkDirForHelixPayload>$(HelixDependenciesStagingPath)\emsdk</EmSdkDirForHelixPayload>
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
