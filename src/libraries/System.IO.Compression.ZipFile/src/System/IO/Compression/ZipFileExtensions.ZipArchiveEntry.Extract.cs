@@ -62,7 +62,7 @@ namespace System.IO.Compression
         /// <param name="overwrite">True to indicate overwrite.</param>
         public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite)
         {
-            ExtractToFileInitialize(source, destinationFileName, overwrite, out FileStreamOptions fileStreamOptions);
+            ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: false, out FileStreamOptions fileStreamOptions);
 
             // When overwriting, extract to a temporary file first to avoid corrupting the destination file
             // if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
@@ -103,11 +103,6 @@ namespace System.IO.Compression
                 }
                 throw;
             }
-        }
-
-        private static void ExtractToFileInitialize(ZipArchiveEntry source, string destinationFileName, bool overwrite, out FileStreamOptions fileStreamOptions)
-        {
-            ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: false, out fileStreamOptions);
         }
 
         private static void ExtractToFileInitialize(ZipArchiveEntry source, string destinationFileName, bool overwrite, bool useAsync, out FileStreamOptions fileStreamOptions)
