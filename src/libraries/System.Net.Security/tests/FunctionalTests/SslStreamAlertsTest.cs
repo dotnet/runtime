@@ -156,6 +156,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.OSX)]
         public async Task SslStream_WriteAfterRemoteCloseNotify_ThrowsIOException(bool useAsync)
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
