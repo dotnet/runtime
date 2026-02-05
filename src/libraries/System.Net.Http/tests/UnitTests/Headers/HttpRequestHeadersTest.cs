@@ -532,6 +532,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Range_UseAddMethod_AddedValueCanBeRetrievedUsingProperty()
         {
             headers.TryAddWithoutValidation("Range", "custom= , ,1-2, -4 , ");
@@ -1468,6 +1469,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void CacheControl_UseAddMethod_AddedValueCanBeRetrievedUsingProperty()
         {
             headers.TryAddWithoutValidation("Cache-Control", "no-cache=\"token1, token2\", must-revalidate, max-age=3");

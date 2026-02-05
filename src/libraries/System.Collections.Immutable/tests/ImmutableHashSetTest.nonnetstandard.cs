@@ -8,6 +8,7 @@ namespace System.Collections.Immutable.Tests
 {
     public partial class ImmutableHashSetTest : ImmutableSetTest
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void EmptyTest()
         {

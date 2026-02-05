@@ -187,6 +187,7 @@ namespace System.Drawing.Tests
 
         [Theory]
         [MemberData(nameof(FromHtml_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void FromHtml_String_ReturnsExpected(string htmlColor, Color expected)
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture, CultureInfo.InvariantCulture))

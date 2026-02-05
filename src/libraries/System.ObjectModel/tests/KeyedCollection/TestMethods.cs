@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Tests.Collections;
+using TestUtilities;
 using Xunit;
 
 namespace System.Collections.ObjectModel.Tests
@@ -292,6 +293,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [MemberData(nameof(ClassData))]
         public void AddNullKey(
             int collectionSize,
@@ -529,6 +531,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Theory]
         [MemberData(nameof(ClassData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ChangeItemKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -574,6 +577,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [MemberData(nameof(ClassData))]
         public void ChangeItemKeyThrowsPreexistingKey(
             int collectionSize,
@@ -661,6 +665,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Theory]
         [MemberData(nameof(ClassData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ChangeItemDoesNotExistThrows(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -708,6 +713,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Theory]
         [MemberData(nameof(ClassData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ChangeItemKeyNullToNull(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -754,6 +760,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Theory]
         [MemberData(nameof(ClassData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ChangeItemKeyNullToNonNull(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1097,6 +1104,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Theory]
         [MemberData(nameof(ClassData2))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ChangeItemKeyKeyAlreadyChangedNewKeyIsDifferent(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1146,6 +1154,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Theory]
         [MemberData(nameof(ClassData2))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ChangeItemKeyNullToNewKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1206,6 +1215,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Theory]
         [MemberData(nameof(ClassData2))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ChangeItemKeyNullToOldKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1268,6 +1278,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Theory]
         [MemberData(nameof(ClassData2))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ChangeItemKeyNullToOtherKey(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1375,6 +1386,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Theory]
         [MemberData(nameof(ClassData2))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ChangeItemKeySetKeyNonNullToNullChangeKeyNonNull(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>
@@ -1756,6 +1768,7 @@ namespace System.Collections.ObjectModel.Tests
 
         [Theory]
         [MemberData(nameof(ContainsKeyData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void KeyIndexer(
             int collectionSize,
             Named<KeyedCollectionGetKeyedValue<TKey, TValue>>

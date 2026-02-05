@@ -16,6 +16,7 @@ namespace System.Collections.Immutable.Tests
             get { return true; }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void CustomSort()
         {
@@ -63,6 +64,7 @@ namespace System.Collections.Immutable.Tests
             this.EnumeratorTestHelper(emptySet, null, 3, 1, 5);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void EnumeratorWithHashCollisionsTest_RefType()
         {
@@ -97,6 +99,7 @@ namespace System.Collections.Immutable.Tests
             enumerator.Dispose();
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void Create()
         {
@@ -198,6 +201,7 @@ namespace System.Collections.Immutable.Tests
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void SymmetricExceptWithComparerTests()
         {

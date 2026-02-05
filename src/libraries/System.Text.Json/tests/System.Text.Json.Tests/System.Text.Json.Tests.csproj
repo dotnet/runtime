@@ -26,7 +26,9 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
-    <XunitShowProgress>true</XunitShowProgress>
+    <XunitShowProgress Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</XunitShowProgress>
+    <!-- Helix timeout -->
+    <_workItemTimeout  Condition="'$(RuntimeFlavor)' == 'CoreCLR'">01:00:00</_workItemTimeout>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">

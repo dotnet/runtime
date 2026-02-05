@@ -420,6 +420,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         void Invoke_Private_CrossAssembly_ThrowsMethodAccessException()
         {
             TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
@@ -442,6 +443,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         void Invoke_Internal_CrossAssembly_ThrowsMethodAccessException()
         {
             TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
@@ -464,6 +466,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         void Invoke_Private_SameAssembly_ThrowsMethodAccessException()
         {
             ModuleBuilder modb = Helpers.DynamicModule();
