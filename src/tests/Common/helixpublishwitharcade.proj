@@ -72,8 +72,10 @@
     <XUnitLogCheckerDirectory>$([MSBuild]::NormalizeDirectory($(XUnitLogCheckerDirectory)))</XUnitLogCheckerDirectory>
     <MergedPayloadsRootDirectory>$(TestBinDir)MergedPayloads\</MergedPayloadsRootDirectory>
     <MergedPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(MergedPayloadsRootDirectory)))</MergedPayloadsRootDirectory>
+    <TargetsMonoBrowser Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'mono'">true</TargetsMonoBrowser>
+    <TargetsMobile Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' != 'mono'">false</TargetsMobile>
     <MobileAppBundleDirName Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">AppBundle</MobileAppBundleDirName>
-    <MobileAppBundleDirName Condition="'$(TargetsBrowser)' == 'true'">wwwroot</MobileAppBundleDirName>
+    <MobileAppBundleDirName Condition="'$(TargetsMonoBrowser)' == 'true'">wwwroot</MobileAppBundleDirName>
   </PropertyGroup>
 
   <!-- This target runs once and creates several instances of this project (one for each scenario)
@@ -111,7 +113,7 @@
         SuperPmiCollect=$(_SuperPmiCollect)
       </_PropertiesToPass>
 
-      <_PropertiesToPass Condition="'$(TargetOS)' == 'browser' Or '$(TargetsAndroid)' == 'true' Or '$(TargetsAppleMobile)' == 'true'">
+      <_PropertiesToPass Condition="('$(TargetOS)' == 'browser' and  '$(RuntimeFlavor)' == 'Mono') Or '$(TargetsAndroid)' == 'true' Or '$(TargetsAppleMobile)' == 'true'">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
         DotNetCliRuntime=$(DotNetCliRuntime);
@@ -148,7 +150,7 @@
       <_BuildInParallel Condition=" '@(_ProjectsToBuild->Count())' &gt; '1' ">true</_BuildInParallel>
     </PropertyGroup>
 
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="printItems" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
   </Target>
 
   <!-- Choose a suitable runtime RID for Helix to restore the dotnet cli -->
@@ -181,7 +183,7 @@
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' Or '$(TargetsAndroid)' == 'true'">
+  <PropertyGroup Condition="'$(TargetsMonoBrowser)' == 'true' Or '$(TargetsAndroid)' == 'true'">
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
@@ -260,7 +262,7 @@
 
   <Target Name="DiscoverMergedTestWrappers">
     <!-- Mobile tests use a run script that's generated into the bundle as the execution script -->
-    <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsMobile)' == 'true' and ('$(TargetsBrowser)' != 'true' or '$(RuntimeFlavor)' != 'coreclr')">
       <_AppBundleRunScriptName>RunTests</_AppBundleRunScriptName>
       <_AppBundleRunScriptName Condition="'$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true'">build-apple-app</_AppBundleRunScriptName>
     </PropertyGroup>
@@ -445,7 +447,7 @@
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForWasm"
-      Condition="'$(TargetsBrowser)' == 'true'"
+      Condition="'$(TargetsMonoBrowser)' == 'true'"
       Outputs="%(_MergedWrapperMarker.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
     <ItemGroup>
@@ -565,7 +567,7 @@
 
   <Target Name="ZipMergedPayloadDirectory"
           AfterTargets="PrepareMergedTestPayloadDirectories"
-          Condition="'$(TargetsBrowser)' == 'true' or ('$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true')">
+          Condition="'$(TargetsMonoBrowser)' == 'true' or ('$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true')">
     <ItemGroup>
       <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
       <MergedPayloads>
@@ -739,7 +741,7 @@
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
 
     <!-- Browser-Wasm and iOS platforms follow a very different workflow, which is currently out of scope of the Log Checker. It's not useful on any platform that uses xharness. -->
-    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(IsXunitLogCheckerSupported)' == 'true' and '$(TargetsBrowser)' != 'true' and '$(TargetsAppleMobile)' != 'true'" />
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(IsXunitLogCheckerSupported)' == 'true' and '$(TargetsMonoBrowser)' != 'true' and '$(TargetsAppleMobile)' != 'true'" />
     <HelixCorrelationPayload Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="dotnet-sos">
       <Destination>sos</Destination>
       <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>
