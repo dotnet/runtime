@@ -6410,7 +6410,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
         unsigned delegateInvokeTmp = m_compiler->lvaGrabTemp(true DEBUGARG("delegate invoke call"));
         base                       = m_compiler->gtNewLclvNode(delegateInvokeTmp, thisExpr->TypeGet());
 
-#if HAS_FIXED_REGISTGER_SET
+#if HAS_FIXED_REGISTER_SET
         LIR::Use thisExprUse(BlockRange(), &thisArgNode->AsOp()->gtOp1, thisArgNode);
         ReplaceWithLclVar(thisExprUse, delegateInvokeTmp);
 #else
@@ -6432,7 +6432,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // behavior (the NRE that would logically happen inside Delegate.Invoke
     // should happen after all args are evaluated). We must also move the
     // PUTARG_REG node ahead.
-#if HAS_FIXED_REGISTGER_SET
+#if HAS_FIXED_REGISTER_SET
     thisArgNode->AsOp()->gtOp1 = newThis;
 #endif
 
