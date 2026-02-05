@@ -1536,5 +1536,120 @@ namespace System.Tests
             AssertExtensions.Equal(-expectedResult, double.RadiansToDegrees(-value), allowedVariance);
             AssertExtensions.Equal(+expectedResult, double.RadiansToDegrees(+value), allowedVariance);
         }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        {
+            // Basic floating point parsing with trailing invalid characters
+            yield return new object[] { "123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 123.45, 6 };
+            yield return new object[] { "456.78xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 456.78, 6 };
+            yield return new object[] { "0.123abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 0.123, 5 };
+            
+            // With leading whitespace
+            yield return new object[] { "  123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 123.45, 8 };
+            
+            // With signs
+            yield return new object[] { "+123.45abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 123.45, 7 };
+            yield return new object[] { "-456.78xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, -456.78, 7 };
+            
+            // With exponent
+            yield return new object[] { "1.23e10abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 1.23e10, 7 };
+            yield return new object[] { "4.56E-5xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 4.56E-5, 7 };
+            yield return new object[] { "1E10abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 1E10, 4 };
+            
+            // Integer without decimal point
+            yield return new object[] { "123abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 123.0, 3 };
+            yield return new object[] { "456xyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 456.0, 3 };
+            
+            // Special values
+            yield return new object[] { "Infinityabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, double.PositiveInfinity, 8 };
+            yield return new object[] { "-Infinityxyz", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, double.NegativeInfinity, 9 };
+            yield return new object[] { "NaNabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, double.NaN, 3 };
+            
+            // Valid number without trailing characters
+            yield return new object[] { "123.45", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 123.45, 6 };
+            
+            // Stop at invalid exponent
+            yield return new object[] { "123eabc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null, 123.0, 3 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, double expectedValue, int expectedCharsConsumed)
+        {
+            double result;
+            int charsConsumed;
+            
+            // Test string overload with charsConsumed
+            Assert.True(double.TryParse(value, style, provider, out result, out charsConsumed));
+            if (double.IsNaN(expectedValue))
+            {
+                Assert.True(double.IsNaN(result));
+            }
+            else
+            {
+                Assert.Equal(expectedValue, result);
+            }
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+            
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.True(double.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            if (double.IsNaN(expectedValue))
+            {
+                Assert.True(double.IsNaN(result));
+            }
+            else
+            {
+                Assert.Equal(expectedValue, result);
+            }
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+            
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.True(double.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            if (double.IsNaN(expectedValue))
+            {
+                Assert.True(double.IsNaN(result));
+            }
+            else
+            {
+                Assert.Equal(expectedValue, result);
+            }
+            // For ASCII characters, bytes consumed should equal chars consumed
+            if (value.All(c => c < 128))
+            {
+                Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        {
+            // Empty string
+            yield return new object[] { "", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null };
+            
+            // Only invalid characters (no valid number)
+            yield return new object[] { "abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null };
+            
+            // Invalid start characters
+            yield return new object[] { ".abc", NumberStyles.Float | NumberStyles.AllowTrailingInvalidCharacters, null };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        {
+            double result;
+            int charsConsumed;
+            
+            // Test string overload with charsConsumed
+            Assert.False(double.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(0.0, result);
+            Assert.Equal(0, charsConsumed);
+            
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.False(double.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(0.0, result);
+            Assert.Equal(0, charsConsumed);
+        }
     }
 }

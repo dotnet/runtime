@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -426,5 +427,39 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat(ushort i, string format, IFormatProvider provider, string expected) =>
             NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        {
+            yield return new object[] { "123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (ushort)123, 3 };
+            yield return new object[] { "1234xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (ushort)1234, 4 };
+            yield return new object[] { "65535abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (ushort)65535, 5 };
+            yield return new object[] { "ABCxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, (ushort)0xABC, 3 };
+            yield return new object[] { "FFFFabc", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, (ushort)0xFFFF, 4 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, ushort expectedValue, int expectedCharsConsumed)
+        {
+            ushort result;
+            int charsConsumed;
+            
+            Assert.True(ushort.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+            
+            Assert.True(ushort.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+            
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.True(ushort.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(expectedValue, result);
+            if (value.All(c => c < 128))
+            {
+                Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+        }
     }
 }
