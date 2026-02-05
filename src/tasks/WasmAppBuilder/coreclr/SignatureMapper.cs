@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -63,7 +63,7 @@ internal static class SignatureMapper
         }
         else if (t.IsPointer)
             c = 'i';
-        else if (PInvokeTableGenerator.IsFunctionPointer(t))
+        else if (t.IsFunctionPointer)
             c = 'i';
         else if (t.IsValueType)
         {
@@ -142,6 +142,17 @@ internal static class SignatureMapper
         'n' => "ARG_IND",
         _ => throw new InvalidSignatureCharException(c)
     };
+
+    public static string TypeToNameType(Type t, LogAdapter log)
+    {
+        char? c = TypeToChar(t, log, out _);
+        if (c == null)
+        {
+            throw new InvalidSignatureCharException('?');
+        }
+
+        return CharToNameType(c.Value);
+    }
 
     public static bool IsVoidSignature(string signature) => signature[0] == 'v';
 }

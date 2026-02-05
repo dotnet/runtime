@@ -73,7 +73,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [KeptAssembly("library.dll")]
     [KeptAssembly("library2.dll")]
     [KeptTypeInAssembly("library.dll", typeof(TypeMapReferencedAssembly))]
-    [KeptMemberInAssembly("library.dll", typeof(TypeMapReferencedAssembly), "Main()")]
+    [KeptMemberInAssembly("library.dll", typeof(TypeMapReferencedAssembly), "Run()")]
     [KeptTypeInAssembly("library.dll", typeof(TargetTypeUnconditional1), Tool = Tool.Trimmer)]
     [KeptTypeInAssembly("library.dll", typeof(TrimTarget1))]
     [KeptMemberInAssembly("library.dll", typeof(TrimTarget1), ".ctor()")]
@@ -179,7 +179,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
             Console.WriteLine(new ConstructedNoTypeCheckNoBoxStruct(42).Value);
 
-            TypeMapReferencedAssembly.Main();
+            TypeMapReferencedAssembly.Run();
 
             // TypeMapUniverses are independent between External and Proxy type maps.
             // That is, if the External type map is used for a given universe, that doesn't keep the Proxy type map, and vice versa.

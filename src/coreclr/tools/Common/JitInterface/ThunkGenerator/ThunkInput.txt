@@ -127,6 +127,7 @@ CorInfoTypeWithMod
 CorInfoCallConvExtension
 InfoAccessType
 InfoAccessType*, ref InfoAccessType
+CorInfoReloc
 CORINFO_LOOKUP_KIND
 CORINFO_ACCESS_FLAGS
 CORINFO_CALLINFO_FLAGS
@@ -302,7 +303,6 @@ FUNCTIONS
     void getHelperFtn (CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE *pMethod);
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn, REF_CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags);
     void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, REF_CORINFO_CONST_LOOKUP pResult);
-    CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE   handle);
     CORINFO_MODULE_HANDLE embedModuleHandle(CORINFO_MODULE_HANDLE   handle, void                  **ppIndirection);
     CORINFO_CLASS_HANDLE embedClassHandle(CORINFO_CLASS_HANDLE    handle, void                  **ppIndirection);
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE   handle, void                  **ppIndirection);
@@ -342,8 +342,8 @@ FUNCTIONS
     JITINTERFACE_HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t**pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource, bool* pDynamicPgo)
     JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData)
     void recordCallSite(uint32_t instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
-    void recordRelocation(void* location, void* locationRW, void* target, uint16_t fRelocType, int32_t addlDelta)
-    uint16_t getRelocTypeHint(void* target)
+    void recordRelocation(void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int32_t addlDelta)
+    CorInfoReloc getRelocTypeHint(void* target)
     uint32_t getExpectedTargetArchitecture()
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)
     CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;

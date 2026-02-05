@@ -9,7 +9,6 @@ enum class WasmValueType : unsigned
     F32,
     F64,
     Count,
-
 #ifdef TARGET_64BIT
     I = I64,
 #else
@@ -17,7 +16,11 @@ enum class WasmValueType : unsigned
 #endif
 };
 
-regNumber MakeWasmReg(unsigned index, var_types type);
-unsigned  UnpackWasmReg(regNumber reg, WasmValueType* pType = nullptr);
-unsigned  WasmRegToIndex(regNumber reg);
-bool      genIsValidReg(regNumber reg);
+const char* WasmValueTypeName(WasmValueType type);
+regNumber   MakeWasmReg(unsigned index, var_types type);
+unsigned    UnpackWasmReg(regNumber reg, WasmValueType* pType = nullptr);
+unsigned    WasmRegToIndex(regNumber reg);
+bool        genIsValidReg(regNumber reg);
+bool        genIsValidIntReg(regNumber reg);
+bool        genIsValidIntOrFakeReg(regNumber reg);
+bool        genIsValidFloatReg(regNumber reg);

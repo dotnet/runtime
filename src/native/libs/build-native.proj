@@ -1,4 +1,5 @@
-<Project Sdk="Microsoft.Build.Traversal">
+<Project Sdk="Microsoft.Build.NoTargets">
+
   <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" />
 
   <PropertyGroup>
@@ -20,7 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)native-binplace.proj" />
+    <ProjectReference Include="$(RepoTasksDir)AndroidAppBuilder\AndroidAppBuilder.csproj" Condition="'$(TargetOS)' == 'android'" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
@@ -91,10 +92,10 @@
     <Exec Command="$(_BuildNativeBuildCommand)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
-  <UsingTask TaskName="AndroidLibBuilderTask"
-             AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="AndroidLibBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" Condition="'$(TargetOS)' == 'android'" />
   <Target Name="BuildNativeAndroid"
           BeforeTargets="BuildNativeUnix"
+          DependsOnTargets="ResolveProjectReferences"
           Condition="'$(TargetOS)' == 'android'">
     <AndroidLibBuilderTask
       JavaSourceDirectory="$(MSBuildThisFileDirectory)System.Security.Cryptography.Native.Android"
@@ -103,4 +104,43 @@
       OutputDir="$(ArtifactsBinDir)native/$(_BuildNativeOutConfig)">
     </AndroidLibBuilderTask>
   </Target>
+
+  <Target Name="CopyNativeFiles" DependsOnTargets="BuildNativeUnix;BuildNativeWindows" AfterTargets="Build">
+    <ItemGroup>
+      <ExcludeNativeLibrariesRuntimeFiles Include="
+          $(NativeBinDir)System.Globalization.Native.dll;
+          $(NativeBinDir)System.Globalization.Native.pdb;
+          $(NativeBinDir)System.Globalization.Native.so;
+          $(NativeBinDir)System.Globalization.Native.dylib"
+        Condition="'$(RuntimeFlavor)' != 'Mono'" />
+
+      <NativeAsset Include="$(NativeBinDir)*.dll" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <NativeAsset Include="$(NativeBinDir)*.pdb" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <NativeAsset Include="$(NativeBinDir)*.lib" />
+      <NativeAsset Include="$(NativeBinDir)*.a" />
+      <NativeAsset Include="$(NativeBinDir)*.bc" />
+      <NativeAsset Include="$(NativeBinDir)*.so" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <NativeAsset Include="$(NativeBinDir)*.dbg" />
+      <NativeAsset Include="$(NativeBinDir)*.dylib" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <NativeAsset Include="$(NativeBinDir)*.dwarf" />
+      <NativeAsset Include="$(NativeBinDir)*.dex" />
+      <NativeAsset Include="$(NativeBinDir)*.jar" />
+      <NativeAsset Include="$(NativeBinDir)*.dat" />
+      <FileWrites Include="@(NativeAsset)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <NativeAssetDestinationDir Include="$(LibrariesAllBinArtifactsPath)" />
+      <NativeAssetDestinationDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" />
+      <NativeAssetDestinationDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(NativeAsset)"
+          DestinationFolder="%(NativeAssetDestinationDir.Identity)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlinksIfPossible)">
+      <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
+    </Copy>
+  </Target>
+
 </Project>

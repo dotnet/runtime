@@ -108,6 +108,12 @@ namespace ILCompiler
                 }
             }
 
+            if (callee.IsAsyncThunk())
+            {
+                // Async thunks require special handling in the compiler and should not be inlined
+                return false;
+            }
+
             _nodeFactory.DetectGenericCycles(caller, callee);
 
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
@@ -694,6 +700,7 @@ namespace ILCompiler
                                 CorInfoImpl.IsMethodCompilable(this, methodCodeNodeNeedingCode.Method))
                                 _methodsWhichNeedMutableILBodies.Add(ecmaMethod);
                         }
+
                         if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
                         {
                             // Validate that the typedef tokens for all of the instantiation parameters of the method
@@ -970,12 +977,17 @@ namespace ILCompiler
 
         public override void Dispose()
         {
-            Array.Clear(_corInfoImpls);
+            // Workaround for https://github.com/dotnet/runtime/issues/23103.
+            // ManifestMetadataTable.Dispose() allows to break circular reference
+            // ConcurrentBag<EcmaModule> -> EcmaModule -> EcmaAssembly -> ReadyToRunCompilerContext -> ... -> ConcurrentBag<EcmaModule>.
+            // This circular reference along with #23103 prevents objects from being collected by GC.
+            _nodeFactory.ManifestMetadataTable.Dispose();
         }
 
         public string GetReproInstructions(MethodDesc method)
         {
             return _printReproInstructions(method);
         }
+
     }
 }

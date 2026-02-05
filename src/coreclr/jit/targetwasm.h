@@ -46,7 +46,7 @@
 
 // TODO-WASM-CQ: measure if "CSE_CONSTS" is beneficial.
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
-#define EMIT_TRACK_STACK_DEPTH   1       // TODO-WASM: set to 0.
+#define EMIT_TRACK_STACK_DEPTH   0       // No need to track arg pushes/pops
 #define EMIT_GENERATE_GCINFO     0       // Codegen and emit not responsible for GC liveness tracking and GCInfo generation
 
 // Since we don't have a fixed register set on WASM, we set most of the following register defines to 'none'-like values.
@@ -260,36 +260,3 @@
 // clang-format on
 
 #include "registeropswasm.h"
-
-// TODO-WASM: implement the following functions in terms of a "locals registry" that would hold information
-// about the registers.
-
-inline bool genIsValidIntReg(regNumber reg)
-{
-    NYI_WASM("genIsValidIntReg");
-    return false;
-}
-
-inline bool genIsValidIntOrFakeReg(regNumber reg)
-{
-    NYI_WASM("genIsValidIntOrFakeReg");
-    return false;
-}
-
-inline bool genIsValidFloatReg(regNumber reg)
-{
-    NYI_WASM("genIsValidFloatReg");
-    return false;
-}
-
-inline bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
-{
-    NYI_WASM("isValidIntArgReg");
-    return false;
-}
-
-inline bool isValidFloatArgReg(regNumber reg)
-{
-    NYI_WASM("isValidFloatArgReg");
-    return false;
-}

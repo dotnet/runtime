@@ -156,9 +156,10 @@ namespace System.IO
         {
             created = false;
 
-            AutoReleaseFileLock placeholderAutoReleaseLock = new AutoReleaseFileLock(new SafeFileHandle());
-
-            creationDeletionLockFileHandle = placeholderAutoReleaseLock;
+            // If we don't create the shared memory file, the caller won't need to hold the creation/deletion lock file handle.
+            // Return a placeholder to simplify the caller's logic and allow them to always dispose of the handle
+            // when the return value is non-null.
+            creationDeletionLockFileHandle = new AutoReleaseFileLock(new SafeFileHandle());
             SharedMemoryId id = new(name, isUserScope);
 
             nuint sharedDataUsedByteCount = (nuint)sizeof(SharedMemorySharedDataHeader) + sharedMemoryDataSize;
@@ -173,7 +174,7 @@ namespace System.IO
                 return processDataHeader;
             }
 
-            creationDeletionLockFileHandle = SharedMemoryManager<TSharedMemoryProcessData>.Instance.AcquireCreationDeletionLockForId(id);
+            using AutoReleaseFileLock creationDeletionLock = SharedMemoryManager<TSharedMemoryProcessData>.Instance.AcquireCreationDeletionLockForId(id);
 
             string sessionDirectory = Path.Combine(
                 SharedMemoryHelpers.SharedFilesPath,
@@ -276,11 +277,12 @@ namespace System.IO
                 }
             }
 
-            if (!createdFile)
+            if (createdFile)
             {
-                creationDeletionLockFileHandle.Dispose();
-                // Reset to the placeholder value to avoid returning a pre-disposed lock.
-                creationDeletionLockFileHandle = placeholderAutoReleaseLock;
+                // If we created the file, then the caller still has more work to do to initialize the shared memory data.
+                // Transfer the creation/deletion lock file handle to the caller to hold while they do that work.
+                creationDeletionLock.SuppressRelease();
+                creationDeletionLockFileHandle = new AutoReleaseFileLock(creationDeletionLock.FileHandle);
             }
 
             processDataHeader = new SharedMemoryProcessDataHeader<TSharedMemoryProcessData>(
@@ -325,7 +327,7 @@ namespace System.IO
 
         private void Close()
         {
-            SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
+            SharedMemoryManager<TSharedMemoryProcessData>.Instance.VerifyCreationDeletionProcessLockIsLocked();
             SharedMemoryManager<TSharedMemoryProcessData>.Instance.RemoveProcessDataHeader(this);
 
             using AutoReleaseFileLock autoReleaseFileLock = SharedMemoryManager<TSharedMemoryProcessData>.Instance.AcquireCreationDeletionLockForId(_id);
@@ -711,6 +713,8 @@ namespace System.IO
     {
         private bool _suppressed;
 
+        public readonly SafeFileHandle FileHandle = fd;
+
         public void SuppressRelease()
         {
             _suppressed = true;
@@ -718,9 +722,9 @@ namespace System.IO
 
         public void Dispose()
         {
-            if (!_suppressed && !fd.IsInvalid)
+            if (!_suppressed && !FileHandle.IsInvalid)
             {
-                Interop.Sys.FLock(fd, Interop.Sys.LockOperations.LOCK_UN);
+                Interop.Sys.FLock(FileHandle, Interop.Sys.LockOperations.LOCK_UN);
             }
         }
     }
@@ -787,7 +791,7 @@ namespace System.IO
                 }
             }
 
-            bool acquired = SharedMemoryHelpers.TryAcquireFileLock(fd, nonBlocking: true, exclusive: true);
+            bool acquired = SharedMemoryHelpers.TryAcquireFileLock(fd, nonBlocking: false, exclusive: true);
             Debug.Assert(acquired);
             return new AutoReleaseFileLock(fd);
 

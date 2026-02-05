@@ -540,6 +540,8 @@
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
   #define RBM_INIT_PINVOKE_FRAME_TRASH  RBM_CALLEE_TRASH
 
+  #define RBM_INTERFACELOOKUP_FOR_SLOT_TRASH (RBM_RAX | RBM_R10 | RBM_R11)
+
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~(RBM_R10 | RBM_RCX))
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL (RBM_INT_CALLEE_TRASH_ALL & ~(RBM_R10 | RBM_RCX))
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_RCX
@@ -547,12 +549,6 @@
 
   #define REG_ASYNC_CONTINUATION_RET REG_RCX
   #define RBM_ASYNC_CONTINUATION_RET RBM_RCX
-
-  // What sort of reloc do we use for [disp32] address mode
-  #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_REL32
-
-  // What sort of reloc to we use for 'moffset' address mode (for 'mov eax, moffset' or 'mov moffset, eax')
-  #define IMAGE_REL_BASED_MOFFSET  IMAGE_REL_BASED_DIR64
 
   // Pointer-sized string move instructions
   #define INS_movsp                INS_movsq

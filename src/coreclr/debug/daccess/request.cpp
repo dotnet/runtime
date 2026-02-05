@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: request.cpp
 //
-
-//
 // CorDataAccess::Request implementation.
-//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -229,7 +227,7 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
 
         if (retval && pMD->HasNativeCode() && !pMD->IsFCall())
         {
-            PCODE jitCodeAddr = pMD->GetNativeCode();
+            PCODE jitCodeAddr = pMD->GetCodeForInterpreterOrJitted();
 
             MethodDesc *pMDCheck = ExecutionManager::GetCodeMethodDesc(jitCodeAddr);
             if (pMDCheck)
@@ -889,16 +887,11 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
         TO_CDADDR(thread->m_LastThrownObjectHandle);
     threadData->nextThread =
         HOST_CDADDR(ThreadStore::s_pThreadStore->m_ThreadList.GetNext(thread));
-#ifdef FEATURE_EH_FUNCLETS
     if (thread->m_ExceptionState.m_pCurrentTracker)
     {
         threadData->firstNestedException = HOST_CDADDR(
             thread->m_ExceptionState.m_pCurrentTracker->m_pPrevNestedInfo);
     }
-#else
-    threadData->firstNestedException = HOST_CDADDR(
-        thread->m_ExceptionState.m_currentExInfo.m_pPrevNestedInfo);
-#endif // FEATURE_EH_FUNCLETS
 
     SOSDacLeave();
     return hr;
@@ -908,7 +901,7 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
 void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, NativeCodeVersion activeCodeVersion, DacpReJitData * pReJitData)
 {
     pReJitData->rejitID = nativeCodeVersion.GetILCodeVersion().GetVersionId();
-    pReJitData->NativeCodeAddr = nativeCodeVersion.GetNativeCode();
+    pReJitData->NativeCodeAddr = GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCodeVersion.GetNativeCode());
 
     if (nativeCodeVersion != activeCodeVersion)
     {
@@ -1018,7 +1011,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
         if (!requestedNativeCodeVersion.IsNull() && requestedNativeCodeVersion.GetNativeCode() != (PCODE)NULL)
         {
             methodDescData->bHasNativeCode = TRUE;
-            methodDescData->NativeCodeAddr = TO_CDADDR(PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode()));
+            methodDescData->NativeCodeAddr = TO_CDADDR(PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode())));
         }
         else
         {
@@ -1242,7 +1235,7 @@ HRESULT ClrDataAccess::GetTieredVersions(
         int count = 0;
         for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
         {
-            TADDR pNativeCode = PCODEToPINSTR((*iter).GetNativeCode());
+            TADDR pNativeCode = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent((*iter).GetNativeCode()));
             nativeCodeAddrs[count].NativeCodeAddr = pNativeCode;
             PTR_NativeCodeVersionNode pNode = (*iter).AsNode();
             nativeCodeAddrs[count].NativeCodeVersionNodePtr = PTR_CDADDR(pNode);

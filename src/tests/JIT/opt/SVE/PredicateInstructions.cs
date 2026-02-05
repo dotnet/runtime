@@ -112,7 +112,9 @@ public class PredicateInstructions
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector<short> BitwiseClearMask(Vector<short> a, Vector<short> b)
     {
-        //ARM64-FULL-LINE: bic {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        //TODO-SVE: Restore check for SVE once >128bits is supported
+        //ARM64-FULL-LINE: {{bic .*}}
+        // {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
         return Sve.ConditionalSelect(
                 Sve.CreateTrueMaskInt16(),
                 Sve.BitwiseClear(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),

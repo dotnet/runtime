@@ -135,6 +135,10 @@ extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     BOOL fNeedFileInfo,
     QCall::ObjectHandleOnStack exception);
 
+extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
+    void* diagnosticIP,
+    QCall::ObjectHandleOnStack exception);
+
 extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip);
 
 

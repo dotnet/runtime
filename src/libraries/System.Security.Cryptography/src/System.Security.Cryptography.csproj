@@ -1566,8 +1566,6 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDecapsulateEncapsulate.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDecapsulateEncapsulate.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDeriveKeyPBKDF2.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDeriveKeyPBKDF2.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyKey.cs"
@@ -1930,8 +1928,6 @@
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
-             Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
@@ -2014,7 +2010,6 @@
     <Compile Include="System\Security\Cryptography\SlhDsaOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.Windows.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
-    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCng.Windows.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.Windows.cs" />

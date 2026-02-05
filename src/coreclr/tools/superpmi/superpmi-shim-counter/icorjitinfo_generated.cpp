@@ -1079,13 +1079,6 @@ void interceptor_ICJI::getFunctionFixedEntryPoint(
     original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
 }
 
-CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle)
-{
-    mcs->AddCall("getLazyStringLiteralHelper");
-    return original_ICorJitInfo->getLazyStringLiteralHelper(handle);
-}
-
 CORINFO_MODULE_HANDLE interceptor_ICJI::embedModuleHandle(
           CORINFO_MODULE_HANDLE handle,
           void** ppIndirection)
@@ -1426,14 +1419,14 @@ void interceptor_ICJI::recordRelocation(
           void* location,
           void* locationRW,
           void* target,
-          uint16_t fRelocType,
+          CorInfoReloc fRelocType,
           int32_t addlDelta)
 {
     mcs->AddCall("recordRelocation");
     original_ICorJitInfo->recordRelocation(location, locationRW, target, fRelocType, addlDelta);
 }
 
-uint16_t interceptor_ICJI::getRelocTypeHint(
+CorInfoReloc interceptor_ICJI::getRelocTypeHint(
           void* target)
 {
     mcs->AddCall("getRelocTypeHint");
