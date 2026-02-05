@@ -297,8 +297,6 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
     OBJECTREF pException = (OBJECTREF)exception.Get();
     _ASSERTE(pException != NULL);
 
-    GCPROTECT_BEGIN(pException);
-
     // populate exception with information from the continuation object
     EECodeInfo codeInfo((PCODE)diagnosticIP);
     _ASSERTE(codeInfo.IsValid());
@@ -309,8 +307,6 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
         0,
         methodDesc,
         NULL);
-
-    GCPROTECT_END();
 
     END_QCALL;
 }
