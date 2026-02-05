@@ -313,7 +313,7 @@ function fatal_handler (event: any, reason: any, type: string) {
             mono_exit(1, reason);
         }
     } catch (err) {
-        // no not re-throw from the fatal handler
+        // do not re-throw from the fatal handler
     }
 }
 
