@@ -21,6 +21,8 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.TypeSystem.Ecma;
+using System.Linq;
+using ILCompiler.ReadyToRun.TypeSystem;
 
 namespace ILCompiler
 {
@@ -108,9 +110,8 @@ namespace ILCompiler
                 }
             }
 
-            if (callee.IsAsyncThunk())
+            if (callee.IsAsyncThunk() || callee.IsAsyncCall() || caller.IsAsyncThunk() || caller.IsAsyncCall())
             {
-                // Async thunks require special handling in the compiler and should not be inlined
                 return false;
             }
 
@@ -301,7 +302,7 @@ namespace ILCompiler
 
         private readonly ProfileDataManager _profileData;
         private readonly FileLayoutOptimizer _fileLayoutOptimizer;
-        private readonly HashSet<EcmaMethod> _methodsWhichNeedMutableILBodies = new HashSet<EcmaMethod>();
+        private readonly HashSet<MethodDesc> _methodsWhichNeedMutableILBodies = new HashSet<MethodDesc>();
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
 
         public ProfileDataManager ProfileData => _profileData;
@@ -672,6 +673,7 @@ namespace ILCompiler
         private int _finishedThreadCount;
         private ManualResetEventSlim _compilationSessionComplete = new ManualResetEventSlim();
         private bool _hasCreatedCompilationThreads = false;
+        private bool _hasAddedAsyncReferences = false;
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
@@ -693,12 +695,79 @@ namespace ILCompiler
                     if (dependency is MethodWithGCInfo methodCodeNodeNeedingCode)
                     {
                         var method = methodCodeNodeNeedingCode.Method;
-                        if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+                        var typicalDef = method.GetTypicalMethodDefinition();
+                        if (typicalDef is EcmaMethod or AsyncMethodVariant)
                         {
-                            if (ilProvider.NeedsCrossModuleInlineableTokens(ecmaMethod) &&
-                                !_methodsWhichNeedMutableILBodies.Contains(ecmaMethod) &&
-                                CorInfoImpl.IsMethodCompilable(this, methodCodeNodeNeedingCode.Method))
-                                _methodsWhichNeedMutableILBodies.Add(ecmaMethod);
+                            if (ilProvider.NeedsCrossModuleInlineableTokens(typicalDef) &&
+                                !_methodsWhichNeedMutableILBodies.Contains(typicalDef) &&
+                                CorInfoImpl.IsMethodCompilable(this, method))
+                            {
+                                _methodsWhichNeedMutableILBodies.Add(typicalDef);
+                            }
+                        }
+                        if (method is AsyncResumptionStub)
+                        {
+                            GetMethodIL(method);
+                        }
+                        if (!CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method)
+                            && (method.IsAsyncCall() || method is AsyncResumptionStub)
+                            && !_hasAddedAsyncReferences)
+                        {
+                            // Keep in sync with CorInfoImpl.getAsyncInfo()
+                            DefType continuation = TypeSystemContext.ContinuationType;
+                            var runtimeHelpers = TypeSystemContext.SystemModule.GetKnownType(
+                                "System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8);
+
+                            var asyncHelpers = TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+                            // AsyncHelpers should already be referenced in the module for the call to Await()
+                            Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(asyncHelpers, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
+                            TypeDesc[] requiredTypes = [continuation];
+                            FieldDesc[] requiredFields = [
+                                continuation.GetKnownField("Next"u8),
+                                continuation.GetKnownField("ResumeInfo"u8),
+                                continuation.GetKnownField("State"u8),
+                                continuation.GetKnownField("Flags"u8),
+                            ];
+                            MethodDesc[] requiredMethods = [
+                                asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null),
+                                asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null),
+                                asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null),
+                                asyncHelpers.GetKnownMethod("CaptureContexts"u8, null),
+                                asyncHelpers.GetKnownMethod("RestoreContexts"u8, null),
+                                asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null),
+                                asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),
+                                asyncHelpers.GetKnownMethod("AllocContinuationClass"u8, null),
+                                asyncHelpers.GetKnownMethod("AllocContinuationMethod"u8, null),
+                                //asyncHelpers.GetKnownMethod("AsyncCallContinuation"u8, null),
+                                //runtimeHelpers.GetKnownMethod("SetNextCallGenericContext"u8, null),
+                                //runtimeHelpers.GetKnownMethod("SetNextCallAsyncContinuation"u8, null),
+                            ];
+                            _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
+                            try
+                            {
+                                // Unconditionally add references to the MutableModule. These members are internal / private and
+                                // shouldn't be referenced already, and this lets us avoid doing this more than once
+                                foreach (var td in requiredTypes)
+                                {
+                                    _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(td);
+                                    Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
+                                }
+                                foreach (var fd in requiredFields)
+                                {
+                                    _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(fd);
+                                    Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForField(fd, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
+                                }
+                                foreach (var md in requiredMethods)
+                                {
+                                    _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(md);
+                                    Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
+                                }
+                                _hasAddedAsyncReferences = true;
+                            }
+                            finally
+                            {
+                                _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
+                            }
                         }
 
                         if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
@@ -788,11 +857,11 @@ namespace ILCompiler
 
             void ProcessMutableMethodBodiesList()
             {
-                EcmaMethod[] mutableMethodBodyNeedList = new EcmaMethod[_methodsWhichNeedMutableILBodies.Count];
+                MethodDesc[] mutableMethodBodyNeedList = new MethodDesc[_methodsWhichNeedMutableILBodies.Count];
                 _methodsWhichNeedMutableILBodies.CopyTo(mutableMethodBodyNeedList);
                 _methodsWhichNeedMutableILBodies.Clear();
                 TypeSystemComparer comparer = TypeSystemComparer.Instance;
-                Comparison<EcmaMethod> comparison = (EcmaMethod a, EcmaMethod b) => comparer.Compare(a, b);
+                Comparison<MethodDesc> comparison = (MethodDesc a, MethodDesc b) => comparer.Compare(a, b);
                 Array.Sort(mutableMethodBodyNeedList, comparison);
                 var ilProvider = (ReadyToRunILProvider)_methodILCache.ILProvider;
 
@@ -845,7 +914,7 @@ namespace ILCompiler
                 while (true)
                 {
                     _compilationThreadSemaphore.Wait();
-                    lock(this)
+                    lock (this)
                     {
                         if (_doneAllCompiling)
                             return;

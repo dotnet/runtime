@@ -63,14 +63,14 @@ namespace Internal.JitInterface
                 var memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
                 switch (memberRef.Parent.Kind)
                 {
-                case HandleKind.TypeDefinition:
-                case HandleKind.TypeReference:
-                case HandleKind.TypeSpecification:
-                    OwningTypeNotDerivedFromToken = token.Module.GetType(memberRef.Parent) != field.OwningType;
-                    break;
+                    case HandleKind.TypeDefinition:
+                    case HandleKind.TypeReference:
+                    case HandleKind.TypeSpecification:
+                        OwningTypeNotDerivedFromToken = token.Module.GetType(memberRef.Parent) != field.OwningType;
+                        break;
 
-                default:
-                    break;
+                    default:
+                        break;
                 }
             }
         }
@@ -133,8 +133,7 @@ namespace Internal.JitInterface
         public readonly bool OwningTypeNotDerivedFromToken;
         public readonly TypeDesc OwningType;
 
-
-        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, object context, TypeDesc devirtualizedMethodOwner = null)
+        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, TypeSystemEntity context, TypeDesc devirtualizedMethodOwner = null)
         {
             Debug.Assert(!method.IsUnboxingThunk());
             Method = method;
@@ -144,13 +143,17 @@ namespace Internal.JitInterface
             OwningType = GetMethodTokenOwningType(this, constrainedType, context, devirtualizedMethodOwner, out OwningTypeNotDerivedFromToken);
             if (method.IsAsync && method.IsAsyncVariant() && token.Module is MutableModule)
             {
-                var ecmaMethod = (EcmaMethod)method.GetTypicalMethodDefinition().GetPrimaryMethodDesc();
-                Token = new (ecmaMethod.Module, ecmaMethod.Handle);
-                OwningTypeNotDerivedFromToken = true;
+                var ecmaMethod = (EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
+                var newToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
+                Token = newToken;
+                if (Token.Module.GetObject((EntityHandle)Token.Handle) != newToken.Module.GetObject((EntityHandle)newToken.Handle))
+                {
+                    OwningTypeNotDerivedFromToken = true;
+                }
             }
         }
 
-        private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, TypeDesc constrainedType, object context, TypeDesc devirtualizedMethodOwner, out bool owningTypeNotDerivedFromToken)
+        private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, TypeDesc constrainedType, TypeSystemEntity context, TypeDesc devirtualizedMethodOwner, out bool owningTypeNotDerivedFromToken)
         {
             ModuleToken moduleToken = methodToken.Token;
             owningTypeNotDerivedFromToken = false;
@@ -176,16 +179,16 @@ namespace Internal.JitInterface
                 case HandleKind.TypeDefinition:
                 case HandleKind.TypeReference:
                 case HandleKind.TypeSpecification:
-                    {
-                        Debug.Assert(devirtualizedMethodOwner == null); // Devirtualization is expected to always use a methoddef token
-                        return HandleContext(moduleToken.Module, memberRef.Parent, methodToken.Method.OwningType, constrainedType, context, null, ref owningTypeNotDerivedFromToken);
-                    }
+                {
+                    Debug.Assert(devirtualizedMethodOwner == null); // Devirtualization is expected to always use a methoddef token
+                    return HandleContext(moduleToken.Module, memberRef.Parent, methodToken.Method.OwningType, constrainedType, context, null, ref owningTypeNotDerivedFromToken);
+                }
 
                 default:
                     return methodToken.Method.OwningType;
             }
 
-            TypeDesc HandleContext(IEcmaModule module, EntityHandle handle, TypeDesc methodTargetOwner, TypeDesc constrainedType, object context, TypeDesc devirtualizedMethodOwner, ref bool owningTypeNotDerivedFromToken)
+            TypeDesc HandleContext(IEcmaModule module, EntityHandle handle, TypeDesc methodTargetOwner, TypeDesc constrainedType, TypeSystemEntity context, TypeDesc devirtualizedMethodOwner, ref bool owningTypeNotDerivedFromToken)
             {
                 var tokenOnlyOwningType = module.GetType(handle);
                 TypeDesc actualOwningType;
@@ -331,7 +334,7 @@ namespace Internal.JitInterface
                 && Unboxing == methodWithToken.Unboxing;
             if (equals)
             {
-                Debug.Assert(OwningTypeNotDerivedFromToken == methodWithToken.OwningTypeNotDerivedFromToken);
+                //Debug.Assert(OwningTypeNotDerivedFromToken == methodWithToken.OwningTypeNotDerivedFromToken);
                 Debug.Assert(OwningType == methodWithToken.OwningType);
             }
 
@@ -358,6 +361,8 @@ namespace Internal.JitInterface
                 sb.Append("; UNBOXING"u8);
             if (Method.IsAsyncVariant())
                 sb.Append("; ASYNC"u8);
+            if (Method is AsyncResumptionStub)
+                sb.Append("; RESUME"u8);
         }
 
         public override string ToString()
@@ -564,8 +569,7 @@ namespace Internal.JitInterface
 
         public static bool ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport instructionSetSupport, MethodDesc method)
         {
-            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition().GetPrimaryMethodDesc() as EcmaMethod;
-
+            EcmaMethod ecmaMethod = (EcmaMethod)(method.GetPrimaryMethodDesc().GetTypicalMethodDefinition());
             var metadataReader = ecmaMethod.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
 
@@ -850,96 +854,96 @@ namespace Internal.JitInterface
             switch (id)
             {
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEW:
-                    {
-                        var type = HandleToObject(pResolvedToken.hClass);
-                        Debug.Assert(type.IsDefType);
-                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                            return false;
+                {
+                    var type = HandleToObject(pResolvedToken.hClass);
+                    Debug.Assert(type.IsDefType);
+                    if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
-                    }
-                    break;
+                    pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
+                }
+                break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEWARR_1:
-                    {
-                        var type = HandleToObject(pResolvedToken.hClass);
-                        Debug.Assert(type.IsSzArray);
-                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                            return false;
+                {
+                    var type = HandleToObject(pResolvedToken.hClass);
+                    Debug.Assert(type.IsSzArray);
+                    if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.NewArr1, type));
-                    }
-                    break;
+                    pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.NewArr1, type));
+                }
+                break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
-                    {
-                        var type = HandleToObject(pResolvedToken.hClass);
-                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                            return false;
+                {
+                    var type = HandleToObject(pResolvedToken.hClass);
+                    if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        return false;
 
-                        // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
-                        if (type.IsNullable)
-                            type = type.Instantiation[0];
+                    // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
+                    if (type.IsNullable)
+                        type = type.Instantiation[0];
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
-                    }
-                    break;
+                    pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
+                }
+                break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
-                    {
-                        var type = HandleToObject(pResolvedToken.hClass);
-                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                            return false;
+                {
+                    var type = HandleToObject(pResolvedToken.hClass);
+                    if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        return false;
 
-                        // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
-                        if (type.IsNullable)
-                            type = type.Instantiation[0];
+                    // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
+                    if (type.IsNullable)
+                        type = type.Instantiation[0];
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
-                    }
-                    break;
+                    pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
+                }
+                break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
-                    {
-                        var type = HandleToObject(pResolvedToken.hClass);
-                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                            return false;
-                        var helperId = GetReadyToRunHelperFromStaticBaseHelper(id);
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, type));
-                    }
-                    break;
+                {
+                    var type = HandleToObject(pResolvedToken.hClass);
+                    if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        return false;
+                    var helperId = GetReadyToRunHelperFromStaticBaseHelper(id);
+                    pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, type));
+                }
+                break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+                {
+                    Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
+
+                    ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
+                    TypeDesc constrainedType = null;
+                    if (helperId == ReadyToRunHelperId.MethodEntry && pGenericLookupKind.runtimeLookupArgs != null)
                     {
-                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
-
-                        ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
-                        TypeDesc constrainedType = null;
-                        if (helperId == ReadyToRunHelperId.MethodEntry && pGenericLookupKind.runtimeLookupArgs != null)
-                        {
-                            constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *(CORINFO_RESOLVED_TOKEN*)pGenericLookupKind.runtimeLookupArgs);
-                            _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, constrainedType);
-                        }
-                        object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                        if (helperArg is MethodDesc methodDesc)
-                        {
-                            var methodIL = HandleToObject(pResolvedToken.tokenScope);
-                            MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                            _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
-                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
-                        }
-                        else if (helperArg is FieldDesc fieldDesc)
-                        {
-                            helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken));
-                        }
-
-                        var methodContext = new GenericContext(HandleToObject(callerHandle));
-                        ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
-                            pGenericLookupKind.runtimeLookupKind,
-                            helperId,
-                            helperArg,
-                            methodContext);
-                        pLookup = CreateConstLookupToSymbol(helper);
+                        constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *(CORINFO_RESOLVED_TOKEN*)pGenericLookupKind.runtimeLookupArgs);
+                        _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, constrainedType);
                     }
-                    break;
+                    object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                    if (helperArg is MethodDesc methodDesc)
+                    {
+                        var methodIL = HandleToObject(pResolvedToken.tokenScope);
+                        MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                        _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
+                        helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
+                    }
+                    else if (helperArg is FieldDesc fieldDesc)
+                    {
+                        helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken));
+                    }
+
+                    var methodContext = new GenericContext(HandleToObject(callerHandle));
+                    ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
+                        pGenericLookupKind.runtimeLookupKind,
+                        helperId,
+                        helperArg,
+                        methodContext);
+                    pLookup = CreateConstLookupToSymbol(helper);
+                }
+                break;
                 default:
                     throw new NotImplementedException("ReadyToRun: " + id.ToString());
             }
@@ -959,8 +963,8 @@ namespace Internal.JitInterface
             MethodDesc targetMethodDesc = HandleToObject(pTargetMethod.hMethod);
             Debug.Assert(!targetMethodDesc.IsUnboxingThunk());
 
-            var typeOrMethodContext = (pTargetMethod.tokenContext == contextFromMethodBeingCompiled()) ?
-                MethodBeingCompiled : HandleToObject((void*)pTargetMethod.tokenContext);
+            TypeSystemEntity typeOrMethodContext = (TypeSystemEntity)((pTargetMethod.tokenContext == contextFromMethodBeingCompiled()) ?
+                MethodBeingCompiled : HandleToObject((void*)pTargetMethod.tokenContext));
 
             TypeDesc constrainedType = null;
             if (targetConstraint != 0)
@@ -989,6 +993,9 @@ namespace Internal.JitInterface
             {
                 case CorInfoHelpFunc.CORINFO_HELP_THROW:
                     id = ReadyToRunHelper.Throw;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROWEXACT:
+                    id = ReadyToRunHelper.ThrowExact;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_RETHROW:
                     id = ReadyToRunHelper.Rethrow;
@@ -1279,6 +1286,33 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.ReversePInvokeExit;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION:
+                {
+
+                    var method = _compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8, null);
+                    var methodWithToken = new MethodWithToken(method, _compilation.CompilationModuleGroup.Resolver.GetModuleTokenForMethod(method, true, true), null, false, null);
+                    return _compilation.NodeFactory.MethodEntrypoint(methodWithToken, false, false, false);
+                    //return _compilation.NodeFactory.MethodEntrypoint()
+                    //id = ReadyToRunHelper.AllocContinuation;
+                    //break;
+                }
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_METHOD:
+                {
+                    var method = _compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuationMethod"u8, null);
+                    var methodWithToken = new MethodWithToken(method, _compilation.CompilationModuleGroup.Resolver.GetModuleTokenForMethod(method, true, true), null, false, null);
+                    return _compilation.NodeFactory.MethodEntrypoint(methodWithToken, false, false, false);
+                    //id = ReadyToRunHelper.AllocContinuationMethod;
+                    //break;
+                }
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_CLASS:
+                {
+                    var method = _compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuationClass"u8, null);
+                    var methodWithToken = new MethodWithToken(method, _compilation.CompilationModuleGroup.Resolver.GetModuleTokenForMethod(method, true, true), null, false, null);
+                    return _compilation.NodeFactory.MethodEntrypoint(methodWithToken, false, false, false);
+                    //id = ReadyToRunHelper.AllocContinuationClass;
+                    //break;
+                }
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
@@ -1307,7 +1341,9 @@ namespace Internal.JitInterface
 
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
         {
-            throw new RequiresRuntimeJitException(HandleToObject(ftn).ToString());
+            var method = HandleToObject(ftn);
+            var entrypoint = _compilation.NodeFactory.MethodEntrypoint(new MethodWithToken(method, _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(method, true, true), null, false, MethodBeingCompiled), false, false, false);
+            pResult = CreateConstLookupToSymbol(entrypoint);
         }
 
         private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
@@ -1354,7 +1390,7 @@ namespace Internal.JitInterface
 
         private MethodWithToken ComputeMethodWithToken(MethodDesc method, ref CORINFO_RESOLVED_TOKEN pResolvedToken, TypeDesc constrainedType, bool unboxing)
         {
-            ModuleToken token = HandleToModuleToken(ref pResolvedToken, method, out object context, ref constrainedType);
+            ModuleToken token = HandleToModuleToken(ref pResolvedToken, method, out TypeSystemEntity context, ref constrainedType);
 
             TypeDesc devirtualizedMethodOwner = null;
             if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
@@ -1365,7 +1401,7 @@ namespace Internal.JitInterface
             return new MethodWithToken(method, token, constrainedType: constrainedType, unboxing: unboxing, context: context, devirtualizedMethodOwner: devirtualizedMethodOwner);
         }
 
-        private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out object context, ref TypeDesc constrainedType)
+        private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out TypeSystemEntity context, ref TypeDesc constrainedType)
         {
             if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc)
                 || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
@@ -1424,7 +1460,7 @@ namespace Internal.JitInterface
                     // It's okay to strip the instantiation away because we don't need a MethodSpec
                     // token - SignatureBuilder will generate the generic method signature
                     // using instantiation parameters from the MethodDesc entity.
-                    resultMethod = resultMethod.GetTypicalMethodDefinition().GetPrimaryMethodDesc();
+                    resultMethod = resultMethod.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
 
                     if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(resultMethod.OwningType))
                     {
@@ -1449,24 +1485,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    if (resultDef is EcmaType ecmaType)
-                    {
-                        if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaType))
-                        {
-                            ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForType(ecmaType, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
-                            return result;
-                        }
-                        token = (mdToken)MetadataTokens.GetToken(ecmaType.Handle);
-                        module = ecmaType.Module;
-                    }
-                    else
-                    {
-                        // To replace !!0, we need to find the token for a !!0 TypeSpec within the image.
-                        Debug.Assert(resultDef is SignatureMethodVariable);
-                        Debug.Assert(((SignatureMethodVariable)resultDef).Index == 0);
-                        module = (EcmaModule)((MetadataType)methodILDef.OwningMethod.OwningType).Module;
-                        token = FindGenericMethodArgTypeSpec((EcmaModule)module);
-                    }
+                    return GetModuleTokenForType((TypeSystemEntity)resultDef);
                 }
             }
             else
@@ -1475,6 +1494,30 @@ namespace Internal.JitInterface
             }
 
             return new ModuleToken(module, token);
+
+            ModuleToken GetModuleTokenForType(TypeSystemEntity resultDef)
+            {
+                switch (resultDef)
+                {
+                    case SignatureMethodVariable sigMethod:
+                        Debug.Assert(sigMethod.Index == 0);
+                        module = (EcmaModule)((MetadataType)methodILDef.OwningMethod.OwningType).Module;
+                        token = FindGenericMethodArgTypeSpec((EcmaModule)module);
+                        return new ModuleToken(module, token);
+                    case ParameterizedType paramType:
+                        return  _compilation.NodeFactory.Resolver.GetModuleTokenForType(paramType, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
+                    case EcmaType ecmaType:
+                        if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaType))
+                        {
+                            return  _compilation.NodeFactory.Resolver.GetModuleTokenForType(ecmaType, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
+                        }
+                        token = (mdToken)MetadataTokens.GetToken(ecmaType.Handle);
+                        module = ecmaType.Module;
+                        return new ModuleToken(module, token);
+                    default:
+                        throw new NotImplementedException($"Unsupported token resolution for {resultDef.GetType()}");
+                }
+            }
         }
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
@@ -1815,18 +1858,18 @@ namespace Internal.JitInterface
                         fieldOffset = 0;
                     }
                     else
-                    if (helperId != ReadyToRunHelperId.Invalid)
-                    {
-                        if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && (fieldOffset <= FieldFixupSignature.MaxCheckableOffset))
+                        if (helperId != ReadyToRunHelperId.Invalid)
                         {
-                            // ENCODE_CHECK_FIELD_OFFSET
-                            AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(ComputeFieldWithToken(field, ref pResolvedToken)));
-                        }
+                            if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && (fieldOffset <= FieldFixupSignature.MaxCheckableOffset))
+                            {
+                                // ENCODE_CHECK_FIELD_OFFSET
+                                AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(ComputeFieldWithToken(field, ref pResolvedToken)));
+                            }
 
-                        pResult->fieldLookup = CreateConstLookupToSymbol(
-                            _compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, field.OwningType)
-                            );
-                    }
+                            pResult->fieldLookup = CreateConstLookupToSymbol(
+                                _compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, field.OwningType)
+                                );
+                        }
                 }
             }
             else
@@ -1921,7 +1964,7 @@ namespace Internal.JitInterface
                 throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
             }
 
-            callerModule = ((EcmaMethod)callerMethod.GetTypicalMethodDefinition()).Module;
+            callerModule = ((EcmaMethod)callerMethod.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             bool isCallVirt = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0;
             bool isLdftn = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0;
             bool isStaticVirtual = (originalMethod.Signature.IsStatic && originalMethod.IsVirtual);
@@ -2473,21 +2516,21 @@ namespace Internal.JitInterface
             switch (pResult->kind)
             {
                 case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB:
+                {
+                    if (pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup)
                     {
-                        if (pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup)
-                        {
-                            return;
-                        }
+                        return;
+                    }
 
-                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.SymbolNodeFactory.InterfaceDispatchCell(
-                                ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
-                                MethodBeingCompiled));
+                    pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                        _compilation.SymbolNodeFactory.InterfaceDispatchCell(
+                            ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
+                            MethodBeingCompiled));
 
-                        // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
-                        UpdateConstLookupWithRequiresRuntimeJitSymbolIfNeeded(ref pResult->codePointerOrStubLookup.constLookup, targetMethod);
-                        }
-                    break;
+                    // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
+                    UpdateConstLookupWithRequiresRuntimeJitSymbolIfNeeded(ref pResult->codePointerOrStubLookup.constLookup, targetMethod);
+                }
+                break;
 
 
                 case CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER:
@@ -2501,41 +2544,41 @@ namespace Internal.JitInterface
                     return;
 
                 case CORINFO_CALL_KIND.CORINFO_CALL:
+                {
+                    // Constrained token is not interesting with this transforms
+                    if (pResult->thisTransform != CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM)
+                        constrainedType = null;
+
+                    MethodDesc nonUnboxingMethod = methodToCall;
+                    bool isUnboxingStub = methodToCall.IsUnboxingThunk();
+                    if (isUnboxingStub)
                     {
-                        // Constrained token is not interesting with this transforms
-                        if (pResult->thisTransform != CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM)
-                            constrainedType = null;
-
-                        MethodDesc nonUnboxingMethod = methodToCall;
-                        bool isUnboxingStub = methodToCall.IsUnboxingThunk();
-                        if (isUnboxingStub)
-                        {
-                            nonUnboxingMethod = methodToCall.GetUnboxedMethod();
-                        }
-                        if (nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
-                        {
-                            nonUnboxingMethod = rawPinvoke.Target;
-                        }
-
-                        if (methodToCall.OwningType.IsArray && methodToCall.IsConstructor)
-                        {
-                            pResult->codePointerOrStubLookup.constLookup = default;
-                        }
-                        else
-                        {
-                            // READYTORUN: FUTURE: Direct calls if possible
-                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                                _compilation.NodeFactory.MethodEntrypoint(
-                                    ComputeMethodWithToken(nonUnboxingMethod, ref pResolvedToken, constrainedType, unboxing: isUnboxingStub),
-                                    isInstantiatingStub: useInstantiatingStub,
-                                    isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0,
-                                    isJumpableImportRequired: false));
-                        }
-
-                        // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
-                        UpdateConstLookupWithRequiresRuntimeJitSymbolIfNeeded(ref pResult->codePointerOrStubLookup.constLookup, targetMethod);
+                        nonUnboxingMethod = methodToCall.GetUnboxedMethod();
                     }
-                    break;
+                    if (nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
+                    {
+                        nonUnboxingMethod = rawPinvoke.Target;
+                    }
+
+                    if (methodToCall.OwningType.IsArray && methodToCall.IsConstructor)
+                    {
+                        pResult->codePointerOrStubLookup.constLookup = default;
+                    }
+                    else
+                    {
+                        // READYTORUN: FUTURE: Direct calls if possible
+                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                            _compilation.NodeFactory.MethodEntrypoint(
+                                ComputeMethodWithToken(nonUnboxingMethod, ref pResolvedToken, constrainedType, unboxing: isUnboxingStub),
+                                isInstantiatingStub: useInstantiatingStub,
+                                isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0,
+                                isJumpableImportRequired: false));
+                    }
+
+                    // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
+                    UpdateConstLookupWithRequiresRuntimeJitSymbolIfNeeded(ref pResult->codePointerOrStubLookup.constLookup, targetMethod);
+                }
+                break;
 
                 case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE:
                     // Only calls within the CoreLib version bubble support fragile NI codegen with vtable based calls, for better performance (because
@@ -2575,6 +2618,10 @@ namespace Internal.JitInterface
                     MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     if (canonMethod.RequiresInstMethodDescArg())
                     {
+                        //if (canonMethod.IsAsyncCall())
+                        //{
+                        //    throw new RequiresRuntimeJitException("");
+                        //}
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
                             ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: constrainedType, unboxing: false)));
@@ -2650,17 +2697,17 @@ namespace Internal.JitInterface
                 case DictionaryEntryKind.MethodEntrySlot:
                 case DictionaryEntryKind.ConstrainedMethodEntrySlot:
                 case DictionaryEntryKind.DispatchStubAddrSlot:
-                    {
-                        if (entryKind == DictionaryEntryKind.MethodDescSlot)
-                            pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
-                        else if (entryKind == DictionaryEntryKind.MethodEntrySlot || entryKind == DictionaryEntryKind.ConstrainedMethodEntrySlot)
-                            pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
-                        else
-                            pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.VirtualDispatchCell;
+                {
+                    if (entryKind == DictionaryEntryKind.MethodDescSlot)
+                        pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
+                    else if (entryKind == DictionaryEntryKind.MethodEntrySlot || entryKind == DictionaryEntryKind.ConstrainedMethodEntrySlot)
+                        pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
+                    else
+                        pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.VirtualDispatchCell;
 
-                        pResultLookup.lookupKind.runtimeLookupArgs = pConstrainedResolvedToken;
-                        break;
-                    }
+                    pResultLookup.lookupKind.runtimeLookupArgs = pConstrainedResolvedToken;
+                    break;
+                }
 
                 case DictionaryEntryKind.FieldDescSlot:
                     pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.FieldHandle;
@@ -2774,6 +2821,17 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
         {
             TypeDesc type = HandleToObject(handle);
+            // Continuations require special handling to encode the layout of the type.
+            // The TypeSignature format used in TypeHandles is not sufficient for encoding specific continuation layouts
+            // PrecodeHelper(
+            //   TypeHandle(ReadyToRunFixupKind.ContinuationLayout)
+            // )
+            if (type is AsyncContinuationType act)
+            {
+                Import import = (Import)_compilation.SymbolNodeFactory.ContinuationTypeSymbol(act);
+                ppIndirection = (void*)ObjectToHandle(import);
+                return null;
+            }
             if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
                 throw new RequiresRuntimeJitException(type.ToString());
 
@@ -2811,26 +2869,26 @@ namespace Internal.JitInterface
                         break;
 
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD:
+                    {
+                        MethodDesc md = HandleToObject(pResolvedToken.hMethod);
+                        TypeDesc td = HandleToObject(pResolvedToken.hClass);
+
+                        bool unboxingStub = false;
+                        //
+                        // This logic should be kept in sync with MethodTableBuilder::NeedsTightlyBoundUnboxingStub
+                        // Essentially all ValueType virtual methods will require an Unboxing Stub
+                        //
+                        if ((td.IsValueType) && !md.Signature.IsStatic
+                            && md.IsVirtual)
                         {
-                            MethodDesc md = HandleToObject(pResolvedToken.hMethod);
-                            TypeDesc td = HandleToObject(pResolvedToken.hClass);
-
-                            bool unboxingStub = false;
-                            //
-                            // This logic should be kept in sync with MethodTableBuilder::NeedsTightlyBoundUnboxingStub
-                            // Essentially all ValueType virtual methods will require an Unboxing Stub
-                            //
-                            if ((td.IsValueType) && !md.Signature.IsStatic
-                                && md.IsVirtual)
-                            {
-                                unboxingStub = true;
-                            }
-
-                            symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                                ReadyToRunHelperId.MethodHandle,
-                                ComputeMethodWithToken(md, ref pResolvedToken, constrainedType: null, unboxing: unboxingStub));
+                            unboxingStub = true;
                         }
-                        break;
+
+                        symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                            ReadyToRunHelperId.MethodHandle,
+                            ComputeMethodWithToken(md, ref pResolvedToken, constrainedType: null, unboxing: unboxingStub));
+                    }
+                    break;
 
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_FIELD:
                         symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
@@ -2977,7 +3035,7 @@ namespace Internal.JitInterface
         private void getGSCookie(IntPtr* pCookieVal, IntPtr** ppCookieVal)
         {
             *pCookieVal = IntPtr.Zero;
-            *ppCookieVal = (IntPtr *)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.GSCookie));
+            *ppCookieVal = (IntPtr*)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.GSCookie));
         }
 
         private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
@@ -3242,7 +3300,7 @@ namespace Internal.JitInterface
                     // Disable async methods in cross module inlines for now, we need to trigger the CheckILBodyFixupSignature in the right situations, and that hasn't been implemented
                     // yet. Currently, we'll correctly trigger the _ilBodiesNeeded logic below, but we also need to avoid triggering the ILBodyFixupSignature for the async thunks, but we ALSO need to make
                     // sure we generate the CheckILBodyFixupSignature for the actual runtime-async body in which case I think the typicalMethod will be an AsyncVariantMethod, which doesn't appear
-                    // to be handled here. This check is here in the place where I believe we actually would behave incorrectly, but we also have a check in CrossModuleInlineable which disallows 
+                    // to be handled here. This check is here in the place where I believe we actually would behave incorrectly, but we also have a check in CrossModuleInlineable which disallows
                     // the cross module inline of async methods currently.
                     throw new Exception("Inlining async methods is not supported in ReadyToRun compilation.");
                 }
@@ -3276,7 +3334,6 @@ namespace Internal.JitInterface
                     // 2. If at any time, the set of methods that are inlined includes a method which has an IL body without
                     //    tokens that are useable in compilation, record that information, and once the multi-threaded portion
                     //    of the build finishes, it will then compute the IL bodies for those methods, then run the compilation again.
-                    
                     if (needsTokenTranslation && !(methodIL is IMethodTokensAreUseableInCompilation) && methodIL is EcmaMethodIL)
                     {
                         // We may have already acquired the right type of MethodIL here, or be working with a method that is an IL Intrinsic

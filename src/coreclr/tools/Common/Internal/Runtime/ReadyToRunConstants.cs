@@ -54,6 +54,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_METHOD_SIG_OwnerType = 0x40,
         READYTORUN_METHOD_SIG_UpdateContext = 0x80,
         READYTORUN_METHOD_SIG_AsyncVariant = 0x100,
+        READYTORUN_METHOD_SIG_ResumptionStub = 0x200,
     }
 
     [Flags]
@@ -186,6 +187,8 @@ namespace Internal.ReadyToRunConstants
 
         Check_IL_Body              = 0x35, /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
         Verify_IL_Body             = 0x36, /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
+
+        ContinuationLayout = 0x37, /* Layout of an async method continuation type */
 
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
@@ -352,6 +355,10 @@ namespace Internal.ReadyToRunConstants
         StackProbe                  = 0x111,
 
         GetCurrentManagedThreadId   = 0x112,
+
+        AllocContinuation           = 0x113,
+        AllocContinuationClass      = 0x114,
+        AllocContinuationMethod     = 0x115,
 
         // **********************************************************************************************
         //

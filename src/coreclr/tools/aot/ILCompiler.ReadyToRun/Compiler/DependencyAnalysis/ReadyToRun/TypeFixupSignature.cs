@@ -10,6 +10,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
 using Internal.ReadyToRunConstants;
 using Internal.CorConstants;
+using Internal.JitInterface;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -46,12 +47,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 IEcmaModule targetModule = factory.SignatureContext.GetTargetModule(_typeDesc);
                 SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupKind, targetModule, factory.SignatureContext);
-                dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
-
                 if ((fixupKind == ReadyToRunFixupKind.Check_TypeLayout) ||
                     (fixupKind == ReadyToRunFixupKind.Verify_TypeLayout))
                 {
+                    dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
+                    Debug.Assert(_typeDesc.IsValueType);
                     EncodeTypeLayout(dataBuilder, _typeDesc);
+                }
+                else if (fixupKind == ReadyToRunFixupKind.ContinuationLayout)
+                {
+                    var act = _typeDesc as AsyncContinuationType;
+                    // Emit EcmaType Continuation type
+                    dataBuilder.EmitTypeSignature(act.BaseType, innerContext);
+                    EncodeContinuationTypeLayout(dataBuilder, act);
+                }
+                else
+                {
+                    dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
                 }
             }
 
@@ -60,7 +72,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private static void EncodeTypeLayout(ObjectDataSignatureBuilder dataBuilder, TypeDesc type)
         {
-            Debug.Assert(type.IsValueType);
             MetadataType defType = (MetadataType)type;
 
             int pointerSize = type.Context.Target.PointerSize;
@@ -108,6 +119,53 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // Encode the GC pointer map
                 GCPointerMap gcMap = GCPointerMap.FromInstanceLayout(defType);
+
+                byte[] encodedGCRefMap = new byte[((size + 7) / pointerSize + 7) / 8];
+                int bitIndex = 0;
+                foreach (bool bit in gcMap)
+                {
+                    if (bit)
+                    {
+                        encodedGCRefMap[bitIndex / 8] |= (byte)(1 << (bitIndex & 7));
+                    }
+
+                    ++bitIndex;
+                }
+
+                dataBuilder.EmitBytes(encodedGCRefMap);
+            }
+        }
+
+        private static void EncodeContinuationTypeLayout(ObjectDataSignatureBuilder dataBuilder, AsyncContinuationType type)
+        {
+            int pointerSize = type.Context.Target.PointerSize;
+            int size = type.PointerMap.Size * pointerSize;
+            int alignment = pointerSize;
+            ReadyToRunTypeLayoutFlags flags = ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment | ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout;
+            Debug.Assert(alignment == pointerSize);
+            flags |= ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment_Native;
+
+            bool gcLayoutEmpty = true;
+            foreach(bool hasPointer in type.PointerMap)
+            {
+                if (hasPointer)
+                {
+                    gcLayoutEmpty = false;
+                    break;
+                }
+            }
+            if (gcLayoutEmpty)
+            {
+                flags |= ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout_Empty;
+            }
+
+            dataBuilder.EmitUInt((uint)flags);
+            dataBuilder.EmitUInt((uint)size);
+
+            if (!gcLayoutEmpty)
+            {
+                // Encode the GC pointer map
+                GCPointerMap gcMap = type.PointerMap;
 
                 byte[] encodedGCRefMap = new byte[(size / pointerSize + 7) / 8];
                 int bitIndex = 0;

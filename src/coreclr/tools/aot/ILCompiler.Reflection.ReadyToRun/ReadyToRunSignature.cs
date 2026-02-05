@@ -1024,6 +1024,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     builder.Append("[ASYNC] ");
                 }
+                if ((flags & ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_ResumptionStub) != 0)
+                {
+                    builder.Append("[RESUME] ");
+                }
                 builder.Append(method);
                 return builder.ToString();
             }
@@ -1377,14 +1381,13 @@ namespace ILCompiler.Reflection.ReadyToRun
                         if (!layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout_Empty))
                         {
                             int cbGCRefMap = (actualSize / _contextReader.TargetPointerSize + 7) / 8;
-                            builder.Append(" GCLayout ");
+                            builder.Append(" GCLayout 0x");
                             for (int i = 0; i < cbGCRefMap; i++)
                             {
                                 builder.Append(ReadByte().ToString("X"));
                             }
                         }
                     }
-
                     if (fixupType == ReadyToRunFixupKind.Check_TypeLayout)
                         builder.Append(" (CHECK_TYPE_LAYOUT)");
                     else
@@ -1472,6 +1475,46 @@ namespace ILCompiler.Reflection.ReadyToRun
                         builder.Append(" (CHECK_IL_BODY)");
                     else
                         builder.Append(" (VERIFY_IL_BODY)");
+                    break;
+
+                case ReadyToRunFixupKind.ContinuationLayout:
+                    var typeBuilder = new StringBuilder();
+                    ParseType(typeBuilder);
+                    builder.Append($"{typeBuilder.ToString()}");
+                    ReadyToRunTypeLayoutFlags layoutFlags2 = (ReadyToRunTypeLayoutFlags)ReadUInt();
+                    builder.Append($" Flags {layoutFlags2}");
+                    int actualSize2 = (int)ReadUInt();
+                    builder.Append($" Size {actualSize2}");
+
+                    if (layoutFlags2.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_HFA))
+                    {
+                        throw new BadImageFormatException("ContinuationLayout fixup should not have READYTORUN_LAYOUT_HFA flag set");
+                    }
+
+                    if (layoutFlags2.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment)
+                        && !layoutFlags2.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment_Native))
+                    {
+                        throw new BadImageFormatException("ContinuationLayout fixup should not have non-native alignment");
+                    }
+
+                    if (!layoutFlags2.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout))
+                    {
+                        throw new BadImageFormatException("ContinuationLayout fixup should have GCLayout");
+                    }
+                    if (!layoutFlags2.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout_Empty))
+                    {
+                        int cbGCRefMap = (actualSize2 / _contextReader.TargetPointerSize + 7) / 8;
+                        builder.Append(" GCLayout 0x");
+                        for (int i = 0; i < cbGCRefMap; i++)
+                        {
+                            builder.Append(ReadByte().ToString("X"));
+                        }
+                    }
+                    else
+                    {
+                        builder.Append(" GCLayout 0x00 (Empty)");
+                    }
+                    builder.Append(" (ContinuationLayout)");
                     break;
 
                 default:
@@ -1637,6 +1680,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 // Exception handling helpers
                 case ReadyToRunHelper.Throw:
                     builder.Append("THROW");
+                    break;
+
+                case ReadyToRunHelper.ThrowExact:
+                    builder.Append("THROW_EXACT");
                     break;
 
                 case ReadyToRunHelper.Rethrow:
@@ -1959,6 +2006,18 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("PERSONALITY_ROUTINE_FILTER_FUNCLET");
                     break;
 
+                case ReadyToRunHelper.AllocContinuation:
+                    builder.Append("ALLOC_CONTINUATION");
+                    break;
+
+                case ReadyToRunHelper.AllocContinuationMethod:
+                    builder.Append("ALLOC_CONTINUATION_METHOD");
+                    break;
+
+                case ReadyToRunHelper.AllocContinuationClass:
+                    builder.Append("ALLOC_CONTINUATION_CLASS");
+                    break;
+
                 //
                 // Deprecated/legacy
                 //
@@ -2011,7 +2070,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 default:
-                    throw new BadImageFormatException();
+                    throw new BadImageFormatException(helperType.ToString());
             }
         }
 

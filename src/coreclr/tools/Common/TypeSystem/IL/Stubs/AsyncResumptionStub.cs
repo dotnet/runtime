@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
+using System.Collections.Immutable;
 using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
@@ -17,16 +17,18 @@ namespace ILCompiler
         private readonly MethodDesc _targetMethod;
         private readonly TypeDesc _owningType;
         private MethodSignature _signature;
+        private ImmutableArray<byte> _name;
 
         public AsyncResumptionStub(MethodDesc targetMethod, TypeDesc owningType)
         {
             Debug.Assert(targetMethod.IsAsyncCall());
             _targetMethod = targetMethod;
             _owningType = owningType;
+            _name = [.. "RESUME_"u8, .. _targetMethod.Name];
         }
 
-        public override ReadOnlySpan<byte> Name => _targetMethod.Name;
-        public override string DiagnosticName => _targetMethod.DiagnosticName;
+        public override ReadOnlySpan<byte> Name => _name.AsSpan();
+        public override string DiagnosticName => "RESUME_" + _targetMethod.DiagnosticName;
 
         public override TypeDesc OwningType => _owningType;
 
@@ -35,6 +37,7 @@ namespace ILCompiler
         public override TypeSystemContext Context => _targetMethod.Context;
 
         public MethodDesc TargetMethod => _targetMethod;
+
 
         private MethodSignature InitializeSignature()
         {
@@ -109,6 +112,7 @@ namespace ILCompiler
             }
             ilStream.EmitLdLoc(newContinuationLocal);
             ilStream.Emit(ILOpcode.ret);
+            ilEmitter.SetHasGeneratedTokens();
 
             return ilEmitter.Link(this);
         }

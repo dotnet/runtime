@@ -176,6 +176,21 @@ namespace ILCompiler.DependencyAnalysis
                         key.MethodWithToken,
                         isInstantiatingStub: false));
             });
+
+            _continuationTypeFixups = new NodeCache<AsyncContinuationType, ISymbolNode>((key) =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.ContinuationLayout, key)
+                );
+            });
+        }
+
+        private NodeCache<AsyncContinuationType, ISymbolNode> _continuationTypeFixups;
+
+        public ISymbolNode ContinuationTypeSymbol(AsyncContinuationType key)
+        {
+            return _continuationTypeFixups.GetOrAdd(key);
         }
 
         private NodeCache<ModuleToken, ISymbolNode> _importStrings;
@@ -398,7 +413,7 @@ namespace ILCompiler.DependencyAnalysis
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.MethodSignature(
-                    ReadyToRunFixupKind.MethodDictionary, 
+                    ReadyToRunFixupKind.MethodDictionary,
                     method,
                     isInstantiatingStub: true));
         }

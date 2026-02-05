@@ -113,7 +113,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             MethodWithToken method = _method;
 
-            if (factory.CompilationModuleGroup.VersionsWithMethodBody(method.Method) && !method.Method.IsAsyncVariant())
+            if (factory.CompilationModuleGroup.VersionsWithMethodBody(method.Method) && !method.Method.IsAsyncVariant() && method.Method is not AsyncResumptionStub)
             {
                 if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
                 {
@@ -130,6 +130,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupKind, method.Token.Module, factory.SignatureContext);
 
+            // We should emit AsyncVariants and ResumptionStubs differently even if the ModuleToken is a Def or Ref
             if (optimized && method.Token.TokenType == CorTokenType.mdtMethodDef)
             {
                 dataBuilder.EmitMethodDefToken(method.Token);

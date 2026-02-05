@@ -41,5 +41,6 @@ namespace System.Reflection
         ELEMENT_TYPE_MODIFIER = 0x40,
         ELEMENT_TYPE_SENTINEL = 0x41,
         ELEMENT_TYPE_PINNED = 0x45,
+        ELEMENT_TYPE_CONTINUATION = 0x46,
     }
 }

@@ -12,6 +12,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using System.Diagnostics;
+using ILCompiler.ReadyToRun.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -61,7 +62,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     return new ModuleToken(ecmaType.Module, (mdToken)MetadataTokens.GetToken(ecmaType.Handle));
                 }
-
                 if (_typeToRefTokens.TryGetValue(ecmaType, out token))
                 {
                     return token;
@@ -100,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+            if (method.GetPrimaryMethodDesc().GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
                 if (_compilationModuleGroup.VersionsWithMethodBody(ecmaMethod))
                 {
@@ -153,6 +153,38 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 DecodeMethodSignatureToDiscoverUsedTypeTokens(methodDef.Signature, token);
             }
         }
+
+        public ModuleToken GetModuleTokenForField(FieldDesc field, bool allowDynamicallyCreatedReference, bool throwIfNotFound)
+        {
+            if (field.GetTypicalFieldDefinition() is EcmaField ecmaField)
+            {
+                if (_compilationModuleGroup.VersionsWithType(ecmaField.OwningType))
+                {
+                    return new ModuleToken(ecmaField.Module, ecmaField.Handle);
+                }
+
+                // If that didn't work, it may be in the manifest module used for version resilient cross module inlining
+                if (allowDynamicallyCreatedReference)
+                {
+                    var handle = _manifestMutableModule.TryGetExistingEntityHandle(ecmaField);
+                    if (handle.HasValue)
+                    {
+                        return new ModuleToken(_manifestMutableModule, handle.Value);
+                    }
+                }
+            }
+
+            // Reverse lookup failed
+            if (throwIfNotFound)
+            {
+                throw new NotImplementedException(field.ToString());
+            }
+            else
+            {
+                return default(ModuleToken);
+            }
+        }
+
 
         private void DecodeMethodSpecificationSignatureToDiscoverUsedTypeTokens(BlobHandle signatureHandle, ModuleToken token)
         {
@@ -299,6 +331,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     SetModuleTokenForTypeSystemEntity(_typeToRefTokens, ecmaType, token);
                 }
+            }
+            else if (type.IsCanonicalDefinitionType(CanonicalFormKind.Specific))
+            {
+                return;
             }
             else if (!specialTypeFound)
             {

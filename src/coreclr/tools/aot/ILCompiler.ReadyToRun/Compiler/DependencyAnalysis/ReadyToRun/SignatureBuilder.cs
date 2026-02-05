@@ -303,6 +303,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         EmitElementType(CorElementType.ELEMENT_TYPE_CANON_ZAPSIG);
                     }
+                    else if (typeDesc is AsyncContinuationType act)
+                    {
+                        // We should never try to encode a continuation on this path
+                        throw new InvalidOperationException();
+                    }
                     else
                     {
                         ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
@@ -440,6 +445,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant;
             }
+            if (method.Method is AsyncResumptionStub)
+            {
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_ResumptionStub;
+            }
+
 
             EmitMethodSpecificationSignature(method, flags, enforceDefEncoding, enforceOwningType, context);
 

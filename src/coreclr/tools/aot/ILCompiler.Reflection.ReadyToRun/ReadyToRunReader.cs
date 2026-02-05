@@ -860,7 +860,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     int runtimeFunctionId;
                     int? fixupOffset;
                     GetRuntimeFunctionIndexFromOffset(offset, out runtimeFunctionId, out fixupOffset);
-                    ReadyToRunMethod method = new ReadyToRunMethod(this, componentReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, fixupOffset: fixupOffset);
+                    ReadyToRunMethod method = new ReadyToRunMethod(this, componentReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, modifiers: [], fixupOffset: fixupOffset);
 
                     if (method.EntryPointRuntimeFunctionId < 0 || method.EntryPointRuntimeFunctionId >= isEntryPoint.Length)
                     {
@@ -1014,6 +1014,24 @@ namespace ILCompiler.Reflection.ReadyToRun
                     constrainedType = decoder.ReadTypeSignatureNoEmit();
                 }
 
+                List<string> modifiers = [];
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant) != 0)
+                {
+                    modifiers.Add("[Async]");
+                }
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_ResumptionStub) != 0)
+                {
+                    modifiers.Add("[Resume]");
+                }
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0)
+                {
+                    throw new NotImplementedException("Crossgen2 should not emit code for Instantiating stubs.");
+                }
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
+                {
+                    throw new NotImplementedException("Crossgen2 should not emit code for Unboxing stubs.");
+                }
+
                 int runtimeFunctionId;
                 int? fixupOffset;
                 GetRuntimeFunctionIndexFromOffset((int)decoder.Offset, out runtimeFunctionId, out fixupOffset);
@@ -1025,6 +1043,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     owningType,
                     constrainedType,
                     methodTypeArgs,
+                    modifiers.ToArray(),
                     fixupOffset);
                 if (method.EntryPointRuntimeFunctionId >= 0 && method.EntryPointRuntimeFunctionId < isEntryPoint.Length)
                 {
@@ -1134,9 +1153,27 @@ namespace ILCompiler.Reflection.ReadyToRun
                     constrainedType = decoder.ReadTypeSignatureNoEmit();
                 }
 
+                List<string> modifiers = [];
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant) != 0)
+                {
+                    modifiers.Add("[Async]");
+                }
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_ResumptionStub) != 0)
+                {
+                    modifiers.Add("[Resume]");
+                }
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0)
+                {
+                    throw new NotImplementedException("Crossgen2 should not emit code for Instantiating stubs.");
+                }
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
+                {
+                    throw new NotImplementedException("Crossgen2 should not emit code for Unboxing stubs.");
+                }
+
                 GetPgoOffsetAndVersion(decoder.Offset, out int pgoFormatVersion, out int pgoOffset);
 
-                PgoInfoKey key = new PgoInfoKey(mdReader, owningType, methodHandle, methodTypeArgs);
+                PgoInfoKey key = new PgoInfoKey(mdReader, owningType, methodHandle, methodTypeArgs, modifiers.ToArray());
                 PgoInfo info = new PgoInfo(key, this, pgoFormatVersion, Image, pgoOffset);
 
                 // Since we do non-assembly qualified name based matching for generic instantiations, we can have conflicts.

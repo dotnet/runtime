@@ -922,6 +922,7 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
     BOOL isInstantiatingStub = (methodFlags & ENCODE_METHOD_SIG_InstantiatingStub);
     BOOL isUnboxingStub = (methodFlags & ENCODE_METHOD_SIG_UnboxingStub);
     bool isAsyncVariant = (methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0;
+    bool isResumptionStub =  (methodFlags & ENCODE_METHOD_SIG_ResumptionStub) != 0;
 
     pMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pMethod, thOwner.GetMethodTable(),
                                                             isUnboxingStub,

@@ -262,7 +262,8 @@ using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 enum class AsyncVariantLookup
 {
     MatchingAsyncVariant = 0,
-    AsyncOtherVariant
+    AsyncOtherVariant,
+    AsyncResumptionStub
 };
 
 enum class MethodReturnKind
@@ -2822,6 +2823,7 @@ public:
         StubDelegateInvokeMethod,
 
         StubAsyncResume,
+        StubAsyncResumeR2R,  // R2R-backed async resumption stub (no IL, points directly to R2R code)
 
         StubLast
     };
@@ -3015,6 +3017,13 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubDelegateShuffleThunk;
+    }
+    bool IsAsyncResumptionStub() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        ILStubType type = GetILStubType();
+        return type == DynamicMethodDesc::StubAsyncResume || type == DynamicMethodDesc::StubAsyncResumeR2R;
     }
 
     // Whether the stub takes a context argument that is an interop MethodDesc.

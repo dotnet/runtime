@@ -94,6 +94,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (MethodWithGCInfo method in _nodeFactory.EnumerateCompiledMethods())
             {
+                if (method.Method is AsyncResumptionStub)
+                {
+                    continue;
+                }
                 ObjectData ehInfo = method.EHInfo;
                 if (ehInfo != null && ehInfo.Data.Length != 0)
                 {

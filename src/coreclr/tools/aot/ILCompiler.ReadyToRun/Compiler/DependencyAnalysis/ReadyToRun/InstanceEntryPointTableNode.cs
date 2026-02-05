@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
-
+using ILCompiler.ReadyToRun.TypeSystem;
 using Internal;
 using Internal.JitInterface;
 using Internal.NativeFormat;
@@ -53,17 +53,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public static byte[] BuildSignatureForMethodDefinedInModule(MethodDesc method, NodeFactory factory)
         {
-            EcmaMethod typicalMethod = (EcmaMethod)method.GetTypicalMethodDefinition();
+            EcmaMethod ecmaMethod = (EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
 
             ModuleToken moduleToken;
-            if (factory.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod))
+            if (factory.CompilationModuleGroup.VersionsWithMethodBody(ecmaMethod))
             {
-                moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
+                moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             }
             else
             {
                 MutableModule manifestMetadata = factory.ManifestMetadataTable._mutableModule;
-                var handle = manifestMetadata.TryGetExistingEntityHandle(method.GetTypicalMethodDefinition());
+                var handle = manifestMetadata.TryGetExistingEntityHandle(ecmaMethod);
                 Debug.Assert(handle.HasValue);
                 moduleToken = new ModuleToken(factory.ManifestMetadataTable._mutableModule, handle.Value);
             }
@@ -102,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods(null, CompiledMethodCategory.Instantiated))
             {
-                Debug.Assert(method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation);
+                Debug.Assert(method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation || method.Method.IsAsyncVariant() || method.Method is AsyncResumptionStub);
 
                 int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
 

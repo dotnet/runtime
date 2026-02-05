@@ -81,7 +81,7 @@ namespace ILCompiler
 
         public static bool IsAsyncThunk(this MethodDesc method)
         {
-            return method.IsAsyncVariant() ^ method.IsAsync;
+            return (method.IsAsyncVariant() ^ method.IsAsync) || method is AsyncResumptionStub;
         }
 
         public static MethodDesc GetAsyncVariant(this MethodDesc method)

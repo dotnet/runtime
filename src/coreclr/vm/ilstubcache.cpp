@@ -137,6 +137,7 @@ namespace
             case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_VirtualStaticMethodDispatch";
             case DynamicMethodDesc::StubDelegateShuffleThunk: return "IL_STUB_DelegateShuffleThunk";
             case DynamicMethodDesc::StubAsyncResume:        return "IL_STUB_AsyncResume";
+            case DynamicMethodDesc::StubAsyncResumeR2R:     return "IL_STUB_AsyncResumeR2R";
             default:
                 UNREACHABLE_MSG("Unknown stub type");
         }
@@ -350,6 +351,101 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     pMD->m_pszDebugMethodName = pMD->m_pszMethodName;
     pMD->m_pszDebugClassName  = ILStubResolver::GetStubClassName(pMD);  // must be called after type is set
     pMD->m_pszDebugMethodSignature = FormatSig(pMD, pCreationHeap, pamTracker);
+    pMD->m_pDebugMethodTable = pMT;
+#endif // _DEBUG
+
+    RETURN pMD;
+}
+
+// Creates a DynamicMethodDesc that wraps pre-compiled R2R async resumption stub code.
+// Unlike regular IL stubs, this does not create a resolver or precode - it points
+// directly to the R2R native code.
+//
+// The stub signature is: object ResumptionStub(object continuation, ref byte resultLocation)
+//
+// static
+MethodDesc* ILStubCache::CreateR2RBackedAsyncResumptionStub(
+    LoaderAllocator* pAllocator,
+    MethodTable* pMT,
+    PCODE r2rEntryPoint,
+    AllocMemTracker* pamTracker)
+{
+    CONTRACT(MethodDesc*)
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pAllocator));
+        PRECONDITION(CheckPointer(pMT));
+        PRECONDITION(r2rEntryPoint != (PCODE)NULL);
+        POSTCONDITION(CheckPointer(RETVAL));
+    }
+    CONTRACT_END;
+
+    LoaderHeap* pCreationHeap = pAllocator->GetHighFrequencyHeap();
+
+    // Allocate the MethodDescChunk
+    // - mcDynamic: This is a dynamic method
+    // - fNonVtableSlot: Dynamic methods don't have vtable slots
+    // - fNativeCodeSlot: We need a slot for the native code pointer
+    // - fHasAsyncMethodData: This is an async resumption stub
+    MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(
+        pCreationHeap,
+        1,                      // count
+        mcDynamic,              // classification
+        TRUE,                   // fNonVtableSlot
+        TRUE,                   // fNativeCodeSlot
+        TRUE,                   // fHasAsyncMethodData
+        pMT,
+        pamTracker);
+
+    DynamicMethodDesc* pMD = (DynamicMethodDesc*)pChunk->GetFirstMethodDesc();
+
+    // Initialize basic MethodDesc state
+    pMD->SetMemberDef(0);
+    pMD->SetSlot(MethodTable::NO_SLOT);
+    pMD->SetStatic();
+
+    // Initialize DynamicMethodDesc flags - this is an IL stub that is public and static
+    pMD->InitializeFlags(DynamicMethodDesc::FlagPublic |
+                         DynamicMethodDesc::FlagStatic |
+                         DynamicMethodDesc::FlagIsILStub);
+    pMD->SetILStubType(DynamicMethodDesc::StubAsyncResumeR2R);
+
+    // No resolver needed - code already exists in R2R image
+    pMD->m_pResolver = nullptr;
+
+    // Set the method name
+    pMD->m_pszMethodName = GetStubMethodName(DynamicMethodDesc::StubAsyncResumeR2R);
+
+    // Build and set the stub signature: object(object, ref byte)
+    // This matches BuildResumptionStubSignature in jitinterface.cpp
+    SigBuilder sigBuilder;
+    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    sigBuilder.AppendData(2);                           // 2 arguments
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);  // return type: object
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);  // arg0: object (continuation)
+    sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF);   // arg1: ref byte (result location)
+    sigBuilder.AppendElementType(ELEMENT_TYPE_U1);
+
+    DWORD cbSig;
+    PVOID pSigBytes = sigBuilder.GetSignature(&cbSig);
+
+    PVOID pSig = pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(cbSig)));
+    memcpy(pSig, pSigBytes, cbSig);
+
+    pMD->SetStoredMethodSig((PCCOR_SIGNATURE)pSig, cbSig);
+
+    // Set async method data flags
+    pMD->SetHasAsyncMethodData();
+    pMD->GetAddrOfAsyncMethodData()->flags = AsyncMethodFlags::AsyncCall;
+
+    // Set the native code directly - no precode needed since code already exists
+    // Use SetNativeCodeInterlocked to atomically set the entry point
+    pMD->SetNativeCodeInterlocked(r2rEntryPoint);
+
+#ifdef _DEBUG
+    pMD->m_pszDebugMethodName = pMD->m_pszMethodName;
+    pMD->m_pszDebugClassName = "ILStubClass";
+    pMD->m_pszDebugMethodSignature = "object(object, ref byte)";
     pMD->m_pDebugMethodTable = pMT;
 #endif // _DEBUG
 

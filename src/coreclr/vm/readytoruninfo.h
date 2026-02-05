@@ -339,6 +339,10 @@ private:
     PTR_MethodDesc GetMethodDescForEntryPointInNativeImage(PCODE entryPoint);
     void SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, PTR_MethodDesc methodDesc);
 
+    // Looks up the R2R entry point for the resumption stub corresponding to the given async variant method.
+    // Returns NULL if not found.
+    PCODE LookupResumptionStubEntryPoint(MethodDesc* pAsyncVariantMD, PrepareCodeConfig* pConfig, BOOL fFixups, uint* pRuntimeFunctionIndex);
+
     PTR_ReadyToRunCoreInfo GetComponentInfo() { return dac_cast<PTR_ReadyToRunCoreInfo>(&m_component); }
 
     friend struct ::cdac_data<ReadyToRunInfo>;
