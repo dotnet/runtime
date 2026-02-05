@@ -55,6 +55,7 @@ jobs:
     if: ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.pulls == '')) && github.repository_owner == 'dotnet' }}
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       pull-requests: read
     outputs:
       pulls: ${{ steps.get-pulls.outputs.pulls }}
