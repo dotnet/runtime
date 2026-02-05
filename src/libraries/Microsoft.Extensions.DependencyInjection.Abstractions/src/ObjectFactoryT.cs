@@ -12,5 +12,5 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <param name="serviceProvider">The <see cref="IServiceProvider"/> to get service arguments from.</param>
     /// <param name="arguments">Additional constructor arguments.</param>
     /// <returns>An instance of type <typeparamref name="T" />.</returns>
-    public delegate T ObjectFactory<T>(IServiceProvider serviceProvider, object?[]? arguments);
+    public delegate T ObjectFactory<out T>(IServiceProvider serviceProvider, object?[]? arguments);
 }

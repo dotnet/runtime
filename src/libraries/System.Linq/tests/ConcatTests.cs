@@ -31,8 +31,8 @@ namespace System.Linq.Tests
             first = from item in first select item;
             second = from item in second select item;
 
-            VerifyEqualsWorker(first.Concat(second), first.Concat(second));
-            VerifyEqualsWorker(second.Concat(first), second.Concat(first));
+            Assert.Equal(first.Concat(second), first.Concat(second));
+            Assert.Equal(second.Concat(first), second.Concat(first));
         }
 
         [Theory]
@@ -41,8 +41,8 @@ namespace System.Linq.Tests
         [InlineData(new int[] { 2, 3, 5, 9 }, new int[] { 8, 10 }, new int[] { 2, 3, 5, 9, 8, 10 })] // Neither side is empty
         public void PossiblyEmptyInputs(IEnumerable<int> first, IEnumerable<int> second, IEnumerable<int> expected)
         {
-            VerifyEqualsWorker(expected, first.Concat(second));
-            VerifyEqualsWorker(expected.Skip(first.Count()).Concat(expected.Take(first.Count())), second.Concat(first)); // Swap the inputs around
+            Assert.Equal(expected, first.Concat(second));
+            Assert.Equal(expected.Skip(first.Count()).Concat(expected.Take(first.Count())), second.Concat(first)); // Swap the inputs around
         }
 
         [Fact]
@@ -80,7 +80,7 @@ namespace System.Linq.Tests
         public void VerifyEquals(IEnumerable<int> expected, IEnumerable<int> actual)
         {
             // workaround: xUnit type inference doesn't work if the input type is not T (like IEnumerable<T>)
-            VerifyEqualsWorker(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
         [Theory]
@@ -133,23 +133,6 @@ namespace System.Linq.Tests
             }
         }
 
-        private static void VerifyEqualsWorker<T>(IEnumerable<T> expected, IEnumerable<T> actual)
-        {
-            // Returns a list of functions that, when applied to enumerable, should return
-            // another one that has equivalent contents.
-            var identityTransforms = IdentityTransforms<T>();
-
-            // We run the transforms N^2 times, by testing all transforms
-            // of expected against all transforms of actual.
-            foreach (var outTransform in identityTransforms)
-            {
-                foreach (var inTransform in identityTransforms)
-                {
-                    Assert.Equal(outTransform(expected), inTransform(actual));
-                }
-            }
-        }
-
         public static IEnumerable<object[]> ArraySourcesData() => GenerateSourcesData(outerTransform: e => e.ToArray());
 
         public static IEnumerable<object[]> SelectArraySourcesData() => GenerateSourcesData(outerTransform: e => e.Select(i => i).ToArray());
@@ -162,8 +145,8 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> ConcatOfConcatsData()
         {
-            yield return new object[]
-            {
+            yield return
+            [
                 Enumerable.Range(0, 20),
                 Enumerable.Concat(
                     Enumerable.Concat(
@@ -172,7 +155,7 @@ namespace System.Linq.Tests
                     Enumerable.Concat(
                         Enumerable.Range(10, 3),
                         Enumerable.Range(13, 7)))
-            };
+            ];
         }
 
         public static IEnumerable<object[]> ConcatWithSelfData()
@@ -180,7 +163,7 @@ namespace System.Linq.Tests
             IEnumerable<int> source = Enumerable.Repeat(1, 4).Concat(Enumerable.Repeat(1, 5));
             source = source.Concat(source);
 
-            yield return new object[] { Enumerable.Repeat(1, 18), source };
+            yield return [Enumerable.Repeat(1, 18), source];
         }
 
         public static IEnumerable<object[]> ChainedCollectionConcatData() => GenerateSourcesData(innerTransform: e => e.ToList());
@@ -225,7 +208,7 @@ namespace System.Linq.Tests
                         }
                     }
 
-                    yield return new object[] { expected.ToArray(), actual.ToArray() };
+                    yield return [expected.ToArray(), actual.ToArray()];
 
                     actual = foundation;
                     expected.Clear();
@@ -237,26 +220,26 @@ namespace System.Linq.Tests
         {
             List<int> baseList = [0, 1, 2, 3, 4];
 
-            yield return new object[]
-            {
+            yield return
+            [
                 Enumerable.Range(0, 5),
                 Enumerable.Concat(Enumerable.Concat(new List<int>(), new List<int>()), baseList)
-            };
-            yield return new object[]
-            {
+            ];
+            yield return
+            [
                 Enumerable.Range(0, 5),
                 Enumerable.Concat(new List<int>(), baseList)
-            };
-            yield return new object[]
-            {
+            ];
+            yield return
+            [
                 Enumerable.Range(0, 5),
                 Enumerable.Concat(Enumerable.Concat(baseList, new List<int>()), new List<int>())
-            };
-            yield return new object[]
-            {
+            ];
+            yield return
+            [
                 Enumerable.Range(0, 5),
                 Enumerable.Concat(baseList, new List<int>())
-            };
+            ];
         }
 
         private static IEnumerable<object[]> GenerateSourcesData(
@@ -275,7 +258,7 @@ namespace System.Linq.Tests
                     actual = outerTransform(actual.Concat(innerTransform(Enumerable.Range(j * 3, 3))));
                 }
 
-                yield return new object[] { expected, actual };
+                yield return [expected, actual];
             }
         }
 
@@ -285,14 +268,14 @@ namespace System.Linq.Tests
         {
             foreach (var transform in IdentityTransforms<int>())
             {
-                IEnumerable<int> concatee = Enumerable.Empty<int>();
+                IEnumerable<int> concatee = [];
                 foreach (var source in sources)
                 {
                     concatee = concatee.Concat(transform(source));
                 }
 
                 Assert.Equal(sources.Sum(s => s.Count()), concatee.Count());
-                VerifyEqualsWorker(sources.SelectMany(s => s), concatee);
+                Assert.Equal(sources.SelectMany(s => s), concatee);
             }
         }
 
@@ -302,7 +285,7 @@ namespace System.Linq.Tests
         {
             foreach (var transform in IdentityTransforms<int>())
             {
-                IEnumerable<int> concatee = Enumerable.Empty<int>();
+                IEnumerable<int> concatee = [];
                 foreach (var source in sources)
                 {
                     concatee = concatee.RunOnce().Concat(transform(source));
@@ -314,13 +297,13 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> ManyConcatsData()
         {
-            yield return new object[] { Enumerable.Repeat(Enumerable.Empty<int>(), 256) };
-            yield return new object[] { Enumerable.Repeat(Enumerable.Repeat(6, 1), 256) };
+            yield return [Enumerable.Repeat(Enumerable.Empty<int>(), 256)];
+            yield return [Enumerable.Repeat(Enumerable.Repeat(6, 1), 256)];
             // Make sure Concat doesn't accidentally swap around the sources, e.g. [3, 4], [1, 2] should not become [1..4]
-            yield return new object[] { Enumerable.Range(0, 500).Select(i => Enumerable.Repeat(i, 1)).Reverse() };
+            yield return [Enumerable.Range(0, 500).Select(i => Enumerable.Repeat(i, 1)).Reverse()];
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void CountOfConcatIteratorShouldThrowExceptionOnIntegerOverflow()
         {
             var supposedlyLargeCollection = new DelegateBasedCollection<int> { CountWorker = () => int.MaxValue };
@@ -373,7 +356,7 @@ namespace System.Linq.Tests
             // ToArray needs the count as well, and the process of copying all of the collections
             // to the array should also not be recursive.
             Assert.Equal(new int[] { }, concatChain.ToArray());
-            Assert.Equal(new List<int> { }, concatChain.ToList()); // ToList also gets the count beforehand
+            Assert.Equal([], concatChain.ToList()); // ToList also gets the count beforehand
         }
 
         [Fact]
@@ -425,7 +408,7 @@ namespace System.Linq.Tests
             // Start with a lazy seed.
             // The seed holds 1 item, so during the first MoveNext we won't have to
             // backtrack through the linked list 30000 times. This is for test perf.
-            IEnumerable<int> concatChain = ForceNotCollection(new int[] { 0xf00 });
+            IEnumerable<int> concatChain = ForceNotCollection([0xf00]);
 
             for (int i = 0; i < NumberOfConcats; i++)
             {
@@ -461,7 +444,7 @@ namespace System.Linq.Tests
 
             // This time, start with an ICollection seed. We want the subsequent Concats in
             // the loop to produce collection iterators.
-            IEnumerable<int> concatChain = new int[] { 0xf00 };
+            IEnumerable<int> concatChain = [0xf00];
 
             for (int i = 0; i < NumberOfConcats - 1; i++)
             {
@@ -502,98 +485,91 @@ namespace System.Linq.Tests
         public static IEnumerable<object[]> GetToArrayDataSources()
         {
             // Marker at the end
-            yield return new object[]
-            {
+            yield return
+            [
                 new IEnumerable<int>[]
                 {
-                    new TestEnumerable<int>(new int[] { 0 }),
-                    new TestEnumerable<int>(new int[] { 1 }),
-                    new TestEnumerable<int>(new int[] { 2 }),
-                    new int[] { 3 },
+                    new TestEnumerable<int>([0]),
+                    new TestEnumerable<int>([1]),
+                    new TestEnumerable<int>([2]), [3],
                 }
-            };
+            ];
 
             // Marker at beginning
-            yield return new object[]
-            {
+            yield return
+            [
                 new IEnumerable<int>[]
                 {
-                    new int[] { 0 },
-                    new TestEnumerable<int>(new int[] { 1 }),
-                    new TestEnumerable<int>(new int[] { 2 }),
-                    new TestEnumerable<int>(new int[] { 3 }),
+                    [0],
+                    new TestEnumerable<int>([1]),
+                    new TestEnumerable<int>([2]),
+                    new TestEnumerable<int>([3]),
                 }
-            };
+            ];
 
             // Marker in middle
-            yield return new object[]
-            {
+            yield return
+            [
                 new IEnumerable<int>[]
                 {
-                    new TestEnumerable<int>(new int[] { 0 }),
-                    new int[] { 1 },
-                    new TestEnumerable<int>(new int[] { 2 }),
+                    new TestEnumerable<int>([0]), [1],
+                    new TestEnumerable<int>([2]),
                 }
-            };
+            ];
 
             // Non-marker in middle
-            yield return new object[]
-            {
+            yield return
+            [
                 new IEnumerable<int>[]
                 {
-                    new int[] { 0 },
-                    new TestEnumerable<int>(new int[] { 1 }),
-                    new int[] { 2 },
+                    [0],
+                    new TestEnumerable<int>([1]), [2],
                 }
-            };
+            ];
 
             // Big arrays (marker in middle)
-            yield return new object[]
-            {
+            yield return
+            [
                 new IEnumerable<int>[]
                 {
                     new TestEnumerable<int>(Enumerable.Range(0, 100).ToArray()),
                     Enumerable.Range(100, 100).ToArray(),
                     new TestEnumerable<int>(Enumerable.Range(200, 100).ToArray()),
                 }
-            };
+            ];
 
             // Big arrays (non-marker in middle)
-            yield return new object[]
-            {
+            yield return
+            [
                 new IEnumerable<int>[]
                 {
                     Enumerable.Range(0, 100).ToArray(),
                     new TestEnumerable<int>(Enumerable.Range(100, 100).ToArray()),
                     Enumerable.Range(200, 100).ToArray(),
                 }
-            };
+            ];
 
             // Interleaved (first marker)
-            yield return new object[]
-            {
+            yield return
+            [
                 new IEnumerable<int>[]
                 {
-                    new int[] { 0 },
-                    new TestEnumerable<int>(new int[] { 1 }),
-                    new int[] { 2 },
-                    new TestEnumerable<int>(new int[] { 3 }),
-                    new int[] { 4 },
+                    [0],
+                    new TestEnumerable<int>([1]), [2],
+                    new TestEnumerable<int>([3]), [4],
                 }
-            };
+            ];
 
             // Interleaved (first non-marker)
-            yield return new object[]
-            {
+            yield return
+            [
                 new IEnumerable<int>[]
                 {
-                    new TestEnumerable<int>(new int[] { 0 }),
-                    new int[] { 1 },
-                    new TestEnumerable<int>(new int[] { 2 }),
-                    new int[] { 3 },
-                    new TestEnumerable<int>(new int[] { 4 }),
+                    new TestEnumerable<int>([0]), [1],
+                    new TestEnumerable<int>([2]), [3],
+                    new TestEnumerable<int>([4]),
                 }
-            };
+            ];
         }
     }
 }

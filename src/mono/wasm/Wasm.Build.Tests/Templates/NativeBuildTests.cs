@@ -23,8 +23,7 @@ namespace Wasm.Build.Templates.Tests
         [InlineData(false)]
         public void BuildWithUndefinedNativeSymbol(bool allowUndefined)
         {
-            string id = $"UndefinedNativeSymbol_{(allowUndefined ? "allowed" : "disabled")}_{GetRandomId()}";
-
+            Configuration config = Configuration.Release;
             string code = @"
                 using System;
                 using System.Runtime.InteropServices;
@@ -35,71 +34,50 @@ namespace Wasm.Build.Templates.Tests
                 [DllImport(""undefined_xyz"")] static extern void call();
             ";
 
-            string projectPath = CreateWasmTemplateProject(id);
-
-            AddItemsPropertiesToProject(
-                projectPath,
-                extraItems: @$"<NativeFileReference Include=""undefined_xyz.c"" />",
-                extraProperties: allowUndefined ? $"<WasmAllowUndefinedSymbols>true</WasmAllowUndefinedSymbols>" : null
+            string extraItems = @$"<NativeFileReference Include=""undefined_xyz.c"" />";
+            string extraProperties = allowUndefined ? $"<WasmAllowUndefinedSymbols>true</WasmAllowUndefinedSymbols>" : "";
+            ProjectInfo info = CreateWasmTemplateProject(
+                Template.WasmBrowser,
+                config,
+                aot: false,
+                $"UndefinedNativeSymbol_{(allowUndefined ? "allowed" : "disabled")}",
+                extraItems: extraItems,
+                extraProperties: extraProperties
             );
+            UpdateFile("Program.cs", code);
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir, "undefined_xyz.c"));
+            var buildOptions = new BuildOptions(ExpectSuccess: allowUndefined, AssertAppBundle: false);
+            (string _, string buildOutput) = BuildProject(info, config, buildOptions, isNativeBuild: true);
 
-            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined_xyz.c"));
-
-            using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
-            CommandResult result = cmd.WithWorkingDirectory(_projectDir!)
-                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                    .ExecuteWithCapturedOutput("build", "-c Release");
-
-            if (allowUndefined)
+            if (!allowUndefined)
             {
-                Assert.True(result.ExitCode == 0, "Expected build to succeed");
-            }
-            else
-            {
-                Assert.False(result.ExitCode == 0, "Expected build to fail");
-                Assert.Contains("undefined symbol: sgfg", result.Output);
-                Assert.Contains("Use '-p:WasmAllowUndefinedSymbols=true' to allow undefined symbols", result.Output);
+                Assert.Contains("undefined symbol: sgfg", buildOutput);
+                Assert.Contains("Use '-p:WasmAllowUndefinedSymbols=true' to allow undefined symbols", buildOutput);
             }
         }
 
         [Theory]
-        [InlineData("Debug")]
-        [InlineData("Release")]
-        public async Task ProjectWithDllImportsRequiringMarshalIlGen_ArrayTypeParameter(string config)
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
+        public async Task ProjectWithDllImportsRequiringMarshalIlGen_ArrayTypeParameter(Configuration config)
         {
-            string id = $"dllimport_incompatible_{GetRandomId()}";
-            string projectFile = CreateWasmTemplateProject(id, template: "wasmbrowser");
-            string projectName = Path.GetFileNameWithoutExtension(projectFile);
-
             string nativeSourceFilename = "incompatible_type.c";
-            string nativeCode = "void call_needing_marhsal_ilgen(void *x) {}";
-            File.WriteAllText(path: Path.Combine(_projectDir!, nativeSourceFilename), nativeCode);
-
-            AddItemsPropertiesToProject(
-                projectFile,
-                extraItems: "<NativeFileReference Include=\"" + nativeSourceFilename + "\" />"
+            string extraItems = "<NativeFileReference Include=\"" + nativeSourceFilename + "\" />";
+            ProjectInfo info = CreateWasmTemplateProject(
+                Template.WasmBrowser,
+                config,
+                aot: false,
+                "dllimport_incompatible",
+                extraItems: extraItems
             );
-
+            string nativeCode = "void call_needing_marhsal_ilgen(void *x) {}";
+            File.WriteAllText(path: Path.Combine(_projectDir, nativeSourceFilename), nativeCode);
             UpdateBrowserMainJs();
-            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "marshal_ilgen_test.cs"),
-                                    Path.Combine(_projectDir!, "Program.cs"),
-                                    overwrite: true);
+            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "marshal_ilgen_test.cs"));
 
-            var buildArgs = new BuildArgs(projectName, config, false, id, null);
-            buildArgs = ExpandBuildArgs(buildArgs);
-            BuildTemplateProject(buildArgs, id: id, new BuildProjectOptions(
-                                    AssertAppBundle: false,
-                                    CreateProject: false,
-                                    HasV8Script: false,
-                                    MainJS: "main.mjs",
-                                    Publish: false,
-                                    TargetFramework: DefaultTargetFramework,
-                                    IsBrowserProject: true)
-                                );
-            string runOutput = await RunBuiltBrowserApp(config, projectFile);
-
-            Assert.Contains("call_needing_marhsal_ilgen got called", runOutput);
+            (string _, string buildOutput) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false), isNativeBuild: true);
+            var runOutput = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 42));
+            Assert.Contains("call_needing_marhsal_ilgen got called", runOutput.TestOutput);
         }
     }
 }

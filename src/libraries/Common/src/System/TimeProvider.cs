@@ -159,14 +159,7 @@ namespace System
         /// </remarks>
         public virtual ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
         {
-#if SYSTEM_PRIVATE_CORELIB
             ArgumentNullException.ThrowIfNull(callback);
-#else
-            if (callback is null)
-            {
-                throw new ArgumentNullException(nameof(callback));
-            }
-#endif // SYSTEM_PRIVATE_CORELIB
 
             return new SystemTimeProviderTimer(dueTime, period, callback, state);
         }

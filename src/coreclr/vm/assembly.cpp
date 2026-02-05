@@ -37,7 +37,6 @@
 
 #include "peimagelayout.inl"
 
-
 // Define these macro's to do strict validation for jit lock and class init entry leaks.
 // This defines determine if the asserts that verify for these leaks are defined or not.
 // These asserts can sometimes go off even if no entries have been leaked so this defines
@@ -77,10 +76,7 @@ namespace
         SafeComHolder<IMetaDataDispenserEx> pDispenser;
 
         // Get the Dispenser interface.
-        MetaDataGetDispenser(
-            CLSID_CorMetaDataDispenser,
-            IID_IMetaDataDispenserEx,
-            (void**)&pDispenser);
+        CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void**)&pDispenser);
         if (pDispenser == NULL)
         {
             ThrowOutOfMemory();
@@ -333,7 +329,10 @@ Assembly * Assembly::Create(
         PRECONDITION(pLoaderAllocator != NULL);
         PRECONDITION(pLoaderAllocator->IsCollectible() || pLoaderAllocator == SystemDomain::GetGlobalLoaderAllocator());
     }
-    CONTRACTL_END
+    CONTRACTL_END;
+
+    // Validate the assembly about to be created is suitable for execution.
+    pPEAssembly->ValidateForExecution();
 
     NewHolder<Assembly> pAssembly (new Assembly(pPEAssembly, pLoaderAllocator));
 
@@ -435,10 +434,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         IfFailThrow(pAssemblyEmit->DefineAssembly(pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, hashAlgorithm,
                                                    pAssemblyNameParts->_pName, &assemData, pAssemblyNameParts->_flags,
                                                    &ma));
-        pPEAssembly = PEAssembly::Create(pAssemblyEmit);
-
-        // Set it as the fallback load context binder for the dynamic assembly being created
-        pPEAssembly->SetFallbackBinder(pBinder);
+        pPEAssembly = PEAssembly::Create(pAssemblyEmit, pBinder);
     }
 
     AppDomain* pDomain = ::GetAppDomain();
@@ -547,21 +543,16 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     RETURN pRetVal;
 } // Assembly::CreateDynamic
 
-
-
 void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
 {
     CONTRACTL
     {
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pDomainAssembly));
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
     GetModule()->SetDomainAssembly(pDomainAssembly);
-
 } // Assembly::SetDomainAssembly
 
 #endif // #ifndef DACCESS_COMPILE
@@ -649,7 +640,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
 #ifndef DACCESS_COMPILE
                     // LoadAssembly never returns NULL
                     pAssembly = GetModule()->LoadAssembly(mdLinkRef);
-                    PREFIX_ASSUME(pAssembly != NULL);
+                    _ASSERTE(pAssembly != NULL);
                     break;
 #else
                     _ASSERTE(!"DAC shouldn't attempt to trigger loading");
@@ -1005,25 +996,11 @@ ReleaseHolder<FriendAssemblyDescriptor> Assembly::GetFriendAssemblyInfo()
 
 //*****************************************************************************
 // Is the given assembly a friend of this assembly?
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, FieldDesc *pFD)
+bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly)
 {
     WRAPPER_NO_CONTRACT;
 
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pFD);
-}
-
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodDesc *pMD)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMD);
-}
-
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodTable *pMT)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMT);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly);
 }
 
 bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
@@ -1083,8 +1060,10 @@ void Assembly::AddDiagnosticStartupHookPath(LPCWSTR wszPath)
 
 enum CorEntryPointType
 {
-    EntryManagedMain,                   // void main(String[])
-    EntryCrtMain                        // unsigned main(void)
+    EntryManagedMain,                   // void/int/uint Main(string[])
+    EntryCrtMain,                       // void/int/uint Main(void)
+    EntryManagedMainAsync,              // Task<int> Main(String[])
+    EntryManagedMainAsyncVoid,          // Task Main(String[])
 };
 
 void DECLSPEC_NORETURN ThrowMainMethodException(MethodDesc* pMD, UINT resID)
@@ -1105,7 +1084,7 @@ void DECLSPEC_NORETURN ThrowMainMethodException(MethodDesc* pMD, UINT resID)
     {
         szUTFMethodName = "Invalid MethodDef record";
     }
-    PREFIX_ASSUME(szUTFMethodName!=NULL);
+    _ASSERTE(szUTFMethodName!=NULL);
     MAKE_WIDEPTR_FROMUTF8(szMethodName, szUTFMethodName);
     COMPlusThrowHR(COR_E_METHODACCESS, resID, szClassName, szMethodName);
 }
@@ -1149,6 +1128,29 @@ void ValidateMainMethod(MethodDesc * pFD, CorEntryPointType *pType)
     CorElementType nReturnType;
     if (FAILED(sig.GetElemType(&nReturnType)))
         ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
+
+#if defined(TARGET_BROWSER)
+    // WASM-TODO: this validation is too trivial, but that's OK for now because we plan to remove browser specific hack later.
+    // https://github.com/dotnet/runtime/issues/121064
+    if (nReturnType == ELEMENT_TYPE_GENERICINST)
+    {
+        if (nParamCount > 1)
+            ThrowMainMethodException(pFD, IDS_EE_TO_MANY_ARGUMENTS_IN_MAIN);
+
+        // this is Task<int> Main(String[] args)
+        *pType = EntryManagedMainAsync;
+        return;
+    }
+    if (nReturnType == ELEMENT_TYPE_CLASS)
+    {
+        if (nParamCount > 1)
+            ThrowMainMethodException(pFD, IDS_EE_TO_MANY_ARGUMENTS_IN_MAIN);
+
+        // this is Task Main(String[] args)
+        *pType = EntryManagedMainAsyncVoid;
+        return;
+    }
+#endif // TARGET_BROWSER
 
     if ((nReturnType != ELEMENT_TYPE_VOID) && (nReturnType != ELEMENT_TYPE_I4) && (nReturnType != ELEMENT_TYPE_U4))
          ThrowMainMethodException(pFD, IDS_EE_MAIN_METHOD_HAS_INVALID_RTN);
@@ -1195,7 +1197,10 @@ static void RunMainInternal(Param* pParam)
     GCPROTECT_BEGIN(StrArgArray);
 
     // Build the parameter array and invoke the method.
-    if (pParam->EntryType == EntryManagedMain) {
+    if (pParam->EntryType == EntryManagedMain
+        || pParam->EntryType == EntryManagedMainAsync
+        || pParam->EntryType == EntryManagedMainAsyncVoid)
+    {
         if (pParam->stringArgs == NULL) {
             // Allocate a COM Array object with enough slots for cCommandArgs - 1
             StrArgArray = (PTRARRAYREF) AllocateObjectArray((pParam->cCommandArgs - pParam->numSkipArgs), g_pStringClass);
@@ -1218,18 +1223,44 @@ static void RunMainInternal(Param* pParam)
         *pParam->piRetVal = 0;
         threadStart.Call(&stackVar);
     }
+// WASM-TODO: remove this
+// https://github.com/dotnet/runtime/issues/121064
+#if defined(TARGET_BROWSER)
+    else if (pParam->EntryType == EntryManagedMainAsync)
+    {
+        *pParam->piRetVal = 0;
+        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
+        
+        OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
+        ARG_SLOT stackVarWrapper[] =
+        {
+            ObjToArgSlot(exitCodeTask)
+        };
+        mainWrapper.Call(stackVarWrapper);
+    }
+    else if (pParam->EntryType == EntryManagedMainAsyncVoid)
+    {
+        *pParam->piRetVal = 0;
+        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT_VOID);
+        
+        OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
+        ARG_SLOT stackVarWrapper[] =
+        {
+            ObjToArgSlot(exitCodeTask)
+        };
+        mainWrapper.Call(stackVarWrapper);
+    }
+#endif // TARGET_BROWSER
     else
     {
+        // Call the main method
         *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
         SetLatchedExitCode(*pParam->piRetVal);
     }
 
     GCPROTECT_END();
 
-    //<TODO>
-    // When we get mainCRTStartup from the C++ then this should be able to go away.</TODO>
-    fflush(stdout);
-    fflush(stderr);
+    minipal_log_flush_all();
 }
 
 /* static */
@@ -1427,8 +1458,10 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
     //to decide when the process should get torn down.  So, don't call it from
     // AppDomain.ExecuteAssembly()
     if (pMeth) {
+#if !defined(TARGET_BROWSER)
         if (waitForOtherThreads)
             RunMainPost();
+#endif // !TARGET_BROWSER
     }
     else {
         StackSString displayName;
@@ -1508,14 +1541,15 @@ MethodDesc* Assembly::GetEntryPoint()
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, IDS_EE_ILLEGAL_TOKEN_FOR_MAIN, displayName);
     }
 
+    MethodTable * pInitialMT;
     if (mdParent != COR_GLOBAL_PARENT_TOKEN) {
         GCX_COOP();
         // This code needs a class init frame, because without it, the
         // debugger will assume any code that results from searching for a
         // type handle (ie, loading an assembly) is the first line of a program.
-        FrameWithCookie<DebuggerClassInitMarkFrame> __dcimf;
+        DebuggerClassInitMarkFrame __dcimf;
 
-        MethodTable * pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
+        pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
                                                                        ClassLoader::ThrowIfNotFound,
                                                                        ClassLoader::FailIfUninstDefOrRef).GetMethodTable();
 
@@ -1527,6 +1561,35 @@ MethodDesc* Assembly::GetEntryPoint()
     {
         m_pEntryPoint = pModule->FindMethod(mdEntry);
     }
+
+#if defined(TARGET_BROWSER)
+    // WASM-TODO: this lookup by name is too trivial, but that's OK for now because we plan to remove browser specific hack later.
+    // https://github.com/dotnet/runtime/issues/121064
+    if (m_pEntryPoint)
+    {
+        // if this is async method we need to find the original method, instead of the roslyn generated wrapper
+        LPCUTF8 szName = m_pEntryPoint->GetName();
+        size_t nameLength = strlen(szName);
+        LPCUTF8 szEnd = szName + nameLength - 1;
+        DWORD dwAttrs = m_pEntryPoint->GetAttrs();
+        if (IsMdSpecialName(dwAttrs) && (*szName == '<') && (*szEnd == '>'))
+        {
+            // look for "<Name>$"
+            LPUTF8 pszAsyncName = (LPUTF8)new char[nameLength + 2];
+            snprintf (pszAsyncName, nameLength + 2, "%s$", szName);
+            m_pEntryPoint = MemberLoader::FindMethodByName(pInitialMT, pszAsyncName);
+
+            if (m_pEntryPoint == NULL)
+            {
+                // look for "Name" by trimming the first and last character of "<Name>"
+                pszAsyncName [nameLength - 1] = '\0';
+                m_pEntryPoint = MemberLoader::FindMethodByName(pInitialMT, pszAsyncName + 1);
+            }
+
+            delete[] pszAsyncName;
+        }
+    }
+#endif // TARGET_BROWSER
 
     RETURN m_pEntryPoint;
 }
@@ -2139,9 +2202,11 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         DeliverSyncEvents();
         break;
 
+#ifdef FEATURE_IJW
     case FILE_LOAD_VTABLE_FIXUPS:
         VtableFixups();
         break;
+#endif // FEATURE_IJW
 
     case FILE_LOADED:
         FinishLoad();
@@ -2218,12 +2283,14 @@ void Assembly::EagerFixups()
 #endif // FEATURE_READYTORUN
 }
 
+#ifdef FEATURE_IJW
 void Assembly::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
     GetModule()->FixupVTables();
 }
+#endif // FEATURE_IJW
 
 void Assembly::FinishLoad()
 {
@@ -2372,7 +2439,7 @@ void Assembly::DeliverSyncEvents()
         SetShouldNotifyDebugger();
 
         // Still work to do even if no debugger is attached.
-        NotifyDebuggerLoad(ATTACH_ASSEMBLY_LOAD, FALSE);
+        NotifyDebuggerLoad(ATTACH_MODULE_LOAD, FALSE);
 
     }
 #endif // DEBUGGING_SUPPORTED
@@ -2395,7 +2462,7 @@ DebuggerAssemblyControlFlags Assembly::ComputeDebuggingConfig()
     IfFailThrow(GetDebuggingCustomAttributes(&dacfFlags));
     return (DebuggerAssemblyControlFlags)dacfFlags;
 #else // !DEBUGGING_SUPPORTED
-    return 0;
+    return DACF_NONE;
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -2418,7 +2485,7 @@ HRESULT Assembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
     ULONG size;
     BYTE *blob;
     IMDInternalImport* mdImport = GetPEAssembly()->GetMDImport();
-    mdAssembly asTK = TokenFromRid(mdtAssembly, 1);
+    mdAssembly asTK = TokenFromRid(1, mdtAssembly);
 
     HRESULT hr = mdImport->GetCustomAttributeByName(asTK,
                                             DEBUGGABLE_ATTRIBUTE_TYPE,
@@ -2495,16 +2562,7 @@ BOOL Assembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     }
 
     // There is still work we need to do even when no debugger is attached.
-    if (flags & ATTACH_ASSEMBLY_LOAD)
-    {
-        if (ShouldNotifyDebugger())
-        {
-            g_pDebugInterface->LoadAssembly(GetDomainAssembly());
-        }
-        result = TRUE;
-    }
-
-    if(this->ShouldNotifyDebugger())
+    if(this->ShouldNotifyDebugger() && !(flags & ATTACH_MODULE_LOAD))
     {
         result = result ||
             this->GetModule()->NotifyDebuggerLoad(GetDomainAssembly(), flags, attaching);

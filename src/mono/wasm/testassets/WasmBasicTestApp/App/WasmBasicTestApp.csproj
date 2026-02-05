@@ -1,9 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk.WebAssembly">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <!-- The private field 'class member' is never used -->
+    <NoWarn>$(NoWarn);CS0169</NoWarn>
   </PropertyGroup>
 
   <!-- Lazy loading test various extensions -->
@@ -15,12 +18,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Library\Json.csproj" />
+    <ProjectReference Include="..\Json\Json.csproj" />
     <ProjectReference Include="..\ResourceLibrary\ResourceLibrary.csproj" />
+    <ProjectReference Include="..\LazyLibrary\LazyLibrary.csproj" />
+    <WasmEnvironmentVariable Include="baz" Value="boo" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TestLazyLoading)' == 'true'">
+    <BlazorWebAssemblyLazyLoad Include="Json$(WasmAssemblyExtension)" />
+    <BlazorWebAssemblyLazyLoad Include="LazyLibrary$(WasmAssemblyExtension)" />
   </ItemGroup>
 
   <ItemGroup>
-    <BlazorWebAssemblyLazyLoad Include="Json$(WasmAssemblyExtension)" />
-    <WasmExtraFilesToDeploy Include="profiler.js" />
+    <WasmFilesToIncludeInFileSystem Include="Vfs1.txt" TargetPath="/myfiles/Vfs1.txt" />
+    <WasmFilesToIncludeInFileSystem Include="subdir/Vfs2.txt" TargetPath="/myfiles/Vfs2.txt" />
+    <WasmFilesToIncludeInFileSystem Include="subdir/subsubdir/Vfs3.txt" />
   </ItemGroup>
 </Project>

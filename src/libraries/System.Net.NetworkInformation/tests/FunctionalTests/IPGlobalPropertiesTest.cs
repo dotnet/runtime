@@ -212,7 +212,10 @@ namespace System.Net.NetworkInformation.Tests
         public void IPGlobalProperties_DomainName_ReturnsEmptyStringWhenNotSet()
         {
             IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
-            Assert.Equal(string.Empty, gp.DomainName);
+
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/109280")]
+            string expectedDomainName = PlatformDetection.IsAndroid ? "localdomain" : string.Empty;
+            Assert.Equal(expectedDomainName, gp.DomainName);
         }
     }
 }

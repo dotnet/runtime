@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 /*
- *
- * COM+99 EE to Debugger Interface Implementation
- *
+ * EE to Debugger Interface Implementation
  */
 
 #include "common.h"
@@ -173,11 +170,7 @@ void* EEDbgInterfaceImpl::GetObjectFromHandle(OBJECTHANDLE handle)
     }
     CONTRACTL_END;
 
-    void *v;
-
-    *((OBJECTREF *)&v) = *(OBJECTREF *)handle;
-
-    return v;
+    return OBJECTREFToObject(ObjectFromHandle(handle));
 }
 
 OBJECTHANDLE EEDbgInterfaceImpl::GetHandleFromObject(void *obj,
@@ -560,7 +553,6 @@ void EEDbgInterfaceImpl::GetMethodRegionInfo(const PCODE    pStart,
     *coldSize = methodRegionInfo.coldSize;
 }
 
-#if defined(FEATURE_EH_FUNCLETS)
 DWORD EEDbgInterfaceImpl::GetFuncletStartOffsets(const BYTE *pStart, DWORD* pStartOffsets, DWORD dwLength)
 {
     CONTRACTL
@@ -592,11 +584,10 @@ StackFrame EEDbgInterfaceImpl::FindParentStackFrame(CrawlFrame* pCF)
     return StackFrame();
 
 #else  // !DACCESS_COMPILE
-    return ExceptionTracker::FindParentStackFrameForStackWalk(pCF);
+    return ExInfo::FindParentStackFrameForStackWalk(pCF);
 
 #endif // !DACCESS_COMPILE
 }
-#endif // FEATURE_EH_FUNCLETS
 
 #ifndef DACCESS_COMPILE
 size_t EEDbgInterfaceImpl::GetFunctionSize(MethodDesc *pFD)
@@ -719,19 +710,6 @@ COR_ILMETHOD* EEDbgInterfaceImpl::MethodDescGetILHeader(MethodDesc *pFD)
     }
 
     RETURN NULL;
-}
-
-ULONG EEDbgInterfaceImpl::MethodDescGetRVA(MethodDesc *pFD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pFD));
-    }
-    CONTRACTL_END;
-
-    return pFD->GetRVA();
 }
 
 MethodDesc *EEDbgInterfaceImpl::FindLoadedMethodRefOrDef(Module* pModule,
@@ -1266,7 +1244,7 @@ bool EEDbgInterfaceImpl::TraceManager(Thread *thread,
         _ASSERTE(!"Fail to trace a stub through TraceManager()");
         fResult = false;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 #ifdef _DEBUG
     StubManager::DbgWriteLog("Doing TraceManager on %s (0x%p) for IP=0x%p, yields:\n", stubManager->DbgGetName(), stubManager, GetIP(context));
@@ -1331,7 +1309,7 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
 
 #ifdef TARGET_WINDOWS
     *pTLSIndex = _tls_index;
-    *pTLSEEThreadOffset = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo.m_pThread);
+    *pTLSEEThreadOffset = Thread::GetOffsetOfThreadStatic(&t_CurrentThreadInfo.m_pThread);
     *pTLSIsSpecialOffset = Thread::GetOffsetOfThreadStatic(&t_ThreadType);
     *pTLSCantStopOffset = Thread::GetOffsetOfThreadStatic(&t_CantStopCount);
 #else

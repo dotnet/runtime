@@ -6,8 +6,6 @@
  *
  * GCToEEInterface implementation
  *
-
- *
  */
 
 #include "common.h"
@@ -25,6 +23,7 @@
 #include "configuration.h"
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
+#include <minipal/memorybarrierprocesswide.h>
 
 // Finalizes a weak reference directly.
 extern void FinalizeWeakReference(Object* obj);
@@ -39,23 +38,26 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 {
     WRAPPER_NO_CONTRACT;
 
-    static_assert_no_msg(SUSPEND_FOR_GC == (int)ThreadSuspend::SUSPEND_FOR_GC);
-    static_assert_no_msg(SUSPEND_FOR_GC_PREP == (int)ThreadSuspend::SUSPEND_FOR_GC_PREP);
+    static_assert(SUSPEND_FOR_GC == (int)ThreadSuspend::SUSPEND_FOR_GC);
+    static_assert(SUSPEND_FOR_GC_PREP == (int)ThreadSuspend::SUSPEND_FOR_GC_PREP);
 
     _ASSERTE(reason == SUSPEND_FOR_GC || reason == SUSPEND_FOR_GC_PREP);
 
-    g_pDebugInterface->SuspendForGarbageCollectionStarted();
+    if (g_pDebugInterface)
+        g_pDebugInterface->SuspendForGarbageCollectionStarted();
 
     ThreadSuspend::SuspendEE((ThreadSuspend::SUSPEND_REASON)reason);
 
-    g_pDebugInterface->SuspendForGarbageCollectionCompleted();
+    if (g_pDebugInterface)
+        g_pDebugInterface->SuspendForGarbageCollectionCompleted();
 }
 
 void GCToEEInterface::RestartEE(bool bFinishedGC)
 {
     WRAPPER_NO_CONTRACT;
 
-    g_pDebugInterface->ResumeForGarbageCollectionStarted();
+    if (g_pDebugInterface)
+        g_pDebugInterface->ResumeForGarbageCollectionStarted();
 
     ThreadSuspend::RestartEE(bFinishedGC, TRUE);
 }
@@ -137,28 +139,18 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
                 IsGCSpecialThread() ||
                 (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
 
-#if defined(FEATURE_CONSERVATIVE_GC) || defined(USE_FEF)
     Frame* pTopFrame = pThread->GetFrame();
     Object ** topStack = (Object **)pTopFrame;
     if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
     {
         // It is an InlinedCallFrame with active call. Get SP from it.
-        InlinedCallFrame* pInlinedFrame = (InlinedCallFrame*)pTopFrame;
+        InlinedCallFrame* pInlinedFrame = dac_cast<PTR_InlinedCallFrame>(pTopFrame);
         topStack = (Object **)pInlinedFrame->GetCallSiteSP();
     }
-#endif // FEATURE_CONSERVATIVE_GC || USE_FEF
 
-#ifdef USE_FEF
-    // We only set the stack_limit when FEF (FaultingExceptionFrame) is enabled, because without the
-    // FEF, the code above would have to check if hardware exception is being handled and get the limit
-    // from the exception frame. Since the stack_limit is strictly necessary only on Unix and FEF is
-    // not enabled on Window x86 only, it is sufficient to keep the stack_limit set to 0 in this case.
+    // We set the stack_limit when FEF (FaultingExceptionFrame) is enabled.
     // See the comment on the stack_limit usage in the PromoteCarefully function for more details.
     sc->stack_limit = (uintptr_t)topStack;
-#else // USE_FEF
-    // It should be set to 0 in the ScanContext constructor
-    _ASSERTE(sc->stack_limit == 0);
-#endif // USE_FEF
 
 #ifdef FEATURE_CONSERVATIVE_GC
     if (g_pConfig->GetGCConservative())
@@ -198,16 +190,16 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 #endif
     {
         unsigned flagsStackWalk = ALLOW_ASYNC_STACK_WALK | ALLOW_INVALID_OBJECTS;
-#if defined(FEATURE_EH_FUNCLETS)
+
         flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
-#endif // defined(FEATURE_EH_FUNCLETS)
+
         gcctx.pScannedSlots = NULL;
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);
         delete gcctx.pScannedSlots;
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();
-    while (pGCFrame != NULL)
+    while (pGCFrame != GCFRAME_TOP)
     {
         pGCFrame->GcScanRoots(fn, sc);
         pGCFrame = pGCFrame->PtrNextFrame();
@@ -235,7 +227,7 @@ static void ScanTailCallArgBufferRoots(Thread* pThread, promote_func* fn, ScanCo
     if (argBuffer == NULL || argBuffer->GCDesc == NULL)
         return;
 
-    if (argBuffer->State == TAILCALLARGBUFFER_ABANDONED)
+    if (argBuffer->State == TAILCALLARGBUFFER_INACTIVE)
         return;
 
     bool instArgOnly = argBuffer->State == TAILCALLARGBUFFER_INSTARG_ONLY;
@@ -388,8 +380,10 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 #endif
 #ifdef FEATURE_COMWRAPPERS
     bool isRooted = false;
-    if (ComWrappersNative::HasManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
+    if (ComWrappersNative::IsManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
+    {
         return isRooted;
+    }
 #endif
 #ifdef FEATURE_OBJCMARSHAL
     bool isReferenced = false;
@@ -398,6 +392,20 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 #endif
 
     return false;
+}
+
+void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_JAVAMARSHAL
+    Interop::TriggerClientBridgeProcessing(args);
+#endif // FEATURE_JAVAMARSHAL
 }
 
 void GCToEEInterface::SyncBlockCacheDemote(int max_gen)
@@ -828,9 +836,13 @@ void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
         size_t context = 0;
 
-        // When we're walking objects allocated by class, then we don't want to walk the large
-        // object heap because then it would count things that may have been around for a while.
-        GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&AllocByClassHelper, (void *)&context, 0, false);
+        // ObjectsAllocatedByClass callback can lead to enormous overhead in the case of Server GC,
+        // so it was made skippable. See https://github.com/dotnet/runtime/issues/108230 for details.
+        if (!CORProfilerSkipAllocatedByClassStatistic()) {
+            // When we're walking objects allocated by class, then we don't want to walk the large
+            // object heap because then it would count things that may have been around for a while.
+            GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&AllocByClassHelper, (void *)&context, 0, false);
+        }
 
         // Notify that we've reached the end of the Gen 0 scan
         (&g_profControlBlock)->EndAllocByClass(&context);
@@ -964,7 +976,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         if (g_sw_ww_enabled_for_gc_heap && (args->write_watch_table != nullptr))
         {
             assert(args->is_runtime_suspended);
-            g_sw_ww_table = args->write_watch_table;
+            g_write_watch_table = args->write_watch_table;
         }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
@@ -990,7 +1002,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         {
             // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
             // See: http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/346765
-            FlushProcessWriteBuffers();
+            minipal_memory_barrier_process_wide();
         }
 #endif
 
@@ -1042,7 +1054,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed state before observing future allocations.
-            FlushProcessWriteBuffers();
+            minipal_memory_barrier_process_wide();
         }
 #endif
 
@@ -1053,6 +1065,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
             ThreadSuspend::RestartEE(FALSE, TRUE);
         }
         return; // unlike other branches we have already done cleanup so bailing out here
+
     case WriteBarrierOp::StompEphemeral:
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
         // StompEphemeral requires a new ephemeral low and a new ephemeral high
@@ -1063,8 +1076,16 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_region_to_generation_table = args->region_to_generation_table;
         g_region_shr = args->region_shr;
         g_region_use_bitwise_write_barrier = args->region_use_bitwise_write_barrier;
+#if defined(HOST_ARM64)
+        // Only allow bitwise write barriers if LSE atomics are present
+        if (!g_arm64_atomics_present)
+        {
+            g_region_use_bitwise_write_barrier = false;
+        }
+#endif
         stompWBCompleteActions |= ::StompWriteBarrierEphemeral(args->is_runtime_suspended);
         break;
+
     case WriteBarrierOp::Initialize:
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
         // This operation should only be invoked once, upon initialization.
@@ -1090,37 +1111,47 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_region_to_generation_table = args->region_to_generation_table;
         g_region_shr = args->region_shr;
         g_region_use_bitwise_write_barrier = args->region_use_bitwise_write_barrier;
+        g_ephemeral_low = args->ephemeral_low;
+        g_ephemeral_high = args->ephemeral_high;
+#if defined(HOST_ARM64)
+        // Only allow bitwise write barriers if LSE atomics are present
+        if (!g_arm64_atomics_present)
+        {
+            g_region_use_bitwise_write_barrier = false;
+        }
+#endif
         stompWBCompleteActions |= ::StompWriteBarrierResize(true, false);
 
         // StompWriteBarrierResize does not necessarily bash g_ephemeral_low
-        // usages, so we must do so here. This is particularly true on x86,
+        // usages, so we must do so here. This is particularly true on x86/Arm64,
         // where StompWriteBarrierResize will not bash g_ephemeral_low when
         // called with the parameters (true, false), as it is above.
-        g_ephemeral_low = args->ephemeral_low;
-        g_ephemeral_high = args->ephemeral_high;
         stompWBCompleteActions |= ::StompWriteBarrierEphemeral(true);
         break;
+
     case WriteBarrierOp::SwitchToWriteWatch:
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
         assert(args->write_watch_table != nullptr);
-        g_sw_ww_table = args->write_watch_table;
+        g_write_watch_table = args->write_watch_table;
         g_sw_ww_enabled_for_gc_heap = true;
         stompWBCompleteActions |= ::SwitchToWriteWatchBarrier(true);
 #else
         assert(!"should never be called without FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP");
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         break;
+
     case WriteBarrierOp::SwitchToNonWriteWatch:
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
-        g_sw_ww_table = 0;
+        g_write_watch_table = 0;
         g_sw_ww_enabled_for_gc_heap = false;
         stompWBCompleteActions |= ::SwitchToNonWriteWatchBarrier(true);
 #else
         assert(!"should never be called without FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP");
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         break;
+
     default:
         assert(!"unknown WriteBarrierOp enum");
     }
@@ -1185,6 +1216,14 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
+
+#ifdef FEATURE_INTERPRETER
+    if (strcmp(privateKey, "gcConservative") == 0)
+    {
+        *value = true;
+        return true;
+    }
+#endif
 
     // these configuration values are given to us via startup flags.
     if (strcmp(privateKey, "gcServer") == 0)
@@ -1456,7 +1495,7 @@ namespace
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (!args.Thread)
         {
@@ -1595,7 +1634,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
         // we're not obligated to provide a name - if it's not valid,
         // just report nullptr as the name.
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     LIMITED_METHOD_CONTRACT;
     if (is_suspendable)
@@ -1680,18 +1719,8 @@ bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
         analysisTimer.Start();
     }
 
-    // Is the list active?
-    GcNotifications gn(g_pGcNotificationTable);
-    if (gn.IsActive())
-    {
-        GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
-        if (gn.GetNotification(gea) != 0)
-        {
-            return true;
-        }
-    }
-
-    return false;
+    GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
+    return GcNotifications::GetNotification(gea);
 }
 
 void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
@@ -1705,15 +1734,10 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
         elapsed = analysisTimer.Elapsed100nsTicks();
     }
 
-    // Is the list active?
-    GcNotifications gn(g_pGcNotificationTable);
-    if (gn.IsActive())
+    GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
+    if (GcNotifications::GetNotification(gea))
     {
-        GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
-        if (gn.GetNotification(gea) != 0)
-        {
-            DACNotify::DoGCNotification(gea);
-        }
+        DACNotify::DoGCNotification(gea);
     }
 
     if (gcGenAnalysisState == GcGenAnalysisState::Enabled)
@@ -1724,6 +1748,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
         {
             if (gcGenAnalysisTrace)
             {
+#ifdef FEATURE_PERFTRACING
                 EventPipeAdapter::ResumeSession(gcGenAnalysisEventPipeSession);
                 FireEtwGenAwareBegin((int)gcIndex, GetClrInstanceId());
                 s_forcedGCInProgress = true;
@@ -1732,6 +1757,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
                 reportGenerationBounds();
                 FireEtwGenAwareEnd((int)gcIndex, GetClrInstanceId());
                 EventPipeAdapter::PauseSession(gcGenAnalysisEventPipeSession);
+#endif //FEATURE_PERFTRACING
             }
             if (gcGenAnalysisDump)
             {
@@ -1742,7 +1768,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
                     GenerateDump (outputPath, 2, GenerateDumpFlagsNone, nullptr, 0);
                 }
                 EX_CATCH {}
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
             }
             gcGenAnalysisState = GcGenAnalysisState::Done;
             EnableFinalization(true);
@@ -1772,15 +1798,15 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     // Refer to the comments in src/gc/gcevents.h see which events are enabled.
 
     // WARNING: To change an event's GC level, perfcollect script needs to be updated simultaneously to reflect it.
-    BOOL keyword_gc_verbose = EventXplatEnabledGCJoin_V2() || EventPipeEventEnabledGCJoin_V2() || UserEventsEventEnabledGCJoin_V2();
-    BOOL keyword_gc_informational = EventXplatEnabledGCStart() || EventPipeEventEnabledGCStart() || UserEventsEventEnabledGCStart();
+    BOOL keyword_gc_verbose = EventXplatEnabledGCJoin_V2() || EventPipeEventEnabledGCJoin_V2();
+    BOOL keyword_gc_informational = EventXplatEnabledGCStart() || EventPipeEventEnabledGCStart();
 
-    BOOL keyword_gc_heapsurvival_and_movement_informational = EventXplatEnabledGCGenerationRange() || EventPipeEventEnabledGCGenerationRange() || UserEventsEventEnabledGCGenerationRange();
-    BOOL keyword_gchandle_informational = EventXplatEnabledSetGCHandle() || EventPipeEventEnabledSetGCHandle() || UserEventsEventEnabledSetGCHandle();
-    BOOL keyword_gchandle_prv_informational = EventXplatEnabledPrvSetGCHandle() || EventPipeEventEnabledPrvSetGCHandle() || UserEventsEventEnabledPrvSetGCHandle();
+    BOOL keyword_gc_heapsurvival_and_movement_informational = EventXplatEnabledGCGenerationRange() || EventPipeEventEnabledGCGenerationRange();
+    BOOL keyword_gchandle_informational = EventXplatEnabledSetGCHandle() || EventPipeEventEnabledSetGCHandle();
+    BOOL keyword_gchandle_prv_informational = EventXplatEnabledPrvSetGCHandle() || EventPipeEventEnabledPrvSetGCHandle();
 
-    BOOL prv_gcprv_informational = EventXplatEnabledBGCBegin() || EventPipeEventEnabledBGCBegin() || UserEventsEventEnabledBGCBegin();
-    BOOL prv_gcprv_verbose = EventXplatEnabledPinPlugAtGCTime() || EventPipeEventEnabledPinPlugAtGCTime() || UserEventsEventEnabledPinPlugAtGCTime();
+    BOOL prv_gcprv_informational = EventXplatEnabledBGCBegin() || EventPipeEventEnabledBGCBegin();
+    BOOL prv_gcprv_verbose = EventXplatEnabledPinPlugAtGCTime() || EventPipeEventEnabledPinPlugAtGCTime();
 
     int publicProviderLevel = keyword_gc_verbose ? GCEventLevel_Verbose :
                                  ((keyword_gc_informational || keyword_gc_heapsurvival_and_movement_informational) ? GCEventLevel_Information : GCEventLevel_None);

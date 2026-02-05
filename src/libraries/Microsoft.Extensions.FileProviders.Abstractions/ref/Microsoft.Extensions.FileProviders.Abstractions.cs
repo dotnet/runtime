@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.FileProviders
         [System.Diagnostics.CodeAnalysis.DoesNotReturn]
         public System.IO.Stream CreateReadStream() { throw null; }
     }
-    public partial class NullChangeToken : Microsoft.Extensions.Primitives.IChangeToken
+    public sealed partial class NullChangeToken : Microsoft.Extensions.Primitives.IChangeToken
     {
         internal NullChangeToken() { }
         public bool ActiveChangeCallbacks { get { throw null; } }

@@ -35,7 +35,7 @@ namespace System
             return pUnk == IntPtr.Zero ? null : Marshal.GetObjectForIUnknown(pUnk);
         }
 
-        private static unsafe object? ConvertWrappedObject(object? wrapped)
+        private static object? ConvertWrappedObject(object? wrapped)
         {
             // Historically, for UnknownWrapper and DispatchWrapper, the wrapped object is passed
             // into Variant.SetFieldsObject, and the result set in objRef field is used for
@@ -140,11 +140,9 @@ namespace System
                 case ErrorWrapper wrapper:
                     pOle = ComVariant.Create(wrapper);
                     break;
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
                 case CurrencyWrapper wrapper:
                     pOle = ComVariant.Create(wrapper);
                     break;
-#pragma warning restore 0618
                 case BStrWrapper wrapper:
                     pOle = ComVariant.Create(wrapper);
                     break;

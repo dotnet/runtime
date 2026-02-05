@@ -64,6 +64,15 @@ public static class Program
             return;
         }
 
+        if (args.ElementAtOrDefault(1) == "--get-instrumented-assemblies")
+        {
+            foreach ((string assembly, string? prefixes) in GetInstrumentationTargets(fuzzer))
+            {
+                Console.WriteLine($"{assembly} {prefixes}");
+            }
+            return;
+        }
+
         RunFuzzer(fuzzer, inputFiles: args.Length > 1 ? args[1] : null);
     }
 
@@ -103,22 +112,49 @@ public static class Program
             throw new Exception($"Dictionary '{unusedDictionary}' is not referenced by any fuzzer.");
         }
 
+        string[] corpora = Directory.GetDirectories(Path.Combine(publishDirectory, "Corpora"))
+            .Select(Path.GetFileName)
+            .ToArray()!;
+
+        if (corpora.FirstOrDefault(corpus => !fuzzers.Any(f => f.Corpus == corpus)) is { } unusedCorpus)
+        {
+            throw new Exception($"Corpus '{unusedCorpus}' is not referenced by any fuzzer.");
+        }
+
         Directory.CreateDirectory(outputDirectory);
 
         await DownloadArtifactAsync(
             Path.Combine(publishDirectory, "libfuzzer-dotnet.exe"),
-            "https://github.com/Metalnem/libfuzzer-dotnet/releases/download/v2023.06.26.1359/libfuzzer-dotnet-windows.exe",
-            "cbc1f510caaec01b17b5e89fc780f426710acee7429151634bbf4d0c57583458").ConfigureAwait(false);
+            "https://github.com/Metalnem/libfuzzer-dotnet/releases/download/v2025.05.02.0904/libfuzzer-dotnet-windows.exe",
+            "4da2a77d06229a43040f9841bc632a881389a0b8fdcc2d60c8d0b547ccbedee63e7b0a7eca8eeffdba1243d85bdcec3cfe763237650c2f46a1327f8ee401d9a2").ConfigureAwait(false);
 
-        foreach (IFuzzer fuzzer in fuzzers)
+        Console.WriteLine("Preparing fuzzers ...");
+
+        List<string> exceptions = new();
+
+        Parallel.ForEach(fuzzers, fuzzer =>
         {
-            Console.WriteLine();
-            Console.WriteLine($"Preparing {fuzzer.Name} ...");
+            try
+            {
+                PrepareFuzzer(fuzzer);
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add($"Failed to prepare {fuzzer.Name}: {ex.Message}");
+            }
+        });
 
+        if (exceptions.Count != 0)
+        {
+            Console.WriteLine(string.Join('\n', exceptions));
+            throw new Exception($"Failed to prepare {exceptions.Count} fuzzers.");
+        }
+
+        void PrepareFuzzer(IFuzzer fuzzer)
+        {
             string fuzzerDirectory = Path.Combine(outputDirectory, fuzzer.Name);
             Directory.CreateDirectory(fuzzerDirectory);
 
-            Console.WriteLine($"Copying artifacts to {fuzzerDirectory}");
             // NOTE: The expected fuzzer directory structure is currently flat.
             // If we ever need to support subdirectories, OneFuzzConfig.json must also be updated to use PreservePathsJobDependencies.
             foreach (string file in Directory.GetFiles(publishDirectory))
@@ -136,12 +172,23 @@ public static class Program
                 File.Copy(Path.Combine(publishDirectory, "Dictionaries", dict), Path.Combine(fuzzerDirectory, "dictionary"), overwrite: true);
             }
 
+            if (fuzzer.Corpus is string corpus)
+            {
+                if (!corpora.Contains(corpus, StringComparer.Ordinal))
+                {
+                    throw new Exception($"Fuzzer '{fuzzer.Name}' is referencing a corpus '{fuzzer.Corpus}' that does not exist in the publish directory.");
+                }
+
+                Directory.CreateDirectory(Path.Combine(fuzzerDirectory, "corpus"));
+                foreach (string file in Directory.EnumerateFiles(Path.Combine(publishDirectory, "Corpora", corpus), "*", SearchOption.TopDirectoryOnly))
+                {
+                    File.Copy(file, Path.Combine(fuzzerDirectory, "corpus", Path.GetFileName(file)), overwrite: true);
+                }
+            }
+
             InstrumentAssemblies(fuzzer, fuzzerDirectory);
 
-            Console.WriteLine("Generating OneFuzzConfig.json");
             File.WriteAllText(Path.Combine(fuzzerDirectory, "OneFuzzConfig.json"), GenerateOneFuzzConfigJson(fuzzer));
-
-            Console.WriteLine("Generating local-run.bat");
             File.WriteAllText(Path.Combine(fuzzerDirectory, "local-run.bat"), GenerateLocalRunHelperScript(fuzzer));
         }
 
@@ -195,8 +242,6 @@ public static class Program
     {
         foreach (var (assembly, prefixes) in GetInstrumentationTargets(fuzzer))
         {
-            Console.WriteLine($"Instrumenting {assembly} {(prefixes is null ? "" : $"({prefixes})")}");
-
             string path = Path.Combine(fuzzerDirectory, assembly);
             if (!File.Exists(path))
             {
@@ -265,7 +310,7 @@ public static class Program
             using var client = new HttpClient();
             byte[] bytes = await client.GetByteArrayAsync(url).ConfigureAwait(false);
 
-            if (!Convert.ToHexString(SHA256.HashData(bytes)).Equals(hash, StringComparison.OrdinalIgnoreCase))
+            if (!Convert.ToHexString(SHA512.HashData(bytes)).Equals(hash, StringComparison.OrdinalIgnoreCase))
             {
                 throw new Exception($"{path} checksum mismatch");
             }
@@ -278,14 +323,14 @@ public static class Program
     {
         // {setup_dir} is replaced by OneFuzz with the path to the fuzzer directory.
         string? dictionaryArgument = fuzzer.Dictionary is not null
-            ? "\"-dict={setup_dir}/dictionary\""
+            ? "\"-dict={setup_dir}/dictionary\","
             : null;
 
         // Make it easier to distinguish between long-running CI jobs and short-lived test submissions.
         string nameSuffix = Environment.GetEnvironmentVariable("TF_BUILD") is null ? "-local" : "";
 
         return
-            $$"""
+            $$$"""
             {
               "ConfigVersion": 3,
               "Entries": [
@@ -296,21 +341,22 @@ public static class Program
                     "$type": "libfuzzer",
                     "FuzzingHarnessExecutableName": "libfuzzer-dotnet.exe",
                     "FuzzingTargetBinaries": [
-                      {{string.Join(", ", GetInstrumentationTargets(fuzzer).Select(t => $"\"{t.Assembly}\""))}}
+                      {{{string.Join(", ", GetInstrumentationTargets(fuzzer).Select(t => $"\"{t.Assembly}\""))}}}
                     ],
                     "CheckFuzzerHelp": false
                   },
-                  "FuzzerTimeoutInSeconds": 60,
+                  "FuzzerTimeoutInSeconds": 120,
                   "OneFuzzJobs": [
                     {
                       "ProjectName": "DotnetFuzzing",
-                      "TargetName": "{{fuzzer.Name}}{{nameSuffix}}",
+                      "TargetName": "{{{fuzzer.Name}}}{{{nameSuffix}}}",
                       "TargetOptions": [
                         "--target_path=DotnetFuzzing.exe",
-                        "--target_arg={{fuzzer.Name}}"
+                        "--target_arg={{{fuzzer.Name}}}"
                       ],
                       "FuzzingTargetOptions": [
-                        {{dictionaryArgument}}
+                        {{{dictionaryArgument}}}
+                        "-timeout=60"
                       ]
                     }
                   ],
@@ -322,7 +368,20 @@ public static class Program
                     "Project": "internal",
                     "AssignedTo": "mizupan@microsoft.com",
                     "AreaPath": "internal\\.NET Libraries",
-                    "IterationPath": "internal"
+                    "IterationPath": "internal",
+                    "AdoFields": {
+                        "System.Title": "[{{ job.project }} {{ job.name }}]: {{ report.crash_site }}",
+                        "Custom.CustomField01": "{{ job.name }}-{{ report.minimized_stack_function_lines_sha256 }}"
+                    },
+                    "UniqueFields": [
+                      "Custom.CustomField01"
+                    ],
+                    "OnDuplicate": {
+                      "SetState": {
+                        "Resolved": "Active",
+                        "Closed": "Active"
+                      }
+                    }
                   }
                 }
               ]
@@ -342,15 +401,24 @@ public static class Program
         // Pass any additional arguments to the fuzzer.
         script += " %*";
 
+        // multiple corpus directories can be passed to the fuzzer, new test
+        // inputs are then added to the first one. We put the seed corpus after
+        // additional args so that if user specifies additional corpus dirs, the
+        // new inputs get added there instead.
+        if (fuzzer.Corpus is not null)
+        {
+            script += " %~dp0/corpus";
+        }
+
         return script;
     }
 
     private static void WorkaroundOneFuzzTaskNotAcceptingMultipleJobs(IFuzzer[] fuzzers)
     {
         string yamlPath = Environment.CurrentDirectory;
-        while (!File.Exists(Path.Combine(yamlPath, "DotnetFuzzing.sln")))
+        while (!File.Exists(Path.Combine(yamlPath, "DotnetFuzzing.slnx")))
         {
-            yamlPath = Path.GetDirectoryName(yamlPath) ?? throw new Exception("Couldn't find DotnetFuzzing.sln");
+            yamlPath = Path.GetDirectoryName(yamlPath) ?? throw new Exception("Couldn't find DotnetFuzzing.slnx");
         }
 
         yamlPath = Path.Combine(yamlPath, "../../../eng/pipelines/libraries/fuzzing/deploy-to-onefuzz.yml");

@@ -273,17 +273,7 @@ namespace System.Security.Cryptography
             {
                 AsnWriter inner = new AsnWriter(AsnEncodingRules.DER);
                 inner.WriteKeyParameterInteger(component);
-
-                byte[] tmp = CryptoPool.Rent(inner.GetEncodedLength());
-
-                if (!inner.TryEncode(tmp, out int written))
-                {
-                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
-                    throw new CryptographicException();
-                }
-
-                writer.WriteBitString(tmp.AsSpan(0, written));
-                CryptoPool.Return(tmp, written);
+                inner.Encode(writer, static (writer, encoded) => writer.WriteBitString(encoded));
             }
             else
             {

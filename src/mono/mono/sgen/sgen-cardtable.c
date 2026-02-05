@@ -165,6 +165,31 @@ sgen_card_table_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int siz
 	}
 }
 
+// Marks more cards so that it works with remset consistency debug checks
+static void
+sgen_card_table_wbarrier_range_copy_debug (gpointer _dest, gconstpointer _src, int size)
+{
+	GCObject **dest = (GCObject **)_dest;
+	GCObject **src = (GCObject **)_src;
+
+	size_t nursery_bits = sgen_nursery_bits;
+	char *start = sgen_nursery_start;
+	G_GNUC_UNUSED char *end = sgen_nursery_end;
+
+	while (size) {
+		GCObject *value = *src;
+		*dest = value;
+		if (SGEN_PTR_IN_NURSERY (value, nursery_bits, start, end) || sgen_concurrent_collection_in_progress) {
+			volatile guint8 *card_address = (volatile guint8 *)sgen_card_table_get_card_address ((mword)dest);
+			*card_address = 1;
+			sgen_dummy_use (value);
+		}
+		++src;
+		++dest;
+		size -= SIZEOF_VOID_P;
+	}
+}
+
 MONO_RESTORE_WARNING
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
@@ -606,7 +631,7 @@ sgen_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, 
 }
 
 void
-sgen_card_table_init (SgenRememberedSet *remset)
+sgen_card_table_init (SgenRememberedSet *remset, gboolean consistency_checks)
 {
 	sgen_cardtable = (guint8 *)sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, (SgenAllocFlags)(SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE), "card table", MONO_MEM_ACCOUNT_SGEN_CARD_TABLE);
 
@@ -637,7 +662,10 @@ sgen_card_table_init (SgenRememberedSet *remset)
 
 	remset->find_address = sgen_card_table_find_address;
 	remset->find_address_with_cards = sgen_card_table_find_address_with_cards;
-	remset->wbarrier_range_copy = sgen_card_table_wbarrier_range_copy;
+	if (consistency_checks)
+		remset->wbarrier_range_copy = sgen_card_table_wbarrier_range_copy_debug;
+	else
+		remset->wbarrier_range_copy = sgen_card_table_wbarrier_range_copy;
 
 	need_mod_union = sgen_get_major_collector ()->is_concurrent;
 }

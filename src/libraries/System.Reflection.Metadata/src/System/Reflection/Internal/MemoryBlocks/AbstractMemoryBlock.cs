@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
+using System.IO;
 using System.Reflection.Metadata;
 
 namespace System.Reflection.Internal
@@ -22,6 +23,11 @@ namespace System.Reflection.Internal
         public abstract int Size { get; }
 
         public unsafe BlobReader GetReader() => new BlobReader(Pointer, Size);
+
+        /// <summary>
+        /// Creates a new stream wrapping the block's memory.
+        /// </summary>
+        public unsafe Stream GetStream() => new UnmanagedMemoryStream(Pointer, Size);
 
         /// <summary>
         /// Returns the content of the entire memory block.

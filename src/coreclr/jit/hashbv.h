@@ -174,7 +174,7 @@ public:
 
     union
     {
-        Compiler* compiler;
+        Compiler* m_compiler;
         // for freelist
         hashBv* next;
     };
@@ -194,7 +194,7 @@ public:
     void dump();
     void dumpFancy();
 #endif // DEBUG
-    __forceinline int hashtable_size() const
+    FORCEINLINE int hashtable_size() const
     {
         return 1 << this->log2_hashSize;
     }

@@ -8,49 +8,49 @@ using Mono.Linker.Tests.Cases.Generics.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Generics
 {
-	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/103843", IgnoredBy = Tool.NativeAot)]
-	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
-	[SetupCompileBefore ("UnresolvedGenericsLibrary.dll", new[] { "Dependencies/UnresolvedGenericsLibrary.cs" },
-		removeFromLinkerInput: true)]
-	class UnresolvedGenerics
-	{
-		static void Main ()
-		{
-			UnresolvedGenericType ();
-			UnresolvedGenericBaseType ();
-			UnresolvedGenericMethod ();
-		}
+    [IgnoreTestCase("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/103843", IgnoredBy = Tool.NativeAot)]
+    [KeptAttributeAttribute(typeof(IgnoreTestCaseAttribute), By = Tool.Trimmer)]
+    [SetupCompileBefore("UnresolvedGenericsLibrary.dll", new[] { "Dependencies/UnresolvedGenericsLibrary.cs" },
+        removeFromLinkerInput: true)]
+    class UnresolvedGenerics
+    {
+        static void Main()
+        {
+            UnresolvedGenericType();
+            UnresolvedGenericBaseType();
+            UnresolvedGenericMethod();
+        }
 
-		[Kept]
-		class GenericTypeArgument { }
+        [Kept]
+        class GenericTypeArgument { }
 
-		[Kept]
-		static void UnresolvedGenericType ()
-		{
-			new UnresolvedGenericsLibrary.GenericClass<GenericTypeArgument> ();
-		}
+        [Kept]
+        static void UnresolvedGenericType()
+        {
+            new UnresolvedGenericsLibrary.GenericClass<GenericTypeArgument>();
+        }
 
-		[Kept]
-		class BaseTypeGenericArgument { }
+        [Kept]
+        class BaseTypeGenericArgument { }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		[KeptBaseType (typeof (UnresolvedGenericsLibrary.GenericClass<BaseTypeGenericArgument>))]
-		class HasBaseType : UnresolvedGenericsLibrary.GenericClass<BaseTypeGenericArgument> { }
+        [Kept]
+        [KeptMember(".ctor()")]
+        [KeptBaseType(typeof(UnresolvedGenericsLibrary.GenericClass<BaseTypeGenericArgument>))]
+        class HasBaseType : UnresolvedGenericsLibrary.GenericClass<BaseTypeGenericArgument> { }
 
-		[Kept]
-		static void UnresolvedGenericBaseType ()
-		{
-			new HasBaseType ();
-		}
+        [Kept]
+        static void UnresolvedGenericBaseType()
+        {
+            new HasBaseType();
+        }
 
-		[Kept]
-		class GenericMethodArgument { }
+        [Kept]
+        class GenericMethodArgument { }
 
-		[Kept]
-		static void UnresolvedGenericMethod ()
-		{
-			UnresolvedGenericsLibrary.GenericMethod<GenericMethodArgument> ();
-		}
-	}
+        [Kept]
+        static void UnresolvedGenericMethod()
+        {
+            UnresolvedGenericsLibrary.GenericMethod<GenericMethodArgument>();
+        }
+    }
 }

@@ -12,7 +12,7 @@ namespace System.Runtime.Loader.Tests
         [Fact]
         public void TryGetRawMetadata()
         {
-            bool supportsRawMetadata = PlatformDetection.IsNotMonoRuntime && PlatformDetection.IsNotNativeAot;
+            bool supportsRawMetadata = PlatformDetection.IsNotNativeAot;
 
             Assembly assembly = typeof(AssemblyExtensionsTest).Assembly;
             bool hasMetadata = assembly.TryGetRawMetadata(out byte* blob, out int length);

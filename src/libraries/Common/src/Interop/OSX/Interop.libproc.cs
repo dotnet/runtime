@@ -326,7 +326,7 @@ internal static partial class Interop
 
             // The path is a fixed buffer size, so use that and trim it after
             int result = 0;
-            byte* pBuffer = stackalloc byte[PROC_PIDPATHINFO_MAXSIZE];
+            byte* pBuffer = stackalloc byte[PROC_PIDPATHINFO_MAXSIZE]; // 4KB
             result = proc_pidpath(pid, pBuffer, (uint)(PROC_PIDPATHINFO_MAXSIZE * sizeof(byte)));
             if (result <= 0)
             {

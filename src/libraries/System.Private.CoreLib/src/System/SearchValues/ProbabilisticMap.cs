@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -72,7 +73,11 @@ namespace System.Buffers
             }
         }
 
+        // SetCharBit and IsCharBitSet must bypass R2R because the set of supported intrinsics impacts how the type is constructed in memory,
+        // so which branch is taken must never change during program execution as we're tiering up. Other methods in this type only check for
+        // intrinsics as a fast path where the fallback path behaves identically, so they are fine to compile R2R.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [BypassReadyToRun]
         private static void SetCharBit(ref uint charMap, byte value)
         {
             if (Sse41.IsSupported || AdvSimd.Arm64.IsSupported)
@@ -86,6 +91,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [BypassReadyToRun]
         private static bool IsCharBitSet(ref uint charMap, byte value) => Sse41.IsSupported || AdvSimd.Arm64.IsSupported
             ? (Unsafe.Add(ref Unsafe.As<uint, byte>(ref charMap), value & VectorizedIndexMask) & (1u << (value >> VectorizedIndexShift))) != 0
             : (Unsafe.Add(ref charMap, value & PortableIndexMask) & (1u << (value >> PortableIndexShift))) != 0;
@@ -110,13 +116,8 @@ namespace System.Buffers
             Vector512<ushort> source0 = Vector512.LoadUnsafe(ref searchSpace0);
             Vector512<ushort> source1 = Vector512.LoadUnsafe(ref searchSpace1);
 
-            Vector512<byte> sourceLower = Avx512BW.PackUnsignedSaturate(
-                (source0 & Vector512.Create((ushort)255)).AsInt16(),
-                (source1 & Vector512.Create((ushort)255)).AsInt16());
-
-            Vector512<byte> sourceUpper = Avx512BW.PackUnsignedSaturate(
-                (source0 >>> 8).AsInt16(),
-                (source1 >>> 8).AsInt16());
+            Vector512<byte> sourceLower = Avx512Vbmi.PermuteVar64x8x2(source0.AsByte(), Vector512.CreateSequence<byte>(0, 2), source1.AsByte());
+            Vector512<byte> sourceUpper = Avx512Vbmi.PermuteVar64x8x2(source0.AsByte(), Vector512.CreateSequence<byte>(1, 2), source1.AsByte());
 
             Vector512<byte> resultLower = IsCharBitNotSetAvx512(charMap, sourceLower);
             Vector512<byte> resultUpper = IsCharBitNotSetAvx512(charMap, sourceUpper);
@@ -128,12 +129,17 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         private static Vector512<byte> IsCharBitNotSetAvx512(Vector512<byte> charMap, Vector512<byte> values)
         {
-            Vector512<byte> shifted = values >>> VectorizedIndexShift;
+            // X86 does not have an instruction for right shifting 8-bit values, so it's instead emulated
+            // by using a 32-bit value shift followed by an AND to mask off the bits that should be zeroed.
+            // We're using PermuteVar64x8, which only looks at the lower 6 bits, so we can skip the AND.
+            // Bits 4/5/6 will not affect the result as the bit positions vector is duplicated 8 times.
+            Vector512<byte> shifted = (values.AsInt32() >>> VectorizedIndexShift).AsByte();
 
-            Vector512<byte> bitPositions = Avx512BW.Shuffle(Vector512.Create(0x8040201008040201).AsByte(), shifted);
+            Vector512<byte> bitPositions = Avx512Vbmi.PermuteVar64x8(Vector512.Create(0x8040201008040201).AsByte(), shifted);
 
-            Vector512<byte> index = values & Vector512.Create((byte)VectorizedIndexMask);
-            Vector512<byte> bitMask = Avx512Vbmi.PermuteVar64x8(charMap, index);
+            // We want to select bytes from 'charMap' based on the low 5 bits of 'values' (values & VectorizedIndexMask).
+            // PermuteVar64x8 will look at the low 6 bits, but the 6th bit will not affect the result as the 'charMap' is duplicated.
+            Vector512<byte> bitMask = Avx512Vbmi.PermuteVar64x8(charMap, values);
 
             return Vector512.Equals(bitMask & bitPositions, Vector512<byte>.Zero);
         }
@@ -145,13 +151,8 @@ namespace System.Buffers
             Vector256<ushort> source0 = Vector256.LoadUnsafe(ref searchSpace0);
             Vector256<ushort> source1 = Vector256.LoadUnsafe(ref searchSpace1);
 
-            Vector256<byte> sourceLower = Avx2.PackUnsignedSaturate(
-                (source0 & Vector256.Create((ushort)255)).AsInt16(),
-                (source1 & Vector256.Create((ushort)255)).AsInt16());
-
-            Vector256<byte> sourceUpper = Avx2.PackUnsignedSaturate(
-                (source0 >>> 8).AsInt16(),
-                (source1 >>> 8).AsInt16());
+            Vector256<byte> sourceLower = Avx512Vbmi.VL.PermuteVar32x8x2(source0.AsByte(), Vector256.CreateSequence<byte>(0, 2), source1.AsByte());
+            Vector256<byte> sourceUpper = Avx512Vbmi.VL.PermuteVar32x8x2(source0.AsByte(), Vector256.CreateSequence<byte>(1, 2), source1.AsByte());
 
             Vector256<byte> resultLower = IsCharBitNotSetAvx512(charMap, sourceLower);
             Vector256<byte> resultUpper = IsCharBitNotSetAvx512(charMap, sourceUpper);
@@ -163,12 +164,17 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Avx512Vbmi.VL))]
         private static Vector256<byte> IsCharBitNotSetAvx512(Vector256<byte> charMap, Vector256<byte> values)
         {
-            Vector256<byte> shifted = values >>> VectorizedIndexShift;
+            // X86 does not have an instruction for right shifting 8-bit values, so it's instead emulated
+            // by using a 32-bit value shift followed by an AND to mask off the bits that should be zeroed.
+            // We're using PermuteVar32x8, which only looks at the lower 5 bits, so we can skip the AND.
+            // Bits 4/5 will not affect the result as the bit positions vector is duplicated 4 times
+            Vector256<byte> shifted = (values.AsInt32() >>> VectorizedIndexShift).AsByte();
 
-            Vector256<byte> bitPositions = Avx2.Shuffle(Vector256.Create(0x8040201008040201).AsByte(), shifted);
+            Vector256<byte> bitPositions = Avx512Vbmi.VL.PermuteVar32x8(Vector256.Create(0x8040201008040201).AsByte(), shifted);
 
-            Vector256<byte> index = values & Vector256.Create((byte)VectorizedIndexMask);
-            Vector256<byte> bitMask = Avx512Vbmi.VL.PermuteVar32x8(charMap, index);
+            // We want to select bytes from 'charMap' based on the low 5 bits of 'values' (values & VectorizedIndexMask).
+            // PermuteVar32x8 already looks only at the low 5 bits, so we can skip the redundant AND.
+            Vector256<byte> bitMask = Avx512Vbmi.VL.PermuteVar32x8(charMap, values);
 
             return Vector256.Equals(bitMask & bitPositions, Vector256<byte>.Zero);
         }
@@ -257,7 +263,7 @@ namespace System.Buffers
         {
             Vector128<byte> shifted = values >>> VectorizedIndexShift;
 
-            Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), shifted);
+            Vector128<byte> bitPositions = Vector128.ShuffleNative(Vector128.Create(0x8040201008040201).AsByte(), shifted);
 
             Vector128<byte> index = values & Vector128.Create((byte)VectorizedIndexMask);
             Vector128<byte> bitMask;
@@ -268,8 +274,8 @@ namespace System.Buffers
             }
             else
             {
-                Vector128<byte> bitMaskLower = Vector128.ShuffleUnsafe(charMapLower, index);
-                Vector128<byte> bitMaskUpper = Vector128.ShuffleUnsafe(charMapUpper, index - Vector128.Create((byte)16));
+                Vector128<byte> bitMaskLower = Vector128.ShuffleNative(charMapLower, index);
+                Vector128<byte> bitMaskUpper = Vector128.ShuffleNative(charMapUpper, index - Vector128.Create((byte)16));
                 Vector128<byte> mask = Vector128.GreaterThan(index, Vector128.Create((byte)15));
                 bitMask = Vector128.ConditionalSelect(mask, bitMaskUpper, bitMaskLower);
             }
@@ -436,7 +442,7 @@ namespace System.Buffers
 
                         if (result != Vector512<byte>.Zero)
                         {
-                            if (TryFindMatchAvx512<TUseFastContains>(ref cur, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
+                            if (TryFindMatchAvx512<TUseFastContains>(ref cur, result.ExtractMostSignificantBits(), ref state, out int index))
                             {
                                 return MatchOffset(ref searchSpace, ref cur) + index;
                             }
@@ -466,7 +472,7 @@ namespace System.Buffers
 
                     if (result != Vector512<byte>.Zero)
                     {
-                        if (TryFindMatchOverlappedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
+                        if (TryFindMatchOverlappedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, result.ExtractMostSignificantBits(), ref state, out int index))
                         {
                             return index;
                         }
@@ -483,7 +489,7 @@ namespace System.Buffers
 
                 if (result != Vector256<byte>.Zero)
                 {
-                    if (TryFindMatchOverlappedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector256Result(result).ExtractMostSignificantBits(), ref state, out int index))
+                    if (TryFindMatchOverlappedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, result.ExtractMostSignificantBits(), ref state, out int index))
                     {
                         return index;
                     }
@@ -614,13 +620,13 @@ namespace System.Buffers
 
                         if (result != Vector512<byte>.Zero)
                         {
-                            if (TryFindLastMatchAvx512<TUseFastContains>(ref cur, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
+                            if (TryFindLastMatchAvx512<TUseFastContains>(ref cur, result.ExtractMostSignificantBits(), ref state, out int index))
                             {
                                 return MatchOffset(ref searchSpace, ref cur) + index;
                             }
                         }
 
-                        if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVector))
+                        if (Unsafe.IsAddressLessThanOrEqualTo(ref cur, ref lastStartVector))
                         {
                             if (Unsafe.AreSame(ref cur, ref searchSpace))
                             {
@@ -643,7 +649,7 @@ namespace System.Buffers
 
                     if (result != Vector512<byte>.Zero)
                     {
-                        if (TryFindLastMatchOverlappedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector512Result(result).ExtractMostSignificantBits(), ref state, out int index))
+                        if (TryFindLastMatchOverlappedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, result.ExtractMostSignificantBits(), ref state, out int index))
                         {
                             return index;
                         }
@@ -661,7 +667,7 @@ namespace System.Buffers
 
                 if (result != Vector256<byte>.Zero)
                 {
-                    if (TryFindLastMatchOverlappedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, PackedSpanHelpers.FixUpPackedVector256Result(result).ExtractMostSignificantBits(), ref state, out int index))
+                    if (TryFindLastMatchOverlappedAvx512<TUseFastContains>(ref searchSpace, searchSpaceLength, result.ExtractMostSignificantBits(), ref state, out int index))
                     {
                         return index;
                     }
@@ -709,7 +715,7 @@ namespace System.Buffers
                         }
                     }
 
-                    if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVectorAvx2))
+                    if (Unsafe.IsAddressLessThanOrEqualTo(ref cur, ref lastStartVectorAvx2))
                     {
                         if (Unsafe.AreSame(ref cur, ref searchSpace))
                         {
@@ -751,7 +757,7 @@ namespace System.Buffers
                     }
                 }
 
-                if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVector))
+                if (Unsafe.IsAddressLessThanOrEqualTo(ref cur, ref lastStartVector))
                 {
                     if (Unsafe.AreSame(ref cur, ref searchSpace))
                     {

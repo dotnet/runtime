@@ -1972,7 +1972,7 @@ ErrExit:
 #endif //FEATURE_METADATA_EMIT
 
 //****************************************************************************
-// convert tokens contained in a COM+ signature
+// convert tokens contained in a signature
 //****************************************************************************
 HRESULT ImportHelper::MergeUpdateTokenInSig(// S_OK or error.
     CMiniMdRW   *pMiniMdAssemEmit,      // [IN] The assembly emit scope.

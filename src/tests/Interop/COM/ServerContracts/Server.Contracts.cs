@@ -184,6 +184,19 @@ namespace Server.Contract
         void Pass_Through_LCID(out int lcid);
     }
 
+    // This interface must not be an explicit COM interface to trigger
+    // the dynamic interface map codepath in ComObject.
+    public interface Interface0
+    {
+    }
+
+    [ComVisible(true)]
+    [Guid("4242A2F9-995D-4302-A722-02058CF58158")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IInterface1 : Interface0
+    {
+    }
+
     [ComVisible(true)]
     [Guid("7FBB8677-BDD0-4E5A-B38B-CA92A4555466")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -195,6 +208,9 @@ namespace Server.Contract
         object Marshal_Instance_Variant([MarshalAs(UnmanagedType.LPWStr)] string init);
 
         void Marshal_ByRefVariant(ref object result, object value);
+
+        [return: MarshalAs(UnmanagedType.Interface)]
+        IInterface1 Marshal_Interface([MarshalAs(UnmanagedType.Interface)] object inst);
     }
 
     public struct HResult
@@ -220,7 +236,8 @@ namespace Server.Contract
 
     public enum IDispatchTesting_Exception
     {
-        Disp,
+        Disp,       // scode
+        DispLegacy, // wCode
         HResult,
         Int,
     }

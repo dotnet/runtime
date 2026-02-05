@@ -157,7 +157,7 @@ namespace System
         /// <param name="value">The argument to validate as not equal to <paramref name="other"/>.</param>
         /// <param name="other">The value to compare with <paramref name="value"/>.</param>
         /// <param name="paramName">The name of the parameter with which <paramref name="value"/> corresponds.</param>
-        public static void ThrowIfEqual<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null) where T : IEquatable<T>?
+        public static void ThrowIfEqual<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null)
         {
             if (EqualityComparer<T>.Default.Equals(value, other))
                 ThrowEqual(value, other, paramName);
@@ -167,7 +167,7 @@ namespace System
         /// <param name="value">The argument to validate as equal to <paramref name="other"/>.</param>
         /// <param name="other">The value to compare with <paramref name="value"/>.</param>
         /// <param name="paramName">The name of the parameter with which <paramref name="value"/> corresponds.</param>
-        public static void ThrowIfNotEqual<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null) where T : IEquatable<T>?
+        public static void ThrowIfNotEqual<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null)
         {
             if (!EqualityComparer<T>.Default.Equals(value, other))
                 ThrowNotEqual(value, other, paramName);
@@ -196,7 +196,7 @@ namespace System
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is less than <paramref name="other"/>.</summary>
-        /// <param name="value">The argument to validate as greatar than or equal than <paramref name="other"/>.</param>
+        /// <param name="value">The argument to validate as greater than or equal than <paramref name="other"/>.</param>
         /// <param name="other">The value to compare with <paramref name="value"/>.</param>
         /// <param name="paramName">The name of the parameter with which <paramref name="value"/> corresponds.</param>
         public static void ThrowIfLessThan<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null)
@@ -207,7 +207,7 @@ namespace System
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is less than or equal <paramref name="other"/>.</summary>
-        /// <param name="value">The argument to validate as greatar than than <paramref name="other"/>.</param>
+        /// <param name="value">The argument to validate as greater than than <paramref name="other"/>.</param>
         /// <param name="other">The value to compare with <paramref name="value"/>.</param>
         /// <param name="paramName">The name of the parameter with which <paramref name="value"/> corresponds.</param>
         public static void ThrowIfLessThanOrEqual<T>(T value, T other, [CallerArgumentExpression(nameof(value))] string? paramName = null)

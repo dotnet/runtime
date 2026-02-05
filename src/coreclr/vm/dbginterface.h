@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
-// COM+99 Debug Interface Header
+// CLR Debug Interface Header
 //
 
 
@@ -60,10 +60,12 @@ public:
 
     virtual void DetachThread(Thread *pRuntimeThread) = 0;
 
+    virtual void AppDomainCreated(AppDomain * pAppDomain) = 0;
+
     // Called when a module is being loaded into an AppDomain.
     // This includes when a domain neutral module is loaded into a new AppDomain.
     // This is called only when a debugger is attached, and will occur after the
-    // related LoadAssembly and AddAppDomainToIPCBlock calls and before any
+    // related LoadAssembly calls and before any
     // LoadClass calls for this module.
     virtual void LoadModule(Module *     pRuntimeModule,  // the module being loaded
                             LPCWSTR      psModuleName,    // module file name
@@ -195,7 +197,7 @@ public:
 
 
     // Used by EditAndContinueModule::FixContextAndResume
-    virtual void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = nullptr) = 0;
+    virtual void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = nullptr, bool HasActivePatchSkip = false, bool fClearSetIP = false) = 0;
     virtual BOOL IsOutOfProcessSetContextEnabled() = 0;
 #endif // FEATURE_METADATA_UPDATER
 
@@ -248,16 +250,6 @@ public:
     // ICorDebugAppDomain on the RS.
     virtual void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomainAssembly, mdTypeDef classToken) = 0;
 
-    // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
-    virtual void SendMDANotification(
-        Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-        SString * szName,
-        SString * szDescription,
-        SString * szXML,
-        CorDebugMDAFlags flags,
-        BOOL bAttach
-    ) = 0;
-
     virtual bool IsJMCMethod(Module* pModule, mdMethodDef tkMethod) = 0;
 
     virtual void SendLogSwitchSetting (int iLevel,
@@ -277,6 +269,7 @@ public:
                                          ULONG32 *pcMap,
                                          COR_DEBUG_IL_TO_NATIVE_MAP map[]) = 0;
 
+#ifdef DEBUG
     virtual HRESULT GetILToNativeMappingIntoArrays(
         MethodDesc * pMethodDesc,
         PCODE pNativeCodeStartAddress,
@@ -284,26 +277,9 @@ public:
         USHORT * pcMap,
         UINT ** prguiILOffset,
         UINT ** prguiNativeOffset) = 0;
+#endif // DEBUG
 
     virtual DWORD GetHelperThreadID(void ) = 0;
-
-    // Called whenever a new AppDomain is created, regardless of whether a debugger is attached.
-    // This will be called before any LoadAssembly calls for assemblies in this domain.
-    virtual HRESULT AddAppDomainToIPC (AppDomain *pAppDomain) = 0;
-
-    // Called whenever an AppDomain is unloaded, regardless of whether a Debugger is attached
-    // This will occur after any UnloadAssembly and UnloadModule callbacks for this domain (if any).
-    virtual HRESULT RemoveAppDomainFromIPC (AppDomain *pAppDomain) = 0;
-
-    virtual HRESULT UpdateAppDomainEntryInIPC (AppDomain *pAppDomain) = 0;
-
-    // Called when an assembly is being loaded into an AppDomain.
-    // This includes when a domain neutral assembly is loaded into a new AppDomain.
-    // This is called only when a debugger is attached, and will occur after the
-    // related AddAppDomainToIPCBlock call and before any LoadModule or
-    // LoadClass calls for this assembly.
-    virtual void LoadAssembly(DomainAssembly * pDomainAssembly) = 0; // the assembly being loaded
-
 
     // Called for all assemblies in an AppDomain when the AppDomain is unloaded.
     // This includes domain neutral assemblies that are also loaded into other domains.

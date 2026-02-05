@@ -15,6 +15,7 @@ parameters:
   condition: true
   displayNameArgs: ''
   runInUnloadableContext: false
+  runInterpreter: false
   tieringTest: false
   runtimeVariant: ''
   variables: {}
@@ -58,18 +59,18 @@ jobs:
 
     ${{ if eq(parameters.dependsOn[0], '') }}:
       dependsOn:
-      - ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
+      - ${{ if in(parameters.testGroup, 'innerloop') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
-      - ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
+      - ${{ if notIn(parameters.testGroup, 'innerloop') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.unifiedArtifactsName, '')}}:
         - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
 
     # Compute job name from template parameters
-    ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
+    ${{ if in(parameters.testGroup, 'innerloop') }}:
       name: 'run_test_p0_${{ parameters.runtimeFlavor }}${{ parameters.runtimeVariant }}_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
       displayName: '${{ parameters.runtimeFlavor }} ${{ parameters.runtimeVariant}} Pri0 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
-    ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
+    ${{ if notIn(parameters.testGroup, 'innerloop') }}:
       name: 'run_test_p1_${{ parameters.displayNameArgs }}_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}'
       displayName: '${{ parameters.runtimeFlavor }} ${{ parameters.runtimeVariant }} Pri1 Runtime Tests Run ${{ parameters.displayNameArgs }} ${{ parameters.osGroup }}${{ parameters.osSubgroup }} ${{ parameters.archType }} ${{ parameters.buildConfig }}'
 
@@ -188,9 +189,9 @@ jobs:
       timeoutInMinutes: 480
     ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
       timeoutInMinutes: 390
-    ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter', 'pgo', 'pgostress', 'jit-experimental') }}:
+    ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'pgo', 'pgostress', 'jit-experimental') }}:
       timeoutInMinutes: 510
-    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512', 'jitstress-isas-sve') }}:
+    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512') }}:
       timeoutInMinutes: 960
 
     steps:
@@ -234,12 +235,6 @@ jobs:
     # managed test artifacts. This step also generates the final test execution scripts.
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg)
       displayName: Copy native test components to test output folder
-
-
-    # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(logRootNameArg)Wrappers $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg)
-      displayName: Generate test wrappers
-
 
     # Compose the Core_Root folder containing all artifacts needed for running
     # CoreCLR tests. This step also compiles the framework using Crossgen2
@@ -308,6 +303,7 @@ jobs:
         runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+        runInterpreter: ${{ parameters.runInterpreter }}
         tieringTest: ${{ parameters.tieringTest }}
         hotColdSplitting: ${{ parameters.hotColdSplitting }}
 
@@ -326,11 +322,27 @@ jobs:
         #
         # We only need to do this for a testGroup with more than one or two scenarios, though it isn't functionally
         # a problem to always do it. Thus, we only exempt this setting for a few cases.
-        ${{ if notIn(parameters.testGroup, 'innerloop', 'outerloop', 'clrinterpreter', 'ilasm', 'gc-longrunning', 'gc-simulator', 'gc-standalone', 'gc-standalone-server') }}:
+        ${{ if notIn(parameters.testGroup, 'innerloop', 'outerloop', 'ilasm', 'gc-longrunning', 'gc-simulator', 'gc-standalone', 'gc-standalone-server') }}:
           msbuildParallelism: '/maxcpucount:55'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
-          ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+          ${{ if and(eq(parameters.runInterpreter, 'true'),eq(variables['Build.Reason'], 'PullRequest')) }}:
+            scenarios:
+            - interpmode3_no_tiered_compilation
+            - interpmode2_no_tiered_compilation
+            - interpmode1_no_tiered_compilation
+            - no_tiered_compilation
+          ${{ elseif eq(parameters.runInterpreter, 'true') }}:
+            scenarios:
+            - interpmode3_no_tiered_compilation
+            - interpmode3
+            - interpmode2_no_tiered_compilation
+            - interpmode2
+            - normal
+            - no_tiered_compilation
+            - interpmode1_no_tiered_compilation
+            - interpmode1
+          ${{ elseif eq(parameters.runtimeFlavor, 'mono') }}:
             # tiered compilation isn't done on mono yet
             scenarios:
             - normal
@@ -357,79 +369,36 @@ jobs:
           - jitstress_random_2
         ${{ if in(parameters.testGroup, 'jitstress-isas-arm') }}:
           scenarios:
-          - jitstress_isas_incompletehwintrinsic
           - jitstress_isas_nohwintrinsic
-          - jitstress_isas_nohwintrinsic_nosimd
-          - jitstress_isas_nosimd
         ${{ if in(parameters.testGroup, 'jitstress-isas-x86') }}:
           scenarios:
-          - jitstress_isas_incompletehwintrinsic
           - jitstress_isas_nohwintrinsic
-          - jitstress_isas_nohwintrinsic_nosimd
-          - jitstress_isas_nosimd
           - jitstress_isas_x86_evex
-          - jitstress_isas_x86_noaes
           - jitstress_isas_x86_noavx
           - jitstress_isas_x86_noavx2
           - jitstress_isas_x86_noavx512
-          - jitstress_isas_x86_nobmi1
-          - jitstress_isas_x86_nobmi2
-          - jitstress_isas_x86_nofma
-          - jitstress_isas_x86_nohwintrinsic
-          - jitstress_isas_x86_nolzcnt
-          - jitstress_isas_x86_nopclmulqdq
-          - jitstress_isas_x86_nopopcnt
-          - jitstress_isas_x86_nosse
-          - jitstress_isas_x86_nosse2
-          - jitstress_isas_x86_nosse3
-          - jitstress_isas_x86_nosse3_4
-          - jitstress_isas_x86_nosse41
-          - jitstress_isas_x86_nosse42
-          - jitstress_isas_x86_nossse3
-          - jitstress_isas_1_x86_noaes
+          - jitstress_isas_x86_vectort128
+          - jitstress_isas_x86_vectort512
+          - jitstress_isas_x86_noavx512_vectort128
+          - jitstress_isas_1_x86_evex
           - jitstress_isas_1_x86_noavx
           - jitstress_isas_1_x86_noavx2
           - jitstress_isas_1_x86_noavx512
-          - jitstress_isas_1_x86_nobmi1
-          - jitstress_isas_1_x86_nobmi2
-          - jitstress_isas_1_x86_nofma
-          - jitstress_isas_1_x86_nohwintrinsic
-          - jitstress_isas_1_x86_nolzcnt
-          - jitstress_isas_1_x86_nopclmulqdq
-          - jitstress_isas_1_x86_nopopcnt
-          - jitstress_isas_1_x86_nosse
-          - jitstress_isas_1_x86_nosse2
-          - jitstress_isas_1_x86_nosse3
-          - jitstress_isas_1_x86_nosse3_4
-          - jitstress_isas_1_x86_nosse41
-          - jitstress_isas_1_x86_nosse42
-          - jitstress_isas_1_x86_nossse3
-          - jitstress_isas_2_x86_noaes
+          - jitstress_isas_1_x86_vectort128
+          - jitstress_isas_1_x86_vectort512
+          - jitstress_isas_1_x86_noavx512_vectort128
+          - jitstress_isas_2_x86_evex
           - jitstress_isas_2_x86_noavx
           - jitstress_isas_2_x86_noavx2
           - jitstress_isas_2_x86_noavx512
-          - jitstress_isas_2_x86_nobmi1
-          - jitstress_isas_2_x86_nobmi2
-          - jitstress_isas_2_x86_nofma
-          - jitstress_isas_2_x86_nohwintrinsic
-          - jitstress_isas_2_x86_nolzcnt
-          - jitstress_isas_2_x86_nopclmulqdq
-          - jitstress_isas_2_x86_nopopcnt
-          - jitstress_isas_2_x86_nosse
-          - jitstress_isas_2_x86_nosse2
-          - jitstress_isas_2_x86_nosse3
-          - jitstress_isas_2_x86_nosse3_4
-          - jitstress_isas_2_x86_nosse41
-          - jitstress_isas_2_x86_nosse42
-          - jitstress_isas_2_x86_nossse3
+          - jitstress_isas_2_x86_vectort128
+          - jitstress_isas_2_x86_vectort512
+          - jitstress_isas_2_x86_noavx512_vectort128
         ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
           scenarios:
           - jitstress_isas_x86_evex
           - jitstress_isas_x86_noavx512
           - jitstressregs0x2000
-        ${{ if in(parameters.testGroup, 'jitstress-isas-sve') }}:
-          scenarios:
-          - jitstress_isas_arm64_sve
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx
@@ -515,6 +484,7 @@ jobs:
             - fullpgo_methodprofiling_always_optimized
             - syntheticpgo
             - syntheticpgo_blend
+            - instrument_if_optimizing
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:
@@ -540,7 +510,6 @@ jobs:
             - jitpartialcompilation_pgo
             - jitpartialcompilation_pgo_stress_random
             - jitoptrepeat
-            - jitoldlayout
           ${{ else }}:
             scenarios:
             - jitosr_stress
@@ -554,7 +523,6 @@ jobs:
             - jitphysicalpromotion_full
             - jitrlcse
             - jitoptrepeat
-            - jitoldlayout
         ${{ if in(parameters.testGroup, 'jit-cfg') }}:
           scenarios:
           - jitcfg
@@ -564,9 +532,6 @@ jobs:
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:
           - ilasmroundtrip
-        ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
-          scenarios:
-          - clrinterpreter
 
     ########################################################################################################
     #
@@ -621,7 +586,7 @@ jobs:
           condition: always()
 
         # Ensure the Python azure-storage-blob package is installed before doing the upload.
-        - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
+        - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.27.0 --force-reinstall && $(PipScript) install azure.identity==1.25.1 --force-reinstall
           displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
           condition: always()
 

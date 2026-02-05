@@ -100,7 +100,7 @@ The p/invoke source generator does not provide an equivalent to using `CharSet.A
 
 We have decided to use `System.Runtime.CompilerServices.DisableRuntimeMarshalling` to enable our custom value type marshalling support. As a result, when a value type that has a `bool` field is passed to native code through source-generated marshalling, the `bool` field is treated as a 1-byte value and is not normalized. Since this default is a little odd and unlikely to be the majority use case, we're going to generally take a stance that all `bool` marshalling must be explicitly specified via `MarshalAs` or other mechanisms.
 
-To aid in conversion from `DllImport` to source-generated marshalling, the code-fix will automatically apply a `[MarshalAs(UnmangedType.Bool)]` attribute to `bool` parameters and return values to ensure the marshalling rules are not changed by the code fix.
+To aid in conversion from `DllImport` to source-generated marshalling, the code-fix will automatically apply a `[MarshalAs(UnmanagedType.Bool)]` attribute to `bool` parameters and return values to ensure the marshalling rules are not changed by the code fix.
 
 ### Custom marshaller support
 

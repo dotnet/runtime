@@ -40,10 +40,7 @@ namespace System.Text.Json
         [RequiresDynamicCode("Getting a converter for a type may require reflection which depends on runtime code generation.")]
         public JsonConverter GetConverter(Type typeToConvert)
         {
-            if (typeToConvert is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(typeToConvert));
-            }
+            ArgumentNullException.ThrowIfNull(typeToConvert);
 
             if (JsonSerializer.IsReflectionEnabledByDefault)
             {

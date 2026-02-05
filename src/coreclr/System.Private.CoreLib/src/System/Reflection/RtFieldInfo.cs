@@ -9,7 +9,7 @@ using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    internal sealed unsafe class RtFieldInfo : RuntimeFieldInfo, IRuntimeFieldInfo
+    internal sealed class RtFieldInfo : RuntimeFieldInfo, IRuntimeFieldInfo
     {
         #region Private Data Members
         // aggressive caching
@@ -74,7 +74,7 @@ namespace System.Reflection
                 ReferenceEquals(fi.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
-            HashCode.Combine(m_fieldHandle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
+            HashCode.Combine(m_fieldHandle, m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle());
 
         #endregion
 

@@ -18,7 +18,6 @@
 //*****************************************************************************
 // Verify the signature at the front of the file to see what type it is.
 //*****************************************************************************
-#define STORAGE_MAGIC_OLD_SIG   0x2B4D4F43  // +MOC (old version of BSJB signature code:STORAGE_MAGIC_SIG)
 HRESULT
 MDFormat::VerifySignature(
     PSTORAGESIGNATURE pSig,     // The signature to check.
@@ -28,11 +27,6 @@ MDFormat::VerifySignature(
 
     // If signature didn't match, you shouldn't be here.
     ULONG dwSignature = pSig->GetSignature();
-    if (dwSignature == STORAGE_MAGIC_OLD_SIG)
-    {
-        Debug_ReportError("Invalid MetaData storage signature - old magic signature +MOC.");
-        return PostError(CLDB_E_FILE_OLDVER, 1, 0);
-    }
     if (dwSignature != STORAGE_MAGIC_SIG)
     {
         Debug_ReportError("Invalid MetaData storage signature - unrecognized magic signature, should be BSJB.");
@@ -76,17 +70,6 @@ MDFormat::VerifySignature(
         }
     }
 
-    // Only a specific version of the 0.x format is supported by this code
-    // in order to support the NT 5 beta clients which used this format.
-    if (pSig->GetMajorVer() == FILE_VER_MAJOR_v0)
-    {
-        if (pSig->GetMinorVer() < FILE_VER_MINOR_v0)
-        {
-            Debug_ReportError("Invalid MetaData storage signature - unrecognized version, should be 1.1.");
-            hr = CLDB_E_FILE_OLDVER;
-        }
-    }
-    else
     // There is currently no code to migrate an old format of the 1.x.  This
     // would be added only under special circumstances.
     if ((pSig->GetMajorVer() != FILE_VER_MAJOR) || (pSig->GetMinorVer() != FILE_VER_MINOR))

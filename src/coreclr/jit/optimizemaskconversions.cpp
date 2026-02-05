@@ -3,7 +3,7 @@
 
 #include "jitpch.h"
 
-#if defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 
 struct MaskConversionsWeight
 {
@@ -19,12 +19,17 @@ struct MaskConversionsWeight
     // Conversion of mask to vector is one instruction.
     static constexpr const weight_t costOfConvertMaskToVector = 1.0;
 
+#if defined(TARGET_ARM64)
     // Conversion of vector to mask is two instructions.
     static constexpr const weight_t costOfConvertVectorToMask = 2.0;
+#else
+    // Conversion of vector to mask is one instructions.
+    static constexpr const weight_t costOfConvertVectorToMask = 1.0;
+#endif
 
     // The simd types of the Lcl Store after conversion to vector.
-    CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-    unsigned    simdSize        = 0;
+    var_types simdBaseType = TYP_UNDEF;
+    unsigned  simdSize     = 0;
 
     void UpdateWeight(bool isStore, bool hasConvert, weight_t blockWeight);
 
@@ -85,22 +90,22 @@ void MaskConversionsWeight::UpdateWeight(bool isStore, bool hasConvert, weight_t
 //
 void MaskConversionsWeight::CacheSimdTypes(GenTreeHWIntrinsic* op, unsigned lclnum)
 {
-    CorInfoType newSimdBaseJitType = op->GetSimdBaseJitType();
-    unsigned    newSimdSize        = op->GetSimdSize();
+    var_types newSimdBaseType = op->GetSimdBaseType();
+    unsigned  newSimdSize     = op->GetSimdSize();
 
-    assert((newSimdBaseJitType != CORINFO_TYPE_UNDEF));
+    assert((newSimdBaseType != TYP_UNDEF));
 
-    if (simdBaseJitType == CORINFO_TYPE_UNDEF)
+    if (simdBaseType == TYP_UNDEF)
     {
         // Types have not already been cached. Set them.
-        simdBaseJitType = newSimdBaseJitType;
-        simdSize        = newSimdSize;
+        simdBaseType = newSimdBaseType;
+        simdSize     = newSimdSize;
     }
-    else if ((simdBaseJitType != newSimdBaseJitType) || (simdSize != newSimdSize))
+    else if ((simdBaseType != newSimdBaseType) || (simdSize != newSimdSize))
     {
         // Type mismatch with existing cached type.
-        JITDUMP("Local V%02d has different types: (%d, %d) vs (%d, %d). ", lclnum, simdBaseJitType, simdSize,
-                newSimdBaseJitType, newSimdSize);
+        JITDUMP("Local V%02d has different types: (%d, %d) vs (%d, %d). ", lclnum, simdBaseType, simdSize,
+                newSimdBaseType, newSimdSize);
         InvalidateWeight();
     }
 }
@@ -113,8 +118,9 @@ class MaskConversionsCheckVisitor final : public GenTreeVisitor<MaskConversionsC
 public:
     enum
     {
-        DoPostOrder       = true,
-        UseExecutionOrder = true
+        DoPreOrder        = true,
+        UseExecutionOrder = true,
+        DoLclVarsOnly     = true,
     };
 
     MaskConversionsCheckVisitor(Compiler* compiler, weight_t bbWeight, MaskConversionsWeightTable* weightsTable)
@@ -124,73 +130,93 @@ public:
     {
     }
 
-    Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
+        GenTreeLclVarCommon* lclOp  = (*use)->AsLclVarCommon();
+        LclVarDsc*           varDsc = m_compiler->lvaGetDesc(lclOp);
+
+        if (!varTypeIsSIMDOrMask(varDsc))
+        {
+            return fgWalkResult::WALK_CONTINUE;
+        }
+
+        // Get the existing weighting (if any).
+        MaskConversionsWeight* weight = weightsTable->LookupPointerOrAdd(lclOp->GetLclNum(), MaskConversionsWeight());
+
+        JITDUMP("%s V%02d at [%06u] ", GenTree::OpName(lclOp->gtOper), lclOp->GetLclNum(),
+                m_compiler->dspTreeID(lclOp));
+
         GenTreeHWIntrinsic* convertOp = nullptr;
 
         bool isLocalStore  = false;
         bool isLocalUse    = false;
-        bool isInvalid     = false;
         bool hasConversion = false;
 
-        switch ((*use)->OperGet())
+        switch (lclOp->OperGet())
         {
             case GT_STORE_LCL_VAR:
+            {
                 isLocalStore = true;
 
                 // Look for:
                 //      use:STORE_LCL_VAR(ConvertMaskToVector(x))
 
-                if ((*use)->AsLclVar()->Data()->OperIsConvertMaskToVector())
+                if (lclOp->Data()->OperIsConvertMaskToVector())
                 {
-                    convertOp     = (*use)->AsLclVar()->Data()->AsHWIntrinsic();
+                    convertOp     = lclOp->Data()->AsHWIntrinsic();
                     hasConversion = true;
                 }
                 break;
+            }
 
             case GT_LCL_VAR:
+            {
                 isLocalUse = true;
 
                 // Look for:
-                //      user:ConvertVectorToMask(use:LCL_VAR(x)))
+                //      user: ConvertVectorToMask(use:LCL_VAR(x)))
 
-                if (user->OperIsConvertVectorToMask())
+                if ((user != nullptr) && user->OperIsConvertVectorToMask())
                 {
                     convertOp     = user->AsHWIntrinsic();
                     hasConversion = true;
                 }
                 break;
+            }
 
             default:
-                break;
+                // LCL_ADDR (can show up unexposed due to retbufs), or partial
+                // use/store. We do not handle these.
+                weight->InvalidateWeight();
+                JITDUMP("is unhandled. ");
+                return fgWalkResult::WALK_CONTINUE;
         }
 
         if (isLocalStore || isLocalUse)
         {
-            GenTreeLclVarCommon* lclOp  = (*use)->AsLclVarCommon();
-            LclVarDsc*           varDsc = m_compiler->lvaGetDesc(lclOp->GetLclNum());
-
-            // Get the existing weighting (if any).
-            MaskConversionsWeight  defaultWeight;
-            MaskConversionsWeight* weight = weightsTable->LookupPointerOrAdd(lclOp->GetLclNum(), defaultWeight);
-
-            JITDUMP("Local %s V%02d at [%06u] ", isLocalStore ? "store" : "use", lclOp->GetLclNum(),
-                    m_compiler->dspTreeID(lclOp));
-
             // Cannot convert any locals with an exposed address.
             if (varDsc->IsAddressExposed())
             {
-                JITDUMP("is address exposed elsewhere. ");
+                JITDUMP("is address exposed. ");
                 weight->InvalidateWeight();
                 return fgWalkResult::WALK_CONTINUE;
             }
+
+            // Cannot convert any locals that r promoted struct fields
+            if (varDsc->lvIsStructField)
+            {
+                JITDUMP("is struct field. ");
+                weight->InvalidateWeight();
+                return fgWalkResult::WALK_CONTINUE;
+            }
+
             // TODO: Converting to a mask loses data - as each field is only a single bit.
             // For parameters, OSR locals, and locals which are used as vectors, then they
             // cannot be stored as a mask as data will be lost.
             // For all of these, conversions could be done by creating a new store of type mask.
             // Then uses as mask could be converted to type mask and pointed to use the new
             // definition. The weighting would need updating to take this into account.
-            else if (isLocalUse && !hasConversion)
+            if (isLocalUse && !hasConversion)
             {
                 JITDUMP("is used as vector. ");
                 weight->InvalidateWeight();
@@ -254,6 +280,12 @@ public:
 
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
+#if defined(TARGET_ARM64)
+        static constexpr const int ConvertVectorToMaskValueOp = 2;
+#else
+        static constexpr const int ConvertVectorToMaskValueOp = 1;
+#endif
+
         GenTreeLclVarCommon* lclOp            = nullptr;
         bool                 isLocalStore     = false;
         bool                 isLocalUse       = false;
@@ -276,11 +308,12 @@ public:
             isLocalStore  = true;
             addConversion = true;
         }
-        else if ((*use)->OperIsConvertVectorToMask() && (*use)->AsHWIntrinsic()->Op(2)->OperIs(GT_LCL_VAR))
+        else if ((*use)->OperIsConvertVectorToMask() &&
+                 (*use)->AsHWIntrinsic()->Op(ConvertVectorToMaskValueOp)->OperIs(GT_LCL_VAR))
         {
             // Found
             //      user(use:ConvertVectorToMask(LCL_VAR(x)))
-            lclOp            = (*use)->AsHWIntrinsic()->Op(2)->AsLclVarCommon();
+            lclOp            = (*use)->AsHWIntrinsic()->Op(ConvertVectorToMaskValueOp)->AsLclVarCommon();
             isLocalUse       = true;
             removeConversion = true;
         }
@@ -303,29 +336,34 @@ public:
         assert(lclOp != nullptr);
 
         // Get the existing weighting.
-        MaskConversionsWeight weight;
-        bool                  found = weightsTable->Lookup(lclOp->GetLclNum(), &weight);
-        assert(found);
+        MaskConversionsWeight* weight = weightsTable->LookupPointer(lclOp->GetLclNum());
+
+        if (weight == nullptr)
+        {
+            return fgWalkResult::WALK_CONTINUE;
+        }
 
         // Quit if the cost of changing is higher or is invalid.
-        if (weight.currentCost <= weight.switchCost || weight.invalid)
+        if (weight->currentCost <= weight->switchCost || weight->invalid)
         {
             JITDUMP("Local %s V%02d at [%06u] will not be converted. ", isLocalStore ? "store" : "use",
                     lclOp->GetLclNum(), Compiler::dspTreeID(lclOp));
-            weight.DumpTotalWeight();
+            weight->DumpTotalWeight();
             return fgWalkResult::WALK_CONTINUE;
         }
 
         JITDUMP("Local %s V%02d at [%06u] will be converted. ", isLocalStore ? "store" : "use", lclOp->GetLclNum(),
                 Compiler::dspTreeID(lclOp));
-        weight.DumpTotalWeight();
+        weight->DumpTotalWeight();
 
         // Fix up the type of the lcl and the lclvar.
-        assert(lclOp->gtType != TYP_MASK);
+        assert(!lclOp->TypeIs(TYP_MASK));
         var_types lclOrigType = lclOp->gtType;
         lclOp->gtType         = TYP_MASK;
-        LclVarDsc* varDsc     = m_compiler->lvaGetDesc(lclOp->GetLclNum());
-        varDsc->lvType        = TYP_MASK;
+
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclOp->GetLclNum());
+        assert(varTypeIsSIMDOrMask(varDsc));
+        varDsc->lvType = TYP_MASK;
 
         // Add or remove a conversion
 
@@ -338,7 +376,6 @@ public:
 
             lclOp->Data() = lclOp->Data()->AsHWIntrinsic()->Op(1);
         }
-
         else if (isLocalStore && addConversion)
         {
             // Convert
@@ -348,11 +385,10 @@ public:
 
             // There is not enough information in the lcl to get simd types. Instead reuse the cached
             // simd types from the removed convert nodes.
-            assert(weight.simdBaseJitType != CORINFO_TYPE_UNDEF);
-            lclOp->Data() = m_compiler->gtNewSimdCvtVectorToMaskNode(TYP_MASK, lclOp->Data(), weight.simdBaseJitType,
-                                                                     weight.simdSize);
+            assert(weight->simdBaseType != TYP_UNDEF);
+            lclOp->Data() = m_compiler->gtNewSimdCvtVectorToMaskNode(TYP_MASK, lclOp->Data(), weight->simdBaseType,
+                                                                     weight->simdSize);
         }
-
         else if (isLocalUse && removeConversion)
         {
             // Convert
@@ -362,7 +398,6 @@ public:
 
             *use = lclOp;
         }
-
         else if (isLocalUse && addConversion)
         {
             // Convert
@@ -372,9 +407,8 @@ public:
 
             // There is not enough information in the lcl to get simd types. Instead reuse the cached simd
             // types from the removed convert nodes.
-            assert(weight.simdBaseJitType != CORINFO_TYPE_UNDEF);
-            *use =
-                m_compiler->gtNewSimdCvtMaskToVectorNode(lclOrigType, lclOp, weight.simdBaseJitType, weight.simdSize);
+            assert(weight->simdBaseType != TYP_UNDEF);
+            *use = m_compiler->gtNewSimdCvtMaskToVectorNode(lclOrigType, lclOp, weight->simdBaseType, weight->simdSize);
         }
 
         JITDUMP("Updated %s V%02d at [%06u] to mask (%s conversion)\n", isLocalStore ? "store" : "use",
@@ -393,7 +427,7 @@ private:
     MaskConversionsWeightTable* weightsTable;
 };
 
-#endif // TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // fgOptimizeMaskConversions: Allow locals to be of Mask type
@@ -445,8 +479,7 @@ private:
 //
 PhaseStatus Compiler::fgOptimizeMaskConversions()
 {
-#if defined(TARGET_ARM64)
-
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (opts.OptimizationDisabled())
     {
         JITDUMP("Skipping. Optimizations Disabled\n");
@@ -476,10 +509,10 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
     {
         for (Statement* const stmt : block->Statements())
         {
-            // Only check statements where there is a local of type TYP_SIMD16/TYP_MASK.
+            // Only check statements where there is a local of type TYP_SIMD/TYP_MASK.
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                if (lcl->TypeIs(TYP_SIMD16, TYP_MASK))
+                if (varTypeIsSIMDOrMask(lvaGetDesc(lcl)))
                 {
                     // Parse the entire statement.
                     MaskConversionsCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
@@ -504,10 +537,10 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
     {
         for (Statement* const stmt : block->Statements())
         {
-            // Only check statements where there is a local of type TYP_SIMD16/TYP_MASK.
+            // Only check statements where there is a local of type TYP_SIMD/TYP_MASK.
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                if (lcl->TypeIs(TYP_SIMD16, TYP_MASK))
+                if (varTypeIsSIMDOrMask(lcl))
                 {
                     // Parse the entire statement.
                     MaskConversionsUpdateVisitor ev(this, stmt, &weightsTable);
@@ -524,8 +557,7 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
     }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
-
 #else
     return PhaseStatus::MODIFIED_NOTHING;
-#endif // TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 }

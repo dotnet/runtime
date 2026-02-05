@@ -1876,27 +1876,15 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static int Compare(string s1, int offset1, int length1, string s2, int offset2, int length2)
         {
-            if (s1 == null)
-            {
-                throw new ArgumentNullException(nameof(s1));
-            }
-            if (s2 == null)
-            {
-                throw new ArgumentNullException(nameof(s2));
-            }
+            ArgumentNullException.ThrowIfNull(s1);
+            ArgumentNullException.ThrowIfNull(s2);
             return Compare(s1.Substring(offset1, length1), s2.Substring(offset2, length2));
         }
 
         internal static int Compare(string s1, int offset1, int length1, string s2, int offset2, int length2, uint compareFlags)
         {
-            if (s1 == null)
-            {
-                throw new ArgumentNullException(nameof(s1));
-            }
-            if (s2 == null)
-            {
-                throw new ArgumentNullException(nameof(s2));
-            }
+            ArgumentNullException.ThrowIfNull(s1);
+            ArgumentNullException.ThrowIfNull(s2);
             return Compare(s1.Substring(offset1, length1), s2.Substring(offset2, length2), compareFlags);
         }
 
@@ -1917,10 +1905,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             //extract IPv6 port number if any
-            bool isBrace = serverName.StartsWith("[", StringComparison.Ordinal);
+            bool isBrace = serverName.StartsWith('[');
             if (isBrace)
             {
-                if (serverName.EndsWith("]", StringComparison.Ordinal))
+                if (serverName.EndsWith(']'))
                 {
                     //[IPv6]
                     serverName = serverName.Substring(1, serverName.Length - 2); //2 for []

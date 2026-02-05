@@ -32,8 +32,8 @@ namespace System.Formats.Nrbf.Tests
             ClassRecord comparerRecord = dictionaryRecord.GetClassRecord(nameof(input.Comparer))!;
             Assert.True(comparerRecord.TypeNameMatches(input.Comparer.GetType()));
 
-            SZArrayRecord<ClassRecord> arrayRecord = (SZArrayRecord<ClassRecord>)dictionaryRecord.GetSerializationRecord("KeyValuePairs")!;
-            ClassRecord[] keyValuePairs = arrayRecord.GetArray()!;
+            SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)dictionaryRecord.GetSerializationRecord("KeyValuePairs")!;
+            ClassRecord[] keyValuePairs = arrayRecord.GetArray().OfType<ClassRecord>().ToArray();
             Assert.True(keyValuePairs[0].TypeNameMatches(typeof(KeyValuePair<string, object>)));
 
             ClassRecord exceptionPair = Find(keyValuePairs, "exception");
@@ -225,8 +225,8 @@ namespace System.Formats.Nrbf.Tests
                 case ClassRecord record when record.TypeNameMatches(typeof(Exception)):
                     Assert.Equal(((Exception)input).Message, record.GetString("Message"));
                     break;
-                case SZArrayRecord<ClassRecord> record when record.TypeNameMatches(typeof(Exception[])):
-                    Assert.Equal(((Exception[])input)[0].Message, record.GetArray()[0]!.GetString("Message"));
+                case SZArrayRecord<SerializationRecord> record when record.TypeNameMatches(typeof(Exception[])):
+                    Assert.Equal(((Exception[])input)[0].Message, ((ClassRecord)record.GetArray()[0]!).GetString("Message"));
                     break;
                 case ClassRecord record when record.TypeNameMatches(typeof(JsonException)):
                     Assert.Equal(((JsonException)input).Message, record.GetString("Message"));
@@ -241,7 +241,11 @@ namespace System.Formats.Nrbf.Tests
                     Assert.Empty(record.MemberNames);
                     break;
                 case ArrayRecord arrayRecord when arrayRecord.TypeNameMatches(typeof(int?[])):
-                    Assert.Equal(input, arrayRecord.GetArray(typeof(int?[])));
+                    SerializationRecord?[] nullableArray = (SerializationRecord?[])arrayRecord.GetArray(typeof(int?[]));
+                    Assert.Equal(((int?[])input)[0], ((PrimitiveTypeRecord)nullableArray[0]).Value);
+                    Assert.Equal(((int?[])input)[1], ((PrimitiveTypeRecord)nullableArray[1]).Value);
+                    Assert.Equal(((int?[])input)[2], ((PrimitiveTypeRecord)nullableArray[2]).Value);
+                    Assert.Null(nullableArray[3]);
                     break;
                 case ArrayRecord arrayRecord when arrayRecord.TypeNameMatches(typeof(EmptyClass[])):
                     Assert.Equal(0, arrayRecord.Lengths.ToArray().Single());
@@ -262,11 +266,58 @@ namespace System.Formats.Nrbf.Tests
 
             static void VerifyDictionary<TKey, TValue>(ClassRecord record)
             {
-                SZArrayRecord<ClassRecord> arrayRecord = (SZArrayRecord<ClassRecord>)record.GetSerializationRecord("KeyValuePairs")!;
-                ClassRecord[] keyValuePairs = arrayRecord.GetArray()!;
+                SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)record.GetSerializationRecord("KeyValuePairs")!;
+                ClassRecord[] keyValuePairs = arrayRecord.GetArray().OfType<ClassRecord>().ToArray();
                 Assert.True(keyValuePairs[0].TypeNameMatches(typeof(KeyValuePair<TKey, TValue>)));
             }
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void UserCanReadArrayOfBaseType(bool mixed)
+        {
+            Mammal[] input = mixed
+                ? [new Dog { Name = "Buddy" }, new Cat { Name = "Luna" }]
+                : [new Dog { Name = "Buddy" }, new Dog { Name = "Rocky" }];
+
+            SZArrayRecord<SerializationRecord> root = (SZArrayRecord<SerializationRecord>)NrbfDecoder.Decode(Serialize(input));
+
+            SerializationRecord[] output = (SerializationRecord[])root.GetArray(typeof(Mammal[]));
+            Assert.True(output[0].TypeNameMatches(typeof(Dog)));
+            Assert.True(output[1].TypeNameMatches(mixed ? typeof(Cat) : typeof(Dog)));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void UserCanReadArrayOfDerivedTypes(bool dogs)
+        {
+            Array input = dogs
+                ? new Dog[] { new Dog { Name = "Buddy" }, new Dog { Name = "Rocky" } }
+                : new Cat[] { new Cat { Name = "Luna" }, new Cat { Name = "Tiger" } };
+
+            SZArrayRecord<SerializationRecord> root = (SZArrayRecord<SerializationRecord>)NrbfDecoder.Decode(Serialize(input));
+
+            Type expected = root.TypeName.GetElementType().FullName == typeof(Dog).FullName
+                ? typeof(Dog[])
+                : typeof(Cat[]);
+
+            SerializationRecord[] output = (SerializationRecord[])root.GetArray(expected);
+            Assert.All(output, record => record.TypeNameMatches(expected.GetElementType()));
+        }
+
+        [Serializable]
+        public class Mammal
+        {
+            public string Name;
+        }
+
+        [Serializable]
+        public class Cat : Mammal { }
+
+        [Serializable]
+        public class Dog : Mammal { }
     }
 
     [Serializable]

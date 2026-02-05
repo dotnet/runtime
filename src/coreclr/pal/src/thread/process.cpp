@@ -25,7 +25,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/palinternal.h"
 #include "pal/process.h"
 #include "pal/init.h"
-#include "pal/critsect.h"
 #include "pal/debug.h"
 #include "pal/utils.h"
 #include "pal/environ.h"
@@ -61,33 +60,21 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <stdint.h>
 #include <dlfcn.h>
 #include <limits.h>
-#include <vector>
 
 #ifdef __linux__
-#include <sys/syscall.h> // __NR_membarrier
-// Ensure __NR_membarrier is defined for portable builds.
-# if !defined(__NR_membarrier)
-#  if defined(__amd64__)
-#   define __NR_membarrier  324
-#  elif defined(__i386__)
-#   define __NR_membarrier  375
-#  elif defined(__arm__)
-#   define __NR_membarrier  389
-#  elif defined(__aarch64__)
-#   define __NR_membarrier  283
-#  elif defined(__loongarch64)
-#   define __NR_membarrier  283
-#  else
-#   error Unknown architecture
-#  endif
-# endif
+#include <linux/membarrier.h>
+#include <sys/syscall.h>
+#define membarrier(...) syscall(__NR_membarrier, __VA_ARGS__)
+#elif HAVE_SYS_MEMBARRIER_H
+#include <sys/membarrier.h>
+#ifdef TARGET_BROWSER
+#define membarrier(cmd, flags, cpu_id) 0 // browser/wasm is currently single threaded
+#endif
 #endif
 
 #ifdef __APPLE__
-#include <libproc.h>
 #include <pwd.h>
 #include <sys/sysctl.h>
-#include <sys/posix_sem.h>
 #include <mach/task.h>
 #include <mach/vm_map.h>
 extern "C"
@@ -105,6 +92,9 @@ extern "C"
         }                                                                   \
     } while (false)
 
+// On macOS 26, sem_open fails if debugger and debugee are signed with different team ids.
+// Use fifos instead of semaphores to avoid this issue, https://github.com/dotnet/runtime/issues/116545
+#define ENABLE_RUNTIME_EVENTS_OVER_PIPES
 #endif // __APPLE__
 
 #ifdef __NetBSD__
@@ -132,59 +122,15 @@ using namespace CorUnix;
 CObjectType CorUnix::otProcess(
                 otiProcess,
                 NULL,   // No cleanup routine
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CProcProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
-                PROCESS_ALL_ACCESS,
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::CrossProcessDuplicationAllowed,
                 CObjectType::WaitableObject,
                 CObjectType::SingleTransitionObject,
-                CObjectType::ThreadReleaseHasNoSideEffects,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseHasNoSideEffects
                 );
-
-//
-// Helper membarrier function
-//
-#ifdef __NR_membarrier
-# define membarrier(...)  syscall(__NR_membarrier, __VA_ARGS__)
-#else
-# define membarrier(...)  -ENOSYS
-#endif
-
-enum membarrier_cmd
-{
-    MEMBARRIER_CMD_QUERY                                 = 0,
-    MEMBARRIER_CMD_GLOBAL                                = (1 << 0),
-    MEMBARRIER_CMD_GLOBAL_EXPEDITED                      = (1 << 1),
-    MEMBARRIER_CMD_REGISTER_GLOBAL_EXPEDITED             = (1 << 2),
-    MEMBARRIER_CMD_PRIVATE_EXPEDITED                     = (1 << 3),
-    MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED            = (1 << 4),
-    MEMBARRIER_CMD_PRIVATE_EXPEDITED_SYNC_CORE           = (1 << 5),
-    MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED_SYNC_CORE  = (1 << 6)
-};
-
-//
-// Tracks if the OS supports FlushProcessWriteBuffers using membarrier
-//
-static int s_flushUsingMemBarrier = 0;
-
-//
-// Helper memory page used by the FlushProcessWriteBuffers
-//
-static int* s_helperPage = 0;
-
-//
-// Mutex to make the FlushProcessWriteBuffersMutex thread safe
-//
-pthread_mutex_t flushProcessWriteBuffersMutex;
 
 CAllowedObjectTypes aotProcess(otiProcess);
 
@@ -197,7 +143,7 @@ IPalObject* CorUnix::g_pobjProcess;
 // Critical section that protects process data (e.g., the
 // list of active threads)/
 //
-CRITICAL_SECTION g_csProcess;
+minipal_mutex g_csProcess;
 
 //
 // List and count of active threads
@@ -226,7 +172,6 @@ DWORD gSID = (DWORD) -1;
 LPCSTR gApplicationGroupId = nullptr;
 int gApplicationGroupIdLength = 0;
 #endif // __APPLE__
-PathCharString* gSharedFilesPath = nullptr;
 
 // The lowest common supported semaphore length, including null character
 // NetBSD-7.99.25: 15 characters
@@ -234,7 +179,7 @@ PathCharString* gSharedFilesPath = nullptr;
 #if defined(__NetBSD__)
 #define CLR_SEM_MAX_NAMELEN 15
 #elif defined(__APPLE__)
-#define CLR_SEM_MAX_NAMELEN PSEMNAMLEN
+#define CLR_SEM_MAX_NAMELEN 31
 #elif defined(NAME_MAX)
 #define CLR_SEM_MAX_NAMELEN (NAME_MAX - 4)
 #else
@@ -242,7 +187,7 @@ PathCharString* gSharedFilesPath = nullptr;
 #define CLR_SEM_MAX_NAMELEN MAX_PATH
 #endif
 
-static_assert_no_msg(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
+static_assert(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
 
 // Function to call during PAL/process shutdown/abort
 Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
@@ -251,7 +196,8 @@ Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
 
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
-std::vector<const char*> g_argvCreateDump;
+#define MAX_ARGV_ENTRIES 32
+const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 
 //
 // Key used for associating CPalThread's with the underlying pthread
@@ -552,6 +498,9 @@ CorUnix::InternalCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     )
 {
+#ifdef TARGET_TVOS
+    return ERROR_NOT_SUPPORTED;
+#else
     PAL_ERROR palError = NO_ERROR;
     IPalObject *pobjProcess = NULL;
     IPalObject *pobjProcessRegistered = NULL;
@@ -1088,6 +1037,7 @@ InternalCreateProcessExit:
     }
 
     return palError;
+#endif // !TARGET_TVOS
 }
 
 
@@ -1437,21 +1387,217 @@ static uint64_t HashSemaphoreName(uint64_t a, uint64_t b)
 static const char *const TwoWayNamedPipePrefix = "clr-debug-pipe";
 static const char* IpcNameFormat = "%s-%d-%llu-%s";
 
-/*++
-    PAL_NotifyRuntimeStarted
+#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
+static const char* RuntimeStartupPipeName = "st";
+static const char* RuntimeContinuePipeName = "co";
 
-    Signals the debugger waiting for runtime startup notification to continue and
-    waits until the debugger signals us to continue.
+#define PIPE_OPEN_RETRY_DELAY_NS 500000000 // 500 ms
 
-Parameters:
-    None
+typedef enum
+{
+    RuntimeEventsOverPipes_Disabled = 0,
+    RuntimeEventsOverPipes_Succeeded = 1,
+    RuntimeEventsOverPipes_Failed = 2,
+} RuntimeEventsOverPipes;
 
-Return value:
-    TRUE - successfully launched by debugger, FALSE - not launched or some failure in the handshake
---*/
+typedef enum
+{
+    RuntimeEvent_Unknown = 0,
+    RuntimeEvent_Started = 1,
+    RuntimeEvent_Continue = 2,
+} RuntimeEvent;
+
+static
+int
+OpenPipe(const char* name, int mode)
+{
+    int fd = -1;
+    int flags = mode | O_NONBLOCK;
+
+#if defined(FD_CLOEXEC)
+    flags |= O_CLOEXEC;
+#endif
+
+    while (fd == -1)
+    {
+        fd = open(name, flags);
+        if (fd == -1)
+        {
+            if (mode == O_WRONLY && errno == ENXIO)
+            {
+                PAL_nanosleep(PIPE_OPEN_RETRY_DELAY_NS);
+                continue;
+            }
+            else if (errno == EINTR)
+            {
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    if (fd != -1)
+    {
+        flags = fcntl(fd, F_GETFL);
+        if (flags != -1)
+        {
+            flags &= ~O_NONBLOCK;
+            if (fcntl(fd, F_SETFL, flags) == -1)
+            {
+                close(fd);
+                fd = -1;
+            }
+        }
+        else
+        {
+            close(fd);
+            fd = -1;
+        }
+    }
+
+    return fd;
+}
+
+static
+void
+ClosePipe(int fd)
+{
+    if (fd != -1)
+    {
+        while (close(fd) < 0 && errno == EINTR);
+    }
+}
+
+static
+RuntimeEventsOverPipes
+NotifyRuntimeUsingPipes()
+{
+    RuntimeEventsOverPipes result = RuntimeEventsOverPipes_Disabled;
+    char startupPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+    char continuePipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+    int startupPipeFd = -1;
+    int continuePipeFd = -1;
+    size_t offset = 0;
+
+    LPCSTR applicationGroupId = PAL_GetApplicationGroupId();
+
+    PAL_GetTransportPipeName(continuePipeName, gPID, applicationGroupId, RuntimeContinuePipeName);
+    TRACE("NotifyRuntimeUsingPipes: opening continue '%s' pipe\n", continuePipeName);
+
+    continuePipeFd = OpenPipe(continuePipeName, O_RDONLY);
+    if (continuePipeFd == -1)
+    {
+        if (errno == ENOENT || errno == EACCES)
+        {
+            TRACE("NotifyRuntimeUsingPipes: pipe %s not found/accessible, runtime events over pipes disabled\n", continuePipeName);
+        }
+        else
+        {
+            TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
+            result = RuntimeEventsOverPipes_Failed;
+        }
+
+        goto exit;
+    }
+
+    PAL_GetTransportPipeName(startupPipeName, gPID, applicationGroupId, RuntimeStartupPipeName);
+    TRACE("NotifyRuntimeUsingPipes: opening startup '%s' pipe\n", startupPipeName);
+
+    startupPipeFd = OpenPipe(startupPipeName, O_WRONLY);
+    if (startupPipeFd == -1)
+    {
+        if (errno == ENOENT || errno == EACCES)
+        {
+            TRACE("NotifyRuntimeUsingPipes: pipe %s not found/accessible, runtime events over pipes disabled\n", startupPipeName);
+        }
+        else
+        {
+            TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+            result = RuntimeEventsOverPipes_Failed;
+        }
+
+        goto exit;
+    }
+
+    TRACE("NotifyRuntimeUsingPipes: sending started event\n");
+
+    {
+        unsigned char event = (unsigned char)RuntimeEvent_Started;
+        unsigned char *buffer = &event;
+        int bytesToWrite = sizeof(event);
+        int bytesWritten = 0;
+
+        do
+        {
+            bytesWritten = write(startupPipeFd, buffer + offset, bytesToWrite - offset);
+            if (bytesWritten > 0)
+            {
+                offset += bytesWritten;
+            }
+        }
+        while ((bytesWritten > 0 && offset < bytesToWrite) || (bytesWritten == -1 && errno == EINTR));
+
+        if (offset != bytesToWrite)
+        {
+            TRACE("NotifyRuntimeUsingPipes: write(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+            goto exit;
+        }
+    }
+
+    TRACE("NotifyRuntimeUsingPipes: waiting on continue event\n");
+
+    {
+        unsigned char event = (unsigned char)RuntimeEvent_Unknown;
+        unsigned char *buffer = &event;
+        int bytesToRead = sizeof(event);
+        int bytesRead = 0;
+
+        offset = 0;
+        do
+        {
+            bytesRead = read(continuePipeFd, buffer + offset, bytesToRead - offset);
+            if (bytesRead > 0)
+            {
+                offset += bytesRead;
+            }
+        }
+        while ((bytesRead > 0 && offset < bytesToRead) || (bytesRead == -1 && errno == EINTR));
+
+        if (offset == bytesToRead && event == (unsigned char)RuntimeEvent_Continue)
+        {
+            TRACE("NotifyRuntimeUsingPipes: received continue event\n");
+        }
+        else
+        {
+            TRACE("NotifyRuntimeUsingPipes: received invalid event\n");
+            goto exit;
+        }
+    }
+
+    result = RuntimeEventsOverPipes_Succeeded;
+
+exit:
+
+    if (startupPipeFd != -1)
+    {
+        ClosePipe(startupPipeFd);
+    }
+
+    if (continuePipeFd != -1)
+    {
+        ClosePipe(continuePipeFd);
+    }
+
+    return result;
+}
+#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
+
+static
 BOOL
-PALAPI
-PAL_NotifyRuntimeStarted()
+NotifyRuntimeUsingSemaphores()
 {
     char startupSemName[CLR_SEM_MAX_NAMELEN];
     char continueSemName[CLR_SEM_MAX_NAMELEN];
@@ -1472,13 +1618,13 @@ PAL_NotifyRuntimeStarted()
     CreateSemaphoreName(startupSemName, RuntimeStartupSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
     CreateSemaphoreName(continueSemName, RuntimeContinueSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
 
-    TRACE("PAL_NotifyRuntimeStarted opening continue '%s' startup '%s'\n", continueSemName, startupSemName);
+    TRACE("NotifyRuntimeUsingSemaphores: opening continue '%s' startup '%s'\n", continueSemName, startupSemName);
 
     // Open the debugger startup semaphore. If it doesn't exists, then we do nothing and return
     startupSem = sem_open(startupSemName, 0);
     if (startupSem == SEM_FAILED)
     {
-        TRACE("sem_open(%s) failed: %d (%s)\n", startupSemName, errno, strerror(errno));
+        TRACE("NotifyRuntimeUsingSemaphores: sem_open(%s) failed: %d (%s)\n", startupSemName, errno, strerror(errno));
         goto exit;
     }
 
@@ -1501,7 +1647,7 @@ PAL_NotifyRuntimeStarted()
     {
         if (EINTR == errno)
         {
-            TRACE("sem_wait() failed with EINTR; re-waiting");
+            TRACE("NotifyRuntimeUsingSemaphores: sem_wait() failed with EINTR; re-waiting");
             continue;
         }
         ASSERT("sem_wait(continueSem) failed: errno is %d (%s)\n", errno, strerror(errno));
@@ -1521,6 +1667,45 @@ exit:
         sem_close(continueSem);
     }
     return launched;
+}
+
+/*++
+    PAL_NotifyRuntimeStarted
+
+    Signals the debugger waiting for runtime startup notification to continue and
+    waits until the debugger signals us to continue.
+
+Parameters:
+    None
+
+Return value:
+    TRUE - successfully launched by debugger, FALSE - not launched or some failure in the handshake
+--*/
+BOOL
+PALAPI
+PAL_NotifyRuntimeStarted()
+{
+#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
+    // Test pipes as runtime event transport.
+    RuntimeEventsOverPipes result = NotifyRuntimeUsingPipes();
+    switch (result)
+    {
+    case RuntimeEventsOverPipes_Disabled:
+        TRACE("PAL_NotifyRuntimeStarted: pipe handshake disabled, try semaphores\n");
+        return NotifyRuntimeUsingSemaphores();
+    case RuntimeEventsOverPipes_Failed:
+        TRACE("PAL_NotifyRuntimeStarted: pipe handshake failed\n");
+        return FALSE;
+    case RuntimeEventsOverPipes_Succeeded:
+        TRACE("PAL_NotifyRuntimeStarted: pipe handshake succeeded\n");
+        return TRUE;
+    default:
+        // Unexpected result.
+        return FALSE;
+    }
+#else
+    return NotifyRuntimeUsingSemaphores();
+#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
 }
 
 LPCSTR
@@ -1546,7 +1731,7 @@ const int SEMAPHORE_ENCODED_NAME_LENGTH =
     sizeof(UnambiguousProcessDescriptor) + /* For process ID + disambiguationKey */
     SEMAPHORE_ENCODED_NAME_EXTRA_LENGTH; /* For base 255 extra encoding space */
 
-static_assert_no_msg(MAX_APPLICATION_GROUP_ID_LENGTH
+static_assert(MAX_APPLICATION_GROUP_ID_LENGTH
     + 1 /* For / */
     + 2 /* For ST/CO name prefix */
     + SEMAPHORE_ENCODED_NAME_LENGTH /* For encoded name string */
@@ -2097,7 +2282,7 @@ Return
 --*/
 BOOL
 PROCBuildCreateDumpCommandLine(
-    std::vector<const char*>& argv,
+    const char* argv[],
     char** pprogram,
     char** ppidarg,
     const char* dumpName,
@@ -2138,27 +2323,29 @@ PROCBuildCreateDumpCommandLine(
     {
         return FALSE;
     }
-    argv.push_back(program);
+    
+    int argc = 0;
+    argv[argc++] = program;
 
     if (dumpName != nullptr)
     {
-        argv.push_back("--name");
-        argv.push_back(dumpName);
+        argv[argc++] = "--name";
+        argv[argc++] = dumpName;
     }
 
     switch (dumpType)
     {
         case DumpTypeNormal:
-            argv.push_back("--normal");
+            argv[argc++] = "--normal";
             break;
         case DumpTypeWithHeap:
-            argv.push_back("--withheap");
+            argv[argc++] = "--withheap";
             break;
         case DumpTypeTriage:
-            argv.push_back("--triage");
+            argv[argc++] = "--triage";
             break;
         case DumpTypeFull:
-            argv.push_back("--full");
+            argv[argc++] = "--full";
             break;
         default:
             break;
@@ -2166,37 +2353,39 @@ PROCBuildCreateDumpCommandLine(
 
     if (flags & GenerateDumpFlagsLoggingEnabled)
     {
-        argv.push_back("--diag");
+        argv[argc++] = "--diag";
     }
 
     if (flags & GenerateDumpFlagsVerboseLoggingEnabled)
     {
-        argv.push_back("--verbose");
+        argv[argc++] = "--verbose";
     }
 
     if (flags & GenerateDumpFlagsCrashReportEnabled)
     {
-        argv.push_back("--crashreport");
+        argv[argc++] = "--crashreport";
     }
 
     if (flags & GenerateDumpFlagsCrashReportOnlyEnabled)
     {
-        argv.push_back("--crashreportonly");
+        argv[argc++] = "--crashreportonly";
     }
 
     if (g_running_in_exe)
     {
-        argv.push_back("--singlefile");
+        argv[argc++] = "--singlefile";
     }
 
     if (logFileName != nullptr)
     {
-        argv.push_back("--logtofile");
-        argv.push_back(logFileName);
+        argv[argc++] = "--logtofile";
+        argv[argc++] = logFileName;
     }
 
-    argv.push_back(*ppidarg);
-    argv.push_back(nullptr);
+    argv[argc++] = *ppidarg;
+
+    argv[argc] = nullptr;
+    _ASSERTE(argc < MAX_ARGV_ENTRIES);
 
     return TRUE;
 }
@@ -2214,12 +2403,15 @@ Return:
 --*/
 BOOL
 PROCCreateCrashDump(
-    std::vector<const char*>& argv,
+    const char* argv[],
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer,
     bool serialize)
 {
-    _ASSERTE(argv.size() > 0);
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
+    return FALSE;
+#else
+    _ASSERTE(argv[0] != nullptr);
     _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
 
     if (serialize)
@@ -2228,8 +2420,11 @@ PROCCreateCrashDump(
         size_t previousThreadId = InterlockedCompareExchange(&g_crashingThreadId, currentThreadId, 0);
         if (previousThreadId != 0)
         {
-            // Should never reenter or recurse
-            _ASSERTE(previousThreadId != currentThreadId);
+            // Return error if reenter this code
+            if (previousThreadId == currentThreadId)
+            {
+                return false;
+            }
 
             // The first thread generates the crash info and any other threads are blocked
             while (true)
@@ -2239,8 +2434,8 @@ PROCCreateCrashDump(
         }
     }
 
-    int pipe_descs[2];
-    if (pipe(pipe_descs) == -1)
+    int pipe_descs[4];
+    if (pipe(pipe_descs) == -1 || pipe(pipe_descs + 2) == -1)
     {
         if (errorMessageBuffer != nullptr)
         {
@@ -2248,9 +2443,13 @@ PROCCreateCrashDump(
         }
         return false;
     }
-    // [0] is read end, [1] is write end
-    int parent_pipe = pipe_descs[0];
-    int child_pipe = pipe_descs[1];
+
+    // from parent (write) to child (read), used to signal prctl(PR_SET_PTRACER, childpid) is done
+    int child_read_pipe = pipe_descs[0];
+    int parent_write_pipe = pipe_descs[1];
+    // from child (write) to parent (read), used to capture createdump's stderr
+    int parent_read_pipe = pipe_descs[2];
+    int child_write_pipe = pipe_descs[3];
 
     // Fork the core dump child process.
     pid_t childpid = fork();
@@ -2262,19 +2461,36 @@ PROCCreateCrashDump(
         {
             sprintf_s(errorMessageBuffer, cbErrorMessageBuffer, "Problem launching createdump: fork() FAILED %s (%d)\n", strerror(errno), errno);
         }
-        close(pipe_descs[0]);
-        close(pipe_descs[1]);
+        for (int i = 0; i < 4; i++)
+        {
+            close(pipe_descs[i]);
+        }
         return false;
     }
     else if (childpid == 0)
     {
-        // Close the read end of the pipe, the child doesn't need it
-        close(parent_pipe);
+        int callbackResult = 0;
+
+        close(parent_read_pipe);
+        close(parent_write_pipe);
+
+        // Wait for prctl(PR_SET_PTRACER, childpid) in parent
+        char buffer;
+        int bytesRead;
+        while((bytesRead = read(child_read_pipe, &buffer, 1)) < 0 && errno == EINTR);
+        close(child_read_pipe);
+
+        if (bytesRead != 1)
+        {
+            fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);
+            close(child_write_pipe);
+            exit(-1);
+        }
 
         // Only dup the child's stderr if there is error buffer
         if (errorMessageBuffer != nullptr)
         {
-            dup2(child_pipe, STDERR_FILENO);
+            dup2(child_write_pipe, STDERR_FILENO);
         }
         if (g_createdumpCallback != nullptr)
         {
@@ -2282,12 +2498,22 @@ PROCCreateCrashDump(
             SEHCleanupSignals(true /* isChildProcess */);
 
             // Call the statically linked createdump code
-            g_createdumpCallback(argv.size(), argv.data());
+            int argc = 0;
+            while (argv[argc] != nullptr && argc < MAX_ARGV_ENTRIES)
+            {
+                argc++;
+            }
+            callbackResult = g_createdumpCallback(argc, argv);
+            // Set the shutdown callback to nullptr and exit
+            // If we don't exit, the child's execution will continue into the diagnostic server behavior
+            // which causes all sorts of problems.
+            g_shutdownCallback = nullptr;
+            exit(callbackResult);
         }
         else
         {
             // Execute the createdump program
-            if (execve(argv[0], (char**)argv.data(), palEnvironment) == -1)
+            if (execve(argv[0], (char**)argv, palEnvironment) == -1)
             {
                 fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
                 exit(-1);
@@ -2296,6 +2522,8 @@ PROCCreateCrashDump(
     }
     else
     {
+        close(child_read_pipe);
+        close(child_write_pipe);
 #if HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
         // Gives the child process permission to use /proc/<pid>/mem and ptrace
         if (prctl(PR_SET_PTRACER, childpid, 0, 0, 0) == -1)
@@ -2305,7 +2533,21 @@ PROCCreateCrashDump(
             ERROR("PROCCreateCrashDump: prctl() FAILED %s (%d)\n", strerror(errno), errno);
         }
 #endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
-        close(child_pipe);
+        // Signal child that prctl(PR_SET_PTRACER, childpid) is done
+        int bytesWritten;
+        while((bytesWritten = write(parent_write_pipe, "S", 1)) < 0 && errno == EINTR);
+        close(parent_write_pipe);
+
+        if (bytesWritten != 1)
+        {
+            fprintf(stderr, "Problem writing to createdump parent_write_pipe: %s (%d)\n", strerror(errno), errno);
+            close(parent_read_pipe);
+            if (errorMessageBuffer != nullptr)
+            {
+                errorMessageBuffer[0] = 0;
+            }
+            return false;
+        }
 
         // Read createdump's stderr messages (if any)
         if (errorMessageBuffer != nullptr)
@@ -2313,7 +2555,7 @@ PROCCreateCrashDump(
             // Read createdump's stderr
             int bytesRead = 0;
             int count = 0;
-            while ((count = read(parent_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) > 0)
+            while ((count = read(parent_read_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) > 0)
             {
                 bytesRead += count;
             }
@@ -2323,7 +2565,7 @@ PROCCreateCrashDump(
                 fputs(errorMessageBuffer, stderr);
             }
         }
-        close(parent_pipe);
+        close(parent_read_pipe);
 
         // Parent waits until the child process is done
         int wstatus = 0;
@@ -2343,6 +2585,7 @@ PROCCreateCrashDump(
         }
     }
     return true;
+#endif // !TARGET_IOS && !TARGET_TVOS
 }
 
 /*++
@@ -2448,7 +2691,7 @@ PAL_GenerateCoreDump(
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer)
 {
-    std::vector<const char*> argvCreateDump;
+    const char* argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 
     if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
     {
@@ -2470,6 +2713,15 @@ PAL_GenerateCoreDump(
     return result;
 }
 
+// Helper function to prevent compiler from optimizing away a variable
+__attribute__((noinline,NOOPT_ATTRIBUTE))
+static void DoNotOptimize(const void* p)
+{
+    // This function takes the address of a variable to ensure
+    // it's preserved and available in crash dumps
+    (void)p;
+}
+
 /*++
 Function:
   PROCCreateCrashDumpIfEnabled
@@ -2480,42 +2732,63 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info or nullptr
+  context - signal context or nullptr
   serialize - allow only one thread to generate core dump
 
 (no return value)
 --*/
+#ifdef HOST_ANDROID
+#include <minipal/log.h>
 VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
+    // Preserve context pointer to prevent optimization
+    DoNotOptimize(&context);
+
+    // TODO: Dump all managed threads callstacks into logcat and/or file?
+    // TODO: Dump stress log into logcat and/or file when enabled?
+    minipal_log_write_fatal("Aborting process.\n");
+}
+#else
+VOID
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
+{
+    // Preserve context pointer to prevent optimization
+    DoNotOptimize(&context);
+
     // If enabled, launch the create minidump utility and wait until it completes
-    if (!g_argvCreateDump.empty())
+    if (g_argvCreateDump[0] != nullptr)
     {
-        std::vector<const char*> argv(g_argvCreateDump);
+        const char* argv[MAX_ARGV_ENTRIES];
         char* signalArg = nullptr;
         char* crashThreadArg = nullptr;
         char* signalCodeArg = nullptr;
         char* signalErrnoArg = nullptr;
         char* signalAddressArg = nullptr;
 
+        // Copy the createdump argv
+        int argc = 0;
+        for (; argc < MAX_ARGV_ENTRIES && g_argvCreateDump[argc] != nullptr; argc++)
+        {
+            argv[argc] = g_argvCreateDump[argc];
+        }
+
         if (signal != 0)
         {
-            // Remove the terminating nullptr
-            argv.pop_back();
-
             // Add the signal number to the command line
             signalArg = PROCFormatInt(signal);
             if (signalArg != nullptr)
             {
-                argv.push_back("--signal");
-                argv.push_back(signalArg);
+                argv[argc++] = "--signal";
+                argv[argc++] = signalArg;
             }
 
             // Add the current thread id to the command line. This function is always called on the crashing thread.
             crashThreadArg = PROCFormatInt(THREADSilentGetCurrentThreadId());
             if (crashThreadArg != nullptr)
             {
-                argv.push_back("--crashthread");
-                argv.push_back(crashThreadArg);
+                argv[argc++] = "--crashthread";
+                argv[argc++] = crashThreadArg;
             }
 
             if (siginfo != nullptr)
@@ -2523,25 +2796,26 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
                 signalCodeArg = PROCFormatInt(siginfo->si_code);
                 if (signalCodeArg != nullptr)
                 {
-                    argv.push_back("--code");
-                    argv.push_back(signalCodeArg);
+                    argv[argc++] = "--code";
+                    argv[argc++] = signalCodeArg;
                 }
                 signalErrnoArg = PROCFormatInt(siginfo->si_errno);
                 if (signalErrnoArg != nullptr)
                 {
-                    argv.push_back("--errno");
-                    argv.push_back(signalErrnoArg);
+                    argv[argc++] = "--errno";
+                    argv[argc++] = signalErrnoArg;
                 }
                 signalAddressArg = PROCFormatInt64((ULONG64)siginfo->si_addr);
                 if (signalAddressArg != nullptr)
                 {
-                    argv.push_back("--address");
-                    argv.push_back(signalAddressArg);
+                    argv[argc++] = "--address";
+                    argv[argc++] = signalAddressArg;
                 }
             }
-
-            argv.push_back(nullptr);
         }
+
+        argv[argc] = nullptr;
+        _ASSERTE(argc < MAX_ARGV_ENTRIES);
 
         PROCCreateCrashDump(argv, nullptr, 0, serialize);
 
@@ -2552,6 +2826,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
         free(signalAddressArg);
     }
 }
+#endif
 
 /*++
 Function:
@@ -2562,6 +2837,7 @@ Function:
 
 Parameters:
   signal - POSIX signal number
+  context - signal context or nullptr
 
   Does not return
 --*/
@@ -2569,12 +2845,12 @@ Parameters:
 PAL_NORETURN
 #endif
 VOID
-PROCAbort(int signal, siginfo_t* siginfo)
+PROCAbort(int signal, siginfo_t* siginfo, void* context)
 {
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashDumpIfEnabled(signal, siginfo, true);
+    PROCCreateCrashDumpIfEnabled(signal, siginfo, context, true);
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.
@@ -2582,68 +2858,6 @@ PROCAbort(int signal, siginfo_t* siginfo)
 
     // Abort the process after waiting for the core dump to complete
     abort();
-}
-
-/*++
-Function:
-  InitializeFlushProcessWriteBuffers
-
-Abstract
-  This function initializes data structures needed for the FlushProcessWriteBuffers
-Return
-  TRUE if it succeeded, FALSE otherwise
---*/
-BOOL
-InitializeFlushProcessWriteBuffers()
-{
-    _ASSERTE(s_helperPage == 0);
-    _ASSERTE(s_flushUsingMemBarrier == 0);
-
-    // Starting with Linux kernel 4.14, process memory barriers can be generated
-    // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
-    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
-    if (mask >= 0 &&
-        mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED)
-    {
-        // Register intent to use the private expedited command.
-        if (membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0) == 0)
-        {
-            s_flushUsingMemBarrier = TRUE;
-            return TRUE;
-        }
-    }
-
-#ifdef TARGET_OSX
-    return TRUE;
-#else
-    s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
-
-    if(s_helperPage == MAP_FAILED)
-    {
-        return FALSE;
-    }
-
-    // Verify that the s_helperPage is really aligned to the GetVirtualPageSize()
-    _ASSERTE((((SIZE_T)s_helperPage) & (GetVirtualPageSize() - 1)) == 0);
-
-    // Locking the page ensures that it stays in memory during the two mprotect
-    // calls in the FlushProcessWriteBuffers below. If the page was unmapped between
-    // those calls, they would not have the expected effect of generating IPI.
-    int status = mlock(s_helperPage, GetVirtualPageSize());
-
-    if (status != 0)
-    {
-        return FALSE;
-    }
-
-    status = pthread_mutex_init(&flushProcessWriteBuffersMutex, NULL);
-    if (status != 0)
-    {
-        munlock(s_helperPage, GetVirtualPageSize());
-    }
-
-    return status == 0;
-#endif // TARGET_OSX
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -2656,74 +2870,6 @@ InitializeFlushProcessWriteBuffers()
         } \
     } \
     while(0)
-
-/*++
-Function:
-  FlushProcessWriteBuffers
-
-See MSDN doc.
---*/
-VOID
-PALAPI
-FlushProcessWriteBuffers()
-{
-    if (s_flushUsingMemBarrier)
-    {
-        int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0);
-        FATAL_ASSERT(status == 0, "Failed to flush using membarrier");
-    }
-    else if (s_helperPage != 0)
-    {
-        int status = pthread_mutex_lock(&flushProcessWriteBuffersMutex);
-        FATAL_ASSERT(status == 0, "Failed to lock the flushProcessWriteBuffersMutex lock");
-
-        // Changing a helper memory page protection from read / write to no access
-        // causes the OS to issue IPI to flush TLBs on all processors. This also
-        // results in flushing the processor buffers.
-        status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_READ | PROT_WRITE);
-        FATAL_ASSERT(status == 0, "Failed to change helper page protection to read / write");
-
-        // Ensure that the page is dirty before we change the protection so that
-        // we prevent the OS from skipping the global TLB flush.
-        InterlockedIncrement(s_helperPage);
-
-        status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_NONE);
-        FATAL_ASSERT(status == 0, "Failed to change helper page protection to no access");
-
-        status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
-        FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
-    }
-#ifdef TARGET_OSX
-    else
-    {
-        mach_msg_type_number_t cThreads;
-        thread_act_t *pThreads;
-        kern_return_t machret = task_threads(mach_task_self(), &pThreads, &cThreads);
-        CHECK_MACH("task_threads()", machret);
-
-        uintptr_t sp;
-        uintptr_t registerValues[128];
-
-        // Iterate through each of the threads in the list.
-        for (mach_msg_type_number_t i = 0; i < cThreads; i++)
-        {
-            // Request the threads pointer values to force the thread to emit a memory barrier
-            size_t registers = 128;
-            machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
-            if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
-            {
-                CHECK_MACH("thread_get_register_pointer_values()", machret);
-            }
-
-            machret = mach_port_deallocate(mach_task_self(), pThreads[i]);
-            CHECK_MACH("mach_port_deallocate()", machret);
-        }
-        // Deallocate the thread list now we're done with it.
-        machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
-        CHECK_MACH("vm_deallocate()", machret);
-    }
-#endif // TARGET_OSX
-}
 
 /*++
 Function:
@@ -2799,14 +2945,14 @@ CorUnix::InitializeProcessData(
     pGThreadList = NULL;
     g_dwThreadCount = 0;
 
-    InternalInitializeCriticalSection(&g_csProcess);
+    minipal_mutex_init(&g_csProcess);
     fLockInitialized = TRUE;
 
     if (NO_ERROR != palError)
     {
         if (fLockInitialized)
         {
-            InternalDeleteCriticalSection(&g_csProcess);
+            minipal_mutex_destroy(&g_csProcess);
         }
     }
 
@@ -2852,7 +2998,7 @@ CorUnix::InitializeProcessCommandLine(
             ERROR("Invalid full path\n");
             palError = ERROR_INTERNAL_ERROR;
             goto exit;
-        }    
+        }
         lpwstr[0] = '\0';
         size_t n = PAL_wcslen(lpwstrFullPath) + 1;
 
@@ -3023,7 +3169,7 @@ PROCCleanupInitialProcess(VOID)
 {
     CPalThread *pThread = InternalGetCurrentThread();
 
-    InternalEnterCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     /* Free the application directory */
     free(g_lpwstrAppDir);
@@ -3031,7 +3177,7 @@ PROCCleanupInitialProcess(VOID)
     /* Free the stored command line */
     free(g_lpwstrCmdLine);
 
-    InternalLeaveCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 
     //
     // Object manager shutdown will handle freeing the underlying
@@ -3059,7 +3205,7 @@ CorUnix::PROCAddThread(
 {
     /* protect the access of the thread list with critical section for
        mutithreading access */
-    InternalEnterCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     pTargetThread->SetNext(pGThreadList);
     pGThreadList = pTargetThread;
@@ -3068,7 +3214,7 @@ CorUnix::PROCAddThread(
     TRACE("Thread 0x%p (id %#x) added to the process thread list\n",
           pTargetThread, pTargetThread->GetThreadId());
 
-    InternalLeaveCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 
@@ -3094,7 +3240,7 @@ CorUnix::PROCRemoveThread(
 
     /* protect the access of the thread list with critical section for
        mutithreading access */
-    InternalEnterCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     curThread = pGThreadList;
 
@@ -3135,7 +3281,7 @@ CorUnix::PROCRemoveThread(
     WARN("Thread %p not removed (it wasn't found in the list)\n", pTargetThread);
 
 EXIT:
-    InternalLeaveCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 
@@ -3180,7 +3326,7 @@ PROCProcessLock(
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
-    InternalEnterCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 }
 
 
@@ -3204,7 +3350,7 @@ PROCProcessUnlock(
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
-    InternalLeaveCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 #if USE_SYSV_SEMAPHORES

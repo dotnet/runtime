@@ -22,10 +22,7 @@ namespace Microsoft.VisualBasic
 
         public VBCodeProvider(IDictionary<string, string> providerOptions)
         {
-            if (providerOptions is null)
-            {
-                throw new ArgumentNullException(nameof(providerOptions));
-            }
+            ArgumentNullException.ThrowIfNull(providerOptions);
 
             _generator = new VBCodeGenerator(providerOptions);
         }

@@ -66,7 +66,7 @@ namespace System.Text.Json
             return utf8String;
         }
 
-        public static ReadOnlySpan<byte> GetUnescapedSpan(ReadOnlySpan<byte> utf8Source)
+        public static byte[] GetUnescaped(ReadOnlySpan<byte> utf8Source)
         {
             // The escaped name is always >= than the unescaped, so it is safe to use escaped name for the buffer length.
             int length = utf8Source.Length;
@@ -79,8 +79,8 @@ namespace System.Text.Json
             Unescape(utf8Source, utf8Unescaped, out int written);
             Debug.Assert(written > 0);
 
-            ReadOnlySpan<byte> propertyName = utf8Unescaped.Slice(0, written).ToArray();
-            Debug.Assert(!propertyName.IsEmpty);
+            byte[] propertyName = utf8Unescaped.Slice(0, written).ToArray();
+            Debug.Assert(propertyName.Length is not 0);
 
             if (pooledName != null)
             {
@@ -254,21 +254,7 @@ namespace System.Text.Json
         {
             try
             {
-#if NET
                 return s_utf8Encoding.GetString(utf8Unescaped);
-#else
-                if (utf8Unescaped.IsEmpty)
-                {
-                    return string.Empty;
-                }
-                unsafe
-                {
-                    fixed (byte* bytePtr = utf8Unescaped)
-                    {
-                        return s_utf8Encoding.GetString(bytePtr, utf8Unescaped.Length);
-                    }
-                }
-#endif
             }
             catch (DecoderFallbackException ex)
             {
@@ -285,22 +271,7 @@ namespace System.Text.Json
         {
             try
             {
-#if NET
                 return s_utf8Encoding.GetChars(utf8Unescaped, destination);
-#else
-                if (utf8Unescaped.IsEmpty)
-                {
-                    return 0;
-                }
-                unsafe
-                {
-                    fixed (byte* srcPtr = utf8Unescaped)
-                    fixed (char* destPtr = destination)
-                    {
-                        return s_utf8Encoding.GetChars(srcPtr, utf8Unescaped.Length, destPtr, destination.Length);
-                    }
-                }
-#endif
             }
             catch (DecoderFallbackException dfe)
             {
@@ -321,7 +292,7 @@ namespace System.Text.Json
 
         public static void ValidateUtf8(ReadOnlySpan<byte> utf8Buffer)
         {
-#if NET8_0_OR_GREATER
+#if NET
             if (!Utf8.IsValid(utf8Buffer))
             {
                 throw ThrowHelper.GetInvalidOperationException_ReadInvalidUTF8();
@@ -329,21 +300,7 @@ namespace System.Text.Json
 #else
             try
             {
-#if NET
-                s_utf8Encoding.GetCharCount(utf8Buffer);
-#else
-                if (utf8Buffer.IsEmpty)
-                {
-                    return;
-                }
-                unsafe
-                {
-                    fixed (byte* srcPtr = utf8Buffer)
-                    {
-                        s_utf8Encoding.GetCharCount(srcPtr, utf8Buffer.Length);
-                    }
-                }
-#endif
+                _ = s_utf8Encoding.GetCharCount(utf8Buffer);
             }
             catch (DecoderFallbackException ex)
             {
@@ -361,21 +318,7 @@ namespace System.Text.Json
         {
             try
             {
-#if NET
                 return s_utf8Encoding.GetByteCount(text);
-#else
-                if (text.IsEmpty)
-                {
-                    return 0;
-                }
-                unsafe
-                {
-                    fixed (char* charPtr = text)
-                    {
-                        return s_utf8Encoding.GetByteCount(charPtr, text.Length);
-                    }
-                }
-#endif
             }
             catch (EncoderFallbackException ex)
             {
@@ -392,23 +335,7 @@ namespace System.Text.Json
         {
             try
             {
-#if NET
                 return s_utf8Encoding.GetBytes(text, dest);
-#else
-                if (text.IsEmpty)
-                {
-                    return 0;
-                }
-
-                unsafe
-                {
-                    fixed (char* charPtr = text)
-                    fixed (byte* destPtr = dest)
-                    {
-                        return s_utf8Encoding.GetBytes(charPtr, text.Length, destPtr, dest.Length);
-                    }
-                }
-#endif
             }
             catch (EncoderFallbackException ex)
             {
@@ -423,22 +350,7 @@ namespace System.Text.Json
 
         internal static string GetTextFromUtf8(ReadOnlySpan<byte> utf8Text)
         {
-#if NET
             return s_utf8Encoding.GetString(utf8Text);
-#else
-            if (utf8Text.IsEmpty)
-            {
-                return string.Empty;
-            }
-
-            unsafe
-            {
-                fixed (byte* bytePtr = utf8Text)
-                {
-                    return s_utf8Encoding.GetString(bytePtr, utf8Text.Length);
-                }
-            }
-#endif
         }
 
         internal static void Unescape(ReadOnlySpan<byte> source, Span<byte> destination, out int written)
@@ -572,12 +484,8 @@ namespace System.Text.Json
                                 + JsonConstants.UnicodePlane01StartValue;
                         }
 
-#if NET
                         var rune = new Rune(scalar);
                         bool success = rune.TryEncodeToUtf8(destination.Slice(written), out int bytesWritten);
-#else
-                        bool success = TryEncodeToUtf8Bytes((uint)scalar, destination.Slice(written), out int bytesWritten);
-#endif
                         if (!success)
                         {
                             goto DestinationTooShort;
@@ -644,73 +552,5 @@ namespace System.Text.Json
         DestinationTooShort:
             return false;
         }
-
-#if !NET
-        /// <summary>
-        /// Copies the UTF-8 code unit representation of this scalar to an output buffer.
-        /// The buffer must be large enough to hold the required number of <see cref="byte"/>s.
-        /// </summary>
-        private static bool TryEncodeToUtf8Bytes(uint scalar, Span<byte> utf8Destination, out int bytesWritten)
-        {
-            Debug.Assert(JsonHelpers.IsValidUnicodeScalar(scalar));
-
-            if (scalar < 0x80U)
-            {
-                // Single UTF-8 code unit
-                if ((uint)utf8Destination.Length < 1u)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
-
-                utf8Destination[0] = (byte)scalar;
-                bytesWritten = 1;
-            }
-            else if (scalar < 0x800U)
-            {
-                // Two UTF-8 code units
-                if ((uint)utf8Destination.Length < 2u)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
-
-                utf8Destination[0] = (byte)(0xC0U | (scalar >> 6));
-                utf8Destination[1] = (byte)(0x80U | (scalar & 0x3FU));
-                bytesWritten = 2;
-            }
-            else if (scalar < 0x10000U)
-            {
-                // Three UTF-8 code units
-                if ((uint)utf8Destination.Length < 3u)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
-
-                utf8Destination[0] = (byte)(0xE0U | (scalar >> 12));
-                utf8Destination[1] = (byte)(0x80U | ((scalar >> 6) & 0x3FU));
-                utf8Destination[2] = (byte)(0x80U | (scalar & 0x3FU));
-                bytesWritten = 3;
-            }
-            else
-            {
-                // Four UTF-8 code units
-                if ((uint)utf8Destination.Length < 4u)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
-
-                utf8Destination[0] = (byte)(0xF0U | (scalar >> 18));
-                utf8Destination[1] = (byte)(0x80U | ((scalar >> 12) & 0x3FU));
-                utf8Destination[2] = (byte)(0x80U | ((scalar >> 6) & 0x3FU));
-                utf8Destination[3] = (byte)(0x80U | (scalar & 0x3FU));
-                bytesWritten = 4;
-            }
-
-            return true;
-        }
-#endif
     }
 }

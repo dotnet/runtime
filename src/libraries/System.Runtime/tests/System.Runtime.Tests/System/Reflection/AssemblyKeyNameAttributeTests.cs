@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("keyName")]
-        public void Ctor_String(string keyName)
+        public void Ctor_String(string? keyName)
         {
             var attribute = new AssemblyKeyNameAttribute(keyName);
             Assert.Equal(keyName, attribute.KeyName);

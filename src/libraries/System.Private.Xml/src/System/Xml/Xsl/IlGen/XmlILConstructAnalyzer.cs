@@ -54,7 +54,6 @@ namespace System.Xml.Xsl.IlGen
         private bool _isNmspInScope, _mightHaveNmsp, _mightHaveAttrs, _mightHaveDupAttrs, _mightHaveNmspAfterAttrs;
         private XmlILConstructMethod _constrMeth;
         private XmlILConstructInfo? _parentInfo;
-        private ArrayList? _callersInfo;
         private bool _isReadOnly;
 
         private static volatile XmlILConstructInfo? s_default;
@@ -359,7 +358,7 @@ namespace System.Xml.Xsl.IlGen
         /// This annotation is only applicable to Function nodes.  It contains a list of XmlILConstructInfo annotations
         /// for all QilInvoke nodes which call the annotated function.
         /// </summary>
-        public ArrayList CallersInfo => _callersInfo ??= new ArrayList();
+        public ArrayList CallersInfo => field ??= new ArrayList();
 
         /// <summary>
         /// Return name of this annotation.

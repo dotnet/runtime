@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- CS0649: uninitialized interop type fields -->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
@@ -14,7 +15,6 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <SuppressPlatformNotSupportedAssemblyDocXmlError>true</SuppressPlatformNotSupportedAssemblyDocXmlError>
 
-    <IsTrimmable>false</IsTrimmable>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
@@ -36,6 +36,10 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
     <OmitResources Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">true</OmitResources>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\StringPolyfills.cs" Link="Common\System\StringPolyfills.cs" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="SR.cs" />

@@ -25,7 +25,7 @@ namespace ILCompiler
     public class MstatObjectDumper : ObjectDumper
     {
         private const int VersionMajor = 2;
-        private const int VersionMinor = 1;
+        private const int VersionMinor = 2;
 
         private readonly string _fileName;
         private readonly MstatEmitter _emitter;
@@ -40,6 +40,7 @@ namespace ILCompiler
         private List<(MethodDesc Method, string MangledName, int Size, int GcInfoSize)> _methods = new();
         private Dictionary<MethodDesc, int> _methodEhInfo = new();
         private Dictionary<string, int> _blobs = new();
+        private Dictionary<MethodDesc, List<(MethodDesc Method, int MangledName)>> _deduplicatedBodies = new();
 
         public MstatObjectDumper(string fileName, TypeSystemContext context)
         {
@@ -106,6 +107,17 @@ namespace ILCompiler
             }
         }
 
+        public override void ReportFoldedNode(NodeFactory factory, ObjectNode originalNode, ISymbolNode targetNode)
+        {
+            if (originalNode is IMethodBodyNode originalBody && targetNode is IMethodBodyNode targetBody)
+            {
+                if (!_deduplicatedBodies.TryGetValue(originalBody.Method, out List<(MethodDesc, int)> targetBodies))
+                    _deduplicatedBodies.Add(originalBody.Method, targetBodies = new List<(MethodDesc, int)>());
+
+                targetBodies.Add((targetBody.Method, AppendMangledName(targetBody.GetName(factory))));
+            }
+        }
+
         private void DumpFrozenRegion(NodeFactory factory)
         {
             Debug.Assert(_frozenObjects.Offset == 0);
@@ -168,12 +180,27 @@ namespace ILCompiler
                 blobs.LoadConstantI4(b.Value);
             }
 
+            var deduplicatedMethods = new InstructionEncoder(new BlobBuilder());
+            foreach (var d in _deduplicatedBodies)
+            {
+                deduplicatedMethods.OpCode(ILOpCode.Ldtoken);
+                deduplicatedMethods.Token(_emitter.EmitMetadataHandleForTypeSystemEntity(d.Key));
+                deduplicatedMethods.LoadConstantI4(d.Value.Count);
+                foreach (var o in d.Value)
+                {
+                    deduplicatedMethods.OpCode(ILOpCode.Ldtoken);
+                    deduplicatedMethods.Token(_emitter.EmitMetadataHandleForTypeSystemEntity(o.Method));
+                    deduplicatedMethods.LoadConstantI4(o.MangledName);
+                }
+            }
+
             _emitter.AddGlobalMethod("Methods", methods, 0);
             _emitter.AddGlobalMethod("Types", _types, 0);
             _emitter.AddGlobalMethod("Blobs", blobs, 0);
             _emitter.AddGlobalMethod("RvaFields", _fieldRvas, 0);
             _emitter.AddGlobalMethod("FrozenObjects", _frozenObjects, 0);
             _emitter.AddGlobalMethod("ManifestResources", _manifestResources, 0);
+            _emitter.AddGlobalMethod("DeduplicatedMethods", deduplicatedMethods, 0);
 
             _emitter.AddPESection(".names", _mangledNames);
 

@@ -61,49 +61,6 @@ namespace Wasm.Build.Tests
         public static IEnumerable<IEnumerable<object?>> MultiplyWithSingleArgs(this IEnumerable<IEnumerable<object?>> data, params object?[] arrayOfArgs)
             => data.SelectMany(row => arrayOfArgs.Select(argCol => row.Concat(new[] { argCol })));
 
-        public static object?[] Enumerate(this RunHost host)
-        {
-            if (host == RunHost.None)
-                return Array.Empty<object?>();
-
-            var list = new List<object?>();
-            foreach (var value in Enum.GetValues<RunHost>())
-            {
-                if (value == RunHost.None)
-                    continue;
-
-                if (value == RunHost.V8 && OperatingSystem.IsWindows())
-                {
-                    // Don't run tests with V8 on windows
-                    continue;
-                }
-
-                // Ignore any combos like RunHost.All from Enum.GetValues
-                // by ignoring any @value that has more than 1 bit set
-                if (((int)value & ((int)value - 1)) != 0)
-                    continue;
-
-                if ((host & value) == value)
-                    list.Add(value);
-            }
-            return list.ToArray();
-        }
-
-        public static IEnumerable<IEnumerable<object?>> WithRunHosts(this IEnumerable<IEnumerable<object?>> data, RunHost hosts)
-        {
-            IEnumerable<object?> hostsEnumerable = hosts.Enumerate();
-            if (hosts == RunHost.None)
-                return data.Select(d => d.Append((object?) BuildTestBase.GetRandomId()));
-
-            return data.SelectMany(d =>
-            {
-                string runId = BuildTestBase.GetRandomId();
-                return hostsEnumerable.Select(o =>
-                        d.Append((object?)o)
-                         .Append((object?)runId));
-            });
-        }
-
         public static void UpdateTo(this IDictionary<string, (string fullPath, bool unchanged)> dict, bool unchanged, params string[] filenames)
         {
             IEnumerable<string> keys = filenames.Length == 0 ? dict.Keys.ToList() : filenames;

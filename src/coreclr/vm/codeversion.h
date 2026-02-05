@@ -29,7 +29,7 @@ typedef DPTR(class ILCodeVersioningState) PTR_ILCodeVersioningState;
 class CodeVersionManager;
 typedef DPTR(class CodeVersionManager) PTR_CodeVersionManager;
 
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
 #ifdef HAVE_GCCOVER
 class GCCoverageInfo;
@@ -46,14 +46,14 @@ class NativeCodeVersion
 #ifdef FEATURE_CODE_VERSIONING
     friend class MethodDescVersioningState;
     friend class ILCodeVersion;
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
 public:
     NativeCodeVersion();
     NativeCodeVersion(const NativeCodeVersion & rhs);
 #ifdef FEATURE_CODE_VERSIONING
     NativeCodeVersion(PTR_NativeCodeVersionNode pVersionNode);
-#endif
+#endif // FEATURE_CODE_VERSIONING
     explicit NativeCodeVersion(PTR_MethodDesc pMethod);
 
     BOOL IsNull() const;
@@ -61,15 +61,17 @@ public:
     NativeCodeVersionId GetVersionId() const;
     BOOL IsDefaultVersion() const;
     PCODE GetNativeCode() const;
+    ReJITID GetILCodeVersionId() const;
 
 #ifdef FEATURE_CODE_VERSIONING
     ILCodeVersion GetILCodeVersion() const;
-    ReJITID GetILCodeVersionId() const;
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
 #ifndef DACCESS_COMPILE
     BOOL SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected = 0);
 #endif
+
+    bool IsFinalTier() const;
 
     // NOTE: Don't change existing values to avoid breaking changes in event tracing
     enum OptimizationTier
@@ -83,7 +85,7 @@ public:
     };
 #ifdef FEATURE_TIERED_COMPILATION
     OptimizationTier GetOptimizationTier() const;
-    bool IsFinalTier() const;
+
 #ifndef DACCESS_COMPILE
     void SetOptimizationTier(OptimizationTier tier);
 #endif
@@ -289,7 +291,7 @@ public:
 #endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    PatchpointInfo * GetOSRInfo(unsigned * ilOffset) const;
+    PatchpointInfo * GetOSRInfo(unsigned * ilOffset);
 #endif
 
 private:
@@ -330,6 +332,9 @@ struct cdac_data<NativeCodeVersionNode>
     static constexpr size_t NativeCode = offsetof(NativeCodeVersionNode, m_pNativeCode);
     static constexpr size_t Flags = offsetof(NativeCodeVersionNode, m_flags);
     static constexpr size_t ILVersionId = offsetof(NativeCodeVersionNode, m_parentId);
+#ifdef HAVE_GCCOVER
+    static constexpr size_t GCCoverageInfo = offsetof(NativeCodeVersionNode, m_gcCover);
+#endif // HAVE_GCCOVER
 };
 
 class NativeCodeVersionCollection
@@ -419,6 +424,9 @@ template<>
 struct cdac_data<ILCodeVersionNode>
 {
     static constexpr size_t VersionId = offsetof(ILCodeVersionNode, m_rejitId);
+    static constexpr size_t Next = offsetof(ILCodeVersionNode, m_pNextILVersionNode);
+    static constexpr size_t RejitState = offsetof(ILCodeVersionNode, m_rejitState);
+    static constexpr size_t ILAddress = offsetof(ILCodeVersionNode, m_pIL);
 };
 
 class ILCodeVersionCollection
@@ -543,6 +551,7 @@ private:
 template<>
 struct cdac_data<ILCodeVersioningState>
 {
+    static constexpr size_t FirstVersionNode = offsetof(ILCodeVersioningState, m_pFirstVersionNode);
     static constexpr size_t ActiveVersionKind = offsetof(ILCodeVersioningState, m_activeVersion.m_storageKind);
     static constexpr size_t ActiveVersionNode = offsetof(ILCodeVersioningState, m_activeVersion.m_pVersionNode);
     static constexpr size_t ActiveVersionModule = offsetof(ILCodeVersioningState, m_activeVersion.m_synthetic.m_pModule);
@@ -687,7 +696,7 @@ inline NativeCodeVersion::NativeCodeVersion()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 #ifdef FEATURE_CODE_VERSIONING
-    static_assert_no_msg(sizeof(m_pVersionNode) == sizeof(m_synthetic));
+    static_assert(sizeof(m_pVersionNode) == sizeof(m_synthetic));
 #endif
 }
 
@@ -700,7 +709,7 @@ inline NativeCodeVersion::NativeCodeVersion(const NativeCodeVersion & rhs)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 #ifdef FEATURE_CODE_VERSIONING
-    static_assert_no_msg(sizeof(m_pVersionNode) == sizeof(m_synthetic));
+    static_assert(sizeof(m_pVersionNode) == sizeof(m_synthetic));
 #endif
 }
 
@@ -744,7 +753,7 @@ inline bool NativeCodeVersion::operator==(const NativeCodeVersion & rhs) const
     LIMITED_METHOD_DAC_CONTRACT;
 
 #ifdef FEATURE_CODE_VERSIONING
-    static_assert_no_msg(sizeof(m_pVersionNode) == sizeof(m_synthetic));
+    static_assert(sizeof(m_pVersionNode) == sizeof(m_synthetic));
     return m_storageKind == rhs.m_storageKind && m_pVersionNode == rhs.m_pVersionNode;
 #else
     return m_pMethodDesc == rhs.m_pMethodDesc;

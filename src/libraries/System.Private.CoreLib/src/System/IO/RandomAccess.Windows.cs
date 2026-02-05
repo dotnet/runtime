@@ -765,7 +765,7 @@ namespace System.IO
         {
             return new IOCompletionCallback(Callback);
 
-            static unsafe void Callback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
+            static void Callback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
                 CallbackResetEvent state = (CallbackResetEvent)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
                 state.ReleaseRefCount(pOverlapped);

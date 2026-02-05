@@ -99,6 +99,15 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Contains("CustomDisplayName", newErrorMessage);
         }
 
+        [Fact]
+        public static void IsValid_ValidationContextNull_ThrowsArgumentNullException()
+        {
+            var attribute = new CompareAttribute(nameof(CompareObject.ComparePropertyWithDisplayName));
+            var compareObject = new CompareObject("test");
+
+            Assert.Throws<ArgumentNullException>(() => attribute.IsValid(compareObject.CompareProperty));
+        }
+
         private class DerivedCompareAttribute : CompareAttribute
         {
             public DerivedCompareAttribute(string otherProperty) : base(otherProperty) { }

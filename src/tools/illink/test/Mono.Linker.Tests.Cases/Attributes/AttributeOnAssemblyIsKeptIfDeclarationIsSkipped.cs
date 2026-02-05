@@ -4,17 +4,17 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 #if REFERENCE_INCLUDED
 [assembly: Mono.Linker.Tests.Cases.Attributes.Dependencies.AttributeDefinedInReference]
 #endif
-[assembly: KeptAttributeAttribute ("Mono.Linker.Tests.Cases.Attributes.Dependencies.AttributeDefinedInReference")]
+[assembly: KeptAttributeAttribute("Mono.Linker.Tests.Cases.Attributes.Dependencies.AttributeDefinedInReference")]
 
 namespace Mono.Linker.Tests.Cases.Attributes
 {
-	[Define ("REFERENCE_INCLUDED")]
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/AttributeDefinedInReference.cs" })]
-	[SetupLinkerAction ("skip", "library")]
-	class AttributeOnAssemblyIsKeptIfDeclarationIsSkipped
-	{
-		static void Main ()
-		{
-		}
-	}
+    [Define("REFERENCE_INCLUDED")]
+    [SetupCompileBefore("library.dll", new[] { "Dependencies/AttributeDefinedInReference.cs" })]
+    [SetupLinkerAction("skip", "library")]
+    class AttributeOnAssemblyIsKeptIfDeclarationIsSkipped
+    {
+        static void Main()
+        {
+        }
+    }
 }

@@ -97,6 +97,40 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task AltSvc_UpgradeThenClear_Success()
+        {
+            using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
+            using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
+            using HttpClient client = CreateHttpClient(HttpVersion.Version20);
+
+            Task<HttpResponseMessage> responseTask = client.GetAsync(firstServer.Address);
+            Task<HttpRequestData> serverTask = firstServer.HandleRequestAsync(headers: new[]
+            {
+                new HttpHeaderData("Alt-Svc", $"h3=\"{secondServer.Address.IdnHost}:{secondServer.Address.Port}\"")
+            });
+            await new Task[] { responseTask, serverTask }.WhenAllOrAnyFailed(30_000);
+            using HttpResponseMessage response1 = responseTask.Result;
+            Assert.True(response1.IsSuccessStatusCode);
+
+            responseTask = client.GetAsync(firstServer.Address);
+            serverTask = secondServer.HandleRequestAsync(headers: new[]
+            {
+                new HttpHeaderData("Alt-Svc", $"clear")
+            });
+            await new Task[] { responseTask, serverTask }.WhenAllOrAnyFailed(30_000);
+            using HttpResponseMessage response2 = responseTask.Result;
+            string altUsed = serverTask.Result.GetSingleHeaderValue("Alt-Used");
+            Assert.Equal($"{secondServer.Address.IdnHost}:{secondServer.Address.Port}", altUsed);
+            Assert.True(response2.IsSuccessStatusCode);
+
+            responseTask = client.GetAsync(firstServer.Address);
+            serverTask = firstServer.HandleRequestAsync();
+            await new Task[] { responseTask, serverTask }.WhenAllOrAnyFailed(30_000);
+            using HttpResponseMessage response3 = responseTask.Result;
+            Assert.True(response3.IsSuccessStatusCode);
+        }
+
+        [Fact]
         public async Task AltSvc_ResponseFrame_UpgradeFrom20_Success()
         {
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();

@@ -24,13 +24,12 @@ This guide will walk you through building and running the CoreCLR tests. These a
 
 ## Requirements
 
-In order to build CoreCLR tests, you will need to have built the runtime and the libraries (that is, _clr_ and _libs_ subsets). You can find more detailed instructions per platform in their dedicated docs:
+In order to build CoreCLR tests, you will need to have built the runtime and the libraries (that is, _clr_ and _libs_ subsets). You can find detailed instructions on how to do it on their respective README's:
 
-* [Windows](/docs/workflow/building/coreclr/windows-instructions.md)
-* [macOS](/docs/workflow/building/coreclr/macos-instructions.md)
-* [Linux](/docs/workflow/building/coreclr/linux-instructions.md)
+* [CoreCLR](/docs/workflow/building/coreclr/README.md)
+* [Libraries](/docs/workflow/building/libraries/README.md)
 
-For CoreCLR testing purposes, it is more than enough to simply build the _libs_ subset, as far as it concerns the libraries. If you want to know more in-depth about them, they have their own [libraries dedicated docs section](/docs/workflow/building/libraries/README.md).
+For CoreCLR testing purposes, it is more than enough to simply build the _libs_ subset, as far as it concerns the libraries. If you want to know more in-depth about them, they have their own [libraries dedicated docs section](/docs/workflow/building/libraries/).
 
 ## Overview
 
@@ -146,7 +145,11 @@ Some tests need to be run in their own process as they interact with global proc
 
 Sometimes you may want to run a test with the least amount of code before actually executing the test. In addition to the merged test runner, we have another runner mode known as the "Standalone" runner. This runner is used by default in tests that require process isolation. This runner consists of a simple `try-catch` around executing each test sequentially, with no test results file or runtime test filtering.
 
+If you have a merged test runner that you want to run in the standalone mode, you can pass `-p:BuildAsStandalone=true` when building the merged test runner. This will build a project that runs all tests sequentially with no filtering or result file support.
+
 To filter tests on a merged test runner built as standalone, you can set the `TestFilter` property, like so: `./dotnet.sh build -c Checked src/tests/path/to/test.csproj -p:TestFilter=SubstringOfFullyQualifiedTestName`. This mechanism supports the same filtering as the runtime test filtering. Using this mechanism will allow you to skip individual test cases at build time instead of at runtime.
+
+The `TestFilter` property can also be used on a runner assembly in the merged runner mode.
 
 #### Building all tests with the Standalone Runner
 

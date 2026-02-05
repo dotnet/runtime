@@ -251,7 +251,7 @@ HRESULT RCWRefCache::AddReferenceUsingDependentHandle(OBJECTREF obj1, OBJECTREF 
         {
             hr = GET_EXCEPTION()->GetHR();
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
     else
     {

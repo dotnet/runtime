@@ -5,19 +5,19 @@ using System;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	/// <summary>
-	/// Stores various customizations which can be added to ILLink at runtime,
-	/// for example test implementations of certain interfaces.
-	/// </summary>
-	public class TrimmingCustomizations
-	{
-		public TestDependencyRecorder DependencyRecorder { get; set; }
+    /// <summary>
+    /// Stores various customizations which can be added to ILLink at runtime,
+    /// for example test implementations of certain interfaces.
+    /// </summary>
+    public class TrimmingCustomizations
+    {
+        public TestDependencyRecorder DependencyRecorder { get; set; }
 
-		public event Action<LinkContext> CustomizeContext;
+        public event Action<LinkContext> CustomizeContext;
 
-		public void CustomizeLinkContext (LinkContext context)
-		{
-			CustomizeContext?.Invoke (context);
-		}
-	}
+        public void CustomizeLinkContext(LinkContext context)
+        {
+            CustomizeContext?.Invoke(context);
+        }
+    }
 }

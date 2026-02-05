@@ -48,7 +48,7 @@ public:
     STRINGREF *GetInternedString(STRINGREF *pString, BOOL bAddIfNotFound, BOOL bIsCollectible);
 
 private:
-    // Hash tables that maps a Unicode string to a COM+ string handle.
+    // Hash tables that maps a Unicode string to a CLR string handle.
     EEUnicodeStringLiteralHashTable    *m_StringToEntryHashTable;
 
     // The memorypool for hash entries for this hash table.

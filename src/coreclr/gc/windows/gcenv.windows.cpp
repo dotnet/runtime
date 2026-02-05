@@ -640,12 +640,6 @@ bool GCToOSInterface::CanGetCurrentProcessorNumber()
     return true;
 }
 
-// Flush write buffers of processors that are executing threads of the current process
-void GCToOSInterface::FlushProcessWriteBuffers()
-{
-    ::FlushProcessWriteBuffers();
-}
-
 // Break into a debugger
 void GCToOSInterface::DebugBreak()
 {
@@ -1097,7 +1091,21 @@ int64_t GCToOSInterface::QueryPerformanceFrequency()
 //  Time stamp in milliseconds
 uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 {
-    return ::GetTickCount64();
+    // GetTickCount64 uses fixed resolution of 10-16ms for backward compatibility. Use
+    // QueryUnbiasedInterruptTime instead which becomes more accurate if the underlying system
+    // resolution is improved. This helps responsiveness in the case an app is trying to opt
+    // into things like multimedia scenarios and additionally does not include "bias" from time
+    // the system is spent asleep or in hibernation.
+
+    const ULONGLONG TicksPerMillisecond = 10000;
+
+    ULONGLONG unbiasedTime;
+    if (!::QueryUnbiasedInterruptTime(&unbiasedTime))
+    {
+        assert(false && "Failed to query unbiased interrupt time");
+    }
+
+    return (uint64_t)(unbiasedTime / TicksPerMillisecond);
 }
 
 // Gets the total number of processors on the machine, not taking
@@ -1317,31 +1325,6 @@ static DWORD GCThreadStub(void* param)
     function(threadParam);
 
     return 0;
-}
-
-// Initialize the critical section
-bool CLRCriticalSection::Initialize()
-{
-    ::InitializeCriticalSection(&m_cs);
-    return true;
-}
-
-// Destroy the critical section
-void CLRCriticalSection::Destroy()
-{
-    ::DeleteCriticalSection(&m_cs);
-}
-
-// Enter the critical section. Blocks until the section can be entered.
-void CLRCriticalSection::Enter()
-{
-    ::EnterCriticalSection(&m_cs);
-}
-
-// Leave the critical section
-void CLRCriticalSection::Leave()
-{
-    ::LeaveCriticalSection(&m_cs);
 }
 
 // WindowsEvent is an implementation of GCEvent that forwards

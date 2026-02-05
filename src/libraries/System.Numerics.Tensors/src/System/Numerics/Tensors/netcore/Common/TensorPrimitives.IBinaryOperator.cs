@@ -31,7 +31,7 @@ namespace System.Numerics.Tensors
         private static void InvokeScalarSpanIntoSpan<T, TBinaryOperator>(
             T x, ReadOnlySpan<T> y, Span<T> destination)
             where TBinaryOperator : struct, IBinaryOperator<T> =>
-            InvokeSpanScalarIntoSpan<T, IdentityOperator<T>, InvertedBinaryOperator<TBinaryOperator, T>>(y, x, destination);
+            InvokeSpanScalarIntoSpan<T, IdentityOperator<T>, SwappedBinaryOperator<TBinaryOperator, T>>(y, x, destination);
 
         /// <summary>
         /// Performs an element-wise operation on <paramref name="x"/> and <paramref name="y"/>,
@@ -2765,7 +2765,7 @@ namespace System.Numerics.Tensors
             return x.ToScalar();
         }
 
-        private readonly struct InvertedBinaryOperator<TOperator, T> : IBinaryOperator<T>
+        private readonly struct SwappedBinaryOperator<TOperator, T> : IBinaryOperator<T>
             where TOperator : IBinaryOperator<T>
         {
             public static bool Vectorizable => TOperator.Vectorizable;

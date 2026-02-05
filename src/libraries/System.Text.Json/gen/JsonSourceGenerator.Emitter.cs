@@ -612,7 +612,17 @@ namespace System.Text.Json.SourceGeneration
                     PropertyGenerationSpec property = properties[i];
                     string propertyName = property.NameSpecifiedInSourceCode;
                     string declaringTypeFQN = property.DeclaringType.FullyQualifiedName;
-                    string propertyTypeFQN = property.PropertyType.FullyQualifiedName;
+
+                    // If the property is ignored and its type is not used anywhere else in the type graph,
+                    // emit a JsonPropertyInfo of type 'object' to avoid unnecessarily referencing the type.
+                    // STJ requires that all ignored properties be included so that it can perform
+                    // necessary run-time validations using configuration not known at compile time
+                    // such as the property naming policy and case sensitivity.
+                    bool isIgnoredPropertyOfUnusedType =
+                        property.DefaultIgnoreCondition is JsonIgnoreCondition.Always &&
+                        !_typeIndex.ContainsKey(property.PropertyType);
+
+                    string propertyTypeFQN = isIgnoredPropertyOfUnusedType ? "object" : property.PropertyType.FullyQualifiedName;
 
                     string getterValue = property switch
                     {
@@ -653,9 +663,12 @@ namespace System.Text.Json.SourceGeneration
                             : $"({JsonConverterTypeRef}<{propertyTypeFQN}>){ExpandConverterMethodName}(typeof({propertyTypeFQN}), new {converterFQN}(), {OptionsLocalVariableName})";
                     }
 
-                    string attributeProviderFactoryExpr = property.IsProperty
-                        ? $"typeof({property.DeclaringType.FullyQualifiedName}).GetProperty({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName}, null, typeof({property.PropertyType.FullyQualifiedName}), {EmptyTypeArray}, null)"
-                        : $"typeof({property.DeclaringType.FullyQualifiedName}).GetField({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName})";
+                    string attributeProviderFactoryExpr = property switch
+                    {
+                        _ when isIgnoredPropertyOfUnusedType => "null",
+                        { IsProperty: true } => $"typeof({property.DeclaringType.FullyQualifiedName}).GetProperty({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName}, null, typeof({propertyTypeFQN}), {EmptyTypeArray}, null)",
+                        _ => $"typeof({property.DeclaringType.FullyQualifiedName}).GetField({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName})",
+                    };
 
                     writer.WriteLine($$"""
                         var {{InfoVarName}}{{i}} = new {{JsonPropertyInfoValuesTypeRef}}<{{propertyTypeFQN}}>
@@ -846,6 +859,9 @@ namespace System.Text.Json.SourceGeneration
 
                     switch (defaultCheckType)
                     {
+                        case SerializedValueCheckType.Ignore:
+                            break;
+
                         case SerializedValueCheckType.IgnoreWhenNull:
                             writer.WriteLine($"if ({propValueExpr} is not null)");
                             writer.WriteLine('{');
@@ -1053,12 +1069,14 @@ namespace System.Text.Json.SourceGeneration
                 IgnoreWhenNull,
                 IgnoreWhenDefault,
                 DisallowNull,
+                Ignore
             }
 
             private static SerializedValueCheckType GetCheckType(ContextGenerationSpec contextSpec, PropertyGenerationSpec propertySpec)
             {
                 return (propertySpec.DefaultIgnoreCondition ?? contextSpec.GeneratedOptionsSpec?.DefaultIgnoreCondition) switch
                 {
+                    JsonIgnoreCondition.WhenWriting => SerializedValueCheckType.Ignore,
                     JsonIgnoreCondition.WhenWritingNull => propertySpec.PropertyType.CanBeNull ? SerializedValueCheckType.IgnoreWhenNull : SerializedValueCheckType.None,
                     JsonIgnoreCondition.WhenWritingDefault => propertySpec.PropertyType.CanBeNull ? SerializedValueCheckType.IgnoreWhenNull : SerializedValueCheckType.IgnoreWhenDefault,
                     _ when propertySpec.IsGetterNonNullableAnnotation && contextSpec.GeneratedOptionsSpec?.RespectNullableAnnotations is true => SerializedValueCheckType.DisallowNull,
@@ -1182,6 +1200,9 @@ namespace System.Text.Json.SourceGeneration
 
                 writer.WriteLine('{');
                 writer.Indentation++;
+
+                if (optionsSpec.AllowDuplicateProperties is bool allowDuplicateProperties)
+                    writer.WriteLine($"AllowDuplicateProperties = {FormatBoolLiteral(allowDuplicateProperties)},");
 
                 if (optionsSpec.AllowOutOfOrderMetadataProperties is bool allowOutOfOrderMetadataProperties)
                     writer.WriteLine($"AllowOutOfOrderMetadataProperties = {FormatBoolLiteral(allowOutOfOrderMetadataProperties)},");
@@ -1495,7 +1516,7 @@ namespace System.Text.Json.SourceGeneration
                     CollectionType.MemoryOfT => "CreateMemoryInfo",
                     CollectionType.ReadOnlyMemoryOfT => "CreateReadOnlyMemoryInfo",
                     CollectionType.ISet => "CreateISetInfo",
-
+                    CollectionType.IReadOnlySetOfT => "CreateIReadOnlySetInfo",
                     CollectionType.Dictionary => "CreateDictionaryInfo",
                     CollectionType.IDictionaryOfTKeyTValue or CollectionType.IDictionary => "CreateIDictionaryInfo",
                     CollectionType.IReadOnlyDictionary => "CreateIReadOnlyDictionaryInfo",

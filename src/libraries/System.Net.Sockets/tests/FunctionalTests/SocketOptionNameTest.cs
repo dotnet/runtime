@@ -16,6 +16,9 @@ namespace System.Net.Sockets.Tests
     public partial class SocketOptionNameTest
     {
         private static bool SocketsReuseUnicastPortSupport => Capability.SocketsReuseUnicastPortSupport().HasValue;
+        // Does not work on Nano and Qemu and AzureLinux has firewall enabled by default
+        private static readonly bool CanRunMulticastTests = !(PlatformDetection.IsWindowsNanoServer || PlatformDetection.IsWindowsServerCore ||
+                                                              PlatformDetection.IsAzureLinux || PlatformDetection.IsQemuLinux);
 
         [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketGetOption()
@@ -66,12 +69,19 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/104547", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
+        [ConditionalFact(nameof(CanRunMulticastTests))]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
-            await MulticastInterface_Set_Helper(0);
+            try
+            {
+                await MulticastInterface_Set_Helper(0);
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.HostUnreachable && PlatformDetection.IsApplePlatform)
+            {
+                // https://github.com/dotnet/runtime/issues/114450
+                throw new SkipTestException("HostUnreachable indicates missing local network permission; this test might pass or fail depending on the environment. Please verify manually.");
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
@@ -123,10 +133,9 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
+        [ConditionalFact(nameof(CanRunMulticastTests))]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/104547", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"

@@ -11,27 +11,21 @@ namespace System.Reflection.TypeLoading
         public sealed override MemberInfo[] GetMembers(BindingFlags bindingAttr) => GetMemberImpl(null, MemberTypes.All, bindingAttr);
         public sealed override MemberInfo[] GetMember(string name, BindingFlags bindingAttr)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             return GetMemberImpl(name, MemberTypes.All, bindingAttr);
         }
 
         public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             return GetMemberImpl(name, type, bindingAttr);
         }
 
         private MemberInfo[] GetMemberImpl(string? optionalNameOrPrefix, MemberTypes type, BindingFlags bindingAttr)
         {
-            bool prefixSearch = optionalNameOrPrefix != null && optionalNameOrPrefix.EndsWith("*", StringComparison.Ordinal);
+            bool prefixSearch = optionalNameOrPrefix != null && optionalNameOrPrefix.EndsWith('*');
             string? optionalName = prefixSearch ? null : optionalNameOrPrefix;
 
             Func<MemberInfo, bool>? predicate = null;

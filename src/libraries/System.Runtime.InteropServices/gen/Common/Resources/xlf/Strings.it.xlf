@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
         <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <target state="translated">Questo tipo implementa almeno un tipo con l'attributo 'GeneratedComInterfaceAttribute' o il relativo tipo di base ha l'attributo 'GeneratedComClassAttribute'. Aggiungere l’attributo 'GeneratedComClassAttribute' per consentire il passaggio di questo tipo a COM e l'esposizione delle interfacce COM per i tipi con l’attributo 'GeneratedComInterfaceAttribute' dagli oggetti di questo tipo.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyMessage">
         <source>The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</source>
-        <target state="new">The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</target>
+        <target state="translated">Il tipo '{0}' ha un'interfaccia di base '{1}' definita in un assembly diverso. Ciò può causare una vasta gamma di problemi difficili da diagnosticare in alcuni scenari</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceDefinedInOtherAssemblyTitle">
         <source>Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</source>
-        <target state="new">Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</target>
+        <target state="translated">La specifica dell’attributo 'GeneratedComInterfaceAttribute' in un'interfaccia che ha un'interfaccia di base definita in un altro assembly non è supportata</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
@@ -392,6 +392,11 @@
         <target state="translated">Il tipo di marshaller del punto di ingresso '{0}' per il tipo '{1}' deve essere un tipo con almeno un elemento 'System.Runtime.InteropServices.CustomMarshallerAttribute' che specifica questo tipo come tipo gestito</target>
         <note />
       </trans-unit>
+      <trans-unit id="ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode">
+        <source>The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</source>
+        <target state="translated">Il tipo '{0}' specificato come 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' non è accessibile dal codice generato. Il tipo deve avere almeno accessibilità "interna". {1}</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ExtraneousMarshallingInfo">
         <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
         <target state="translated">Sono state specificate informazioni di marshalling per l'elemento 'ElementIndirectionDepth' {0}, ma le informazioni di marshalling sono necessarie solo per {1} livello/i di riferimento indiretto</target>
@@ -430,6 +435,11 @@
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
         <target state="translated">La configurazione di 'StringMarshalling' e 'StringMarshallingCustomType' deve corrispondere all'interfaccia COM di base.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GenericDelegatesNotSupported">
+        <source>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</source>
+        <target state="translated">Il marshalling di un delegato generico non è supportato. Valutare invece se utilizzare un puntatore funzione.</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -504,7 +514,7 @@
       </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
-        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
+        <target state="translated">Gli oggetti di cui è stato eseguito il marshalling da VARIANT come parametri 'in' nelle chiamate da non gestito a gestito non verranno propagati nuovamente al risultato aggiornato, anche se VARIANT è una variante VT_BYREF. Usare un parametro 'ref' invece di un parametro 'in' per propagare nuovamente il valore aggiornato al chiamante.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -610,6 +620,11 @@
       <trans-unit id="InvalidExceptionMarshallingValue">
         <source>The provided value is not a known flag of the 'ExceptionMarshalling' enum.</source>
         <target state="translated">Il valore specificato non è un flag noto dell'enumerazione 'ExceptionMarshalling'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
+        <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
+        <target state="translated">Il tipo specificato come 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' non è un tipo di marshaller valido.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">
@@ -842,9 +857,9 @@
         <target state="translated">Il tipo di punto di ingresso del marshalling '{0}' per il tipo gestito '{1}' deve avere un grado maggiore rispetto a quello del tipo gestito.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
-        <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
-        <target state="translated">Tutti i marshalling per i valori passati come valore restituito non gestito devono avere lo stesso tipo non gestito.</target>
+      <trans-unit id="MarshallerInOverlappingNativePositionMustMatchNativeType">
+        <source>All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</source>
+        <target state="translated">Tutti i marshalling per i valori passati come parametro o valore restituito non gestito devono avere lo stesso tipo non gestito.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">

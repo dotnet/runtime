@@ -121,8 +121,14 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
     };
 
     [RequiresUnreferencedCode("Calls System.Windows.Forms.BinaryFormat.BinaryFormattedObject.TypeResolver.GetType(TypeName)")]
-    internal static Array? GetSimpleBinaryArray(ArrayRecord arrayRecord, BinaryFormattedObject.ITypeResolver typeResolver)
+    internal static Array? GetRectangularArrayOfPrimitives(ArrayRecord arrayRecord, BinaryFormattedObject.ITypeResolver typeResolver)
     {
+        // Only rectangular, non-jagged BinaryArrayRecord can hit the lucky path below.
+        if (arrayRecord.Rank <= 1 || arrayRecord.TypeName.GetElementType().IsArray)
+        {
+            return null;
+        }
+
         Type arrayRecordElementType = typeResolver.GetType(arrayRecord.TypeName.GetElementType());
         Type elementType = arrayRecordElementType;
         while (elementType.IsArray)
@@ -130,17 +136,12 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
             elementType = elementType.GetElementType()!;
         }
 
-        if (!(HasBuiltInSupport(elementType)
-            || (Nullable.GetUnderlyingType(elementType) is Type nullable && HasBuiltInSupport(nullable))))
+        if (!HasBuiltInSupport(elementType))
         {
             return null;
         }
 
-        Type expectedArrayType = arrayRecord.Rank switch
-        {
-            1 => arrayRecordElementType.MakeArrayType(),
-            _ => arrayRecordElementType.MakeArrayType(arrayRecord.Rank)
-        };
+        Type expectedArrayType = arrayRecordElementType.MakeArrayType(arrayRecord.Rank);
 
         return arrayRecord.GetArray(expectedArrayType);
 

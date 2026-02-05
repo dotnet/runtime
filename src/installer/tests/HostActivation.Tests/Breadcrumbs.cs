@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void BreadcrumbThreadFinishes()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
                 .EnvironmentVariable(Constants.Breadcrumbs.EnvironmentVariable, sharedTestState.BreadcrumbLocation)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
@@ -34,10 +34,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void UnhandledException_BreadcrumbThreadDoesNotFinish()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "throw_exception")
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "throw_exception")
                 .EnvironmentVariable(Constants.Breadcrumbs.EnvironmentVariable, sharedTestState.BreadcrumbLocation)
                 .EnableTracingAndCaptureOutputs()
-                .Execute(expectedToFail: true)
+                .DisableDumps() // Expected to throw an exception
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining("Unhandled exception.")
                 .And.HaveStdErrContaining("System.Exception: Goodbye World")

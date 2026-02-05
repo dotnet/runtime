@@ -5,13 +5,14 @@
 #ifndef DISABLE_RUNTIME_CPU_DETECTION
 
 #include "zbuild.h"
-#include "functable.h"
-#include "cpu_features.h"
-#include "arch_functions.h"
 
 #if defined(_MSC_VER)
 #  include <intrin.h>
 #endif
+
+#include "functable.h"
+#include "cpu_features.h"
+#include "arch_functions.h"
 
 /* Platform has pointer size atomic store */
 #if defined(__GNUC__) || defined(__clang__)
@@ -60,9 +61,9 @@ static void init_functable(void) {
     ft.crc32_fold_reset = &crc32_fold_reset_c;
     ft.inflate_fast = &inflate_fast_c;
     ft.slide_hash = &slide_hash_c;
-    ft.longest_match = &longest_match_generic;
-    ft.longest_match_slow = &longest_match_slow_generic;
-    ft.compare256 = &compare256_generic;
+    ft.longest_match = &longest_match_c;
+    ft.longest_match_slow = &longest_match_slow_c;
+    ft.compare256 = &compare256_c;
 
     // Select arch-optimized functions
 
@@ -109,7 +110,11 @@ static void init_functable(void) {
 #endif
     // X86 - AVX
 #ifdef X86_AVX2
-    if (cf.x86.has_avx2) {
+    /* BMI2 support is all but implicit with AVX2 but let's sanity check this just in case. Enabling BMI2 allows for
+     * flagless shifts, resulting in fewer flag stalls for the pipeline, and allows us to set destination registers
+     * for the shift results as an operand, eliminating several register-register moves when the original value needs
+     * to remain intact. They also allow for a count operand that isn't the CL register, avoiding contention there */
+    if (cf.x86.has_avx2 && cf.x86.has_bmi2) {
         ft.adler32 = &adler32_avx2;
         ft.adler32_fold_copy = &adler32_fold_copy_avx2;
         ft.chunkmemset_safe = &chunkmemset_safe_avx2;
@@ -128,6 +133,9 @@ static void init_functable(void) {
     if (cf.x86.has_avx512_common) {
         ft.adler32 = &adler32_avx512;
         ft.adler32_fold_copy = &adler32_fold_copy_avx512;
+        ft.chunkmemset_safe = &chunkmemset_safe_avx512;
+        ft.chunksize = &chunksize_avx512;
+        ft.inflate_fast = &inflate_fast_avx512;
     }
 #endif
 #ifdef X86_AVX512VNNI
@@ -272,9 +280,9 @@ static uint32_t adler32_fold_copy_stub(uint32_t adler, uint8_t* dst, const uint8
     return functable.adler32_fold_copy(adler, dst, src, len);
 }
 
-static uint8_t* chunkmemset_safe_stub(uint8_t* out, unsigned dist, unsigned len, unsigned left) {
+static uint8_t* chunkmemset_safe_stub(uint8_t* out, uint8_t *from, unsigned len, unsigned left) {
     init_functable();
-    return functable.chunkmemset_safe(out, dist, len, left);
+    return functable.chunkmemset_safe(out, from, len, left);
 }
 
 static uint32_t chunksize_stub(void) {

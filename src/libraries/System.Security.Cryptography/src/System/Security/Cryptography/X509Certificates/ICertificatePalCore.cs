@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.X509Certificates
         string LegacySubject { get; }
         byte[] Thumbprint { get; }
         string KeyAlgorithm { get; }
-        byte[] KeyAlgorithmParameters { get; }
+        byte[]? KeyAlgorithmParameters { get; }
         byte[] PublicKeyValue { get; }
         byte[] SerialNumber { get; }
         string SignatureAlgorithm { get; }
@@ -24,5 +24,7 @@ namespace System.Security.Cryptography.X509Certificates
         DateTime NotBefore { get; }
         byte[] RawData { get; }
         byte[] Export(X509ContentType contentType, SafePasswordHandle password);
+        byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password);
+        byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password);
     }
 }

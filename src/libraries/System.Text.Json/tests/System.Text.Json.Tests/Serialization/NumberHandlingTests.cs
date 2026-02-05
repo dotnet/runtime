@@ -47,6 +47,11 @@ namespace System.Text.Json.Serialization.Tests
         public NumberHandlingTests_Pipe() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
     }
 
+    public class NumberHandlingTests_PipeWithSmallBuffer : NumberHandlingTests_OverloadSpecific
+    {
+        public NumberHandlingTests_PipeWithSmallBuffer() : base(JsonSerializerWrapper.AsyncPipeSerializerWithSmallBuffer) { }
+    }
+
     public abstract class NumberHandlingTests_OverloadSpecific
     {
         private JsonSerializerWrapper Serializer { get; }

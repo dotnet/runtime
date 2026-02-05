@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
             if (shouldUseCache)
             {
                 if (s_oidToFriendlyName.TryGetValue(oid, out mappedName) ||
-                    s_compatOids.TryGetValue(oid, out mappedName) ||
+                    ((mappedName = LookupCompatOidName(oid)) is not null) ||
                     s_lateBoundOidToFriendlyName.TryGetValue(oid, out mappedName))
                 {
                     return mappedName;
@@ -101,22 +101,6 @@ namespace System.Security.Cryptography
         private static readonly Dictionary<string, string> s_oidToFriendlyName =
             new Dictionary<string, string>(OidToFriendlyNameCount, StringComparer.Ordinal);
 
-        private static readonly Dictionary<string, string> s_compatOids =
-            new Dictionary<string, string>
-            {
-                { "1.2.840.113549.1.3.1", "DH" },
-                { "1.3.14.3.2.12", "DSA" },
-                { "1.3.14.3.2.13", "sha1DSA" },
-                { "1.3.14.3.2.15", "shaRSA" },
-                { "1.3.14.3.2.18", "sha" },
-                { "1.3.14.3.2.2", "md4RSA" },
-                { "1.3.14.3.2.22", "RSA_KEYX" },
-                { "1.3.14.3.2.29", "sha1RSA" },
-                { "1.3.14.3.2.3", "md5RSA" },
-                { "1.3.14.3.2.4", "md4RSA" },
-                { "1.3.14.7.2.3.1", "md2RSA" },
-            };
-
         static OidLookup()
         {
             InitializeLookupDictionaries();
@@ -129,6 +113,24 @@ namespace System.Security.Cryptography
 
             ExtraStaticDebugValidation();
 #endif
+        }
+
+        private static string? LookupCompatOidName(string oid)
+        {
+            return oid switch
+            {
+                "1.2.840.113549.1.3.1" => "DH",
+                "1.3.14.3.2.12" => "DSA",
+                "1.3.14.3.2.13" => "sha1DSA",
+                "1.3.14.3.2.15" => "shaRSA",
+                "1.3.14.3.2.18" => "sha",
+                "1.3.14.3.2.2" or "1.3.14.3.2.4" => "md4RSA",
+                "1.3.14.3.2.22" => "RSA_KEYX",
+                "1.3.14.3.2.29" => "sha1RSA",
+                "1.3.14.3.2.3" => "md5RSA",
+                "1.3.14.7.2.3.1" => "md2RSA",
+                _ => null,
+            };
         }
 
         private static void InitializeLookupDictionaries()
@@ -153,7 +155,7 @@ namespace System.Security.Cryptography
             // Japanese (Win10).
             //
             // Sometimes wincrypt.h has more than one OID which results in the same name.  The OIDs whose value
-            // doesn't roundtrip (new Oid(new Oid(value).FriendlyName).Value) are contained in s_compatOids.
+            // doesn't roundtrip (new Oid(new Oid(value).FriendlyName).Value) are contained in LookupCompatOidName.
             //
             // X-Plat: The names (and casing) in this table come from Windows. Part of the intent of this table
             // is to prevent issues wherein an identifier is different between Windows and Unix;

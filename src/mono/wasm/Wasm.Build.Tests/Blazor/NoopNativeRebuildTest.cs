@@ -19,58 +19,54 @@ namespace Wasm.Build.Tests.Blazor
         }
 
         [Theory]
-        [InlineData("Debug")]
-        [InlineData("Release")]
-        public void BlazorNoopRebuild(string config)
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
+        public void BlazorNoopRebuild(Configuration config)
         {
-            string id = $"blz_rebuild_{config}_{GetRandomId()}";
-            string projectFile = CreateBlazorWasmTemplateProject(id);
-            AddItemsPropertiesToProject(projectFile, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            string extraProperties = "<WasmBuildNative>true</WasmBuildNative>";
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_rebuild", extraProperties: extraProperties);
+            BlazorBuild(info, config, isNativeBuild: true);
+            string projectDir = Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(info.ProjectFilePath)))!;
+            File.Move(Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build.binlog"),
+                        Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build-first.binlog"));
 
-            string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm");
-
-            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
-            File.Move(Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build.binlog"),
-                        Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build-first.binlog"));
-
+            string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "wasm");
             var pathsDict = _provider.GetFilesTable(true, objDir);
             pathsDict.Remove("runtime-icall-table.h");
-            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var originalStat = _provider.StatFiles(pathsDict);
 
             // build again
-            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
-            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            BlazorBuild(info, config, new BuildOptions(UseCache: false), isNativeBuild: true);
+            var newStat = _provider.StatFiles(pathsDict);
 
-            _provider.CompareStat(originalStat, newStat, pathsDict.Values);
+            _provider.CompareStat(originalStat, newStat, pathsDict);
         }
 
 
         [Theory]
-        [InlineData("Debug")]
-        [InlineData("Release")]
-        public void BlazorOnlyLinkRebuild(string config)
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
+        public void BlazorOnlyLinkRebuild(Configuration config)
         {
-            string id = $"blz_relink_{config}_{GetRandomId()}";
-            string projectFile = CreateBlazorWasmTemplateProject(id);
-            AddItemsPropertiesToProject(projectFile, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            string extraProperties = "<WasmBuildNative>true</WasmBuildNative>";
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_relink", extraProperties: extraProperties);
+            var buildOptions = new BuildOptions(ExtraMSBuildArgs: "-p:EmccLinkOptimizationFlag=-O2");
+            BlazorBuild(info, config, buildOptions, isNativeBuild: true);
+            string projectDir = Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(info.ProjectFilePath)))!;
+            File.Move(Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build.binlog"),
+                        Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build-first.binlog"));
 
-            string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm");
-
-            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "-p:EmccLinkOptimizationFlag=-O2");
-            File.Move(Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build.binlog"),
-                        Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build-first.binlog"));
-
+            string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "wasm");
             var pathsDict = _provider.GetFilesTable(true, objDir);
             pathsDict.Remove("runtime-icall-table.h");
             pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js", "emcc-link.rsp");
-
-            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var originalStat = _provider.StatFiles(pathsDict);
 
             // build again
-            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "-p:EmccLinkOptimizationFlag=-O1");
-            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            BlazorBuild(info, config, new BuildOptions(ExtraMSBuildArgs: "-p:EmccLinkOptimizationFlag=-O1", UseCache: false), isNativeBuild: true);
+            var newStat = _provider.StatFiles(pathsDict);
 
-            _provider.CompareStat(originalStat, newStat, pathsDict.Values);
+            _provider.CompareStat(originalStat, newStat, pathsDict);
         }
     }
 }

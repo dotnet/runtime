@@ -89,13 +89,9 @@ struct EHblkDsc
         unsigned    ebdTyp;    // Exception type (a class token), otherwise
     };
 
-    EHHandlerType ebdHandlerType;
+    unsigned short ebdID; // Unique ID for this eh descriptor (stable across add/delete/inlining)
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    // How nested is the try/handler within other *handlers* - 0 for outermost clauses, 1 for nesting with a handler,
-    // etc.
-    unsigned short ebdHandlerNestingLevel;
-#endif // FEATURE_EH_WINDOWS_X86
+    EHHandlerType ebdHandlerType;
 
     static const unsigned short NO_ENCLOSING_INDEX = USHRT_MAX;
 

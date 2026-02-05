@@ -5,7 +5,6 @@
     <InstallerName>dotnet-hostfxr</InstallerName>
     <InstallerName Condition="'$(TargetOS)' == 'osx'">dotnet-hostfxr-internal</InstallerName>
     <PackageBrandNameSuffix>Host FX Resolver</PackageBrandNameSuffix>
-    <PlatformPackageType>ToolPack</PlatformPackageType>
     <VSInsertionShortComponentName>NetCore.HostFXR</VSInsertionShortComponentName>
     <WixIncludeRegistryKeys>true</WixIncludeRegistryKeys>
     <RegKeyProductName>hostfxr</RegKeyProductName>
@@ -39,13 +38,13 @@
           DestinationFolder="$(SymbolsOutputPath)" />
   </Target>
 
-  <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
-    <ItemGroup Condition="'$(GenerateDeb)' == 'true'">
-      <LinuxPackageDependency Include="libc6;libgcc1;libstdc++6" />
-    </ItemGroup>
-    <ItemGroup>
-      <LinuxPackageDependency Include="dotnet-host" Version="$(InstallerPackageVersion)" />
-      <RpmOwnedDirectory Include="/usr/share/dotnet/host;/usr/share/dotnet/host/fxr;/usr/share/dotnet/host/fxr/$(Version)" />
-    </ItemGroup>
-  </Target>
+  <ItemGroup Condition="'$(GenerateDeb)' == 'true'">
+    <LinuxPackageDependency Include="libc6;libgcc1;libstdc++6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <LinuxPackageDependency Include="dotnet-host" Version="$(InstallerPackageVersion)" />
+    <RpmOwnedDirectory Include="/usr/share/dotnet/host;/usr/share/dotnet/host/fxr;/usr/share/dotnet/host/fxr/$(Version)" />
+  </ItemGroup>
+
 </Project>

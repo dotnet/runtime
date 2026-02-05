@@ -15,9 +15,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/corunix.hpp"
 #include "pal/context.h"
 #include "pal/thread.hpp"
-#include "pal/mutex.hpp"
 #include "pal/handlemgr.hpp"
-#include "pal/cs.hpp"
 #include "pal/seh.hpp"
 #include "pal/signal.hpp"
 
@@ -41,6 +39,10 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #if defined(__sun)
 #include <procfs.h>
 #include <fcntl.h>
+#endif
+
+#if defined(TARGET_BROWSER)
+#include <emscripten/stack.h>
 #endif
 
 #include <signal.h>
@@ -88,38 +90,20 @@ void
 ThreadCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
-    );
-
-PAL_ERROR
-ThreadInitializationRoutine(
-    CPalThread *pThread,
-    CObjectType *pObjectType,
-    void *pImmutableData,
-    void *pSharedData,
-    void *pProcessLocalData
+    bool fShutdown
     );
 
 CObjectType CorUnix::otThread(
                 otiThread,
                 ThreadCleanupRoutine,
-                ThreadInitializationRoutine,
                 0,      // sizeof(CThreadImmutableData),
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CThreadProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                0,      // sizeof(CThreadSharedData),
-                0,      // THREAD_ALL_ACCESS,
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::WaitableObject,
                 CObjectType::SingleTransitionObject,
-                CObjectType::ThreadReleaseHasNoSideEffects,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseHasNoSideEffects
                 );
 
 CAllowedObjectTypes aotThread(otiThread);
@@ -151,7 +135,7 @@ static void InternalEndCurrentThreadWrapper(void *arg)
        will lock its own critical section */
     LOADCallDllMain(DLL_THREAD_DETACH, NULL);
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && HAVE_SIGALTSTACK
     pThread->FreeSignalAlternateStack();
 #endif // !HAVE_MACH_EXCEPTIONS
 
@@ -219,59 +203,6 @@ static void FreeTHREAD(CPalThread *pThread)
     delete pThread;
 }
 
-
-/*++
-Function:
-  THREADGetThreadProcessId
-
-returns the process owner ID of the indicated hThread
---*/
-DWORD
-THREADGetThreadProcessId(
-    HANDLE hThread
-    // UNIXTODO Should take pThread parameter here (modify callers)
-    )
-{
-    CPalThread *pThread;
-    CPalThread *pTargetThread;
-    IPalObject *pobjThread = NULL;
-    PAL_ERROR palError = NO_ERROR;
-
-    DWORD dwProcessId = 0;
-
-    pThread = InternalGetCurrentThread();
-
-    palError = InternalGetThreadDataFromHandle(
-        pThread,
-        hThread,
-        &pTargetThread,
-        &pobjThread
-        );
-
-    if (NO_ERROR != palError)
-    {
-        if (!pThread->IsDummy())
-        {
-            dwProcessId = GetCurrentProcessId();
-        }
-        else
-        {
-            ASSERT("Dummy thread passed to THREADGetProcessId\n");
-        }
-
-        if (NULL != pobjThread)
-        {
-            pobjThread->ReleaseReference(pThread);
-        }
-    }
-    else
-    {
-        ERROR("Couldn't retrieve the hThread:%p pid owner !\n", hThread);
-    }
-
-
-    return dwProcessId;
-}
 
 /*++
 Function:
@@ -811,24 +742,6 @@ CorUnix::InternalEndCurrentThread(
     PAL_ERROR palError = NO_ERROR;
     ISynchStateController *pSynchStateController = NULL;
 
-#ifdef PAL_PERF
-    PERFDisableThreadProfile(UserCreatedThread != pThread->GetThreadType());
-#endif
-
-    //
-    // Abandon any objects owned by this thread
-    //
-
-    palError = g_pSynchronizationManager->AbandonObjectsOwnedByThread(
-        pThread,
-        pThread
-        );
-
-    if (NO_ERROR != palError)
-    {
-        ERROR("Failure abandoning owned objects");
-    }
-
     //
     // Need to synchronize setting the thread state to TS_DONE since
     // this is checked for in InternalSuspendThreadFromData.
@@ -1352,10 +1265,9 @@ CorUnix::GetThreadTimesInternal(
     CPalThread *pThread;
     CPalThread *pTargetThread;
     IPalObject *pobjThread = NULL;
+    clockid_t cid;
 #ifdef __sun
     int fd;
-#else // __sun
-    clockid_t cid;
 #endif // __sun
 
     pThread = InternalGetCurrentThread();
@@ -1569,7 +1481,7 @@ CPalThread::ThreadEntry(
     }
 #endif // HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && HAVE_SIGALTSTACK
     if (!pThread->EnsureSignalAlternateStack())
     {
         ASSERT("Cannot allocate alternate stack for SIGSEGV!\n");
@@ -1606,13 +1518,6 @@ CPalThread::ThreadEntry(
             ASSERT("Error %i attempting to suspend new thread\n", palError);
             goto fail;
         }
-
-        //
-        // We need to run any APCs that have already been queued for
-        // this thread.
-        //
-
-        (void) g_pSynchronizationManager->DispatchPendingAPCs(pThread);
     }
     else
     {
@@ -1633,11 +1538,6 @@ CPalThread::ThreadEntry(
            will take the module critical section */
         LOADCallDllMain(DLL_THREAD_ATTACH, NULL);
     }
-
-#ifdef PAL_PERF
-    PERFAllocThreadInfo();
-    PERFEnableThreadProfile(UserCreatedThread != pThread->GetThreadType());
-#endif
 
     /* call the startup routine */
     pfnStartRoutine = pThread->GetStartAddress();
@@ -2066,7 +1966,7 @@ CPalThread::RunPreCreateInitializers(
     // First, perform initialization of CPalThread private members
     //
 
-    InternalInitializeCriticalSection(&m_csLock);
+    minipal_mutex_init(&m_mtxLock);
     m_fLockInitialized = TRUE;
 
     iError = pthread_mutex_init(&m_startMutex, NULL);
@@ -2100,12 +2000,6 @@ CPalThread::RunPreCreateInitializers(
         goto RunPreCreateInitializersExit;
     }
 
-    palError = apcInfo.InitializePreCreate();
-    if (NO_ERROR != palError)
-    {
-        goto RunPreCreateInitializersExit;
-    }
-
 RunPreCreateInitializersExit:
 
     return palError;
@@ -2125,7 +2019,7 @@ CPalThread::~CPalThread()
 
     if (m_fLockInitialized)
     {
-        InternalDeleteCriticalSection(&m_csLock);
+        minipal_mutex_destroy(&m_mtxLock);
     }
 
     if (m_fStartItemsInitialized)
@@ -2187,12 +2081,6 @@ CPalThread::RunPostCreateInitializers(
     }
 
     palError = suspensionInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
-    if (NO_ERROR != palError)
-    {
-        goto RunPostCreateInitializersExit;
-    }
-
-    palError = apcInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
     if (NO_ERROR != palError)
     {
         goto RunPostCreateInitializersExit;
@@ -2292,7 +2180,7 @@ CPalThread::WaitForStartStatus(
     return m_fStartStatus;
 }
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && HAVE_SIGALTSTACK
 /*++
 Function :
     EnsureSignalAlternateStack
@@ -2308,6 +2196,10 @@ Return :
 BOOL
 CPalThread::EnsureSignalAlternateStack()
 {
+#ifdef TARGET_WASM
+    // WebAssembly does not support alternate signal stacks.
+    return TRUE;
+#else // !TARGET_WASM
     int st = 0;
 
     if (g_registered_signal_handlers)
@@ -2361,6 +2253,7 @@ CPalThread::EnsureSignalAlternateStack()
     }
 
     return (st == 0);
+#endif // !TARGET_WASM
 }
 
 /*++
@@ -2378,6 +2271,7 @@ Return :
 void
 CPalThread::FreeSignalAlternateStack()
 {
+#ifndef TARGET_WASM // WebAssembly does not support alternate signal stacks.
     void *altstack = m_alternateStack;
     m_alternateStack = nullptr;
 
@@ -2401,6 +2295,7 @@ CPalThread::FreeSignalAlternateStack()
             }
         }
     }
+#endif // !TARGET_WASM
 }
 
 #endif // !HAVE_MACH_EXCEPTIONS
@@ -2409,8 +2304,7 @@ void
 ThreadCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
+    bool fShutdown
     )
 {
     CThreadProcessLocalData *pThreadData = NULL;
@@ -2453,18 +2347,6 @@ ThreadCleanupRoutine(
 
 }
 
-PAL_ERROR
-ThreadInitializationRoutine(
-    CPalThread *pThread,
-    CObjectType *pObjectType,
-    void *pImmutableData,
-    void *pSharedData,
-    void *pProcessLocalData
-    )
-{
-    return NO_ERROR;
-}
-
 // Get base address of the current thread's stack
 void *
 CPalThread::GetStackBase()
@@ -2484,6 +2366,7 @@ CPalThread::GetStackBase()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
+#ifndef TARGET_BROWSER
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2500,7 +2383,10 @@ CPalThread::GetStackBase()
     _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
 
     stackBase = (void*)((size_t)stackAddr + stackSize);
-#endif
+#else // TARGET_BROWSER
+    stackBase = (void*)emscripten_stack_get_base();
+#endif // TARGET_BROWSER
+#endif // !TARGET_APPLE
 
     return stackBase;
 }
@@ -2524,6 +2410,7 @@ CPalThread::GetStackLimit()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
+#ifndef TARGET_BROWSER
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2538,7 +2425,19 @@ CPalThread::GetStackLimit()
 
     status = pthread_attr_destroy(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
-#endif
+#else // TARGET_BROWSER
+    uintptr_t stackLimitMaybe = emscripten_stack_get_end();
+    if (stackLimitMaybe == 0) // emscripten_stack_get_end can return 0.
+    {
+        stackLimitMaybe += sizeof(size_t);
+
+        // CoreCLR doesn't like using 0 as a limit address.
+        // So we bump it up a bit and tell emscripten about it.
+        emscripten_stack_set_limits(GetStackBase(), (void*)stackLimitMaybe);
+    }
+    stackLimit = (void*)stackLimitMaybe;
+#endif // TARGET_BROWSER
+#endif // !TARGET_APPLE
 
     return stackLimit;
 }
@@ -2723,102 +2622,3 @@ int CorUnix::CThreadMachExceptionHandlers::GetIndexOfHandler(exception_mask_t bm
 }
 
 #endif // HAVE_MACH_EXCEPTIONS
-
-/*++
-Function:
-  PAL_SetCurrentThreadAffinity
-
-Abstract
-  Set affinity of the current thread to the specified processor.
-
-Parameters:
-  procNo - number of the processor to affinitize the current thread to
-
-Return value:
-  TRUE if the function was able to set the affinity, FALSE if it has failed.
---*/
-BOOL
-PALAPI
-PAL_SetCurrentThreadAffinity(WORD procNo)
-{
-#if HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
-    cpu_set_t cpuSet;
-    CPU_ZERO(&cpuSet);
-    CPU_SET(procNo, &cpuSet);
-
-    // Snap's default strict confinement does not allow sched_setaffinity(<nonzeroPid>, ...) without manually connecting the
-    // process-control plug. sched_setaffinity(<currentThreadPid>, ...) is also currently not allowed, only
-    // sched_setaffinity(0, ...). pthread_setaffinity_np(pthread_self(), ...) seems to call
-    // sched_setaffinity(<currentThreadPid>, ...) in at least one implementation, and does not work. To work around those
-    // issues, use sched_setaffinity(0, ...) if available and only otherwise fall back to pthread_setaffinity_np(). See the
-    // following for more information:
-    // - https://github.com/dotnet/runtime/pull/38795
-    // - https://github.com/dotnet/runtime/issues/1634
-    // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
-#if HAVE_SCHED_SETAFFINITY
-    int st = sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
-#else
-    int st = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
-#endif
-
-    return st == 0;
-#else  // !(HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP)
-    // There is no API to manage thread affinity, so let's ignore the request
-    return FALSE;
-#endif // HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
-}
-
-/*++
-Function:
-  PAL_SetCurrentThreadAffinity
-
-Abstract
-  Get affinity set of the current thread. The set is represented by an array of "size" entries of UINT_PTR type.
-
-Parameters:
-  size - number of entries in the "data" array
-  data - pointer to the data of the resulting set, the LSB of the first entry in the array represents processor 0
-
-Return value:
-  TRUE if the function was able to get the affinity set, FALSE if it has failed.
---*/
-BOOL
-PALAPI
-PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data)
-{
-#if HAVE_PTHREAD_GETAFFINITY_NP
-    cpu_set_t cpuSet;
-    CPU_ZERO(&cpuSet);
-
-    int st = pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
-
-    if (st == 0)
-    {
-        const SIZE_T BitsPerBitsetEntry = 8 * sizeof(UINT_PTR);
-
-        // Get info for as much processors as it is possible to fit into the resulting set
-        SIZE_T remainingCount = std::min(size * BitsPerBitsetEntry, (SIZE_T)CPU_SETSIZE);
-        SIZE_T i = 0;
-        while (remainingCount != 0)
-        {
-            UINT_PTR entry = 0;
-            SIZE_T bitsToCopy = std::min(remainingCount, BitsPerBitsetEntry);
-            SIZE_T cpuSetOffset = i * BitsPerBitsetEntry;
-            for (SIZE_T j = 0; j < bitsToCopy; j++)
-            {
-                if (CPU_ISSET(cpuSetOffset + j, &cpuSet))
-                {
-                    entry |= (UINT_PTR)1 << j;
-                }
-            }
-            remainingCount -= bitsToCopy;
-            data[i++] = entry;
-        }
-    }
-
-    return st == 0;
-#else  // HAVE_PTHREAD_GETAFFINITY_NP
-    // There is no API to manage thread affinity, so let's ignore the request
-    return FALSE;
-#endif // HAVE_PTHREAD_GETAFFINITY_NP
-}

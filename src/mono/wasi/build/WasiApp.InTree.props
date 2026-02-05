@@ -10,4 +10,11 @@
     <TrimMode>full</TrimMode>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
+  <ItemGroup>
+    <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a"/>
+    <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-stub-static.a" />
+    <_MonoRuntimeComponentDontLink Include="libmono-component-hot_reload-stub-static.a" />
+    <_MonoRuntimeComponentDontLink Include="libmono-component-marshal-ilgen-static.a" />
+  </ItemGroup>
+
 </Project>

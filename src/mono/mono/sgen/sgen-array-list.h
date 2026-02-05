@@ -60,7 +60,10 @@ static inline guint32
 sgen_clz (guint32 x)
 {
 	gulong leading_zero_bits;
-	return _BitScanReverse (&leading_zero_bits, (gulong)x) ? 31 - leading_zero_bits : 32;
+	if (_BitScanReverse (&leading_zero_bits, (gulong)x))
+		return 31 - leading_zero_bits;
+	else
+		return 32;
 }
 #elif defined(ENABLE_MSVC_LZCNT) && defined(_MSC_VER)
 static inline guint32

@@ -58,6 +58,14 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
         {
             SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
         }
+        else if (0 == _stricmp(targetArchitecture, "riscv64"))
+        {
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_RISCV64);
+        }
+        else if (0 == _stricmp(targetArchitecture, "wasm") || (0 == _stricmp(targetArchitecture, "wasm32")))
+        {
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_WASM32);
+        }
         else
         {
             LogError("Illegal target architecture '%s'", targetArchitecture);
@@ -157,12 +165,12 @@ static void PrintDiffsCsvRow(
     bool hasDiff)
 {
     fw.Printf("%d,%u,", context, contextSize);
-    fw.PrintQuotedCsvField(baseRes.CompileResults->MethodFullName == nullptr ? "" : baseRes.CompileResults->MethodFullName);
+    fw.PrintQuotedCsvField(diffRes.CompileResults->MethodFullName == nullptr ? "" : diffRes.CompileResults->MethodFullName);
     fw.Printf(
         ",%s,%s,%s,%s,%s,%lld,%lld",
-        baseRes.CompileResults->TieringName == nullptr ? "" : baseRes.CompileResults->TieringName,
+        diffRes.CompileResults->TieringName == nullptr ? "" : diffRes.CompileResults->TieringName,
         ResultToString(baseRes.Result), ResultToString(diffRes.Result),
-        baseRes.IsMinOpts ? "True" : "False",
+        diffRes.IsMinOpts ? "True" : "False",
         hasDiff ? "True" : "False",
         baseRes.NumExecutedInstructions, diffRes.NumExecutedInstructions);
 

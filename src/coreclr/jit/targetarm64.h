@@ -7,8 +7,9 @@
 #endif
 
 // clang-format off
+  #define CORINFO_ARCH_TARGET      CORINFO_ARCH_ARM64
+
   #define CPU_LOAD_STORE_ARCH      1
-  #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
 #ifdef FEATURE_SIMD
@@ -25,7 +26,6 @@
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
-  #define FEATURE_STRUCT_CLASSIFIER     0  // Uses a classifier function to determine is structs are passed/returned in more than one register
   #define MAX_PASS_SINGLEREG_BYTES     16  // Maximum size of a struct passed in a single register (16-byte vector).
   #define MAX_PASS_MULTIREG_BYTES      64  // Maximum size of a struct that could be passed in more than one register (max is 4 16-byte vectors using an HVA)
   #define MAX_RET_MULTIREG_BYTES       64  // Maximum size of a struct that could be returned in more than one register (Max is an HVA of 4 16-byte vectors)
@@ -37,12 +37,13 @@
 
   #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
   #define USER_ARGS_COME_LAST      1
+  #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
+  #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
+
+  #define CSE_CONSTS               1       // Enable if we want to CSE constants
   #define EMIT_TRACK_STACK_DEPTH   1       // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
                                            // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
-  #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
-  #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
-  #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
-  #define CSE_CONSTS               1       // Enable if we want to CSE constants
+  #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 
   #define REG_FP_FIRST             REG_V0
   #define REG_FP_LAST              REG_V31
@@ -57,8 +58,9 @@
   #define REG_MASK_FIRST           REG_PREDICATE_FIRST
   #define REG_MASK_LAST            REG_PREDICATE_LAST
 
-  static_assert_no_msg(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
+  static_assert(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
 
+  #define HAS_FIXED_REGISTER_SET   1       // Has a fixed register set
   #define REGNUM_BITS              7       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
   #define FP_REGSIZE_BYTES         16      // number of bytes in one FP/SIMD register
@@ -108,18 +110,17 @@
                                    REG_V12, REG_V13, REG_V14, REG_V15, \
                                    REG_V3,  REG_V2, REG_V1,  REG_V0
 
-  #define RBM_CALL_GC_REGS_ORDER   RBM_R19,RBM_R20,RBM_R21,RBM_R22,RBM_R23,RBM_R24,RBM_R25,RBM_R26,RBM_R27,RBM_R28,RBM_INTRET,RBM_INTRET_1
-  #define RBM_CALL_GC_REGS         (RBM_R19|RBM_R20|RBM_R21|RBM_R22|RBM_R23|RBM_R24|RBM_R25|RBM_R26|RBM_R27|RBM_R28|RBM_INTRET|RBM_INTRET_1)
-
   #define CNT_CALLEE_SAVED        (11)
   #define CNT_CALLEE_TRASH        (17)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
-  #define CNT_CALL_GC_REGS        (CNT_CALLEE_SAVED+2)
 
   #define CNT_CALLEE_SAVED_FLOAT  (8)
   #define CNT_CALLEE_TRASH_FLOAT  (24)
+  #define CNT_CALLEE_ENREG_FLOAT  (CNT_CALLEE_SAVED_FLOAT)
+
   #define CNT_CALLEE_SAVED_MASK   (4)
   #define CNT_CALLEE_TRASH_MASK   (8)
+  #define CNT_CALLEE_ENREG_MASK   (CNT_CALLEE_SAVED_MASK)
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
@@ -131,8 +132,7 @@
   #define RBM_ENC_CALLEE_SAVED     0
 
   // Temporary registers used for the GS cookie check.
-  #define REG_GSCOOKIE_TMP_0       REG_IP0
-  #define REG_GSCOOKIE_TMP_1       REG_IP1
+  #define RBM_GSCOOKIE_TMP         (RBM_IP0 | RBM_IP1)
 
   // register to hold shift amount; no special register is required on ARM64.
   #define REG_SHIFT                REG_NA
@@ -263,9 +263,14 @@
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
   #define RBM_INIT_PINVOKE_FRAME_TRASH  RBM_CALLEE_TRASH
 
+  #define RBM_INTERFACELOOKUP_FOR_SLOT_TRASH (RBM_R12 | RBM_R13 | RBM_R14 | RBM_R15)
+  #define RBM_INTERFACELOOKUP_FOR_SLOT_RETURN RBM_R15
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R15))
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_R15
   #define REG_DISPATCH_INDIRECT_CALL_ADDR REG_R9
+
+  #define REG_ASYNC_CONTINUATION_RET REG_R2
+  #define RBM_ASYNC_CONTINUATION_RET RBM_R2
 
   #define REG_FPBASE               REG_FP
   #define RBM_FPBASE               RBM_FP

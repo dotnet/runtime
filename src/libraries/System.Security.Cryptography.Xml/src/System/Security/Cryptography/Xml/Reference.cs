@@ -208,10 +208,7 @@ namespace System.Security.Cryptography.Xml
         [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public void LoadXml(XmlElement value)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             _id = Utils.GetAttribute(value, "Id", SignedXml.XmlDsigNamespaceUrl);
             _uri = Utils.GetAttribute(value, "URI", SignedXml.XmlDsigNamespaceUrl);
@@ -340,10 +337,7 @@ namespace System.Security.Cryptography.Xml
 
         public void AddTransform(Transform transform)
         {
-            if (transform is null)
-            {
-                throw new ArgumentNullException(nameof(transform));
-            }
+            ArgumentNullException.ThrowIfNull(transform);
 
             transform.Reference = this;
             TransformChain.Add(transform);

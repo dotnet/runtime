@@ -52,10 +52,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteString(string propertyName, DateTime value)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
             WriteString(propertyName.AsSpan(), value);
         }
 

@@ -8,7 +8,6 @@ import { Module, loaderHelpers } from "./globals";
 import { forceThreadMemoryViewRefresh } from "./memory";
 
 let spread_timers_maximum = 0;
-let pump_count = 0;
 
 export function prevent_timer_throttling (): void {
     if (WasmEnableThreads) return;
@@ -37,7 +36,6 @@ function prevent_timer_throttling_tick () {
     }
     try {
         cwraps.mono_wasm_execute_timer();
-        pump_count++;
     } catch (ex) {
         loaderHelpers.mono_exit(1, ex);
     }
@@ -46,28 +44,28 @@ function prevent_timer_throttling_tick () {
 
 function mono_background_exec_until_done () {
     if (WasmEnableThreads) return;
+    lastScheduledBackground = undefined;
     Module.maybeExit();
+    if (!loaderHelpers.is_runtime_running()) {
+        return;
+    }
     try {
-        while (pump_count > 0) {
-            --pump_count;
-            if (!loaderHelpers.is_runtime_running()) {
-                return;
-            }
-            cwraps.mono_background_exec();
-        }
+        cwraps.mono_background_exec();
     } catch (ex) {
         loaderHelpers.mono_exit(1, ex);
     }
 }
 
-export function schedule_background_exec (): void {
+let lastScheduledBackground: any = undefined;
+export function SystemJS_ScheduleBackgroundJobImpl (): void {
     if (WasmEnableThreads) return;
-    ++pump_count;
-    Module.safeSetTimeout(mono_background_exec_until_done, 0);
+    if (!lastScheduledBackground) {
+        lastScheduledBackground = Module.safeSetTimeout(mono_background_exec_until_done, 0);
+    }
 }
 
 let lastScheduledTimeoutId: any = undefined;
-export function mono_wasm_schedule_timer (shortestDueTimeMs: number): void {
+export function SystemJS_ScheduleTimerImpl (shortestDueTimeMs: number): void {
     if (WasmEnableThreads) return;
     if (lastScheduledTimeoutId) {
         globalThis.clearTimeout(lastScheduledTimeoutId);
@@ -86,7 +84,6 @@ function mono_wasm_schedule_timer_tick () {
     lastScheduledTimeoutId = undefined;
     try {
         cwraps.mono_wasm_execute_timer();
-        pump_count++;
     } catch (ex) {
         loaderHelpers.mono_exit(1, ex);
     }

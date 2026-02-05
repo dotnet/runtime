@@ -9,6 +9,7 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Threading;
 
 using Internal.Reflection.Augments;
 using Internal.Runtime;
@@ -313,7 +314,11 @@ namespace System
                 }
                 else
                 {
-                    functionPointer = ldftnResult;
+                    nint unboxedPointer = RuntimeAugments.GetCodeTarget(ldftnResult);
+                    if (unboxedPointer == ldftnResult)
+                        unboxedPointer = RuntimeAugments.GetTargetOfUnboxingAndInstantiatingStub(ldftnResult);
+
+                    functionPointer = unboxedPointer != 0 ? unboxedPointer : ldftnResult;
                 }
                 return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromStartAddress(functionPointer);
             }
@@ -385,6 +390,8 @@ namespace System
             Debug.Assert(delegateEEType != null);
             Debug.Assert(delegateEEType->IsCanonical);
 
+            RuntimeAugments.EnsureMethodTableSafeToAllocate(delegateEEType);
+
             Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
 
             IntPtr objArrayThunk = del.GetThunk(Delegate.ObjectArrayThunk);
@@ -407,6 +414,8 @@ namespace System
         //
         internal static unsafe Delegate CreateDelegate(MethodTable* delegateEEType, IntPtr ldftnResult, object thisObject, bool isStatic, bool isOpen)
         {
+            RuntimeAugments.EnsureMethodTableSafeToAllocate(delegateEEType);
+
             Delegate del = (Delegate)RuntimeImports.RhNewObject(delegateEEType);
 
             // What? No constructor call? That's right, and it's not an oversight. All "construction" work happens in
@@ -457,7 +466,7 @@ namespace System
 
         private static bool TrySetSlot(Wrapper[] a, int index, Delegate o)
         {
-            if (a[index].Value == null && System.Threading.Interlocked.CompareExchange(ref a[index].Value, o, null) == null)
+            if (a[index].Value == null && Interlocked.CompareExchange(ref a[index].Value, o, null) == null)
                 return true;
 
             // The slot may be already set because we have added and removed the same method before.

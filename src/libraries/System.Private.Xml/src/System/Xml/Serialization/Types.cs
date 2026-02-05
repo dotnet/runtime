@@ -49,6 +49,7 @@ namespace System.Xml.Serialization
         CanBeElementValue = 0x20,
         HasCustomFormatter = 0x40,
         AmbiguousDataType = 0x80,
+        SecondaryDataType = 0x100,
         IgnoreDefault = 0x200,
         HasIsEmpty = 0x400,
         HasDefaultConstructor = 0x800,
@@ -465,6 +466,7 @@ namespace System.Xml.Serialization
         private static readonly Hashtable s_primitiveTypes = new Hashtable();
         private static readonly Hashtable s_primitiveDataTypes = new Hashtable();
         private static readonly NameTable s_primitiveNames = new NameTable();
+        private static readonly NameTable s_primitiveNamesSecondary = new NameTable();
 
         private static readonly string[] s_unsupportedTypes = new string[] {
             "anyURI",
@@ -530,6 +532,18 @@ namespace System.Xml.Serialization
             AddNonXsdPrimitive(typeof(char), "char", UrtTypes.Namespace, "Char", new XmlQualifiedName("unsignedShort", XmlSchema.Namespace), Array.Empty<XmlSchemaFacet>(), TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.IgnoreDefault);
             AddNonXsdPrimitive(typeof(TimeSpan), "TimeSpan", UrtTypes.Namespace, "TimeSpan", new XmlQualifiedName("duration", XmlSchema.Namespace), Array.Empty<XmlSchemaFacet>(), TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired);
             AddNonXsdPrimitive(typeof(DateTimeOffset), "dateTimeOffset", UrtTypes.Namespace, "DateTimeOffset", new XmlQualifiedName("dateTime", XmlSchema.Namespace), Array.Empty<XmlSchemaFacet>(), TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired);
+
+            // DateOnly is more restrictive than xsd:date. It must be >= 0001-01-01 and cannot include timezone information.
+            // However, to make our pattern simpler, we can note that xsd:date requires 4-digit years, and 2-digit months and days.
+            XmlSchemaPatternFacet dateOnlyPattern = new XmlSchemaPatternFacet() { Value = @"([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])" };
+            AddNonXsdPrimitive(typeof(DateOnly), "dateOnly", UrtTypes.Namespace, "DateOnly", new XmlQualifiedName("date", XmlSchema.Namespace), new XmlSchemaFacet[] { dateOnlyPattern }, TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.XmlEncodingNotRequired);
+
+            // TimeOnly is more restrictive than xsd:time. It cannot include timezone information, cannot include leap seconds (:60) and is limited to 7 decimals of fractional seconds.
+            // However, to make our pattern simpler, we can note that xsd:time requires 2-digit hours, minutes and seconds.
+            var timeOnlyPattern = @"([01][0-9]|2[0-3]):([0-5][0-9])(:([0-5][0-9])(\.[0-9]{1,7})?)?";
+            AddNonXsdPrimitive(typeof(TimeOnly), "timeOnly", UrtTypes.Namespace, "TimeOnly", new XmlQualifiedName("time", XmlSchema.Namespace), new XmlSchemaFacet[] { new XmlSchemaPatternFacet() { Value = timeOnlyPattern } }, TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.XmlEncodingNotRequired);
+            // Adding a secondary primitive mapping so TimeOnly fields with DataType="time" can read in xsd:time's with offsets - the offset is simply ignored.
+            AddPrimitive(typeof(TimeOnly), "time", "TimeOnlyIgnoreOffset", TypeFlags.SecondaryDataType | TypeFlags.AmbiguousDataType | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.XmlEncodingNotRequired);
 
             AddSoapEncodedTypes(Soap.Encoding);
 
@@ -630,10 +644,32 @@ namespace System.Xml.Serialization
             XmlSchemaSimpleType dataType = new XmlSchemaSimpleType();
             dataType.Name = dataTypeName;
             TypeDesc typeDesc = new TypeDesc(type, true, dataType, formatterName, flags);
+
+            if ((flags & TypeFlags.SecondaryDataType) != 0)
+            {
+                // Secondary name registration - Must first have a 'Primary' registered
+                Debug.Assert(s_primitiveNames[dataTypeName, XmlSchema.Namespace] != null);
+                if (s_primitiveNames[dataTypeName, XmlSchema.Namespace] == null)
+                    return;
+
+                var secondaryList = (List<TypeDesc>?)s_primitiveNamesSecondary[dataTypeName, XmlSchema.Namespace];
+                if (secondaryList == null)
+                {
+                    secondaryList = new List<TypeDesc>();
+                    s_primitiveNamesSecondary.Add(dataTypeName, XmlSchema.Namespace, secondaryList);
+                }
+                secondaryList.Add(typeDesc);
+            }
+            else
+            {
+                // Primary name registration
+                s_primitiveNames.Add(dataTypeName, XmlSchema.Namespace, typeDesc);
+            }
+
+            // Common registration
             if (s_primitiveTypes[type] == null)
                 s_primitiveTypes.Add(type, typeDesc);
             s_primitiveDataTypes.Add(dataType, typeDesc);
-            s_primitiveNames.Add(dataTypeName, XmlSchema.Namespace, typeDesc);
         }
 
         private static void AddNonXsdPrimitive(Type type, string dataTypeName, string ns, string formatterName, XmlQualifiedName baseTypeName, XmlSchemaFacet[] facets, TypeFlags flags)
@@ -657,6 +693,33 @@ namespace System.Xml.Serialization
         private static void AddSoapEncodedPrimitive(Type type, string dataTypeName, string ns, string formatterName, XmlQualifiedName baseTypeName, TypeFlags flags)
         {
             AddNonXsdPrimitive(type, dataTypeName, ns, formatterName, baseTypeName, Array.Empty<XmlSchemaFacet>(), flags);
+        }
+
+        internal static TypeDesc? GetMatchingTypeDesc(string name, string ns, string fullName)
+        {
+            // First, look for the primary match
+            var td = GetTypeDesc(name, ns);
+            if (td != null && td.FullName == fullName)
+            {
+                return td;
+            }
+
+            // Primary wasn't found, or didn't match. Look for a secondary match
+            var tdList = (List<TypeDesc>?)s_primitiveNamesSecondary[name, ns];
+            if (tdList != null)
+            {
+                var flags = (TypeFlags.SecondaryDataType | TypeFlags.CanBeElementValue | TypeFlags.CanBeTextValue | TypeFlags.CanBeAttributeValue);
+
+                foreach (var typeDesc in tdList)
+                {
+                    if ((typeDesc.Flags & flags) != 0 && typeDesc.FullName == fullName)
+                    {
+                        return typeDesc;
+                    }
+                }
+            }
+
+            return null;
         }
 
         internal static TypeDesc? GetTypeDesc(string name, string ns)
@@ -1033,13 +1096,16 @@ namespace System.Xml.Serialization
 
         internal static void GetAllMembers(StructMapping mapping, List<MemberMapping> list)
         {
+            // Order matters. Legacy behavior gives deference to base mappings. So we start there.
+            // But we want to replace base mappings with overrides from the derived class.
             if (mapping.BaseMapping != null)
             {
                 GetAllMembers(mapping.BaseMapping, list);
             }
             for (int i = 0; i < mapping.Members!.Length; i++)
             {
-                list.Add(mapping.Members[i]);
+                if (!TryReplaceHiddenMapping(list, mapping.Members[i]))
+                    list.Add(mapping.Members[i]);
             }
         }
 
@@ -1060,6 +1126,9 @@ namespace System.Xml.Serialization
 
         private static void GetSettableMembers(StructMapping mapping, List<MemberMapping> list)
         {
+            // Similar to GetAllMembers, we want to replace base mappings with overrides from the derived class.
+            // Although I don't believe order matters here. We just want to make sure we don't have duplicates.
+            // Start with the base mapping.
             if (mapping.BaseMapping != null)
             {
                 GetSettableMembers(mapping.BaseMapping, list);
@@ -1075,9 +1144,25 @@ namespace System.Xml.Serialization
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlReadOnlyPropertyError, propertyInfo.DeclaringType, propertyInfo.Name));
                     }
-                    list.Add(memberMapping);
+
+                    // Replace hidden base members with derived members, or else add the new member.
+                    if (!TryReplaceHiddenMapping(list, memberMapping))
+                        list.Add(memberMapping);
                 }
             }
+        }
+
+        private static bool TryReplaceHiddenMapping(List<MemberMapping> list, MemberMapping memberMapping)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (memberMapping.Hides(list[i]))
+                {
+                    list[i] = memberMapping;
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static bool CanWriteProperty(PropertyInfo propertyInfo, TypeDesc typeDesc)

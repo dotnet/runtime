@@ -15,9 +15,8 @@
 #include "forward_declarations.h"
 #include "RhConfig.h"
 
-#include "PalRedhawkCommon.h"
+#include "PalLimitedContext.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "interoplibinterface.h"
@@ -43,11 +42,18 @@ GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 GPTR_IMPL(Thread, g_pFinalizerThread);
 
 bool RhInitializeFinalization();
+#ifdef TARGET_WINDOWS
+bool RhWaitForFinalizerThreadStart();
+#endif
 
 // Perform any runtime-startup initialization needed by the GC, HandleTable or environmental code in gcenv.ee.
 // Returns true on success or false if a subsystem failed to initialize.
 bool InitializeGC()
 {
+    // Give some headstart to the finalizer thread by launching it early.
+    if (!RhInitializeFinalization())
+        return false;
+
     // Initialize the special MethodTable used to mark free list entries in the GC heap.
     g_FreeObjectEEType.InitializeAsGcFreeType();
     g_pFreeObjectEEType = &g_FreeObjectEEType;
@@ -78,13 +84,17 @@ bool InitializeGC()
     if (FAILED(hr))
         return false;
 
-    if (!RhInitializeFinalization())
-        return false;
-
     // Initialize HandleTable.
     if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
         return false;
 
+#ifdef TARGET_WINDOWS
+    // By now finalizer thread should have initialized FLS slot for thread cleanup notifications.
+    // And ensured that COM is initialized (must happen before allocating FLS slot).
+    // Make sure that this was done.
+    if (!RhWaitForFinalizerThreadStart())
+        return false;
+#endif
     return true;
 }
 
@@ -101,7 +111,7 @@ void MethodTable::InitializeAsGcFreeType()
     m_uBaseSize = sizeof(Array) + SYNC_BLOCK_SKEW;
 }
 
-EXTERN_C void QCALLTYPE RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
+EXTERN_C void QCALLTYPE RhCollect(uint32_t uGeneration, uint32_t uMode, UInt32_BOOL lowMemoryP)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -116,7 +126,7 @@ EXTERN_C void QCALLTYPE RhpCollect(uint32_t uGeneration, uint32_t uMode, UInt32_
     pCurThread->EnablePreemptiveMode();
 }
 
-EXTERN_C int64_t QCALLTYPE RhpGetGcTotalMemory()
+EXTERN_C int64_t QCALLTYPE RhGetGcTotalMemory()
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -132,7 +142,7 @@ EXTERN_C int64_t QCALLTYPE RhpGetGcTotalMemory()
     return ret;
 }
 
-EXTERN_C int32_t QCALLTYPE RhpStartNoGCRegion(int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC)
+EXTERN_C int32_t QCALLTYPE RhStartNoGCRegion(int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC)
 {
     Thread *pCurThread = ThreadStore::GetCurrentThread();
     ASSERT(!pCurThread->IsCurrentThreadInCooperativeMode());
@@ -147,7 +157,7 @@ EXTERN_C int32_t QCALLTYPE RhpStartNoGCRegion(int64_t totalSize, UInt32_BOOL has
     return result;
 }
 
-EXTERN_C int32_t QCALLTYPE RhpEndNoGCRegion()
+EXTERN_C int32_t QCALLTYPE RhEndNoGCRegion()
 {
     ASSERT(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
@@ -395,7 +405,7 @@ FCIMPLEND
 
 // The MethodTable is remembered in some slow-path allocation paths. This value is used in event tracing.
 // It may statistically correlate with the most allocated type on the given stack/thread.
-DECLSPEC_THREAD
+static PLATFORM_THREAD_LOCAL
 MethodTable* tls_pLastAllocationEEType = NULL;
 
 MethodTable* GetLastAllocEEType()
@@ -607,11 +617,11 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     if (pObject == NULL)
         return NULL;
 
-    pObject->set_EEType(pEEType);
+    pObject->SetMethodTable(pEEType);
     if (pEEType->HasComponentSize())
     {
         ASSERT(numElements == (uint32_t)numElements);
-        ((Array*)pObject)->InitArrayLength((uint32_t)numElements);
+        ((Array*)pObject)->SetNumComponents((uint32_t)numElements);
     }
 
     if (isSampled)
@@ -645,7 +655,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
 //  numElements     -  number of array elements
 //  pTransitionFrame-  transition frame to make stack crawlable
 // Returns a pointer to the object allocated or NULL on failure.
-EXTERN_C void* F_CALL_CONV RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame)
+EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, intptr_t numElements, PInvokeTransitionFrame* pTransitionFrame)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 

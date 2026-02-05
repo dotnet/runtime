@@ -1,7 +1,7 @@
 # Requirements to Set Up the Build Environment on Linux
 
 - [Using your Linux Environment](#using-your-linux-environment)
-  - [Debian/Ubuntu](#debian/ubuntu)
+  - [Debian and Ubuntu](#debian-and-ubuntu)
     - [CMake on Older Versions of Ubuntu and Debian](#cmake-on-older-versions-of-ubuntu-and-debian)
     - [Clang for WASM](#clang-for-wasm)
     - [Additional Tools for Cross Building](#additional-tools-for-cross-building)
@@ -28,7 +28,7 @@ eng/common/native/install-dependencies.sh
 
 Note that it is always a good idea to manually double check that all the dependencies were installed correctly if you opt to use the script.
 
-### Debian/Ubuntu
+### Debian and Ubuntu
 
 These instructions are written assuming the current *Ubuntu LTS*.
 
@@ -36,7 +36,7 @@ The packages you need to install are shown in the following list:
 
 - `build-essential`
 - `clang` (see the [Clang for WASM](#clang-for-wasm) section if you plan on doing work on *Web Assembly (Wasm)*)
-- `cmake` (version 3.20 or newer)
+- `cmake` (version 3.26 or newer)
 - `cpio`
 - `curl`
 - `git`
@@ -62,7 +62,7 @@ apt install -y cmake llvm lld clang build-essential \
 
 #### CMake on Older Versions of Ubuntu and Debian
 
-As of now, Ubuntu's `apt` only has until *CMake* version 3.16.3 if you're using *Ubuntu 20.04 LTS* (less in older Ubuntu versions), and version 3.18.4 in *Debian 11* (less in older Debian versions). This is lower than the required 3.20, which in turn makes it incompatible with the runtime repo. To get around this, there are two options you can choose: Use the `snap` package manager, which has a more recent version of *CMake*, or directly use the *Kitware APT Feed*.
+As of now, Ubuntu's `apt` only has until *CMake* version 3.22 if you're using *Ubuntu 22.04 LTS* (less in older Ubuntu versions), and version 3.25.1 in *Debian 12* (less in older Debian versions). This is lower than the required 3.26, which in turn makes it incompatible with the runtime repo. To get around this, there are two options you can choose: Use the `snap` package manager, which has a more recent version of *CMake*, or directly use the *Kitware APT Feed*.
 
 To use `snap`, run the following command:
 
@@ -94,6 +94,10 @@ If you're planning to use your environment to do Linux cross-building to other a
 - `debootstrap`
 - `qemu`
 - `qemu-user-static`
+
+```bash
+apt install binfmt-support debootstrap qemu qemu-user-static
+```
 
 ### Fedora
 

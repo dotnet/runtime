@@ -12,7 +12,7 @@ namespace System.Reflection.Tests
         [InlineData("")]
         [InlineData("keyFile")]
         [InlineData("KeyFile.snk")]
-        public void Ctor_String(string keyFile)
+        public void Ctor_String(string? keyFile)
         {
             var attribute = new AssemblyKeyFileAttribute(keyFile);
             Assert.Equal(keyFile, attribute.KeyFile);

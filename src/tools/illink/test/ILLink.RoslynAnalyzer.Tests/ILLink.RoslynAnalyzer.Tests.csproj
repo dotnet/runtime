@@ -22,13 +22,6 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="$(CompilerPlatformTestingVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
 
-    <!-- Upgrade transitive references of Microsoft.CodeAnalysis.Analyzer.Testing which bring in NS 1.x deps -->
-    <PackageReference Include="DiffPlex" Version="$(CompilerPlatformTestingDiffPlexVersion)" />
-    <PackageReference Include="Microsoft.VisualBasic" Version="$(CompilerPlatformTestingMicrosoftVisualBasicVersion)" />
-    <PackageReference Include="Microsoft.VisualStudio.Composition" Version="$(CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion)" />
-    <!-- Upgrade to a non-vulnerable version of Asn1 - which will be ignored in favor of the framework copy  -->
-    <PackageReference Include="System.Formats.Asn1" Version="$(SystemFormatsAsn1Version)" ExcludeAssets="All" />
-
     <ProjectReference Include="..\..\src\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" />
     <ProjectReference Include="..\..\src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" />
     <ProjectReference Include="..\Mono.Linker.Tests.Cases\**\*.csproj" />
@@ -44,16 +37,12 @@
   <!-- The analyzer tests require the reference assemblies that are compiled against.
        Copy them to the output/publish directory so that tests still work on a different
        machine (i.e. when testing with Helix). -->
-  <Target Name="CopyReferenceAssembliesToOutputDir"
-          DependsOnTargets="FindReferenceAssembliesForReferences"
-          BeforeTargets="AssignTargetPaths;GetCopyToPublishDirectoryItems">
-    <ItemGroup>
-      <None Include="@(ReferencePathWithRefAssemblies->WithMetadataValue('FrameworkReferenceName', 'Microsoft.NETCore.App'))"
-            CopyToOutputDirectory="PreserveNewest"
-            CopyToPublishDirectory="PreserveNewest"
-            Link="live-ref-pack\%(RecursiveDir)%(Filename)%(Extension)"
-            Visible="false" />
-    </ItemGroup>
-  </Target>
+  <ItemGroup>
+    <None Include="$(MicrosoftNetCoreAppRefPackRefDir)**/*.dll"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest"
+          LinkBase="live-ref-pack/"
+          Visible="false" />
+  </ItemGroup>
 
 </Project>

@@ -23,6 +23,23 @@ struct CodeBlockHandle
     TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle);
     // Get the instruction pointer address of the start of the code block
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle);
+    // Get the instruction pointer address of the start of the funclet containing the code block
+    TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle);
+    // Gets the unwind info of the code block at the specified code pointer
+    TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle);
+    // Gets the base address the UnwindInfo of codeInfoHandle is relative to
+    TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle);
+    // Gets the DebugInfo associated with the code block and specifies if the DebugInfo contains
+    // the flag byte which modifies how DebugInfo is parsed.
+    TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte);
+    // Gets the GCInfo associated with the code block and its version
+    // **Currently GetGCInfo only supports X86**
+    void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion);
+    // Gets the offset of the codeInfoHandle inside of the code block
+    TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
+
+    // Extension Methods (implemented in terms of other APIs)
+    bool IsFunclet(CodeBlockHandle codeInfoHandle);
 ```
 
 ## Version 1
@@ -52,19 +69,33 @@ Data descriptors used:
 | `CodeHeapListNode` | `EndAddress` | End address of the used portion of the code heap |
 | `CodeHeapListNode` | `MapBase` | Start of the map - start address rounded down based on OS page size |
 | `CodeHeapListNode` | `HeaderMap` | Bit array used to find the start of methods - relative to `MapBase` |
+| `EEJitManager` | `StoreRichDebugInfo` | Boolean value determining if debug info associated with the JitManager contains rich info. |
 | `RealCodeHeader` | `MethodDesc` | Pointer to the corresponding `MethodDesc` |
+| `RealCodeHeader` | `NumUnwindInfos` | Number of Unwind Infos |
+| `RealCodeHeader` | `UnwindInfos` | Start address of Unwind Infos |
+| `RealCodeHeader` | `DebugInfo` | Pointer to the DebugInfo |
+| `RealCodeHeader` | `GCInfo` | Pointer to the GCInfo encoding |
 | `Module` | `ReadyToRunInfo` | Pointer to the `ReadyToRunInfo` for the module |
+| `ReadyToRunInfo` | `ReadyToRunHeader` | Pointer to the ReadyToRunHeader |
 | `ReadyToRunInfo` | `CompositeInfo` | Pointer to composite R2R info - or itself for non-composite |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | Number of `RuntimeFunctions` |
-| `ReadyToRunInfo` | `RuntimeFunctions` | Pointer to an array of `RuntimeFunctions` |
+| `ReadyToRunInfo` | `RuntimeFunctions` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions)|
+| `ReadyToRunInfo` | `NumHotColdMap` | Number of entries in the `HotColdMap` |
+| `ReadyToRunInfo` | `HotColdMap` | Pointer to an array of 32-bit integers - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
 | `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | Pointer to an `ImageDataDirectory` for the delay load method call thunks |
+| `ReadyToRunInf` | `DebugInfo` | Pointer to an `ImageDataDirectory` for the debug info |
 | `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
+| `ReadyToRunHeader` | `MajorVersion` | ReadyToRun major version |
+| `ReadyToRunHeader` | `MinorVersion` | ReadyToRun minor version |
 | `ImageDataDirectory` | `VirtualAddress` | Virtual address of the image data directory |
 | `ImageDataDirectory` | `Size` | Size of the data |
 | `RuntimeFunction` | `BeginAddress` | Begin address of the function |
+| `RuntimeFunction` | `EndAddress` | End address of the function. Only exists on some platforms |
+| `RuntimeFunction` | `UnwindData` | Pointer to the unwind info for the function |
 | `HashMap` | `Buckets` | Pointer to the buckets of a `HashMap` |
 | `Bucket` | `Keys` | Array of keys of `HashMapSlotsPerBucket` length |
 | `Bucket` | `Values` | Array of values of `HashMapSlotsPerBucket` length |
+| `UnwindInfo` | `FunctionLength` | Length of the associated function in bytes. Only exists on some platforms |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -74,73 +105,60 @@ Global variables used:
 | `HashMapSlotsPerBucket` | uint32 | Number of slots in each bucket of a `HashMap` |
 | `HashMapValueMask` | uint64 | Bitmask used when storing values in a `HashMap` |
 | `FeatureEHFunclets` | uint8 | 1 if EH funclets are enabled, 0 otherwise |
+| `GCInfoVersion` | uint32 | JITted code GCInfo version |
+| `FeatureOnStackReplacement` | uint8 | 1 if FEATURE_ON_STACK_REPLACEMENT is enabled, 0 otherwise |
 
 Contracts used:
 | Contract Name |
 | --- |
 | `PlatformMetadata` |
 
-The bulk of the work is done by the `GetCodeBlockHandle` API that maps a code pointer to information about the containing jitted method.
+The bulk of the work is done by the `GetCodeBlockHandle` API that maps a code pointer to information about the containing jitted method. This relies the [range section lookup](#rangesectionmap).
 
 ```csharp
     private CodeBlock? GetCodeBlock(TargetCodePointer jittedCodeAddress)
     {
-        RangeSection range = RangeSection.Find(_topRangeSectionMap, jittedCodeAddress);
-        if (range.Data == null)
-        {
+        TargetPointer rangeSection = // find range section corresponding to jittedCodeAddress - see RangeSectionMap below
+        if (/* no corresponding range section */)
             return null;
-        }
+
         JitManager jitManager = GetJitManager(range.Data);
-        if (jitManager.GetMethodInfo(range, jittedCodeAddress, out CodeBlock? info))
-        {
+        if (/* JIT manager corresponding to rangeSection */.GetMethodInfo(range, jittedCodeAddress, out CodeBlock? info))
             return info;
-        }
-        else
-        {
-            return null;
-        }
+        return null;
     }
     CodeBlockHandle? IExecutionManager.GetCodeBlockHandle(TargetCodePointer ip)
     {
-        TargetPointer key = ip.AsTargetPointer;
-        if (/*cache*/.ContainsKey(key))
-        {
-            return new CodeBlockHandle(key);
-        }
         CodeBlock? info = GetCodeBlock(ip);
-        if (info == null || !info.Valid)
-        {
+        if (info == null)
             return null;
-        }
-        /*cache*/.TryAdd(key, info);
-        return new CodeBlockHandle(key);
+        return new CodeBlockHandle(ip.AsTargetPointer);
     }
 ```
 
-Here `RangeSection.Find` implements the range section lookup, summarized below.
-
-There are two `JitManager`s: the "EE JitManager" for jitted code and "R2R JitManager" for ReadyToRun code.
+There are two JIT managers: the "EE JitManager" for jitted code and "R2R JitManager" for ReadyToRun code.
 
 The EE JitManager `GetMethodInfo` implements the nibble map lookup, summarized below, followed by returning the `RealCodeHeader` data:
 
 ```csharp
-bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
+bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
 {
-    TargetPointer start = FindMethodCode(rangeSection, jittedCodeAddress); // nibble map lookup
+    info = default;
+    TargetPointer start = // look up jittedCodeAddress in nibble map for rangeSection - see NibbleMap below
     if (start == TargetPointer.Null)
-    {
         return false;
-    }
+
     TargetNUInt relativeOffset = jittedCodeAddress - start;
     int codeHeaderOffset = Target.PointerSize;
     TargetPointer codeHeaderIndirect = start - codeHeaderOffset;
-    if (RangeSection.IsStubCodeBlock(Target, codeHeaderIndirect))
-    {
+
+    // Check if address is in a stub code block
+    if (codeHeaderIndirect < Target.ReadGlobal<byte>("StubCodeBlockLast"))
         return false;
-    }
+
     TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
-    Data.RealCodeHeader realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
-    info = new CodeBlock(jittedCodeAddress, realCodeHeader.MethodDesc, relativeOffset, rangeSection.Data!.JitManager);
+    TargetPointer methodDesc = Target.ReadPointer(codeHeaderAddress + /* RealCodeHeader::MethodDesc offset */);
+    info = new CodeBlock(jittedCodeAddress, realCodeHeader.MethodDesc, relativeOffset);
     return true;
 }
 ```
@@ -148,35 +166,31 @@ bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddres
 The R2R JitManager `GetMethodInfo` finds the runtime function corresponding to an address and maps its entry point pack to a method:
 
 ```csharp
-bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
+bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
 {
-    if (rangeSection.Data == null)
-        throw new ArgumentException(nameof(rangeSection));
-
     info = default;
 
     TargetPointer r2rModule = Target.ReadPointer(/* range section address + RangeSection::R2RModule offset */);
     TargetPointer r2rInfo = Target.ReadPointer(r2rModule + /* Module::ReadyToRunInfo offset */);
 
     // Check if address is in a thunk
-    if (IsStubCodeBlockThunk(rangeSection.Data, r2rInfo, jittedCodeAddress))
+    if (/* jittedCodeAddress is in ReadyToRunInfo::DelayLoadMethodCallThunks */)
         return false;
 
     // Find the relative address that we are looking for
-    TargetCodePointer code = /* code pointer from jittedCodeAddress using PlatformMetadata.GetCodePointerFlags */
+    TargetCodePointer addr = /* code pointer from jittedCodeAddress using PlatformMetadata.GetCodePointerFlags */
     TargetPointer imageBase = Target.ReadPointer(/* range section address + RangeSection::RangeBegin offset */);
-    TargetPointer relativeAddr = code - imageBase;
+    TargetPointer relativeAddr = addr - imageBase;
 
     TargetPointer runtimeFunctions = Target.ReadPointer(r2rInfo + /* ReadyToRunInfo::RuntimeFunctions offset */);
     int index = // Iterate through runtimeFunctions and find index of function with relativeAddress
     if (index < 0)
         return false;
 
-    bool featureEHFunclets = Target.ReadGlobal<byte>(Constants.Globals.FeatureEHFunclets) != 0;
+    bool featureEHFunclets = Target.ReadGlobal<byte>("FeatureEHFunclets") != 0;
     if (featureEHFunclets)
     {
-        // TODO: [cdac] Look up in hot/cold mapping lookup table and if the method is in the cold block,
-        // get the index of the associated hot block.
+        index = // look up hot part index in the hot/cold map
     }
 
     TargetPointer function = runtimeFunctions + (ulong)(index * /* size of RuntimeFunction */);
@@ -186,11 +200,22 @@ bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddres
 
     TargetPointer mapAddress = r2rInfo + /* ReadyToRunInfo::EntryPointToMethodDescMap offset */;
     TargetPointer methodDesc = /* look up entryPoint in HashMap at mapAddress */;
+    while (featureEHFunclets && methodDesc == TargetPointer.Null)
+    {
+        index--;
+        methodDesc = /* re-compute entryPoint based on updated index and look up in HashMap at mapAddress */
+    }
 
-    // TODO: [cdac] Handle method with cold code when computing relative offset
     TargetNUInt relativeOffset = new TargetNUInt(code - startAddress);
+    if (/* function has cold part and addr is in the cold part*/)
+    {
+        uint coldIndex = // look up cold part in hot/cold map
+        TargetPointer coldFunction = runtimeFunctions + (ulong)(coldIndex * /* size of RuntimeFunction */);
+        TargetPointer coldStart = imageBase + Target.Read<uint>(function + /* RuntimeFunction::BeginAddress offset */);
+        relativeOffset = /* function length of hot part */ + addr - coldStart;
+    }
 
-    info = new CodeBlock(startAddress.Value, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
+    info = new CodeBlock(startAddress.Value, methodDesc, relativeOffset);
     return true;
 }
 ```
@@ -204,23 +229,20 @@ class CodeBlock
 
     public TargetCodePointer StartAddress { get; }
     public TargetPointer MethodDesc { get; }
-    public TargetPointer JitManagerAddress { get; }
     public TargetNUInt RelativeOffset { get; }
 
-    public CodeBlock(TargetCodePointer startAddress, TargetPointer methodDesc, TargetNUInt relativeOffset, TargetPointer jitManagerAddress)
+    public CodeBlock(TargetCodePointer startAddress, TargetPointer methodDesc, TargetNUInt relativeOffset)
     {
         StartAddress = startAddress;
         MethodDesc = methodDesc;
         RelativeOffset = relativeOffset;
-        JitManagerAddress = jitManagerAddress;
     }
 
     public TargetPointer MethodDescAddress => _codeHeaderData.MethodDesc;
-    public bool Valid => JitManagerAddress != TargetPointer.Null;
 }
 ```
 
-The remaining contract APIs extract fields of the `CodeBlock`:
+The `GetMethodDesc`, `GetStartAddress`, and `GetRelativeOffset` APIs extract fields of the `CodeBlock`:
 
 ```csharp
     TargetPointer IExecutionManager.GetMethodDesc(CodeBlockHandle codeInfoHandle)
@@ -234,7 +256,42 @@ The remaining contract APIs extract fields of the `CodeBlock`:
         /* find CodeBlock info for codeInfoHandle.Address*/
         return info.StartAddress;
     }
+
+    TargetNUInt IExecutionManager.GetRelativeOffset(CodeBlockHandle codeInfoHandle)
+    {
+        /* find CodeBlock info for codeInfoHandle.Address*/
+        return info.RelativeOffset;
+    }
 ```
+
+`IExecutionManager.GetUnwindInfo` gets the Windows style unwind data in the form of `RUNTIME_FUNCTION` which has a platform dependent implementation. The ExecutionManager delegates to the JitManager implementations as the unwind infos (`RUNTIME_FUNCTION`) are stored differently on jitted and R2R code.
+
+* For jitted code (`EEJitManager`) a list of sorted `RUNTIME_FUNCTION` are stored on the `RealCodeHeader` which is accessed in the same was as `GetMethodInfo` described above. The correct `RUNTIME_FUNCTION` is found by binary searching the list based on IP.
+
+* For R2R code (`ReadyToRunJitManager`), a list of sorted `RUNTIME_FUNCTION` are stored on the module's `ReadyToRunInfo`. This is accessed as described above for `GetMethodInfo`. Again, the relevant `RUNTIME_FUNCTION` is found by binary searching the list based on IP.
+
+Unwind info (`RUNTIME_FUNCTION`) use relative addressing. For managed code, these values are relative to the start of the code's containing range in the RangeSectionMap (described below). This could be the beginning of a `CodeHeap` for jitted code or the base address of the loaded image for ReadyToRun code.
+`GetUnwindInfoBaseAddress` finds this base address for a given `CodeBlockHandle`.
+
+`IExecutionManager.GetDebugInfo` gets a pointer to the relevant DebugInfo for a `CodeBlockHandle`. The ExecutionManager delegates to the JitManager implementations as the DebugInfo is stored in different ways on jitted and R2R code.
+
+* For Jitted code (`EEJitManager`) a pointer to the `DebugInfo` is stored on the `RealCodeHeader` which is accessed in the same way as `GetMethodInfo` described above. `hasFlagByte` is `true` if either the global `FeatureOnStackReplacement` is `true` or `StoreRichDebugInfo` is `true` on the `EEJitManager`.
+
+* For R2R code (`ReadyToRunJitManager`) the `DebugInfo` is stored as part of the R2R image. The relevant `ReadyToRunInfo` stores a pointer to the an `ImageDataDirectory` representing the `DebugInfo` directory. Read the `VirtualAddress` of this data directory as a `NativeArray` containing the `DebugInfos`. To find the specific `DebugInfo`, index into the array using the `index` of the beginning of the R2R function as found like in `GetMethodInfo` above. This yields an offset `offset` value relative to the image base. Read the first variable length uint at `imageBase + offset`, `lookBack`. If `lookBack != 0`, return `imageBase + offset - lookback`. Otherwise return `offset + size of reading lookback`.
+For R2R images, `hasFlagByte` is always `false`.
+
+`IExecutionManager.GetGCInfo` gets a pointer to the relevant GCInfo for a `CodeBlockHandle`. The ExecutionManager delegates to the JitManager implementations as the GCInfo is stored differently on jitted and R2R code.
+
+* For jitted code (`EEJitManager`) a pointer to the `GCInfo` is stored on the `RealCodeHeader` which is accessed in the same way as `GetMethodInfo` described above. This can simply be returned as is. The `GCInfoVersion` is defined by the runtime global `GCInfoVersion`.
+
+* For R2R code (`ReadyToRunJitManager`), the `GCInfo` is stored directly after the `UnwindData`. This in turn is found by looking up the `UnwindInfo` (`RUNTIME_FUNCTION`) and reading the `UnwindData` offset. We find the `UnwindInfo` as described above in `IExecutionManager.GetUnwindInfo`. Once we have the relevant unwind data, we calculate the size of the unwind data and return a pointer to the following byte (first byte of the GCInfo). The size of the unwind data is a platform specific. Currently only X86 is supported with a constant unwind data size of 32-bits.
+    * The `GCInfoVersion` of R2R code is mapped from the R2R MajorVersion and MinorVersion which is read from the ReadyToRunHeader which itself is read from the ReadyToRunInfo (can be found as in GetMethodInfo). The current GCInfoVersion mapping is:
+        * MajorVersion >= 11 and MajorVersion < 15 => 4
+
+
+`IExecutionManager.GetFuncletStartAddress` finds the start of the code blocks funclet. This will be different than the methods start address `GetStartAddress` if the current code block is inside of a funclet. To find the funclet start address, we get the unwind info corresponding to the code block using `IExecutionManager.GetUnwindInfo`. We then parse the unwind info to find the begin address (relative to the unwind info base address) and return the unwind info base address + unwind info begin address.
+
+`IsFunclet` is implemented in terms of `IExecutionManager.GetStartAddress` and `IExecutionManager.GetFuncletStartAddress`. If the values are the same, the code block handle is not a funclet. If they are different, it is a funclet.
 
 ### RangeSectionMap
 
@@ -257,6 +314,10 @@ On 64-bit targets, we take advantage of the fact that most architectures don't s
 
 That is, level 5 has 256 entires pointing to level 4 maps (or nothing if there's no
 code allocated in that address range), level 4 entires point to level 3 maps and so on.  Each level 1 map has 256 entries covering a 128 KiB chunk and pointing to a linked list of range section fragments that fall within that 128 KiB chunk.
+
+### Native Format
+
+The ReadyToRun image stores data in a compressed native foramt defined in [nativeformatreader.h](../../../src/coreclr/vm/nativeformatreader.h).
 
 ### NibbleMap
 

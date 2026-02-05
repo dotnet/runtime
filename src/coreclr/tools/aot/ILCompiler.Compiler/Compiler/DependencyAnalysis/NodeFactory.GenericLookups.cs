@@ -27,6 +27,16 @@ namespace ILCompiler.DependencyAnalysis
                     return new TypeHandleGenericLookupResult(type);
                 });
 
+                _necessaryTypeSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new NecessaryTypeHandleGenericLookupResult(type);
+                });
+
+                _metadataTypeSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
+                {
+                    return new MetadataTypeHandleGenericLookupResult(type);
+                });
+
                 _unwrapNullableSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
                     return new UnwrapNullableTypeHandleGenericLookupResult(type);
@@ -95,16 +105,27 @@ namespace ILCompiler.DependencyAnalysis
                 return _typeSymbols.GetOrAdd(type);
             }
 
+            private NodeCache<TypeDesc, GenericLookupResult> _necessaryTypeSymbols;
+
+            public GenericLookupResult NecessaryType(TypeDesc type)
+            {
+                return _necessaryTypeSymbols.GetOrAdd(type);
+            }
+
+            private NodeCache<TypeDesc, GenericLookupResult> _metadataTypeSymbols;
+
+            public GenericLookupResult MetadataType(TypeDesc type)
+            {
+                return _metadataTypeSymbols.GetOrAdd(type);
+            }
+
             private NodeCache<TypeDesc, GenericLookupResult> _unwrapNullableSymbols;
 
             public GenericLookupResult UnwrapNullableType(TypeDesc type)
             {
-                // An actual unwrap nullable lookup is only required if the type is exactly a runtime
-                // determined type associated with System.__UniversalCanon itself, or if it's
+                // An actual unwrap nullable lookup is only required if the type is exactly
                 // a runtime determined instance of Nullable.
-                if (type.IsRuntimeDeterminedType && (
-                    ((RuntimeDeterminedType)type).CanonicalType.IsCanonicalDefinitionType(CanonicalFormKind.Universal) ||
-                    ((RuntimeDeterminedType)type).CanonicalType.IsNullable))
+                if (type.IsRuntimeDeterminedType && ((RuntimeDeterminedType)type).CanonicalType.IsNullable)
                     return _unwrapNullableSymbols.GetOrAdd(type);
                 else
                 {

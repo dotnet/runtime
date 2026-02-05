@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -67,7 +68,7 @@ internal static partial class Interop
             if (error == 0)
             {
                 Debug.Assert(passwd.Name != null);
-                username = Marshal.PtrToStringUTF8((IntPtr)passwd.Name);
+                username = Utf8StringMarshaller.ConvertToManaged(passwd.Name);
                 return true;
             }
 

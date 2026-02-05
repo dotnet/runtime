@@ -32,6 +32,7 @@
 #include <sys/proc.h>
 #define MINIPAL_DEBUGGER_PRESENT_CHECK
 #elif defined(__sun)
+#include <stdio.h>
 #include <fcntl.h>
 #include <procfs.h>
 #include <errno.h>

@@ -22,6 +22,14 @@ void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl)
 
 namespace
 {
+    void file_printf(FILE* fallbackFileHandle, const pal::char_t* format, ...)
+    {
+        va_list args;
+        va_start(args, format);
+        pal::file_vprintf(fallbackFileHandle, format, args);
+        va_end(args);
+    }
+    
     void print_line_to_handle(const pal::char_t* message, HANDLE handle, FILE* fallbackFileHandle) {
         // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
         // In order to properly print UTF-8 and GB18030 characters to the console without requiring the user to use chcp to a compatible locale, we use WriteConsoleW.
@@ -33,7 +41,7 @@ namespace
         {
             // We use file_vprintf to handle UTF-8 formatting. The WriteFile api will output the bytes directly with Unicode bytes,
             // while pal::file_vprintf will convert the characters to UTF-8.
-            pal::file_vprintf(fallbackFileHandle, message, va_list());
+            file_printf(fallbackFileHandle, _X("%s"), message);
         }
         else {
             ::WriteConsoleW(handle, message, (int)pal::strlen(message), NULL, NULL);
@@ -383,6 +391,11 @@ namespace
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
+    return get_default_installation_dir_for_arch(get_current_arch(), recv);
+}
+
+bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
+{
     //  ***Used only for testing***
     pal::string_t environmentOverride;
     if (test_only_getenv(_X("_DOTNET_TEST_DEFAULT_INSTALL_PATH"), &environmentOverride))
@@ -392,11 +405,6 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
     //  ***************************
 
-    return get_default_installation_dir_for_arch(get_current_arch(), recv);
-}
-
-bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
-{
     bool is_current_arch = arch == get_current_arch();
 
     // Bail out early for unsupported requests for different architectures
@@ -657,9 +665,31 @@ pal::string_t pal::get_current_os_rid_platform()
     return ridOS;
 }
 
+namespace
+{
+    bool is_directory_separator(pal::char_t c)
+    {
+        return c == DIR_SEPARATOR || c == L'/';
+    }
+}
+
 bool pal::is_path_rooted(const string_t& path)
 {
-    return path.length() >= 2 && path[1] == L':';
+    return (path.length() >= 1 && is_directory_separator(path[0])) // UNC or device paths
+        || (path.length() >= 2 && path[1] == L':'); // Drive letter paths
+}
+
+bool pal::is_path_fully_qualified(const string_t& path)
+{
+    if (path.length() < 2)
+        return false;
+
+    // Check for UNC and DOS device paths
+    if (is_directory_separator(path[0]))
+        return path[1] == L'?' || is_directory_separator(path[1]);
+
+    // Check for drive absolute path - for example C:\.
+    return path.length() >= 3 && path[1] == L':' && is_directory_separator(path[2]);
 }
 
 // Returns true only if an env variable can be read successfully to be non-empty.
@@ -690,6 +720,28 @@ bool pal::getenv(const char_t* name, string_t* recv)
 
     recv->assign(buffer.data());
     return true;
+}
+
+void pal::enumerate_environment_variables(const std::function<void(const pal::char_t*, const pal::char_t*)> callback)
+{
+    LPWCH env_strings = ::GetEnvironmentStringsW();
+    if (env_strings == nullptr)
+        return;
+
+    LPWCH current = env_strings;
+    while (*current != L'\0')
+    {
+        LPWCH eq_ptr = ::wcschr(current, L'=');
+        if (eq_ptr != nullptr && eq_ptr != current)
+        {
+            pal::string_t name(current, eq_ptr - current);
+            callback(name.c_str(), eq_ptr + 1);
+        }
+
+        current += pal::strlen(current) + 1; // Move to next string
+    }
+
+    ::FreeEnvironmentStringsW(env_strings);
 }
 
 int pal::xtoi(const char_t* input)
@@ -898,8 +950,12 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
                 }
             }
 
-            // Remove the \\?\ prefix, unless it is necessary or was already there
-            if (LongFile::IsExtended(str) && !LongFile::IsExtended(*path) &&
+            // Remove the UNC extended prefix (\\?\UNC\) or extended prefix (\\?\) unless it is necessary or was already there
+            if (LongFile::IsUNCExtended(str) && !LongFile::IsUNCExtended(*path) && str.length() < MAX_PATH)
+            {
+                str.replace(0, LongFile::UNCExtendedPathPrefix.size(), LongFile::UNCPathPrefix);
+            }
+            else if (LongFile::IsExtended(str) && !LongFile::IsExtended(*path) &&
                 !LongFile::ShouldNormalize(str.substr(LongFile::ExtendedPrefix.size())))
             {
                 str.erase(0, LongFile::ExtendedPrefix.size());
@@ -990,6 +1046,12 @@ bool pal::file_exists(const string_t& path)
 {
     string_t tmp(path);
     return pal::fullpath(&tmp, true);
+}
+
+bool pal::is_directory(const pal::string_t& path)
+{
+    DWORD attributes = ::GetFileAttributesW(path.c_str());
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)

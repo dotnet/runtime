@@ -1,7 +1,6 @@
 <Project>
   <PropertyGroup>
     <TargetArchitecture>wasm</TargetArchitecture>
-    <UseMonoRuntime>true</UseMonoRuntime>
 
     <!-- Top level -->
     <WasmBuildAppDependsOn>
@@ -18,7 +17,6 @@
     </_WasmBuildAppCoreDependsOn>
 
     <WasmNestedPublishAppDependsOn>
-      _PrepareForNestedPublish;
       _WasmBuildAppCore;
     </WasmNestedPublishAppDependsOn>
   </PropertyGroup>

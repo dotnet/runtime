@@ -30,7 +30,7 @@ namespace System.Runtime.InteropServices
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, castable.GetType(), interfaceType));
 
             RuntimeType implType = handle.GetRuntimeType();
-            if (!implType.IsInterface)
+            if (!implType.IsActualInterface)
                 throw new InvalidOperationException(SR.Format(SR.IDynamicInterfaceCastable_NotInterface, implType.ToString()));
 
             if (!implType.IsDefined(typeof(DynamicInterfaceCastableImplementationAttribute), inherit: false))

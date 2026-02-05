@@ -288,7 +288,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray requiredPropertiesSet)
+        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray assignedOrNotRequiredPropertiesSet)
         {
             StringBuilder listOfMissingPropertiesBuilder = new();
             bool first = true;
@@ -298,7 +298,7 @@ namespace System.Text.Json
 
             foreach (JsonPropertyInfo property in parent.PropertyCache)
             {
-                if (!property.IsRequired || requiredPropertiesSet[property.RequiredPropertyIndex])
+                if (assignedOrNotRequiredPropertiesSet[property.PropertyIndex])
                 {
                     continue;
                 }
@@ -324,6 +324,46 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowJsonException_DuplicatePropertyNotAllowed(JsonPropertyInfo property)
+        {
+            throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_JsonPropertyInfo, property.Name, property.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_DuplicatePropertyNotAllowed()
+        {
+            throw new JsonException(SR.DuplicatePropertiesNotAllowed);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_DuplicatePropertyNotAllowed(string name)
+        {
+            throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_NameSpan, Truncate(name)));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_DuplicatePropertyNotAllowed(ReadOnlySpan<byte> nameBytes)
+        {
+            string name = Encoding.UTF8.GetString(nameBytes);
+            throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_NameSpan, Truncate(name)));
+        }
+
+        private static string Truncate(ReadOnlySpan<char> str)
+        {
+            const int MaxLength = 15;
+
+            if (str.Length <= MaxLength)
+            {
+                return str.ToString();
+            }
+
+            Span<char> builder = stackalloc char[MaxLength + 3];
+            str.Slice(0, MaxLength).CopyTo(builder);
+            builder[MaxLength] = builder[MaxLength + 1] = builder[MaxLength + 2] = '.';
+            return builder.ToString();
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_NamingPolicyReturnNull(JsonNamingPolicy namingPolicy)
         {
             throw new InvalidOperationException(SR.Format(SR.NamingPolicyReturnNull, namingPolicy));
@@ -336,7 +376,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_SerializerConverterFactoryReturnsJsonConverterFactorty(Type converterType)
+        public static void ThrowInvalidOperationException_SerializerConverterFactoryReturnsJsonConverterFactory(Type converterType)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializerConverterFactoryReturnsJsonConverterFactory, converterType));
         }
@@ -509,7 +549,7 @@ namespace System.Text.Json
             if (string.IsNullOrEmpty(message))
             {
                 // Use a default message.
-                message = SR.Format(SR.SerializeUnableToSerialize);
+                message = SR.SerializeUnableToSerialize;
                 ex.AppendPathInformation = true;
             }
 
@@ -687,7 +727,7 @@ namespace System.Text.Json
         public static void ThrowJsonException_MetadataUnexpectedProperty(ReadOnlySpan<byte> propertyName, scoped ref ReadStack state)
         {
             state.Current.JsonPropertyName = propertyName.ToArray();
-            ThrowJsonException(SR.Format(SR.MetadataUnexpectedProperty));
+            ThrowJsonException(SR.MetadataUnexpectedProperty);
         }
 
         [DoesNotReturn]
@@ -741,7 +781,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowJsonException_DuplicateMetadataProperty(ReadOnlySpan<byte> utf8PropertyName)
         {
-            ThrowJsonException(SR.Format(SR.DuplicateMetadataProperty, JsonHelpers.Utf8GetString(utf8PropertyName)));
+            ThrowJsonException(SR.Format(SR.DuplicateMetadataProperty, Encoding.UTF8.GetString(utf8PropertyName)));
         }
 
         [DoesNotReturn]
@@ -937,6 +977,12 @@ namespace System.Text.Json
         public static void ThrowOperationCanceledException_PipeWriteCanceled()
         {
             throw new OperationCanceledException(SR.PipeWriterCanceled);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowOperationCanceledException_PipeReadCanceled()
+        {
+            throw new OperationCanceledException(SR.PipeReaderCanceled);
         }
 
         [DoesNotReturn]

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -11,7 +12,7 @@ using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
-    internal sealed record ManagedHResultExceptionMarshallingInfo : MarshallingInfo;
+    internal sealed record ManagedHResultExceptionMarshallingInfo(Guid InterfaceId) : MarshallingInfo;
 
     internal sealed class ManagedHResultExceptionGeneratorResolver : IMarshallingGeneratorResolver
     {
@@ -37,7 +38,7 @@ namespace Microsoft.Interop
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => info.ManagedType;
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
             {
-                Debug.Assert(info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo);
+                ManagedHResultExceptionMarshallingInfo marshallingInfo = (ManagedHResultExceptionMarshallingInfo)info.MarshallingAttributeInfo;
 
                 if (context.CurrentStage != StubIdentifierContext.Stage.NotifyForSuccessfulInvoke)
                 {
@@ -46,11 +47,17 @@ namespace Microsoft.Interop
 
                 (string managedIdentifier, _) = context.GetIdentifiers(info);
 
-                // Marshal.ThrowExceptionForHR(<managed>);
+                // Marshal.ThrowExceptionForHR(<managed>, new(<embeddedDataBlob>), <thisParameter>);
                 yield return MethodInvocationStatement(
                                 TypeSyntaxes.System_Runtime_InteropServices_Marshal,
                                 IdentifierName("ThrowExceptionForHR"),
-                                Argument(IdentifierName(managedIdentifier)));
+                                Argument(IdentifierName(managedIdentifier)),
+                                Argument(ImplicitObjectCreationExpression(
+                                    ArgumentList(
+                                        SingletonSeparatedList(
+                                            Argument(ComInterfaceGeneratorHelpers.CreateEmbeddedDataBlobCreationStatement(marshallingInfo.InterfaceId.ToByteArray())))),
+                                    initializer: null)),
+                                Argument(CastExpression(TypeSyntaxes.System_IntPtr, IdentifierName(VirtualMethodPointerStubGenerator.NativeThisParameterIdentifier))));
             }
 
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;

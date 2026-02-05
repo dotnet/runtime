@@ -17,11 +17,26 @@ namespace System.Runtime.CompilerServices
     public static unsafe class Unsafe
     {
         /// <summary>
+        /// Determines the byte offset from origin to target from the given references.
+        /// </summary>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IntPtr ByteOffset<T>(ref readonly T origin, ref readonly T target)
+        {
+            throw new PlatformNotSupportedException();
+
+            // ldarg .1
+            // ldarg .0
+            // sub
+            // ret
+        }
+
+        /// <summary>
         /// Returns a pointer to the given by-ref parameter.
         /// </summary>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void* AsPointer<T>(ref T value)
+        public static void* AsPointer<T>(ref readonly T value)
         {
             throw new PlatformNotSupportedException();
 

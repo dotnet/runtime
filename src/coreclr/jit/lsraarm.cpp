@@ -68,10 +68,10 @@ int LinearScan::BuildLclHeap(GenTree* tree)
             {
                 internalIntCount = 0;
             }
-            else if (!compiler->info.compInitMem)
+            else if (!m_compiler->info.compInitMem)
             {
                 // No need to initialize allocated stack space.
-                if (sizeVal < compiler->eeGetPageSize())
+                if (sizeVal < m_compiler->eeGetPageSize())
                 {
                     internalIntCount = 0;
                 }
@@ -98,7 +98,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     // a temporary register for doing the probe. Note also that if the outgoing argument space is
     // large enough that it can't be directly encoded in SUB/ADD instructions, we also need a temp
     // register to load the large sized constant into a register.
-    if (compiler->lvaOutgoingArgSpaceSize > 0)
+    if (m_compiler->lvaOutgoingArgSpaceSize > 0)
     {
         internalIntCount = 1;
     }
@@ -131,11 +131,11 @@ int LinearScan::BuildLclHeap(GenTree* tree)
 //
 int LinearScan::BuildShiftLongCarry(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO);
+    assert(tree->OperIs(GT_LSH_HI) || tree->OperIs(GT_RSH_LO));
 
     int      srcCount = 2;
     GenTree* source   = tree->AsOp()->gtOp1;
-    assert((source->OperGet() == GT_LONG) && source->isContained());
+    assert(source->OperIs(GT_LONG) && source->isContained());
 
     GenTree* sourceLo = source->gtGetOp1();
     GenTree* sourceHi = source->gtGetOp2();
@@ -146,7 +146,7 @@ int LinearScan::BuildShiftLongCarry(GenTree* tree)
 
     if (!tree->isContained())
     {
-        if (tree->OperGet() == GT_LSH_HI)
+        if (tree->OperIs(GT_LSH_HI))
         {
             setDelayFree(sourceLoUse);
         }
@@ -249,7 +249,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_STORE_LCL_VAR:
             if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
             {
-                dstCount = compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
+                dstCount = m_compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
             }
             FALLTHROUGH;
 
@@ -372,7 +372,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 1;
             assert(dstCount == 0);
             BuildUse(tree->gtGetOp1());
-            killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             BuildKills(tree, killMask);
             break;
 
@@ -440,7 +440,7 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_CNS_DBL:
-            if (tree->TypeGet() == TYP_FLOAT)
+            if (tree->TypeIs(TYP_FLOAT))
             {
                 // An int register for float constant
                 buildInternalIntRegisterDefForNode(tree);
@@ -448,7 +448,7 @@ int LinearScan::BuildNode(GenTree* tree)
             else
             {
                 // TYP_DOUBLE
-                assert(tree->TypeGet() == TYP_DOUBLE);
+                assert(tree->TypeIs(TYP_DOUBLE));
 
                 // Two int registers for double constant
                 buildInternalIntRegisterDefForNode(tree);
@@ -468,19 +468,19 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETURN:
             srcCount = BuildReturn(tree);
-            killMask = getKillSetForReturn();
+            killMask = getKillSetForReturn(tree);
             BuildKills(tree, killMask);
             break;
 
         case GT_RETFILT:
             assert(dstCount == 0);
-            if (tree->TypeGet() == TYP_VOID)
+            if (tree->TypeIs(TYP_VOID))
             {
                 srcCount = 0;
             }
             else
             {
-                assert(tree->TypeGet() == TYP_INT);
+                assert(tree->TypeIs(TYP_INT));
                 srcCount = 1;
                 BuildUse(tree->gtGetOp1(), RBM_INTRET.GetIntRegSet());
             }
@@ -597,7 +597,7 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             GenTree* src = tree->gtGetOp2();
 
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
+            if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
             {
                 srcCount = BuildGCWriteBarrier(tree);
                 break;
@@ -631,12 +631,18 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
             break;
 
+        case GT_ASYNC_CONTINUATION:
+            srcCount = 0;
+            assert(dstCount == 1);
+            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
+            break;
+
         case GT_COPY:
             srcCount = 1;
 #ifdef TARGET_ARM
             // This case currently only occurs for double types that are passed as TYP_LONG;
             // actual long types would have been decomposed by now.
-            if (tree->TypeGet() == TYP_LONG)
+            if (tree->TypeIs(TYP_LONG))
             {
                 dstCount = 2;
             }
@@ -647,11 +653,6 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             BuildUse(tree->gtGetOp1());
             BuildDefs(tree, dstCount);
-            break;
-
-        case GT_PUTARG_SPLIT:
-            srcCount = BuildPutArgSplit(tree->AsPutArgSplit());
-            dstCount = tree->AsPutArgSplit()->gtNumRegs;
             break;
 
         case GT_PUTARG_STK:
@@ -688,11 +689,14 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_LCL_ADDR:
         case GT_PHYSREG:
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_RESUME:
+        case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_PINVOKE_PROLOG:
         case GT_JCC:
         case GT_SETCC:
         case GT_MEMORYBARRIER:
+        case GT_RETURN_SUSPEND:
             srcCount = BuildSimple(tree);
             break;
 
@@ -724,7 +728,7 @@ int LinearScan::BuildNode(GenTree* tree)
     assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsValue() || (dstCount != 0));
-    assert(dstCount == tree->GetRegisterDstCount(compiler));
+    assert(dstCount == tree->GetRegisterDstCount(m_compiler));
     return srcCount;
 }
 

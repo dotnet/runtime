@@ -879,7 +879,7 @@ ErrExit:
 STDMETHODIMP RegMeta::FindMember(
     mdTypeDef   td,                     // [IN] given typedef
     LPCWSTR     szName,                 // [IN] member name
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdToken     *pmb)                   // [OUT] matching memberdef
 {
@@ -917,7 +917,7 @@ ErrExit:
 STDMETHODIMP RegMeta::FindMethod(
     mdTypeDef   td,                     // [IN] given typedef
     LPCWSTR     szName,                 // [IN] member name
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdMethodDef *pmb)                   // [OUT] matching memberdef
 {
@@ -931,7 +931,7 @@ STDMETHODIMP RegMeta::FindMethod(
 
     if (szName == NULL)
         IfFailGo(E_INVALIDARG);
-    PREFIX_ASSUME(szName != NULL);
+    _ASSERTE(szName != NULL);
 
     // If this is a global method, then use the <Module> typedef as parent.
     IsGlobalMethodParent(&td);
@@ -955,7 +955,7 @@ STDMETHODIMP
 RegMeta::FindField(
     mdTypeDef       td,             // [IN] given typedef
     LPCWSTR         szName,         // [IN] member name
-    PCCOR_SIGNATURE pvSigBlob,      // [IN] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE pvSigBlob,      // [IN] point to a blob value of signature
     ULONG           cbSigBlob,      // [IN] count of bytes in the signature blob
     mdFieldDef     *pmb)            // [OUT] matching memberdef
 {
@@ -993,7 +993,7 @@ ErrExit:
 STDMETHODIMP RegMeta::FindMemberRef(
     mdToken     tkPar,                  // [IN] given parent token.
     LPCWSTR     szName,                 // [IN] member name
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdMemberRef *pmr)                   // [OUT] matching memberref
 {

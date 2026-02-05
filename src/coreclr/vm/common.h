@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// common.h - precompiled headers include for the COM+ Execution Engine
-//
 
 //
-
+// common.h - precompiled headers include for the CLR Execution Engine
+//
 
 #ifndef _common_h_
 #define _common_h_
@@ -70,10 +68,12 @@
 #include <time.h>
 #include <limits.h>
 #include <assert.h>
+#include <cstdint>
+#include <functional>
 
 #include <olectl.h>
 
-#ifdef HOST_AMD64
+#if defined(HOST_AMD64) || defined(HOST_X86)
 #include <xmmintrin.h>
 #endif
 
@@ -93,7 +93,7 @@ using std::min;
 
 #include "stdmacros.h"
 
-#define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:I64(0xCCCCCCCCCCCCCCCC)))
+#define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:0xCCCCCCCCCCCCCCCCLL))
 
 #include "switches.h"
 #include "holder.h"
@@ -123,12 +123,15 @@ typedef VPTR(class EditAndContinueModule) PTR_EditAndContinueModule;
 typedef DPTR(class EEClass)             PTR_EEClass;
 typedef DPTR(class DelegateEEClass)     PTR_DelegateEEClass;
 typedef VPTR(class EECodeManager)       PTR_EECodeManager;
+#ifdef FEATURE_INTERPRETER
+typedef VPTR(class InterpreterCodeManager) PTR_InterpreterCodeManager;
+#endif
 typedef DPTR(class RangeSectionMap)     PTR_RangeSectionMap;
 typedef DPTR(class EEConfig)            PTR_EEConfig;
 typedef VPTR(class EEDbgInterfaceImpl)  PTR_EEDbgInterfaceImpl;
 typedef VPTR(class DebugInfoManager)    PTR_DebugInfoManager;
 typedef DPTR(class FieldDesc)           PTR_FieldDesc;
-typedef VPTR(class Frame)               PTR_Frame;
+typedef DPTR(class Frame)               PTR_Frame;
 typedef DPTR(class GCFrame)             PTR_GCFrame;
 typedef VPTR(class ICodeManager)        PTR_ICodeManager;
 typedef VPTR(class IJitManager)         PTR_IJitManager;
@@ -141,7 +144,7 @@ typedef DPTR(class MethodImpl)          PTR_MethodImpl;
 typedef DPTR(class MethodTable)         PTR_MethodTable;
 typedef DPTR(class CoreLibBinder)      PTR_CoreLibBinder;
 typedef VPTR(class Module)              PTR_Module;
-typedef DPTR(class NDirectMethodDesc)   PTR_NDirectMethodDesc;
+typedef DPTR(class PInvokeMethodDesc)   PTR_PInvokeMethodDesc;
 typedef DPTR(class Thread)              PTR_Thread;
 typedef DPTR(class Object)              PTR_Object;
 typedef DPTR(PTR_Object)                PTR_PTR_Object;
@@ -201,22 +204,10 @@ Thread * const CURRENT_THREAD = NULL;
     (void)CURRENT_THREAD_AVAILABLE; /* silence "local variable initialized but not used" warning */ \
 
 #ifndef DACCESS_COMPILE
-EXTERN_C AppDomain* STDCALL GetAppDomain();
+AppDomain* GetAppDomain();
 #endif //!DACCESS_COMPILE
 
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
-
-#ifndef memcpyUnsafe_f
-#define memcpyUnsafe_f
-
-// use this when you want to memcpy something that contains GC refs
-FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
-{
-    WRAPPER_NO_CONTRACT;
-    return memcpy(dest, src, len);
-}
-
-#endif // !memcpyUnsafe_f
 
 FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
 {
@@ -245,7 +236,7 @@ namespace Loader
 #include "utilcode.h"
 #include "log.h"
 #include "loaderheap.h"
-#include "stgpool.h"
+#include "memorystreams.h"
 
 // src/vm
 #include "gcenv.interlocked.h"
@@ -281,16 +272,13 @@ namespace Loader
 #include "eehash.h"
 
 #include "vars.hpp"
-#include "eventstore.hpp"
 
 #include "synch.h"
 #include "regdisp.h"
 #include "stackframe.h"
-#include "gms.h"
 #include "fcall.h"
 #include "syncblk.h"
 #include "gcdesc.h"
-#include "specialstatics.h"
 #include "object.h"  // <NICE> We should not really need to put this so early... </NICE>
 #include "gchelpers.h"
 #include "peassembly.h"

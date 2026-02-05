@@ -1412,7 +1412,8 @@ namespace System.Threading
 
         public int WaitingUpgradeCount => (int)_numUpgradeWaiters;
 
-        public int WaitingWriteCount => (int)_numWriteWaiters;
+        // Include the thread that may be waiting in upgradable mode.
+        public int WaitingWriteCount => (int)_numWriteWaiters + (int)_numWriteUpgradeWaiters;
 
         private struct SpinLock
         {

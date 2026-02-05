@@ -169,14 +169,8 @@ CorUnix::InternalDuplicateHandle(
         goto InternalDuplicateHandleExit;
     }
 
-    /* Since handles can be remoted to others processes using PAL_LocalHsndleToRemote
-       and PAL_RemoteHandleToLocal, DuplicateHandle needs some special handling
-       when this scenario occurs.
-
-       if hSourceProcessHandle is from another process OR
-       hTargetProcessHandle is from another process but both aren't
-       ( handled above ) return hSourceHandle.
-    */
+    // Handles can't be remoted cross-process.
+    // Just return the same handle.
     if (source_process_id != cur_process_id
         || target_process_id != cur_process_id)
     {

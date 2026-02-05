@@ -344,12 +344,12 @@ handle_enum:
 				break;
 			}
 
-			t = m_class_get_byval_arg (t->data.generic_class->container_class);
+			t = m_class_get_byval_arg (m_type_data_get_generic_class (t)->container_class);
 			type = t->type;
 			goto handle_enum;
 		case MONO_TYPE_VALUETYPE:
-			if (type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (t->data.klass)) {
-				type = mono_class_enum_basetype_internal (t->data.klass)->type;
+			if (type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass (t))) {
+				type = mono_class_enum_basetype_internal (m_type_data_get_klass (t))->type;
 				goto handle_enum;
 			}
 			mono_mb_emit_no_nullcheck (mb);
@@ -1009,9 +1009,9 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 			case MONO_TYPE_VOID:
 				break;
 			case MONO_TYPE_VALUETYPE:
-				klass = sig->ret->data.klass;
+				klass = m_type_data_get_klass (sig->ret);
 				if (m_class_is_enumtype (klass)) {
-					type = mono_class_enum_basetype_internal (sig->ret->data.klass)->type;
+					type = mono_class_enum_basetype_internal (m_type_data_get_klass (sig->ret))->type;
 					goto handle_enum;
 				}
 				mono_emit_marshal (&m, 0, sig->ret, spec, 0, NULL, MARSHAL_ACTION_CONV_RESULT);
@@ -2052,7 +2052,8 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 			}
 			mono_mb_emit_ldarg_addr (mb, 1);
 			mono_mb_emit_ldarg (mb, 0);
-			mono_mb_emit_icall (mb, mono_get_addr_compiled_method);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_LDVIRTFTN_DELEGATE);
 			mono_mb_emit_op (mb, CEE_CALLI, target_method_sig);
 		} else {
 			mono_mb_emit_byte (mb, CEE_LDNULL);

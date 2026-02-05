@@ -15,12 +15,7 @@ namespace System.Net.Http
 {
     internal static class WinHttpResponseParser
     {
-        private const string EncodingNameDeflate = "DEFLATE";
-        private const string EncodingNameGzip = "GZIP";
-
-        public static HttpResponseMessage CreateResponseMessage(
-            WinHttpRequestState state,
-            DecompressionMethods manuallyProcessedDecompressionMethods)
+        public static HttpResponseMessage CreateResponseMessage(WinHttpRequestState state)
         {
             HttpRequestMessage? request = state.RequestMessage;
             SafeWinHttpHandle? requestHandle = state.RequestHandle;
@@ -64,36 +59,8 @@ namespace System.Net.Http
 
                 // Create response stream and wrap it in a StreamContent object.
                 var responseStream = new WinHttpResponseStream(requestHandle, state, response);
-                state.RequestHandle = null; // ownership successfully transferred to WinHttpResponseStram.
-                Stream decompressedStream = responseStream;
-
-                if (manuallyProcessedDecompressionMethods != DecompressionMethods.None)
-                {
-                    int contentEncodingStartIndex = 0;
-                    int contentEncodingLength = GetResponseHeader(
-                        requestHandle,
-                        Interop.WinHttp.WINHTTP_QUERY_CONTENT_ENCODING,
-                        buffer);
-
-                    ReadOnlySpan<char> value = new ReadOnlySpan<char>(buffer, contentEncodingStartIndex, contentEncodingLength).Trim();
-                    if (!value.IsEmpty)
-                    {
-                        if ((manuallyProcessedDecompressionMethods & DecompressionMethods.GZip) == DecompressionMethods.GZip &&
-                            value.Equals(EncodingNameGzip.AsSpan(), StringComparison.OrdinalIgnoreCase))
-                        {
-                            decompressedStream = new GZipStream(responseStream, CompressionMode.Decompress);
-                            stripEncodingHeaders = true;
-                        }
-                        else if ((manuallyProcessedDecompressionMethods & DecompressionMethods.Deflate) == DecompressionMethods.Deflate &&
-                                 value.Equals(EncodingNameDeflate.AsSpan(), StringComparison.OrdinalIgnoreCase))
-                        {
-                            decompressedStream = new DeflateStream(responseStream, CompressionMode.Decompress);
-                            stripEncodingHeaders = true;
-                        }
-                    }
-                }
-
-                response.Content = new NoWriteNoSeekStreamContent(decompressedStream);
+                state.RequestHandle = null; // ownership successfully transferred to WinHttpResponseStream.
+                response.Content = new NoWriteNoSeekStreamContent(responseStream);
                 response.RequestMessage = request;
 
                 // Parse raw response headers and place them into response message.
@@ -187,7 +154,16 @@ namespace System.Net.Http
                 index = originalIndex;
 
                 buffer = new char[bufferLength];
-                return GetResponseHeader(requestHandle, infoLevel, ref buffer, ref index, out headerValue);
+                fixed (char* pBuffer = &buffer[0])
+                {
+                    if (QueryHeaders(requestHandle, infoLevel, pBuffer, ref bufferLength, ref index))
+                    {
+                        headerValue = new string(pBuffer, 0, bufferLength);
+                        return true;
+                    }
+                }
+
+                lastError = Marshal.GetLastWin32Error();
             }
 
             throw WinHttpException.CreateExceptionUsingError(lastError, nameof(Interop.WinHttp.WinHttpQueryHeaders));

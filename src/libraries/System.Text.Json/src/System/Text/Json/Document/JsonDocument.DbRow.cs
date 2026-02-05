@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -51,19 +52,13 @@ namespace System.Text.Json
 
             internal const int UnknownSize = -1;
 
-#if DEBUG
-            static unsafe DbRow()
-            {
-                Debug.Assert(sizeof(DbRow) == Size);
-            }
-#endif
-
             internal DbRow(JsonTokenType jsonTokenType, int location, int sizeOrLength)
             {
                 Debug.Assert(jsonTokenType > JsonTokenType.None && jsonTokenType <= JsonTokenType.Null);
                 Debug.Assert((byte)jsonTokenType < 1 << 4);
                 Debug.Assert(location >= 0);
                 Debug.Assert(sizeOrLength >= UnknownSize);
+                Debug.Assert(Unsafe.SizeOf<DbRow>() == Size);
 
                 _location = location;
                 _sizeOrLengthUnion = sizeOrLength;

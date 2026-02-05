@@ -15,6 +15,7 @@
 #include "mono-error-internals.h"
 #include <mono/utils/checked-build.h>
 #include <mono/utils/w32subset.h>
+#include <mono/utils/mono-time.h>
 
 /* Empty handler only used to detect interrupt state of current thread. */
 /* Needed in order to correctly avoid entering wait methods under */
@@ -61,9 +62,9 @@ win32_wait_interrupt_handler (gpointer ignored)
 #define WIN32_ENTER_ALERTABLE_WAIT(info) \
 	do { \
 		if (info) { \
-			gboolean alerted = FALSE; \
-			mono_thread_info_install_interrupt (win32_wait_interrupt_handler, NULL, &alerted); \
-			if (alerted) { \
+			gboolean interrupted = FALSE; \
+			mono_thread_info_install_interrupt (win32_wait_interrupt_handler, NULL, &interrupted); \
+			if (interrupted) { \
 				SetLastError (WAIT_IO_COMPLETION); \
 				return WAIT_IO_COMPLETION; \
 			} \
@@ -71,12 +72,13 @@ win32_wait_interrupt_handler (gpointer ignored)
 		} \
 	} while (0)
 
-#define WIN32_LEAVE_ALERTABLE_WAIT(info) \
+#define WIN32_LEAVE_ALERTABLE_WAIT(info, alerted) \
 	do { \
 		if (info) { \
-			gboolean alerted = FALSE; \
-			mono_win32_leave_alertable_wait (info); \
-			mono_thread_info_uninstall_interrupt (&alerted); \
+			alerted = mono_win32_leave_alertable_wait (info); \
+			gboolean interrupted; \
+			mono_thread_info_uninstall_interrupt (&interrupted); \
+			alerted = alerted || interrupted; \
 		} \
 	} while (0)
 
@@ -93,17 +95,46 @@ win32_wait_for_single_object_ex (HANDLE handle, DWORD timeout, BOOL alertable, B
 	DWORD result = WAIT_FAILED;
 	MonoThreadInfo * const info = alertable ? mono_thread_info_current_unchecked () : NULL;
 
-	WIN32_ENTER_ALERTABLE_WAIT (info);
+	guint64 start_ticks = 0;
+	gboolean done = FALSE;
 
-	if (cooperative) {
-		MONO_ENTER_GC_SAFE;
-		result = win32_wait_for_single_object_ex_interrupt_checked (info, handle, timeout, alertable);
-		MONO_EXIT_GC_SAFE;
-	} else {
-		result = win32_wait_for_single_object_ex_interrupt_checked (info, handle, timeout, alertable);
+	if (timeout != INFINITE && alertable)
+		start_ticks = GINT64_TO_UINT64 (mono_msec_ticks ());
+
+	while (!done)
+	{
+		DWORD current_timeout = timeout;
+
+		if (timeout != INFINITE && alertable && result == WAIT_IO_COMPLETION) {
+			DWORD elapsed = 0;
+			guint64 current_ticks = mono_msec_ticks ();
+
+			if (current_ticks >= start_ticks)
+				elapsed = GUINT64_TO_UINT32 (current_ticks - start_ticks);
+			else
+				elapsed = GUINT64_TO_UINT32 (G_MAXUINT64 - start_ticks + current_ticks);
+
+			if (elapsed > timeout)
+				return WAIT_TIMEOUT;
+
+			current_timeout = timeout - elapsed;
+		}
+
+		WIN32_ENTER_ALERTABLE_WAIT (info);
+
+		if (cooperative) {
+			MONO_ENTER_GC_SAFE;
+			result = win32_wait_for_single_object_ex_interrupt_checked (info, handle, current_timeout, alertable);
+			MONO_EXIT_GC_SAFE;
+		} else {
+			result = win32_wait_for_single_object_ex_interrupt_checked (info, handle, current_timeout, alertable);
+		}
+
+		gboolean alerted = FALSE;
+		WIN32_LEAVE_ALERTABLE_WAIT (info, alerted);
+
+		done = !(alertable && !alerted && result == WAIT_IO_COMPLETION);
 	}
-
-	WIN32_LEAVE_ALERTABLE_WAIT (info);
 
 	return result;
 }
@@ -133,17 +164,46 @@ win32_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, BOOL wai
 	DWORD result = WAIT_FAILED;
 	MonoThreadInfo * const info = alertable ? mono_thread_info_current_unchecked () : NULL;
 
-	WIN32_ENTER_ALERTABLE_WAIT (info);
+	guint64 start_ticks = 0;
+	gboolean done = FALSE;
 
-	if (cooperative) {
-		MONO_ENTER_GC_SAFE;
-		result = win32_wait_for_multiple_objects_ex_interrupt_checked (info, count, handles, waitAll, timeout, alertable);
-		MONO_EXIT_GC_SAFE;
-	} else {
-		result = win32_wait_for_multiple_objects_ex_interrupt_checked (info, count, handles, waitAll, timeout, alertable);
+	if (timeout != INFINITE && alertable)
+		start_ticks = GINT64_TO_UINT64 (mono_msec_ticks ());
+
+	while (!done)
+	{
+		DWORD current_timeout = timeout;
+
+		if (timeout != INFINITE && alertable && result == WAIT_IO_COMPLETION) {
+			DWORD elapsed = 0;
+			guint64 current_ticks = mono_msec_ticks ();
+
+			if (current_ticks >= start_ticks)
+				elapsed = GUINT64_TO_UINT32 (current_ticks - start_ticks);
+			else
+				elapsed = GUINT64_TO_UINT32 (G_MAXUINT64 - start_ticks + current_ticks);
+
+			if (elapsed > timeout)
+				return WAIT_TIMEOUT;
+
+			current_timeout = timeout - elapsed;
+		}
+
+		WIN32_ENTER_ALERTABLE_WAIT (info);
+
+		if (cooperative) {
+			MONO_ENTER_GC_SAFE;
+			result = win32_wait_for_multiple_objects_ex_interrupt_checked (info, count, handles, waitAll, current_timeout, alertable);
+			MONO_EXIT_GC_SAFE;
+		} else {
+			result = win32_wait_for_multiple_objects_ex_interrupt_checked (info, count, handles, waitAll, current_timeout, alertable);
+		}
+
+		gboolean alerted = FALSE;
+		WIN32_LEAVE_ALERTABLE_WAIT (info, alerted);
+
+		done = !(alertable && !alerted && result == WAIT_IO_COMPLETION);
 	}
-
-	WIN32_LEAVE_ALERTABLE_WAIT (info);
 
 	// This is not perfect, but it is the best you can do in usermode and matches CoreCLR.
 	// i.e. handle-based instead of object-based.

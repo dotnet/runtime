@@ -75,18 +75,10 @@ namespace System.Reflection.Runtime.General
             return null;
         }
 
-        public static TypeLoadException CreateTypeLoadException(string typeName, Assembly assemblyIfAny)
-        {
-            if (assemblyIfAny == null)
-                throw new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFound, typeName));
-            else
-                throw Helpers.CreateTypeLoadException(typeName, assemblyIfAny.FullName);
-        }
-
         public static TypeLoadException CreateTypeLoadException(string typeName, string assemblyName)
         {
-            string message = SR.Format(SR.TypeLoad_TypeNotFoundInAssembly, typeName, assemblyName);
-            return ReflectionAugments.CreateTypeLoadException(message, typeName);
+            string message = SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, typeName, assemblyName);
+            return new TypeLoadException(message, typeName);
         }
 
         // Escape identifiers as described in "Specifying Fully Qualified Type Names" on msdn.

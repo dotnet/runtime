@@ -1,9 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CMakeProjectReference -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
@@ -12,5 +8,8 @@
     <ProjectReference Include="..\dll\hfa_nested_f64_managed.csproj" />
     <CMakeProjectReference Include="..\dll\CMakeLists.txt" />
     <ProjectReference Include="..\dll\hfa_nested_f64_common.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

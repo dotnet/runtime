@@ -62,8 +62,6 @@
 #define EMSCRIPTEN_KEEPALIVE
 #endif
 
-int mono_wasm_enable_gc = 1;
-
 /* Missing from public headers */
 char *mono_fixup_symbol_name (const char *prefix, const char *key, const char *suffix);
 void mono_icall_table_init (void);
@@ -327,7 +325,7 @@ mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, co
 	 */
 	if (debug_level) {
 		// Disable optimizations which interfere with debugging
-		interp_opts = "-all";
+		interp_opts = "-all,simd";
 		mono_wasm_enable_debugging (debug_level);
 	}
 #endif

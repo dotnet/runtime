@@ -251,15 +251,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
     private static void AddRunnerSource(SourceProductionContext context, ImmutableArray<ITestInfo> methods, AnalyzerConfigOptionsProvider configOptions, ImmutableDictionary<string, string> aliasMap, CompData compData)
     {
-        bool isMergedTestRunnerAssembly = configOptions.GlobalOptions.IsMergedTestRunnerAssembly();
+        bool buildAsMergedRunner = configOptions.GlobalOptions.IsMergedTestRunnerAssembly() && !configOptions.GlobalOptions.BuildAsStandalone();
         configOptions.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
         string assemblyName = compData.AssemblyName;
 
-        if (isMergedTestRunnerAssembly)
+        if (buildAsMergedRunner)
         {
             if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser")
             {
-                context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName));
+                context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName, targetOS));
             }
             else
             {
@@ -333,6 +333,13 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             builder.AppendLine("System.Console.SetOut(outputRecorder);");
         }
         builder.AppendLine();
+
+        builder.AppendLine(@"if (args is [""--help"" or ""-h"" or ""/?"" or ""-?""])");
+        using (builder.NewBracesScope())
+        {
+            builder.AppendLine("XUnitWrapperLibrary.Help.WriteHelpText();");
+            builder.AppendLine("return 0;");
+        }
 
         builder.AppendLine("Initialize();");
 
@@ -431,7 +438,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return builder.GetCode();
     }
 
-    private static string GenerateXHarnessTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string assemblyName)
+    private static string GenerateXHarnessTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string assemblyName, string? targetOS)
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
         CodeBuilder builder = new();
@@ -440,6 +447,18 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary;");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch;");
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder;");
+        if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst")
+        {
+            builder.AppendLine("string documentsPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);");
+            builder.AppendLine($@"string tempLogPath = System.IO.Path.Combine(documentsPath, ""{assemblyName}.templog.xml"");");
+            builder.AppendLine($@"string testStatsPath = System.IO.Path.Combine(documentsPath, ""{assemblyName}.testStats.csv"");");
+        }
+        else
+        {
+            builder.AppendLine($@"string tempLogPath = ""{assemblyName}.templog.xml"";");
+            builder.AppendLine($@"string testStatsPath = ""{assemblyName}.testStats.csv"";");
+        }
+
         builder.AppendLine();
 
         builder.AppendLine("try");
@@ -468,16 +487,16 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
+            builder.AppendLine("if (System.IO.File.Exists(tempLogPath))");
             using (builder.NewBracesScope())
             {
-                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
+                builder.AppendLine("System.IO.File.Delete(tempLogPath);");
             }
 
-            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
+            builder.AppendLine("if (System.IO.File.Exists(testStatsPath))");
             using (builder.NewBracesScope())
             {
-                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
+                builder.AppendLine("System.IO.File.Delete(testStatsPath);");
             }
             builder.AppendLine();
 
@@ -495,8 +514,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             builder.AppendLine("Initialize();");
 
             // Open the stream writer for the temp log.
-            builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.templog.xml""))");
-            builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv""))");
+            builder.AppendLine($"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(tempLogPath))");
+            builder.AppendLine($"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(testStatsPath))");
             CodeBuilder testExecutorBuilder = new();
 
             using (builder.NewBracesScope())
@@ -644,6 +663,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
     private static IEnumerable<ITestInfo> GetTestMethodInfosForMethod(IMethodSymbol method, AnalyzerConfigOptionsProvider options, ImmutableDictionary<string, string> aliasMap)
     {
+        try
+        {
         bool factAttribute = false;
         bool theoryAttribute = false;
         List<AttributeData> theoryDataAttributes = new();
@@ -750,7 +771,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         break;
                     }
                 case "Xunit.OuterLoopAttribute":
-                    if (options.GlobalOptions.Priority() == 0)
+                    if (options.GlobalOptions.CLRTestPriorityToBuild() == 0)
                     {
                         if (filterAttribute.AttributeConstructor!.Parameters.Length < 2)
                         {
@@ -828,9 +849,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         continue;
                     }
 
-                    Xunit.TestPlatforms skippedTestPlatforms = 0;
-                    Xunit.RuntimeConfiguration skippedConfigurations = 0;
-                    Xunit.RuntimeTestModes skippedTestModes = 0;
+                    Xunit.TestPlatforms skippedTestPlatforms = Xunit.TestPlatforms.Any;
+                    Xunit.RuntimeConfiguration skippedConfigurations = Xunit.RuntimeConfiguration.Any;
+                    Xunit.RuntimeTestModes skippedTestModes = Xunit.RuntimeTestModes.Any;
 
                     for (int i = 1; i < filterAttribute.ConstructorArguments.Length; i++)
                     {
@@ -856,29 +877,36 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         }
                     }
 
-                    if (skippedTestModes == Xunit.RuntimeTestModes.Any)
+                    if (skippedTestModes == Xunit.RuntimeTestModes.Any
+                        && skippedConfigurations == Xunit.RuntimeConfiguration.Any
+                        && skippedTestPlatforms == Xunit.TestPlatforms.Any)
                     {
                         testInfos = FilterForSkippedRuntime(testInfos, (int)Xunit.TestRuntimes.CoreCLR, options);
                     }
-                    testInfos = DecorateWithSkipOnPlatform(testInfos, (int)skippedTestPlatforms, options);
-                    testInfos = DecorateWithSkipOnCoreClrConfiguration(testInfos, skippedTestModes, skippedConfigurations);
+                    testInfos = DecorateWithSkipOnCoreClrConfiguration(testInfos, skippedTestModes, skippedConfigurations, skippedTestPlatforms, options);
 
                     break;
             }
         }
 
         return testInfos;
+        }
+        catch(Exception ex) when (LaunchDebugger(ex))
+        {
+            throw;
+        }
+
+        bool LaunchDebugger(Exception ex)
+        {
+            System.Diagnostics.Debugger.Launch();
+            return false;
+        }
     }
 
-    private static ImmutableArray<ITestInfo> DecorateWithSkipOnCoreClrConfiguration(ImmutableArray<ITestInfo> testInfos, Xunit.RuntimeTestModes skippedTestModes, Xunit.RuntimeConfiguration skippedConfigurations)
+    private static ImmutableArray<ITestInfo> DecorateWithSkipOnCoreClrConfiguration(ImmutableArray<ITestInfo> testInfos, Xunit.RuntimeTestModes skippedTestModes, Xunit.RuntimeConfiguration skippedConfigurations, Xunit.TestPlatforms skippedTestPlatforms, AnalyzerConfigOptionsProvider options)
     {
         const string ConditionClass = "TestLibrary.CoreClrConfigurationDetection";
         List<string> conditions = new();
-        if (skippedConfigurations.HasFlag(Xunit.RuntimeConfiguration.Debug | Xunit.RuntimeConfiguration.Checked | Xunit.RuntimeConfiguration.Release))
-        {
-            // If all configurations are skipped, just skip the test as a whole
-            return ImmutableArray<ITestInfo>.Empty;
-        }
 
         if (skippedConfigurations.HasFlag(Xunit.RuntimeConfiguration.Debug))
         {
@@ -914,7 +942,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.TailcallStress))
         {
-            conditions.Add($"!{ConditionClass}.IsTailcallStress");
+            conditions.Add($"!{ConditionClass}.IsTailCallStress");
         }
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.TieredCompilation))
         {
@@ -923,6 +951,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.HeapVerify))
         {
             conditions.Add($"!{ConditionClass}.IsHeapVerify");
+        }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.InterpreterActive))
+        {
+            conditions.Add($"!{ConditionClass}.IsCoreClrInterpreter");
         }
 
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.AnyGCStress))
@@ -938,7 +970,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             conditions.Add($"!{ConditionClass}.IsGCStressC");
         }
 
-        return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(t => new ConditionalTest(t, string.Join(" && ", conditions))));
+        options.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
+        Xunit.TestPlatforms targetPlatform = GetPlatformForTargetOS(targetOS);
+
+        return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(t => new ConditionalTest(t, string.Join(" && ", conditions), targetPlatform & ~skippedTestPlatforms)));
     }
 
     private static ImmutableArray<ITestInfo> FilterForSkippedTargetFrameworkMonikers(ImmutableArray<ITestInfo> testInfos, int v)
@@ -1056,28 +1091,28 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             // The target platform is not mentioned in the attribute, just run it as-is.
             return testInfos;
         }
+    }
 
-        static Xunit.TestPlatforms GetPlatformForTargetOS(string? targetOS)
+    private static Xunit.TestPlatforms GetPlatformForTargetOS(string? targetOS)
+    {
+        return targetOS?.ToLowerInvariant() switch
         {
-            return targetOS?.ToLowerInvariant() switch
-            {
-                "windows" => Xunit.TestPlatforms.Windows,
-                "linux" => Xunit.TestPlatforms.Linux,
-                "osx" => Xunit.TestPlatforms.OSX,
-                "illumos" => Xunit.TestPlatforms.illumos,
-                "solaris" => Xunit.TestPlatforms.Solaris,
-                "android" => Xunit.TestPlatforms.Android,
-                "ios" => Xunit.TestPlatforms.iOS,
-                "tvos" => Xunit.TestPlatforms.tvOS,
-                "maccatalyst" => Xunit.TestPlatforms.MacCatalyst,
-                "browser" => Xunit.TestPlatforms.Browser,
-                "wasi" => Xunit.TestPlatforms.Wasi,
-                "freebsd" => Xunit.TestPlatforms.FreeBSD,
-                "netbsd" => Xunit.TestPlatforms.NetBSD,
-                null or "" or "anyos" => Xunit.TestPlatforms.Any,
-                _ => 0
-            };
-        }
+            "windows" => Xunit.TestPlatforms.Windows,
+            "linux" => Xunit.TestPlatforms.Linux,
+            "osx" => Xunit.TestPlatforms.OSX,
+            "illumos" => Xunit.TestPlatforms.illumos,
+            "solaris" => Xunit.TestPlatforms.Solaris,
+            "android" => Xunit.TestPlatforms.Android,
+            "ios" => Xunit.TestPlatforms.iOS,
+            "tvos" => Xunit.TestPlatforms.tvOS,
+            "maccatalyst" => Xunit.TestPlatforms.MacCatalyst,
+            "browser" => Xunit.TestPlatforms.Browser,
+            "wasi" => Xunit.TestPlatforms.Wasi,
+            "freebsd" => Xunit.TestPlatforms.FreeBSD,
+            "netbsd" => Xunit.TestPlatforms.NetBSD,
+            null or "" or "anyos" => Xunit.TestPlatforms.Any,
+            _ => 0
+        };
     }
 
     private static ImmutableArray<ITestInfo> DecorateWithUserDefinedCondition(

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.SpanTests
@@ -27,13 +28,13 @@ namespace System.SpanTests
                 {
                     a[i] = 10 * (i + 1);
                 }
-                ReadOnlySpan<int> span = new ReadOnlySpan<int>(a);
 
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
                     int target = a[targetIndex];
-                    bool found = span.Contains(target);
-                    Assert.True(found);
+                    Assert.True(new ReadOnlySpan<int>(a).Contains(target));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.True(new ReadOnlySpan<int>(a).Contains(target, comparer)));
+                    Assert.False(new ReadOnlySpan<int>(a).Contains(target, GetFalseEqualityComparer<int>()));
                 }
             }
         }
@@ -52,9 +53,9 @@ namespace System.SpanTests
                 a[length - 1] = 5555;
                 a[length - 2] = 5555;
 
-                ReadOnlySpan<int> span = new ReadOnlySpan<int>(a);
-                bool found = span.Contains(5555);
-                Assert.True(found);
+                Assert.True(new ReadOnlySpan<int>(a).Contains(5555));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.True(new ReadOnlySpan<int>(a).Contains(5555, comparer)));
+                Assert.False(new ReadOnlySpan<int>(a).Contains(5555, GetFalseEqualityComparer<int>()));
             }
         }
 
@@ -71,8 +72,7 @@ namespace System.SpanTests
                     a[i] = new TInt(10 * (i + 1), log);
                 }
                 ReadOnlySpan<TInt> span = new ReadOnlySpan<TInt>(a);
-                bool found = span.Contains(new TInt(9999, log));
-                Assert.False(found);
+                Assert.False(span.Contains(new TInt(9999, log)));
 
                 // Since we asked for a non-existent value, make sure each element of the array was compared once.
                 // (Strictly speaking, it would not be illegal for IndexOf to compare an element more than once but
@@ -112,8 +112,7 @@ namespace System.SpanTests
                 }
 
                 ReadOnlySpan<TInt> span = new ReadOnlySpan<TInt>(a, GuardLength, length);
-                bool found = span.Contains(new TInt(9999, checkForOutOfRangeAccess));
-                Assert.False(found);
+                Assert.False(span.Contains(new TInt(9999, checkForOutOfRangeAccess)));
             }
         }
 
@@ -121,8 +120,11 @@ namespace System.SpanTests
         public static void ZeroLengthContains_String()
         {
             ReadOnlySpan<string> span = new ReadOnlySpan<string>(Array.Empty<string>());
-            bool found = span.Contains("a");
-            Assert.False(found);
+            Assert.False(span.Contains("a"));
+            Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.False(new ReadOnlySpan<string>(Array.Empty<string>()).Contains("a", comparer)));
+            Assert.False(span.Contains("a", null));
+            Assert.False(span.Contains("a", EqualityComparer<string>.Default));
+            Assert.False(span.Contains("a", EqualityComparer<string>.Create((i, j) => i == j)));
         }
 
         [Fact]
@@ -140,8 +142,9 @@ namespace System.SpanTests
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
                     string target = a[targetIndex];
-                    bool found = span.Contains(target);
-                    Assert.True(found);
+                    Assert.True(span.Contains(target));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.True(new ReadOnlySpan<string>(a).Contains(target, comparer)));
+                    Assert.False(span.Contains(target, GetFalseEqualityComparer<string>()));
                 }
             }
         }
@@ -161,8 +164,7 @@ namespace System.SpanTests
                 }
                 ReadOnlySpan<string> span = new ReadOnlySpan<string>(a);
 
-                bool found = span.Contains(target);
-                Assert.False(found);
+                Assert.False(span.Contains(target));
             }
         }
 
@@ -181,8 +183,7 @@ namespace System.SpanTests
                 a[length - 2] = "5555";
 
                 ReadOnlySpan<string> span = new ReadOnlySpan<string>(a);
-                bool found = span.Contains("5555");
-                Assert.True(found);
+                Assert.True(span.Contains("5555"));
             }
         }
 
@@ -192,6 +193,7 @@ namespace System.SpanTests
         {
             ReadOnlySpan<string> theStrings = spanInput;
             Assert.Equal(expected, theStrings.Contains(null));
+            Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(expected, new ReadOnlySpan<string>(spanInput).Contains(null, comparer)));
         }
     }
 }

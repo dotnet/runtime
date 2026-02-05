@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -309,7 +308,7 @@ namespace System
 #endif
         public extern String(ReadOnlySpan<char> value);
 
-        private static unsafe string Ctor(ReadOnlySpan<char> value)
+        private static string Ctor(ReadOnlySpan<char> value)
         {
             if (value.Length == 0)
                 return Empty;
@@ -395,7 +394,7 @@ namespace System
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This API should not be used to create mutable strings. See https://go.microsoft.com/fwlink/?linkid=2084035 for alternatives.")]
-        public static unsafe string Copy(string str)
+        public static string Copy(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
 
@@ -414,7 +413,7 @@ namespace System
         // sourceIndex + count - 1 to the character array buffer, beginning
         // at destinationIndex.
         //
-        public unsafe void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
+        public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
         {
             ArgumentNullException.ThrowIfNull(destination);
 
@@ -465,7 +464,7 @@ namespace System
         public char[] ToCharArray()
         {
             if (Length == 0)
-                return Array.Empty<char>();
+                return [];
 
             char[] chars = new char[Length];
 
@@ -488,7 +487,7 @@ namespace System
             if (length <= 0)
             {
                 ArgumentOutOfRangeException.ThrowIfNegative(length);
-                return Array.Empty<char>();
+                return [];
             }
 
             char[] chars = new char[length];
@@ -526,6 +525,7 @@ namespace System
         public ref readonly char GetPinnableReference() => ref _firstChar;
 
         internal ref char GetRawStringData() => ref _firstChar;
+        internal ref byte GetRawStringDataAsUInt8() => ref Unsafe.As<char, byte>(ref _firstChar);
         internal ref ushort GetRawStringDataAsUInt16() => ref Unsafe.As<char, ushort>(ref _firstChar);
 
         // Helper for encodings so they can talk to our buffer directly
@@ -709,15 +709,6 @@ namespace System
 
         public bool IsNormalized(NormalizationForm normalizationForm)
         {
-            if (Ascii.IsValid(this))
-            {
-                // If its ASCII && one of the 4 main forms, then its already normalized
-                if (normalizationForm == NormalizationForm.FormC ||
-                    normalizationForm == NormalizationForm.FormKC ||
-                    normalizationForm == NormalizationForm.FormD ||
-                    normalizationForm == NormalizationForm.FormKD)
-                    return true;
-            }
             return Normalization.IsNormalized(this, normalizationForm);
         }
 
@@ -728,15 +719,6 @@ namespace System
 
         public string Normalize(NormalizationForm normalizationForm)
         {
-            if (Ascii.IsValid(this))
-            {
-                // If its ASCII && one of the 4 main forms, then its already normalized
-                if (normalizationForm == NormalizationForm.FormC ||
-                    normalizationForm == NormalizationForm.FormKC ||
-                    normalizationForm == NormalizationForm.FormD ||
-                    normalizationForm == NormalizationForm.FormKD)
-                    return this;
-            }
             return Normalization.Normalize(this, normalizationForm);
         }
 
@@ -758,7 +740,7 @@ namespace System
         //
         // This is an intrinsic function so that the JIT can recognise it specially
         // and eliminate checks on character fetches in a loop like:
-        //        for(int i = 0; i < str.Length; i++) str[i]
+        //        for (int i = 0; i < str.Length; i++) str[i]
         // The actual code generated for this will be one instruction and will be inlined.
         //
         public int Length

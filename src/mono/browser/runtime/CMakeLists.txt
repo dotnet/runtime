@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 
 project(mono-wasm-runtime C)
 
@@ -15,8 +15,6 @@ set_target_properties(dotnet.native PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMC
 
 target_link_libraries(dotnet.native
     PRIVATE
-    ${ICU_LIB_DIR}/libicuuc.a
-    ${ICU_LIB_DIR}/libicui18n.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-hot_reload-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-debugger-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-diagnostics_tracing-stub-static.a
@@ -26,14 +24,14 @@ target_link_libraries(dotnet.native
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-eh-js.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
-    ${MONO_ARTIFACTS_DIR}/libmono-profiler-aot.a
-    ${MONO_ARTIFACTS_DIR}/libmono-profiler-browser.a
-    ${MONO_ARTIFACTS_DIR}/libmono-profiler-log.a
-    ${MONO_ARTIFACTS_DIR}/libz.a
-    ${NATIVE_BIN_DIR}/wasm-bundled-timezones.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
+    ${NATIVE_BIN_DIR}/libSystem.Native.TimeZoneData.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a
-    ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a)
+    ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a
+    ${NATIVE_BIN_DIR}/libicudata.a
+    ${NATIVE_BIN_DIR}/libicuuc.a
+    ${NATIVE_BIN_DIR}/libicui18n.a
+    ${NATIVE_BIN_DIR}/libz.a)
 
 set_target_properties(dotnet.native PROPERTIES
     LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.pre.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.lib.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.extpost.js;"

@@ -100,9 +100,9 @@ style amd64 text-align: left;
 style arm64 text-align: left;
 style x86 text-align: left;
 style arm text-align: left;
-style amd64-alpine text-align: left;
-style arm64-alpine text-align: left;
-style arm-alpine text-align: left;
+style amd64-musl text-align: left;
+style arm64-musl text-align: left;
+style arm-musl text-align: left;
 
 style deps text-align: left;
 style builder text-align: left;
@@ -119,9 +119,9 @@ amd64("cross-amd64")
 arm64("cross-arm64")
 x86("cross-x86")
 arm("cross-arm")
-amd64-alpine("cross-amd64-alpine")
-arm64-alpine("cross-arm64-alpine")
-arm-alpine("cross-arm-alpine")
+amd64-musl("cross-amd64-musl")
+arm64-musl("cross-arm64-musl")
+arm-musl("cross-arm-musl")
 
 llvm("crossdeps-llvm
 • source-built LLVM")
@@ -134,8 +134,8 @@ builder("crossdeps-builder
 • source-built LLVM")
 base("Azure Linux base image")
 
-amd64 & arm64 & x86 & arm & amd64-alpine & arm64-alpine & arm-alpine ----> llvm
-amd64 & arm64 & x86 & arm & amd64-alpine & arm64-alpine & arm-alpine -.-> builder
+amd64 & arm64 & x86 & arm & amd64-musl & arm64-musl & arm-musl ----> llvm
+amd64 & arm64 & x86 & arm & amd64-musl & arm64-musl & arm-musl -.-> builder
 
 llvm --> deps
 llvm -.-> builder

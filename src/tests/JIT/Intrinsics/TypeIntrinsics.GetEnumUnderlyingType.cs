@@ -21,12 +21,15 @@ public class GetEnumUnderlyingType
         AssertEquals(typeof(long),   typeof(LongEnum).GetEnumUnderlyingType());
         AssertEquals(typeof(ulong),  typeof(ULongEnum).GetEnumUnderlyingType());
 
-        AssertEquals(typeof(char),   typeof(CharEnum).GetEnumUnderlyingType());
-        AssertEquals(typeof(bool),   typeof(BoolEnum).GetEnumUnderlyingType());
-        AssertEquals(typeof(float),  typeof(FloatEnum).GetEnumUnderlyingType());
-        AssertEquals(typeof(double), typeof(DoubleEnum).GetEnumUnderlyingType());
-        AssertEquals(typeof(nint),   typeof(IntPtrEnum).GetEnumUnderlyingType());
-        AssertEquals(typeof(nuint),  typeof(UIntPtrEnum).GetEnumUnderlyingType());
+        if (TestLibrary.PlatformDetection.IsRareEnumsSupported)
+        {
+            AssertEquals(typeof(char),   typeof(CharEnum).GetEnumUnderlyingType());
+            AssertEquals(typeof(bool),   typeof(BoolEnum).GetEnumUnderlyingType());
+            AssertEquals(typeof(float),  typeof(FloatEnum).GetEnumUnderlyingType());
+            AssertEquals(typeof(double), typeof(DoubleEnum).GetEnumUnderlyingType());
+            AssertEquals(typeof(nint),   typeof(IntPtrEnum).GetEnumUnderlyingType());
+            AssertEquals(typeof(nuint),  typeof(UIntPtrEnum).GetEnumUnderlyingType());
+        }
 
         AssertThrowsArgumentException(() => typeof(int).GetEnumUnderlyingType());
         AssertThrowsArgumentException(() => typeof(nint).GetEnumUnderlyingType());
@@ -43,12 +46,15 @@ public class GetEnumUnderlyingType
         AssertEquals(typeof(long),   NoInline(typeof(LongEnum).GetEnumUnderlyingType()));
         AssertEquals(typeof(ulong),  NoInline(typeof(ULongEnum).GetEnumUnderlyingType()));
 
-        AssertEquals(typeof(char),   NoInline(typeof(CharEnum).GetEnumUnderlyingType()));
-        AssertEquals(typeof(bool),   NoInline(typeof(BoolEnum).GetEnumUnderlyingType()));
-        AssertEquals(typeof(float),  NoInline(typeof(FloatEnum).GetEnumUnderlyingType()));
-        AssertEquals(typeof(double), NoInline(typeof(DoubleEnum).GetEnumUnderlyingType()));
-        AssertEquals(typeof(nint),   NoInline(typeof(IntPtrEnum).GetEnumUnderlyingType()));
-        AssertEquals(typeof(nuint),  NoInline(typeof(UIntPtrEnum).GetEnumUnderlyingType()));
+        if (TestLibrary.PlatformDetection.IsRareEnumsSupported)
+        {
+            AssertEquals(typeof(char),   NoInline(typeof(CharEnum).GetEnumUnderlyingType()));
+            AssertEquals(typeof(bool),   NoInline(typeof(BoolEnum).GetEnumUnderlyingType()));
+            AssertEquals(typeof(float),  NoInline(typeof(FloatEnum).GetEnumUnderlyingType()));
+            AssertEquals(typeof(double), NoInline(typeof(DoubleEnum).GetEnumUnderlyingType()));
+            AssertEquals(typeof(nint),   NoInline(typeof(IntPtrEnum).GetEnumUnderlyingType()));
+            AssertEquals(typeof(nuint),  NoInline(typeof(UIntPtrEnum).GetEnumUnderlyingType()));
+        }
 
         AssertThrowsArgumentException(() => NoInline(typeof(int).GetEnumUnderlyingType()));
         AssertThrowsArgumentException(() => NoInline(typeof(nint).GetEnumUnderlyingType()));

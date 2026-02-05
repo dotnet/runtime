@@ -139,6 +139,9 @@ namespace System.Net.Primitives.Functional.Tests
             yield return new object[] { u5, "=value" }; // No name
             yield return new object[] { u5, "$=value" }; // Invalid name
             yield return new object[] { new Uri("http://url.com"), "na\tme=value; domain=.domain.com" }; // Invalid name
+            yield return new object[] { u5, "name=val\rue" }; // Invalid value
+            yield return new object[] { u5, "name=val\nue" }; // Invalid value
+            yield return new object[] { u5, "name=val\0ue" }; // Invalid value
             yield return new object[] { new Uri("http://url.com"), "name=value; domain=.domain.com" }; // Domain not the same
             yield return new object[] { new Uri("http://url.com:90"), "name=value; port=\"80\"" }; // Port not the same
             yield return new object[] { new Uri("http://url.com"), "name=value; domain=" }; // Empty domain

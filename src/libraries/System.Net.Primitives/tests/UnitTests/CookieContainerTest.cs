@@ -468,39 +468,6 @@ namespace System.Net.Primitives.Unit.Tests
         }
 
         [Fact]
-        public void GetCookies_AddCookieVersion1WithExplicitDomain_CookieReturnedForDomainAndOneLevelSubDomain()
-        {
-            const string SchemePrefix = "http://";
-            const string OriginalDomain = "contoso.com";
-            const string OriginalDomainWithLeadingDot = "." + OriginalDomain;
-
-            var container = new CookieContainer();
-            var cookie1 = new Cookie(CookieName1, CookieValue1) { Domain = OriginalDomainWithLeadingDot, Version = 1 };
-            container.Add(new Uri(SchemePrefix + OriginalDomain), cookie1);
-
-            var uri = new Uri(SchemePrefix + OriginalDomain);
-            CookieCollection cookies = container.GetCookies(uri);
-            Assert.Equal(1, cookies.Count);
-            Assert.Equal(OriginalDomainWithLeadingDot, cookies[CookieName1].Domain);
-
-            uri = new Uri(SchemePrefix + "www." + OriginalDomain);
-            cookies = container.GetCookies(uri);
-            Assert.Equal(1, cookies.Count);
-
-            uri = new Uri(SchemePrefix + "x.www." + OriginalDomain);
-            cookies = container.GetCookies(uri);
-            Assert.Equal(0, cookies.Count);
-
-            uri = new Uri(SchemePrefix + "y.x.www." + OriginalDomain);
-            cookies = container.GetCookies(uri);
-            Assert.Equal(0, cookies.Count);
-
-            uri = new Uri(SchemePrefix + "z.y.x.www." + OriginalDomain);
-            cookies = container.GetCookies(uri);
-            Assert.Equal(0, cookies.Count);
-        }
-
-        [Fact]
         public void Ctor_Capacity_Success()
         {
             CookieContainer cc = new CookieContainer(5);
@@ -590,13 +557,20 @@ namespace System.Net.Primitives.Unit.Tests
         {
             Uri uri = new Uri("http://domain.com");
 
+            Cookie c0 = new Cookie("name1", "value", "", "domain.com");
             Cookie c1 = new Cookie("name1", "value", "", ".domain.com"); // Variant = Plain
             Cookie c2 = new Cookie("name1", "value", "", ".domain.com") { Port = "\"80\"" }; // Variant = RFC2965 (should override)
             Cookie c3 = new Cookie("name1", "value", "", ".domain.com") { Port = "\"80, 90\"" }; // Variant = RFC2965 (should override)
             Cookie c4 = new Cookie("name1", "value", "", ".domain.com") { Version = 1 }; // Variant = RFC2109 (should be rejected)
 
             CookieContainer cc = new CookieContainer();
+
+            cc.Add(c0);
+            Assert.Equal("domain.com", cc.GetCookies(uri)[0].Domain);
+
             cc.Add(c1);
+            Assert.Equal(1, cc.Count);
+            Assert.Equal(".domain.com", cc.GetCookies(uri)[0].Domain);
 
             // Adding a newer variant should override an older one
             cc.Add(c2);
@@ -612,6 +586,24 @@ namespace System.Net.Primitives.Unit.Tests
 
             // Ensure that although we added 3 cookies, only 1 was actually added (the others were overridden or rejected)
             Assert.Equal(1, cc.Count);
+        }
+
+        [Fact]
+        public static void Add_SetCookies_SameCookieDifferentVairants_OverridesOlderVariant()
+        {
+            Uri uri = new Uri("http://domain.com");
+            CookieContainer cc = new();
+            Cookie a = new()
+            {
+                Domain = "domain.com",
+                Name = "lol",
+                Value = "0"
+            };
+            cc.Add(uri, a);
+            cc.SetCookies(uri, "lol=42");
+
+            Assert.Equal(1, cc.Count);
+            Assert.Equal("42", cc.GetCookies(uri).Single().Value);
         }
 
         [Fact]
@@ -781,10 +773,10 @@ namespace System.Net.Primitives.Unit.Tests
 
             for (int i = 0; i < expected.Length; i++)
             {
-                Cookie c1 = expected[i];
                 Cookie c2 = cc2[i];
-                Assert.Equal(c1.Name, c2.Name); // Primitive check for equality
-                Assert.Equal(c1.Value, c2.Value);
+                Cookie c1 = expected.Single(c => c.Name == c2.Name);
+
+                Assert.Equal(c1.Value, c2.Value); // Primitive check for equality
             }
         }
 
@@ -982,6 +974,101 @@ namespace System.Net.Primitives.Unit.Tests
             Uri requestUri = new Uri("http://test.com" + requestPath);
             CookieCollection collection = container.GetCookies(requestUri);
             Assert.Equal(expectedMatches, collection.Count);
+        }
+
+        [Fact]
+        public void Add_ImplicitDomainOfIPv6Hostname_Success()
+        {
+            CookieContainer container = new CookieContainer();
+            Cookie cookie = new Cookie("lol", "haha");
+            Uri uri = new Uri("https://[::FFFF:192.168.0.1]/test");
+            container.Add(uri, cookie);
+            Assert.Equal(uri.Host, container.GetCookies(uri).Single().Domain);
+        }
+
+        public static TheoryData<string, string> DomainMatching_WhenMatches_Success_Data = new TheoryData<string, string>()
+        {
+            { "https://q", "q" },
+            { "https://localhost/", "localhost" },
+            { "https://test.com", "test.com" },
+            { "https://test.COM", "tEsT.com" },
+            { "https://test.com", ".test.com" },
+            { "https://yay.test.com", "yay.test.com" },
+            { "https://yay.test.com", ".yay.test.com" },
+            { "https://yay.test.com", ".test.com" },
+            { "https://42.aaaa.bbb.cc.d.test.com", "d.test.com" },
+            { "https://yay.test.com/foo/bar", "test.com" },
+            { "https://127.0.1.1", "127.0.1.1" },
+            { "https://42.42.100.100", "42.42.100.100" },
+        };
+
+        [Theory]
+        [MemberData(nameof(DomainMatching_WhenMatches_Success_Data))]
+        public void DomainMatching_WhenMatches_Success(string uriString, string domain)
+        {
+            CookieContainer container = new CookieContainer();
+            Cookie cookie = new Cookie("lol", "haha")
+            {
+                Domain = domain
+            };
+
+            Uri uri = new Uri(uriString);
+            container.Add(uri, cookie);
+            Assert.Equal(1, container.Count);
+
+            CookieCollection collection = container.GetCookies(uri);
+            Assert.Equal(1, collection.Count);
+        }
+
+        [Fact]
+        public void DomainMatching_ExplicitDomain_MatchesMultiple()
+        {
+            CookieContainer container = new CookieContainer();
+            Cookie a = new Cookie("a", "aa", null, "a.com");
+            Cookie b = new Cookie("b", "bb", null, "b.a.com");
+            Cookie c = new Cookie("c", "cc", null, "c.b.a.com");
+
+            container.Add(new Uri("http://a.com"), a);
+            container.Add(new Uri("http://b.a.com"), b);
+            container.Add(new Uri("http://c.b.a.com"), c);
+
+            CookieCollection matches = container.GetCookies(new Uri("http://c.b.a.com"));
+            Assert.Equal(3, matches.Count);
+        }
+
+        public static TheoryData<string, string> DomainMatching_WhenDoesNotMatch_ThrowsCookieException_Data = new TheoryData<string, string>()
+        {
+            { "https://test.com", "test.co" }, // Domain is not a suffix
+            { "https://test.com", "x.test.com" }, // Domain is not a suffix (extra chars at start)
+            { "https://test.com", "ttest.com" }, // Suffix but not separated by dot
+            { "https://test.com", "test.com." }, // Trailing dot
+            { "https://test.com", "..test.com" }, // 2 leading dots
+            { "https://foo.test.com", "yay.test.com" }, // subdomain mismatch
+            { "https://42.42.100.100", "41.42.100.100" }, // different IP
+
+            // Single label domain without a full match.
+            { "https://test.com", ".com" },
+            { "https://test.com", "com" }, 
+
+            // If Host is an IP address, it should be equal to the domain.
+            // See https://issues.chromium.org/issues/40126142 and the last condition in
+            // https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3
+            { "https://1.2.3.4", ".2.3.4" }
+        };
+
+
+        [Theory]
+        [MemberData(nameof(DomainMatching_WhenDoesNotMatch_ThrowsCookieException_Data))]
+        public void DomainMatching_WhenDoesNotMatch_ThrowsCookieException(string uriString, string domain)
+        {
+            CookieContainer container = new CookieContainer();
+            Cookie cookie = new Cookie("lol", "haha")
+            {
+                Domain = domain
+            };
+
+            Uri uri = new Uri(uriString);
+            Assert.Throws<CookieException>(() => container.Add(uri, cookie));
         }
     }
 }

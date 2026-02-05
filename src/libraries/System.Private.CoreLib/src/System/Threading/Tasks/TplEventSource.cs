@@ -12,7 +12,6 @@ namespace System.Threading.Tasks
         Name = "System.Threading.Tasks.TplEventSource",
         Guid = "2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5"
         )]
-    [EventSourceAutoGenerate]
     internal sealed partial class TplEventSource : EventSource
     {
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
@@ -41,10 +40,6 @@ namespace System.Threading.Tasks
         /// Defines the singleton instance for the TPL ETW provider.
         /// </summary>
         public static readonly TplEventSource Log = new TplEventSource();
-
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private TplEventSource(int _) { }
 
         /// <summary>Configured behavior of a task wait operation.</summary>
         public enum TaskWaitBehavior : int
@@ -502,7 +497,7 @@ namespace System.Threading.Tasks
         }
 
         [NonEvent]
-        public unsafe void RunningContinuation(int TaskID, object Object) => RunningContinuation(TaskID, ObjectIDForEvents(Object));
+        public void RunningContinuation(int TaskID, object Object) => RunningContinuation(TaskID, ObjectIDForEvents(Object));
         [Event(20, Keywords = Keywords.Debug)]
         private void RunningContinuation(int TaskID, long Object)
         {
@@ -511,7 +506,7 @@ namespace System.Threading.Tasks
         }
 
         [NonEvent]
-        public unsafe void RunningContinuationList(int TaskID, int Index, object Object) => RunningContinuationList(TaskID, Index, ObjectIDForEvents(Object));
+        public void RunningContinuationList(int TaskID, int Index, object Object) => RunningContinuationList(TaskID, Index, ObjectIDForEvents(Object));
 
         [Event(21, Keywords = Keywords.Debug)]
         public void RunningContinuationList(int TaskID, int Index, long Object)

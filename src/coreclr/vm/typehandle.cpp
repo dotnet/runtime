@@ -91,6 +91,13 @@ BOOL TypeHandle::IsString() const
     return !IsTypeDesc() && AsMethodTable()->IsString();
 }
 
+BOOL TypeHandle::IsContinuation() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return !IsTypeDesc() && AsMethodTable()->IsContinuation();
+}
+
 BOOL TypeHandle::IsGenericVariable() const {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -256,10 +263,7 @@ PTR_Module TypeHandle::GetLoaderModule() const
 
 PTR_LoaderAllocator TypeHandle::GetLoaderAllocator() const
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SUPPORTS_DAC;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     if (IsTypeDesc())
     {
@@ -268,6 +272,20 @@ PTR_LoaderAllocator TypeHandle::GetLoaderAllocator() const
     else
     {
         return AsMethodTable()->GetLoaderAllocator();
+    }
+}
+
+bool TypeHandle::IsCollectible() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (IsTypeDesc())
+    {
+        return AsTypeDesc()->IsCollectible();
+    }
+    else
+    {
+        return AsMethodTable()->Collectible();
     }
 }
 
@@ -307,6 +325,20 @@ bool TypeHandle::IsManagedClassObjectPinned() const
 
 void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
+
+    if (IsContinuation())
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Continuation"));
+        return;
+    }
+
     REFLECTCLASSBASEREF refClass = NULL;
 
     PTR_LoaderAllocator allocator = GetLoaderAllocator();
@@ -384,7 +416,7 @@ BOOL TypeHandle::IsInterface() const
 BOOL TypeHandle::IsAbstract() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->IsAbstract();
 }
 
@@ -475,42 +507,42 @@ BOOL TypeHandle::HasLayout() const
 TypeHandle TypeHandle::GetCoClassForInterface() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->GetCoClassForInterface();
 }
 
 DWORD TypeHandle::IsComClassInterface() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->IsComClassInterface();
 }
 
 BOOL TypeHandle::IsComObjectType() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->IsComObjectType();
 }
 
 BOOL TypeHandle::IsComEventItfType() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->IsComEventItfType();
 }
 
 CorIfaceAttr TypeHandle::GetComInterfaceType() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->GetComInterfaceType();
 }
 
 TypeHandle TypeHandle::GetDefItfForComClassItf() const
 {
     WRAPPER_NO_CONTRACT;
-    PREFIX_ASSUME(GetMethodTable() != NULL);
+    _ASSERTE(GetMethodTable() != NULL);
     return GetMethodTable()->GetDefItfForComClassItf();
 }
 
@@ -571,8 +603,8 @@ BOOL TypeHandle::IsBoxedAndCanCastTo(TypeHandle type, TypeHandlePairList *pPairL
     {
         TypeVarTypeDesc* varFromParam = AsGenericVariable();
 
-        if (!varFromParam->ConstraintsLoaded())
-            varFromParam->LoadConstraints(CLASS_DEPENDENCIES_LOADED);
+        if (!varFromParam->ConstraintsLoaded(WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly))
+            varFromParam->LoadConstraints(CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
 
         // A generic type parameter cannot be compatible with another type
         // as it could be substitued with a valuetype. However, if it is
@@ -939,17 +971,7 @@ TypeHandle TypeHandle::MergeArrayTypeHandlesToCommonParent(TypeHandle ta, TypeHa
         return TypeHandle(g_pArrayClass);
     }
 
-
-    {
-        // This should just result in resolving an already loaded type.
-        ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-        // == FailIfNotLoadedOrNotRestored
-        TypeHandle result = ClassLoader::LoadArrayTypeThrowing(tMergeElem, mergeKind, rank, ClassLoader::DontLoadTypes);
-        _ASSERTE(!result.IsNull());
-
-        // <TODO> should be able to assert IsRestored here </TODO>
-        return result;
-    }
+    return ClassLoader::LoadArrayTypeThrowing(tMergeElem, mergeKind, rank);
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -1371,8 +1393,6 @@ BOOL TypeHandle::SatisfiesClassConstraints() const
         _ASSERTE(tyvar != NULL);
         _ASSERTE(TypeFromToken(tyvar->GetTypeOrMethodDef()) == mdtTypeDef);
 
-        tyvar->LoadConstraints(); //TODO: is this necessary for anything but the typical class?
-
         if (!tyvar->SatisfiesConstraints(&typeContext, thArg))
         {
             return FALSE;
@@ -1511,7 +1531,7 @@ CHECK TypeHandle::CheckLoadLevel(ClassLoadLevel requiredLevel)
 {
     CHECK(!IsNull());
     //    CHECK_MSGF(!IsNull(), ("Type is null, required load level is %s", classLoadLevelName[requiredLevel]));
-    static_assert_no_msg(ARRAY_SIZE(classLoadLevelName) == (1 + CLASS_LOAD_LEVEL_FINAL));
+    static_assert(ARRAY_SIZE(classLoadLevelName) == (1 + CLASS_LOAD_LEVEL_FINAL));
 
     // Quick check to avoid creating debug string
     ClassLoadLevel actualLevel = GetLoadLevel();

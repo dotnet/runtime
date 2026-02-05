@@ -26,36 +26,67 @@ public class ExplicitLayout
     }
 #pragma warning restore 618
 
+    [StructLayout(LayoutKind.Explicit)]
+    public class ExplicitBase
+    {
+        [FieldOffset(8)] public object? m_objectField;
+        [FieldOffset(0)] public double m_doubleField;
+
+        public double DoubleValue
+        {
+            get => m_doubleField;
+            set => m_doubleField = value;
+        }
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public class EmptyExplicitClassDerivingFromExplicitClass : ExplicitBase
+    {
+    }
+
+    public class AutoDerivingFromEmptyExplicitClass : EmptyExplicitClassDerivingFromExplicitClass
+    {
+        string MyStringField;
+
+        public AutoDerivingFromEmptyExplicitClass(string fieldValue = "Default Value")
+        {
+            MyStringField = fieldValue;
+        }
+
+        public string GetMyStringField()
+        {
+            return MyStringField;
+        }
+    }
+
     public class Program
     {
         [Fact]
         [OuterLoop]
-        public static int TestEntrypoint()
+        public static void ExplicitLayoutStruct()
         {
-            int returnVal = 100;
-
             TestStruct t = new TestStruct();
             t.Guid1 = Guid.NewGuid();
             t.Guid2 = t.Guid1;
 
-            if (t.Guid1 != t.Guid2)
-            {
-                Console.WriteLine("FAIL self-copy");
-                returnVal = -1;
-            }
+            Assert.Equal(t.Guid1, t.Guid2);
 
             TestStruct t2 = new TestStruct();
             Guid newGuid = Guid.NewGuid();
             t2.Guid1 = newGuid;
             t2.Guid2 = newGuid;
 
-            if (t2.Guid1 != t2.Guid2)
-            {
-                Console.WriteLine("FAIL other-copy");
-                returnVal = -1;
-            }
+            Assert.Equal(t2.Guid1, t2.Guid2);
+        }
 
-            return returnVal;
+        [Fact]
+        public static void EmptyExplicitClass()
+        {
+            AutoDerivingFromEmptyExplicitClass emptyDirectBase = new("AutoDerivingFromEmptyExplicitClass");
+
+            emptyDirectBase.DoubleValue = 17.0;
+
+            Assert.Equal("AutoDerivingFromEmptyExplicitClass", emptyDirectBase.GetMyStringField());
         }
     }
 }

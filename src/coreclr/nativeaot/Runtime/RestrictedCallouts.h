@@ -97,6 +97,6 @@ private:
     static CrstStatic s_sLock;
 
     // Prototypes for the callouts.
-    typedef void (F_CALL_CONV * GcRestrictedCallbackFunction)(uint32_t uiCondemnedGeneration);
+    typedef void (* GcRestrictedCallbackFunction)(uint32_t uiCondemnedGeneration);
     typedef CLR_BOOL (* HandleTableRestrictedCallbackFunction)(Object * pObject);
 };

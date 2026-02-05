@@ -5,12 +5,12 @@ using Mono.Cecil.Cil;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	public partial record LocalVariableReferenceValue (VariableDefinition LocalDefinition)
-		: ReferenceValue (LocalDefinition.VariableType)
-	{
-		public override SingleValue DeepCopy ()
-		{
-			return this;
-		}
-	}
+    public partial record LocalVariableReferenceValue(VariableDefinition LocalDefinition)
+        : ReferenceValue(LocalDefinition.VariableType)
+    {
+        public override SingleValue DeepCopy()
+        {
+            return this;
+        }
+    }
 }

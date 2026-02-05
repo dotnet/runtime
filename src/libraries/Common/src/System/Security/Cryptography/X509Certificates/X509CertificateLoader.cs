@@ -12,10 +12,11 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.X509Certificates
 {
+    /// <summary>
+    ///   Provides methods for loading an X.509 certificate or a PKCS#12 PFX containing certificates.
+    /// </summary>
     [UnsupportedOSPlatform("browser")]
-#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105974
     public static partial class X509CertificateLoader
-#pragma warning restore 1591
     {
         private const int MemoryMappedFileCutoff = 1_048_576;
 
@@ -131,7 +132,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
             Pkcs12LoaderLimits? loaderLimits = null)
         {
-            ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(data);
             ValidateKeyStorageFlagsCore(keyStorageFlags);
 
             return LoadPkcs12(
@@ -372,7 +373,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
             Pkcs12LoaderLimits? loaderLimits = null)
         {
-            ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(data);
             ValidateKeyStorageFlagsCore(keyStorageFlags);
 
             return LoadPkcs12Collection(
@@ -707,16 +708,6 @@ namespace System.Security.Cryptography.X509Certificates
 #endif
         }
 
-        private static void ThrowIfNull(
-            [NotNull] object? argument,
-            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
-        {
-            if (argument is null)
-            {
-                ThrowNull(paramName);
-            }
-        }
-
         private static void ThrowIfNullOrEmpty(
             [NotNull] string? argument,
             [CallerArgumentExpression(nameof(argument))] string? paramName = null)
@@ -736,7 +727,7 @@ namespace System.Security.Cryptography.X509Certificates
         [DoesNotReturn]
         private static void ThrowNullOrEmpty(string? argument, string? paramName)
         {
-            ThrowIfNull(argument, paramName);
+            ArgumentNullException.ThrowIfNull(argument, paramName);
             throw new ArgumentException(SR.Argument_EmptyString, paramName);
         }
     }

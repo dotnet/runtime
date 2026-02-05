@@ -8,5 +8,7 @@
 
     <Compile Include="$(CommonTestPath)System\Net\EnterpriseTests\EnterpriseTestConfiguration.cs"
              Link="Common\System\Net\EnterpriseTests\EnterpriseTestConfiguration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs"
+             Link="Common\System\Net\RemoteExecutorExtensions.cs" />
   </ItemGroup>
 </Project>

@@ -8,9 +8,7 @@ using System.Threading;
 namespace System.Diagnostics.Tracing
 {
 #if !ES_BUILD_STANDALONE
-#if !FEATURE_WASM_PERFTRACING
     [UnsupportedOSPlatform("browser")]
-#endif
 #endif
     internal sealed class CounterGroup
     {
@@ -171,7 +169,7 @@ namespace System.Diagnostics.Tracing
                         IsBackground = true,
                         Name = ".NET Counter Poller"
                     };
-                    s_pollingThread.InternalUnsafeStart();
+                    s_pollingThread.Start();
                 }
 
                 if (!s_counterGroupEnabledList!.Contains(this))

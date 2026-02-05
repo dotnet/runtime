@@ -33,7 +33,7 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyCulture ("")]
+[assembly: AssemblyCulture("")]
 
-[assembly: CLSCompliant (false)]
-[assembly: ComVisible (false)]
+[assembly: CLSCompliant(false)]
+[assembly: ComVisible(false)]

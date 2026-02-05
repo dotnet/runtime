@@ -1,6 +1,8 @@
-# Threaded runtime #
+# Threaded runtime
 
-## Building the runtime ##
+For WebAssembly documentation including building, testing, and debugging, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
+
+## Building the runtime
 
 Build the runtime with `/p:WasmEnableThreads=true` to enable support for multi-threading.
 
@@ -14,11 +16,6 @@ This also works with released versions of .NET 7 or later and the `wasmbrowser` 
 We use the `FeatureWasmManagedThreads` property in the libraries projects to conditionally define
 `FEATURE_WASM_MANAGED_THREADS` which is used to affect how the libraries are built for the multi-threaded
 runtime.
-
-We use the `FeatureWasmPerfTracing` property in the libraries projects to
-conditionally define `FEATURE_WASM_PERFTRACING` which is used to affect how the
-libraries are built for a runtime that is single-threaded for users, but
-internally can use multithreading for EventPipe diagnostics.
 
 ### Ref asssemblies ###
 
@@ -35,15 +32,12 @@ assemblies.
 ### Implementation assemblies ###
 
 The implementation (in `System.Private.CoreLib`) we check
-`System.Threading.Thread.IsThreadStartSupported` or call
-`System.Threading.Thread.ThrowIfNoThreadStart()` to guard code paths that depends on
+`System.Threading.Thread.IsSingleThreaded` or call
+`System.Threading.Thread.ThrowIfSingleThreaded()` to guard code paths that depends on
 multi-threading.  The property is a boolean constant that will allow the IL trimmer or the
 JIT/interpreter/AOT to drop the multi-threaded implementation in the single-threaded CoreLib.
 
 The implementation should not use `[UnsupportedOSPlatform("browser")]`
-
-**TODO** For `FeatureWasmPerfTracing`, the implementation should check *some
-runtime constant* and throw PNSE if diagnostics are not enabled.
 
 ## Native runtime preprocessor defines ##
 
@@ -70,18 +64,11 @@ Mono exposes these functions as `mono_threads_wasm_async_run_in_main_thread`, et
 
 ## Background tasks ##
 
-The runtime has a number of tasks that are scheduled with `mono_main_thread_schedule_background_job`
+The runtime has a number of tasks that are scheduled with `SystemJS_ScheduleBackgroundJob`
 (pumping the threadpool task queue, running GC finalizers, etc).
 
-The background tasks will run on the main thread.  Calling `mono_main_thread_schedule_background_job` on
+The background tasks will run on the main thread.  Calling `SystemJS_ScheduleBackgroundJob` on
 a worker thread will use `async_run_in_main_thread` to queue up work for the main thread.
-
-## Debugger tests ##
-
-To run the debugger tests in the runtime [built with enabled support for multi-threading](#building-the-runtime) we use:
-```
-dotnet test src/mono/browser/debugger/DebuggerTestSuite -e RuntimeConfiguration=Debug -e Configuration=Debug -e DebuggerHost=chrome -e WasmEnableThreads=true
-```
 
 ## JS interop on dedicated threads ##
 FIXME: better documentation, better public API.

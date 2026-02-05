@@ -3,7 +3,7 @@
 - [The Basics](#the-basics)
   - [Build Results](#build-results)
   - [What to do with the Build](#what-to-do-with-the-build)
-    - [The Core_Root for Testing Your Build](#the-core-root-for-testing-your-build)
+    - [The Core_Root for Testing Your Build](#the-core\_root-for-testing-your-build)
     - [The Dev Shipping Packs](#the-dev-shipping-packs)
   - [Cross Compilation](#cross-compilation)
 - [Other Features](#other-features)
@@ -90,6 +90,12 @@ Using an x64 machine, it is possible to generate builds for other architectures.
 **NOTE:** On macOS, it is also possible to cross-compile from ARM64 to x64 using an Apple Silicon Mac.
 
 Detailed instructions on how to do cross-compilation can be found in the cross-building doc [over here](/docs/workflow/building/coreclr/cross-building.md).
+
+### Platform-Specific Guides
+
+For specialized platforms, detailed instructions are available in the following guides:
+
+- **WebAssembly:** [Building CoreCLR for WebAssembly](/docs/workflow/building/coreclr/wasm.md) - Experimental support for building, running, and debugging CoreCLR on WebAssembly.
 
 ## Other Features
 

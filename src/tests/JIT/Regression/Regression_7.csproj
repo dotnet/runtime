@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NumberOfStripesToUseInStress>4</NumberOfStripesToUseInStress>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="CLR-x86-JIT/V1-M09.5-PDC/**/*.??proj" />
+    <MergedWrapperProjectReference Include="CLR-x86-JIT/V1-M10/**/*.??proj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

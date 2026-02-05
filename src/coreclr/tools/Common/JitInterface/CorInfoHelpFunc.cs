@@ -28,13 +28,13 @@ namespace Internal.JitInterface
         CORINFO_HELP_LMOD,
         CORINFO_HELP_ULDIV,
         CORINFO_HELP_ULMOD,
+        CORINFO_HELP_LNG2FLT,               // Convert a signed int64 to a float
         CORINFO_HELP_LNG2DBL,               // Convert a signed int64 to a double
+        CORINFO_HELP_ULNG2FLT,              // Convert a unsigned int64 to a float
         CORINFO_HELP_ULNG2DBL,              // Convert a unsigned int64 to a double
-        CORINFO_HELP_DBL2INT,
         CORINFO_HELP_DBL2INT_OVF,
         CORINFO_HELP_DBL2LNG,
         CORINFO_HELP_DBL2LNG_OVF,
-        CORINFO_HELP_DBL2UINT,
         CORINFO_HELP_DBL2UINT_OVF,
         CORINFO_HELP_DBL2ULNG,
         CORINFO_HELP_DBL2ULNG_OVF,
@@ -55,11 +55,10 @@ namespace Internal.JitInterface
         CORINFO_HELP_NEW_MDARR_RARE, // rare multi-dim array helper (Rank == 1)
         CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
         CORINFO_HELP_NEWARR_1_MAYBEFROZEN, // allocator for arrays that *might* allocate them on a frozen segment
-        CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
+        CORINFO_HELP_NEWARR_1_PTR,      // optimized arrays of pointer sized elements
         CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
         CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
-        CORINFO_HELP_STRCNS,            // create a new string literal
         /* Object model */
 
         CORINFO_HELP_INITCLASS,         // Initialize class if not already initialized
@@ -96,6 +95,7 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_THROW,             // Throw an exception object
         CORINFO_HELP_RETHROW,           // Rethrow the currently active exception
+        CORINFO_HELP_THROWEXACT,        // Throw an exception object, preserving stack trace
         CORINFO_HELP_USER_BREAKPOINT,   // For a user program to break to the debugger
         CORINFO_HELP_RNGCHKFAIL,        // array bounds check failed
         CORINFO_HELP_OVERFLOW,          // throw an overflow exception
@@ -124,7 +124,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_STOP_FOR_GC,       // Call GC (force a GC)
         CORINFO_HELP_POLL_GC,           // Ask GC if it wants to collect
 
-        CORINFO_HELP_STRESS_GC,         // Force a GC, but then update the JITTED code to be a noop call
         CORINFO_HELP_CHECK_OBJ,         // confirm that ECX is a valid object pointer (debugging only)
 
         /* GC Write barrier support */
@@ -172,6 +171,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
         CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2,
         CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT,
+        CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE,
         /* Debugger */
 
         CORINFO_HELP_DBG_IS_JUST_MY_CODE,    // Check if this is "JustMyCode" and needs to be stepped through.
@@ -265,11 +265,12 @@ namespace Internal.JitInterface
         CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS, // Transition to preemptive mode and track transitions in reverse P/Invoke prolog.
 
         CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
+        CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT,  // Resolve a non-generic interface method from this pointer and dispatch cell
 
         CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
         CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
-        CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
+        CORINFO_HELP_PATCHPOINT_FORCED,         // Notify runtime that code has reached a part of the method that needs to transition
 
         CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
         CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
@@ -284,6 +285,10 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
         CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
+
+        CORINFO_HELP_ALLOC_CONTINUATION,
+        CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
+        CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
         CORINFO_HELP_COUNT,
     }

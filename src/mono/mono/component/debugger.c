@@ -31,8 +31,5 @@ mono_component_debugger_init (void)
 #if defined(HOST_BROWSER)
 	mini_wasm_debugger_add_function_pointers (&fn_table);
 #endif
-#if defined(HOST_WASI)
-	mini_wasi_debugger_add_function_pointers (&fn_table);
-#endif
 	return &fn_table;
 }

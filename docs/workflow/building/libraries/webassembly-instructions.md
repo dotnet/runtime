@@ -80,7 +80,7 @@ Individual projects and libraries can be build by specifying the build configura
 - Build all projects for a given library (e.g.: System.Net.Http) including the tests
 
 ```bash
-./build.sh -os browser -c Release --projects <full-repository-path>/src/libraries/System.Net.Http/System.Net.Http.sln
+./build.sh -os browser -c Release --projects <full-repository-path>/src/libraries/System.Net.Http/System.Net.Http.slnx
 ```
 
 - Build only the source project of a given library (e.g.: System.Net.Http)

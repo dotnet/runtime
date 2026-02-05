@@ -22,23 +22,17 @@ namespace System.Threading.Channels.Tests
         protected virtual bool RequiresSingleReader => false;
         protected virtual bool RequiresSingleWriter => false;
         protected virtual bool BuffersItems => true;
-
-        public static IEnumerable<object[]> ThreeBools =>
-            from b1 in new[] { false, true }
-            from b2 in new[] { false, true }
-            from b3 in new[] { false, true }
-            select new object[] { b1, b2, b3 };
+        protected virtual bool HasDebuggerTypeProxy => true;
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void ValidateDebuggerAttributes()
         {
             Channel<int> c = CreateChannel();
-            for (int i = 1; i <= 10; i++)
-            {
-                c.Writer.WriteAsync(i);
-            }
             DebuggerAttributes.ValidateDebuggerDisplayReferences(c);
-            DebuggerAttributes.InvokeDebuggerTypeProxyProperties(c);
+            if (HasDebuggerTypeProxy)
+            {
+                DebuggerAttributes.InvokeDebuggerTypeProxyProperties(c);
+            }
         }
 
         [Fact]
@@ -112,7 +106,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
-        public async Task TryComplete_ErrorsPropage()
+        public async Task TryComplete_ErrorsPropagate()
         {
             Channel<int> c;
 
@@ -141,6 +135,10 @@ namespace System.Threading.Channels.Tests
             if (!c.Reader.CanCount)
             {
                 Assert.Throws<NotSupportedException>(() => c.Reader.Count);
+            }
+            else
+            {
+                Assert.InRange(c.Reader.Count, 0, int.MaxValue);
             }
         }
 
@@ -226,17 +224,13 @@ namespace System.Threading.Channels.Tests
             {
                 tasks[i] = Task.Run(async () =>
                 {
-                    try
+                    while (await c.Reader.WaitToReadAsync())
                     {
-                        while (await c.Reader.WaitToReadAsync())
+                        while (c.Reader.TryRead(out int value))
                         {
-                            if (c.Reader.TryRead(out int value))
-                            {
-                                Interlocked.Add(ref readTotal, value);
-                            }
+                            Interlocked.Add(ref readTotal, value);
                         }
                     }
-                    catch (ChannelClosedException) { }
                 });
             }
 
@@ -352,13 +346,13 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
-        public void TryRead_DataAvailable_Success()
+        public async Task TryRead_DataAvailable_Success()
         {
             Channel<int> c = CreateChannel();
             ValueTask write = c.Writer.WriteAsync(42);
-            Assert.True(write.IsCompletedSuccessfully);
             Assert.True(c.Reader.TryRead(out int result));
             Assert.Equal(42, result);
+            await write;
         }
 
         [Fact]
@@ -370,7 +364,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
-        public void TryPeek_SucceedsWhenDataAvailable()
+        public async Task TryPeek_SucceedsWhenDataAvailable()
         {
             Channel<int> c = CreateChannel();
 
@@ -379,7 +373,7 @@ namespace System.Threading.Channels.Tests
             for (int i = 0; i < 3; i++)
             {
                 // Write a value
-                Assert.True(c.Writer.WriteAsync(42).IsCompletedSuccessfully);
+                ValueTask write = c.Writer.WriteAsync(42);
 
                 // Can peek at the written value
                 Assert.True(c.Reader.TryPeek(out int peekedResult));
@@ -389,9 +383,16 @@ namespace System.Threading.Channels.Tests
                 Assert.True(c.Reader.TryRead(out int readResult));
                 Assert.Equal(42, readResult);
 
+                await write;
+
                 // Peeking no longer finds it
                 Assert.False(c.Reader.TryPeek(out int noResult));
                 Assert.Equal(0, noResult);
+            }
+
+            if (!BuffersItems)
+            {
+                return;
             }
 
             // Write another value
@@ -544,7 +545,7 @@ namespace System.Threading.Channels.Tests
             Assert.True(writeTask.IsCanceled);
 
             ValueTask<bool> waitTask = c.Writer.WaitToWriteAsync(new CancellationToken(true));
-            Assert.True(writeTask.IsCanceled);
+            Assert.True(waitTask.IsCanceled);
         }
 
         [Fact]
@@ -558,16 +559,23 @@ namespace System.Threading.Channels.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void Precancellation_WaitToReadAsync_ReturnsImmediately(bool dataAvailable)
+        public async Task Precancellation_WaitToReadAsync_ReturnsImmediately(bool dataAvailable)
         {
             Channel<int> c = CreateChannel();
+
+            ValueTask write = default;
             if (dataAvailable)
             {
-                Assert.True(c.Writer.TryWrite(42));
+                write = c.Writer.WriteAsync(42);
             }
 
             ValueTask<bool> waitTask = c.Reader.WaitToReadAsync(new CancellationToken(true));
             Assert.True(waitTask.IsCanceled);
+
+            if (BuffersItems)
+            {
+                await write;
+            }
         }
 
         [Theory]
@@ -634,7 +642,7 @@ namespace System.Threading.Channels.Tests
             Channel<int> c = CreateChannel();
             if (dataAvailable)
             {
-                Assert.True(c.Writer.TryWrite(42));
+                c.Writer.WriteAsync(42);
             }
 
             ValueTask<int> readTask = c.Reader.ReadAsync(new CancellationToken(true));
@@ -655,10 +663,9 @@ namespace System.Threading.Channels.Tests
 
             await AssertExtensions.CanceledAsync(cts.Token, async () => await r);
 
-            if (c.Writer.TryWrite(42))
-            {
-                Assert.Equal(42, await c.Reader.ReadAsync());
-            }
+            ValueTask vt = c.Writer.WriteAsync(42);
+            Assert.Equal(42, await c.Reader.ReadAsync());
+            await vt;
         }
 
         [Fact]
@@ -823,7 +830,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
-        public void ReadAllAsync_AvailableDataCompletesSynchronously()
+        public async Task ReadAllAsync_AvailableDataCompletesSynchronously()
         {
             Channel<int> c = CreateChannel();
 
@@ -832,11 +839,12 @@ namespace System.Threading.Channels.Tests
             {
                 for (int i = 100; i < 110; i++)
                 {
-                    Assert.True(c.Writer.TryWrite(i));
+                    ValueTask write = c.Writer.WriteAsync(i);
                     ValueTask<bool> vt = e.MoveNextAsync();
                     Assert.True(vt.IsCompletedSuccessfully);
                     Assert.True(vt.Result);
                     Assert.Equal(i, e.Current);
+                    await write;
                 }
             }
             finally
@@ -859,7 +867,7 @@ namespace System.Threading.Channels.Tests
                 {
                     ValueTask<bool> vt = e.MoveNextAsync();
                     Assert.False(vt.IsCompleted);
-                    Task producer = Task.Run(() => c.Writer.TryWrite(i));
+                    Task producer = Task.Run(() => c.Writer.WriteAsync(i).AsTask());
                     Assert.True(await vt);
                     await producer;
                     Assert.Equal(i, e.Current);
@@ -916,14 +924,16 @@ namespace System.Threading.Channels.Tests
         {
             Channel<int> c = CreateChannel();
 
-            Assert.True(c.Writer.TryWrite(42));
-            c.Writer.Complete();
+            ValueTask write = c.Writer.WriteAsync(42);
 
             IAsyncEnumerable<int> enumerable = c.Reader.ReadAllAsync();
             IAsyncEnumerator<int> e = enumerable.GetAsyncEnumerator();
 
             Assert.True(await e.MoveNextAsync());
             Assert.Equal(42, e.Current);
+
+            await write;
+            c.Writer.Complete();
 
             Assert.False(await e.MoveNextAsync());
             Assert.False(await e.MoveNextAsync());
@@ -942,16 +952,17 @@ namespace System.Threading.Channels.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public void ReadAllAsync_MultipleSingleElementEnumerations_AllItemsEnumerated(bool sameEnumerable, bool dispose)
+        public async Task ReadAllAsync_MultipleSingleElementEnumerations_AllItemsEnumerated(bool sameEnumerable, bool dispose)
         {
             Channel<int> c = CreateChannel();
             IAsyncEnumerable<int> enumerable = c.Reader.ReadAllAsync();
 
             for (int i = 0; i < 10; i++)
             {
-                Assert.True(c.Writer.TryWrite(i));
+                ValueTask write = c.Writer.WriteAsync(i);
                 IAsyncEnumerator<int> e = (sameEnumerable ? enumerable : c.Reader.ReadAllAsync()).GetAsyncEnumerator();
                 ValueTask<bool> vt = e.MoveNextAsync();
+                await write;
                 Assert.True(vt.IsCompletedSuccessfully);
                 Assert.True(vt.Result);
                 Assert.Equal(i, e.Current);
@@ -1015,9 +1026,10 @@ namespace System.Threading.Channels.Tests
         public async Task ReadAllAsync_CanceledBeforeMoveNextAsync_Throws(bool dataAvailable)
         {
             Channel<int> c = CreateChannel();
+
             if (dataAvailable)
             {
-                Assert.True(c.Writer.TryWrite(42));
+                _ = c.Writer.WriteAsync(42);
             }
 
             var cts = new CancellationTokenSource();
@@ -1057,10 +1069,11 @@ namespace System.Threading.Channels.Tests
             for (int i = 0; i < 5; i++)
             {
                 ValueTask<bool> r = c.Reader.WaitToReadAsync();
-                await c.Writer.WriteAsync(i);
+                ValueTask write = c.Writer.WriteAsync(i);
                 Assert.True(await r);
                 Assert.True(c.Reader.TryRead(out int item));
                 Assert.Equal(i, item);
+                await write;
             }
         }
 
@@ -1155,7 +1168,8 @@ namespace System.Threading.Channels.Tests
             Channel<int> c = CreateChannel();
 
             ValueTask<bool> read = c.Reader.WaitToReadAsync();
-            Assert.True(c.Writer.TryWrite(42));
+
+            ValueTask write = c.Writer.WriteAsync(42);
             Assert.True(await read);
             Assert.Throws<InvalidOperationException>(() => read.GetAwaiter().IsCompleted);
             Assert.Throws<InvalidOperationException>(() => read.GetAwaiter().OnCompleted(() => { }));
@@ -1169,8 +1183,9 @@ namespace System.Threading.Channels.Tests
             Channel<int> c = CreateChannel();
 
             ValueTask<int> read = c.Reader.ReadAsync();
-            Assert.True(c.Writer.TryWrite(42));
+            ValueTask write = c.Writer.WriteAsync(42);
             Assert.Equal(42, await read);
+            await write;
             Assert.Throws<InvalidOperationException>(() => read.GetAwaiter().IsCompleted);
             Assert.Throws<InvalidOperationException>(() => read.GetAwaiter().OnCompleted(() => { }));
             Assert.Throws<InvalidOperationException>(() => read.GetAwaiter().GetResult());
@@ -1186,7 +1201,7 @@ namespace System.Threading.Channels.Tests
             }
 
             ValueTask<bool> write = c.Writer.WaitToWriteAsync();
-            await c.Reader.ReadAsync();
+            ValueTask<int> read = c.Reader.ReadAsync();
             Assert.True(await write);
             Assert.Throws<InvalidOperationException>(() => write.GetAwaiter().IsCompleted);
             Assert.Throws<InvalidOperationException>(() => write.GetAwaiter().OnCompleted(() => { }));
@@ -1344,7 +1359,7 @@ namespace System.Threading.Channels.Tests
                 {
                     Assert.False(vt.IsCompleted);
                     Assert.False(vt.IsCompletedSuccessfully);
-                    c.Writer.TryWrite(true);
+                    _ = c.Writer.WriteAsync(true);
                 }
 
                 SynchronizationContext.SetSynchronizationContext(new CustomSynchronizationContext());
@@ -1379,7 +1394,7 @@ namespace System.Threading.Channels.Tests
                 {
                     Assert.False(vt.IsCompleted);
                     Assert.False(vt.IsCompletedSuccessfully);
-                    c.Writer.TryWrite(true);
+                    _ = c.Writer.WriteAsync(true);
                 }
 
                 await continuationRan.Task;
@@ -1440,7 +1455,7 @@ namespace System.Threading.Channels.Tests
                 {
                     Assert.False(vt.IsCompleted);
                     Assert.False(vt.IsCompletedSuccessfully);
-                    c.Writer.TryWrite(true);
+                    _ = c.Writer.WriteAsync(true);
                 }
 
                 await Task.Factory.StartNew(() =>
@@ -1482,7 +1497,7 @@ namespace System.Threading.Channels.Tests
                 {
                     Assert.False(vt.IsCompleted);
                     Assert.False(vt.IsCompletedSuccessfully);
-                    c.Writer.TryWrite(true);
+                    _ = c.Writer.WriteAsync(true);
                 }
 
                 await continuationRan.Task;

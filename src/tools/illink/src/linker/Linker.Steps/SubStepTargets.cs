@@ -5,16 +5,16 @@ using System;
 
 namespace Mono.Linker.Steps
 {
-	[Flags]
-	public enum SubStepTargets
-	{
-		None = 0,
+    [Flags]
+    public enum SubStepTargets
+    {
+        None = 0,
 
-		Assembly = 1,
-		Type = 2,
-		Field = 4,
-		Method = 8,
-		Property = 16,
-		Event = 32,
-	}
+        Assembly = 1,
+        Type = 2,
+        Field = 4,
+        Method = 8,
+        Property = 16,
+        Event = 32,
+    }
 }

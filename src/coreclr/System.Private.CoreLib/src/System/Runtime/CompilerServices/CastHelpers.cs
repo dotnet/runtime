@@ -14,21 +14,44 @@ namespace System.Runtime.CompilerServices
         // In coreclr the table is allocated and written to on the native side.
         internal static int[]? s_table;
 
-        [LibraryImport(RuntimeHelpers.QCall)]
-        internal static partial void ThrowInvalidCastException(void* fromTypeHnd, void* toTypeHnd);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThrowInvalidCastException")]
+        private static partial void ThrowInvalidCastExceptionInternal(void* fromTypeHnd, void* toTypeHnd);
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidCastException(void* fromTypeHnd, void* toTypeHnd)
+        {
+            ThrowInvalidCastExceptionInternal(fromTypeHnd, toTypeHnd);
+            throw null!; // Provide hint to the inliner that this method does not return
+        }
 
         [DoesNotReturn]
         internal static void ThrowInvalidCastException(object fromType, void* toTypeHnd)
         {
-            ThrowInvalidCastException(RuntimeHelpers.GetMethodTable(fromType), toTypeHnd);
+            ThrowInvalidCastExceptionInternal(RuntimeHelpers.GetMethodTable(fromType), toTypeHnd);
+            GC.KeepAlive(fromType);
             throw null!; // Provide hint to the inliner that this method does not return
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj);
+        [LibraryImport(RuntimeHelpers.QCall)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, [MarshalAs(UnmanagedType.Bool)] bool throwCastException, ObjectHandleOnStack obj);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static object? IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj)
+        {
+            if (IsInstanceOf_NoCacheLookup(toTypeHnd, false, ObjectHandleOnStack.Create(ref obj)))
+            {
+                return obj;
+            }
+            return null;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj)
+        {
+            IsInstanceOf_NoCacheLookup(toTypeHnd, true, ObjectHandleOnStack.Create(ref obj));
+            return obj;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WriteBarrier(ref object? dst, object? obj);
@@ -175,8 +198,10 @@ namespace System.Runtime.CompilerServices
                 mt = mt->ParentMethodTable;
             }
 
+#if FEATURE_TYPEEQUIVALENCE
             // this helper is not supposed to be used with type-equivalent "to" type.
             Debug.Assert(!((MethodTable*)toTypeHnd)->HasTypeEquivalence);
+#endif // FEATURE_TYPEEQUIVALENCE
 
             obj = null;
 
@@ -462,17 +487,17 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(obj != null);
 
-            obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
-            if (obj == null)
+            object? obj2 = IsInstanceOfAny_NoCacheLookup(elementType, obj);
+            if (obj2 == null)
             {
                 ThrowArrayMismatchException();
             }
 
-            WriteBarrier(ref element, obj);
+            WriteBarrier(ref element, obj2);
         }
 
         [DebuggerHidden]
-        private static unsafe void ArrayTypeCheck(object obj, Array array)
+        private static void ArrayTypeCheck(object obj, Array array)
         {
             Debug.Assert(obj != null);
 
@@ -490,15 +515,53 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void ArrayTypeCheck_Helper(object obj, void* elementType)
+        private static void ArrayTypeCheck_Helper(object obj, void* elementType)
         {
             Debug.Assert(obj != null);
 
-            obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
-            if (obj == null)
+            if (IsInstanceOfAny_NoCacheLookup(elementType, obj) == null)
             {
                 ThrowArrayMismatchException();
             }
+        }
+
+        // Helpers for boxing
+        [DebuggerHidden]
+        internal static object? Box_Nullable(MethodTable* srcMT, ref byte nullableData)
+        {
+            Debug.Assert(srcMT->IsNullable);
+
+            if (nullableData == 0)
+                return null;
+
+            // Allocate a new instance of the T in Nullable<T>.
+            MethodTable* dstMT = srcMT->InstantiationArg0();
+            ref byte srcValue = ref Unsafe.Add(ref nullableData, srcMT->NullableValueAddrOffset);
+
+            // Delegate to non-nullable boxing implementation
+            return Box(dstMT, ref srcValue);
+        }
+
+        [DebuggerHidden]
+        internal static object Box(MethodTable* typeMT, ref byte unboxedData)
+        {
+            Debug.Assert(typeMT != null);
+            Debug.Assert(typeMT->IsValueType);
+
+            // A null can be passed for boxing of a null ref.
+            _ = Unsafe.ReadUnaligned<byte>(ref unboxedData);
+
+            object boxed = RuntimeTypeHandle.InternalAllocNoChecks(typeMT);
+            if (typeMT->ContainsGCPointers)
+            {
+                Buffer.BulkMoveWithWriteBarrier(ref boxed.GetRawData(), ref unboxedData, typeMT->GetNumInstanceFieldBytesIfContainsGCPointers());
+            }
+            else
+            {
+                SpanHelpers.Memmove(ref boxed.GetRawData(), ref unboxedData, typeMT->GetNumInstanceFieldBytes());
+            }
+
+            return boxed;
         }
 
         // Helpers for Unboxing
@@ -523,7 +586,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsNullableForType(MethodTable* typeMT, MethodTable* boxedMT)
+        internal static bool IsNullableForType(MethodTable* typeMT, MethodTable* boxedMT)
         {
             if (!typeMT->IsNullable)
             {
@@ -594,6 +657,13 @@ namespace System.Runtime.CompilerServices
                         SpanHelpers.Memmove(ref dst, ref src, valueSize);
                 }
             }
+        }
+
+        [DebuggerHidden]
+        internal static object? ReboxFromNullable(MethodTable* srcMT, object src)
+        {
+            ref byte nullableData = ref src.GetRawData();
+            return Box_Nullable(srcMT, ref nullableData);
         }
 
         [DebuggerHidden]

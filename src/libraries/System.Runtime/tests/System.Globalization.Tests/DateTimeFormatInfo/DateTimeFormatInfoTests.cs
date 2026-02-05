@@ -138,7 +138,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Months_GetHebrew_ReturnsExpected()
         {
             CultureInfo ci = new CultureInfo("he-IL");

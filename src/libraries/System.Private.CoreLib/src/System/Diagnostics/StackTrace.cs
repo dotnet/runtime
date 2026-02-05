@@ -18,10 +18,10 @@ namespace System.Diagnostics
     public partial class StackTrace
     {
         [FeatureSwitchDefinition("System.Diagnostics.StackTrace.IsSupported")]
-        internal static bool IsSupported { get; } = InitializeIsSupported();
+        internal static bool IsSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.StackTrace.IsSupported", out bool isSupported) ? isSupported : true;
 
-        private static bool InitializeIsSupported() =>
-            AppContext.TryGetSwitch("System.Diagnostics.StackTrace.IsSupported", out bool isSupported) ? isSupported : true;
+        [FeatureSwitchDefinition("System.Diagnostics.StackTrace.IsLineNumberSupported")]
+        internal static bool IsLineNumberSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.StackTrace.IsLineNumberSupported", out bool isSupported) ? isSupported : true;
 
         public const int METHODS_TO_SKIP = 0;
 
@@ -171,7 +171,7 @@ namespace System.Diagnostics
         public virtual StackFrame[] GetFrames()
         {
             if (_stackFrames == null || _numOfFrames <= 0)
-                return Array.Empty<StackFrame>();
+                return [];
 
             // We have to return a subset of the array. Unfortunately this
             // means we have to allocate a new array and copy over.
@@ -418,7 +418,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static Attribute[] GetCustomAttributesSafe(MemberInfo memberInfo, Type attributeType, bool inherit)
+        private static Attribute[]? GetCustomAttributesSafe(MemberInfo memberInfo, Type attributeType, bool inherit)
         {
             try
             {
@@ -426,9 +426,9 @@ namespace System.Diagnostics
             }
             catch
             {
-                // Getting the attributes has failed, return an empty array. One of the reasons
+                // Getting the attributes has failed, return null. One of the reasons
                 // can be that the member has attributes defined in an assembly that is missing.
-                return [];
+                return null;
             }
         }
 
@@ -459,7 +459,7 @@ namespace System.Diagnostics
 
             foreach (MethodInfo candidateMethod in methods)
             {
-                StateMachineAttribute[]? attributes = (StateMachineAttribute[])GetCustomAttributesSafe(candidateMethod, typeof(StateMachineAttribute), inherit: false);
+                StateMachineAttribute[]? attributes = (StateMachineAttribute[]?)GetCustomAttributesSafe(candidateMethod, typeof(StateMachineAttribute), inherit: false);
                 if (attributes == null)
                 {
                     continue;

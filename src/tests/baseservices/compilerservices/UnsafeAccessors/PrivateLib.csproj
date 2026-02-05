@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="PrivateLib.cs" />
+  </ItemGroup>
+</Project>
+

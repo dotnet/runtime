@@ -39,6 +39,7 @@ pr:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
     - name: TeamName
       value: dotnet-core
@@ -103,7 +104,7 @@ extends:
             platforms:
             - windows_x64
             jobParameters:
-              buildArgs: -test -s tools+libs+libs.tests -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+              buildArgs: -test -s tools+libs+libs.tests -c $(_BuildConfig) /p:BuildAllConfigurations=true /p:TestAssemblies=false /p:TestPackages=true
               nameSuffix: Libraries_AllConfigurations
               timeoutInMinutes: 150
               extraVariablesTemplates:

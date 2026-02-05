@@ -21,7 +21,7 @@ namespace System
           ISpanParsable<DateOnly>,
           IUtf8SpanFormattable
     {
-        private readonly int _dayNumber;
+        private readonly uint _dayNumber;
 
         // Maps to Jan 1st year 1
         private const int MinDayNumber = 0;
@@ -29,13 +29,13 @@ namespace System
         // Maps to December 31 year 9999.
         private const int MaxDayNumber = DateTime.DaysTo10000 - 1;
 
-        private static int DayNumberFromDateTime(DateTime dt) => (int)((ulong)dt.Ticks / TimeSpan.TicksPerDay);
+        private static uint DayNumberFromDateTime(DateTime dt) => (uint)((ulong)dt.Ticks / TimeSpan.TicksPerDay);
 
-        internal DateTime GetEquivalentDateTime() => DateTime.UnsafeCreate(_dayNumber * TimeSpan.TicksPerDay);
+        internal DateTime GetEquivalentDateTime() => DateTime.CreateUnchecked(_dayNumber * TimeSpan.TicksPerDay);
 
-        private DateOnly(int dayNumber)
+        private DateOnly(uint dayNumber)
         {
-            Debug.Assert((uint)dayNumber <= MaxDayNumber);
+            Debug.Assert(dayNumber <= MaxDayNumber);
             _dayNumber = dayNumber;
         }
 
@@ -77,7 +77,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_DayNumber(dayNumber);
             }
 
-            return new DateOnly(dayNumber);
+            return new DateOnly((uint)dayNumber);
         }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace System
         /// <summary>
         /// Gets the day of the week represented by this instance.
         /// </summary>
-        public DayOfWeek DayOfWeek => (DayOfWeek)(((uint)_dayNumber + 1) % 7);
+        public DayOfWeek DayOfWeek => (DayOfWeek)((_dayNumber + 1) % 7);
 
         /// <summary>
         /// Gets the day of the year represented by this instance.
@@ -108,7 +108,7 @@ namespace System
         /// <summary>
         /// Gets the number of days since January 1, 0001 in the Proleptic Gregorian calendar represented by this instance.
         /// </summary>
-        public int DayNumber => _dayNumber;
+        public int DayNumber => (int)_dayNumber;
 
         /// <summary>
         /// Adds the specified number of days to the value of this instance.
@@ -120,8 +120,8 @@ namespace System
         /// </exception>
         public DateOnly AddDays(int value)
         {
-            int newDayNumber = _dayNumber + value;
-            if ((uint)newDayNumber > MaxDayNumber)
+            uint newDayNumber = _dayNumber + (uint)value;
+            if (newDayNumber > MaxDayNumber)
             {
                 ThrowOutOfRange();
             }
@@ -214,7 +214,7 @@ namespace System
         /// </summary>
         /// <param name="time">The time of the day.</param>
         /// <returns>The DateTime instance composed of the date of the current DateOnly instance and the time specified by the input time.</returns>
-        public DateTime ToDateTime(TimeOnly time) => new DateTime(_dayNumber * TimeSpan.TicksPerDay + time.Ticks);
+        public DateTime ToDateTime(TimeOnly time) => DateTime.CreateUnchecked(_dayNumber * TimeSpan.TicksPerDay + time.Ticks);
 
         /// <summary>
         /// Returns a DateTime instance with the specified input kind that is set to the date of this DateOnly instance and the time of specified input time.
@@ -222,7 +222,7 @@ namespace System
         /// <param name="time">The time of the day.</param>
         /// <param name="kind">One of the enumeration values that indicates whether ticks specifies a local time, Coordinated Universal Time (UTC), or neither.</param>
         /// <returns>The DateTime instance composed of the date of the current DateOnly instance and the time specified by the input time.</returns>
-        public DateTime ToDateTime(TimeOnly time, DateTimeKind kind) => new DateTime(_dayNumber * TimeSpan.TicksPerDay + time.Ticks, kind);
+        public DateTime ToDateTime(TimeOnly time, DateTimeKind kind) => DateTime.SpecifyKind(ToDateTime(time), kind);
 
         /// <summary>
         /// Returns a DateOnly instance that is set to the date part of the specified dateTime.
@@ -272,7 +272,7 @@ namespace System
         /// Returns the hash code for this instance.
         /// </summary>
         /// <returns>A 32-bit signed integer hash code.</returns>
-        public override int GetHashCode() => _dayNumber;
+        public override int GetHashCode() => (int)_dayNumber;
 
         private const ParseFlags ParseFlagsDateMask = ParseFlags.HaveHour | ParseFlags.HaveMinute | ParseFlags.HaveSecond | ParseFlags.HaveTime | ParseFlags.TimeZoneUsed |
                                                       ParseFlags.TimeZoneUtc | ParseFlags.CaptureOffset | ParseFlags.UtcSortPattern;
@@ -286,6 +286,11 @@ namespace System
         /// <returns>An object that is equivalent to the date contained in s, as specified by provider and styles.</returns>
         public static DateOnly Parse(ReadOnlySpan<char> s, IFormatProvider? provider = default, DateTimeStyles style = DateTimeStyles.None)
         {
+            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
+            }
+
             ParseFailureKind result = TryParseInternal(s, provider, style, out DateOnly dateOnly);
             if (result != ParseFailureKind.None)
             {
@@ -309,6 +314,11 @@ namespace System
         /// <returns>An object that is equivalent to the date contained in s, as specified by format, provider, and style.</returns>
         public static DateOnly ParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider = default, DateTimeStyles style = DateTimeStyles.None)
         {
+            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
+            }
+
             ParseFailureKind result = TryParseExactInternal(s, format, provider, style, out DateOnly dateOnly);
 
             if (result != ParseFailureKind.None)
@@ -339,6 +349,25 @@ namespace System
         /// <returns>An object that is equivalent to the date contained in s, as specified by format, provider, and style.</returns>
         public static DateOnly ParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] string[] formats, IFormatProvider? provider, DateTimeStyles style = DateTimeStyles.None)
         {
+            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
+            }
+
+            if (formats == null)
+            {
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
+            }
+
+            // Validate formats array for null/empty entries upfront
+            for (int i = 0; i < formats.Length; i++)
+            {
+                if (string.IsNullOrEmpty(formats[i]))
+                {
+                    throw new FormatException(SR.Argument_BadFormatSpecifier);
+                }
+            }
+
             ParseFailureKind result = TryParseExactInternal(s, formats, provider, style, out DateOnly dateOnly);
             if (result != ParseFailureKind.None)
             {
@@ -433,16 +462,19 @@ namespace System
         /// <param name="style">A bitwise combination of enumeration values that indicates the permitted format of s. A typical value to specify is None.</param>
         /// <param name="result">When this method returns, contains the DateOnly value equivalent to the date contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s parameter is empty string, or does not contain a valid string representation of a date. This parameter is passed uninitialized.</param>
         /// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
-        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out DateOnly result) => TryParseInternal(s, provider, style, out result) == ParseFailureKind.None;
-
-        private static ParseFailureKind TryParseInternal(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
         {
             if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
             {
-                result = default;
-                return ParseFailureKind.Argument_InvalidDateStyles;
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
             }
 
+            ParseFailureKind failureKind = TryParseInternal(s, provider, style, out result);
+            return failureKind == ParseFailureKind.None;
+        }
+
+        private static ParseFailureKind TryParseInternal(ReadOnlySpan<char> s, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
+        {
             DateTimeResult dtResult = default;
             dtResult.Init(s);
 
@@ -482,28 +514,38 @@ namespace System
         /// <param name="style">A bitwise combination of one or more enumeration values that indicate the permitted format of s.</param>
         /// <param name="result">When this method returns, contains the DateOnly value equivalent to the date contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s is empty string, or does not contain a date that correspond to the pattern specified in format. This parameter is passed uninitialized.</param>
         /// <returns>true if s was converted successfully; otherwise, false.</returns>
-        public static bool TryParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out DateOnly result) =>
-                            TryParseExactInternal(s, format, provider, style, out result) == ParseFailureKind.None;
-        private static ParseFailureKind TryParseExactInternal(ReadOnlySpan<char> s, ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
+        public static bool TryParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
         {
             if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
             {
-                result = default;
-                return ParseFailureKind.Argument_InvalidDateStyles;
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
             }
 
+            ParseFailureKind failureKind = TryParseExactInternal(s, format, provider, style, out result);
+            if (failureKind != ParseFailureKind.None)
+            {
+                if (failureKind == ParseFailureKind.Argument_BadFormatSpecifier)
+                {
+                    throw new FormatException(SR.Argument_BadFormatSpecifier);
+                }
+                return false;
+            }
+            return true;
+        }
+        private static ParseFailureKind TryParseExactInternal(ReadOnlySpan<char> s, ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
+        {
             if (format.Length == 1)
             {
                 switch (format[0] | 0x20)
                 {
                     case 'o':
                         format = OFormat;
-                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
+                        provider = DateTimeFormat.InvariantFormatInfo;
                         break;
 
                     case 'r':
                         format = RFormat;
-                        provider = CultureInfo.InvariantCulture.DateTimeFormat;
+                        provider = DateTimeFormat.InvariantFormatInfo;
                         break;
                 }
             }
@@ -514,7 +556,9 @@ namespace System
             if (!DateTimeParse.TryParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style, ref dtResult))
             {
                 result = default;
-                return ParseFailureKind.Format_BadDateOnly;
+                return dtResult.failure == ParseFailureKind.Argument_BadFormatSpecifier
+                    ? ParseFailureKind.Argument_BadFormatSpecifier
+                    : ParseFailureKind.Format_BadDateOnly;
             }
 
             if ((dtResult.flags & ParseFlagsDateMask) != 0)
@@ -546,41 +590,51 @@ namespace System
         /// <param name="style">A bitwise combination of enumeration values that defines how to interpret the parsed date. A typical value to specify is None.</param>
         /// <param name="result">When this method returns, contains the DateOnly value equivalent to the date contained in s, if the conversion succeeded, or MinValue if the conversion failed. The conversion fails if the s parameter is Empty, or does not contain a valid string representation of a date. This parameter is passed uninitialized.</param>
         /// <returns>true if the s parameter was converted successfully; otherwise, false.</returns>
-        public static bool TryParseExact(ReadOnlySpan<char> s, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateOnly result) =>
-                            TryParseExactInternal(s, formats, provider, style, out result) == ParseFailureKind.None;
+        public static bool TryParseExact(ReadOnlySpan<char> s, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
+        {
+            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
+            }
+
+            if (formats == null)
+            {
+                throw new ArgumentException(SR.Argument_InvalidDateStyles, nameof(style));
+            }
+
+            // Validate formats array for null/empty entries upfront
+            for (int i = 0; i < formats.Length; i++)
+            {
+                if (string.IsNullOrEmpty(formats[i]))
+                {
+                    throw new FormatException(SR.Argument_BadFormatSpecifier);
+                }
+            }
+
+            return TryParseExactInternal(s, formats, provider, style, out result) == ParseFailureKind.None;
+        }
 
         private static ParseFailureKind TryParseExactInternal(ReadOnlySpan<char> s, string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateOnly result)
         {
-            if ((style & ~DateTimeStyles.AllowWhiteSpaces) != 0 || formats == null)
-            {
-                result = default;
-                return ParseFailureKind.Argument_InvalidDateStyles;
-            }
-
             DateTimeFormatInfo dtfi = DateTimeFormatInfo.GetInstance(provider);
 
-            for (int i = 0; i < formats.Length; i++)
+            for (int i = 0; i < formats!.Length; i++)
             {
                 DateTimeFormatInfo dtfiToUse = dtfi;
                 string? format = formats[i];
-                if (string.IsNullOrEmpty(format))
-                {
-                    result = default;
-                    return ParseFailureKind.Argument_BadFormatSpecifier;
-                }
 
-                if (format.Length == 1)
+                if (format!.Length == 1)
                 {
                     switch (format[0] | 0x20)
                     {
                         case 'o':
                             format = OFormat;
-                            dtfiToUse = CultureInfo.InvariantCulture.DateTimeFormat;
+                            dtfiToUse = DateTimeFormat.InvariantFormatInfo;
                             break;
 
                         case 'r':
                             format = RFormat;
-                            dtfiToUse = CultureInfo.InvariantCulture.DateTimeFormat;
+                            dtfiToUse = DateTimeFormat.InvariantFormatInfo;
                             break;
                     }
                 }
@@ -593,6 +647,12 @@ namespace System
                 {
                     result = new DateOnly(DayNumberFromDateTime(dtResult.parsedDate));
                     return ParseFailureKind.None;
+                }
+
+                if (dtResult.failure == ParseFailureKind.Argument_BadFormatSpecifier)
+                {
+                    result = default;
+                    return ParseFailureKind.Argument_BadFormatSpecifier;
                 }
             }
 
@@ -718,7 +778,7 @@ namespace System
         /// The DateOnly object will be formatted in short form.
         /// </summary>
         /// <returns>A string that contains the short date string representation of the current DateOnly object.</returns>
-        public override string ToString() => ToString("d");
+        public override string ToString() => DateTimeFormat.Format(GetEquivalentDateTime(), "d", null);
 
         /// <summary>
         /// Converts the value of the current DateOnly object to its equivalent string representation using the specified format and the formatting conventions of the current culture.
@@ -732,7 +792,7 @@ namespace System
         /// </summary>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <returns>A string representation of value of the current DateOnly object as specified by provider.</returns>
-        public string ToString(IFormatProvider? provider) => ToString("d", provider);
+        public string ToString(IFormatProvider? provider) => DateTimeFormat.Format(GetEquivalentDateTime(), "d", provider);
 
         /// <summary>
         /// Converts the value of the current DateOnly object to its equivalent string representation using the specified culture-specific format information.
@@ -753,13 +813,13 @@ namespace System
                 {
                     'o' => string.Create(10, this, (destination, value) =>
                            {
-                               DateTimeFormat.TryFormatDateOnlyO(value.Year, value.Month, value.Day, destination, out int charsWritten);
+                               DateTimeFormat.TryFormatDateOnlyO(value, destination, out int charsWritten);
                                Debug.Assert(charsWritten == destination.Length);
                            }),
 
                     'r' => string.Create(16, this, (destination, value) =>
                            {
-                               DateTimeFormat.TryFormatDateOnlyR(value.DayOfWeek, value.Year, value.Month, value.Day, destination, out int charsWritten);
+                               DateTimeFormat.TryFormatDateOnlyR(value, destination, out int charsWritten);
                                Debug.Assert(charsWritten == destination.Length);
                            }),
 
@@ -801,10 +861,10 @@ namespace System
                 switch (format[0] | 0x20)
                 {
                     case 'o':
-                        return DateTimeFormat.TryFormatDateOnlyO(Year, Month, Day, destination, out charsWritten);
+                        return DateTimeFormat.TryFormatDateOnlyO(this, destination, out charsWritten);
 
                     case 'r':
-                        return DateTimeFormat.TryFormatDateOnlyR(DayOfWeek, Year, Month, Day, destination, out charsWritten);
+                        return DateTimeFormat.TryFormatDateOnlyR(this, destination, out charsWritten);
 
                     case 'm':
                     case 'd':

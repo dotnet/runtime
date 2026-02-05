@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-namespace GitHub_19910
+namespace GitHub_3539
 
 {
     public class Program

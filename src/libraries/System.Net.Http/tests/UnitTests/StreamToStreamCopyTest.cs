@@ -62,7 +62,7 @@ namespace System.Net.Http.Tests
             const int StartingPosition = 1024;
             source.Position = StartingPosition;
 
-            var destination = new HttpContent.LimitMemoryStream(int.MaxValue, 0);
+            var destination = new MemoryStream();
 
             await StreamToStreamCopy.CopyAsync(source, destination, 4096, disposeSource);
 
@@ -86,7 +86,7 @@ namespace System.Net.Http.Tests
             int StartingPosition = input.Length;
             source.Position = StartingPosition;
 
-            var destination = new HttpContent.LimitMemoryStream(int.MaxValue, 0);
+            var destination = new MemoryStream();
 
             await StreamToStreamCopy.CopyAsync(source, destination, 4096, disposeSource);
 
@@ -107,7 +107,7 @@ namespace System.Net.Http.Tests
         {
             byte[] input = CreateByteArray(8192);
             MemoryStream source = CreateSourceMemoryStream(sourceIsExposable, input);
-            var destination = new HttpContent.LimitMemoryStream(int.MaxValue, 0);
+            using var destination = new HttpContent.LimitArrayPoolWriteStream(int.MaxValue, 0, getFinalSizeFromPool: false);
 
             await StreamToStreamCopy.CopyAsync(source, destination, 4096, disposeSource);
 
@@ -117,18 +117,18 @@ namespace System.Net.Http.Tests
                 Assert.Equal(input.Length, source.Position);
             }
 
+            destination.ReallocateIfPooled();
             Assert.Equal(input, destination.ToArray());
-            Assert.Equal(input.Length, destination.Position);
             Assert.Equal(input.Length, destination.Length);
         }
 
         [Theory]
-        [MemberData(nameof(TwoBooleans))]
-        public async Task MemoryStream_To_LimitMemoryStream_EqualCapacity(bool sourceIsExposable, bool disposeSource)
+        [MemberData(nameof(ThreeBooleans))]
+        public async Task MemoryStream_To_LimitMemoryStream_EqualCapacity(bool sourceIsExposable, bool disposeSource, bool getFinalSizeFromPool)
         {
             byte[] input = CreateByteArray(8192);
             MemoryStream source = CreateSourceMemoryStream(sourceIsExposable, input);
-            var destination = new HttpContent.LimitMemoryStream(int.MaxValue, input.Length);
+            using var destination = new HttpContent.LimitArrayPoolWriteStream(int.MaxValue, input.Length, getFinalSizeFromPool);
 
             await StreamToStreamCopy.CopyAsync(source, destination, 4096, disposeSource);
 
@@ -138,18 +138,18 @@ namespace System.Net.Http.Tests
                 Assert.Equal(input.Length, source.Position);
             }
 
-            Assert.Equal(input, destination.ToArray());
-            Assert.Equal(input.Length, destination.Position);
+            destination.ReallocateIfPooled();
+            Assert.Equal(input, destination.GetFirstBuffer());
             Assert.Equal(input.Length, destination.Length);
         }
 
         [Theory]
-        [MemberData(nameof(TwoBooleans))]
-        public async Task MemoryStream_To_LimitMemoryStream_BiggerCapacity(bool sourceIsExposable, bool disposeSource)
+        [MemberData(nameof(ThreeBooleans))]
+        public async Task MemoryStream_To_LimitMemoryStream_BiggerCapacity(bool sourceIsExposable, bool disposeSource, bool getFinalSizeFromPool)
         {
             byte[] input = CreateByteArray(8192);
             MemoryStream source = CreateSourceMemoryStream(sourceIsExposable, input);
-            var destination = new HttpContent.LimitMemoryStream(int.MaxValue, input.Length * 2);
+            var destination = new HttpContent.LimitArrayPoolWriteStream(int.MaxValue, input.Length * 2, getFinalSizeFromPool);
 
             await StreamToStreamCopy.CopyAsync(source, destination, 4096, disposeSource);
 
@@ -159,18 +159,18 @@ namespace System.Net.Http.Tests
                 Assert.Equal(input.Length, source.Position);
             }
 
-            Assert.Equal(input, destination.ToArray());
-            Assert.Equal(input.Length, destination.Position);
+            destination.ReallocateIfPooled();
+            Assert.Equal(input, destination.GetFirstBuffer());
             Assert.Equal(input.Length, destination.Length);
         }
 
         [Theory]
-        [MemberData(nameof(TwoBooleans))]
-        public async Task MemoryStream_To_LimitMemoryStream_SmallerCapacity(bool sourceIsExposable, bool disposeSource)
+        [MemberData(nameof(ThreeBooleans))]
+        public async Task MemoryStream_To_LimitMemoryStream_SmallerCapacity(bool sourceIsExposable, bool disposeSource, bool getFinalSizeFromPool)
         {
             byte[] input = CreateByteArray(8192);
             MemoryStream source = CreateSourceMemoryStream(sourceIsExposable, input);
-            var destination = new HttpContent.LimitMemoryStream(int.MaxValue, 1024);
+            var destination = new HttpContent.LimitArrayPoolWriteStream(int.MaxValue, 1024, getFinalSizeFromPool);
 
             await StreamToStreamCopy.CopyAsync(source, destination, 4096, disposeSource);
 
@@ -180,31 +180,9 @@ namespace System.Net.Http.Tests
                 Assert.Equal(input.Length, source.Position);
             }
 
-            Assert.Equal(input, destination.ToArray());
-            Assert.Equal(input.Length, destination.Position);
+            destination.ReallocateIfPooled();
+            Assert.Equal(input, destination.GetFirstBuffer());
             Assert.Equal(input.Length, destination.Length);
-        }
-
-        [Theory]
-        [MemberData(nameof(TwoBooleans))]
-        public async Task MemoryStream_To_LimitMemoryStream_BiggerLength(bool sourceIsExposable, bool disposeSource)
-        {
-            byte[] input = CreateByteArray(8192);
-            MemoryStream source = CreateSourceMemoryStream(sourceIsExposable, input);
-            var destination = new HttpContent.LimitMemoryStream(int.MaxValue, 0);
-            destination.SetLength(input.Length * 2);
-
-            await StreamToStreamCopy.CopyAsync(source, destination, 4096, disposeSource);
-
-            Assert.NotEqual(disposeSource, source.CanRead);
-            if (!disposeSource)
-            {
-                Assert.Equal(input.Length, source.Position);
-            }
-
-            Assert.Equal(input.Concat(new byte[input.Length]), destination.ToArray());
-            Assert.Equal(input.Length, destination.Position);
-            Assert.Equal(input.Length * 2, destination.Length);
         }
 
         [Theory]
@@ -234,7 +212,7 @@ namespace System.Net.Http.Tests
         {
             byte[] input = CreateByteArray(8192);
             var source = new WrapperStream(CreateSourceMemoryStream(sourceIsExposable, input));
-            var destination = new HttpContent.LimitMemoryStream(int.MaxValue, 0);
+            var destination = new HttpContent.LimitArrayPoolWriteStream(int.MaxValue, 0, getFinalSizeFromPool: false);
 
             await StreamToStreamCopy.CopyAsync(source, destination, 4096, disposeSource);
 
@@ -244,18 +222,18 @@ namespace System.Net.Http.Tests
                 Assert.Equal(input.Length, source.Position);
             }
 
+            destination.ReallocateIfPooled();
             Assert.Equal(input, destination.ToArray());
-            Assert.Equal(input.Length, destination.Position);
             Assert.Equal(input.Length, destination.Length);
         }
 
         [Theory]
-        [MemberData(nameof(TwoBooleans))]
-        public async Task NonMemoryStream_To_LimitMemoryStream_EqualCapacity(bool sourceIsExposable, bool disposeSource)
+        [MemberData(nameof(ThreeBooleans))]
+        public async Task NonMemoryStream_To_LimitMemoryStream_EqualCapacity(bool sourceIsExposable, bool disposeSource, bool getFinalSizeFromPool)
         {
             byte[] input = CreateByteArray(8192);
             var source = new WrapperStream(CreateSourceMemoryStream(sourceIsExposable, input));
-            var destination = new HttpContent.LimitMemoryStream(int.MaxValue, input.Length);
+            var destination = new HttpContent.LimitArrayPoolWriteStream(int.MaxValue, input.Length, getFinalSizeFromPool);
 
             await StreamToStreamCopy.CopyAsync(source, destination, 4096, disposeSource);
 
@@ -265,8 +243,8 @@ namespace System.Net.Http.Tests
                 Assert.Equal(input.Length, source.Position);
             }
 
-            Assert.Equal(input, destination.ToArray());
-            Assert.Equal(input.Length, destination.Position);
+            destination.ReallocateIfPooled();
+            Assert.Equal(input, destination.GetFirstBuffer());
             Assert.Equal(input.Length, destination.Length);
         }
 
@@ -291,6 +269,74 @@ namespace System.Net.Http.Tests
             Assert.Equal(input, underlyingDestination.ToArray());
             Assert.Equal(input.Length, destination.Position);
             Assert.Equal(input.Length, destination.Length);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void LimitMemoryStream_ResizingLogicWorks(bool getFinalSizeFromPool)
+        {
+            byte[] input = CreateByteArray(32 * 1024 * 1024);
+            var rng = new Random();
+
+            for (int actualSize = 2; actualSize <= input.Length; actualSize = (int)Math.Ceiling(actualSize * 1.15))
+            {
+                ReadOnlySpan<byte> currentInput = input.AsSpan(0, actualSize);
+
+                foreach (int expectedSize in (ReadOnlySpan<int>)[0, 42, actualSize / 4, actualSize / 2, actualSize - 1, actualSize, actualSize + 1])
+                {
+                    HttpRequestException capacityEx;
+                    if (expectedSize >= actualSize)
+                    {
+                        capacityEx = Assert.Throws<HttpRequestException>(() => new HttpContent.LimitArrayPoolWriteStream(maxBufferSize: actualSize - 1, expectedSize, getFinalSizeFromPool));
+                    }
+                    else
+                    {
+                        using var smallDestination = new HttpContent.LimitArrayPoolWriteStream(maxBufferSize: actualSize - 1, expectedSize, getFinalSizeFromPool);
+                        capacityEx = Assert.Throws<HttpRequestException>(() => WriteChunks(smallDestination, actualSize));
+                    }
+
+                    Assert.Equal(HttpRequestError.ConfigurationLimitExceeded, capacityEx.HttpRequestError);
+
+                    using var destination = new HttpContent.LimitArrayPoolWriteStream(maxBufferSize: actualSize + 42, expectedSize, getFinalSizeFromPool);
+                    WriteChunks(destination, actualSize);
+
+                    if (!getFinalSizeFromPool && expectedSize == actualSize)
+                    {
+                        Assert.Equal(currentInput, destination.GetFirstBuffer());
+                        Assert.Equal(actualSize, destination.GetSingleBuffer().Length);
+                        Assert.Same(destination.ToArray(), destination.GetSingleBuffer());
+                    }
+                    else
+                    {
+                        Assert.True(currentInput.StartsWith(destination.GetFirstBuffer()));
+                    }
+
+                    destination.ReallocateIfPooled();
+                    Assert.Equal(currentInput, destination.CreateCopy());
+
+                    if (getFinalSizeFromPool || actualSize == expectedSize)
+                    {
+                        Assert.Equal(actualSize, destination.GetSingleBuffer().Length);
+                    }
+                    else
+                    {
+                        Assert.True(actualSize <= destination.GetSingleBuffer().Length);
+                    }
+                }
+            }
+
+            void WriteChunks(Stream destination, int totalSize)
+            {
+                ReadOnlySpan<byte> remaining = input.AsSpan(0, totalSize);
+
+                while (!remaining.IsEmpty)
+                {
+                    int chunk = rng.Next(remaining.Length + 1);
+                    destination.Write(remaining.Slice(0, chunk));
+                    remaining = remaining.Slice(chunk);
+                }
+            }
         }
 
         private static MemoryStream CreateSourceMemoryStream(bool sourceIsExposable, byte[] input)
@@ -323,6 +369,8 @@ namespace System.Net.Http.Tests
             new object[] { true, false },
             new object[] { true, true },
         };
+
+        public static IEnumerable<object[]> ThreeBooleans = TwoBooleansWithAdditionalArg([true, false]);
 
         public static IEnumerable<object[]> TwoBooleansWithAdditionalArg(object[] args)
         {

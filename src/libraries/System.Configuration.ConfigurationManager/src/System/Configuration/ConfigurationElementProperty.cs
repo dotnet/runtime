@@ -11,10 +11,7 @@ namespace System.Configuration
     {
         public ConfigurationElementProperty(ConfigurationValidatorBase validator)
         {
-            if (validator is null)
-            {
-                throw new ArgumentNullException(nameof(validator));
-            }
+            ArgumentNullException.ThrowIfNull(validator);
 
             Validator = validator;
         }

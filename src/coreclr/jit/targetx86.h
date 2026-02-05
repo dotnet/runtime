@@ -7,8 +7,9 @@
 #endif
 
 // clang-format off
+  #define CORINFO_ARCH_TARGET      CORINFO_ARCH_X86
+
   #define CPU_LOAD_STORE_ARCH      0
-  #define ROUND_FLOAT              1       // round intermed float expression results
   #define CPU_HAS_BYTE_REGS        1
 
   #define CPOBJ_NONGC_SLOTS_LIMIT  4       // For CpObj code generation, this is the threshold of the number
@@ -47,17 +48,15 @@
                                            // ASM barriers we definitely don't have NOGC barriers).
 #endif
   #define USER_ARGS_COME_LAST      0
-  #define EMIT_TRACK_STACK_DEPTH   1
   #define TARGET_POINTER_SIZE      4       // equal to sizeof(void*) and the managed pointer size in bytes for this
                                            // target
-  #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter,
-                                           // filter-handler, fault) and directly execute 'finally' clauses.
-#if !defined(UNIX_X86_ABI)
-  #define FEATURE_EH_WINDOWS_X86   1       // Enable support for SEH regions
-#endif
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based
                                            // frames for most methods
+
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
+  #define LOWER_DECOMPOSE_LONGS    1       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
+  #define EMIT_TRACK_STACK_DEPTH   1
+  #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX
@@ -118,8 +117,8 @@
   #define YMM_REGSIZE_BYTES        32      // YMM register size in bytes
   #define ZMM_REGSIZE_BYTES        64      // ZMM register size in bytes
 
+  #define HAS_FIXED_REGISTER_SET   1       // Has a fixed register set
   #define REGNUM_BITS              6       // number of bits in a REG_*
-
   #define REGSIZE_BYTES            4       // number of bytes in one register
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
@@ -143,21 +142,16 @@
   #define REG_VAR_ORDER            REG_EAX,REG_EDX,REG_ECX,REG_ESI,REG_EDI,REG_EBX
   #define MAX_VAR_ORDER_SIZE       6
 
-  // The order here is fixed: it must agree with an order assumed in eetwain...
-  // NB: x86 GC decoder does not report return registers at call sites.
-  #define RBM_CALL_GC_REGS_ORDER   RBM_EDI,RBM_ESI,RBM_EBX,RBM_EBP
-  #define RBM_CALL_GC_REGS         (RBM_EDI|RBM_ESI|RBM_EBX|RBM_EBP)
-
   #define CNT_CALLEE_SAVED        (4)
   #define CNT_CALLEE_TRASH        (3)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
-  // NB: x86 GC decoder does not report return registers at call sites.
-  #define CNT_CALL_GC_REGS        (CNT_CALLEE_SAVED)
 
   #define CNT_CALLEE_SAVED_FLOAT  (0)
   #define CNT_CALLEE_TRASH_FLOAT  (6)
+  #define CNT_CALLEE_ENREG_FLOAT  (CNT_CALLEE_SAVED_FLOAT)
 
-  #define CNT_CALLEE_SAVED_MASK        (0)
+  #define CNT_CALLEE_SAVED_MASK   (0)
+  #define CNT_CALLEE_ENREG_MASK   (CNT_CALLEE_SAVED_MASK)
 
   #define CNT_CALLEE_TRASH_MASK_INIT   (0)
   #define CNT_CALLEE_TRASH_MASK_EVEX   (7)
@@ -301,6 +295,9 @@
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~RBM_ECX)
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_ECX
 
+  #define REG_ASYNC_CONTINUATION_RET REG_ECX
+  #define RBM_ASYNC_CONTINUATION_RET RBM_ECX
+
   #define REG_FPBASE               REG_EBP
   #define RBM_FPBASE               RBM_EBP
   #define STR_FPBASE               "ebp"
@@ -333,12 +330,6 @@
   #define RBM_PROFILER_ENTER_TRASH     RBM_NONE
   #define RBM_PROFILER_LEAVE_TRASH     RBM_NONE
   #define RBM_PROFILER_TAILCALL_TRASH  (RBM_CALLEE_TRASH & ~RBM_ARG_REGS)
-
-  // What sort of reloc do we use for [disp32] address mode
-  #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_HIGHLOW
-
-  // What sort of reloc to we use for 'moffset' address mode (for 'mov eax, moffset' or 'mov moffset, eax')
-  #define IMAGE_REL_BASED_MOFFSET  IMAGE_REL_BASED_HIGHLOW
 
   // Pointer-sized string move instructions
   #define INS_movsp                INS_movsd

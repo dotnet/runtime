@@ -42,7 +42,7 @@
 # if defined(__i386__)
 #  define _LIBUNWIND_TARGET_I386
 #  define _LIBUNWIND_CONTEXT_SIZE 13
-#  define _LIBUNWIND_CURSOR_SIZE 19
+#  define _LIBUNWIND_CURSOR_SIZE 20
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_X86
 # elif defined(__x86_64__)
 #  define _LIBUNWIND_TARGET_X86_64 1
@@ -53,6 +53,9 @@
 #    else
 #      define _LIBUNWIND_CURSOR_SIZE 66
 #    endif
+#  elif defined(__ILP32__)
+#    define _LIBUNWIND_CONTEXT_SIZE 21
+#    define _LIBUNWIND_CURSOR_SIZE 28
 #  else
 #    define _LIBUNWIND_CONTEXT_SIZE 38
 #    define _LIBUNWIND_CURSOR_SIZE 50
@@ -151,7 +154,7 @@
 #  else
 #   define RISCV_FLEN 0
 #  endif
-#  define _LIBUNWIND_CONTEXT_SIZE (32 * (__riscv_xlen + RISCV_FLEN) / 64)
+#  define _LIBUNWIND_CONTEXT_SIZE (32 * (__riscv_xlen + RISCV_FLEN) / 64) + 32
 #  if __riscv_xlen == 32
 #   define _LIBUNWIND_CURSOR_SIZE (_LIBUNWIND_CONTEXT_SIZE + 7)
 #  elif __riscv_xlen == 64
@@ -175,16 +178,16 @@
 #if __loongarch_grlen == 64
 #define _LIBUNWIND_CONTEXT_SIZE 98
 #define _LIBUNWIND_CURSOR_SIZE 110
-#elif defined(HOST_WASM)
-#define _LIBUNWIND_TARGET_WASM 1
-// TODO: Determine the right values
-#define _LIBUNWIND_CONTEXT_SIZE 0xbadf00d
-#define _LIBUNWIND_CURSOR_SIZE 0xbadf00d
 #else
 #error "Unsupported LoongArch ABI"
 #endif
 #define _LIBUNWIND_HIGHEST_DWARF_REGISTER                                      \
   _LIBUNWIND_HIGHEST_DWARF_REGISTER_LOONGARCH
+#elif defined(__wasm__)
+#define _LIBUNWIND_TARGET_WASM 1
+// Unused
+#define _LIBUNWIND_CONTEXT_SIZE 0
+#define _LIBUNWIND_CURSOR_SIZE 0
 # else
 #  error "Unsupported architecture."
 # endif

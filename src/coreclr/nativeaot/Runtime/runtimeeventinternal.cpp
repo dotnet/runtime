@@ -90,14 +90,14 @@ EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolIOPack(void * Nati
     FireEtwThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);
 }
 
-EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogExceptionThrown(const WCHAR* exceptionTypeName, const WCHAR* exceptionMessage, void* faultingIP, HRESULT hresult)
+EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogExceptionThrown(const WCHAR* exceptionTypeName, const WCHAR* exceptionMessage, void* faultingIP, HRESULT hresult, uint16_t flags, uint16_t ClrInstanceID)
 {
     FireEtwExceptionThrown_V1(exceptionTypeName,
         exceptionMessage,
         faultingIP,
         hresult,
-        0,
-        GetClrInstanceId());
+        flags,
+        ClrInstanceID);
 }
 
 EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogWaitHandleWaitStart(uint8_t WaitSource, intptr_t AssociatedObjectID, uint16_t ClrInstanceID)

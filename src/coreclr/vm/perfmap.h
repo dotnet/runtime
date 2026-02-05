@@ -7,10 +7,18 @@
 #define PERFPID_H
 
 #include "sstring.h"
-#include "fstream.h"
 #include "volatile.h"
+#include <stdio.h>
 
 // Generates a perfmap file.
+
+enum class PerfMapStubType
+{
+    Block,
+    IndividualWithinBlock,
+    Individual
+};
+
 class PerfMap
 {
 private:
@@ -22,13 +30,17 @@ private:
     // Indicates whether optimization tiers should be shown for methods in perf maps
     static bool s_ShowOptimizationTiers;
 
+    // Indicate current stub granularity rules
+    static bool s_GroupStubsOfSameType;
+    static bool s_IndividualAllocationStubReporting;
+
     // Set to true if an error is encountered when writing to the file.
     static unsigned s_StubsMapped;
 
     static CrstStatic s_csPerfMap;
 
     // The file stream to write the map to.
-    CFileStream * m_FileStream;
+    FILE * m_fp;
 
     // Set to true if an error is encountered when writing to the file.
     bool m_ErrorEncountered;
@@ -44,6 +56,8 @@ private:
 
     // Default to /tmp or use DOTNET_PerfMapJitDumpPath if set
     static const char* InternalConstructPath();
+
+    static void InitializeConfiguration();
 
 protected:
     // Open the perf map file for write.
@@ -85,9 +99,11 @@ public:
     static void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode);
 
     // Log a set of stub to the map.
-    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize);
+    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType);
 
     // Close the map and flush any remaining data.
     static void Disable();
+
+    static bool LowGranularityStubs() { return !s_IndividualAllocationStubReporting; }
 };
 #endif // PERFPID_H

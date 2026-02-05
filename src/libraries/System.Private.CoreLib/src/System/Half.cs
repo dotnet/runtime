@@ -738,7 +738,7 @@ namespace System
             const uint SingleBiasedExponentMask = float.BiasedExponentMask;
             // Exponent displacement #2
             const uint Exponent13 = 0x0680_0000u;
-            // Maximum value that is not Infinity in Half
+            // The maximum infinitely precise value that will round down to MaxValue
             const float MaxHalfValueBelowInfinity = 65520.0f;
             // Mask for exponent bits in Half
             const uint ExponentMask = BiasedExponentMask;
@@ -746,7 +746,7 @@ namespace System
             // Extract sign bit
             uint sign = (bitValue & float.SignMask) >> 16;
             // Detecting NaN (~0u if a is not NaN)
-            uint realMask = (uint)(Unsafe.BitCast<bool, sbyte>(float.IsNaN(value)) - 1);
+            uint realMask = float.IsNaN(value) ? 0u : ~0u;
             // Clear sign bit
             value = float.Abs(value);
             // Rectify values that are Infinity in Half. (float.Min now emits vminps instruction if one of two arguments is a constant)
@@ -1015,7 +1015,7 @@ namespace System
                 exp -= 1;
             }
 
-            return CreateDouble(sign, (ushort)(exp + 0x3F0), (ulong)sig << 42);
+            return double.CreateDouble(sign, (ushort)(exp + 0x3F0), (ulong)sig << 42);
         }
 
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="float" /> value.</summary>
@@ -1075,9 +1075,7 @@ namespace System
             // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
             uint offsetExponent = bitValueInProcess & HalfExponentMask;
             // ~0u when value is subnormal, 0 otherwise
-            uint subnormalMask = (uint)-Unsafe.BitCast<bool, byte>(offsetExponent == 0u);
-            // ~0u when value is either Infinity or NaN, 0 otherwise
-            int infinityOrNaNMask = Unsafe.BitCast<bool, byte>(offsetExponent == HalfExponentMask);
+            uint subnormalMask = offsetExponent == 0u ? ~0u : 0u;
             // 0x3880_0000u if value is subnormal, 0 otherwise
             uint maskedExponentLowerBound = subnormalMask & ExponentLowerBound;
             // 0x3880_0000u if value is subnormal, 0x3800_0000u otherwise
@@ -1085,7 +1083,7 @@ namespace System
             // Match the position of the boundary of exponent bits and fraction bits with IEEE 754 Binary32(Single)
             bitValueInProcess <<= 13;
             // Double the offsetMaskedExponentLowerBound if value is either Infinity or NaN
-            offsetMaskedExponentLowerBound <<= infinityOrNaNMask;
+            offsetMaskedExponentLowerBound <<= offsetExponent == HalfExponentMask ? 1 : 0;
             // Extract exponent bits and fraction bits of value
             bitValueInProcess &= HalfToSingleBitsMask;
             // Adjust exponent to match the range of exponent
@@ -1178,10 +1176,6 @@ namespace System
 
             return BitConverter.UInt64BitsToDouble(signInt | NaNBits | sigInt);
         }
-
-        private static float CreateSingle(bool sign, byte exp, uint sig) => BitConverter.UInt32BitsToSingle(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.BiasedExponentShift) + sig);
-
-        private static double CreateDouble(bool sign, ushort exp, ulong sig) => BitConverter.UInt64BitsToDouble(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.BiasedExponentShift) + sig);
 
         #endregion
 
@@ -1362,24 +1356,20 @@ namespace System
         int IFloatingPoint<Half>.GetSignificandByteCount() => sizeof(ushort);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
-        int IFloatingPoint<Half>.GetSignificandBitLength() => 11;
+        int IFloatingPoint<Half>.GetSignificandBitLength() => SignificandLength;
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<Half>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length >= sizeof(sbyte))
             {
-                sbyte exponent = Exponent;
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
+                destination[0] = (byte)Exponent;
                 bytesWritten = sizeof(sbyte);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
@@ -1387,65 +1377,39 @@ namespace System
         {
             if (destination.Length >= sizeof(sbyte))
             {
-                sbyte exponent = Exponent;
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
+                destination[0] = (byte)Exponent;
                 bytesWritten = sizeof(sbyte);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<Half>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ushort))
+            if (BinaryPrimitives.TryWriteUInt16BigEndian(destination, Significand))
             {
-                ushort significand = Significand;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
                 bytesWritten = sizeof(ushort);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<Half>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ushort))
+            if (BinaryPrimitives.TryWriteUInt16LittleEndian(destination, Significand))
             {
-                ushort significand = Significand;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
                 bytesWritten = sizeof(ushort);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //
@@ -1568,7 +1532,7 @@ namespace System
                 }
 
                 Debug.Assert(IsSubnormal(x));
-                return MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - BiasedExponentLength);
+                return MinExponent - (ushort.LeadingZeroCount(x.TrailingSignificand) - BiasedExponentLength);
             }
 
             return x.Exponent;
@@ -1671,7 +1635,17 @@ namespace System
         //
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        public static Half Clamp(Half value, Half min, Half max) => (Half)Math.Clamp((float)value, (float)min, (float)max);
+        public static Half Clamp(Half value, Half min, Half max) => (Half)float.Clamp((float)value, (float)min, (float)max);
+
+        /// <inheritdoc cref="INumber{TSelf}.ClampNative(TSelf, TSelf, TSelf)" />
+        public static Half ClampNative(Half value, Half min, Half max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return MinNative(MaxNative(value, min), max);
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static Half CopySign(Half value, Half sign)
@@ -1687,7 +1661,10 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static Half Max(Half x, Half y) => (Half)MathF.Max((float)x, (float)y);
+        public static Half Max(Half x, Half y) => (Half)float.Max((float)x, (float)y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
+        public static Half MaxNative(Half x, Half y) => (x > y) ? x : y;
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         public static Half MaxNumber(Half x, Half y)
@@ -1712,7 +1689,10 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static Half Min(Half x, Half y) => (Half)MathF.Min((float)x, (float)y);
+        public static Half Min(Half x, Half y) => (Half)float.Min((float)x, (float)y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
+        public static Half MinNative(Half x, Half y) => (x < y) ? x : y;
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         public static Half MinNumber(Half x, Half y)
@@ -1944,6 +1924,7 @@ namespace System
             return TryConvertFrom(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFrom<TOther>(TOther value, out Half result)
             where TOther : INumberBase<TOther>
         {
@@ -2093,6 +2074,7 @@ namespace System
             return TryConvertTo(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertTo<TOther>(Half value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
@@ -2136,16 +2118,24 @@ namespace System
             }
             else if (typeof(TOther) == typeof(uint))
             {
+#if MONO
                 uint actualResult = (value == PositiveInfinity) ? uint.MaxValue :
                                     (value <= Zero) ? uint.MinValue : (uint)value;
+#else
+                uint actualResult = (uint)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
+#if MONO
                 ulong actualResult = (value == PositiveInfinity) ? ulong.MaxValue :
                                      (value <= Zero) ? ulong.MinValue :
                                      IsNaN(value) ? 0 : (ulong)value;
+#else
+                ulong actualResult = (ulong)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -2158,8 +2148,12 @@ namespace System
             }
             else if (typeof(TOther) == typeof(nuint))
             {
+#if MONO
                 nuint actualResult = (value == PositiveInfinity) ? nuint.MaxValue :
                                      (value <= Zero) ? nuint.MinValue : (nuint)value;
+#else
+                nuint actualResult = (nuint)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -2341,7 +2335,7 @@ namespace System
         static int IBinaryFloatParseAndFormatInfo<Half>.NumberBufferLength => Number.HalfNumberBufferLength;
 
         static ulong IBinaryFloatParseAndFormatInfo<Half>.ZeroBits => 0;
-        static ulong IBinaryFloatParseAndFormatInfo<Half>.InfinityBits => 0x7C00;
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.InfinityBits => PositiveInfinityBits;
 
         static ulong IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaMask => (1UL << SignificandLength) - 1;
         static ulong IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaMask => TrailingSignificandMask;
@@ -2353,15 +2347,15 @@ namespace System
         static int IBinaryFloatParseAndFormatInfo<Half>.MaxDecimalExponent => 5;
 
         static int IBinaryFloatParseAndFormatInfo<Half>.ExponentBias => ExponentBias;
-        static ushort IBinaryFloatParseAndFormatInfo<Half>.ExponentBits => 5;
+        static ushort IBinaryFloatParseAndFormatInfo<Half>.ExponentBits => BiasedExponentLength;
 
         static int IBinaryFloatParseAndFormatInfo<Half>.OverflowDecimalExponent => (MaxExponent + (2 * SignificandLength)) / 3;
-        static int IBinaryFloatParseAndFormatInfo<Half>.InfinityExponent => 0x1F;
+        static int IBinaryFloatParseAndFormatInfo<Half>.InfinityExponent => MaxBiasedExponent;
 
         static ushort IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaBits => SignificandLength;
         static ushort IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaBits => TrailingSignificandLength;
 
-        static int IBinaryFloatParseAndFormatInfo<Half>.MinFastFloatDecimalExponent => -8;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinFastFloatDecimalExponent => -26;
         static int IBinaryFloatParseAndFormatInfo<Half>.MaxFastFloatDecimalExponent => 4;
 
         static int IBinaryFloatParseAndFormatInfo<Half>.MinExponentRoundToEven => -21;

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
-using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Extensions.DependencyModel.Resolution;
 using Xunit;
 using F = Microsoft.Extensions.DependencyModel.Tests.TestLibraryFactory;
@@ -28,7 +27,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             result.Should().Contain(PackagesPath);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/runtime/issues/21430
+        [Fact]
         public void ShouldUseNugetUnderUserProfile()
         {
             var environment = EnvironmentMockBuilder.Create()

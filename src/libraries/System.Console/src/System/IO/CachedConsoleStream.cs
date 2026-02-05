@@ -26,7 +26,7 @@ namespace System.IO
         {
             int maxCharCount = _encoding.GetMaxCharCount(buffer.Length);
             char[]? pooledBuffer = null;
-            Span<char> charSpan = maxCharCount <= 512 ? stackalloc char[512] : (pooledBuffer = ArrayPool<char>.Shared.Rent(maxCharCount));
+            Span<char> charSpan = (uint)maxCharCount <= 512 ? stackalloc char[512] : (pooledBuffer = ArrayPool<char>.Shared.Rent(maxCharCount));
             try
             {
                 int count = _decoder.GetChars(buffer, charSpan, false);

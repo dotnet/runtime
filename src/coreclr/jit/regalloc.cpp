@@ -6,6 +6,7 @@
 #pragma hdrstop
 #endif
 #include "regalloc.h"
+#include "regallocimpl.h"
 
 #if DOUBLE_ALIGN
 DWORD Compiler::getCanDoubleAlign()
@@ -95,80 +96,6 @@ bool Compiler::shouldDoubleAlign(
 }
 #endif // DOUBLE_ALIGN
 
-// The code to set the regState for each arg is outlined for shared use
-// by linear scan. (It is not shared for System V AMD64 platform.)
-regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc)
-{
-    regNumber inArgReg  = argDsc->GetArgReg();
-    regMaskTP inArgMask = genRegMask(inArgReg);
-
-    if (regState->rsIsFloat)
-    {
-        assert((inArgMask & RBM_FLTARG_REGS) != RBM_NONE);
-    }
-    else
-    {
-        assert((inArgMask & fullIntArgRegMask(info.compCallConv)) != RBM_NONE);
-    }
-
-    regState->rsCalleeRegArgMaskLiveIn |= inArgMask;
-
-#ifdef TARGET_ARM
-    if (argDsc->lvType == TYP_DOUBLE)
-    {
-        if (info.compIsVarArgs || opts.compUseSoftFP)
-        {
-            assert((inArgReg == REG_R0) || (inArgReg == REG_R2));
-            assert(!regState->rsIsFloat);
-        }
-        else
-        {
-            assert(regState->rsIsFloat);
-            assert(emitter::isDoubleReg(inArgReg));
-        }
-        regState->rsCalleeRegArgMaskLiveIn |= genRegMask((regNumber)(inArgReg + 1));
-    }
-    else if (argDsc->lvType == TYP_LONG)
-    {
-        assert((inArgReg == REG_R0) || (inArgReg == REG_R2));
-        assert(!regState->rsIsFloat);
-        regState->rsCalleeRegArgMaskLiveIn |= genRegMask((regNumber)(inArgReg + 1));
-    }
-#endif // TARGET_ARM
-
-#if FEATURE_MULTIREG_ARGS
-    if (varTypeIsStruct(argDsc->lvType))
-    {
-        if (argDsc->lvIsHfaRegArg())
-        {
-            assert(regState->rsIsFloat);
-            unsigned cSlots = argDsc->lvHfaSlots();
-            for (unsigned i = 1; i < cSlots; i++)
-            {
-                assert(inArgReg + i <= LAST_FP_ARGREG);
-                regState->rsCalleeRegArgMaskLiveIn |= genRegMask(static_cast<regNumber>(inArgReg + i));
-            }
-        }
-        else
-        {
-            assert(!regState->rsIsFloat);
-            unsigned cSlots = argDsc->lvSize() / TARGET_POINTER_SIZE;
-            for (unsigned i = 1; i < cSlots; i++)
-            {
-                regNumber nextArgReg = (regNumber)(inArgReg + i);
-                if (nextArgReg > REG_ARG_LAST)
-                {
-                    break;
-                }
-                regState->rsCalleeRegArgMaskLiveIn |= genRegMask(nextArgReg);
-            }
-        }
-    }
-#endif // FEATURE_MULTIREG_ARGS
-
-    return inArgReg;
-}
-
 //------------------------------------------------------------------------
 // rpMustCreateEBPFrame:
 //   Returns true when we must create an EBP frame
@@ -210,12 +137,12 @@ bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
         INDEBUG(reason = "Method has Loops");
         result = true;
     }
-    if (!result && (optCallCount >= 2))
+    if (!result && (optCallCount >= optFastTailCallCount + 2))
     {
         INDEBUG(reason = "Call Count");
         result = true;
     }
-    if (!result && (optIndirectCallCount >= 1))
+    if (!result && (optIndirectCallCount >= optIndirectFastTailCallCount + 1))
     {
         INDEBUG(reason = "Indirect Call");
         result = true;
@@ -330,9 +257,9 @@ void Compiler::raMarkStkVars()
 
         noway_assert((varDsc->lvType != TYP_UNDEF) && (varDsc->lvType != TYP_VOID) && (varDsc->lvType != TYP_UNKNOWN));
 #if FEATURE_FIXED_OUT_ARGS
-        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || lvaLclSize(lclNum) != 0);
+        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || (lvaLclStackHomeSize(lclNum) != 0));
 #else  // FEATURE_FIXED_OUT_ARGS
-        noway_assert(lvaLclSize(lclNum) != 0);
+        noway_assert(lvaLclStackHomeSize(lclNum) != 0);
 #endif // FEATURE_FIXED_OUT_ARGS
 
         varDsc->lvOnFrame = true; // Our prediction is that the final home for this local variable will be in the
@@ -386,4 +313,151 @@ void Compiler::raMarkStkVars()
         }
 #endif
     }
+}
+
+//------------------------------------------------------------------------
+// isRegCandidate: Determine whether a local is eligible for register allocation.
+//
+// Arguments:
+//    varDsc - The local's descriptor
+//
+// Return Value:
+//    Whether the variable represented by "varDsc" may be allocated in
+//    a register, or needs to live on the stack.
+//
+bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
+{
+    if (!willEnregisterLocalVars())
+    {
+        return false;
+    }
+    Compiler* compiler = m_compiler;
+    assert(compiler->compEnregLocals());
+
+    if (!varDsc->lvTracked)
+    {
+        return false;
+    }
+
+#if !defined(TARGET_64BIT)
+    if (varDsc->lvType == TYP_LONG)
+    {
+        // Long variables should not be register candidates.
+        // Lowering will have split any candidate lclVars into lo/hi vars.
+        return false;
+    }
+#endif // !defined(TARGET_64BIT)
+
+    // If we have JMP, reg args must be put on the stack
+
+    if (compiler->compJmpOpUsed && varDsc->lvIsRegArg)
+    {
+        return false;
+    }
+
+    // Don't allocate registers for dependently promoted struct fields
+    if (compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+    {
+        return false;
+    }
+
+    // Don't enregister if the ref count is zero.
+    if (varDsc->lvRefCnt() == 0)
+    {
+        varDsc->setLvRefCntWtd(0);
+        return false;
+    }
+
+    // Variables that are address-exposed are never enregistered, or tracked.
+    // A struct may be promoted, and a struct that fits in a register may be fully enregistered.
+    // Pinned variables may not be tracked (a condition of the GCInfo representation)
+    // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
+    // references when using the general GC encoding.
+    unsigned lclNum = compiler->lvaGetLclNum(varDsc);
+    if (varDsc->IsAddressExposed() || !varDsc->IsEnregisterableType() ||
+        (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT)))
+    {
+#ifdef DEBUG
+        DoNotEnregisterReason dner;
+        if (varDsc->IsAddressExposed())
+        {
+            dner = DoNotEnregisterReason::AddrExposed;
+        }
+        else if (!varDsc->IsEnregisterableType())
+        {
+            dner = DoNotEnregisterReason::NotRegSizeStruct;
+        }
+        else
+        {
+            dner = DoNotEnregisterReason::DontEnregStructs;
+        }
+#endif // DEBUG
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(dner));
+        return false;
+    }
+    else if (varDsc->lvPinned)
+    {
+        varDsc->lvTracked = 0;
+#ifdef JIT32_GCENCODER
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
+#endif // JIT32_GCENCODER
+        return false;
+    }
+
+    //  Are we not optimizing and we have exception handlers?
+    //   if so mark all args and locals as volatile, so that they
+    //   won't ever get enregistered.
+    //
+    if (compiler->opts.MinOpts() && compiler->compHndBBtabCount > 0)
+    {
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+    }
+
+    if (varDsc->lvDoNotEnregister)
+    {
+        return false;
+    }
+
+    switch (genActualType(varDsc->TypeGet()))
+    {
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return !compiler->opts.compDbgCode;
+
+        case TYP_INT:
+        case TYP_LONG:
+        case TYP_REF:
+        case TYP_BYREF:
+            break;
+
+#ifdef FEATURE_SIMD
+        case TYP_SIMD8:
+        case TYP_SIMD12:
+        case TYP_SIMD16:
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+        case TYP_SIMD64:
+#endif // TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+        case TYP_MASK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
+        {
+            return !varDsc->lvPromoted;
+        }
+#endif // FEATURE_SIMD
+
+        case TYP_STRUCT:
+        {
+            // TODO-1stClassStructs: support vars with GC pointers. The issue is that such
+            // vars will have `lvMustInit` set, because emitter has poor support for struct liveness,
+            // but if the variable is tracked the prolog generator would expect it to be in liveIn set,
+            // so an assert in `genFnProlog` will fire.
+            return compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
+        }
+
+        default:
+            return false;
+    }
+
+    return true;
 }

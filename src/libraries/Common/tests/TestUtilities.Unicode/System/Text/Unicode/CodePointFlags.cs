@@ -47,5 +47,9 @@ namespace System.Text.Unicode
         Unified_Ideograph = 1ul << 31,
         Variation_Selector = 1ul << 32,
         White_Space = 1ul << 33,
+        IDS_Unary_Operator = 1ul << 34,
+        ID_Compat_Math_Continue = 1ul << 35,
+        ID_Compat_Math_Start = 1ul << 36,
+        Modifier_Combining_Mark = 1ul << 37,
     }
 }

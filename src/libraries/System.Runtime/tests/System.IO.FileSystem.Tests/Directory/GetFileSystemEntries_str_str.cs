@@ -300,7 +300,7 @@ namespace System.IO.Tests
         }
 
         // Can't do these without extended path support on Windows, UsingNewNormalization filters appropriately
-        [ConditionalTheory(nameof(UsingNewNormalization)),
+        [Theory,
             // Periods are optional if left of * or ? and end of match
             InlineData(
                 "foo.*",
@@ -357,7 +357,7 @@ namespace System.IO.Tests
         }
 
         // Can't do these without extended path support on Windows, UsingNewNormalization filters appropriately
-        [ConditionalTheory(nameof(UsingNewNormalization)),
+        [Theory,
             InlineData(
                 "foo*.",
                 new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo..", @"foo...", @"foo .", @"foo. . .", @"foo. t" },
@@ -580,7 +580,7 @@ namespace System.IO.Tests
             GetEntries(testDir.FullName, longName);
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [Fact]
         public void SearchPatternLongPath()
         {
             // Create a destination path longer than the traditional Windows limit of 256 characters

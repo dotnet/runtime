@@ -64,45 +64,6 @@ namespace AppHost.Bundle.Tests
                 .And.HaveStdOutContaining("System.Console location: " + extractionDir); // System.Console should be from extracted location
         }
 
-        [Fact]
-        public void NativeSearchDirectories()
-        {
-            string singleFile = sharedTestState.BundledAppPath;
-            string extractionRoot = sharedTestState.App.GetNewExtractionRootPath();
-            string bundleDir = Directory.GetParent(singleFile).FullName;
-
-            // If we don't extract anything to disk, the extraction dir shouldn't
-            // appear in the native search dirs.
-            Command.Create(singleFile, "native_search_dirs")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractionRoot)
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining(bundleDir)
-                .And.NotHaveStdOutContaining(extractionRoot);
-        }
-
-        [Fact]
-        public void NativeSearchDirectories_WithExtraction()
-        {
-            SingleFileTestApp app = sharedTestState.App;
-            string singleFile = app.Bundle(BundleOptions.BundleNativeBinaries, out Manifest manifest);
-
-            string extractionRoot = app.GetNewExtractionRootPath();
-            string extractionDir = app.GetExtractionDir(extractionRoot, manifest).FullName;
-            string bundleDir = Directory.GetParent(singleFile).FullName;
-
-            Command.Create(singleFile, "native_search_dirs")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractionRoot)
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining(extractionDir)
-                .And.HaveStdOutContaining(bundleDir);
-        }
-
         public class SharedTestState : IDisposable
         {
             public SingleFileTestApp App { get; set; }

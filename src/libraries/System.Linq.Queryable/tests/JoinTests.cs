@@ -243,8 +243,9 @@ namespace System.Linq.Tests
         [Fact]
         public void SelectorsReturnNull()
         {
-            int?[] inner = { null, null, null };
             int?[] outer = { null, null };
+            int?[] inner = { null, null, null };
+
             Assert.Empty(outer.AsQueryable().Join(inner.AsQueryable(), e => e, e => e, (x, y) => x));
         }
 

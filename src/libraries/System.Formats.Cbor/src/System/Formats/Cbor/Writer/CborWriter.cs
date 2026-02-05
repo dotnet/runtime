@@ -110,7 +110,7 @@ namespace System.Formats.Cbor
                 _offset = 0;
                 _nestedDataItems?.Clear();
                 _currentMajorType = null;
-                _definiteLength = null;
+                _definiteLength = AllowMultipleRootLevelValues ? null : (int?)1;
                 _itemsWritten = 0;
                 _frameOffset = 0;
                 _isTagContext = false;
@@ -120,6 +120,7 @@ namespace System.Formats.Cbor
                 _keysRequireSorting = false;
                 _keyValuePairEncodingRanges?.Clear();
                 _keyEncodingRanges?.Clear();
+                _currentIndefiniteLengthStringRanges?.Clear();
             }
         }
 

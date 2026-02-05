@@ -17,6 +17,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             return callSiteFactory.GetCallSite(ServiceIdentifier.FromServiceType(type), callSiteChain);
         }
+
+        internal static ServiceCallSite GetKeyedCallSite(this CallSiteFactory callSiteFactory, Type type, object? serviceKey, CallSiteChain callSiteChain)
+        {
+            return callSiteFactory.GetCallSite(new ServiceIdentifier(serviceKey, type), callSiteChain);
+        }
     }
 
     public class CallSiteTests
@@ -300,6 +305,61 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Equal(typeof(FakeOpenGenericService<int>), implementationTypes[1]);
         }
 
+        [Fact]
+        public void ServiceCallSite_ShouldHaveKey_WhenResolvingKeyedService()
+        {
+            // Arrange
+            IServiceCollection services = new ServiceCollection();
+
+            services.Add(ServiceDescriptor.Transient(typeof(SomeService), typeof(SomeService)));
+            services.Add(ServiceDescriptor.KeyedTransient(typeof(SomeService), "someKey", typeof(SomeOtherService)));
+
+            using var serviceProvider = services.BuildServiceProvider();
+
+            // Act
+            var callSite = serviceProvider.CallSiteFactory.GetKeyedCallSite(typeof(SomeService), "someKey", new CallSiteChain());
+
+            // Assert
+            Assert.NotNull(callSite.Key);
+        }
+
+        [Fact]
+        public void ServiceCallSite_ShouldHaveKey_WhenResolvingKeyedClosedImplementationOfOpenGenericService()
+        {
+            // Arrange
+            IServiceCollection services = new ServiceCollection();
+
+            services.Add(ServiceDescriptor.Transient(typeof(IGenericService<>), typeof(UnkeyedGenericService<>)));
+            services.Add(ServiceDescriptor.KeyedTransient(typeof(IGenericService<>), "someKey", typeof(PrimaryKeyedGenericService<>)));
+
+            using var serviceProvider = services.BuildServiceProvider();
+
+            // Act
+            var callSite = serviceProvider.CallSiteFactory.GetKeyedCallSite(typeof(IGenericService<object>), "someKey", new CallSiteChain());
+
+            // Assert
+            Assert.NotNull(callSite.Key);
+        }
+
+        [Fact]
+        public void ServiceCallSite_ShouldHaveKey_WhenResolvingKeyedIEnumerableOfClosedImplementationOfOpenGenericService()
+        {
+            // Arrange
+            IServiceCollection services = new ServiceCollection();
+
+            services.Add(ServiceDescriptor.Transient(typeof(IGenericService<>), typeof(UnkeyedGenericService<>)));
+            services.Add(ServiceDescriptor.KeyedTransient(typeof(IGenericService<>), "someKey", typeof(PrimaryKeyedGenericService<>)));
+            services.Add(ServiceDescriptor.KeyedTransient(typeof(IGenericService<>), "someKey", typeof(SecondaryKeyedGenericService<>)));
+
+            using var serviceProvider = services.BuildServiceProvider();
+
+            // Act
+            var callSite = serviceProvider.CallSiteFactory.GetKeyedCallSite(typeof(IEnumerable<IGenericService<object>>), "someKey", new CallSiteChain());
+
+            // Assert
+            Assert.NotNull(callSite.Key);
+        }
+
         private class FakeIntService : IFakeOpenGenericService<int>
         {
             public int Value => 0;
@@ -394,6 +454,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             {
             }
         }
+
+        private interface IGenericService<T>;
+
+        private class UnkeyedGenericService<T> : IGenericService<T>;
+
+        private class PrimaryKeyedGenericService<T> : IGenericService<T>;
+
+        private class SecondaryKeyedGenericService<T> : IGenericService<T>;
+
+        private class SomeService;
+
+        private class SomeOtherService : SomeService;
 
         private static object Invoke(ServiceCallSite callSite, ServiceProviderEngineScope scope)
         {

@@ -466,12 +466,10 @@ namespace System.IO
             bool asDirectory,
             long creationTime = 0,
             long lastAccessTime = 0,
-            long lastWriteTime = 0,
-            long changeTime = 0,
-            uint fileAttributes = 0)
+            long lastWriteTime = 0)
         {
             using SafeFileHandle handle = OpenHandleToWriteAttributes(fullPath, asDirectory);
-            SetFileTime(handle, fullPath, creationTime, lastAccessTime, lastWriteTime, changeTime, fileAttributes);
+            SetFileTime(handle, fullPath, creationTime, lastAccessTime, lastWriteTime);
         }
 
         private static unsafe void SetFileTime(
@@ -479,17 +477,13 @@ namespace System.IO
             string? fullPath = null,
             long creationTime = 0,
             long lastAccessTime = 0,
-            long lastWriteTime = 0,
-            long changeTime = 0,
-            uint fileAttributes = 0)
+            long lastWriteTime = 0)
         {
             var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO
             {
                 CreationTime = creationTime,
                 LastAccessTime = lastAccessTime,
                 LastWriteTime = lastWriteTime,
-                ChangeTime = changeTime,
-                FileAttributes = fileAttributes
             };
 
             if (!Interop.Kernel32.SetFileInformationByHandle(fileHandle, Interop.Kernel32.FileBasicInfo, &basicInfo, (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)))
@@ -522,6 +516,11 @@ namespace System.IO
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
             Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory);
+        }
+
+        internal static void CreateHardLink(string path, string pathToTarget)
+        {
+            Interop.Kernel32.CreateHardLink(path, pathToTarget);
         }
 
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)

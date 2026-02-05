@@ -118,8 +118,8 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return calli? OP_FCALL_REG: virt? OP_FCALL_MEMBASE: OP_FCALL;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		} else {
 			if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
@@ -132,7 +132,7 @@ handle_enum:
 	case MONO_TYPE_GENERICINST: {
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return calli? OP_XCALL_REG: virt? OP_XCALL_MEMBASE: OP_XCALL;
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	}
 	case MONO_TYPE_VAR:

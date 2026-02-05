@@ -17,7 +17,7 @@ namespace System.DirectoryServices
 
         public DirectoryServicesCOMException(string? message, Exception? inner) : base(message, inner) { }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -35,7 +35,7 @@ namespace System.DirectoryServices
 
         public string? ExtendedErrorMessage { get; }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif

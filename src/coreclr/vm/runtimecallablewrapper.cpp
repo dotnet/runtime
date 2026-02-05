@@ -37,12 +37,8 @@ class Object;
 #include "typestring.h"
 #include "caparser.h"
 #include "classnames.h"
-#include "objectnative.h"
 #include "finalizerthread.h"
 #include "dynamicinterfacecastable.h"
-
-// static
-SLIST_HEADER RCW::s_RCWStandbyList;
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"
@@ -65,7 +61,7 @@ void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
 
     SString strMessage;
     SString strResource;
-    WCHAR strClsid[GUID_STR_BUFFER_LEN];
+    WCHAR strClsid[MINIPAL_GUID_BUFFER_LEN];
     SString strHRDescription;
 
     // Obtain the textual representation of the HRESULT.
@@ -110,7 +106,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     if (FAILED(SafeQueryInterface(pClassFact, IID_IClassFactory2, (IUnknown**)&pClassFact2))
         || m_pClassMT == NULL)
     {
-        FrameWithCookie<DebuggerExitFrame> __def;
+        DebuggerExitFrame __def;
         {
             GCX_PREEMP();
             hr = pClassFact->CreateInstance(punkOuter, IID_IUnknown, (void **)&pUnk);
@@ -196,7 +192,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
         // Create the instance
         if (SUCCEEDED(hr))
         {
-            FrameWithCookie<DebuggerExitFrame> __def;
+            DebuggerExitFrame __def;
             {
                 GCX_PREEMP();
                 if (fDesignTime || bstrKey == NULL)
@@ -253,7 +249,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
 
 //-------------------------------------------------------------
 // ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass)
-// create a COM+ instance that aggregates a COM instance
+// create a CLR instance that aggregates a COM instance
 
 OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL ForManaged)
 {
@@ -322,7 +318,7 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
         if (pCallbackMT && !pCallbackMT->IsComImport())
             bUseDelegate = TRUE;
 
-        FrameWithCookie<DebuggerExitFrame> __def;
+        DebuggerExitFrame __def;
 
         // get the IUnknown interface for the managed object
         pOuter = ComCallWrapper::GetComIPFromCCW(pComWrap, IID_IUnknown, NULL);
@@ -505,7 +501,7 @@ IClassFactory *ComClassFactory::GetIClassFactory()
     {
         SString strMessage;
         SString strResource;
-        WCHAR strClsid[GUID_STR_BUFFER_LEN];
+        WCHAR strClsid[MINIPAL_GUID_BUFFER_LEN];
         SString strHRDescription;
 
         // Obtain the textual representation of the HRESULT.
@@ -944,7 +940,7 @@ VOID RCWCleanupList::AddWrapper(RCW* pRCW)
     CONTRACTL_END;
 
     // For the global cleanup list, this is called only from the finalizer thread
-    _ASSERTE(this != g_pRCWCleanupList || GetThread() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE(this != g_pRCWCleanupList || FinalizerThread::IsCurrentThreadFinalizer());
 
     {
         CrstHolder ch(&m_lock);
@@ -1005,7 +1001,7 @@ VOID RCWCleanupList::CleanupAllWrappers()
         MODE_ANY;
 
         // For the global cleanup list, this is called only from the finalizer thread
-        PRECONDITION( (this != g_pRCWCleanupList) || (GetThread() == FinalizerThread::GetFinalizerThread()));
+        PRECONDITION( (this != g_pRCWCleanupList) || FinalizerThread::IsCurrentThreadFinalizer());
     }
     CONTRACTL_END;
 
@@ -1198,7 +1194,7 @@ VOID RCWCleanupList::CleanupWrappersInCurrentCtxThread(BOOL fWait, BOOL fManualC
 
             // Do a noop wait just to make sure we are cooperating
             // with the finalizer thread
-            pThread->Join(1, TRUE);
+            pThread->DoReentrantWaitWithRetry(pThread->GetThreadHandle(), 1, WaitMode_Alertable);
         }
     }
 }
@@ -1284,27 +1280,6 @@ VOID RCWCleanupList::ReleaseRCWListRaw(RCW* pRCW)
     }
 }
 
-const int RCW::s_rGCPressureTable[GCPressureSize_COUNT] =
-{
-    0,                           // GCPressureSize_None
-    GC_PRESSURE_PROCESS_LOCAL,   // GCPressureSize_ProcessLocal
-    GC_PRESSURE_MACHINE_LOCAL,   // GCPressureSize_MachineLocal
-    GC_PRESSURE_REMOTE,          // GCPressureSize_Remote
-};
-
-// Deletes all items in code:s_RCWStandbyList.
-void RCW::FlushStandbyList()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PSLIST_ENTRY pEntry = InterlockedFlushSList(&RCW::s_RCWStandbyList);
-    while (pEntry)
-    {
-        PSLIST_ENTRY pNextEntry = pEntry->Next;
-        delete (RCW *)pEntry;
-        pEntry = pNextEntry;
-    }
-}
 //--------------------------------------------------------------------------------
 // The IUnknown passed in is AddRef'ed if we succeed in creating the wrapper.
 RCW* RCW::CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT)
@@ -1344,16 +1319,7 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
     CONTRACT_END;
 
     // now allocate the wrapper
-    RCW *pWrap = (RCW *)InterlockedPopEntrySList(&RCW::s_RCWStandbyList);
-    if (pWrap != NULL)
-    {
-        // cache hit - reinitialize the data structure
-        new (pWrap) RCW();
-    }
-    else
-    {
-        pWrap = new RCW();
-    }
+    RCW *pWrap = new RCW();
 
     AppDomain * pAppDomain = GetAppDomain();
     ULONG cbRef = SafeAddRefPreemp(pUnk);
@@ -1501,42 +1467,6 @@ RCW::MarshalingType RCW::GetMarshalingType(IUnknown* pUnk, MethodTable *pClassMT
     if (IUnkEntry::IsComponentFreeThreaded(pUnk))
         return MarshalingType_FreeThreaded;
     return MarshalingType_Unknown;
-}
-
-void RCW::AddMemoryPressure(GCPressureSize pressureSize)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    int pressure = s_rGCPressureTable[pressureSize];
-    GCInterface::AddMemoryPressure(pressure);
-
-    // Remember the pressure we set.
-    m_Flags.m_GCPressure = pressureSize;
-}
-
-void RCW::RemoveMemoryPressure()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if (GCPressureSize_None == m_Flags.m_GCPressure)
-        return;
-
-    int pressure = s_rGCPressureTable[m_Flags.m_GCPressure];
-    GCInterface::RemoveMemoryPressure(pressure);
-
-    m_Flags.m_GCPressure = GCPressureSize_None;
 }
 
 
@@ -1695,7 +1625,7 @@ void RCW::MinorCleanup()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(GCHeapUtilities::IsGCInProgress() || ( (g_fEEShutDown & ShutDown_SyncBlock) && IsAtProcessExit() ));
+        PRECONDITION(GCHeapUtilities::IsGCInProgress());
     }
     CONTRACTL_END;
 
@@ -1753,9 +1683,6 @@ void RCW::Cleanup()
 
         // Release the IUnkEntry and the InterfaceEntries.
         ReleaseAllInterfacesCallBack(this);
-
-        // Remove the memory pressure caused by this RCW (if present)
-        RemoveMemoryPressure();
     }
 
 #ifdef _DEBUG
@@ -1764,7 +1691,7 @@ void RCW::Cleanup()
 #endif
 
     // If there's no thread currently working with the RCW, this call will release helper fields on IUnkEntry
-    // and recycle the entire RCW structure, i.e. insert it in the standby list to be reused or free the memory.
+    // and delete the entire RCW structure.
     // If a thread still keeps a ref-count on the RCW, it will release it when it's done. Keeping the structure
     // and the helper fields alive reduces the chances of memory corruption in race scenarios.
     DecrementUseCount();
@@ -2512,7 +2439,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         }
 
         // Convert the IID to a string.
-        WCHAR strIID[GUID_STR_BUFFER_LEN];
+        WCHAR strIID[MINIPAL_GUID_BUFFER_LEN];
         GuidToLPWSTR(iid, strIID);
 
         // Obtain the textual description of the HRESULT.
@@ -2530,7 +2457,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
             pSrcItfClass->GetGuid(&SrcItfIID, TRUE);
 
             // Convert the source interface IID to a string.
-            WCHAR strSrcItfIID[GUID_STR_BUFFER_LEN];
+            WCHAR strSrcItfIID[MINIPAL_GUID_BUFFER_LEN];
             GuidToLPWSTR(SrcItfIID, strSrcItfIID);
 
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_EVENTITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),

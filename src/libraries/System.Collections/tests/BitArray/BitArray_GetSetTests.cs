@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -326,6 +327,92 @@ namespace System.Collections.Tests
             {
                 Assert.True(def.Equals(array[i]), $"Elements after the copied area have been modified. Expected {def} at index {i}, actual {array[i]}");
             }
+        }
+
+        [Fact]
+        public static void AsBytes_NullInput_ProducesEmptySpan()
+        {
+            BitArray? ba = null;
+            Span<byte> bytes = CollectionsMarshal.AsBytes(ba);
+            Assert.True(bytes.IsEmpty);
+        }
+
+        [Fact]
+        public static void AsBytes_RoundtripsCtor()
+        {
+            Random r = new();
+
+            for (int length = 0; length < 128; length++)
+            {
+                bool[] bits = new bool[length];
+                for (int i = 0; i < bits.Length; i++)
+                {
+                    bits[i] = r.Next(0, 2) == 0;
+                }
+
+                BitArray ba = new(bits);
+
+                Span<byte> bytes = CollectionsMarshal.AsBytes(ba);
+                Assert.Equal((length + 7) / 8, bytes.Length);
+                for (int i = 0; i < length; i++)
+                {
+                    Assert.Equal(bits[i], (bytes[i / 8] & (1 << (i % 8))) != 0);
+                }
+                for (int i = length; i < bytes.Length * 8; i++)
+                {
+                    Assert.Equal(0, bytes[i / 8] & (1 << (i % 8)));
+                }
+            }
+        }
+
+        [Fact]
+        public static void AsBytes_ChangesReflectedInBitArray()
+        {
+            BitArray ba = new(8);
+            Span<byte> bytes = CollectionsMarshal.AsBytes(ba);
+            Assert.Equal(0, bytes[0]);
+
+            bytes[0] = 0b11100101;
+            Assert.True(ba[0]);
+            Assert.False(ba[1]);
+            Assert.True(ba[2]);
+            Assert.False(ba[3]);
+            Assert.False(ba[4]);
+            Assert.True(ba[5]);
+            Assert.True(ba[6]);
+            Assert.True(ba[7]);
+        }
+
+        [Fact]
+        public static void AsBytes_ExtraBitsDontAffectReadOperations()
+        {
+            BitArray ba = new(4);
+            Span<byte> bytes = CollectionsMarshal.AsBytes(ba);
+            Assert.Equal(0, bytes[0]);
+
+            bytes[0] = 0xFF;
+
+            Assert.True(ba[0]);
+            Assert.True(ba[1]);
+            Assert.True(ba[2]);
+            Assert.True(ba[3]);
+
+            Assert.True(ba.HasAllSet());
+            Assert.True(ba.HasAnySet());
+
+            ba[0] = false;
+
+            Assert.False(ba.HasAllSet());
+            Assert.True(ba.HasAnySet());
+
+            ba[1] = false;
+            ba[2] = false;
+            ba[3] = false;
+
+            Assert.False(ba.HasAllSet());
+            Assert.False(ba.HasAnySet());
+
+            Assert.Equal(0b11110000, bytes[0]);
         }
 
         [Fact]

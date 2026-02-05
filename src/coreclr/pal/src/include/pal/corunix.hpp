@@ -132,14 +132,6 @@ namespace CorUnix
     // type when:
     // 1) The object's refcount drops to 0
     // 2) A process is shutting down
-    // 3) A process has released all local references to the object
-    //
-    // The cleanup routine must only cleanup the object's shared state
-    // when the last parameter (fCleanupSharedSate) is TRUE. When
-    // fCleanupSharedState is FALSE the cleanup routine must not attempt
-    // to access the shared data for the object, as another process may
-    // have already deleted it. ($$REIVEW -- would someone ever need access
-    // to the shared data in order to cleanup process local state?)
     //
     // When the third parameter (fShutdown) is TRUE the process is in
     // the act of exiting. The cleanup routine should not perform any
@@ -151,25 +143,7 @@ namespace CorUnix
     typedef void (*OBJECTCLEANUPROUTINE) (
         CPalThread *,   // pThread
         IPalObject *,   // pObjectToCleanup
-        bool,           // fShutdown
-        bool            // fCleanupSharedState
-        );
-
-    //
-    // Signature of the initialization routine that is to be called
-    // when the first reference within a process to an existing
-    // object comes into existence. This routine is responsible for
-    // initializing the object's process local data, based on the
-    // immutable and shared data. The thread that this routine is
-    // called on holds an implicit read lock on the shared data.
-    //
-
-    typedef PAL_ERROR (*OBJECTINITROUTINE) (
-        CPalThread *,   // pThread
-        CObjectType *,  // pObjectType
-        void *,         // pImmutableData
-        void *,         // pSharedData
-        void *          // pProcessLocalData
+        bool            // fShutdown
         );
 
     typedef void (*OBJECT_IMMUTABLE_DATA_COPY_ROUTINE) (
@@ -185,8 +159,6 @@ namespace CorUnix
     {
         otiAutoResetEvent = 0,
         otiManualResetEvent,
-        otiMutex,
-        otiNamedMutex,
         otiSemaphore,
         otiFile,
         otiFileMapping,
@@ -215,24 +187,6 @@ namespace CorUnix
     // supported generic access rights (e.g., GENERIC_READ) map to the
     // specific access rights for this object type.
     //
-    // If instances of this object may have a security descriptor set on
-    // them eSecuritySupport should be set to SecuritySupported. If the OS can
-    // persist security information for the object type (as would be the case
-    // for, say, files) eSecurityPersistence should be set to
-    // OSPersistedSecurityInfo.
-    //
-    // If the object may have a name eObjectNameSupport should be
-    // ObjectCanHaveName. A named object can be opened in more than one
-    // process.
-    //
-    // If it is possible to duplicate a handle to an object across process
-    // boundaries then eHandleDuplicationSupport should be set to
-    // CrossProcessDuplicationAllowed. Note that it is possible to have
-    // an object type where eObjectNameSupport is ObjectCanHaveName and
-    // eHandleDuplicationSupport is LocalDuplicationOnly. For these object
-    // types an unnamed object instance will only have references from
-    // the creating process.
-    //
     // If the object may be waited on eSynchronizationSupport should be
     // WaitableObject. (Note that this implies that object type supports
     // the SYNCHRONIZE access right.)
@@ -250,39 +204,10 @@ namespace CorUnix
     //   Must be ThreadReleaseHasNoSideEffects if eSignalingSemantics is
     //   SingleTransitionObject
     //
-    // * eOwnershipSemantics: OwnershipTracked only for mutexes, for which the
-    //   previous two items must also ObjectCanBeUnsignaled and
-    //   ThreadReleaseAltersSignalCount.
-    //
 
     class CObjectType
     {
     public:
-
-        enum SecuritySupport
-        {
-            SecuritySupported,
-            SecurityNotSupported
-        };
-
-        enum SecurityPersistence
-        {
-            OSPersistedSecurityInfo,
-            SecurityInfoNotPersisted
-        };
-
-        enum ObjectNameSupport
-        {
-            ObjectCanHaveName,
-            UnnamedObject
-        };
-
-        enum HandleDuplicationSupport
-        {
-            CrossProcessDuplicationAllowed,
-            LocalDuplicationOnly
-        };
-
         enum SynchronizationSupport
         {
             WaitableObject,
@@ -303,13 +228,6 @@ namespace CorUnix
             ThreadReleaseNotApplicable
         };
 
-        enum OwnershipSemantics
-        {
-            OwnershipTracked,
-            NoOwner,
-            OwnershipNotApplicable
-        };
-
     private:
 
         //
@@ -321,65 +239,41 @@ namespace CorUnix
 
         PalObjectTypeId m_eTypeId;
         OBJECTCLEANUPROUTINE m_pCleanupRoutine;
-        OBJECTINITROUTINE m_pInitRoutine;
         DWORD m_dwImmutableDataSize;
         OBJECT_IMMUTABLE_DATA_COPY_ROUTINE m_pImmutableDataCopyRoutine;
         OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE m_pImmutableDataCleanupRoutine;
         DWORD m_dwProcessLocalDataSize;
         OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE m_pProcessLocalDataCleanupRoutine;
-        DWORD m_dwSharedDataSize;
-        DWORD m_dwSupportedAccessRights;
         // Generic access rights mapping
-        SecuritySupport m_eSecuritySupport;
-        SecurityPersistence m_eSecurityPersistence;
-        ObjectNameSupport m_eObjectNameSupport;
-        HandleDuplicationSupport m_eHandleDuplicationSupport;
         SynchronizationSupport m_eSynchronizationSupport;
         SignalingSemantics m_eSignalingSemantics;
         ThreadReleaseSemantics m_eThreadReleaseSemantics;
-        OwnershipSemantics m_eOwnershipSemantics;
 
     public:
 
         CObjectType(
             PalObjectTypeId eTypeId,
             OBJECTCLEANUPROUTINE pCleanupRoutine,
-            OBJECTINITROUTINE pInitRoutine,
             DWORD dwImmutableDataSize,
             OBJECT_IMMUTABLE_DATA_COPY_ROUTINE pImmutableDataCopyRoutine,
             OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE pImmutableDataCleanupRoutine,
             DWORD dwProcessLocalDataSize,
             OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE pProcessLocalDataCleanupRoutine,
-            DWORD dwSharedDataSize,
-            DWORD dwSupportedAccessRights,
-            SecuritySupport eSecuritySupport,
-            SecurityPersistence eSecurityPersistence,
-            ObjectNameSupport eObjectNameSupport,
-            HandleDuplicationSupport eHandleDuplicationSupport,
             SynchronizationSupport eSynchronizationSupport,
             SignalingSemantics eSignalingSemantics,
-            ThreadReleaseSemantics eThreadReleaseSemantics,
-            OwnershipSemantics eOwnershipSemantics
+            ThreadReleaseSemantics eThreadReleaseSemantics
             )
             :
             m_eTypeId(eTypeId),
             m_pCleanupRoutine(pCleanupRoutine),
-            m_pInitRoutine(pInitRoutine),
             m_dwImmutableDataSize(dwImmutableDataSize),
             m_pImmutableDataCopyRoutine(pImmutableDataCopyRoutine),
             m_pImmutableDataCleanupRoutine(pImmutableDataCleanupRoutine),
             m_dwProcessLocalDataSize(dwProcessLocalDataSize),
             m_pProcessLocalDataCleanupRoutine(pProcessLocalDataCleanupRoutine),
-            m_dwSharedDataSize(dwSharedDataSize),
-            m_dwSupportedAccessRights(dwSupportedAccessRights),
-            m_eSecuritySupport(eSecuritySupport),
-            m_eSecurityPersistence(eSecurityPersistence),
-            m_eObjectNameSupport(eObjectNameSupport),
-            m_eHandleDuplicationSupport(eHandleDuplicationSupport),
             m_eSynchronizationSupport(eSynchronizationSupport),
             m_eSignalingSemantics(eSignalingSemantics),
-            m_eThreadReleaseSemantics(eThreadReleaseSemantics),
-            m_eOwnershipSemantics(eOwnershipSemantics)
+            m_eThreadReleaseSemantics(eThreadReleaseSemantics)
         {
             s_rgotIdMapping[eTypeId] = this;
         };
@@ -407,14 +301,6 @@ namespace CorUnix
             )
         {
             return m_pCleanupRoutine;
-        };
-
-        OBJECTINITROUTINE
-        GetObjectInitRoutine(
-            void
-            )
-        {
-            return  m_pInitRoutine;
         };
 
         DWORD
@@ -473,55 +359,7 @@ namespace CorUnix
             return m_pProcessLocalDataCleanupRoutine;
         }
 
-        DWORD
-        GetSharedDataSize(
-            void
-            )
-        {
-            return m_dwSharedDataSize;
-        };
-
-        DWORD
-        GetSupportedAccessRights(
-            void
-            )
-        {
-            return m_dwSupportedAccessRights;
-        };
-
         // Generic access rights mapping
-
-        SecuritySupport
-        GetSecuritySupport(
-            void
-            )
-        {
-            return  m_eSecuritySupport;
-        };
-
-        SecurityPersistence
-        GetSecurityPersistence(
-            void
-            )
-        {
-            return  m_eSecurityPersistence;
-        };
-
-        ObjectNameSupport
-        GetObjectNameSupport(
-            void
-            )
-        {
-            return  m_eObjectNameSupport;
-        };
-
-        HandleDuplicationSupport
-        GetHandleDuplicationSupport(
-            void
-            )
-        {
-            return  m_eHandleDuplicationSupport;
-        };
 
         SynchronizationSupport
         GetSynchronizationSupport(
@@ -545,14 +383,6 @@ namespace CorUnix
             )
         {
             return  m_eThreadReleaseSemantics;
-        };
-
-        OwnershipSemantics
-        GetOwnershipSemantics(
-            void
-            )
-        {
-            return  m_eOwnershipSemantics;
         };
     };
 
@@ -677,36 +507,6 @@ namespace CorUnix
             LONG lAmountToDecrement
             ) = 0;
 
-        //
-        // The following two routines may only be used for object types
-        // where eOwnershipSemantics is OwnershipTracked (i.e., mutexes).
-        //
-
-        //
-        // SetOwner is intended to be used in the implementation of
-        // CreateMutex when bInitialOwner is TRUE. It must be called
-        // before the new object instance is registered with the
-        // handle manager. Any other call to this method is an error.
-        //
-
-        virtual
-        PAL_ERROR
-        SetOwner(
-            CPalThread *pNewOwningThread
-            ) = 0;
-
-        //
-        // DecrementOwnershipCount returns an error if the object
-        // is unowned, or if the thread this controller is bound to
-        // is not the owner of the object.
-        //
-
-        virtual
-        PAL_ERROR
-        DecrementOwnershipCount(
-            void
-            ) = 0;
-
         virtual
         void
         ReleaseController(
@@ -752,8 +552,7 @@ namespace CorUnix
         virtual
         PAL_ERROR
         CanThreadWaitWithoutBlocking(
-            bool *pfCanWaitWithoutBlocking,     // OUT
-            bool *pfAbandoned
+            bool *pfCanWaitWithoutBlocking     // OUT
             ) = 0;
 
         virtual
@@ -771,9 +570,7 @@ namespace CorUnix
         PAL_ERROR
         RegisterWaitingThread(
             WaitType eWaitType,
-            DWORD dwIndex,
-            bool fAltertable,
-            bool fPrioritize
+            DWORD dwIndex
             ) = 0;
 
         //
@@ -815,24 +612,6 @@ namespace CorUnix
             ) = 0;
     };
 
-    //
-    // The following two enums are part of the local object
-    // optimizations
-    //
-
-    enum ObjectDomain
-    {
-        ProcessLocalObject,
-        SharedObject
-    };
-
-    enum WaitDomain
-    {
-        LocalWait,      // All objects in the wait set are local to this process
-        MixedWait,      // Some objects are local; some are shared
-        SharedWait      // All objects in the wait set are shared
-    };
-
     class IPalObject
     {
     public:
@@ -870,15 +649,6 @@ namespace CorUnix
             LockType eLockRequest,
             IDataLock **ppDataLock,             // OUT
             void **ppvProcessLocalData          // OUT
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        GetSharedData(
-            CPalThread *pThread,                // IN, OPTIONAL
-            LockType eLockRequest,
-            IDataLock **ppDataLock,             // OUT
-            void **ppvSharedData                // OUT
             ) = 0;
 
         //
@@ -926,18 +696,6 @@ namespace CorUnix
         DWORD
         ReleaseReference(
             CPalThread *pThread
-            ) = 0;
-
-        //
-        // This routine is mainly intended for the synchronization
-        // manager. The promotion / process synch lock must be held
-        // before calling this routine.
-        //
-
-        virtual
-        ObjectDomain
-        GetObjectDomain(
-            void
             ) = 0;
 
         //
@@ -1101,8 +859,6 @@ namespace CorUnix
     enum ThreadWakeupReason
     {
         WaitSucceeded,
-        Alerted,
-        MutexAbandoned,
         WaitTimeout,
         WaitFailed
     };
@@ -1127,43 +883,11 @@ namespace CorUnix
         BlockThread(
             CPalThread *pCurrentThread,
             DWORD dwTimeout,
-            bool fAlertable,
             bool fIsSleep,
             ThreadWakeupReason *peWakeupReason, // OUT
             DWORD *pdwSignaledObject       // OUT
             ) = 0;
 
-        virtual
-        PAL_ERROR
-        AbandonObjectsOwnedByThread(
-            CPalThread *pCallingThread,
-            CPalThread *pTargetThread
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        QueueUserAPC(
-            CPalThread *pThread,
-            CPalThread *pTargetThread,
-            PAPCFUNC pfnAPC,
-            ULONG_PTR dwData
-            ) = 0;
-
-        virtual
-        bool
-        AreAPCsPending(
-            CPalThread *pThread
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        DispatchPendingAPCs(
-            CPalThread *pThread
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        SendTerminationRequestToWorkerThread() = 0;
 
         //
         // This routine is primarily meant for use by WaitForMultipleObjects[Ex].
@@ -1200,7 +924,6 @@ namespace CorUnix
         PAL_ERROR
         AllocateObjectSynchData(
             CObjectType *pObjectType,
-            ObjectDomain eObjectDomain,
             VOID **ppvSynchData                 // OUT
             ) = 0;
 
@@ -1208,16 +931,7 @@ namespace CorUnix
         void
         FreeObjectSynchData(
             CObjectType *pObjectType,
-            ObjectDomain eObjectDomain,
             VOID *pvSynchData
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        PromoteObjectSynchData(
-            CPalThread *pThread,
-            VOID *pvLocalSynchData,
-            VOID **ppvSharedSynchData           // OUT
             ) = 0;
 
         //
@@ -1248,7 +962,6 @@ namespace CorUnix
             CPalThread *pThread,                // IN, OPTIONAL
             CObjectType *pObjectType,
             VOID *pvSynchData,
-            ObjectDomain eObjectDomain,
             ISynchStateController **ppStateController       // OUT
             ) = 0;
 
@@ -1258,7 +971,6 @@ namespace CorUnix
             CPalThread *pThread,                // IN, OPTIONAL
             CObjectType *pObjectType,
             VOID *pvSynchData,
-            ObjectDomain eObjectDomain,
             ISynchWaitController **ppWaitController       // OUT
             ) = 0;
     };

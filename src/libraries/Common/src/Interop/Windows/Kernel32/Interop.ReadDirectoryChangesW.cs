@@ -14,7 +14,7 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool ReadDirectoryChangesW(
             SafeFileHandle hDirectory,
-            byte[] lpBuffer,
+            void* lpBuffer,
             uint nBufferLength,
             [MarshalAs(UnmanagedType.Bool)] bool bWatchSubtree,
             uint dwNotifyFilter,

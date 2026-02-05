@@ -213,6 +213,7 @@ namespace System.Xml.Xsl.Xslt
                 for (int i = 0; i < args.Count; i++)
                     args[i] = _f.SafeDocOrderDistinct(args[i]);
 
+#pragma warning disable SYSLIB0062 // XsltSettings.EnableScript is obsolete
                 if (_compiler.Settings.EnableScript)
                 {
                     XmlExtensionFunction? scrFunc = _compiler.Scripts.ResolveFunction(name, ns, args.Count, (IErrorHelper)this);
@@ -229,6 +230,7 @@ namespace System.Xml.Xsl.Xslt
                         return _f.Error(_lastScope!.SourceLine, SR.Xslt_ScriptsProhibited);
                     }
                 }
+#pragma warning restore SYSLIB0062
 
                 return _f.XsltInvokeLateBound(_f.QName(name, ns, prefix), args);
             }

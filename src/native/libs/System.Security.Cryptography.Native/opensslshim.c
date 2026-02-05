@@ -13,17 +13,13 @@
 
 // Define pointers to all the used OpenSSL functions
 #define REQUIRED_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
-#define REQUIRED_FUNCTION_110(fn) TYPEOF(fn) fn##_ptr;
 #define LIGHTUP_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
 #define FALLBACK_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
 #define RENAMED_FUNCTION(fn,oldfn) TYPEOF(fn) fn##_ptr;
-#define LEGACY_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
 FOR_ALL_OPENSSL_FUNCTIONS
-#undef LEGACY_FUNCTION
 #undef RENAMED_FUNCTION
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
-#undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
 #if defined(TARGET_ARM) && defined(TARGET_LINUX)
 TYPEOF(OPENSSL_gmtime) OPENSSL_gmtime_ptr;
@@ -32,17 +28,11 @@ TYPEOF(OPENSSL_gmtime) OPENSSL_gmtime_ptr;
 // x.x.x, considering the max number of decimal digits for each component
 #define MaxVersionStringLength 32
 
- static void* volatile libssl = NULL;
+static void* volatile libssl = NULL;
 
-#ifdef __APPLE__
-#define DYLIBNAME_PREFIX "libssl."
-#define DYLIBNAME_SUFFIX ".dylib"
-#define MAKELIB(v) DYLIBNAME_PREFIX v DYLIBNAME_SUFFIX
-#else
 #define LIBNAME "libssl.so"
 #define SONAME_BASE LIBNAME "."
 #define MAKELIB(v)  SONAME_BASE v
-#endif
 
 #if defined(TARGET_ARM) && defined(TARGET_LINUX)
 // We support ARM32 linux distros that have Y2038-compatible glibc (those which support _TIME_BITS).
@@ -66,26 +56,16 @@ static void DlOpen(const char* libraryName)
 
 static void OpenLibraryOnce(void)
 {
-    // If there is an override of the version specified using the CLR_OPENSSL_VERSION_OVERRIDE
+    // If there is an override of the version specified using the DOTNET_OPENSSL_VERSION_OVERRIDE
     // env variable, try to load that first.
     // The format of the value in the env variable is expected to be the version numbers,
     // like 1.0.0, 1.0.2 etc.
-    char* versionOverride = getenv("CLR_OPENSSL_VERSION_OVERRIDE");
+    char* versionOverride = getenv("DOTNET_OPENSSL_VERSION_OVERRIDE");
 
     if ((versionOverride != NULL) && strnlen(versionOverride, MaxVersionStringLength + 1) <= MaxVersionStringLength)
     {
-#ifdef __APPLE__
-        char soName[sizeof(DYLIBNAME_PREFIX) + MaxVersionStringLength + sizeof(DYLIBNAME_SUFFIX)] =
-            DYLIBNAME_PREFIX;
-
-        strcat(soName, versionOverride);
-        strcat(soName, DYLIBNAME_SUFFIX);
-#else
         char soName[sizeof(SONAME_BASE) + MaxVersionStringLength] = SONAME_BASE;
-
         strcat(soName, versionOverride);
-#endif
-
         DlOpen(soName);
     }
 
@@ -143,26 +123,6 @@ static void OpenLibraryOnce(void)
     {
         DlOpen(MAKELIB("1.1"));
     }
-
-    if (libssl == NULL)
-    {
-        // Debian 9 has dropped support for SSLv3 and so they have bumped their soname. Let's try it
-        // before trying the version 1.0.0 to make it less probable that some of our other dependencies
-        // end up loading conflicting version of libssl.
-        DlOpen(MAKELIB("1.0.2"));
-    }
-
-    if (libssl == NULL)
-    {
-        // Now try the default versioned so naming as described in the OpenSSL doc
-        DlOpen(MAKELIB("1.0.0"));
-    }
-
-    if (libssl == NULL)
-    {
-        // Fedora derived distros use different naming for the version 1.0.0
-        DlOpen(MAKELIB("10"));
-    }
 }
 
 static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;
@@ -189,10 +149,6 @@ void InitializeOpenSSLShim(void)
         abort();
     }
 
-    // A function defined in libcrypto.so.1.0.0/libssl.so.1.0.0 that is not defined in
-    // libcrypto.so.1.1.0/libssl.so.1.1.0
-    const void* v1_0_sentinel = dlsym(libssl, "SSL_state");
-
     // Only permit a single assignment here so that two assemblies both triggering the initializer doesn't cause a
     // race where the fn_ptr is nullptr, then properly bound, then goes back to nullptr right before being used (then bound again).
     void* volatile tmp_ptr;
@@ -200,9 +156,6 @@ void InitializeOpenSSLShim(void)
     // Get pointers to all the functions that are needed
 #define REQUIRED_FUNCTION(fn) \
     if (!(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
-
-#define REQUIRED_FUNCTION_110(fn) \
-    if (!v1_0_sentinel && !(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
 
 #define LIGHTUP_FUNCTION(fn) \
     fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn));
@@ -216,15 +169,10 @@ void InitializeOpenSSLShim(void)
     if (!tmp_ptr && !(tmp_ptr = dlsym(libssl, #oldfn))) { fprintf(stderr, "Cannot get required symbol " #oldfn " from libssl\n"); abort(); } \
     fn##_ptr = (TYPEOF(fn))tmp_ptr;
 
-#define LEGACY_FUNCTION(fn) \
-    if (v1_0_sentinel && !(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
-
     FOR_ALL_OPENSSL_FUNCTIONS
-#undef LEGACY_FUNCTION
 #undef RENAMED_FUNCTION
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
-#undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
 #if defined(TARGET_ARM) && defined(TARGET_LINUX)
     if (!(OPENSSL_gmtime_ptr = (TYPEOF(OPENSSL_gmtime))(dlsym(libssl, "OPENSSL_gmtime")))) { fprintf(stderr, "Cannot get required symbol OPENSSL_gmtime from libssl\n"); abort(); }
@@ -243,7 +191,7 @@ void InitializeOpenSSLShim(void)
 
 #if defined(TARGET_ARM) && defined(TARGET_LINUX)
     c_static_assert_msg(sizeof(time_t) == 8, "Build requires 64-bit time_t.");
-    
+
     // This value will represent a time in year 2038 if 64-bit time is used,
     // or 1901 if the lower 32 bits are interpreted as a 32-bit time_t value.
     time_t timeVal = (time_t)0x80000000U;

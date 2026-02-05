@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <fnmatch.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -46,7 +47,7 @@
 #include <sys/vfs.h>
 #elif HAVE_STATFS_MOUNT // BSD
 #include <sys/mount.h>
-#elif HAVE_SYS_STATVFS_H && !HAVE_NON_LEGACY_STATFS // SunOS
+#elif HAVE_SYS_STATVFS_H && !HAVE_NON_LEGACY_STATFS && HAVE_STATVFS_BASETYPE // SunOS
 #include <sys/types.h>
 #include <sys/statvfs.h>
 #if HAVE_STATFS_VFS
@@ -57,6 +58,10 @@
 #ifdef TARGET_SUNOS
 #include <sys/param.h>
 #endif
+
+#ifdef TARGET_HAIKU
+#include <fs_info.h>
+#endif // TARGET_HAIKU
 
 #ifdef _AIX
 #include <alloca.h>
@@ -342,7 +347,9 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
 
 int32_t SystemNative_Close(intptr_t fd)
 {
-    return close(ToFileDescriptor(fd));
+    int result = close(ToFileDescriptor(fd));
+    if (result < 0 && errno == EINTR) result = 0; // on all supported platforms, close(2) returning EINTR still means it was released
+    return result;
 }
 
 intptr_t SystemNative_Dup(intptr_t oldfd)
@@ -399,7 +406,7 @@ int32_t SystemNative_IsMemfdSupported(void)
     }
 #endif
 
-    // Note that the name has no affect on file descriptor behavior. From linux manpage: 
+    // Note that the name has no affect on file descriptor behavior. From linux manpage:
     //   Names do not affect the behavior of the file descriptor, and as such multiple files can have the same name without any side effects.
     int32_t fd = (int32_t)syscall(__NR_memfd_create, "test", MFD_CLOEXEC | MFD_ALLOW_SEALING);
     if (fd < 0) return 0;
@@ -498,97 +505,13 @@ static void ConvertDirent(const struct dirent* entry, DirectoryEntry* outputEntr
 #endif
 }
 
-#if HAVE_READDIR_R
-// struct dirent typically contains 64-bit numbers (e.g. d_ino), so we align it at 8-byte.
-static const size_t dirent_alignment = 8;
-#endif
-
-int32_t SystemNative_GetReadDirRBufferSize(void)
-{
-#if HAVE_READDIR_R
-    size_t result = sizeof(struct dirent);
-#ifdef TARGET_SUNOS
-    // The d_name array is declared with only a single byte in it.
-    // We have to add pathconf("dir", _PC_NAME_MAX) more bytes.
-    // MAXNAMELEN is the largest possible value returned from pathconf.
-    result += MAXNAMELEN;
-#endif
-    // dirent should be under 2k in size
-    assert(result < 2048);
-    // add some extra space so we can align the buffer to dirent.
-    return (int32_t)(result + dirent_alignment - 1);
-#else
-    return 0;
-#endif
-}
-
-// To reduce the number of string copies, the caller of this function is responsible to ensure the memory
-// referenced by outputEntry remains valid until it is read.
-// If the platform supports readdir_r, the caller provides a buffer into which the data is read.
-// If the platform uses readdir, the caller must ensure no calls are made to readdir/closedir since those will invalidate
+// The caller must ensure no calls are made to readdir/closedir since those will invalidate
 // the current dirent. We assume the platform supports concurrent readdir calls to different DIRs.
-int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
+int32_t SystemNative_ReadDir(DIR* dir, DirectoryEntry* outputEntry)
 {
     assert(dir != NULL);
     assert(outputEntry != NULL);
 
-#if HAVE_READDIR_R
-    assert(buffer != NULL);
-
-    // align to dirent
-    struct dirent* entry = (struct dirent*)((size_t)(buffer + dirent_alignment - 1) & ~(dirent_alignment - 1));
-
-    // check there is dirent size available at entry
-    if ((buffer + bufferSize) < ((uint8_t*)entry + sizeof(struct dirent)))
-    {
-        assert(false && "Buffer size too small; use GetReadDirRBufferSize to get required buffer size");
-        return ERANGE;
-    }
-
-    struct dirent* result = NULL;
-#ifdef _AIX
-    // AIX returns 0 on success, but bizarrely, it returns 9 for both error and
-    // end-of-directory. result is NULL for both cases. The API returns the
-    // same thing for EOD/error, so disambiguation between the two is nearly
-    // impossible without clobbering errno for yourself and seeing if the API
-    // changed it. See:
-    // https://www.ibm.com/support/knowledgecenter/ssw_aix_71/com.ibm.aix.basetrf2/readdir_r.htm
-
-    errno = 0; // create a success condition for the API to clobber
-    int error = readdir_r(dir, entry, &result);
-
-    if (error == 9)
-    {
-        memset(outputEntry, 0, sizeof(*outputEntry)); // managed out param must be initialized
-        return errno == 0 ? -1 : errno;
-    }
-#else
-    int error;
-
-    // EINTR isn't documented, happens in practice on macOS.
-    while ((error = readdir_r(dir, entry, &result)) && errno == EINTR);
-
-    // positive error number returned -> failure
-    if (error != 0)
-    {
-        assert(error > 0);
-        memset(outputEntry, 0, sizeof(*outputEntry)); // managed out param must be initialized
-        return error;
-    }
-
-    // 0 returned with null result -> end-of-stream
-    if (result == NULL)
-    {
-        memset(outputEntry, 0, sizeof(*outputEntry)); // managed out param must be initialized
-        return -1;         // shim convention for end-of-stream
-    }
-#endif
-
-    // 0 returned with non-null result (guaranteed to be set to entry arg) -> success
-    assert(result == entry);
-#else
-    (void)buffer;     // unused
-    (void)bufferSize; // unused
     errno = 0;
     struct dirent* entry = readdir(dir);
 
@@ -605,7 +528,7 @@ int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, Dir
         }
         return -1;
     }
-#endif
+
     ConvertDirent(entry, outputEntry);
     return 0;
 }
@@ -882,8 +805,14 @@ void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint
 {
 #if !defined(TARGET_WASI)
     dev_t castedDev = (dev_t)dev;
+#if !defined(TARGET_HAIKU)
     *majorNumber = (uint32_t)major(castedDev);
     *minorNumber = (uint32_t)minor(castedDev);
+#else
+    // Haiku has no concept of major/minor numbers, but it does have device IDs.
+    *majorNumber = 0;
+    *minorNumber = (uint32_t)dev;
+#endif // TARGET_HAIKU
 #else /* TARGET_WASI */
     dev_t castedDev = (dev_t)dev;
     *majorNumber = 0;
@@ -894,7 +823,12 @@ void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint
 int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
 {
 #if !defined(TARGET_WASI)
+#if !defined(TARGET_HAIKU)
     dev_t dev = (dev_t)makedev(major, minor);
+#else
+    (void)major;
+    dev_t dev = (dev_t)minor;
+#endif // !TARGET_HAIKU
 
     int32_t result;
     while ((result = mknod(pathName, (mode_t)mode, dev)) < 0 && errno == EINTR);
@@ -1117,13 +1051,13 @@ int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
     switch (advice)
     {
         case PAL_MADV_DONTFORK:
-#if defined(MADV_DONTFORK) && !defined(TARGET_WASI)
+#if defined(MADV_DONTFORK) && !defined(TARGET_WASM)
             return madvise(address, (size_t)length, MADV_DONTFORK);
 #else
             (void)address, (void)length, (void)advice;
             errno = ENOTSUP;
             return -1;
-#endif
+#endif // MADV_DONTFORK && !TARGET_WASM
         default:
             break; // fall through to error
     }
@@ -1641,146 +1575,46 @@ static int16_t ConvertLockType(int16_t managedLockType)
     }
 }
 
-#if !HAVE_NON_LEGACY_STATFS || defined(TARGET_APPLE) || defined(TARGET_FREEBSD)
-static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
+#if HAVE_STATFS_FSTYPENAME || HAVE_STATVFS_BASETYPE || defined(TARGET_HAIKU)
+static uint32_t FileSystemNameSupportsLocking(const char* fileSystemName)
 {
-    uint32_t result = 0;
-
-    if (strcmp(fileSystemName, "adfs") == 0) result = 0xADF5;
-    else if (strcmp(fileSystemName, "affs") == 0) result = 0xADFF;
-    else if (strcmp(fileSystemName, "afs") == 0) result = 0x5346414F;
-    else if (strcmp(fileSystemName, "anoninode") == 0) result = 0x09041934;
-    else if (strcmp(fileSystemName, "apfs") == 0) result = 0x1A;
-    else if (strcmp(fileSystemName, "aufs") == 0) result = 0x61756673;
-    else if (strcmp(fileSystemName, "autofs") == 0) result = 0x0187;
-    else if (strcmp(fileSystemName, "autofs4") == 0) result = 0x6D4A556D;
-    else if (strcmp(fileSystemName, "befs") == 0) result = 0x42465331;
-    else if (strcmp(fileSystemName, "bdevfs") == 0) result = 0x62646576;
-    else if (strcmp(fileSystemName, "bfs") == 0) result = 0x1BADFACE;
-    else if (strcmp(fileSystemName, "bpf_fs") == 0) result = 0xCAFE4A11;
-    else if (strcmp(fileSystemName, "binfmt_misc") == 0) result = 0x42494E4D;
-    else if (strcmp(fileSystemName, "bootfs") == 0) result = 0xA56D3FF9;
-    else if (strcmp(fileSystemName, "btrfs") == 0) result = 0x9123683E;
-    else if (strcmp(fileSystemName, "ceph") == 0) result = 0x00C36400;
-    else if (strcmp(fileSystemName, "cgroupfs") == 0) result = 0x0027E0EB;
-    else if (strcmp(fileSystemName, "cgroup2fs") == 0) result = 0x63677270;
-    else if (strcmp(fileSystemName, "cifs") == 0) result = 0xFF534D42;
-    else if (strcmp(fileSystemName, "coda") == 0) result = 0x73757245;
-    else if (strcmp(fileSystemName, "coherent") == 0) result = 0x012FF7B7;
-    else if (strcmp(fileSystemName, "configfs") == 0) result = 0x62656570;
-    else if (strcmp(fileSystemName, "cpuset") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "cramfs") == 0) result = 0x28CD3D45;
-    else if (strcmp(fileSystemName, "ctfs") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "debugfs") == 0) result = 0x64626720;
-    else if (strcmp(fileSystemName, "dev") == 0) result = 0x1373;
-    else if (strcmp(fileSystemName, "devfs") == 0) result = 0x1373;
-    else if (strcmp(fileSystemName, "devpts") == 0) result = 0x1CD1;
-    else if (strcmp(fileSystemName, "ecryptfs") == 0) result = 0xF15F;
-    else if (strcmp(fileSystemName, "efs") == 0) result = 0x00414A53;
-    else if (strcmp(fileSystemName, "exofs") == 0) result = 0x5DF5;
-    else if (strcmp(fileSystemName, "ext") == 0) result = 0x137D;
-    else if (strcmp(fileSystemName, "ext2_old") == 0) result = 0xEF51;
-    else if (strcmp(fileSystemName, "ext2") == 0) result = 0xEF53;
-    else if (strcmp(fileSystemName, "ext3") == 0) result = 0xEF53;
-    else if (strcmp(fileSystemName, "ext4") == 0) result = 0xEF53;
-    else if (strcmp(fileSystemName, "f2fs") == 0) result = 0xF2F52010;
-    else if (strcmp(fileSystemName, "fat") == 0) result = 0x4006;
-    else if (strcmp(fileSystemName, "fd") == 0) result = 0xF00D1E;
-    else if (strcmp(fileSystemName, "fhgfs") == 0) result = 0x19830326;
-    else if (strcmp(fileSystemName, "fuse") == 0) result = 0x65735546;
-    else if (strcmp(fileSystemName, "fuseblk") == 0) result = 0x65735546;
-    else if (strcmp(fileSystemName, "fusectl") == 0) result = 0x65735543;
-    else if (strcmp(fileSystemName, "futexfs") == 0) result = 0x0BAD1DEA;
-    else if (strcmp(fileSystemName, "gfsgfs2") == 0) result = 0x1161970;
-    else if (strcmp(fileSystemName, "gfs2") == 0) result = 0x01161970;
-    else if (strcmp(fileSystemName, "gpfs") == 0) result = 0x47504653;
-    else if (strcmp(fileSystemName, "hfs") == 0) result = 0x4244;
-    else if (strcmp(fileSystemName, "hfsplus") == 0) result = 0x482B;
-    else if (strcmp(fileSystemName, "hpfs") == 0) result = 0xF995E849;
-    else if (strcmp(fileSystemName, "hugetlbfs") == 0) result = 0x958458F6;
-    else if (strcmp(fileSystemName, "inodefs") == 0) result = 0x11307854;
-    else if (strcmp(fileSystemName, "inotifyfs") == 0) result = 0x2BAD1DEA;
-    else if (strcmp(fileSystemName, "isofs") == 0) result = 0x9660;
-    else if (strcmp(fileSystemName, "jffs") == 0) result = 0x07C0;
-    else if (strcmp(fileSystemName, "jffs2") == 0) result = 0x72B6;
-    else if (strcmp(fileSystemName, "jfs") == 0) result = 0x3153464A;
-    else if (strcmp(fileSystemName, "kafs") == 0) result = 0x6B414653;
-    else if (strcmp(fileSystemName, "lofs") == 0) result = 0xEF53;
-    else if (strcmp(fileSystemName, "logfs") == 0) result = 0xC97E8168;
-    else if (strcmp(fileSystemName, "lustre") == 0) result = 0x0BD00BD0;
-    else if (strcmp(fileSystemName, "minix_old") == 0) result = 0x137F;
-    else if (strcmp(fileSystemName, "minix") == 0) result = 0x138F;
-    else if (strcmp(fileSystemName, "minix2") == 0) result = 0x2468;
-    else if (strcmp(fileSystemName, "minix2v2") == 0) result = 0x2478;
-    else if (strcmp(fileSystemName, "minix3") == 0) result = 0x4D5A;
-    else if (strcmp(fileSystemName, "mntfs") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "mqueue") == 0) result = 0x19800202;
-    else if (strcmp(fileSystemName, "msdos") == 0) result = 0x4D44;
-    else if (strcmp(fileSystemName, "nfs") == 0) result = 0x6969;
-    else if (strcmp(fileSystemName, "nfsd") == 0) result = 0x6E667364;
-    else if (strcmp(fileSystemName, "nilfs") == 0) result = 0x3434;
-    else if (strcmp(fileSystemName, "novell") == 0) result = 0x564C;
-    else if (strcmp(fileSystemName, "ntfs") == 0) result = 0x5346544E;
-    else if (strcmp(fileSystemName, "objfs") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "ocfs2") == 0) result = 0x7461636F;
-    else if (strcmp(fileSystemName, "openprom") == 0) result = 0x9FA1;
-    else if (strcmp(fileSystemName, "omfs") == 0) result = 0xC2993D87;
-    else if (strcmp(fileSystemName, "overlay") == 0) result = 0x794C7630;
-    else if (strcmp(fileSystemName, "overlayfs") == 0) result = 0x794C764F;
-    else if (strcmp(fileSystemName, "panfs") == 0) result = 0xAAD7AAEA;
-    else if (strcmp(fileSystemName, "pipefs") == 0) result = 0x50495045;
-    else if (strcmp(fileSystemName, "proc") == 0) result = 0x9FA0;
-    else if (strcmp(fileSystemName, "pstorefs") == 0) result = 0x6165676C;
-    else if (strcmp(fileSystemName, "qnx4") == 0) result = 0x002F;
-    else if (strcmp(fileSystemName, "qnx6") == 0) result = 0x68191122;
-    else if (strcmp(fileSystemName, "ramfs") == 0) result = 0x858458F6;
-    else if (strcmp(fileSystemName, "reiserfs") == 0) result = 0x52654973;
-    else if (strcmp(fileSystemName, "romfs") == 0) result = 0x7275;
-    else if (strcmp(fileSystemName, "rootfs") == 0) result = 0x53464846;
-    else if (strcmp(fileSystemName, "rpc_pipefs") == 0) result = 0x67596969;
-    else if (strcmp(fileSystemName, "samba") == 0) result = 0x517B;
-    else if (strcmp(fileSystemName, "sdcardfs") == 0) result = 0x5DCA2DF5;
-    else if (strcmp(fileSystemName, "securityfs") == 0) result = 0x73636673;
-    else if (strcmp(fileSystemName, "selinux") == 0) result = 0xF97CFF8C;
-    else if (strcmp(fileSystemName, "sffs") == 0) result = 0x786F4256;
-    else if (strcmp(fileSystemName, "sharefs") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "smb") == 0) result = 0x517B;
-    else if (strcmp(fileSystemName, "smb2") == 0) result = 0xFE534D42;
-    else if (strcmp(fileSystemName, "sockfs") == 0) result = 0x534F434B;
-    else if (strcmp(fileSystemName, "squashfs") == 0) result = 0x73717368;
-    else if (strcmp(fileSystemName, "sysfs") == 0) result = 0x62656572;
-    else if (strcmp(fileSystemName, "sysv2") == 0) result = 0x012FF7B6;
-    else if (strcmp(fileSystemName, "sysv4") == 0) result = 0x012FF7B5;
-    else if (strcmp(fileSystemName, "tmpfs") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "tracefs") == 0) result = 0x74726163;
-    else if (strcmp(fileSystemName, "ubifs") == 0) result = 0x24051905;
-    else if (strcmp(fileSystemName, "udf") == 0) result = 0x15013346;
-    else if (strcmp(fileSystemName, "ufs") == 0) result = 0x00011954;
-    else if (strcmp(fileSystemName, "ufscigam") == 0) result = 0x54190100;
-    else if (strcmp(fileSystemName, "ufs2") == 0) result = 0x19540119;
-    else if (strcmp(fileSystemName, "usbdevice") == 0) result = 0x9FA2;
-    else if (strcmp(fileSystemName, "v9fs") == 0) result = 0x01021997;
-    else if (strcmp(fileSystemName, "vagrant") == 0) result = 0x786F4256;
-    else if (strcmp(fileSystemName, "vboxfs") == 0) result = 0x786F4256;
-    else if (strcmp(fileSystemName, "vmhgfs") == 0) result = 0xBACBACBC;
-    else if (strcmp(fileSystemName, "vxfs") == 0) result = 0xA501FCF5;
-    else if (strcmp(fileSystemName, "vzfs") == 0) result = 0x565A4653;
-    else if (strcmp(fileSystemName, "xenfs") == 0) result = 0xABBA1974;
-    else if (strcmp(fileSystemName, "xenix") == 0) result = 0x012FF7B4;
-    else if (strcmp(fileSystemName, "xfs") == 0) result = 0x58465342;
-    else if (strcmp(fileSystemName, "xia") == 0) result = 0x012FD16D;
-    else if (strcmp(fileSystemName, "udev") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "zfs") == 0) result = 0x2FC12FC1;
-
-    assert(result != 0);
-    return result;
+    if (strcmp(fileSystemName, "nfs") == 0 ||
+        strcmp(fileSystemName, "cifs") == 0 ||
+        strcmp(fileSystemName, "smb") == 0 ||
+        strcmp(fileSystemName, "smb2") == 0)
+    {
+        return 0;
+    }
+    return 1;
 }
 #endif
 #endif /* TARGET_WASI */
 
-uint32_t SystemNative_GetFileSystemType(intptr_t fd)
+// LOCK_SH does not work well for write access on nfs/cifs/samba. For example, writes are dropped silently.
+// See https://github.com/dotnet/runtime/issues/44546 and https://github.com/dotnet/runtime/issues/53182.
+uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd, int32_t lockOperation, int32_t accessWrite)
 {
-#if HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
+    assert(lockOperation == PAL_LOCK_SH || lockOperation == PAL_LOCK_EX);
+#if defined(TARGET_WASI) || defined(TARGET_WASM)
+    return 0; // WASI/WASM doesn't support locking.
+#else
+    if (lockOperation == PAL_LOCK_EX || accessWrite == 0)
+    {
+        return 1;
+    }
+#if defined(TARGET_HAIKU)
+    struct stat st;
+    int fstatRes;
+    while ((fstatRes = fstat(ToFileDescriptor(fd), &st)) == -1 && errno == EINTR);
+    if (fstatRes == -1) return 0;
+
+    struct fs_info info;
+    int fsStatDevRes;
+    while ((fsStatDevRes = fs_stat_dev(st.st_dev, &info)) == -1 && errno == EINTR);
+    if (fsStatDevRes == -1) return 0;
+
+    return FileSystemNameSupportsLocking(info.fsh_name);
+#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     int statfsRes;
     struct statfs statfsArgs;
     // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
@@ -1788,29 +1622,29 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
     if (statfsRes == -1) return 0;
 
-#if defined(TARGET_APPLE) || defined(TARGET_FREEBSD)
-    // * On OSX-like systems, f_type is version-specific. Don't use it, just map the name.
-    // * Specifically, on FreeBSD with ZFS, f_type may return a value like 0xDE when emulating
-    //   FreeBSD on macOS (e.g., FreeBSD-x64 on macOS ARM64). Therefore, we use f_fstypename to
-    //   get the correct filesystem type.
-    return MapFileSystemNameToEnum(statfsArgs.f_fstypename);
-#else
-    // On Linux, f_type is signed. This causes some filesystem types to be represented as
-    // negative numbers on 32-bit platforms. We cast to uint32_t to make them positive.
-    uint32_t result = (uint32_t)statfsArgs.f_type;
-    return result;
+#if HAVE_STATFS_FSTYPENAME
+    return FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
+#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+    unsigned int f_type = (unsigned int)statfsArgs.f_type;
+    if (f_type == 0x6969 ||     // NFS_SUPER_MAGIC
+        f_type == 0xFF534D42 || // CIFS_SUPER_MAGIC
+        f_type == 0x517B ||     // SMB_SUPER_MAGIC
+        f_type == 0xFE534D42)   // SMB2_SUPER_MAGIC
+    {
+        return 0;
+    }
+    return 1;
 #endif
-#elif defined(TARGET_WASI)
-    return EINTR;
-#elif !HAVE_NON_LEGACY_STATFS
+#elif HAVE_STATVFS_BASETYPE
     int statfsRes;
     struct statvfs statfsArgs;
     while ((statfsRes = fstatvfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
     if (statfsRes == -1) return 0;
 
-    return MapFileSystemNameToEnum(statfsArgs.f_basetype);
+    return FileSystemNameSupportsLocking(statfsArgs.f_basetype);
 #else
     #error "Platform doesn't support fstatfs or fstatvfs"
+#endif
 #endif
 }
 
@@ -1895,31 +1729,97 @@ int32_t SystemNative_CanGetHiddenFlag(void)
 #endif
 }
 
-int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
+int32_t SystemNative_ReadThreadInfo(int32_t pid, int32_t tid, ThreadInfo* threadInfo)
 {
 #ifdef __sun
-    char statusFilename[64];
-    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/psinfo", pid);
+    char infoFilename[64];
+    snprintf(infoFilename, sizeof(infoFilename), "/proc/%d/lwp/%d/lwpsinfo", pid, tid);
 
     intptr_t fd;
-    while ((fd = open(statusFilename, O_RDONLY)) < 0 && errno == EINTR);
+    while ((fd = open(infoFilename, O_RDONLY)) < 0 && errno == EINTR);
     if (fd < 0)
     {
         return 0;
     }
 
-    psinfo_t status;
-    int result = Common_Read(fd, &status, sizeof(psinfo_t));
+    lwpsinfo_t pr;
+    int result = Common_Read(fd, &pr, sizeof(pr));
     close(fd);
-    if (result >= 0)
+    if (result < sizeof (pr))
     {
-        processStatus->ResidentSetSize = status.pr_rssize * 1024; // pr_rssize is in Kbytes
-        return 1;
+        errno = EIO;
+        return -1;
+    }
+
+    threadInfo->Tid = pr.pr_lwpid;
+    threadInfo->Priority = pr.pr_pri;
+    threadInfo->NiceVal = pr.pr_nice;
+    // Status code, a char: ...
+    threadInfo->StatusCode = (uchar_t)pr.pr_sname;
+    // Thread start time and CPU time
+    threadInfo->StartTime = pr.pr_start.tv_sec;
+    threadInfo->StartTimeNsec = pr.pr_start.tv_nsec;
+    threadInfo->CpuTotalTime = pr.pr_time.tv_sec;
+    threadInfo->CpuTotalTimeNsec = pr.pr_time.tv_nsec;
+
+    return 0;
+#else
+    (void)pid, (void)tid, (void)threadInfo;
+    errno = ENOTSUP;
+    return -1;
+#endif // __sun
+}
+
+// The struct passing is limited, so the args string is handled separately here.
+int32_t SystemNative_ReadProcessInfo(int32_t pid, ProcessInfo* processInfo, uint8_t *argBuf, int32_t argBufSize)
+{
+#ifdef __sun
+    if (argBufSize != 0 && argBufSize < PRARGSZ)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    char infoFilename[64];
+    snprintf(infoFilename, sizeof(infoFilename), "/proc/%d/psinfo", pid);
+
+    intptr_t fd;
+    while ((fd = open(infoFilename, O_RDONLY)) < 0 && errno == EINTR);
+    if (fd < 0)
+    {
+        return 0;
+    }
+
+    psinfo_t pr;
+    int result = Common_Read(fd, &pr, sizeof(pr));
+    close(fd);
+    if (result < sizeof (pr))
+    {
+        errno = EIO;
+        return -1;
+    }
+
+    processInfo->Pid = pr.pr_pid;
+    processInfo->ParentPid = pr.pr_ppid;
+    processInfo->SessionId = pr.pr_sid;
+    processInfo->Priority = pr.pr_lwp.pr_pri;
+    processInfo->NiceVal = pr.pr_lwp.pr_nice;
+    // pr_size and pr_rsize are in Kbytes.
+    processInfo->VirtualSize = (uint64_t)pr.pr_size * 1024;
+    processInfo->ResidentSetSize = (uint64_t)pr.pr_rssize * 1024;
+    processInfo->StartTime = pr.pr_start.tv_sec;
+    processInfo->StartTimeNsec = pr.pr_start.tv_nsec;
+    processInfo->CpuTotalTime = pr.pr_time.tv_sec;
+    processInfo->CpuTotalTimeNsec = pr.pr_time.tv_nsec;
+
+    if (argBuf != NULL && argBufSize != 0)
+    {
+        SafeStringCopy((char*)argBuf, PRARGSZ, pr.pr_psargs);
     }
 
     return 0;
 #else
-    (void)pid, (void)processStatus;
+    (void)pid, (void)processInfo, (void)argBuf, (void)argBufSize;
     errno = ENOTSUP;
     return -1;
 #endif // __sun
@@ -1950,19 +1850,48 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
 }
 
 #if (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
-static int GetAllowedVectorCount(int32_t vectorCount)
+static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
 {
+#if defined(IOV_MAX)
+    const int IovMax = IOV_MAX;
+#else
+    // In theory all the platforms that we support define IOV_MAX,
+    // but we want to be extra safe and provde a fallback
+    // in case it turns out to not be true.
+    // 16 is low, but supported on every platform.
+    const int IovMax = 16;
+#endif
+
     int allowedCount = (int)vectorCount;
 
-#if defined(IOV_MAX)
-    if (IOV_MAX < allowedCount)
+    // We need to respect the limit of items that can be passed in iov.
+    // In case of writes, the managed code is responsible for handling incomplete writes.
+    // In case of reads, we simply returns the number of bytes read and it's up to the users.
+    if (IovMax < allowedCount)
     {
-        // We need to respect the limit of items that can be passed in iov.
-        // In case of writes, the managed code is reponsible for handling incomplete writes.
-        // In case of reads, we simply returns the number of bytes read and it's up to the users.
-        allowedCount = IOV_MAX;
+        allowedCount = IovMax;
     }
+
+#if defined(TARGET_APPLE)
+    // For macOS preadv and pwritev can fail with EINVAL when the total length
+    // of all vectors overflows a 32-bit integer.
+    size_t totalLength = 0;
+    for (int i = 0; i < allowedCount; i++)
+    {
+        assert(INT_MAX >= vectors[i].Count);
+
+        totalLength += vectors[i].Count;
+
+        if (totalLength > INT_MAX)
+        {
+            allowedCount = i;
+            break;
+        }
+    }
+#else
+    (void)vectors;
 #endif
+
     return allowedCount;
 }
 #endif // (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
@@ -1975,7 +1904,7 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PREADV && !defined(TARGET_WASM) // preadv is buggy on WASM
-    int allowedVectorCount = GetAllowedVectorCount(vectorCount);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
     while ((count = preadv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;
@@ -2016,7 +1945,7 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PWRITEV && !defined(TARGET_WASM) // pwritev is buggy on WASM
-    int allowedVectorCount = GetAllowedVectorCount(vectorCount);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
     while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;

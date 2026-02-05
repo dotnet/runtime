@@ -254,7 +254,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Client content", "Server content")]
         [InlineData(null, null)]
         [InlineData(null, "Server content")]
-        public async Task Http2ClearText_SendAsync_Success(string clientContent, string serverContent)
+        public async Task Http2ClearText_SendAsync_Success(string? clientContent, string? serverContent)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -1077,7 +1077,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Server sends GOAWAY frame
                 await connection.SendGoAway(streamId, ProtocolErrors.ENHANCE_YOUR_CALM);
-                connection.ShutdownSend();
+                await connection.ShutdownSendAsync();
             });
         }
 
@@ -1487,7 +1487,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendResponseDataAsync(streamId3, new byte[5], endStream: true);
 
                 // We will not send any more frames, so send EOF now, and ensure the client handles this properly.
-                connection.ShutdownSend();
+                await connection.ShutdownSendAsync();
 
                 // Receive all responses
                 HttpResponseMessage response1 = await sendTask1;

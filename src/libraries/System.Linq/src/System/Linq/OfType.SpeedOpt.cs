@@ -167,12 +167,32 @@ namespace System.Linq
                     // they're covariant. It's not worthwhile checking for List<T> to use the ListWhereSelectIterator
                     // because List<> is not covariant.
                     Func<object, bool> isTResult = static o => o is TResult;
-                    return objectSource is object[] array ?
+                    return !IsSizeOptimized && objectSource is object[] array ?
                         new ArrayWhereSelectIterator<object, TResult2>(array, isTResult, localSelector) :
                         new IEnumerableWhereSelectIterator<object, TResult2>(objectSource, isTResult, localSelector);
                 }
 
                 return base.Select(selector);
+            }
+
+            public override bool Contains(TResult value)
+            {
+                // It is tempting to delegate here to IList.Contains if _source is IList (especially
+                // if TResult is not a value type, as it would be boxed as an argument to Contains).
+                // And while that will be correct in most cases, if any of the items in the source
+                // compares equally with value but is not actually of type TResult, doing so would
+                // skip the type check implied by OfType<TResult>(). Further, if IList is a multidim
+                // array, its IList.Contains will fail for non-1 ranks. We thus just iterate directly.
+
+                foreach (object? item in _source)
+                {
+                    if (item is TResult castItem && EqualityComparer<TResult>.Default.Equals(castItem, value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
     }

@@ -42,6 +42,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\src\System.Security.Cryptography.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\src\System.Text.RegularExpressions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\Microsoft.Win32.SystemEvents.csproj" PrivateAssets="all" />
@@ -51,7 +52,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Diagnostics.PerformanceCounter.csproj" PrivateAssets="all" />
     <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.IO.Ports.csproj" PrivateAssets="all" />
     <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Permissions.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Threading.AccessControl.csproj" PrivateAssets="all" />
     <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Windows.Extensions.csproj" PrivateAssets="all" />
   </ItemGroup>
 

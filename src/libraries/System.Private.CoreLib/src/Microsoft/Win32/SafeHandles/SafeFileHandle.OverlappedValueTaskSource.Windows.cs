@@ -35,7 +35,11 @@ namespace Microsoft.Win32.SafeHandles
 
             if (Interlocked.CompareExchange(ref _reusableOverlappedValueTaskSource, source, null) is not null)
             {
-                source._preallocatedOverlapped.Dispose();
+                source.Dispose();
+            }
+            else if (IsClosed)
+            {
+                Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null)?.Dispose();
             }
         }
 

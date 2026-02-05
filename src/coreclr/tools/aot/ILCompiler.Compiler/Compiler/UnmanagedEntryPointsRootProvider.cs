@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -16,10 +17,13 @@ namespace ILCompiler
     {
         private EcmaModule _module;
 
-        public UnmanagedEntryPointsRootProvider(EcmaModule module)
+        public UnmanagedEntryPointsRootProvider(EcmaModule module, bool hidden = false)
         {
             _module = module;
+            Hidden = hidden;
         }
+
+        public bool Hidden { get; }
 
         public IEnumerable<EcmaMethod> ExportedMethods
         {
@@ -33,13 +37,15 @@ namespace ILCompiler
                     if (ca.Parent.Kind != HandleKind.MethodDefinition)
                         continue;
 
+                    var parent = (MethodDefinitionHandle)ca.Parent;
+
                     if (!reader.GetAttributeNamespaceAndName(caHandle, out StringHandle nsHandle, out StringHandle nameHandle))
                         continue;
 
                     if (comparer.Equals(nameHandle, "RuntimeExportAttribute")
                         && comparer.Equals(nsHandle, "System.Runtime"))
                     {
-                        var method = (EcmaMethod)_module.GetMethod(ca.Parent);
+                        EcmaMethod method = _module.GetMethod(parent);
                         if (method.GetRuntimeExportName() != null)
                             yield return method;
                     }
@@ -47,7 +53,7 @@ namespace ILCompiler
                     if (comparer.Equals(nameHandle, "UnmanagedCallersOnlyAttribute")
                         && comparer.Equals(nsHandle, "System.Runtime.InteropServices"))
                     {
-                        var method = (EcmaMethod)_module.GetMethod(ca.Parent);
+                        EcmaMethod method = _module.GetMethod(parent);
                         if (method.GetUnmanagedCallersOnlyExportName() != null)
                             yield return method;
                     }
@@ -61,13 +67,13 @@ namespace ILCompiler
             {
                 if (ecmaMethod.IsUnmanagedCallersOnly)
                 {
-                    string unmanagedCallersOnlyExportName = ecmaMethod.GetUnmanagedCallersOnlyExportName();
-                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", unmanagedCallersOnlyExportName);
+                    Utf8String unmanagedCallersOnlyExportName = new(ecmaMethod.GetUnmanagedCallersOnlyExportName());
+                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Native callable", unmanagedCallersOnlyExportName, Hidden);
                 }
                 else
                 {
-                    string runtimeExportName = ecmaMethod.GetRuntimeExportName();
-                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Runtime export", runtimeExportName);
+                    Utf8String runtimeExportName = new(ecmaMethod.GetRuntimeExportName());
+                    rootProvider.AddCompilationRoot((MethodDesc)ecmaMethod, "Runtime export", runtimeExportName, Hidden);
                 }
             }
         }

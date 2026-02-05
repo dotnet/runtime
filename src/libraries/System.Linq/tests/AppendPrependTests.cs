@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Xunit;
 
@@ -9,6 +10,25 @@ namespace System.Linq.Tests
 {
     public class AppendPrependTests : EnumerableTests
     {
+        // Mock collection for testing overflow without allocating memory
+        private sealed class MockCollection<T> : ICollection<T>
+        {
+            private readonly int _count;
+
+            public MockCollection(int count) => _count = count;
+
+            public int Count => _count;
+            public bool IsReadOnly => true;
+
+            public void Add(T item) => throw new NotSupportedException();
+            public void Clear() => throw new NotSupportedException();
+            public bool Contains(T item) => false;
+            public void CopyTo(T[] array, int arrayIndex) { }
+            public bool Remove(T item) => throw new NotSupportedException();
+            public IEnumerator<T> GetEnumerator() => Enumerable.Empty<T>().GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
         [Fact]
         public void SameResultsRepeatCallsIntQueryAppend()
         {
@@ -16,7 +36,7 @@ namespace System.Linq.Tests
                      select x1;
 
             Assert.Equal(q1.Append(42), q1.Append(42));
-            Assert.Equal(q1.Append(42), q1.Concat(new int?[] { 42 }));
+            Assert.Equal(q1.Append(42), q1.Concat([42]));
         }
 
         [Fact]
@@ -36,7 +56,7 @@ namespace System.Linq.Tests
                      select x1;
 
             Assert.Equal(q1.Append("hi"), q1.Append("hi"));
-            Assert.Equal(q1.Append("hi"), q1.Concat(new string[] { "hi" }));
+            Assert.Equal(q1.Append("hi"), q1.Concat(["hi"]));
         }
 
         [Fact]
@@ -61,7 +81,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptyAppend()
         {
-            int[] first = { };
+            int[] first = [];
             Assert.All(CreateSources(first), first =>
             {
                 Assert.Single(first.Append(42), 42);
@@ -71,7 +91,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptyPrepend()
         {
-            string[] first = { };
+            string[] first = [];
             Assert.All(CreateSources(first), first =>
             {
                 Assert.Single(first.Prepend("aa"), "aa");
@@ -150,12 +170,12 @@ namespace System.Linq.Tests
             var app1ba = app0b.Append(9);
             var app1bb = app0b.Append(10);
 
-            Assert.Equal(new[] { 0, 1, 2, 3, 4, 5 }, app0a);
-            Assert.Equal(new[] { 0, 1, 2, 3, 4, 6 }, app0b);
-            Assert.Equal(new[] { 0, 1, 2, 3, 4, 5, 7 }, app1aa);
-            Assert.Equal(new[] { 0, 1, 2, 3, 4, 5, 8 }, app1ab);
-            Assert.Equal(new[] { 0, 1, 2, 3, 4, 6, 9 }, app1ba);
-            Assert.Equal(new[] { 0, 1, 2, 3, 4, 6, 10 }, app1bb);
+            Assert.Equal([0, 1, 2, 3, 4, 5], app0a);
+            Assert.Equal([0, 1, 2, 3, 4, 6], app0b);
+            Assert.Equal([0, 1, 2, 3, 4, 5, 7], app1aa);
+            Assert.Equal([0, 1, 2, 3, 4, 5, 8], app1ab);
+            Assert.Equal([0, 1, 2, 3, 4, 6, 9], app1ba);
+            Assert.Equal([0, 1, 2, 3, 4, 6, 10], app1bb);
         }
 
         [Fact]
@@ -169,12 +189,12 @@ namespace System.Linq.Tests
             var pre1ba = pre0b.Prepend(9);
             var pre1bb = pre0b.Prepend(10);
 
-            Assert.Equal(new[] { 5, 0, 1, 2, 3 }, pre0a);
-            Assert.Equal(new[] { 6, 0, 1, 2, 3 }, pre0b);
-            Assert.Equal(new[] { 7, 5, 0, 1, 2, 3 }, pre1aa);
-            Assert.Equal(new[] { 8, 5, 0, 1, 2, 3 }, pre1ab);
-            Assert.Equal(new[] { 9, 6, 0, 1, 2, 3 }, pre1ba);
-            Assert.Equal(new[] { 10, 6, 0, 1, 2, 3 }, pre1bb);
+            Assert.Equal([5, 0, 1, 2, 3], pre0a);
+            Assert.Equal([6, 0, 1, 2, 3], pre0b);
+            Assert.Equal([7, 5, 0, 1, 2, 3], pre1aa);
+            Assert.Equal([8, 5, 0, 1, 2, 3], pre1ab);
+            Assert.Equal([9, 6, 0, 1, 2, 3], pre1ba);
+            Assert.Equal([10, 6, 0, 1, 2, 3], pre1bb);
         }
 
         [Fact]
@@ -262,6 +282,60 @@ namespace System.Linq.Tests
             Assert.Equal(42, NumberRangeGuaranteedNotCollectionType(84, 1).Prepend(42).ElementAt(0));
             Assert.Equal(84, NumberRangeGuaranteedNotCollectionType(42, 1).Append(84).ElementAt(1));
             Assert.Equal(84, NumberRangeGuaranteedNotCollectionType(84, 1).Prepend(42).ElementAt(1));
+        }
+
+        [Fact]
+        public void AppendOverflowCount()
+        {
+            // AppendPrepend1Iterator overflow when source has GetCount optimization
+            var source = Enumerable.Repeat(0, int.MaxValue);
+            var appended = source.Append(1);
+            Assert.Throws<OverflowException>(() => appended.Count());
+        }
+
+        [Fact]
+        public void PrependOverflowCount()
+        {
+            // AppendPrepend1Iterator overflow when source has GetCount optimization
+            var source = Enumerable.Repeat(0, int.MaxValue);
+            var prepended = source.Prepend(1);
+            Assert.Throws<OverflowException>(() => prepended.Count());
+        }
+
+        [Fact]
+        public void AppendPrependNOverflowCount()
+        {
+            // AppendPrependN overflow when source has GetCount optimization
+            var source = Enumerable.Repeat(0, int.MaxValue);
+            var result = source.Append(1).Prepend(2);
+            Assert.Throws<OverflowException>(() => result.Count());
+        }
+
+        [Fact]
+        public void AppendOverflowCountWithICollection()
+        {
+            // AppendPrepend1Iterator overflow when source is ICollection
+            var source = new MockCollection<int>(int.MaxValue);
+            var appended = source.Append(1);
+            Assert.Throws<OverflowException>(() => appended.Count());
+        }
+
+        [Fact]
+        public void PrependOverflowCountWithICollection()
+        {
+            // AppendPrepend1Iterator overflow when source is ICollection
+            var source = new MockCollection<int>(int.MaxValue);
+            var prepended = source.Prepend(1);
+            Assert.Throws<OverflowException>(() => prepended.Count());
+        }
+
+        [Fact]
+        public void AppendPrependNOverflowCountWithICollection()
+        {
+            // AppendPrependN overflow when source is ICollection
+            var source = new MockCollection<int>(int.MaxValue);
+            var result = source.Append(1).Prepend(2);
+            Assert.Throws<OverflowException>(() => result.Count());
         }
     }
 }

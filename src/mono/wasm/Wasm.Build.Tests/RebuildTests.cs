@@ -14,40 +14,28 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
-    public class RebuildTests : TestMainJsTestBase
+    public class RebuildTests : WasmTemplateTestsBase
     {
         public RebuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
         }
 
-        public static IEnumerable<object?[]> NonNativeDebugRebuildData()
-            => ConfigWithAOTData(aot: false, config: "Debug")
-                    .WithRunHosts(RunHost.Chrome)
-                    .UnwrapItemsAsArrays().ToList();
-
         [Theory]
-        [MemberData(nameof(NonNativeDebugRebuildData))]
-        public async Task NoOpRebuild(BuildArgs buildArgs, RunHost host, string id)
+        [BuildAndRun(aot: false, config: Configuration.Debug)]
+        public async Task NoOpRebuild(Configuration config, bool aot)
         {
-            string projectName = $"rebuild_{buildArgs.Config}_{buildArgs.AOT}";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild");
+            UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
+            PublishProject(info, config);
 
-            buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs);
+            BrowserRunOptions runOptions = new(config, TestScenario: "DotnetRun", ExpectedExitCode: 42);
+            await RunForPublishWithWebServer(runOptions);
 
-            BuildProject(buildArgs,
-                            id: id,
-                            new BuildProjectOptions(
-                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                                DotnetWasmFromRuntimePack: true,
-                                CreateProject: true));
+            if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
+                throw new XunitException($"Test bug: could not get the build result in the cache");
 
-            Run();
-
-            if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
-                throw new XunitException($"Test bug: could not get the build product in the cache");
-
-            File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+            File.Move(result!.LogFile, Path.ChangeExtension(result.LogFile!, ".first.binlog"));
 
             // artificial delay to have new enough timestamps
             await Task.Delay(5000);
@@ -55,19 +43,8 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
 
             // no-op Rebuild
-            BuildProject(buildArgs,
-                        id: id,
-                        new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: true,
-                            CreateProject: false,
-                            UseCache: false));
-
-            Run();
-
-            void Run() => RunAndTestWasmApp(
-                                buildArgs, buildDir: _projectDir, expectedExitCode: 42,
-                                test: output => {},
-                                host: host, id: id);
+            PublishProject(info, config, new PublishOptions(UseCache: false));
+            await RunForPublishWithWebServer(runOptions);
         }
     }
 }

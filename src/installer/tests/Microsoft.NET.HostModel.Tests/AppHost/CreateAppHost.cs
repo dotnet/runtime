@@ -20,6 +20,7 @@ using Xunit;
 using System.Buffers.Binary;
 using System.IO.MemoryMappedFiles;
 using Microsoft.NET.HostModel.MachO.CodeSign.Tests;
+using System.ComponentModel;
 
 namespace Microsoft.NET.HostModel.AppHost.Tests
 {
@@ -261,9 +262,9 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData("")]
         [InlineData("dir with spaces")]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public void CodeSignMachOAppHost(string subdir)
         {
             using (TestArtifact artifact = CreateTestDirectory())
@@ -282,28 +283,46 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
 
                 // Validate that there is a signature present in the apphost Mach file
                 SigningTests.IsSigned(destinationFilePath).Should().BeTrue();
-
-                // Verify with codesign as well
-                Assert.True(Codesign.IsAvailable);
-                const string codesign = @"/usr/bin/codesign";
-                var psi = new ProcessStartInfo()
-                {
-                    Arguments = $"-d \"{destinationFilePath}\"",
-                    FileName = codesign,
-                    RedirectStandardError = true,
-                };
-
-                using (var p = Process.Start(psi))
-                {
-                    p.Start();
-                    p.StandardError.ReadToEnd()
-                        .Should().Contain($"Executable={Path.GetFullPath(destinationFilePath)}");
-                    p.WaitForExit();
-                    // Successfully signed the apphost.
-                    Assert.True(p.ExitCode == 0, $"Expected exit code was '0' but '{codesign}' returned '{p.ExitCode}' instead.");
-                }
             }
+        }
 
+        [Theory]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [InlineData("")]
+        [InlineData("dir with spaces")]
+        public void SigningExistingAppHostCreatesNewInode(string subdir)
+        {
+            using (TestArtifact artifact = CreateTestDirectory())
+            {
+                string testDirectory = Path.Combine(artifact.Location, subdir);
+                Directory.CreateDirectory(testDirectory);
+                string sourceAppHostMock = Binaries.AppHost.FilePath;
+                string destinationFilePath = Path.Combine(testDirectory, Binaries.AppHost.FileName);
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false,
+                   enableMacOSCodeSign: true);
+                var firstInode = Inode.GetInode(destinationFilePath);
+
+                // Validate that there is a signature present in the apphost Mach file
+                Assert.True(SigningTests.IsSigned(destinationFilePath));
+
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false,
+                   enableMacOSCodeSign: true);
+                var secondInode = Inode.GetInode(destinationFilePath);
+
+                // Ensure the MacOS signature cache is cleared
+                Assert.False(firstInode == secondInode, "not a different inode after re-bundling");
+
+                Assert.True(SigningTests.IsSigned(destinationFilePath));
+            }
         }
 
         [Theory]
@@ -327,29 +346,6 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
 
                 // Validate that there is a signature present in the apphost Mach file
                 SigningTests.IsSigned(destinationFilePath).Should().BeTrue();
-
-                // Verify with codesign as well
-                if (!Codesign.IsAvailable)
-                {
-                    return;
-                }
-                const string codesign = @"/usr/bin/codesign";
-                var psi = new ProcessStartInfo()
-                {
-                    Arguments = $"-d \"{destinationFilePath}\"",
-                    FileName = codesign,
-                    RedirectStandardError = true,
-                };
-
-                using (var p = Process.Start(psi))
-                {
-                    p.Start();
-                    p.StandardError.ReadToEnd()
-                        .Should().Contain($"Executable={Path.GetFullPath(destinationFilePath)}");
-                    p.WaitForExit();
-                    // Successfully signed the apphost.
-                    Assert.True(p.ExitCode == 0, $"Expected exit code was '0' but '{codesign}' returned '{p.ExitCode}' instead.");
-                }
             }
         }
 
@@ -485,12 +481,23 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             }
         }
 
-        private static readonly byte[] s_placeholderData = AppBinaryPathPlaceholderSearchValue.Concat(DotNetSearchPlaceholderValue).ToArray();
+        private static readonly byte[] s_apphostPlaceholderData = AppBinaryPathPlaceholderSearchValue.Concat(DotNetSearchPlaceholderValue).ToArray();
+        private static readonly byte[] s_singleFileApphostPlaceholderData = {
+            // 8 bytes represent the bundle header-offset
+            // Zero for non-bundle apphosts (default).
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            // 32 bytes represent the bundle signature: SHA-256 for ".net core bundle"
+            0x8b, 0x12, 0x02, 0xb9, 0x6a, 0x61, 0x20, 0x38,
+            0x72, 0x7b, 0x93, 0x02, 0x14, 0xd7, 0xa0, 0x32,
+            0x13, 0xf5, 0xb9, 0xe6, 0xef, 0xae, 0x33, 0x18,
+            0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
+        };
+
         /// <summary>
         /// Prepares a mock executable file with the AppHost placeholder embedded in it.
         /// This file will not run, but can be used to test HostWriter and signing process.
         /// </summary>
-        public static string PrepareMockMachAppHostFile(string directory)
+        public static string PrepareMockMachAppHostFile(string directory, bool singleFile = false)
         {
             string fileName = "MockAppHost.mach.o";
             string outputFilePath = Path.Combine(directory, fileName);
@@ -501,7 +508,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 // Add the placeholder - it just needs to exist somewhere in the image
                 // We'll put it at 4096 bytes into the file - this should be in the middle of the __TEXT segment
                 managedSignFile.Position = 4096;
-                managedSignFile.Write(s_placeholderData);
+                managedSignFile.Write(singleFile ? s_singleFileApphostPlaceholderData : s_apphostPlaceholderData);
             }
             return outputFilePath;
         }

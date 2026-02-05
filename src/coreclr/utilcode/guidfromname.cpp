@@ -187,10 +187,10 @@ void GuidFromName
 }
 
 
-// This guid is used for calling GuidFromName function as COM+ runtime uniqualifier
+// This guid is used for calling GuidFromName function as CLR uniqualifier
 //
 // {69F9CBC9-DA05-11d1-9408-0000F8083460}
-static const GUID COMPLUS_RUNTIME_GUID = {0x69f9cbc9, 0xda05, 0x11d1,
+static const GUID CLR_UNIQUALIFIER_GUID = {0x69f9cbc9, 0xda05, 0x11d1,
         {0x94, 0x8, 0x0, 0x0, 0xf8, 0x8, 0x34, 0x60}};
 
 void CorGuidFromNameW
@@ -204,7 +204,7 @@ void CorGuidFromNameW
 
     GuidFromName(
         pGuidResult,
-        COMPLUS_RUNTIME_GUID,
+        CLR_UNIQUALIFIER_GUID,
         wzName,
         (DWORD)((cchName == (SIZE_T) -1 ? (u16_strlen(wzName)+1) : cchName) * sizeof(WCHAR)));
 }

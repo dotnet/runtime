@@ -1,7 +1,7 @@
 <Project>
   <UsingTask TaskName="EmitBundleSourceFiles"
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
-  <UsingTask TaskName="LibraryBuilderTask" 
+  <UsingTask TaskName="LibraryBuilderTask"
              AssemblyFile="$(LibraryBuilderTasksAssemblyPath)" />
 
   <Target Name="_BuildNativeLibrary"
@@ -33,7 +33,7 @@
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
       IsSharedLibrary="$(_IsSharedLibrary)"
-      MonoRuntimeHeaders="$(_MonoHeaderPath)"
+      MonoRuntimeHeaders="@(RuntimeHeaders)"
       Name="$(AssemblyName)"
       OutputDirectory="$(BundleDir)"
       RuntimeIdentifier="$(RuntimeIdentifier)"

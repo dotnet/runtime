@@ -1,6 +1,11 @@
 <Project>
+  <PropertyGroup>
+    <UseLocalTargetingRuntimePack Condition="'$(UseBootstrapLayout)' == 'true'">true</UseLocalTargetingRuntimePack>
+  </PropertyGroup>
   <Import Project="../Directory.Build.targets" />
   <PropertyGroup>
     <IsTrimmable Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</IsTrimmable>
   </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseBootstrapLayout)' == 'true'" />
 </Project>

@@ -7,35 +7,35 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Mono.Linker
 {
-	[DebuggerDisplay ("{Override}")]
-	public class OverrideInformation
-	{
-		public MethodDefinition Base { get; }
+    [DebuggerDisplay("{Override}")]
+    public class OverrideInformation
+    {
+        public MethodDefinition Base { get; }
 
-		public MethodDefinition Override { get; }
+        public MethodDefinition Override { get; }
 
-		internal InterfaceImplementor? InterfaceImplementor { get; }
+        internal InterfaceImplementor? InterfaceImplementor { get; }
 
-		internal OverrideInformation (MethodDefinition @base, MethodDefinition @override, InterfaceImplementor? interfaceImplementor = null)
-		{
-			Base = @base;
-			Override = @override;
-			InterfaceImplementor = interfaceImplementor;
-			// Ensure we have an interface implementation if the base method is from an interface and the override method is on a class
-			Debug.Assert(@base.DeclaringType.IsInterface && interfaceImplementor != null
-						|| !@base.DeclaringType.IsInterface && interfaceImplementor == null);
-			// Ensure the interfaceImplementor is for the interface we expect
-			Debug.Assert (@base.DeclaringType.IsInterface ? interfaceImplementor!.InterfaceType == @base.DeclaringType : true);
-		}
+        internal OverrideInformation(MethodDefinition @base, MethodDefinition @override, InterfaceImplementor? interfaceImplementor = null)
+        {
+            Base = @base;
+            Override = @override;
+            InterfaceImplementor = interfaceImplementor;
+            // Ensure we have an interface implementation if the base method is from an interface and the override method is on a class
+            Debug.Assert(@base.DeclaringType.IsInterface && interfaceImplementor != null
+                        || !@base.DeclaringType.IsInterface && interfaceImplementor == null);
+            // Ensure the interfaceImplementor is for the interface we expect
+            Debug.Assert(@base.DeclaringType.IsInterface ? interfaceImplementor!.InterfaceType == @base.DeclaringType : true);
+        }
 
-		public InterfaceImplementation? MatchingInterfaceImplementation
-			=> InterfaceImplementor?.InterfaceImplementation;
+        public InterfaceImplementation? MatchingInterfaceImplementation
+            => InterfaceImplementor?.InterfaceImplementation;
 
-		public TypeDefinition? InterfaceType
-			=> InterfaceImplementor?.InterfaceType;
+        public TypeDefinition? InterfaceType
+            => InterfaceImplementor?.InterfaceType;
 
-		[MemberNotNullWhen (true, nameof (InterfaceImplementor), nameof (MatchingInterfaceImplementation))]
-		public bool IsOverrideOfInterfaceMember
-			=> InterfaceImplementor != null;
-	}
+        [MemberNotNullWhen(true, nameof(InterfaceImplementor), nameof(MatchingInterfaceImplementation))]
+        public bool IsOverrideOfInterfaceMember
+            => InterfaceImplementor != null;
+    }
 }

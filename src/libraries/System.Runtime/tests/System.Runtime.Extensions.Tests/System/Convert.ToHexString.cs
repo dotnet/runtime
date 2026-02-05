@@ -14,6 +14,16 @@ namespace System.Tests
         {
             byte[] inputBytes = new byte[] { 0x00, 0x01, 0x02, 0xFD, 0xFE, 0xFF };
             Assert.Equal("000102FDFEFF", Convert.ToHexString(inputBytes));
+
+            Span<char> output = stackalloc char[12];
+            Assert.True(Convert.TryToHexString(inputBytes, output, out int charsWritten));
+            Assert.Equal(12, charsWritten);
+            Assert.Equal("000102FDFEFF", output.ToString());
+
+            Span<byte> outputUtf8 = stackalloc byte[12];
+            Assert.True(Convert.TryToHexString(inputBytes, outputUtf8, out int bytesWritten));
+            Assert.Equal(12, bytesWritten);
+            Assert.Equal("000102FDFEFF", Encoding.UTF8.GetString(outputUtf8));
         }
 
         [Fact]
@@ -21,6 +31,16 @@ namespace System.Tests
         {
             byte[] inputBytes = new byte[] { 0x00, 0x01, 0x02, 0xFD, 0xFE, 0xFF };
             Assert.Equal("000102fdfeff", Convert.ToHexStringLower(inputBytes));
+
+            Span<char> output = stackalloc char[12];
+            Assert.True(Convert.TryToHexStringLower(inputBytes, output, out int charsWritten));
+            Assert.Equal(12, charsWritten);
+            Assert.Equal("000102fdfeff", output.ToString());
+
+            Span<byte> outputUtf8 = stackalloc byte[12];
+            Assert.True(Convert.TryToHexStringLower(inputBytes, outputUtf8, out int bytesWritten));
+            Assert.Equal(12, bytesWritten);
+            Assert.Equal("000102fdfeff", Encoding.UTF8.GetString(outputUtf8));
         }
 
         [Fact]
@@ -34,7 +54,18 @@ namespace System.Tests
                 sb.Append($"{i:X2}");
             }
 
-            Assert.Equal(sb.ToString(), Convert.ToHexString(values));
+            string excepted = sb.ToString();
+            Assert.Equal(excepted, Convert.ToHexString(values));
+
+            Span<char> output = stackalloc char[512];
+            Assert.True(Convert.TryToHexString(values, output, out int charsWritten));
+            Assert.Equal(512, charsWritten);
+            Assert.Equal(excepted, output.ToString());
+
+            Span<byte> outputUtf8 = stackalloc byte[512];
+            Assert.True(Convert.TryToHexString(values, outputUtf8, out int bytesWritten));
+            Assert.Equal(512, bytesWritten);
+            Assert.Equal(excepted, Encoding.UTF8.GetString(outputUtf8));
         }
 
         [Fact]
@@ -48,7 +79,18 @@ namespace System.Tests
                 sb.Append($"{i:x2}");
             }
 
-            Assert.Equal(sb.ToString(), Convert.ToHexStringLower(values));
+            string excepted = sb.ToString();
+            Assert.Equal(excepted, Convert.ToHexStringLower(values));
+
+            Span<char> output = stackalloc char[512];
+            Assert.True(Convert.TryToHexStringLower(values, output, out int charsWritten));
+            Assert.Equal(512, charsWritten);
+            Assert.Equal(excepted, output.ToString());
+
+            Span<byte> outputUtf8 = stackalloc byte[512];
+            Assert.True(Convert.TryToHexStringLower(values, outputUtf8, out int bytesWritten));
+            Assert.Equal(512, bytesWritten);
+            Assert.Equal(excepted, Encoding.UTF8.GetString(outputUtf8));
         }
 
         [Fact]
@@ -57,6 +99,18 @@ namespace System.Tests
             byte[] inputBytes = Convert.FromHexString("000102FDFEFF");
             Assert.Same(string.Empty, Convert.ToHexString(inputBytes, 0, 0));
             Assert.Same(string.Empty, Convert.ToHexStringLower(inputBytes, 0, 0));
+
+            Span<char> output = stackalloc char[12];
+            Assert.True(Convert.TryToHexString(default, output, out int charsWritten));
+            Assert.Equal(0, charsWritten);
+            Assert.True(Convert.TryToHexStringLower(default, output, out charsWritten));
+            Assert.Equal(0, charsWritten);
+
+            Span<byte> outputUtf8 = stackalloc byte[12];
+            Assert.True(Convert.TryToHexString(default, outputUtf8, out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.True(Convert.TryToHexStringLower(default, outputUtf8, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
         }
 
         [Fact]
@@ -66,6 +120,32 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("inArray", () => Convert.ToHexString(null, 0, 0));
             AssertExtensions.Throws<ArgumentNullException>("inArray", () => Convert.ToHexStringLower(null));
             AssertExtensions.Throws<ArgumentNullException>("inArray", () => Convert.ToHexStringLower(null, 0, 0));
+        }
+
+        [Fact]
+        public static void InvalidOutputBuffer()
+        {
+            byte[] inputBytes = new byte[] { 0x00, 0x01, 0x02, 0xFD, 0xFE, 0xFF };
+
+            Span<char> output = stackalloc char[11];
+            Assert.False(Convert.TryToHexString(inputBytes, Span<char>.Empty, out int charsWritten));
+            Assert.Equal(0, charsWritten);
+            Assert.False(Convert.TryToHexString(inputBytes, output, out charsWritten));
+            Assert.Equal(0, charsWritten);
+            Assert.False(Convert.TryToHexStringLower(inputBytes, Span<char>.Empty, out charsWritten));
+            Assert.Equal(0, charsWritten);
+            Assert.False(Convert.TryToHexStringLower(inputBytes, output, out charsWritten));
+            Assert.Equal(0, charsWritten);
+
+            Span<byte> outputUtf8 = stackalloc byte[11];
+            Assert.False(Convert.TryToHexString(inputBytes, Span<byte>.Empty, out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.False(Convert.TryToHexString(inputBytes, outputUtf8, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.False(Convert.TryToHexStringLower(inputBytes, Span<byte>.Empty, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.False(Convert.TryToHexStringLower(inputBytes, outputUtf8, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
         }
 
         [Fact]
@@ -93,8 +173,20 @@ namespace System.Tests
         [Fact]
         public static unsafe void InputTooLarge()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("bytes", () => Convert.ToHexString(new ReadOnlySpan<byte>((void*)0, Int32.MaxValue)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("bytes", () => Convert.ToHexStringLower(new ReadOnlySpan<byte>((void*)0, Int32.MaxValue)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bytes", () => Convert.ToHexString(new ReadOnlySpan<byte>((void*)0, int.MaxValue)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bytes", () => Convert.ToHexStringLower(new ReadOnlySpan<byte>((void*)0, int.MaxValue)));
+
+            Span<char> output = new Span<char>((void*)0, int.MaxValue);
+            Assert.False(Convert.TryToHexString(new ReadOnlySpan<byte>((void*)0, int.MaxValue), output, out int charsWritten));
+            Assert.Equal(0, charsWritten);
+            Assert.False(Convert.TryToHexStringLower(new ReadOnlySpan<byte>((void*)0, int.MaxValue), output, out charsWritten));
+            Assert.Equal(0, charsWritten);
+
+            Span<byte> outputUtf8 = new Span<byte>((void*)0, int.MaxValue);
+            Assert.False(Convert.TryToHexString(new ReadOnlySpan<byte>((void*)0, int.MaxValue), outputUtf8, out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.False(Convert.TryToHexStringLower(new ReadOnlySpan<byte>((void*)0, int.MaxValue), outputUtf8, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
         }
 
         public static IEnumerable<object[]> ToHexStringTestData()
@@ -139,10 +231,41 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToHexStringTestData))]
+        public static unsafe void TryToHexString(byte[] input, string expected)
+        {
+            Span<char> output = new char[expected.Length];
+            Assert.True(Convert.TryToHexString(input, output, out int charsWritten));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.Equal(expected, output.ToString());
+
+            Span<byte> outputUtf8 = new byte[expected.Length];
+            Assert.True(Convert.TryToHexString(input, outputUtf8, out int bytesWritten));
+            Assert.Equal(expected.Length, bytesWritten);
+            Assert.Equal(expected, Encoding.UTF8.GetString(outputUtf8));
+        }
+
+
+        [Theory]
+        [MemberData(nameof(ToHexStringTestData))]
         public static unsafe void ToHexStringLower(byte[] input, string expected)
         {
             string actual = Convert.ToHexStringLower(input);
             Assert.Equal(expected.ToLower(), actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(ToHexStringTestData))]
+        public static unsafe void TryToHexStringLower(byte[] input, string expected)
+        {
+            Span<char> output = new char[expected.Length];
+            Assert.True(Convert.TryToHexStringLower(input, output, out int charsWritten));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.Equal(expected.ToLower(), output.ToString());
+
+            Span<byte> outputUtf8 = new byte[expected.Length];
+            Assert.True(Convert.TryToHexStringLower(input, outputUtf8, out int bytesWritten));
+            Assert.Equal(expected.Length, bytesWritten);
+            Assert.Equal(expected.ToLower(), Encoding.UTF8.GetString(outputUtf8));
         }
     }
 }

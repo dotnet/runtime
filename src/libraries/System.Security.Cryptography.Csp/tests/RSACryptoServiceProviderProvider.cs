@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Tests;
+using Test.Cryptography;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
@@ -15,7 +16,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         public RSA Create(int keySize) => new RSACryptoServiceProvider(keySize);
 
-        public bool Supports384PrivateKey => true;
+        public bool Supports384PrivateKey => PlatformSupport.IsRSA384Supported;
 
         public bool SupportsLargeExponent => false;
 

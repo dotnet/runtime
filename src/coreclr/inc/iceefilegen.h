@@ -155,6 +155,7 @@ class ICeeFileGen {
                                     BYTE* buffer, unsigned buffLen);
 
     virtual HRESULT GetFileTimeStamp (HCEEFILE ceeFile, DWORD *pTimeStamp);
+    virtual HRESULT SetFileHeaderTimeStamp(HCEEFILE ceeFile, DWORD timeStamp);
 
     virtual HRESULT SetFileAlignment(HCEEFILE ceeFile, ULONG fileAlignment);
 

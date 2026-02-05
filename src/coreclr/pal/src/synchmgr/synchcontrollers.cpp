@@ -51,10 +51,8 @@ namespace CorUnix
     PAL_ERROR CSynchControllerBase::Init(
         CPalThread * pthrCurrent,
         ControllerType ctCtrlrType,
-        ObjectDomain odObjectDomain,
         CObjectType *potObjectType,
-        CSynchData * psdSynchData,
-        WaitDomain wdWaitDomain)
+        CSynchData * psdSynchData)
     {
         VALIDATEOBJECT(psdSynchData);
 
@@ -63,20 +61,14 @@ namespace CorUnix
         // Initialize internal controller data
         m_pthrOwner      = pthrCurrent;
         m_ctCtrlrType    = ctCtrlrType;
-        m_odObjectDomain = odObjectDomain;
         m_potObjectType  = potObjectType;
         m_psdSynchData   = psdSynchData;
-        m_wdWaitDomain   = wdWaitDomain;
 
         // Add reference to target synch data
         m_psdSynchData->AddRef();
 
         // Acquire lock implied by the controller
         CPalSynchronizationManager::AcquireLocalSynchLock(m_pthrOwner);
-        if (LocalWait != m_wdWaitDomain)
-        {
-            CPalSynchronizationManager::AcquireSharedSynchLock(m_pthrOwner);
-        }
 
         return NO_ERROR;
     }
@@ -106,10 +98,6 @@ namespace CorUnix
         m_psdSynchData->Release(m_pthrOwner);
 
         // Release lock implied by the controller
-        if (LocalWait != m_wdWaitDomain)
-        {
-            CPalSynchronizationManager::ReleaseSharedSynchLock(m_pthrOwner);
-        }
         CPalSynchronizationManager::ReleaseLocalSynchLock(m_pthrOwner);
 
         // Return controller to the appropriate cache
@@ -145,8 +133,7 @@ namespace CorUnix
     signaled)
     --*/
     PAL_ERROR CSynchWaitController::CanThreadWaitWithoutBlocking(
-        bool * pfCanWaitWithoutBlocking,
-        bool * pfAbandoned)
+        bool * pfCanWaitWithoutBlocking)
     {
         VALIDATEOBJECT(m_psdSynchData);
 
@@ -154,9 +141,8 @@ namespace CorUnix
 
         _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
         _ASSERTE(NULL != pfCanWaitWithoutBlocking);
-        _ASSERTE(NULL != pfAbandoned);
 
-        fRetVal = m_psdSynchData->CanWaiterWaitWithoutBlocking(m_pthrOwner, pfAbandoned);
+        fRetVal = m_psdSynchData->CanWaiterWaitWithoutBlocking(m_pthrOwner);
 
         if(!fRetVal && otiProcess == m_psdSynchData->GetObjectTypeId())
         {
@@ -260,9 +246,7 @@ namespace CorUnix
     --*/
     PAL_ERROR CSynchWaitController::RegisterWaitingThread(
         WaitType wtWaitType,
-        DWORD dwIndex,
-        bool fAlertable,
-        bool fPrioritize)
+        DWORD dwIndex)
     {
         VALIDATEOBJECT(m_psdSynchData);
 
@@ -271,7 +255,6 @@ namespace CorUnix
         SharedID shridNewNode = NULL;
         ThreadWaitInfo * ptwiWaitInfo;
         DWORD * pdwWaitState;
-        bool fSharedObject = (SharedObject == m_odObjectDomain);
         bool fEarlyDeath = false;
         bool fSynchDataRefd = false;
         CPalSynchronizationManager * pSynchManager =
@@ -287,28 +270,12 @@ namespace CorUnix
         pdwWaitState = SharedIDToTypePointer(DWORD,
                 m_pthrOwner->synchronizationInfo.m_shridWaitAwakened);
 
-        if (fSharedObject)
-        {
-            shridNewNode = pSynchManager->CacheGetSharedWTListNode(m_pthrOwner);
-            pwtlnNewNode = SharedIDToTypePointer(WaitingThreadsListNode, shridNewNode);
-        }
-        else
-        {
-            pwtlnNewNode = pSynchManager->CacheGetLocalWTListNode(m_pthrOwner);
-        }
+        pwtlnNewNode = pSynchManager->CacheGetLocalWTListNode(m_pthrOwner);
 
         if (!pwtlnNewNode)
         {
-            if (fSharedObject && (NULL != shridNewNode))
-            {
-                ASSERT("Bad Shared Memory ptr %p\n", shridNewNode);
-                palErr = ERROR_INTERNAL_ERROR;
-            }
-            else
-            {
-                ERROR("Out of memory\n");
-                palErr = ERROR_NOT_ENOUGH_MEMORY;
-            }
+            ERROR("Out of memory\n");
+            palErr = ERROR_NOT_ENOUGH_MEMORY;
             goto RWT_exit;
         }
 
@@ -322,37 +289,15 @@ namespace CorUnix
         if (0 == ptwiWaitInfo->lObjCount)
         {
             ptwiWaitInfo->wtWaitType = wtWaitType;
-            ptwiWaitInfo->wdWaitDomain = m_wdWaitDomain;
-        }
-        else
-        {
-            _ASSERT_MSG(wtWaitType == ptwiWaitInfo->wtWaitType,
-                        "Conflicting wait types in wait registration\n");
-
-            if (m_wdWaitDomain != ptwiWaitInfo->wdWaitDomain)
-            {
-                ptwiWaitInfo->wdWaitDomain = MixedWait;
-            }
         }
 
-        pwtlnNewNode->shridSHRThis       = NULL;
         pwtlnNewNode->ptwiWaitInfo       = ptwiWaitInfo;
         pwtlnNewNode->dwObjIndex         = dwIndex;
-        pwtlnNewNode->dwProcessId        = gPID;
         pwtlnNewNode->dwThreadId         = m_pthrOwner->GetThreadId();
         pwtlnNewNode->dwFlags            = (MultipleObjectsWaitAll == wtWaitType) ?
                                             WTLN_FLAG_WAIT_ALL : 0;
         pwtlnNewNode->shridWaitingState  = m_pthrOwner->synchronizationInfo.m_shridWaitAwakened;
-        if (fSharedObject)
-        {
-            pwtlnNewNode->dwFlags                   |= WTLN_FLAG_OWNER_OBJECT_IS_SHARED;
-            pwtlnNewNode->shridSHRThis               = shridNewNode;
-            pwtlnNewNode->ptrOwnerObjSynchData.shrid = m_psdSynchData->GetSharedThis();
-        }
-        else
-        {
-            pwtlnNewNode->ptrOwnerObjSynchData.ptr = m_psdSynchData;
-        }
+        pwtlnNewNode->ptrOwnerObjSynchData.ptr = m_psdSynchData;
 
         // AddRef the synch data (will be released in UnregisterWait)
         m_psdSynchData->AddRef();
@@ -390,7 +335,7 @@ namespace CorUnix
             DWORD dwWaitState;
 
             // Setting the thread in wait state
-            dwWaitState = (DWORD)(fAlertable ? TWS_ALERTABLE: TWS_WAITING);
+            dwWaitState = TWS_WAITING;
 
             TRACE("Switching my wait state [%p] from TWS_ACTIVE to %u \n",
                   pdwWaitState, dwWaitState);
@@ -419,15 +364,7 @@ namespace CorUnix
         }
 
         // Add new node to queue
-        if (fSharedObject)
-        {
-            m_psdSynchData->SharedWaiterEnqueue(shridNewNode, fPrioritize);
-            ptwiWaitInfo->lSharedObjCount += 1;
-        }
-        else
-        {
-            m_psdSynchData->WaiterEnqueue(pwtlnNewNode, fPrioritize);
-        }
+        m_psdSynchData->WaiterEnqueue(pwtlnNewNode);
 
         // Succeeded: update object count
         ptwiWaitInfo->lObjCount++;
@@ -436,17 +373,13 @@ namespace CorUnix
         if (palErr != NO_ERROR)
         {
             // Unregister any partial wait registration
-            pSynchManager->UnRegisterWait(m_pthrOwner, ptwiWaitInfo, fSharedObject);
+            pSynchManager->UnRegisterWait(m_pthrOwner, ptwiWaitInfo);
 
             if (fSynchDataRefd)
             {
                 m_psdSynchData->Release(m_pthrOwner);
             }
-            if ((fSharedObject)  && (NULL != shridNewNode))
-            {
-                pSynchManager->CacheAddSharedWTListNode(m_pthrOwner, shridNewNode);
-            }
-            else if (NULL != pwtlnNewNode)
+            if (NULL != pwtlnNewNode)
             {
                 pSynchManager->CacheAddLocalWTListNode(m_pthrOwner, pwtlnNewNode);
             }
@@ -457,9 +390,7 @@ namespace CorUnix
                 // We need to completely release the synch lock(s) before
                 // going to sleep
                 LONG lLocalSynchLockCount;
-                LONG lSharedSynchLockCount;
 
-                lSharedSynchLockCount = CPalSynchronizationManager::ResetSharedSynchLock(m_pthrOwner);
                 lLocalSynchLockCount = CPalSynchronizationManager::ResetLocalSynchLock(m_pthrOwner);
 
                 _ASSERTE(0 < lLocalSynchLockCount);
@@ -571,7 +502,7 @@ namespace CorUnix
         _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
         _ASSERTE(lNewCount >= 0);
 
-        m_psdSynchData->Signal(m_pthrOwner, lNewCount, false);
+        m_psdSynchData->Signal(m_pthrOwner, lNewCount);
 
         return NO_ERROR;
     }
@@ -598,7 +529,7 @@ namespace CorUnix
             "Signal count increment %d would make current signal count %d to "
             "wrap around\n", lAmountToIncrement, lOldCount);
 
-        m_psdSynchData->Signal(m_pthrOwner, lNewCount, false);
+        m_psdSynchData->Signal(m_pthrOwner, lNewCount);
 
         return NO_ERROR;
     }
@@ -623,117 +554,6 @@ namespace CorUnix
 
         m_psdSynchData->SetSignalCount(lCount - lAmountToDecrement);
 
-        return palErr;
-    }
-
-    /*++
-    Method:
-      CSynchStateController::SetOwner
-
-    Sets the owner of the target object and initializes the ownership
-    count to 1 (for objects with tracked ownership).
-    --*/
-    PAL_ERROR CSynchStateController::SetOwner(CPalThread * pNewOwningThread)
-    {
-        VALIDATEOBJECT(m_psdSynchData);
-
-        PAL_ERROR palErr = NO_ERROR;
-
-        _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
-        _ASSERTE(NULL != pNewOwningThread);
-        _ASSERT_MSG(CObjectType::OwnershipTracked ==
-                    m_potObjectType->GetOwnershipSemantics(),
-                    "SetOwner called on an object without OwnershipTracked "
-                    "semantics\n");
-
-        if (0 != m_psdSynchData->GetOwnershipCount())
-        {
-            ASSERT("Ownership count should be zero at this time\n");
-            palErr = ERROR_INTERNAL_ERROR;
-            goto SO_exit;
-        }
-
-        palErr = m_psdSynchData->AssignOwnershipToThread(m_pthrOwner,
-                                                       pNewOwningThread);
-
-        _ASSERT_MSG(0 == m_psdSynchData->GetOwnershipCount() ||
-                    0 == m_psdSynchData->GetSignalCount(),
-                    "Conflicting values for SignalCount [%d] and "
-                    "OwnershipCount [%d]\n",
-                    m_psdSynchData->GetOwnershipCount(),
-                    m_psdSynchData->GetSignalCount());
-
-    SO_exit:
-        return palErr;
-    }
-
-    /*++
-    Method:
-      CSynchStateController::DecrementOwnershipCount
-
-    Decrements the ownership count of the target object possibly triggering
-    waiting threads awakening (for objects with tracked ownership).
-    --*/
-    PAL_ERROR CSynchStateController::DecrementOwnershipCount()
-    {
-        VALIDATEOBJECT(m_psdSynchData);
-
-        PAL_ERROR palErr = NO_ERROR;
-        LONG lOwnershipCount = m_psdSynchData->GetOwnershipCount();
-
-        _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
-        _ASSERT_MSG(CObjectType::OwnershipTracked ==
-                    m_potObjectType->GetOwnershipSemantics(),
-                    "Trying to decrement ownership count on an object with "
-                    "ownership semantics other than OwnershipTracked\n");
-        _ASSERT_MSG(0 <= lOwnershipCount,
-                    "Operation would make ownership count negative - object "
-                    "should be owned at this time [ownership count=%d]\n",
-                    lOwnershipCount);
-
-        if ( (1 > lOwnershipCount) ||
-             (m_psdSynchData->GetOwnerProcessID() != gPID) ||
-             (m_psdSynchData->GetOwnerThread() != m_pthrOwner) )
-        {
-            palErr = ERROR_NOT_OWNER;
-            goto DOC_exit;
-        }
-
-        lOwnershipCount--;
-        m_psdSynchData->SetOwnershipCount(lOwnershipCount);
-
-        if (0 == lOwnershipCount)
-        {
-            CPalSynchronizationManager * pSynchManager =
-                CPalSynchronizationManager::GetInstance();
-            OwnedObjectsListNode * pooln =
-                m_psdSynchData->GetOwnershipListNode();
-
-            _ASSERT_MSG(NULL != pooln,
-                        "Null ownership node pointer in SynchData with ownership "
-                        "semantics\n");
-            _ASSERT_MSG(m_psdSynchData == pooln->pPalObjSynchData,
-                        "Corrupted ownership node\n");
-
-            // Object has been released
-            // Remove it from list of owned objs for current thread
-            m_pthrOwner->synchronizationInfo.RemoveObjectFromOwnedList(pooln);
-
-            // Release SynchData reference count implied by the ownership
-            // list node
-            m_psdSynchData->Release(m_pthrOwner);
-
-            // Return node to the cache
-            pSynchManager->CacheAddOwnedObjsListNode(m_pthrOwner, pooln);
-
-            // Reset ownership
-            m_psdSynchData->ResetOwnership();
-
-            // Signal it and trigger waiter thread awakening
-            m_psdSynchData->Signal(m_pthrOwner, 1, false);
-        }
-
-    DOC_exit:
         return palErr;
     }
 
@@ -779,17 +599,15 @@ namespace CorUnix
         {
             CPalSynchronizationManager * pSynchManager =
                 CPalSynchronizationManager::GetInstance();
-            bool fSharedObject = (SharedObject == m_odObjectDomain);
 
-            _ASSERT_MSG((fSharedObject && (NULL == m_ptrWTLHead.shrid)) ||
-                        (!fSharedObject && (NULL == m_ptrWTLHead.ptr)),
+            _ASSERT_MSG((NULL == m_ptrWTLHead.ptr),
                         "Final Release on CSynchData with threads still in "
                         "the waiting list\n");
 
             TRACE("Disposing %s waitable object with SynchData @ "
-                  "{shrid=%p, p=%p}\n",
-                  (SharedObject == m_odObjectDomain) ? "shared" : "local",
-                  (PVOID)m_shridThis, this);
+                  "p=%p}\n",
+                  "local",
+                  this);
 
 
 #ifdef SYNCH_STATISTICS
@@ -824,14 +642,7 @@ namespace CorUnix
                   lStatContentionCount);
 #endif // SYNCH_STATISTICS
 
-            if (fSharedObject)
-            {
-                pSynchManager->CacheAddSharedSynchData(pthrCurrent, m_shridThis);
-            }
-            else
-            {
-                pSynchManager->CacheAddLocalSynchData(pthrCurrent, this);
-            }
+            pSynchManager->CacheAddLocalSynchData(pthrCurrent, this);
         }
 
         return lCount;
@@ -846,9 +657,7 @@ namespace CorUnix
     SynchData (e.g. modifying the object signal count accordingly with its
     thread release semantics)
 
-    Note: this method must be called while holding the appropriate
-          synchronization locks (the local process synch lock if the target
-          object is local, both local and shared one if the object is shared).
+    Note: this method must be called while holding the local process synch lock.
     --*/
     PAL_ERROR CSynchData::ReleaseWaiterWithoutBlocking(
         CPalThread * pthrCurrent,
@@ -862,11 +671,8 @@ namespace CorUnix
         CObjectType::SignalingSemantics ssSignalingSemantics =
             potObjectType->GetSignalingSemantics();
 #endif // _DEBUG
-        CObjectType::OwnershipSemantics osOwnershipSemantics =
-            potObjectType->GetOwnershipSemantics();
         CObjectType::ThreadReleaseSemantics trsThreadReleaseSemantics =
             potObjectType->GetThreadReleaseSemantics();
-        bool fReenteringObjWithOwnership = false;
 
         _ASSERT_MSG(CObjectType::SignalingNotApplicable != ssSignalingSemantics,
                     "Signaling not applicable");
@@ -874,57 +680,22 @@ namespace CorUnix
                     trsThreadReleaseSemantics,
                     "Thread releasing not applicable");
         _ASSERT_MSG(CObjectType::SingleTransitionObject != ssSignalingSemantics ||
-                    (CObjectType::ThreadReleaseHasNoSideEffects ==
-                     trsThreadReleaseSemantics &&
-                     CObjectType::NoOwner == osOwnershipSemantics),
+                    CObjectType::ThreadReleaseHasNoSideEffects == trsThreadReleaseSemantics,
                     "Conflicting object synchronization attributes "
-                    "[SignalingSemantics=%u OwnershipSemantics=%u "
-                    "ThreadReleaseSemantics=%u]\n", ssSignalingSemantics,
-                    osOwnershipSemantics, trsThreadReleaseSemantics);
+                    "[SignalingSemantics=%u "
+                    "ThreadReleaseSemantics=%u]\n",
+                    ssSignalingSemantics,
+                    trsThreadReleaseSemantics);
 
-        if (CObjectType::OwnershipTracked == osOwnershipSemantics &&
-            0 < GetOwnershipCount())
-        {
-            // We are rentering an object with ownership: we need to skip
-            // the object unsignaling
-            fReenteringObjWithOwnership = true;
-        }
-
-        if (!fReenteringObjWithOwnership &&
-            CObjectType::ThreadReleaseAltersSignalCount == trsThreadReleaseSemantics)
+        if (CObjectType::ThreadReleaseAltersSignalCount == trsThreadReleaseSemantics)
         {
             _ASSERT_MSG(0 < GetSignalCount(),
                         "Internal error: operation would make signal count "
                         "negative - object should be signaled at this time "
                         "[signal count=%d]", GetSignalCount());
-            _ASSERT_MSG(CObjectType::OwnershipTracked != osOwnershipSemantics ||
-                        1 == GetSignalCount(),
-                        "Ownable objects cannot have signal count greater "
-                        "than zero [current SignalCount=%d]\n",
-                        GetSignalCount());
 
             // Unsignal the object
             DecrementSignalCount();
-        }
-
-        if (CObjectType::OwnershipTracked == osOwnershipSemantics)
-        {
-            _ASSERT_MSG(0 == GetOwnershipCount() || 0 == GetSignalCount(),
-                        "OwnershipCount and SignalCount with conflicting "
-                        "values\n");
-
-            // Take ownership or increment ownership count.
-            // We do this after the object unsignaling to minimize possibilities
-            // of having both SignalCount and OwnershipCount greater than zero
-            // (see comment in AssignOwnershipToThread)
-            palErr = AssignOwnershipToThread(pthrCurrent, pthrTarget);
-
-            if (NO_ERROR != palErr)
-            {
-                ERROR("AssignOwnershipToThread failed with error %u; "
-                      "ownership data on object with SynchData {shrid=%p p=%p} "
-                      "may be corrupted\n", palErr, (void *)m_shridThis, this);
-            }
         }
 
 #ifdef SYNCH_STATISTICS
@@ -949,45 +720,11 @@ namespace CorUnix
           object is local, both local and shared one if the object is shared).
     --*/
     bool CSynchData::CanWaiterWaitWithoutBlocking(
-        CPalThread * pWaiterThread,
-        bool * pfAbandoned)
+        CPalThread * pWaiterThread)
     {
         VALIDATEOBJECT(this);
 
-        bool fRetVal = (0 < GetSignalCount());
-        bool fAbandoned = false;
-        bool fOwnershipTracked = (CObjectType::OwnershipTracked ==
-                                  GetObjectType()->GetOwnershipSemantics());
-        if (fRetVal)
-        {
-            // Object signaled: thread can wait without blocking
-            if (fOwnershipTracked)
-            {
-                fAbandoned = IsAbandoned();
-            }
-
-            goto CWWWB_exit;
-        }
-
-        // Object not signaled: thread can wait without blocking only if the
-        // object is an ownable one, and it is owned by the current thread
-        if (fOwnershipTracked)
-        {
-            _ASSERT_MSG(0 < GetSignalCount() || 0 < GetOwnershipCount(),
-                        "Objects with ownership must be either signaled or "
-                        "owned by a thread\n");
-
-            if ((GetOwnerProcessID() == gPID) &&
-                (GetOwnerThread() == pWaiterThread) )
-            {
-                fRetVal = true;
-                goto CWWWB_exit;
-            }
-        }
-
-    CWWWB_exit:
-        *pfAbandoned = fAbandoned;
-        return fRetVal;
+        return 0 < GetSignalCount();
     }
 
     /*++
@@ -1003,13 +740,11 @@ namespace CorUnix
     --*/
     void CSynchData::Signal(
         CPalThread * pthrCurrent,
-        LONG lSignalCount,
-        bool fWorkerThread)
+        LONG lSignalCount)
     {
         VALIDATEOBJECT(this);
 
         bool fThreadReleased = false;
-        bool fDelegatedSignaling = false;
         bool fReleaseAltersSignalCount =
             (CObjectType::ThreadReleaseAltersSignalCount ==
                 GetObjectType()->GetThreadReleaseSemantics());
@@ -1022,9 +757,7 @@ namespace CorUnix
 
         while (m_lSignalCount > 0)
         {
-            fThreadReleased = ReleaseFirstWaiter(pthrCurrent,
-                                                 &fDelegatedSignaling,
-                                                 fWorkerThread);
+            fThreadReleased = ReleaseFirstWaiter(pthrCurrent);
             if (!fThreadReleased)
             {
                 // No more threads to release: break out of the loop
@@ -1036,22 +769,7 @@ namespace CorUnix
                 // Adjust signal count
                 m_lSignalCount--;
             }
-            if (fDelegatedSignaling)
-            {
-                // Object signaling has been delegated
-                m_lSignalCount = 0;
-            }
         }
-
-        _ASSERT_MSG(CObjectType::OwnershipTracked !=
-                    GetObjectType()->GetOwnershipSemantics() ||
-                    0 == GetOwnershipCount() || 0 == GetSignalCount(),
-                    "Conflicting values for SignalCount [%d] and "
-                    "OwnershipCount [%d]\n",
-                    GetOwnershipCount(), GetSignalCount());
-
-        _ASSERT_MSG(otiMutex != m_otiObjectTypeId || m_lSignalCount <= 1,
-                    "Mutex with invalid singal count\n");
 
         return;
     }
@@ -1071,36 +789,20 @@ namespace CorUnix
           object is local, both local and shared one if the object is shared).
     --*/
     bool CSynchData::ReleaseFirstWaiter(
-        CPalThread * pthrCurrent,
-        bool * pfDelegated,
-        bool fWorkerThread)
+        CPalThread * pthrCurrent)
     {
         PAL_ERROR palErr = NO_ERROR;
-        bool fSharedSynchLock = false;
-        bool fSharedObject = (SharedObject == GetObjectDomain());
         bool fThreadAwakened = false;
-        bool fDelegatedSignaling = false;
         DWORD * pdwWaitState;
         DWORD dwObjIdx;
         SharedID shridItem = NULL, shridNextItem = NULL;
         WaitingThreadsListNode * pwtlnItem, * pwtlnNextItem;
-        DWORD dwPid = gPID;
         CPalSynchronizationManager * pSynchManager =
             CPalSynchronizationManager::GetInstance();
 
         VALIDATEOBJECT(this);
 
-        *pfDelegated = false;
-
-        if (fSharedObject)
-        {
-            shridItem = GetWTLHeadShmPtr();
-            pwtlnItem = SharedIDToTypePointer(WaitingThreadsListNode, shridItem);
-        }
-        else
-        {
-            pwtlnItem = GetWTLHeadPtr();
-        }
+        pwtlnItem = GetWTLHeadPtr();
 
         while (pwtlnItem)
         {
@@ -1111,61 +813,13 @@ namespace CorUnix
             pdwWaitState = SharedIDToTypePointer(DWORD,
                 pwtlnItem->shridWaitingState);
 
-            if (fSharedObject)
-            {
-                shridNextItem = pwtlnItem->ptrNext.shrid;
-                pwtlnNextItem = SharedIDToTypePointer(WaitingThreadsListNode,
-                                                  shridNextItem);
-            }
-            else
-            {
-                pwtlnNextItem = pwtlnItem->ptrNext.ptr;
-            }
+            pwtlnNextItem = pwtlnItem->ptrNext.ptr;
 
             if (fWaitAll)
             {
                 // Wait All: we need to find out whether the wait is satisfied,
-                // or it is not, or if that cannot be determined from within
-                // this process (WaitMayBeSatisfied); in this case we need to
-                // delegate the object signaling to the process hosting the
-                // thread that owns the current target WaitingThreadsListNode
-
-                // If the target object is local (fSharedObject == false)
-                // we're probably not holding the shared lock.
-                // If the wait is not a LocalWait, it involves at least one
-                // shared object. If that is the case, at this time we need
-                // to grab the shared lock.  In fact IsRestOfWaitAllSatisfied
-                // and UnsignalRestOfLocalAwakeningWaitAll must be called
-                // atomically to prevent that another thread living
-                // in a different process could race with us stealing the
-                // signaling from one of the objects involved in the wait-all.
-                //
-                // Note: pwtlnItem->ptwiWaitInfo is valid only if the target
-                // wait originates in the current process. Anyway in the
-                // following 'if' we don't need to check that since we are
-                // already making sure that the object is local (!fSharedObject).
-                // If a wait involves at least one object local to this process,
-                // it can only be a wait performed by a thread in the current
-                // process, therefore pwtlnItem->ptwiWaitInfo is valid.
-
-                _ASSERTE(fSharedObject || pwtlnItem->dwProcessId == gPID);
-
-                if (!fSharedSynchLock && !fSharedObject &&
-                    LocalWait != pwtlnItem->ptwiWaitInfo->wdWaitDomain)
-                {
-                    CPalSynchronizationManager::AcquireSharedSynchLock(pthrCurrent);
-                    fSharedSynchLock = true;
-                }
-
-                // First check if the current target node is already marked for
-                // wait all check in progress, and in case skip it by setting
-                // wcsWaitCompletionState to WaitIsNotSatisfied
-                bool fMarkedForDelegatedObjectSingalingInProgress =
-                    (0 != (WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS & pwtlnItem->dwFlags));
-
-                wcsWaitCompletionState =
-                    fMarkedForDelegatedObjectSingalingInProgress ? WaitIsNotSatisfied :
-                    IsRestOfWaitAllSatisfied(pwtlnItem);
+                // or it is not.
+                wcsWaitCompletionState = IsRestOfWaitAllSatisfied(pwtlnItem);
             }
             else
             {
@@ -1178,112 +832,53 @@ namespace CorUnix
                 //
                 // Target wait is satisfied
                 //
-                TRACE("Trying to switch wait state [%p] from WAIT/ALERTABLE "
+                TRACE("Trying to switch wait state [%p] from WAIT "
                       "to ACTIVE for thread=%u\n",
                       pdwWaitState, pwtlnItem->dwThreadId);
 
-                if (CPalSynchronizationManager::InterlockedAwaken(pdwWaitState, FALSE))
+                if (CPalSynchronizationManager::InterlockedAwaken(pdwWaitState))
                 {
-                    TRACE("Succeeded switching wait state [%p] from WAIT/ALERTABLE "
+                    TRACE("Succeeded switching wait state [%p] from WAIT "
                           "to TWS_ACTIVE for trhead=%u\n",
                           pdwWaitState, pwtlnItem->dwThreadId);
 
                     dwObjIdx = pwtlnItem->dwObjIndex;
 
-                    if (dwPid == pwtlnItem->dwProcessId)
+                    ThreadWaitInfo * ptwiWaitInfo = pwtlnItem->ptwiWaitInfo;
+
+                    if (fWaitAll)
                     {
-                        ///////////////////////////
-                        //
-                        // Local Thread Awakening
-                        //
-                        ///////////////////////////
-                        ThreadWaitInfo * ptwiWaitInfo = pwtlnItem->ptwiWaitInfo;
-                        bool fAbandoned = false;
-
-                        if (CObjectType::OwnershipTracked ==
-                            GetObjectType()->GetOwnershipSemantics())
-                        {
-                            // Get the abandoned status before resetting it by
-                            // assigning ownership to target thread
-                            fAbandoned = IsAbandoned();
-
-                            // Assign ownership to target thread
-                            // Note: This will cause both ownership count and
-                            //       signal count to be greater than zero at the
-                            //       same time; the signal count will be anyway
-                            //       decremented immediately by the caller
-                            //       CsynchData::Signal
-                            palErr = AssignOwnershipToThread(pthrCurrent,
-                                                             ptwiWaitInfo->pthrOwner);
-                            if (NO_ERROR != palErr)
-                            {
-                                ERROR("Synch Worker: AssignOwnershipToThread "
-                                      "failed with error %u; ownership data on "
-                                      "object with SynchData %p may be "
-                                      "corrupted\n", palErr, this);
-                            }
-                        }
-
-                        if (fWaitAll)
-                        {
-                            // Wait all satisfied: unsignal other objects
-                            // involved in the wait
-                            CPalSynchronizationManager::UnsignalRestOfLocalAwakeningWaitAll(
-                                pthrCurrent,
-                                ptwiWaitInfo->pthrOwner,
-                                pwtlnItem,
-                                this);
-                        }
-
-                        TRACE("Unregistering wait for thread %u and waking it up "
-                              "[pdwWaitState=%p]\n", pwtlnItem->dwThreadId,
-                              pdwWaitState);
-
-                        // Unregister the wait
-                        pSynchManager->UnRegisterWait(pthrCurrent,
-                                                      ptwiWaitInfo,
-                                                      fSharedObject || fSharedSynchLock);
-
-                        // After UnRegisterWait pwtlnItem is invalid
-                        pwtlnItem = NULL;
-
-                        palErr = CPalSynchronizationManager::WakeUpLocalThread(
+                        // Wait all satisfied: unsignal other objects
+                        // involved in the wait
+                        CPalSynchronizationManager::UnsignalRestOfLocalAwakeningWaitAll(
                             pthrCurrent,
                             ptwiWaitInfo->pthrOwner,
-                            fAbandoned ? MutexAbandoned : WaitSucceeded,
-                            dwObjIdx);
-
-                        if (NO_ERROR != palErr)
-                        {
-                            ERROR("Failed to wakeup local thread %#x: "
-                                  "object signaling may be "
-                                  "lost\n", ptwiWaitInfo->pthrOwner->GetThreadId());
-                        }
+                            pwtlnItem,
+                            this);
                     }
-                    else
+
+                    TRACE("Unregistering wait for thread %u and waking it up "
+                            "[pdwWaitState=%p]\n", pwtlnItem->dwThreadId,
+                            pdwWaitState);
+
+                    // Unregister the wait
+                    pSynchManager->UnRegisterWait(pthrCurrent,
+                                                    ptwiWaitInfo);
+
+                    // After UnRegisterWait pwtlnItem is invalid
+                    pwtlnItem = NULL;
+
+                    palErr = CPalSynchronizationManager::WakeUpLocalThread(
+                        pthrCurrent,
+                        ptwiWaitInfo->pthrOwner,
+                        WaitSucceeded,
+                        dwObjIdx);
+
+                    if (NO_ERROR != palErr)
                     {
-                        ///////////////////////////
-                        //
-                        // Remote Thread Awakening
-                        //
-                        ///////////////////////////
-
-                        // Note: if we are here, this cannot be a wait-all
-                        _ASSERT_MSG(!fWaitAll,
-                                    "Control should never reach this point if "
-                                    "target wait is a wait-all\n");
-
-                        // Wake up remote thread
-                        palErr = CPalSynchronizationManager::WakeUpRemoteThread(shridItem);
-
-                        if (NO_ERROR != palErr)
-                        {
-                            ERROR("Failed to dispatch remote awakening cmd to "
-                                  "worker thread in process pid=%d to wake up"
-                                  "thread tid=%#x; object signaling may be "
-                                  "lost\n", pwtlnItem->dwProcessId,
-                                  pwtlnItem->dwThreadId);
-                        }
+                        ERROR("Failed to wakeup local thread %#x: "
+                                "object signaling may be "
+                                "lost\n", ptwiWaitInfo->pthrOwner->GetThreadId());
                     }
 
                     // A thread has been awakened
@@ -1293,90 +888,12 @@ namespace CorUnix
                     break;
                 }
             }
-            else if (WaitMayBeSatisfied == wcsWaitCompletionState)
-            {
-                //////////////////////////////////////////
-                //
-                // Wait All with remote thread awakening
-                //
-                //////////////////////////////////////////
-
-                //
-                // We need to transfer the object signaling to the process
-                // hosting the target waiter thread
-                //
-
-                _ASSERT_MSG(fWaitAll,
-                            "IsRestOfWaitAllSatisfied() apparently "
-                            "returned -1 on a normal (non wait all) "
-                            "wait\n");
-                _ASSERT_MSG(fSharedObject,
-                            "About to delegate object signaling to a remote "
-                            "process, but the signaled object is actually "
-                            "local\n");
-
-                // Delegate object signaling to target process
-                palErr = CPalSynchronizationManager::DelegateSignalingToRemoteProcess(
-                    pthrCurrent,
-                    pwtlnItem->dwProcessId,
-                    pwtlnItem->ptrOwnerObjSynchData.shrid);
-
-                TRACE("Delegating object signaling for SynchData shrid=%p\n",
-                      (VOID *)pwtlnItem->ptrOwnerObjSynchData.shrid);
-
-                if (NO_ERROR == palErr)
-                {
-                    // A remote thread will be awakened
-                    // This will also cause the object to be unsignaled by the
-                    // code calling ReleaseFirstWaiter before releasing the
-                    // synch locks, so no other WaitForMultipleObjects
-                    // involving the target object may race stealing this
-                    // particuklar object signaling
-                    fThreadAwakened = true;
-
-                    fDelegatedSignaling = true;
-
-                    // break out of the while loop
-                    break;
-                }
-                else
-                {
-                    ERROR("Failed to delegate object signaling to remote "
-                          "process %d. Looking for another waiter.\n",
-                          pwtlnItem->dwProcessId);
-
-                    // Go on: a different target waiter will be selected
-                }
-            }
-
-            if (fWorkerThread && fWaitAll && (dwPid == pwtlnItem->dwProcessId))
-            {
-                // Mark the target wait for object signaling
-                CPalSynchronizationManager::MarkWaitForDelegatedObjectSignalingInProgress(
-                    pthrCurrent,
-                    pwtlnItem);
-            }
 
             // Go to the next item
             shridItem = shridNextItem;
             pwtlnItem = pwtlnNextItem;
         }
 
-        if (fDelegatedSignaling)
-        {
-            *pfDelegated = true;
-        }
-        else if (fWorkerThread)
-        {
-            // Reset 'delegated object signaling in progress' flags
-            CPalSynchronizationManager::UnmarkTWListForDelegatedObjectSignalingInProgress(
-                this);
-        }
-
-        if (fSharedSynchLock)
-        {
-            CPalSynchronizationManager::ReleaseSharedSynchLock(pthrCurrent);
-        }
         return fThreadAwakened;
     }
 
@@ -1396,27 +913,16 @@ namespace CorUnix
     {
         PAL_ERROR palErr = NO_ERROR;
         LONG lAwakenedCount = 0;
-        bool fSharedSynchLock = false;
-        bool fSharedObject = (SharedObject == GetObjectDomain());
         DWORD * pdwWaitState;
         DWORD dwObjIdx;
         SharedID shridItem = NULL, shridNextItem = NULL;
         WaitingThreadsListNode * pwtlnItem, * pwtlnNextItem;
-        DWORD dwPid = gPID;
         CPalSynchronizationManager * pSynchManager =
             CPalSynchronizationManager::GetInstance();
 
         VALIDATEOBJECT(this);
 
-        if (fSharedObject)
-        {
-            shridItem = GetWTLHeadShmPtr();
-            pwtlnItem = SharedIDToTypePointer(WaitingThreadsListNode, shridItem);
-        }
-        else
-        {
-            pwtlnItem = GetWTLHeadPtr();
-        }
+        pwtlnItem = GetWTLHeadPtr();
 
         while (pwtlnItem)
         {
@@ -1426,67 +932,28 @@ namespace CorUnix
             pdwWaitState = SharedIDToTypePointer(DWORD,
                 pwtlnItem->shridWaitingState);
 
-            if (fSharedObject)
-            {
-                shridNextItem = pwtlnItem->ptrNext.shrid;
-                pwtlnNextItem = SharedIDToTypePointer(WaitingThreadsListNode,
-                                                  shridNextItem);
-            }
-            else
-            {
-                pwtlnNextItem = pwtlnItem->ptrNext.ptr;
-            }
+            pwtlnNextItem = pwtlnItem->ptrNext.ptr;
 
             // See note in similar spot in ReleaseFirstWaiter
 
-            _ASSERTE(fSharedObject || pwtlnItem->dwProcessId == gPID);
-
-            if (!fSharedSynchLock && !fSharedObject &&
-                LocalWait != pwtlnItem->ptwiWaitInfo->wdWaitDomain)
-            {
-                CPalSynchronizationManager::AcquireSharedSynchLock(pthrCurrent);
-                fSharedSynchLock = true;
-            }
-
-            if( dwPid == pwtlnItem->dwProcessId &&
-                (!fWaitAll || WaitIsSatisfied == IsRestOfWaitAllSatisfied(pwtlnItem)) )
+            if(!fWaitAll || WaitIsSatisfied == IsRestOfWaitAllSatisfied(pwtlnItem))
             {
                 //
                 // Target wait is satisfied
                 //
-                TRACE("Trying to switch wait state [%p] from WAIT/ALERTABLE "
+                TRACE("Trying to switch wait state [%p] from WAIT "
                       "to ACTIVE for thread=%u\n",
                       pdwWaitState, pwtlnItem->dwThreadId);
 
-                if (CPalSynchronizationManager::InterlockedAwaken(pdwWaitState, FALSE))
+                if (CPalSynchronizationManager::InterlockedAwaken(pdwWaitState))
                 {
-                    TRACE("Succeeded switching wait state [%p] from WAIT/ALERTABLE "
+                    TRACE("Succeeded switching wait state [%p] from WAIT "
                           "to TWS_ACTIVE for trhead=%u\n",
                           pdwWaitState, pwtlnItem->dwThreadId);
 
                     dwObjIdx = pwtlnItem->dwObjIndex;
 
                     ThreadWaitInfo * ptwiWaitInfo = pwtlnItem->ptwiWaitInfo;
-                    bool fAbandoned = false;
-
-                    if (CObjectType::OwnershipTracked ==
-                        GetObjectType()->GetOwnershipSemantics())
-                    {
-                        // Get the abandoned status before resetting it by
-                        // assigning ownership to target thread
-                        fAbandoned = IsAbandoned();
-
-                        // Assign ownership to target thread
-                        palErr = AssignOwnershipToThread(pthrCurrent,
-                                                         ptwiWaitInfo->pthrOwner);
-                        if (NO_ERROR != palErr)
-                        {
-                            ERROR("Synch Worker: AssignOwnershipToThread "
-                                  "failed with error %u; ownership data on "
-                                  "object with SynchData %p may be "
-                                  "corrupted\n", palErr, this);
-                        }
-                    }
 
                     if (fWaitAll)
                     {
@@ -1505,8 +972,7 @@ namespace CorUnix
 
                     // Unregister the wait
                     pSynchManager->UnRegisterWait(pthrCurrent,
-                                                  ptwiWaitInfo,
-                                                  fSharedObject || fSharedSynchLock);
+                                                  ptwiWaitInfo);
 
                     // After UnRegisterWait pwtlnItem is invalid
                     pwtlnItem = NULL;
@@ -1514,7 +980,7 @@ namespace CorUnix
                     palErr = CPalSynchronizationManager::WakeUpLocalThread(
                         pthrCurrent,
                         ptwiWaitInfo->pthrOwner,
-                        fAbandoned ? MutexAbandoned : WaitSucceeded,
+                        WaitSucceeded,
                         dwObjIdx);
 
                     if (NO_ERROR != palErr)
@@ -1536,10 +1002,6 @@ namespace CorUnix
             pwtlnItem = pwtlnNextItem;
         }
 
-        if (fSharedSynchLock)
-        {
-            CPalSynchronizationManager::ReleaseSharedSynchLock(pthrCurrent);
-        }
         return lAwakenedCount;
     }
 
@@ -1553,10 +1015,6 @@ namespace CorUnix
     It returns:
      - WaitIsNotSatisfied if the wait-all is not fully satisfied.
      - WaitIsSatisfied if the wait-all is fully satisfied.
-     - WaitMayBeSatisfied if the target thread lives in a different process and
-       therefore the wait may involve objects local to the remote process, and
-       as result is generally not possible to say whether or not the wait-all is
-       fully satisfied from the current process.
 
     Note: this method must be called while holding the synchronization locks
           appropriate to all the objects involved in the wait-all. If any
@@ -1567,7 +1025,7 @@ namespace CorUnix
     WaitCompletionState CSynchData::IsRestOfWaitAllSatisfied(
         WaitingThreadsListNode * pwtlnNode)
     {
-        int iSignaledOrOwnedObjCount = 0;
+        int iSignaledObjCount = 0;
         int iTgtCount = 0;
         int i;
         WaitCompletionState wcsWaitCompletionState = WaitIsNotSatisfied;
@@ -1580,24 +1038,6 @@ namespace CorUnix
         _ASSERT_MSG(0 != (WTLN_FLAG_WAIT_ALL & pwtlnNode->dwFlags),
                     "IsRestOfWaitAllSatisfied() called on a normal "
                     "(non wait all) wait");
-        _ASSERT_MSG((SharedObject == GetObjectDomain()) ==
-                    (0 != (WTLN_FLAG_OWNER_OBJECT_IS_SHARED & pwtlnNode->dwFlags)),
-                    "WTLN_FLAG_OWNER_OBJECT_IS_SHARED in WaitingThreadsListNode "
-                    "not consistent with target object's domain\n");
-
-        if(gPID != pwtlnNode->dwProcessId)
-        {
-            ////////////////////////////
-            //
-            // Remote Thread Awakening
-            //
-            ////////////////////////////
-
-            // Cannot determine whether or not the wait all is satisfied from
-            // this process
-            wcsWaitCompletionState = WaitMayBeSatisfied;
-            goto IROWAS_exit;
-        }
 
         ///////////////////////////
         //
@@ -1612,19 +1052,10 @@ namespace CorUnix
         {
             WaitingThreadsListNode * pwtlnItem = ptwiWaitInfo->rgpWTLNodes[i];
             bool fRetVal;
-            bool fIsAbandoned;
 
             VALIDATEOBJECT(pwtlnItem);
 
-            if (0 != (WTLN_FLAG_OWNER_OBJECT_IS_SHARED & pwtlnItem->dwFlags))
-            {
-                psdSynchDataItem = SharedIDToTypePointer(CSynchData,
-                    pwtlnItem->ptrOwnerObjSynchData.shrid);
-            }
-            else
-            {
-                psdSynchDataItem = pwtlnItem->ptrOwnerObjSynchData.ptr;
-            }
+            psdSynchDataItem = pwtlnItem->ptrOwnerObjSynchData.ptr;
 
             VALIDATEOBJECT(psdSynchDataItem);
 
@@ -1637,17 +1068,16 @@ namespace CorUnix
                 // The target object (the one related to pwtlnNode) is counted as
                 // signaled/owned without checking it (also if it is not, as
                 // it normally happens when this method is called)
-                iSignaledOrOwnedObjCount++;
+                iSignaledObjCount++;
                 continue;
             }
 
             fRetVal = psdSynchDataItem->CanWaiterWaitWithoutBlocking(
-                ptwiWaitInfo->pthrOwner,
-                &fIsAbandoned);
+                ptwiWaitInfo->pthrOwner);
 
             if (fRetVal)
             {
-                iSignaledOrOwnedObjCount++;
+                iSignaledObjCount++;
             }
             else
             {
@@ -1655,7 +1085,7 @@ namespace CorUnix
             }
         }
 
-        if (iSignaledOrOwnedObjCount < iTgtCount)
+        if (iSignaledObjCount < iTgtCount)
         {
             wcsWaitCompletionState = WaitIsNotSatisfied;
         }
@@ -1664,149 +1094,9 @@ namespace CorUnix
             wcsWaitCompletionState = WaitIsSatisfied;
         }
 
-    IROWAS_exit:
         TRACE("IsRestOfWaitAllSatisfied() returning %u \n", wcsWaitCompletionState);
 
         return wcsWaitCompletionState;
-    }
-
-
-    /*++
-    Method:
-      CSynchData::SetOwner
-
-    Blindly sets the thread whose CPalThread is passed as argument, as the
-    owner of the current object.
-    WARNING: this method discards any previous ownership data and does not
-    update the list of the object owned by the owner thread.
-
-    Note: this method must be called while holding the appropriate
-          synchronization locks (the local process synch lock if the target
-          object is local, both local and shared one if the object is shared).
-    --*/
-    void CSynchData::SetOwner(CPalThread * pOwnerThread)
-    {
-        VALIDATEOBJECT(this);
-
-        m_dwOwnerPid   = gPID;
-        m_dwOwnerTid   = pOwnerThread->GetThreadId();
-        m_pOwnerThread = pOwnerThread;
-    }
-
-    /*++
-    Method:
-      CSynchData::ResetOwnership
-
-    Resets current object's ownership data
-
-    Note: this method must be called while holding the appropriate
-          synchronization locks (the local process synch lock if the target
-          object is local, both local and shared one if the object is shared).
-    --*/
-    void CSynchData::ResetOwnership()
-    {
-        VALIDATEOBJECT(this);
-
-        m_lOwnershipCount          = 0;
-        m_dwOwnerPid               = 0;
-        m_dwOwnerTid               = 0;
-        m_pOwnerThread             = NULL;
-        m_poolnOwnedObjectListNode = NULL;
-    }
-
-    /*++
-    Method:
-      CSynchData::AssignOwnershipToThread
-
-    Assigns thw ownership of the current object to the target thread, performing
-    all the operations neede to mantain the correct status of ownership data,
-    also handling recursive object ownership acquisition
-
-    Note: this method must be called while holding the appropriate
-          synchronization locks (the local process synch lock if the target
-          object is local, both local and shared one if the object is shared).
-    --*/
-    PAL_ERROR CSynchData::AssignOwnershipToThread(
-        CPalThread * pthrCurrent,
-        CPalThread * pthrTarget)
-    {
-        // Note: when this method is called by ReleaseFirstWaiter there is
-        //       a small time window in which both SignalCount and
-        //       OwnershipCount can be greater than zero (which normally
-        //       is illegal). Anyway that is fine since ReleaseFirstWaiter
-        //       will restore the value right after, and such situation
-        //       takes place while holding synchroniztion locks, so no
-        //       other thread/process can access the object.
-
-        PAL_ERROR palErr = NO_ERROR;
-
-        _ASSERT_MSG(CObjectType::OwnershipTracked ==
-                    GetObjectType()->GetOwnershipSemantics(),
-                    "AssignOwnershipToThread called on a non-ownable "
-                    "CSynchData [this=%p OwnershipSemantics=%u]\n", this,
-                    GetObjectType()->GetOwnershipSemantics());
-
-
-        if (0 < m_lOwnershipCount)
-        {
-            //
-            // Object already owned, incrementing ownership count
-            //
-            _ASSERT_MSG(0 == GetSignalCount(),
-                        "Conflicting OwnershipCount and SignalCount values\n");
-
-            _ASSERT_MSG(pthrTarget == m_pOwnerThread && gPID == m_dwOwnerPid,
-                        "Attempting to assign ownership of CSynchData %p to "
-                        "thread {pid=%#x tid=%#x} while it is currently owned "
-                        "by thread {pid=%#x tid=%#x}\n", this,
-                        gPID, pthrTarget->GetThreadId(),
-                        m_dwOwnerPid, m_pOwnerThread->GetThreadId());
-
-            m_lOwnershipCount++;
-
-            TRACE("Incrementing ownership count for object with "
-                  "SynchData %p owned by thread %#x [new count=%d]\n",
-                  this, pthrTarget->GetThreadId(), m_lOwnershipCount);
-        }
-        else
-        {
-            //
-            // Acquiring currently not owned object
-            //
-            CPalSynchronizationManager * pSynchManager =
-                CPalSynchronizationManager::GetInstance();
-            OwnedObjectsListNode * pooln;
-
-            pooln = pSynchManager->CacheGetOwnedObjsListNode(pthrCurrent);
-            if (NULL == pooln)
-            {
-                ERROR("Out of memory while acquiring mutex ownership");
-                // In this case we bail out. It will result in no
-                // thread being awakend, which may cause deadlock,
-                // but it is anyway better than corrupting the
-                // ownership list
-                palErr = ERROR_NOT_ENOUGH_MEMORY;
-                goto AOTT_exit;
-            }
-
-            TRACE("Assigning ownable object with SynchData %p to "
-                  "thread %#x\n",
-                  this, pthrTarget->GetThreadId());
-
-            // Set ownership data
-            SetOwner(pthrTarget);
-            SetOwnershipListNode(pooln);
-            SetOwnershipCount(1);
-            SetAbandoned(false);
-
-            // Add object to list of owned objs for current thread
-            pooln->pPalObjSynchData = this;
-            AddRef();
-            pthrTarget->synchronizationInfo.AddObjectToOwnedList(pooln);
-        }
-
-    AOTT_exit:
-        return palErr;
     }
 
     /*++
@@ -1821,165 +1111,32 @@ namespace CorUnix
     Note: this method must be called while holding the local process
           synchronization lock.
     --*/
-    void CSynchData::WaiterEnqueue(WaitingThreadsListNode * pwtlnNewNode, bool fPrioritize)
+    void CSynchData::WaiterEnqueue(WaitingThreadsListNode * pwtlnNewNode)
     {
         VALIDATEOBJECT(this);
         VALIDATEOBJECT(pwtlnNewNode);
 
-        _ASSERT_MSG(ProcessLocalObject == GetObjectDomain(),
-                    "Trying to enqueue a WaitingThreadsListNode as local "
-                    "on a shared object\n");
-        _ASSERT_MSG(0 == (WTLN_FLAG_OWNER_OBJECT_IS_SHARED & pwtlnNewNode->dwFlags),
-                    "Trying to add a WaitingThreadsListNode marked as shared "
-                    "as it was a local one\n");
+        // Enqueue normally to the end of the queue
+        WaitingThreadsListNode * pwtlnCurrLast = m_ptrWTLTail.ptr;
 
-        if (!fPrioritize)
+        pwtlnNewNode->ptrNext.ptr = NULL;
+        if (NULL == pwtlnCurrLast)
         {
-            // Enqueue normally to the end of the queue
-            WaitingThreadsListNode * pwtlnCurrLast = m_ptrWTLTail.ptr;
-
-            pwtlnNewNode->ptrNext.ptr = NULL;
-            if (NULL == pwtlnCurrLast)
-            {
-                _ASSERT_MSG(NULL == m_ptrWTLHead.ptr,
-                            "Corrupted waiting list on local CSynchData @ %p\n",
-                            this);
-
-                pwtlnNewNode->ptrPrev.ptr = NULL;
-                m_ptrWTLHead.ptr = pwtlnNewNode;
-                m_ptrWTLTail.ptr = pwtlnNewNode;
-            }
-            else
-            {
-                VALIDATEOBJECT(pwtlnCurrLast);
-
-                pwtlnNewNode->ptrPrev.ptr = pwtlnCurrLast;
-                pwtlnCurrLast->ptrNext.ptr = pwtlnNewNode;
-                m_ptrWTLTail.ptr = pwtlnNewNode;
-            }
-        }
-        else
-        {
-            // The wait is prioritized, enqueue to the beginning of the queue
-            WaitingThreadsListNode * pwtlnCurrFirst = m_ptrWTLHead.ptr;
+            _ASSERT_MSG(NULL == m_ptrWTLHead.ptr,
+                        "Corrupted waiting list on local CSynchData @ %p\n",
+                        this);
 
             pwtlnNewNode->ptrPrev.ptr = NULL;
-            if (NULL == pwtlnCurrFirst)
-            {
-                _ASSERT_MSG(NULL == m_ptrWTLTail.ptr,
-                            "Corrupted waiting list on local CSynchData @ %p\n",
-                            this);
-
-                pwtlnNewNode->ptrNext.ptr = NULL;
-                m_ptrWTLHead.ptr = pwtlnNewNode;
-                m_ptrWTLTail.ptr = pwtlnNewNode;
-            }
-            else
-            {
-                VALIDATEOBJECT(pwtlnCurrFirst);
-
-                pwtlnNewNode->ptrNext.ptr = pwtlnCurrFirst;
-                pwtlnCurrFirst->ptrPrev.ptr = pwtlnNewNode;
-                m_ptrWTLHead.ptr = pwtlnNewNode;
-            }
-        }
-
-        m_ulcWaitingThreads += 1;
-
-        return;
-    }
-
-    /*++
-    Method:
-      CSynchData::SharedWaiterEnqueue
-
-    Adds the WaitingThreadsListNode passed as argument at the end of the
-    list of WaitingThreadsListNode for the current object, representing
-    the threads waiting on the current object. The target SynchData is
-    assumed to be shared among processes
-
-    Note: this method must be called while holding both local and shared
-          synchronization locks.
-    --*/
-    void CSynchData::SharedWaiterEnqueue(SharedID shridNewNode, bool fPrioritize)
-    {
-        VALIDATEOBJECT(this);
-
-        _ASSERT_MSG(SharedObject == GetObjectDomain(),
-                    "Trying to enqueue a WaitingThreadsListNode as shared "
-                    "on a local object\n");
-
-        if (!fPrioritize)
-        {
-            // Enqueue normally to the end of the queue
-            SharedID shridCurrLast;
-            WaitingThreadsListNode * pwtlnCurrLast, * pwtlnNewNode;
-
-            shridCurrLast = m_ptrWTLTail.shrid;
-            pwtlnCurrLast = SharedIDToTypePointer(WaitingThreadsListNode, shridCurrLast);
-            pwtlnNewNode = SharedIDToTypePointer(WaitingThreadsListNode, shridNewNode);
-
-            _ASSERT_MSG(1 == (WTLN_FLAG_OWNER_OBJECT_IS_SHARED & pwtlnNewNode->dwFlags),
-                        "Trying to add a WaitingThreadsListNode marked as local "
-                        "as it was a shared one\n");
-
-            VALIDATEOBJECT(pwtlnNewNode);
-
-            pwtlnNewNode->ptrNext.shrid = NULL;
-            if (NULL == pwtlnCurrLast)
-            {
-                _ASSERT_MSG(NULL == m_ptrWTLHead.shrid,
-                            "Corrupted waiting list on shared CSynchData at "
-                            "{shrid=%p, p=%p}\n", m_shridThis, this);
-
-                pwtlnNewNode->ptrPrev.shrid = NULL;
-                m_ptrWTLHead.shrid = shridNewNode;
-                m_ptrWTLTail.shrid = shridNewNode;
-            }
-            else
-            {
-                VALIDATEOBJECT(pwtlnCurrLast);
-
-                pwtlnNewNode->ptrPrev.shrid = shridCurrLast;
-                pwtlnCurrLast->ptrNext.shrid = shridNewNode;
-                m_ptrWTLTail.shrid = shridNewNode;
-            }
+            m_ptrWTLHead.ptr = pwtlnNewNode;
+            m_ptrWTLTail.ptr = pwtlnNewNode;
         }
         else
         {
-            // The wait is prioritized, enqueue to the beginning of the queue
-            SharedID shridCurrFirst;
-            WaitingThreadsListNode * pwtlnCurrFirst, * pwtlnNewNode;
+            VALIDATEOBJECT(pwtlnCurrLast);
 
-            shridCurrFirst = m_ptrWTLHead.shrid;
-            pwtlnCurrFirst = SharedIDToTypePointer(WaitingThreadsListNode, shridCurrFirst);
-            pwtlnNewNode = SharedIDToTypePointer(WaitingThreadsListNode, shridNewNode);
-
-            _ASSERT_MSG(1 == (WTLN_FLAG_OWNER_OBJECT_IS_SHARED & pwtlnNewNode->dwFlags),
-                        "Trying to add a WaitingThreadsListNode marked as local "
-                        "as it was a shared one\n");
-
-            VALIDATEOBJECT(pwtlnNewNode);
-
-            pwtlnNewNode->ptrPrev.shrid = NULL;
-            if (NULL == pwtlnCurrFirst)
-            {
-                _ASSERT_MSG(NULL == m_ptrWTLTail.shrid,
-                            "Corrupted waiting list on shared CSynchData at "
-                            "{shrid=%p, p=%p}\n", m_shridThis, this);
-
-                pwtlnNewNode->ptrNext.shrid = NULL;
-                m_ptrWTLHead.shrid = shridNewNode;
-                m_ptrWTLTail.shrid = shridNewNode;
-            }
-            else
-            {
-                VALIDATEOBJECT(pwtlnCurrFirst);
-
-                pwtlnNewNode->ptrNext.shrid = shridCurrFirst;
-                pwtlnCurrFirst->ptrPrev.shrid = shridNewNode;
-                m_ptrWTLHead.shrid = shridNewNode;
-            }
+            pwtlnNewNode->ptrPrev.ptr = pwtlnCurrLast;
+            pwtlnCurrLast->ptrNext.ptr = pwtlnNewNode;
+            m_ptrWTLTail.ptr = pwtlnNewNode;
         }
 
         m_ulcWaitingThreads += 1;

@@ -13,7 +13,7 @@
 uint32_t adler32_rvv(uint32_t adler, const uint8_t *buf, size_t len);
 uint32_t adler32_fold_copy_rvv(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len);
 uint32_t chunksize_rvv(void);
-uint8_t* chunkmemset_safe_rvv(uint8_t *out, unsigned dist, unsigned len, unsigned left);
+uint8_t* chunkmemset_safe_rvv(uint8_t *out, uint8_t *from, unsigned len, unsigned left);
 uint32_t compare256_rvv(const uint8_t *src0, const uint8_t *src1);
 
 uint32_t longest_match_rvv(deflate_state *const s, Pos cur_match);

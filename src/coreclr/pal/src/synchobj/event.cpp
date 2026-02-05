@@ -32,43 +32,27 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC);
 CObjectType CorUnix::otManualResetEvent(
                 otiManualResetEvent,
                 NULL,   // No cleanup routine
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
-                EVENT_ALL_ACCESS, // Currently ignored (no Win32 security)
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::WaitableObject,
                 CObjectType::ObjectCanBeUnsignaled,
-                CObjectType::ThreadReleaseHasNoSideEffects,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseHasNoSideEffects
                 );
 
 CObjectType CorUnix::otAutoResetEvent(
                 otiAutoResetEvent,
                 NULL,   // No cleanup routine
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
-                EVENT_ALL_ACCESS, // Currently ignored (no Win32 security)
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::WaitableObject,
                 CObjectType::ObjectCanBeUnsignaled,
-                CObjectType::ThreadReleaseAltersSignalCount,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseAltersSignalCount
                 );
 
 PalObjectTypeId rgEventIds[] = {otiManualResetEvent, otiAutoResetEvent};

@@ -40,7 +40,7 @@ namespace System.Linq.Tests
         [Fact]
         public void OneElement()
         {
-            int[] source = { 2 };
+            int[] source = [2];
 
             Assert.Equal(source, source.AsEnumerable());
         }
@@ -48,7 +48,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SomeElements()
         {
-            int?[] source = { -5, 0, 1, -4, 3, null, 10 };
+            int?[] source = [-5, 0, 1, -4, 3, null, 10];
 
             Assert.Equal(source, source.AsEnumerable());
         }
@@ -56,7 +56,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SomeElementsRunOnce()
         {
-            int?[] source = { -5, 0, 1, -4, 3, null, 10 };
+            int?[] source = [-5, 0, 1, -4, 3, null, 10];
 
             Assert.Equal(source, source.RunOnce().AsEnumerable());
         }

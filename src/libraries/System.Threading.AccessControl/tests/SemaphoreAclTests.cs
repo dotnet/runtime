@@ -46,7 +46,7 @@ namespace System.Threading.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void Semaphore_Create_NameMultipleNew(string name)
+        public void Semaphore_Create_NameMultipleNew(string? name)
         {
             SemaphoreSecurity security = GetBasicSemaphoreSecurity();
             bool expectedCreatedNew = true;

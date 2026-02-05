@@ -109,19 +109,6 @@ namespace System.Globalization
             Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-#if TARGET_WINDOWS
-            if (!Environment.IsWindows8OrAbove)
-            {
-                // On Windows 7 / Server 2008, LCMapStringEx exhibits strange behaviors if the destination
-                // buffer is both non-null and too small for the required output. To prevent this from
-                // causing issues for us, we need to make an immutable copy of the input buffer so that
-                // its contents can't change between when we calculate the required sort key length and
-                // when we populate the sort key buffer.
-
-                source = source.ToString();
-            }
-#endif
-
             // LCMapStringEx doesn't support passing cchSrc = 0, so if given a null or empty input
             // we'll normalize it to an empty null-terminated string and pass -1 to indicate that
             // the underlying OS function should read until it encounters the null terminator.
@@ -153,7 +140,7 @@ namespace System.Globalization
                 // See https://learn.microsoft.com/windows/desktop/api/winnls/nf-winnls-lcmapstringex.
 
                 byte[]? borrowedArr = null;
-                Span<byte> span = sortKeyLength <= 512 ?
+                Span<byte> span = (uint)sortKeyLength <= 512 ?
                     stackalloc byte[512] :
                     (borrowedArr = ArrayPool<byte>.Shared.Rent(sortKeyLength));
 
@@ -433,19 +420,6 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-#if TARGET_WINDOWS
-            if (!Environment.IsWindows8OrAbove)
-            {
-                // On Windows 7 / Server 2008, LCMapStringEx exhibits strange behaviors if the destination
-                // buffer is both non-null and too small for the required output. To prevent this from
-                // causing issues for us, we need to make an immutable copy of the input buffer so that
-                // its contents can't change between when we calculate the required sort key length and
-                // when we populate the sort key buffer.
-
-                source = source.ToString();
-            }
-#endif
-
             uint flags = LCMAP_SORTKEY | (uint)GetNativeCompareFlags(options);
 
             // LCMapStringEx doesn't support passing cchSrc = 0, so if given an empty span
@@ -466,30 +440,6 @@ namespace System.Globalization
             {
                 Debug.Assert(pSource != null);
                 Debug.Assert(pSortKey != null);
-
-#if TARGET_WINDOWS
-                if (!Environment.IsWindows8OrAbove)
-                {
-                    // Manually check that the destination buffer is large enough to hold the full output.
-                    // See earlier comment for reasoning.
-
-                    int requiredSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
-                                                                               flags,
-                                                                               pSource, sourceLength,
-                                                                               null, 0,
-                                                                               null, null, _sortHandle);
-
-                    if (requiredSortKeyLength > destination.Length)
-                    {
-                        ThrowHelper.ThrowArgumentException_DestinationTooShort();
-                    }
-
-                    if (requiredSortKeyLength <= 0)
-                    {
-                        throw new ArgumentException(SR.Arg_ExternalException);
-                    }
-                }
-#endif
 
                 actualSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
                                                                      flags,
@@ -583,6 +533,7 @@ namespace System.Globalization
         private const int NORM_IGNOREWIDTH = 0x00020000;       // Does not differentiate between a single-byte character and the same character as a double-byte character.
         private const int NORM_LINGUISTIC_CASING = 0x08000000;       // use linguistic rules for casing
         private const int SORT_STRINGSORT = 0x00001000;       // Treats punctuation the same as symbols.
+        private const int SORT_DIGITSASNUMBERS = 0x00000008;       // Treat digits as numbers during sorting, for example, sort "2" before "10".
 
         private static int GetNativeCompareFlags(CompareOptions options)
         {
@@ -595,6 +546,7 @@ namespace System.Globalization
             if ((options & CompareOptions.IgnoreSymbols) != 0) { nativeCompareFlags |= NORM_IGNORESYMBOLS; }
             if ((options & CompareOptions.IgnoreWidth) != 0) { nativeCompareFlags |= NORM_IGNOREWIDTH; }
             if ((options & CompareOptions.StringSort) != 0) { nativeCompareFlags |= SORT_STRINGSORT; }
+            if ((options & CompareOptions.NumericOrdering) != 0) { nativeCompareFlags |= SORT_DIGITSASNUMBERS; }
 
             // TODO: Can we try for GetNativeCompareFlags to never
             // take Ordinal or OrdinalIgnoreCase.  This value is not part of Win32, we just handle it special
@@ -607,6 +559,7 @@ namespace System.Globalization
                                           CompareOptions.IgnoreNonSpace |
                                           CompareOptions.IgnoreSymbols |
                                           CompareOptions.IgnoreWidth |
+                                          CompareOptions.NumericOrdering |
                                           CompareOptions.StringSort)) == 0) ||
                              (options == CompareOptions.Ordinal), "[CompareInfo.GetNativeCompareFlags]Expected all flags to be handled");
 

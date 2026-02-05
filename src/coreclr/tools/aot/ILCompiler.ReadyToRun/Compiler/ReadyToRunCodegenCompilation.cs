@@ -19,6 +19,7 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Reflection.ReadyToRun;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
@@ -82,8 +83,9 @@ namespace ILCompiler
                 return false;
             }
 
-            if (callee.IsNoInlining)
+            if (callee.IsNoInlining || callee.IsNoOptimization)
             {
+                // NoOptimization implies NoInlining
                 return false;
             }
 
@@ -104,6 +106,12 @@ namespace ILCompiler
                 {
                     return false;
                 }
+            }
+
+            if (callee.IsAsyncThunk())
+            {
+                // Async thunks require special handling in the compiler and should not be inlined
+                return false;
             }
 
             _nodeFactory.DetectGenericCycles(caller, callee);
@@ -292,7 +300,7 @@ namespace ILCompiler
         private readonly Func<MethodDesc, string> _printReproInstructions;
 
         private readonly ProfileDataManager _profileData;
-        private readonly ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
+        private readonly FileLayoutOptimizer _fileLayoutOptimizer;
         private readonly HashSet<EcmaMethod> _methodsWhichNeedMutableILBodies = new HashSet<EcmaMethod>();
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
 
@@ -303,6 +311,8 @@ namespace ILCompiler
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
         private readonly int _customPESectionAlignment;
+        private readonly ReadyToRunContainerFormat _format;
+
         /// <summary>
         /// Determining whether a type's layout is fixed is a little expensive and the question can be asked many times
         /// for the same type during compilation so preserve the computed value.
@@ -332,10 +342,11 @@ namespace ILCompiler
             bool generateProfileFile,
             int parallelism,
             ProfileDataManager profileData,
-            ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
-            ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm,
+            MethodLayoutAlgorithm methodLayoutAlgorithm,
+            FileLayoutAlgorithm fileLayoutAlgorithm,
             int customPESectionAlignment,
-            bool verifyTypeAndFieldLayout)
+            bool verifyTypeAndFieldLayout,
+            ReadyToRunContainerFormat format)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -359,6 +370,7 @@ namespace ILCompiler
             _perfMapFormatVersion = perfMapFormatVersion;
             _generateProfileFile = generateProfileFile;
             _customPESectionAlignment = customPESectionAlignment;
+            _format = format;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             if (nodeFactory.InstrumentationDataTable != null)
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
@@ -377,7 +389,7 @@ namespace ILCompiler
 
             _profileData = profileData;
 
-            _fileLayoutOptimizer = new ReadyToRunFileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
+            _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
         }
 
         private readonly static string s_folderUpPrefix = ".." + Path.DirectorySeparatorChar;
@@ -412,7 +424,9 @@ namespace ILCompiler
                     perfMapFormatVersion: _perfMapFormatVersion,
                     generateProfileFile: _generateProfileFile,
                     callChainProfile: _profileData.CallChainProfile,
-                    _customPESectionAlignment);
+                    _format,
+                    _customPESectionAlignment,
+                    _logger);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
                 if (moduleGroup.IsCompositeBuildMode)
@@ -422,6 +436,13 @@ namespace ILCompiler
                     // the composite executable.
                     string outputDirectory = Path.GetDirectoryName(outputFile);
                     string ownerExecutableName = Path.GetFileName(outputFile);
+
+                    if (_format == ReadyToRunContainerFormat.MachO)
+                    {
+                        // MachO composite images have the owner executable name stored with the dylib extension
+                        ownerExecutableName = Path.ChangeExtension(ownerExecutableName, ".dylib");
+                    }
+
                     foreach (string inputFile in _inputFiles)
                     {
                         string relativeMsilPath = Path.GetRelativePath(_compositeRootPath, inputFile);
@@ -447,7 +468,7 @@ namespace ILCompiler
                 ReadyToRunFlags.READYTORUN_FLAG_Component |
                 ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs;
 
-            if (inputModule.IsPlatformNeutral)
+            if (inputModule.IsPlatformNeutral || inputModule.PEReader.IsReadyToRunPlatformNeutralSource())
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
@@ -457,12 +478,29 @@ namespace ILCompiler
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
 
+            NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with { IsComponentModule = true };
+
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
+
+            bool isNativeCompositeImage = false;
+            if (NodeFactory.Target.IsWindows && NodeFactory.Format == ReadyToRunContainerFormat.PE)
+            {
+                isNativeCompositeImage = true;
+            }
+            else if (NodeFactory.Target.IsApplePlatform && NodeFactory.Format == ReadyToRunContainerFormat.MachO)
+            {
+                isNativeCompositeImage = true;
+            }
+
+            if (isNativeCompositeImage)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNativeImage;
+            }
 
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             // Re-written components shouldn't have any additional diagnostic information - only information about the forwards.
             // Even with all of this, we might be modifying the image in a silly manner - adding a directory when if didn't have one.
-            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile, shouldAddNiPdb: false, shouldGeneratePerfmap: false);
+            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule, outputFile, shouldAddNiPdb: false, shouldGeneratePerfmap: false, perfMapFormatVersion: 0);
             NodeFactory componentFactory = new NodeFactory(
                 _nodeFactory.TypeSystemContext,
                 _nodeFactory.CompilationModuleGroup,
@@ -471,10 +509,11 @@ namespace ILCompiler
                 copiedCorHeader,
                 debugDirectory,
                 win32Resources: new Win32Resources.ResourceData(inputModule),
-                flags,
-                _nodeFactory.OptimizationFlags,
-                _nodeFactory.ImageBase,
-                automaticTypeValidation ? inputModule : null,
+                flags: flags,
+                nodeFactoryOptimizationFlags: optimizationFlags,
+                format: ReadyToRunContainerFormat.PE,
+                imageBase: _nodeFactory.ImageBase,
+                associatedModule: automaticTypeValidation ? inputModule : null,
                 genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
                 genericCycleBreadthCutoff: -1); // as we're not actually compiling anything
 
@@ -507,7 +546,9 @@ namespace ILCompiler
                 perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: false,
                 _profileData.CallChainProfile,
-                customPESectionAlignment: 0);
+                ReadyToRunContainerFormat.PE,
+                customPESectionAlignment: 0,
+                _logger);
         }
 
         public override void WriteDependencyLog(string outputFileName)
@@ -659,6 +700,7 @@ namespace ILCompiler
                                 CorInfoImpl.IsMethodCompilable(this, methodCodeNodeNeedingCode.Method))
                                 _methodsWhichNeedMutableILBodies.Add(ecmaMethod);
                         }
+
                         if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
                         {
                             // Validate that the typedef tokens for all of the instantiation parameters of the method
@@ -800,7 +842,7 @@ namespace ILCompiler
 
             void CompilationThread(object objThreadId)
             {
-                while(true)
+                while (true)
                 {
                     _compilationThreadSemaphore.Wait();
                     lock(this)
@@ -935,12 +977,17 @@ namespace ILCompiler
 
         public override void Dispose()
         {
-            Array.Clear(_corInfoImpls);
+            // Workaround for https://github.com/dotnet/runtime/issues/23103.
+            // ManifestMetadataTable.Dispose() allows to break circular reference
+            // ConcurrentBag<EcmaModule> -> EcmaModule -> EcmaAssembly -> ReadyToRunCompilerContext -> ... -> ConcurrentBag<EcmaModule>.
+            // This circular reference along with #23103 prevents objects from being collected by GC.
+            _nodeFactory.ManifestMetadataTable.Dispose();
         }
 
         public string GetReproInstructions(MethodDesc method)
         {
             return _printReproInstructions(method);
         }
+
     }
 }

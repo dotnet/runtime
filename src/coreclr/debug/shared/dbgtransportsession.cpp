@@ -16,6 +16,19 @@ public:
     BYTE             m_event[CorDBIPC_BUFFER_SIZE];     // buffer for the IPC event
 };
 
+#define INITGUID
+#include <guiddef.h>
+
+DEFINE_GUID(IID_IDebugChannel,0x0498eef8,0x7a24,0x44a7,0x81,0x41,0xdc,0x40,0x19,0x04,0xce,0x25);
+
+HRESULT CreateChannel(
+    /* [in] */ const ProcessDescriptor& procDesc,
+    /* [out] */ IDebugChannel** ppChannel);
+
+HRESULT ConnectToChannel(
+    /* [in] */ const ProcessDescriptor& procDesc,
+    /* [out] */ IDebugChannel** ppChannel);
+
 //
 // Provides a robust and secure transport session between a debugger and a debuggee that are potentially on
 // different machines.
@@ -56,6 +69,9 @@ DbgTransportSession::~DbgTransportSession()
 
     if (m_fInitStateLock)
         m_sStateLock.Destroy();
+
+    if (m_channel != NULL)
+        (void)m_channel->Release();
 }
 
 // Allocates initial resources (including starting the transport thread). The session will start in the
@@ -67,23 +83,18 @@ DbgTransportSession::~DbgTransportSession()
 #ifdef RIGHT_SIDE_COMPILE
 HRESULT DbgTransportSession::Init(const ProcessDescriptor& pd, HANDLE hProcessExited)
 #else // RIGHT_SIDE_COMPILE
-HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumerationIPCBlock *pADB)
+HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
 #endif // RIGHT_SIDE_COMPILE
 {
     _ASSERTE(m_eState == SS_Closed);
 
-    // Start with a blank slate so that Shutdown() on a partially initialized instance will only do the
-    // cleanup necessary.
-    *this = {};
-
-    // Because of the above memset the embedded classes/structs need to be reinitialized especially
-    // the two way pipe; it expects the in/out handles to be -1 instead of 0.
     m_ref = 1;
-    m_pipe = TwoWayPipe();
-    m_sStateLock = DbgTransportLock();
 
     // Initialize all per-session state variables.
     InitSessionState();
+
+    m_sStateLock.Init();
+    m_fInitStateLock = true;
 
 #ifdef RIGHT_SIDE_COMPILE
     // The RS randomly allocates a session ID which is sent to the LS in the SessionRequest message. In the
@@ -91,12 +102,8 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     // a new request from a different RS.
     if (!minipal_guid_v4_create(&m_sSessionID))
         return E_FAIL;
-#endif // RIGHT_SIDE_COMPILE
 
-
-#ifdef RIGHT_SIDE_COMPILE
     m_pd = pd;
-
     if (!DuplicateHandle(GetCurrentProcess(),
                          hProcessExited,
                          GetCurrentProcess(),
@@ -109,23 +116,17 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     }
 
     m_fDebuggerAttached = false;
-#else // RIGHT_SIDE_COMPILE
-    m_pDCB = pDCB;
-    m_pADB = pADB;
-#endif // RIGHT_SIDE_COMPILE
-
-    m_sStateLock.Init();
-    m_fInitStateLock = true;
-
-#ifdef RIGHT_SIDE_COMPILE
     m_hSessionOpenEvent = CreateEvent(NULL, TRUE, FALSE, NULL); // Manual reset, not signalled
     if (m_hSessionOpenEvent == NULL)
         return E_OUTOFMEMORY;
+
 #else // RIGHT_SIDE_COMPILE
-    ProcessDescriptor pd = ProcessDescriptor::FromCurrentProcess();
-    if (!m_pipe.CreateServer(pd)) {
-        return E_OUTOFMEMORY;
-    }
+    m_pDCB = pDCB;
+
+    HRESULT hr = CreateChannel(ProcessDescriptor::FromCurrentProcess(), &m_channel);
+    if (FAILED(hr))
+        return hr;
+
 #endif // RIGHT_SIDE_COMPILE
 
     // Allocate some buffers to receive incoming events. The initial number is chosen arbitrarily, tune as
@@ -187,15 +188,15 @@ void DbgTransportSession::Shutdown()
 
         // Must take the state lock to make a state transition.
         {
-            TransportLockHolder sLockHolder(&m_sStateLock);
+            TransportLockHolder sLockHolder(m_sStateLock);
 
             // Remember previous state and transition to SS_Closed.
             SessionState ePreviousState = m_eState;
             m_eState = SS_Closed;
 
-            if (ePreviousState != SS_Closed)
+            if (ePreviousState != SS_Closed && m_channel != NULL)
             {
-                m_pipe.Disconnect();
+                m_channel->CloseConnection();
             }
 
         } // Leave m_sStateLock
@@ -217,7 +218,7 @@ void DbgTransportSession::Shutdown()
 // TerminateProcess and for unhandled native exceptions and asserts.
 void DbgTransportSession::AbortConnection()
 {
-    m_pipe.Disconnect();
+    m_channel->CloseConnection();
 }
 
 // API used only by the LS to drive the transport into a state where it won't accept connections. This is used
@@ -237,7 +238,12 @@ void DbgTransportSession::Neuter()
 // and semaphores when the debugger detects the debuggee process  exited.
 void DbgTransportSession::CleanupTargetProcess()
 {
-    m_pipe.CleanupTargetProcess();
+    if (m_channel == NULL)
+        return;
+
+    (void)m_channel->CloseConnection();
+    (void)m_channel->Release();
+    m_channel = NULL;
 }
 
 // On the RS it may be useful to wait and see if the session can reach the SS_Open state. If the target
@@ -271,7 +277,7 @@ bool DbgTransportSession::WaitForSessionToOpen(DWORD dwTimeout)
 
 bool DbgTransportSession::UseAsDebugger(DebugTicket * pTicket)
 {
-    TransportLockHolder sLockHolder(&m_sStateLock);
+    TransportLockHolder sLockHolder(m_sStateLock);
     if (m_fDebuggerAttached)
     {
         if (pTicket->IsValid())
@@ -309,7 +315,7 @@ bool DbgTransportSession::UseAsDebugger(DebugTicket * pTicket)
 
 bool DbgTransportSession::StopUsingAsDebugger(DebugTicket * pTicket)
 {
-    TransportLockHolder sLockHolder(&m_sStateLock);
+    TransportLockHolder sLockHolder(m_sStateLock);
     if (m_fDebuggerAttached && pTicket->IsValid())
     {
         // The caller is indeed the owner of the debug ticket.
@@ -365,7 +371,7 @@ void DbgTransportSession::GetNextEvent(DebuggerIPCEvent *pEvent, DWORD cbEvent)
 
     // Must acquire the state lock to synchronize us wrt to the transport thread (clients already guarantee
     // they serialize calls to this and waiting on m_rghEventReadyEvent).
-    TransportLockHolder sLockHolder(&m_sStateLock);
+    TransportLockHolder sLockHolder(m_sStateLock);
 
     // There must be at least one valid event waiting (this call does not block).
     _ASSERTE(m_cValidEventBuffers);
@@ -526,16 +532,6 @@ HRESULT DbgTransportSession::WriteMemory(PBYTE pbRemoteAddress, PBYTE pbBuffer, 
     return sMessage.m_sHeader.TypeSpecificData.MemoryAccess.m_hrResult;
 }
 
-HRESULT DbgTransportSession::VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
-{
-    DbgTransportLog(LC_Requests, "Sending 'VirtualUnwind'");
-    DBG_TRANSPORT_INC_STAT(SentVirtualUnwind);
-
-    Message sMessage;
-    sMessage.Init(MT_VirtualUnwind, context, contextSize, context, contextSize);
-    return SendRequestMessageAndWait(&sMessage);
-}
-
 // Read and write the debugger control block on the LS from the RS.
 HRESULT DbgTransportSession::GetDCB(DebuggerIPCControlBlock *pDCB)
 {
@@ -563,17 +559,6 @@ HRESULT DbgTransportSession::SetDCB(DebuggerIPCControlBlock *pDCB)
     sMessage.Init(MT_SetDCB, (PBYTE)&dcbt, sizeof(DebuggerIPCControlBlockTransport));
     return SendRequestMessageAndWait(&sMessage);
 
-}
-
-// Read the AppDomain control block on the LS from the RS.
-HRESULT DbgTransportSession::GetAppDomainCB(AppDomainEnumerationIPCBlock *pADB)
-{
-    DbgTransportLog(LC_Requests, "Sending 'GetAppDomainCB'");
-    DBG_TRANSPORT_INC_STAT(SentGetAppDomainCB);
-
-    Message sMessage;
-    sMessage.Init(MT_GetAppDomainCB, NULL, 0, (PBYTE)pADB, sizeof(AppDomainEnumerationIPCBlock));
-    return SendRequestMessageAndWait(&sMessage);
 }
 
 #endif // RIGHT_SIDE_COMPILE
@@ -607,7 +592,7 @@ HRESULT DbgTransportSession::SendMessage(Message *pMessage, bool fWaitsForReply)
     // and while determining whether to send immediately or not depending on the session state (to avoid
     // posting a send on a closed and possibly recycled socket).
     {
-        TransportLockHolder sLockHolder(&m_sStateLock);
+        TransportLockHolder sLockHolder(m_sStateLock);
 
         // Perform any last updates to the header or data block here since we might be about to encrypt them.
 
@@ -818,7 +803,6 @@ HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
 bool DbgTransportSession::SendBlock(PBYTE pbBuffer, DWORD cbBuffer)
 {
     _ASSERTE(m_eState == SS_Opening || m_eState == SS_Resync || m_eState == SS_Open);
-    _ASSERTE(m_pipe.GetState() == TwoWayPipe::ServerConnected || m_pipe.GetState() == TwoWayPipe::ClientConnected);
     _ASSERTE(cbBuffer > 0);
 
     DBG_TRANSPORT_INC_STAT(SentBlocks);
@@ -829,7 +813,7 @@ bool DbgTransportSession::SendBlock(PBYTE pbBuffer, DWORD cbBuffer)
     if (DBG_TRANSPORT_SHOULD_INJECT_FAULT(Send))
         fSuccess = false;
     else
-        fSuccess = ((DWORD)m_pipe.Write(pbBuffer, cbBuffer) == cbBuffer);
+        fSuccess = SUCCEEDED((DWORD)m_channel->Write(pbBuffer, cbBuffer));
 
     if (!fSuccess)
     {
@@ -848,7 +832,6 @@ bool DbgTransportSession::SendBlock(PBYTE pbBuffer, DWORD cbBuffer)
 // state).
 bool DbgTransportSession::ReceiveBlock(PBYTE pbBuffer, DWORD cbBuffer)
 {
-    _ASSERTE(m_pipe.GetState() == TwoWayPipe::ServerConnected || m_pipe.GetState() == TwoWayPipe::ClientConnected);
     _ASSERTE(cbBuffer > 0);
 
     DBG_TRANSPORT_INC_STAT(ReceivedBlocks);
@@ -860,7 +843,7 @@ bool DbgTransportSession::ReceiveBlock(PBYTE pbBuffer, DWORD cbBuffer)
     if (DBG_TRANSPORT_SHOULD_INJECT_FAULT(Receive))
         fSuccess = false;
     else
-        fSuccess = ((DWORD)m_pipe.Read(pbBuffer, cbBuffer) == cbBuffer);
+        fSuccess = SUCCEEDED((DWORD)m_channel->Read(pbBuffer, cbBuffer));
 
     if (!fSuccess)
     {
@@ -922,7 +905,7 @@ void DbgTransportSession::HandleNetworkError(bool fCallerHoldsStateLock)
         // we'll call CancelReceive() to abort the operation. The transport thread itself will handle the
         // actual Destroy() (having one thread do this management greatly simplifies things).
         m_eState = SS_Resync_NC;
-        m_pipe.Disconnect();
+        m_channel->CloseConnection();
         break;
 
     default:
@@ -939,7 +922,7 @@ void DbgTransportSession::HandleNetworkError(bool fCallerHoldsStateLock)
 void DbgTransportSession::FlushSendQueue(DWORD dwLastProcessedId)
 {
     // Must access the send queue under the state lock.
-    TransportLockHolder sLockHolder(&m_sStateLock);
+    TransportLockHolder sLockHolder(m_sStateLock);
 
     // Note that message headers (and data blocks) may be encrypted. Use the cached fields in the Message
     // structure to compare message IDs and types.
@@ -957,10 +940,8 @@ void DbgTransportSession::FlushSendQueue(DWORD dwLastProcessedId)
             MessageType eType = pMsg->m_sHeader.m_eType;
             if (eType != MT_ReadMemory &&
                 eType != MT_WriteMemory &&
-                eType != MT_VirtualUnwind &&
                 eType != MT_GetDCB &&
-                eType != MT_SetDCB &&
-                eType != MT_GetAppDomainCB)
+                eType != MT_SetDCB)
 #endif // RIGHT_SIDE_COMPILE
             {
 #ifdef RIGHT_SIDE_COMPILE
@@ -1030,7 +1011,7 @@ bool DbgTransportSession::ProcessReply(MessageHeader *pHeader)
             // we don't need to put it on the queue in order (it will never be resent). Easiest just to put it
             // on the head.
             {
-                TransportLockHolder sLockHolder(&m_sStateLock);
+                TransportLockHolder sLockHolder(m_sStateLock);
                 pMsg->m_pNext = m_pSendQueueFirst;
                 m_pSendQueueFirst = pMsg;
                 if (m_pSendQueueLast == NULL)
@@ -1101,7 +1082,7 @@ DbgTransportSession::Message * DbgTransportSession::RemoveMessageFromSendQueue(D
     // Locate original message on the send queue.
     Message *pMsg = NULL;
     {
-        TransportLockHolder sLockHolder(&m_sStateLock);
+        TransportLockHolder sLockHolder(m_sStateLock);
 
         pMsg = m_pSendQueueFirst;
         Message *pLastMsg = NULL;
@@ -1242,7 +1223,7 @@ DWORD WINAPI DbgTransportSession::TransportWorkerStatic(LPVOID pvContext)
 // origin.
 #define HANDLE_TRANSIENT_ERROR() do {           \
     HandleNetworkError(false);                  \
-    m_pipe.Disconnect();                        \
+    m_channel->CloseConnection();               \
     goto ResetConnection;                       \
 } while (false)
 
@@ -1251,13 +1232,11 @@ DWORD WINAPI DbgTransportSession::TransportWorkerStatic(LPVOID pvContext)
     goto Shutdown;                              \
 } while (false)
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 void DbgTransportSession::TransportWorker()
 {
     _ASSERTE(m_eState == SS_Opening_NC);
+
+    HRESULT hr;
 
     // Loop until shutdown. Each loop iteration involves forming a connection (or waiting for one to form)
     // followed by processing incoming messages on that connection until there's a failure (either here of
@@ -1271,6 +1250,14 @@ void DbgTransportSession::TransportWorker()
 
         DbgTransportLog(LC_Proxy, "Forming new connection");
 
+        // Clear out any existing connection.
+        if (m_channel != NULL)
+        {
+            (void)m_channel->CloseConnection();
+            (void)m_channel->Release();
+            m_channel = NULL;
+        }
+
 #ifdef RIGHT_SIDE_COMPILE
         // The session is definitely not open at this point.
         ResetEvent(m_hSessionOpenEvent);
@@ -1281,10 +1268,13 @@ void DbgTransportSession::TransportWorker()
         // terminate this loop.
         ConnStatus eStatus;
         if (DBG_TRANSPORT_SHOULD_INJECT_FAULT(Connect))
+        {
             eStatus = SCS_NetworkFailure;
+        }
         else
         {
-            if (m_pipe.Connect(m_pd))
+            hr = ConnectToChannel(m_pd, &m_channel);
+            if (SUCCEEDED(hr))
             {
                 eStatus = SCS_Success;
             }
@@ -1300,19 +1290,25 @@ void DbgTransportSession::TransportWorker()
         {
             DbgTransportLog(LC_Proxy, "AllocateConnection() failed with %u\n", eStatus);
             DBG_TRANSPORT_INC_STAT(MiscErrors);
-            _ASSERTE(m_pipe.GetState() != TwoWayPipe::ClientConnected);
             Sleep(1000);
             continue;
         }
 #else // RIGHT_SIDE_COMPILE
         ConnStatus eStatus;
         if (DBG_TRANSPORT_SHOULD_INJECT_FAULT(Accept))
+        {
             eStatus = SCS_NetworkFailure;
+        }
         else
         {
-            ProcessDescriptor pd = ProcessDescriptor::FromCurrentProcess();
-            if ((m_pipe.GetState() == TwoWayPipe::Created || m_pipe.CreateServer(pd)) &&
-                 m_pipe.WaitForConnection())
+            BOOL isConnected = FALSE;
+            hr = CreateChannel(ProcessDescriptor::FromCurrentProcess(), &m_channel);
+            if (SUCCEEDED(hr))
+            {
+                (void)m_channel->WaitForConnection(/* timeoutMilliseconds */ -1, &isConnected);
+            }
+
+            if (isConnected)
             {
                 eStatus = SCS_Success;
             }
@@ -1328,7 +1324,6 @@ void DbgTransportSession::TransportWorker()
         {
             DbgTransportLog(LC_Proxy, "Accept() failed with %u\n", eStatus);
             DBG_TRANSPORT_INC_STAT(MiscErrors);
-            _ASSERTE(m_pipe.GetState() != TwoWayPipe::ServerConnected);
             Sleep(1000);
             continue;
         }
@@ -1344,7 +1339,7 @@ void DbgTransportSession::TransportWorker()
         // blocked on a Receive() on the newly formed connection (important if they want to transition the state
         // to SS_Closed).
         {
-            TransportLockHolder sLockHolder(&m_sStateLock);
+            TransportLockHolder sLockHolder(m_sStateLock);
 
             if (m_eState == SS_Closed)
                 break;
@@ -1485,7 +1480,7 @@ void DbgTransportSession::TransportWorker()
 
             // Must access the send queue under the state lock.
             {
-                TransportLockHolder sLockHolder(&m_sStateLock);
+                TransportLockHolder sLockHolder(m_sStateLock);
                 Message *pMsg = m_pSendQueueFirst;
                 while (pMsg)
                 {
@@ -1497,14 +1492,14 @@ void DbgTransportSession::TransportWorker()
                 // Check none of the sends failed.
                 if (m_eState != SS_Opening)
                 {
-                    m_pipe.Disconnect();
+                    m_channel->CloseConnection();
                     continue;
                 }
             } // Leave m_sStateLock
 
             // Finally we can transition to SS_Open.
             {
-                TransportLockHolder sLockHolder(&m_sStateLock);
+                TransportLockHolder sLockHolder(m_sStateLock);
                 if (m_eState == SS_Closed)
                     break;
                 else if (m_eState == SS_Opening)
@@ -1621,7 +1616,7 @@ void DbgTransportSession::TransportWorker()
 
             // Must access the send queue under the state lock.
             {
-                TransportLockHolder sLockHolder(&m_sStateLock);
+                TransportLockHolder sLockHolder(m_sStateLock);
 
                 Message *pMsg = m_pSendQueueFirst;
                 while (pMsg)
@@ -1644,7 +1639,7 @@ void DbgTransportSession::TransportWorker()
                     break;
                 else if (m_eState == SS_Resync_NC)
                 {
-                    m_pipe.Disconnect();
+                    m_channel->CloseConnection();
                     continue;
                 }
                 else
@@ -1673,8 +1668,7 @@ void DbgTransportSession::TransportWorker()
 
             // Since we care about security here, perform some additional validation checks that make it
             // harder for a malicious sender to attack with random message data.
-            if (sReceiveHeader.m_eType > MT_GetAppDomainCB ||
-                (sReceiveHeader.m_dwId <= m_dwLastMessageIdSeen &&
+            if ((sReceiveHeader.m_dwId <= m_dwLastMessageIdSeen &&
                  sReceiveHeader.m_dwId != (DWORD)0) ||
                 (sReceiveHeader.m_dwReplyId >= m_dwNextMessageId &&
                  sReceiveHeader.m_dwReplyId != (DWORD)0) ||
@@ -1770,7 +1764,7 @@ void DbgTransportSession::TransportWorker()
                 // We need to do some state cleanup here, since when we reform a connection (if ever, it will
                 // be with a new session).
                 {
-                    TransportLockHolder sLockHolder(&m_sStateLock);
+                    TransportLockHolder sLockHolder(m_sStateLock);
 
                     // Check we're still in a good state before a clean restart.
                     if (m_eState != SS_Open)
@@ -1779,7 +1773,7 @@ void DbgTransportSession::TransportWorker()
                         break;
                     }
 
-                    m_pipe.Disconnect();
+                    m_channel->CloseConnection();
 
                     // We could add code to drain the send queue here (like we have for SS_Closed at the end of
                     // this method) but I'm pretty sure we can only get a graceful session close with no
@@ -1819,7 +1813,7 @@ void DbgTransportSession::TransportWorker()
                     // that can expand the array, a client thread may be in GetNextEvent() reading from the
                     // old version.
                     {
-                        TransportLockHolder sLockHolder(&m_sStateLock);
+                        TransportLockHolder sLockHolder(m_sStateLock);
 
                         // When we copy old array contents over we place the head of the list at the start of
                         // the new array for simplicity. If the head happened to be at the start of the old
@@ -1872,7 +1866,7 @@ void DbgTransportSession::TransportWorker()
 
                     // We must take the lock to update the count of valid entries though, since clients can
                     // touch this field as well.
-                    TransportLockHolder sLockHolder(&m_sStateLock);
+                    TransportLockHolder sLockHolder(m_sStateLock);
 
                     m_cValidEventBuffers++;
                     DWORD idxCurrentEvent = m_idxEventBufferTail;
@@ -1957,33 +1951,6 @@ void DbgTransportSession::TransportWorker()
 #endif // RIGHT_SIDE_COMPILE
                 break;
 
-            case MT_VirtualUnwind:
-#ifdef RIGHT_SIDE_COMPILE
-                if (!ProcessReply(&sReceiveHeader))
-                    HANDLE_TRANSIENT_ERROR();
-#else // RIGHT_SIDE_COMPILE
-                if (sReceiveHeader.m_cbDataBlock != (DWORD)sizeof(frameContext))
-                {
-                    _ASSERTE(!"Inconsistent VirtualUnwind request");
-                    HANDLE_CRITICAL_ERROR();
-                }
-
-                if (!ReceiveBlock((PBYTE)&frameContext, sizeof(frameContext)))
-                {
-                    HANDLE_TRANSIENT_ERROR();
-                }
-
-                if (!PAL_VirtualUnwind(&frameContext, NULL))
-                {
-                    HANDLE_TRANSIENT_ERROR();
-                }
-
-                fReplyRequired = true;
-                pbOptReplyData = (PBYTE)&frameContext;
-                cbOptReplyData = sizeof(frameContext);
-#endif // RIGHT_SIDE_COMPILE
-                break;
-
             case MT_GetDCB:
 #ifdef RIGHT_SIDE_COMPILE
                 if (!ProcessReply(&sReceiveHeader))
@@ -2013,17 +1980,6 @@ void DbgTransportSession::TransportWorker()
                     HANDLE_TRANSIENT_ERROR();
 
                 MarshalDCBTransportToDCB(&dcbt, m_pDCB);
-#endif // RIGHT_SIDE_COMPILE
-                break;
-
-            case MT_GetAppDomainCB:
-#ifdef RIGHT_SIDE_COMPILE
-                if (!ProcessReply(&sReceiveHeader))
-                    HANDLE_TRANSIENT_ERROR();
-#else // RIGHT_SIDE_COMPILE
-                fReplyRequired = true;
-                pbOptReplyData = (PBYTE)m_pADB;
-                cbOptReplyData = sizeof(AppDomainEnumerationIPCBlock);
 #endif // RIGHT_SIDE_COMPILE
                 break;
 
@@ -2091,11 +2047,12 @@ void DbgTransportSession::TransportWorker()
 #endif // RIGHT_SIDE_COMPILE
 
     // Close the connection if we haven't done so already.
-    m_pipe.Disconnect();
+    if (m_channel != NULL)
+        m_channel->CloseConnection();
 
     // Drain any remaining entries in the send queue (aborting them when they need completions).
     {
-        TransportLockHolder sLockHolder(&m_sStateLock);
+        TransportLockHolder sLockHolder(m_sStateLock);
 
         Message *pMsg;
         while ((pMsg = m_pSendQueueFirst) != NULL)
@@ -2129,20 +2086,16 @@ void DbgTransportSession::TransportWorker()
 #ifdef RIGHT_SIDE_COMPILE
             case MT_ReadMemory:
             case MT_WriteMemory:
-            case MT_VirtualUnwind:
             case MT_GetDCB:
             case MT_SetDCB:
-            case MT_GetAppDomainCB:
                 // On the RS these are the original requests. Signal the completion event.
                 SignalReplyEvent(pMsg);
                 break;
 #else // RIGHT_SIDE_COMPILE
             case MT_ReadMemory:
             case MT_WriteMemory:
-            case MT_VirtualUnwind:
             case MT_GetDCB:
             case MT_SetDCB:
-            case MT_GetAppDomainCB:
                 // On the LS these are replies to the original request. Nobody's waiting on these.
                 break;
 #endif // RIGHT_SIDE_COMPILE
@@ -2203,6 +2156,7 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_AFTER_GARBAGE_COLLECTION:
     case DB_IPCE_DISABLE_OPTS_RESULT:
     case DB_IPCE_CATCH_HANDLER_FOUND_RESULT:
+    case DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION_RESULT:
         cbAdditionalSize = 0;
         break;
 
@@ -2364,10 +2318,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         cbAdditionalSize = sizeof(pEvent->JitDebugInfo);
         break;
 
-    case DB_IPCE_MDA_NOTIFICATION:
-        cbAdditionalSize = sizeof(pEvent->MDANotification);
-        break;
-
     case DB_IPCE_GET_GCHANDLE_INFO_RESULT:
         cbAdditionalSize = sizeof(pEvent->GetGCHandleInfoResult);
         break;
@@ -2517,9 +2467,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 
     return cbBaseSize + cbAdditionalSize;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 #ifdef _DEBUG
 // Debug helper which returns the name associated with a MessageType.
@@ -2543,14 +2490,10 @@ const char *DbgTransportSession::MessageName(MessageType eType)
         return "ReadMemory";
     case MT_WriteMemory:
         return "WriteMemory";
-    case MT_VirtualUnwind:
-        return "VirtualUnwind";
     case MT_GetDCB:
         return "GetDCB";
     case MT_SetDCB:
         return "SetDCB";
-    case MT_GetAppDomainCB:
-        return "GetAppDomainCB";
     default:
         _ASSERTE(!"Unknown message type");
         return NULL;
@@ -2601,10 +2544,6 @@ void DbgTransportSession::DbgTransportLogMessageReceived(MessageHeader *pHeader)
                         (DWORD)pHeader->TypeSpecificData.MemoryAccess.m_cbLeftSideBuffer);
         DBG_TRANSPORT_INC_STAT(ReceivedWriteMemory);
         return;
-    case MT_VirtualUnwind:
-        DbgTransportLog(LC_Requests,  "Received 'VirtualUnwind' reply");
-        DBG_TRANSPORT_INC_STAT(ReceivedVirtualUnwind);
-        return;
     case MT_GetDCB:
         DbgTransportLog(LC_Requests,  "Received 'GetDCB' reply");
         DBG_TRANSPORT_INC_STAT(ReceivedGetDCB);
@@ -2612,10 +2551,6 @@ void DbgTransportSession::DbgTransportLogMessageReceived(MessageHeader *pHeader)
     case MT_SetDCB:
         DbgTransportLog(LC_Requests,  "Received 'SetDCB' reply");
         DBG_TRANSPORT_INC_STAT(ReceivedSetDCB);
-        return;
-    case MT_GetAppDomainCB:
-        DbgTransportLog(LC_Requests,  "Received 'GetAppDomainCB' reply");
-        DBG_TRANSPORT_INC_STAT(ReceivedGetAppDomainCB);
         return;
 #else // RIGHT_SIDE_COMPILE
     case MT_ReadMemory:
@@ -2630,10 +2565,6 @@ void DbgTransportSession::DbgTransportLogMessageReceived(MessageHeader *pHeader)
                         (DWORD)pHeader->TypeSpecificData.MemoryAccess.m_cbLeftSideBuffer);
         DBG_TRANSPORT_INC_STAT(ReceivedWriteMemory);
         return;
-    case MT_VirtualUnwind:
-        DbgTransportLog(LC_Requests,  "Received 'VirtualUnwind'");
-        DBG_TRANSPORT_INC_STAT(ReceivedVirtualUnwind);
-        return;
     case MT_GetDCB:
         DbgTransportLog(LC_Requests,  "Received 'GetDCB'");
         DBG_TRANSPORT_INC_STAT(ReceivedGetDCB);
@@ -2641,10 +2572,6 @@ void DbgTransportSession::DbgTransportLogMessageReceived(MessageHeader *pHeader)
     case MT_SetDCB:
         DbgTransportLog(LC_Requests,  "Received 'SetDCB'");
         DBG_TRANSPORT_INC_STAT(ReceivedSetDCB);
-        return;
-    case MT_GetAppDomainCB:
-        DbgTransportLog(LC_Requests,  "Received 'GetAppDomainCB'");
-        DBG_TRANSPORT_INC_STAT(ReceivedGetAppDomainCB);
         return;
 #endif // RIGHT_SIDE_COMPILE
     default:
@@ -2713,30 +2640,162 @@ bool DbgTransportSession::DbgTransportShouldInjectFault(DbgTransportFaultOp eOp,
 }
 #endif // _DEBUG
 
+#include <twowaypipe.h>
+
+class DbgTransportPipeChannel final : public IDebugChannel
+{
+private:
+    LONG m_refCount;
+    TwoWayPipe m_pipe;
+
+public:
+    DbgTransportPipeChannel()
+        : m_refCount{ 1 }
+        , m_pipe{}
+    { }
+
+    ~DbgTransportPipeChannel()
+    {
+        m_pipe.CleanupTargetProcess();
+    }
+
+    TwoWayPipe& Pipe() { return m_pipe; }
+
+public: // IDebugChannel
+    HRESULT STDMETHODCALLTYPE WaitForConnection(
+        /* [in] */ DWORD /* timeoutMilliseconds */,
+        /* [out] */ BOOL* isConnected) override
+    {
+        _ASSERTE(isConnected != NULL);
+        *isConnected = m_pipe.WaitForConnection();
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE CloseConnection() override
+    {
+        m_pipe.Disconnect();
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE Read(
+        /* [out] */ BYTE* buffer,
+        /* [in] */ DWORD size) override
+    {
+        _ASSERTE(m_pipe.GetState() == TwoWayPipe::ServerConnected || m_pipe.GetState() == TwoWayPipe::ClientConnected);
+        return ((DWORD)m_pipe.Read(buffer, size) == size)
+            ? S_OK
+            : E_FAIL;
+    }
+
+    HRESULT STDMETHODCALLTYPE Write(
+        /* [in] */ BYTE* data,
+        /* [in] */ DWORD size) override
+    {
+        _ASSERTE(m_pipe.GetState() == TwoWayPipe::ServerConnected || m_pipe.GetState() == TwoWayPipe::ClientConnected);
+        return ((DWORD)m_pipe.Write(data, size) == size)
+            ? S_OK
+            : E_FAIL;
+    }
+
+public: // IUnknown
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) override
+    {
+        if (ppvObject == NULL)
+            return E_POINTER;
+
+        if (riid == IID_IUnknown || riid == IID_IDebugChannel)
+        {
+            *ppvObject = static_cast<IDebugChannel*>(this);
+        }
+        else
+        {
+            *ppvObject = NULL;
+            return E_NOINTERFACE;
+        }
+
+        (void)AddRef();
+        return S_OK;
+    }
+
+    ULONG STDMETHODCALLTYPE AddRef() override
+    {
+        return InterlockedIncrement(&m_refCount);
+    }
+
+    ULONG STDMETHODCALLTYPE Release() override
+    {
+        LONG refCount = InterlockedDecrement(&m_refCount);
+        if (refCount == 0)
+        {
+            delete this;
+        }
+        return refCount;
+    }
+};
+
+HRESULT CreateChannel(
+    /* [in] */ const ProcessDescriptor& procDesc,
+    /* [out] */ IDebugChannel** ppChannel)
+{
+    DbgTransportPipeChannel* channel = new (nothrow) DbgTransportPipeChannel();
+    if (channel == NULL)
+        return E_OUTOFMEMORY;
+
+    if (!channel->Pipe().CreateServer(procDesc))
+    {
+        (void)channel->Release();
+        return E_OUTOFMEMORY;
+    }
+
+    HRESULT hr = channel->QueryInterface(IID_IDebugChannel, (void**)ppChannel);
+    (void)channel->Release();
+    return hr;
+}
+
+HRESULT ConnectToChannel(
+    /* [in] */ const ProcessDescriptor& procDesc,
+    /* [out] */ IDebugChannel** ppChannel)
+{
+    DbgTransportPipeChannel* channel = new (nothrow) DbgTransportPipeChannel();
+    if (channel == NULL)
+        return E_OUTOFMEMORY;
+
+    if (!channel->Pipe().Connect(procDesc))
+    {
+        (void)channel->Release();
+        return E_OUTOFMEMORY;
+    }
+
+    HRESULT hr = channel->QueryInterface(IID_IDebugChannel, (void**)ppChannel);
+    (void)channel->Release();
+    return hr;
+}
+
 // Lock abstraction code (hides difference in lock implementation between left and right side).
 #ifdef RIGHT_SIDE_COMPILE
 
-// On the right side we use a CRITICAL_SECTION.
+// On the right side we use a minipal_mutex.
 
 void DbgTransportLock::Init()
 {
-    InitializeCriticalSection(&m_sLock);
+    minipal_mutex_init(&m_sLock);
 }
 
 void DbgTransportLock::Destroy()
 {
-    DeleteCriticalSection(&m_sLock);
+    minipal_mutex_destroy(&m_sLock);
 }
 
 void DbgTransportLock::Enter()
 {
-    EnterCriticalSection(&m_sLock);
+    minipal_mutex_enter(&m_sLock);
 }
 
 void DbgTransportLock::Leave()
 {
-    LeaveCriticalSection(&m_sLock);
+    minipal_mutex_leave(&m_sLock);
 }
+
 #else // RIGHT_SIDE_COMPILE
 
 // On the left side we use a Crst.

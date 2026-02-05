@@ -16,6 +16,20 @@ namespace System.Net
         internal const int MaxIPv4StringLength = 15; // 4 numbers separated by 3 periods, with up to 3 digits per number
         internal const int MaxIPv6StringLength = 65;
 
+        public static bool IsValid<TChar>(ReadOnlySpan<TChar> ipSpan)
+            where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            if (ipSpan.Contains(TChar.CreateTruncating(':')))
+            {
+                return IPv6AddressHelper.IsValidStrict(ipSpan);
+            }
+            else
+            {
+                long address = IPv4AddressHelper.ParseNonCanonical(ipSpan, out int end, notImplicitFile: true);
+                return address != IPv4AddressHelper.Invalid && end == ipSpan.Length;
+            }
+        }
+
         internal static IPAddress? Parse<TChar>(ReadOnlySpan<TChar> ipSpan, bool tryParse)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
@@ -45,16 +59,10 @@ namespace System.Net
             throw new FormatException(SR.dns_bad_ip_address, new SocketException(SocketError.InvalidArgument));
         }
 
-        private static unsafe bool TryParseIpv4<TChar>(ReadOnlySpan<TChar> ipSpan, out long address)
+        private static bool TryParseIpv4<TChar>(ReadOnlySpan<TChar> ipSpan, out long address)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            int end = ipSpan.Length;
-            long tmpAddr;
-
-            fixed (TChar* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
-            {
-                tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipStringPtr, 0, ref end, notImplicitFile: true);
-            }
+            long tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, out int end, notImplicitFile: true);
 
             if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
             {
@@ -69,66 +77,60 @@ namespace System.Net
             return false;
         }
 
-        private static unsafe bool TryParseIPv6<TChar>(ReadOnlySpan<TChar> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
+        private static bool TryParseIPv6<TChar>(ReadOnlySpan<TChar> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(numbersLength >= IPAddressParserStatics.IPv6AddressShorts);
 
-            int end = ipSpan.Length;
-            bool isValid = false;
-            fixed (TChar* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
+            if (!IPv6AddressHelper.IsValidStrict(ipSpan))
             {
-                isValid = IPv6AddressHelper.IsValidStrict(ipStringPtr, 0, ref end);
+                scope = 0;
+                return false;
             }
 
-            scope = 0;
-            if (isValid || (end != ipSpan.Length))
+            IPv6AddressHelper.Parse(ipSpan, numbers, out ReadOnlySpan<TChar> scopeIdSpan);
+
+            if (scopeIdSpan.Length > 1)
             {
-                IPv6AddressHelper.Parse(ipSpan, numbers, out ReadOnlySpan<TChar> scopeIdSpan);
+                bool parsedNumericScope;
+                scopeIdSpan = scopeIdSpan.Slice(1);
 
-                if (scopeIdSpan.Length > 1)
+                // scopeId is a numeric value
+                if (typeof(TChar) == typeof(byte))
                 {
-                    bool parsedNumericScope = false;
-                    scopeIdSpan = scopeIdSpan.Slice(1);
+                    ReadOnlySpan<byte> castScopeIdSpan = MemoryMarshal.Cast<TChar, byte>(scopeIdSpan);
 
-                    // scopeId is a numeric value
-                    if (typeof(TChar) == typeof(byte))
-                    {
-                        ReadOnlySpan<byte> castScopeIdSpan = MemoryMarshal.Cast<TChar, byte>(scopeIdSpan);
+                    parsedNumericScope = uint.TryParse(castScopeIdSpan, NumberStyles.None, CultureInfo.InvariantCulture, out scope);
+                }
+                else
+                {
+                    ReadOnlySpan<char> castScopeIdSpan = MemoryMarshal.Cast<TChar, char>(scopeIdSpan);
 
-                        parsedNumericScope = uint.TryParse(castScopeIdSpan, NumberStyles.None, CultureInfo.InvariantCulture, out scope);
-                    }
-                    else if (typeof(TChar) == typeof(char))
-                    {
-                        ReadOnlySpan<char> castScopeIdSpan = MemoryMarshal.Cast<TChar, char>(scopeIdSpan);
-
-                        parsedNumericScope = uint.TryParse(castScopeIdSpan, NumberStyles.None, CultureInfo.InvariantCulture, out scope);
-                    }
-
-                    if (parsedNumericScope)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        uint interfaceIndex = InterfaceInfoPal.InterfaceNameToIndex(scopeIdSpan);
-
-                        if (interfaceIndex > 0)
-                        {
-                            scope = interfaceIndex;
-                            return true; // scopeId is a known interface name
-                        }
-                    }
-
-                    // scopeId is an unknown interface name
+                    parsedNumericScope = uint.TryParse(castScopeIdSpan, NumberStyles.None, CultureInfo.InvariantCulture, out scope);
                 }
 
-                // scopeId is not presented
-                return true;
+                if (parsedNumericScope)
+                {
+                    return true;
+                }
+                else
+                {
+                    uint interfaceIndex = InterfaceInfoPal.InterfaceNameToIndex(scopeIdSpan);
+
+                    if (interfaceIndex > 0)
+                    {
+                        scope = interfaceIndex;
+                        return true; // scopeId is a known interface name
+                    }
+                }
+
+                // scopeId is an unknown interface name
             }
 
-            return false;
+            // scopeId is not presented
+            scope = 0;
+            return true;
         }
 
         internal static int FormatIPv4Address<TChar>(uint address, Span<TChar> addressString)
@@ -179,6 +181,7 @@ namespace System.Net
         internal static int FormatIPv6Address<TChar>(ushort[] address, uint scopeId, Span<TChar> destination)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(byte) || typeof(TChar) == typeof(char));
             int pos = 0;
 
             if (IPv6AddressHelper.ShouldHaveIpv4Embedded(address))
@@ -205,18 +208,13 @@ namespace System.Net
             {
                 destination[pos++] = TChar.CreateTruncating('%');
 
-                // TODO https://github.com/dotnet/runtime/issues/84527: Use UInt32 TryFormat for both char and byte once IUtf8SpanFormattable implementation exists
-                Span<TChar> chars = stackalloc TChar[10];
-                int bytesPos = 10;
-                do
-                {
-                    (scopeId, uint digit) = Math.DivRem(scopeId, 10);
-                    chars[--bytesPos] = TChar.CreateTruncating('0' + digit);
-                }
-                while (scopeId != 0);
-                Span<TChar> used = chars.Slice(bytesPos);
-                used.CopyTo(destination.Slice(pos));
-                pos += used.Length;
+                int bytesWritten;
+                bool formatted = typeof(TChar) == typeof(byte) ?
+                    scopeId.TryFormat(MemoryMarshal.Cast<TChar, byte>(destination).Slice(pos), out bytesWritten) :
+                    scopeId.TryFormat(MemoryMarshal.Cast<TChar, char>(destination).Slice(pos), out bytesWritten);
+
+                Debug.Assert(formatted);
+                pos += bytesWritten;
             }
 
             return pos;

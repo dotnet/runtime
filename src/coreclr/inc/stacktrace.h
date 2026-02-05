@@ -63,16 +63,6 @@ void MagicDeinit(void);
 ******************************************************************** robch */
 void GetStringFromStackLevels(UINT ifrStart, UINT cfrTotal, _Out_writes_(cchMaxAssertStackLevelStringLen * cfrTotal) CHAR *pszString, struct _CONTEXT * pContext = NULL);
 
-/****************************************************************************
-* GetStringFromAddr *
-*-------------------*
-*   Description:
-*       Builds a string from an address in the format:
-*
-*           0x<address>: <module>! <symbol> + 0x<offset>
-******************************************************************** robch */
-void GetStringFromAddr(DWORD_PTR dwAddr, _Out_writes_(cchMaxAssertStackLevelStringLen) LPSTR szString);
-
 #if defined(HOST_X86) && !defined(TARGET_UNIX)
 /****************************************************************************
 * ClrCaptureContext *

@@ -685,6 +685,42 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+#if NET
+    public class TestClassWithObjectIReadOnlySetT : ITestClass
+    {
+        public IReadOnlySet<SimpleTestClass> MyData { get; set; }
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(
+            @"{" +
+                @"""MyData"":[" +
+                    SimpleTestClass.s_json + "," +
+                    SimpleTestClass.s_json +
+                @"]" +
+            @"}");
+
+        public void Initialize()
+        {
+            SimpleTestClass obj1 = new SimpleTestClass();
+            obj1.Initialize();
+
+            SimpleTestClass obj2 = new SimpleTestClass();
+            obj2.Initialize();
+
+            MyData = new HashSet<SimpleTestClass> { obj1, obj2 };
+        }
+
+        public void Verify()
+        {
+            Assert.Equal(2, MyData.Count);
+
+            foreach (SimpleTestClass obj in MyData)
+            {
+                obj.Verify();
+            }
+        }
+    }
+#endif
+
     public class TestClassWithInitializedArray
     {
         public int[] Values { get; set; }
@@ -1116,6 +1152,53 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(helloSeen && worldSeen);
         }
     }
+
+#if NET
+    public class TestClassWithGenericIReadOnlySetT : ITestClass
+    {
+        public IReadOnlySet<string> MyData { get; set; }
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(
+            @"{" +
+                @"""MyData"":[" +
+                    @"""Hello""," +
+                    @"""World""" +
+                @"]" +
+            @"}");
+
+        public void Initialize()
+        {
+            MyData = new HashSet<string>
+            {
+                "Hello",
+                "World"
+            };
+            Assert.Equal(2, MyData.Count);
+        }
+
+        public void Verify()
+        {
+            Assert.Equal(2, MyData.Count);
+
+            bool helloSeen = false;
+            bool worldSeen = false;
+
+            foreach (string data in MyData)
+            {
+                if (data == "Hello")
+                {
+                    helloSeen = true;
+                }
+                else if (data == "World")
+                {
+                    worldSeen = true;
+                }
+            }
+
+            Assert.True(helloSeen && worldSeen);
+        }
+    }
+#endif
 
     public class TestClassWithStringToPrimitiveDictionary : ITestClass
     {
@@ -2041,13 +2124,13 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Initialize()
         {
-            Number = JsonDocument.Parse(@"1").RootElement.Clone();
-            True = JsonDocument.Parse(@"true").RootElement.Clone();
-            False = JsonDocument.Parse(@"false").RootElement.Clone();
-            String = JsonDocument.Parse(@"""Hello""").RootElement.Clone();
-            Array = JsonDocument.Parse(@"[2, false, true, ""Goodbye""]").RootElement.Clone();
-            Object = JsonDocument.Parse(@"{}").RootElement.Clone();
-            Null = JsonDocument.Parse(@"null").RootElement.Clone();
+            Number = JsonElement.Parse(@"1");
+            True = JsonElement.Parse(@"true");
+            False = JsonElement.Parse(@"false");
+            String = JsonElement.Parse(@"""Hello""");
+            Array = JsonElement.Parse(@"[2, false, true, ""Goodbye""]");
+            Object = JsonElement.Parse(@"{}");
+            Null = JsonElement.Parse(@"null");
         }
 
         public void Verify()
@@ -2099,10 +2182,10 @@ namespace System.Text.Json.Serialization.Tests
         {
             Array = new JsonElement[]
             {
-                JsonDocument.Parse(@"1").RootElement.Clone(),
-                JsonDocument.Parse(@"true").RootElement.Clone(),
-                JsonDocument.Parse(@"false").RootElement.Clone(),
-                JsonDocument.Parse(@"""Hello""").RootElement.Clone()
+                JsonElement.Parse(@"1"),
+                JsonElement.Parse(@"true"),
+                JsonElement.Parse(@"false"),
+                JsonElement.Parse(@"""Hello""")
             };
         }
 
@@ -2152,8 +2235,8 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Initialize()
         {
-            Array = JsonDocument.Parse(s_array).RootElement.Clone();
-            Object = JsonDocument.Parse(s_object).RootElement.Clone();
+            Array = JsonElement.Parse(s_array);
+            Object = JsonElement.Parse(s_object);
         }
 
         public void Verify()

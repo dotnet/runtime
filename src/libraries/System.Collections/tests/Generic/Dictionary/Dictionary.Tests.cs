@@ -261,6 +261,41 @@ namespace System.Collections.Tests
             }
         }
 
+        [Theory]
+        [InlineData(10)]
+        [InlineData(1000)]
+        [InlineData(1000_000)]
+        public void InsertionOpsOnly_Enumeration_PreservesInsertionOrder(int count)
+        {
+            var dictionary = new Dictionary<string, int>();
+            for (int i = 0; i < count; i++)
+            {
+                dictionary.Add(i.ToString(), i);
+            }
+
+            int j = 0;
+            foreach (KeyValuePair<string, int> kvp in dictionary)
+            {
+                Assert.Equal(j, int.Parse(kvp.Key));
+                Assert.Equal(j, kvp.Value);
+                j++;
+            }
+
+            j = 0;
+            foreach (string key in dictionary.Keys)
+            {
+                Assert.Equal(j.ToString(), key);
+                j++;
+            }
+
+            j = 0;
+            foreach (int value in dictionary.Values)
+            {
+                Assert.Equal(j, value);
+                j++;
+            }
+        }
+
         [Fact]
         public void TryAdd_ItemAlreadyExists_DoesNotInvalidateEnumerator()
         {

@@ -64,6 +64,10 @@ namespace Microsoft.Interop.Analyzers
 
                     foreach (var method in type.GetMembers().OfType<IMethodSymbol>().Where(m => !m.IsStatic && m.IsAbstract))
                     {
+                        // Non-ordinary methods (e.g., property/event accessors) are not supported by the COM generator.
+                        if (method.MethodKind != MethodKind.Ordinary)
+                            return;
+
                         // Ignore types with methods with unsupported returns
                         if (method.ReturnsByRef || method.ReturnsByRefReadonly)
                             return;

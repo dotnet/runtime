@@ -235,7 +235,6 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
     }
     if (flags & CONTEXT_INTEGER)
     {
-        context->Tp = m_gpRegisters.regs[2];
         memcpy(&context->A0, &m_gpRegisters.regs[4], sizeof(context->A0)*(21 - 4 + 1));
         memcpy(&context->S0, &m_gpRegisters.regs[23], sizeof(context->S0)*9);
     }

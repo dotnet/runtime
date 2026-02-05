@@ -286,7 +286,14 @@ namespace System.IO.Compression
         }
 
         /// <summary>Gets a reference to the underlying stream.</summary>
-        public Stream BaseStream => _deflateStream?.BaseStream!;
+        public Stream BaseStream
+        {
+            get
+            {
+                ThrowIfClosed();
+                return _deflateStream.BaseStream;
+            }
+        }
 
         /// <summary>Throws an <see cref="ObjectDisposedException"/> if the stream is closed.</summary>
         private void ThrowIfClosed()

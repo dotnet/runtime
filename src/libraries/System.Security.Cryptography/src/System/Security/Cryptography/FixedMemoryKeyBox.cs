@@ -27,5 +27,46 @@ namespace System.Security.Cryptography
         }
 
         public override bool IsInvalid => handle == IntPtr.Zero;
+
+        internal TRet UseKey<TState, TRet>(
+            TState state,
+            Func<TState, ReadOnlySpan<byte>, TRet> func)
+        {
+            bool addedRef = false;
+
+            try
+            {
+                DangerousAddRef(ref addedRef);
+                return func(state, DangerousKeySpan);
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    DangerousRelease();
+                }
+            }
+        }
+
+        internal TRet UseKey<TState, TRet>(
+            ReadOnlySpan<byte> state1,
+            TState state2,
+            Func<ReadOnlySpan<byte>, TState, ReadOnlySpan<byte>, TRet> func)
+        {
+            bool addedRef = false;
+
+            try
+            {
+                DangerousAddRef(ref addedRef);
+                return func(state1, state2, DangerousKeySpan);
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    DangerousRelease();
+                }
+            }
+        }
     }
 }

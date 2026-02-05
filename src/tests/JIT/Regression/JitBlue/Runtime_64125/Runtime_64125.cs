@@ -8,6 +8,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using TestLibrary;
 using Xunit;
 
 namespace Runtime_64125
@@ -6933,7 +6934,10 @@ namespace Runtime_64125
             return true;
         }
 
+        [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
         public static unsafe int TestEntryPoint()
         {
             var anyLocation = new AnyLocation();

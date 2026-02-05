@@ -17,6 +17,7 @@ namespace Microsoft.CSharp.RuntimeBinder
     public static class Binder
     {
         internal const string TrimmerWarning = "Using dynamic types might cause types or members to be removed by trimmer.";
+        internal const string DynamicCodeWarning = "The 'dynamic' feature requires runtime-code generation, which is incompatible with AOT.";
         //////////////////////////////////////////////////////////////////////
 
         /// <summary>
@@ -28,6 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
         /// <returns>Returns a new CSharp binary operation binder.</returns>
         [RequiresUnreferencedCode(TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CallSiteBinder BinaryOperation(
             CSharpBinderFlags flags,
             ExpressionType operation,
@@ -56,6 +58,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="context">The <see cref="Type"/> that indicates where this operation is used.</param>
         /// <returns>Returns a new CSharp convert binder.</returns>
         [RequiresUnreferencedCode(TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CallSiteBinder Convert(
             CSharpBinderFlags flags,
             Type type,
@@ -83,6 +86,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
         /// <returns>Returns a new CSharp get index binder.</returns>
         [RequiresUnreferencedCode(TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CallSiteBinder GetIndex(
             CSharpBinderFlags flags,
             Type? context,
@@ -102,6 +106,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
         /// <returns>Returns a new CSharp get member binder.</returns>
         [RequiresUnreferencedCode(TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CallSiteBinder GetMember(
             CSharpBinderFlags flags,
             string name,
@@ -122,6 +127,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
         /// <returns>Returns a new CSharp invoke binder.</returns>
         [RequiresUnreferencedCode(TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CallSiteBinder Invoke(
             CSharpBinderFlags flags,
             Type? context,
@@ -150,6 +156,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
         /// <returns>Returns a new CSharp invoke member binder.</returns>
         [RequiresUnreferencedCode(TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CallSiteBinder InvokeMember(
             CSharpBinderFlags flags,
             string name,
@@ -188,6 +195,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
         /// <returns>Returns a new CSharp invoke constructor binder.</returns>
         [RequiresUnreferencedCode(TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CallSiteBinder InvokeConstructor(
             CSharpBinderFlags flags,
             Type? context,
@@ -206,6 +214,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="context">The <see cref="System.Type"/> that indicates where this operation is used.</param>
         /// <returns>Returns a new CSharp is event binder.</returns>
         [RequiresUnreferencedCode(TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CallSiteBinder IsEvent(
             CSharpBinderFlags flags,
             string name,
@@ -224,6 +233,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
         /// <returns>Returns a new CSharp set index binder.</returns>
         [RequiresUnreferencedCode(TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CallSiteBinder SetIndex(
             CSharpBinderFlags flags,
             Type? context,
@@ -245,6 +255,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
         /// <returns>Returns a new CSharp set member binder.</returns>
         [RequiresUnreferencedCode(TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CallSiteBinder SetMember(
             CSharpBinderFlags flags,
             string name,
@@ -267,6 +278,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
         /// <returns>Returns a new CSharp unary operation binder.</returns>
         [RequiresUnreferencedCode(TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CallSiteBinder UnaryOperation(
             CSharpBinderFlags flags,
             ExpressionType operation,

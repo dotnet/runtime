@@ -9,13 +9,11 @@
 ;;
 ;; CONSTANTS -- INTEGER
 ;;
-TSF_Attached                    equ 0x01
 TSF_SuppressGcStress            equ 0x08
 TSF_DoNotTriggerGc              equ 0x10
 TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC equ 0x18
 
 ;; Bit position for the flags above, to be used with tbz/tbnz instructions
-TSF_Attached_Bit                equ 0
 TSF_SuppressGcStress_Bit        equ 3
 TSF_DoNotTriggerGc_Bit          equ 4
 
@@ -60,35 +58,20 @@ PTFF_SAVE_ALL_SCRATCH   equ 0x3FFFF800  ;; NOTE: X0-X18
 PTFF_SAVE_FP            equ 0x40000000
 PTFF_SAVE_LR            equ 0x80000000
 
-;; NOTE: The following flags represent the upper 32 bits of the PInvokeTransitionFrameFlags.
-;; Since the assembler doesn't support 64 bit constants in any way, we need to define just
-;; the upper bits here
-PTFF_X0_IS_GCREF_HI     equ 0x00000001 ;; iff PTFF_SAVE_X0 : set->x0 is Object, clear->x0 is scalar
-PTFF_X0_IS_BYREF_HI     equ 0x00000002 ;; iff PTFF_SAVE_X0 : set->x0 is ByRef, clear->x0 is Object or scalar
-PTFF_X1_IS_GCREF_HI     equ 0x00000004 ;; iff PTFF_SAVE_X1 : set->x1 is Object, clear->x1 is scalar
-PTFF_X1_IS_BYREF_HI     equ 0x00000008 ;; iff PTFF_SAVE_X1 : set->x1 is ByRef, clear->x1 is Object or scalar
-PTFF_THREAD_ABORT_HI    equ 0x00000010 ;; indicates that ThreadAbortException should be thrown when returning from the transition
-
-;; Bit position for the flags above, to be used with tbz / tbnz instructions
-PTFF_THREAD_ABORT_BIT   equ 36
+PTFF_THREAD_HIJACK_HI   equ 0x00000001           // upper 32 bits of the PTFF_THREAD_HIJACK
 
 ;; These must match the TrapThreadsFlags enum
 TrapThreadsFlags_None            equ 0
-TrapThreadsFlags_AbortInProgress equ 1
-TrapThreadsFlags_TrapThreads     equ 2
+TrapThreadsFlags_TrapThreads     equ 1
 
 ;; Bit position for the flags above, to be used with tbz / tbnz instructions
-TrapThreadsFlags_AbortInProgress_Bit equ 0
-TrapThreadsFlags_TrapThreads_Bit     equ 1
-
-;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
-STATUS_REDHAWK_THREAD_ABORT      equ 0x43
+TrapThreadsFlags_TrapThreads_Bit     equ 0
 
 ;;
 ;; Rename fields of nested structs
 ;;
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_eeAllocContext__combined_limit  equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit
+OFFSETOF__ee_alloc_context__alloc_ptr        equ OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+OFFSETOF__ee_alloc_context                   equ OFFSETOF__Thread__m_eeAllocContext
 
 ;;
 ;; IMPORTS
@@ -229,7 +212,6 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
         INLINE_GET_TLS_VAR $destReg, $trashReg, tls_CurrentThread
     MEND
 
-
     MACRO
         INLINE_THREAD_UNHIJACK $threadReg, $trashReg1, $trashReg2
         ;;
@@ -243,6 +225,12 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
         str         xzr, [$threadReg, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
         str         xzr, [$threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 0
+    MEND
+
+    MACRO
+        INLINE_GET_ALLOC_CONTEXT_BASE $destReg, $trashReg
+
+        INLINE_GET_TLS_VAR $destReg, $trashReg, tls_CurrentThread
     MEND
 
 ;; ---------------------------------------------------------------------------- -

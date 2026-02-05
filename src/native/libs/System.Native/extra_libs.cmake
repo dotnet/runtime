@@ -13,7 +13,6 @@ macro(append_extra_system_libs NativeLibsExtra)
     endif ()
 
     if (CLR_CMAKE_TARGET_APPLE)
-        include(CMakeFindFrameworks)
         find_library(FOUNDATION Foundation REQUIRED)
         list(APPEND ${NativeLibsExtra} ${FOUNDATION})
     endif ()

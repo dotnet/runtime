@@ -17,6 +17,12 @@ namespace Internal.TypeSystem
             throw new NotSupportedException();
         }
 
+        public override bool ComputeContainsByRefs(DefType type)
+        {
+            // This should never be called
+            throw new NotSupportedException();
+        }
+
         public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
         {
             return new ComputedInstanceFieldLayout()
