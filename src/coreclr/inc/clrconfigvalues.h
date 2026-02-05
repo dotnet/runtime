@@ -347,6 +347,10 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_MultiCoreJitNoProfileGather, W("MultiCoreJitNo
 
 #endif
 
+#ifdef TARGET_ARM64
+CONFIG_DWORD_INFO(EXTERNAL_JitUseScalableVectorT, W("JitUseScalableVectorT"), 0, "Accelerate Vector<T> with SVE if available.")
+#endif
+
 ///
 /// Loader heap
 ///

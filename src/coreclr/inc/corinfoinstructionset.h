@@ -373,10 +373,10 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_Vector64);
         if (resultflags.HasInstructionSet(InstructionSet_Vector128) && !resultflags.HasInstructionSet(InstructionSet_AdvSimd))
             resultflags.RemoveInstructionSet(InstructionSet_Vector128);
+        if (resultflags.HasInstructionSet(InstructionSet_VectorT) && !resultflags.HasInstructionSet(InstructionSet_Sve))
+            resultflags.RemoveInstructionSet(InstructionSet_VectorT);
         if (resultflags.HasInstructionSet(InstructionSet_VectorT128) && !resultflags.HasInstructionSet(InstructionSet_AdvSimd))
             resultflags.RemoveInstructionSet(InstructionSet_VectorT128);
-        if (resultflags.HasInstructionSet(InstructionSet_VectorT) && !resultflags.HasInstructionSet(InstructionSet_AdvSimd))
-            resultflags.RemoveInstructionSet(InstructionSet_VectorT);
         if (resultflags.HasInstructionSet(InstructionSet_Sve) && !resultflags.HasInstructionSet(InstructionSet_AdvSimd))
             resultflags.RemoveInstructionSet(InstructionSet_Sve);
         if (resultflags.HasInstructionSet(InstructionSet_Sve2) && !resultflags.HasInstructionSet(InstructionSet_Sve))

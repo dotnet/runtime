@@ -411,7 +411,7 @@ namespace Internal.JitInterface
                 {
                 case InstructionSet.ARM64_Vector64: return InstructionSet.ARM64_AdvSimd;
                 case InstructionSet.ARM64_Vector128: return InstructionSet.ARM64_AdvSimd;
-                case InstructionSet.ARM64_VectorT: return InstructionSet.ARM64_AdvSimd;
+                case InstructionSet.ARM64_VectorT: return InstructionSet.ARM64_Sve;
                 }
                 break;
             case TargetArchitecture.X64:
@@ -503,9 +503,9 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Vector128))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_VectorT128))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_VectorT))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_VectorT128))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
@@ -775,10 +775,10 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Vector64);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Vector128);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_VectorT);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_VectorT128);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_VectorT);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
