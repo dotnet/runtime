@@ -2891,15 +2891,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         CorElementType corType = argIt.GetArgType(&thArgTypeHandle);
         if ((corType == ELEMENT_TYPE_VALUETYPE) && thArgTypeHandle.GetSize() > INTERP_STACK_SLOT_SIZE)
         {
-            unsigned align = CEEInfo::getClassAlignmentRequirementStatic(thArgTypeHandle);
-            if (align < INTERP_STACK_SLOT_SIZE)
-            {
-                align = INTERP_STACK_SLOT_SIZE;
-            }
-            else if (align > INTERP_STACK_ALIGNMENT)
-            {
-                align = INTERP_STACK_ALIGNMENT;
-            }
+            unsigned align = std::clamp(CEEInfo::getClassAlignmentRequirementStatic(thArgTypeHandle), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
             assert(align == 8 || align == 16); // At the moment, we can only have an 8 or 16 byte alignment requirement here
             if (interpreterStackOffset != ALIGN_UP(interpreterStackOffset, align))
             {

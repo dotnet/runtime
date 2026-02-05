@@ -222,25 +222,6 @@ PhaseStatus Compiler::fgComputeDominators()
     return PhaseStatus::MODIFIED_NOTHING;
 }
 
-//-------------------------------------------------------------
-// fgInitBlockVarSets: Initialize the per-block variable sets (used for liveness analysis).
-//
-// Notes:
-//   Initializes:
-//      bbVarUse, bbVarDef, bbLiveIn, bbLiveOut,
-//      bbMemoryUse, bbMemoryDef, bbMemoryLiveIn, bbMemoryLiveOut,
-//      bbScope
-//
-void Compiler::fgInitBlockVarSets()
-{
-    for (BasicBlock* const block : Blocks())
-    {
-        block->InitVarSets(this);
-    }
-
-    fgBBVarSetsInited = true;
-}
-
 //------------------------------------------------------------------------
 // fgPostImportationCleanups: clean up flow graph after importation
 //
