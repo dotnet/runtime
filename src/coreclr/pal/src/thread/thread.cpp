@@ -597,7 +597,6 @@ CorUnix::InternalCreateThread(
     PROCProcessLock();
     fHoldingProcessLock = TRUE;
 
-    PROCAddThread(pThread, pNewThread);
     fThreadDataAddedToProcessList = TRUE;
 
     //
@@ -675,10 +674,6 @@ EXIT:
         // resources here
         //
 
-        if (fThreadDataAddedToProcessList)
-        {
-            PROCRemoveThread(pThread, pNewThread);
-        }
         //
         // Once we remove the thread from the process list, we can call
         // PROCProcessUnlock.
@@ -789,11 +784,9 @@ CorUnix::InternalEndCurrentThread(
 
     pThread->GetThreadObject()->ReleaseReference(pThread);
 
-    /* Remove thread for the thread list of the process
+    /* Remove thread from the thread list of the process
         (don't do if this is the last thread -> gets handled by
         TerminateProcess->PROCCleanupProcess->PROCTerminateOtherThreads) */
-
-    PROCRemoveThread(pThread, pThread);
 
     // Ensure that EH is disabled on the current thread
     SEHDisable(pThread);

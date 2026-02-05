@@ -146,9 +146,8 @@ IPalObject* CorUnix::g_pobjProcess;
 minipal_mutex g_csProcess;
 
 //
-// List and count of active threads
+// The count of active threads
 //
-CPalThread* CorUnix::pGThreadList;
 DWORD g_dwThreadCount;
 
 //
@@ -2942,7 +2941,6 @@ CorUnix::InitializeProcessData(
     PAL_ERROR palError = NO_ERROR;
     bool fLockInitialized = FALSE;
 
-    pGThreadList = NULL;
     g_dwThreadCount = 0;
 
     minipal_mutex_init(&g_csProcess);
@@ -3185,105 +3183,6 @@ PROCCleanupInitialProcess(VOID)
     //
 
 }
-
-/*++
-Function:
-  PROCAddThread
-
-Abstract
-  Add a thread to the thread list of the current process
-
-Parameter
-  pThread:   Thread object
-
---*/
-VOID
-CorUnix::PROCAddThread(
-    CPalThread *pCurrentThread,
-    CPalThread *pTargetThread
-    )
-{
-    /* protect the access of the thread list with critical section for
-       mutithreading access */
-    minipal_mutex_enter(&g_csProcess);
-
-    pTargetThread->SetNext(pGThreadList);
-    pGThreadList = pTargetThread;
-    g_dwThreadCount += 1;
-
-    TRACE("Thread 0x%p (id %#x) added to the process thread list\n",
-          pTargetThread, pTargetThread->GetThreadId());
-
-    minipal_mutex_leave(&g_csProcess);
-}
-
-
-/*++
-Function:
-  PROCRemoveThread
-
-Abstract
-  Remove a thread form the thread list of the current process
-
-Parameter
-  CPalThread *pThread : thread object to remove
-
-(no return value)
---*/
-VOID
-CorUnix::PROCRemoveThread(
-    CPalThread *pCurrentThread,
-    CPalThread *pTargetThread
-    )
-{
-    CPalThread *curThread, *prevThread;
-
-    /* protect the access of the thread list with critical section for
-       mutithreading access */
-    minipal_mutex_enter(&g_csProcess);
-
-    curThread = pGThreadList;
-
-    /* if thread list is empty */
-    if (curThread == NULL)
-    {
-        ASSERT("Thread list is empty.\n");
-        goto EXIT;
-    }
-
-    /* do we remove the first thread? */
-    if (curThread == pTargetThread)
-    {
-        pGThreadList =  curThread->GetNext();
-        TRACE("Thread 0x%p (id %#x) removed from the process thread list\n",
-            pTargetThread, pTargetThread->GetThreadId());
-        goto EXIT;
-    }
-
-    prevThread = curThread;
-    curThread = curThread->GetNext();
-    /* find the thread to remove */
-    while (curThread != NULL)
-    {
-        if (curThread == pTargetThread)
-        {
-            /* found, fix the chain list */
-            prevThread->SetNext(curThread->GetNext());
-            g_dwThreadCount -= 1;
-            TRACE("Thread %p removed from the process thread list\n", pTargetThread);
-            goto EXIT;
-        }
-
-        prevThread = curThread;
-        curThread = curThread->GetNext();
-    }
-
-    WARN("Thread %p not removed (it wasn't found in the list)\n", pTargetThread);
-
-EXIT:
-    minipal_mutex_leave(&g_csProcess);
-}
-
 
 /*++
 Function:
@@ -3599,30 +3498,6 @@ bool GetApplicationContainerFolder(PathCharString& buffer, const char *applicati
         && buffer.Append('/');
 }
 #endif // __APPLE__
-
-#ifdef _DEBUG
-void PROCDumpThreadList()
-{
-    CPalThread *pThread;
-
-    PROCProcessLock();
-
-    TRACE ("Threads:{\n");
-
-    pThread = pGThreadList;
-    while (NULL != pThread)
-    {
-        TRACE ("    {pThr=0x%p tid=%#x lwpid=%#x state=%d}\n",
-               pThread, (int)pThread->GetThreadId(), (int)pThread->GetLwpId(),
-               (int)pThread->synchronizationInfo.GetThreadState());
-
-        pThread = pThread->GetNext();
-    }
-    TRACE ("Threads:}\n");
-
-    PROCProcessUnlock();
-}
-#endif
 
 /* Internal function definitions **********************************************/
 

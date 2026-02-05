@@ -119,10 +119,6 @@ static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv);
 static LPWSTR INIT_GetCurrentEXEPath();
 static BOOL INIT_SharedFilesPath(void);
 
-#ifdef _DEBUG
-extern void PROCDumpThreadList(void);
-#endif
-
 /*++
 Function:
   PAL_Initialize
@@ -424,8 +420,6 @@ Initialize(
             ERROR("Unable to create initial thread data\n");
             goto CLEANUP1a;
         }
-
-        PROCAddThread(pThread, pThread);
 
         //
         // It's now safe to access our thread data
@@ -817,10 +811,6 @@ PALCommonCleanup()
         // Let the synchronization manager know we're about to shutdown
         //
         CPalSynchMgrController::PrepareForShutdown();
-
-#ifdef _DEBUG
-        PROCDumpThreadList();
-#endif
     }
 }
 
