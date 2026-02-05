@@ -98,6 +98,8 @@ namespace System.Collections
             {
                 BinaryPrimitives.ReverseEndianness(array, MemoryMarshal.Cast<byte, int>((Span<byte>)_array));
             }
+
+            ClearHighExtraBits();
         }
 
         /// <summary>Generates serialization data for the BitArray in a way that's compatible with the original .NET Framework implementation.</summary>
