@@ -156,7 +156,6 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public async Task SslStream_WriteAfterRemoteCloseNotify_ThrowsIOException(bool useAsync)
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -166,8 +165,10 @@ namespace System.Net.Security.Tests
             using (var server = new SslStream(serverStream))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
-                await server.AuthenticateAsServerAsync(certificate).WaitAsync(TestConfiguration.PassingTestTimeout);
-                await client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false)).WaitAsync(TestConfiguration.PassingTestTimeout);
+                await Task.WhenAll(
+                    server.AuthenticateAsServerAsync(certificate),
+                    client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false))
+                ).WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 var buffer = new byte[1024];
 
@@ -179,13 +180,46 @@ namespace System.Net.Security.Tests
                 Assert.Equal(0, bytesRead);
 
                 // Client attempts to write after receiving close_notify
-                if (useAsync)
+                // On macOS with Secure Transport, this throws immediately
+                // On Linux/Windows, the first write may succeed, subsequent operations fail
+                if (PlatformDetection.IsOSX)
                 {
-                    await Assert.ThrowsAsync<IOException>(() => client.WriteAsync(buffer, 0, buffer.Length)).WaitAsync(TestConfiguration.PassingTestTimeout);
+                    if (useAsync)
+                    {
+                        await Assert.ThrowsAsync<IOException>(() => client.WriteAsync(buffer, 0, buffer.Length)).WaitAsync(TestConfiguration.PassingTestTimeout);
+                    }
+                    else
+                    {
+                        Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
+                    }
                 }
                 else
                 {
-                    Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
+                    // On other platforms, write may succeed (sends data despite close_notify)
+                    // The connection may be closed by the server or subsequent operations may fail
+                    // We just verify that we don't crash or hang
+                    if (useAsync)
+                    {
+                        try
+                        {
+                            await client.WriteAsync(buffer, 0, buffer.Length).WaitAsync(TestConfiguration.PassingTestTimeout);
+                        }
+                        catch (IOException)
+                        {
+                            // Also acceptable on some platforms
+                        }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            client.Write(buffer, 0, buffer.Length);
+                        }
+                        catch (IOException)
+                        {
+                            // Also acceptable on some platforms
+                        }
+                    }
                 }
             }
         }
