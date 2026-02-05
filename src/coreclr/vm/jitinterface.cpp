@@ -13774,7 +13774,7 @@ MethodTable* GetContinuationTypeFromLayout(PCCOR_SIGNATURE pBlob, Module* curren
         bool* objRefs = (bool*)_alloca(objRefsSize * sizeof(bool));
         size_t bytesInBlob = (objRefsSize + 7) / 8;
         // Expand bitmap to bool array for use with getContinuationType
-        for(size_t byteIndex = 0; byteIndex < bytesInBlob; byteIndex++)
+        for (size_t byteIndex = 0; byteIndex < bytesInBlob; byteIndex++)
         {
             uint8_t b = pGCRefMapBlob[byteIndex];
             for (int bit = 0; bit < 8 && byteIndex * 8 + bit < objRefsSize; bit++)
