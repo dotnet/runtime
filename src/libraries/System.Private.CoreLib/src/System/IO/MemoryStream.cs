@@ -263,8 +263,6 @@ namespace System.IO
                 // Special behavior if the MS isn't expandable: we don't throw if value is the same as the current capacity
                 if (value < Length)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
-                if (value > MemStreamMaxLength)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_Capacity);
 
                 EnsureNotClosed();
 
