@@ -509,6 +509,7 @@ namespace System.Collections.Immutable.Tests
             if (array.Length > 0)
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.Slice(1, array.Length));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.Slice(1, int.MaxValue));
             }
         }
 
