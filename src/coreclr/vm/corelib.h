@@ -870,6 +870,11 @@ DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSup
 DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
 DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwift)
 
+DEFINE_CLASS(SWIFT_SELF,                     Swift,                  SwiftSelf)
+DEFINE_CLASS(SWIFT_SELF_T,                   Swift,                  SwiftSelf`1)
+DEFINE_CLASS(SWIFT_ERROR,                    Swift,                  SwiftError)
+DEFINE_CLASS(SWIFT_INDIRECT_RESULT,          Swift,                  SwiftIndirectResult)
+
 DEFINE_CLASS(SAFE_HANDLE,         Interop,                SafeHandle)
 DEFINE_FIELD(SAFE_HANDLE,           HANDLE,                 handle)
 
