@@ -40,12 +40,14 @@ namespace ILCompiler
             MethodStackTraceVisibilityFlags result = _flags;
 
             if (method.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute")
-                || (method.OwningType is MetadataType mdType && mdType.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute")))
+                || (method.OwningType is MetadataType mdType && mdType.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute"))
+                || (method is Internal.IL.Stubs.ILStubMethod)
+                || method.IsAsyncThunk()) // see MethodDesc::IsDiagnosticsHidden() in src/coreclr/vm/method.inl
             {
                 result |= MethodStackTraceVisibilityFlags.IsHidden;
             }
 
-            return method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod
+            return (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod || (method.IsAsync && method.IsAsyncCall()))
                 ? result | MethodStackTraceVisibilityFlags.HasMetadata
                 : result;
         }

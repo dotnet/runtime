@@ -397,7 +397,7 @@ namespace System.IO
 
             if (count == 0)
             {
-                return Array.Empty<char>();
+                return [];
             }
 
             char[] chars = new char[count];
@@ -438,7 +438,7 @@ namespace System.IO
 
             if (count == 0)
             {
-                return Array.Empty<byte>();
+                return [];
             }
 
             byte[] result = new byte[count];
@@ -503,7 +503,7 @@ namespace System.IO
             {
                 case 0:
                     // ReadExactly no-ops for empty buffers, so special case numBytes == 0 to preserve existing behavior.
-                    int n = _stream.Read(Array.Empty<byte>(), 0, 0);
+                    int n = _stream.Read([], 0, 0);
                     if (n == 0)
                     {
                         ThrowHelper.ThrowEndOfFileException();

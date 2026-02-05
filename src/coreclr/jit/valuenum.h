@@ -274,7 +274,7 @@ public:
     };
 
 private:
-    Compiler* m_pComp;
+    Compiler* m_compiler;
 
     // For allocations.  (Other things?)
     CompAllocator m_alloc;
@@ -615,7 +615,7 @@ private:
         toVisit.Push(vn);
 
         SmallValueNumSet visited;
-        visited.Add(m_pComp, vn);
+        visited.Add(m_compiler, vn);
         while (toVisit.Height() > 0)
         {
             ValueNum vnToVisit = toVisit.Pop();
@@ -628,7 +628,7 @@ private:
                 for (unsigned ssaArgNum = 0; ssaArgNum < phiDef.NumArgs; ssaArgNum++)
                 {
                     ValueNum childVN = VNPhiDefToVN(phiDef, ssaArgNum);
-                    if (visited.Add(m_pComp, childVN))
+                    if (visited.Add(m_compiler, childVN))
                     {
                         toVisit.Push(childVN);
                     }
@@ -1110,15 +1110,15 @@ public:
 #ifdef DEBUG
         void dump(ValueNumStore* vnStore)
         {
-            vnStore->vnDump(vnStore->m_pComp, cmpOp);
+            vnStore->vnDump(vnStore->m_compiler, cmpOp);
             printf(" ");
             printf(vnStore->VNFuncName((VNFunc)cmpOper));
             printf(" ");
-            vnStore->vnDump(vnStore->m_pComp, vnBound);
+            vnStore->vnDump(vnStore->m_compiler, vnBound);
             if (arrOper != GT_NONE)
             {
                 printf(vnStore->VNFuncName((VNFunc)arrOper));
-                vnStore->vnDump(vnStore->m_pComp, arrOp);
+                vnStore->vnDump(vnStore->m_compiler, arrOp);
             }
         }
 #endif
@@ -1143,7 +1143,7 @@ public:
 #ifdef DEBUG
         void dump(ValueNumStore* vnStore)
         {
-            vnStore->vnDump(vnStore->m_pComp, cmpOpVN);
+            vnStore->vnDump(vnStore->m_compiler, cmpOpVN);
             printf(" ");
             printf(vnStore->VNFuncName((VNFunc)cmpOper));
             printf(" ");

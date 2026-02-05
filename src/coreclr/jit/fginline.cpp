@@ -1214,7 +1214,7 @@ Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWal
     GenTree* tree = *pTree;
     if (tree->OperIs(GT_CALL))
     {
-        Compiler*    compiler = data->compiler;
+        Compiler*    compiler = data->m_compiler;
         Statement*   stmt     = (Statement*)data->pCallbackData;
         GenTreeCall* call     = tree->AsCall();
 
