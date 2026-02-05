@@ -9,6 +9,9 @@
     <Compile Include="test22888resources.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="test22888.resx" LogicalName="test22888resources.test22888.resources">
       <Generator>ResXFileCodeGenerator</Generator>
     </EmbeddedResource>

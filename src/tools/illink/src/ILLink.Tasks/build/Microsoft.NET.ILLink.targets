@@ -80,6 +80,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == ''">false</EnableTrimAnalyzer>
   </PropertyGroup>
 
+  <!-- Configure TypeMap entry assembly -->
+  <PropertyGroup Condition="'$(TypeMapEntryAssembly)' != ''">
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly "$(TypeMapEntryAssembly)"</_ExtraTrimmerArgs>
+  </PropertyGroup>
+
   <!-- Disable Redundant Warning Suppressions by default-->
   <PropertyGroup Condition="'$(_TrimmerShowRedundantSuppressions)' != 'true' And '$(PublishTrimmed)' == 'true'">
     <NoWarn>$(NoWarn);IL2121</NoWarn>

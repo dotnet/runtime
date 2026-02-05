@@ -4,8 +4,6 @@
 /***
 *   mbusafecrt_internal.h - internal declarations for SafeCRT functions
 *
-
-*
 *   Purpose:
 *       This file contains the internal declarations SafeCRT
 *       functions ported to MacOS. These are the safe versions of
@@ -54,8 +52,6 @@ typedef __builtin_va_list va_list;
 
 #define CASSERT(p) extern int sanity_check_dummy[1+((!(p))*(-2))];
 
-extern tSafeCRT_AssertFuncPtr sMBUSafeCRTAssertFunc;
-
 typedef struct miniFILE_struct
 {
     char* _ptr;
@@ -73,19 +69,15 @@ typedef struct miniFILE_struct
 #define _IOREAD 4
 #define _IOMYBUF 8
 
-int _putc_nolock( char inChar, miniFILE* inStream );
-int _putwc_nolock( char16_t inChar, miniFILE* inStream );
 int _getc_nolock( miniFILE* inStream );
 int _getwc_nolock( miniFILE* inStream );
 int _ungetc_nolock( char inChar, miniFILE* inStream );
 int _ungetwc_nolock( char16_t inChar, miniFILE* inStream );
 
 void _safecrt_fassign(int flag, void* argument, char * number );
-void _safecrt_wfassign(int flag, void* argument, char16_t * number );
 
 int _minimal_chartowchar( char16_t* outWChar, const char* inChar );
 
 int __tinput_s( miniFILE* inFile, const unsigned char * inFormat, va_list inArgList );
-int __twinput_s( miniFILE* inFile, const char16_t * inFormat, va_list inArgList );
 
 #endif  /* MBUSAFECRT_INTERNAL_H */

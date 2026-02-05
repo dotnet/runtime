@@ -23,19 +23,19 @@
 #if 0
 #define EMITVERBOSE 1
 #else
-#define EMITVERBOSE (emitComp->verbose)
+#define EMITVERBOSE (m_compiler->verbose)
 #endif
 
 #if 0
 #define EMIT_GC_VERBOSE 0
 #else
-#define EMIT_GC_VERBOSE (emitComp->verbose)
+#define EMIT_GC_VERBOSE (m_compiler->verbose)
 #endif
 
 #if 1
 #define EMIT_INSTLIST_VERBOSE 0
 #else
-#define EMIT_INSTLIST_VERBOSE (emitComp->verbose)
+#define EMIT_INSTLIST_VERBOSE (m_compiler->verbose)
 #endif
 
 #ifdef TARGET_XARCH
@@ -524,7 +524,7 @@ protected:
     /*                        Miscellaneous stuff                           */
     /************************************************************************/
 
-    Compiler* emitComp;
+    Compiler* m_compiler;
     GCInfo*   gcInfo;
     CodeGen*  codeGen;
 
@@ -637,6 +637,10 @@ protected:
         bool              idFinallyCall; // Branch instruction is a call to finally
         bool              idCatchRet;    // Instruction is for a catch 'return'
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
+        BasicBlock*       idTargetBlock; // Target block for branches
+#ifdef TARGET_WASM
+        int lclOffset; // Base index of the WASM locals being declared
+#endif
     };
 
 #ifdef TARGET_ARM
@@ -1294,6 +1298,13 @@ protected:
             _idReg1 = reg;
             assert(reg == _idReg1);
         }
+
+#ifdef TARGET_WASM
+        bool idIsLclVarDecl() const
+        {
+            return _idInsFmt == IF_LOCAL_DECL;
+        }
+#endif
 
 #ifdef TARGET_ARM64
         GCtype idGCrefReg2() const
@@ -2334,6 +2345,25 @@ protected:
     };
 #endif
 
+#if defined(TARGET_WASM)
+    struct instrDescLclVarDecl : instrDesc
+    {
+        instrDescLclVarDecl() = delete;
+        unsigned int  lclCnt;
+        WasmValueType lclType;
+
+        void idLclType(WasmValueType type)
+        {
+            lclType = type;
+        }
+
+        void idLclCnt(unsigned int cnt)
+        {
+            lclCnt = cnt;
+        }
+    };
+#endif // TARGET_WASM
+
 #ifdef TARGET_RISCV64
     struct instrDescLoadImm : instrDescCns
     {
@@ -2591,10 +2621,12 @@ public:
     bool emitIssuing;
 #endif
 
-    BYTE*  emitCodeBlock;     // Hot code block
-    BYTE*  emitColdCodeBlock; // Cold code block
-    BYTE*  emitConsBlock;     // Read-only (constant) data block
-    size_t writeableOffset;   // Offset applied to a code address to get memory location that can be written
+    BYTE*          emitCodeBlock;     // Hot code block
+    BYTE*          emitColdCodeBlock; // Cold code block
+    AllocMemChunk* emitDataChunks;
+    unsigned*      emitDataChunkOffsets;
+    unsigned       emitNumDataChunks;
+    size_t         writeableOffset; // Offset applied to a code address to get memory location that can be written
 
     UNATIVE_OFFSET emitTotalHotCodeSize;
     UNATIVE_OFFSET emitTotalColdCodeSize;
@@ -2632,11 +2664,7 @@ public:
         }
     }
 
-    BYTE* emitDataOffsetToPtr(UNATIVE_OFFSET offset)
-    {
-        assert(offset < emitDataSize());
-        return emitConsBlock + offset;
-    }
+    BYTE* emitDataOffsetToPtr(UNATIVE_OFFSET offset);
 
     bool emitJumpCrossHotColdBoundary(size_t srcOffset, size_t dstOffset)
     {
@@ -3292,6 +3320,7 @@ private:
     instrDesc* emitNewInstrCns(emitAttr attr, cnsval_ssize_t cns);
     instrDesc* emitNewInstrDsp(emitAttr attr, target_ssize_t dsp);
     instrDesc* emitNewInstrCnsDsp(emitAttr attr, target_ssize_t cns, int dsp);
+
 #ifdef TARGET_ARM
     instrDesc* emitNewInstrReloc(emitAttr attr, BYTE* addr);
 #endif // TARGET_ARM
@@ -3501,17 +3530,6 @@ public:
     /*      The following logic keeps track of initialized data sections    */
     /************************************************************************/
 
-    // Note: Keep synchronized with AsyncHelpers.ResumeInfo
-    struct dataAsyncResumeInfo
-    {
-        // delegate*<Continuation, ref byte, Continuation>
-        target_size_t Resume;
-        // Pointer in main code for diagnostics. See comments on
-        // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and
-        // ResumeInfo.DiagnosticIP in SPC.
-        target_size_t DiagnosticIP;
-    };
-
     /* One of these is allocated for every blob of initialized data */
 
     struct dataSection
@@ -3531,6 +3549,7 @@ public:
         };
 
         dataSection*   dsNext;
+        UNATIVE_OFFSET dsAlignment;
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
         var_types      dsDataType;
@@ -3548,13 +3567,11 @@ public:
         dataSection*   dsdList;
         dataSection*   dsdLast;
         UNATIVE_OFFSET dsdOffs;
-        UNATIVE_OFFSET alignment; // in bytes, defaults to 4
 
         dataSecDsc()
             : dsdList(nullptr)
             , dsdLast(nullptr)
             , dsdOffs(0)
-            , alignment(4)
         {
         }
     };
@@ -3563,8 +3580,8 @@ public:
 
     dataSection* emitDataSecCur;
 
-    void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
-    void emitDispDataSec(dataSecDsc* section, BYTE* dst);
+    void emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* dataChunks);
+    void emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks);
     void emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataOffset, dataSection** dataSection);
 
     /************************************************************************/
@@ -3767,12 +3784,12 @@ public:
     // infrastructure of the entire JIT...
     void Init()
     {
-        VarSetOps::AssignNoCopy(emitComp, emitPrevGCrefVars, VarSetOps::MakeEmpty(emitComp));
-        VarSetOps::AssignNoCopy(emitComp, emitInitGCrefVars, VarSetOps::MakeEmpty(emitComp));
-        VarSetOps::AssignNoCopy(emitComp, emitThisGCrefVars, VarSetOps::MakeEmpty(emitComp));
+        VarSetOps::AssignNoCopy(m_compiler, emitPrevGCrefVars, VarSetOps::MakeEmpty(m_compiler));
+        VarSetOps::AssignNoCopy(m_compiler, emitInitGCrefVars, VarSetOps::MakeEmpty(m_compiler));
+        VarSetOps::AssignNoCopy(m_compiler, emitThisGCrefVars, VarSetOps::MakeEmpty(m_compiler));
 #if defined(DEBUG)
-        VarSetOps::AssignNoCopy(emitComp, debugPrevGCrefVars, VarSetOps::MakeEmpty(emitComp));
-        VarSetOps::AssignNoCopy(emitComp, debugThisGCrefVars, VarSetOps::MakeEmpty(emitComp));
+        VarSetOps::AssignNoCopy(m_compiler, debugPrevGCrefVars, VarSetOps::MakeEmpty(m_compiler));
+        VarSetOps::AssignNoCopy(m_compiler, debugThisGCrefVars, VarSetOps::MakeEmpty(m_compiler));
         debugPrevRegPtrDsc = nullptr;
         debugPrevGCrefRegs = RBM_NONE;
         debugPrevByrefRegs = RBM_NONE;
@@ -3835,17 +3852,6 @@ inline unsigned emitter::emitGetEpilogCnt()
 inline UNATIVE_OFFSET emitter::emitDataSize()
 {
     return emitConsDsc.dsdOffs;
-}
-
-/*****************************************************************************
- *
- *  Return a handle to the current position in the output stream. This can
- *  be later converted to an actual code offset in bytes.
- */
-
-inline void* emitter::emitCurBlock()
-{
-    return emitCurIG;
 }
 
 /*****************************************************************************

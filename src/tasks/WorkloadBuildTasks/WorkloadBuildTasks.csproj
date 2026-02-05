@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent)</TargetFrameworks>
     <!-- net8.0 is only need for the internal nuget produced which isn't required for source builds -->
     <TargetFrameworks Condition="'$(DotNetBuildSourceOnly)' != 'true'">$(TargetFrameworks);net8.0</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
@@ -18,10 +19,7 @@
 
       <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
       <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).pdb" TargetPath="tasks\%(_PublishFramework.Identity)" />
-
-      <!-- For .NET Framework we need all the dependent assemblies too, so copy from the publish folder -->
-      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETFrameworkTasks)\*.dll*"
-                      TargetPath="tasks\$(TargetFrameworkForNETFrameworkTasks)" />
     </ItemGroup>
   </Target>
+
 </Project>

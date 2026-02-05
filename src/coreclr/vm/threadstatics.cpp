@@ -814,6 +814,7 @@ extern "C" size_t GetTLSResolverAddress();
 // different for the other threads.
 static bool IsValidTLSResolver()
 {
+#if defined(TARGET_ARM64)
 #define READ_CODE(p, code)                                      \
     code = (p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0];    \
     p += 4;
@@ -899,6 +900,107 @@ static bool IsValidTLSResolver()
     }
 
     return false;
+#elif defined(TARGET_LOONGARCH64)
+#define READ_CODE(p, code)                                      \
+    code = (p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0];    \
+    p += 4;
+
+    uint32_t code;
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetTLSResolverAddress);
+
+    // addi.d  $sp, $sp, -16
+    READ_CODE(p, code)
+    if (code != 0x02FFC063)
+    {
+        return false;
+    }
+
+    // st.d $fp, $sp, 0
+    READ_CODE(p, code)
+    if (code != 0x29C00076)
+    {
+        return false;
+    }
+
+    // st.d $ra, $sp, 8
+    READ_CODE(p, code)
+    if (code != 0x29C02061)
+    {
+        return false;
+    }
+
+    // ori $fp, $sp, 0
+    READ_CODE(p, code)
+    if (code != 0x03800076)
+    {
+        return false;
+    }
+
+    // pcalau12i $a0, %desc_pc_hi20(t_ThreadStatics)
+    READ_CODE(p, code)
+    if ((code & 0xFE00001F) != 0x1A000004)
+    {
+        return false;
+    }
+
+    // addi.d $a0, $a0, %desc_pc_lo12(t_ThreadStatics)
+    READ_CODE(p, code)
+    if ((code & 0xFFC003FF) != 0x02C00084)
+    {
+        return false;
+    }
+
+    // ld.d $a0, $a0, %desc_ld(t_ThreadStatics)
+    READ_CODE(p, code)
+    if ((code & 0xFFC003FF) != 0x28C00084)
+    {
+        return false;
+    }
+
+    // ld.d $ra, $sp, 8
+    READ_CODE(p, code)
+    if (code != 0x28C02061)
+    {
+        return false;
+    }
+
+    // ld.d $fp, $sp, 0
+    READ_CODE(p, code)
+    if (code != 0x28C00076)
+    {
+        return false;
+    }
+
+    // addi.d $sp, $sp, 16
+    READ_CODE(p, code)
+    if (code != 0x02C04063)
+    {
+        return false;
+    }
+
+    // ret
+    READ_CODE(p, code)
+    if (code != 0x4c000020)
+    {
+        return false;
+    }
+
+    // Now invoke the code to retrieve the resolver address
+    // and verify if that is as expected.
+    uint32_t* resolverAddress = reinterpret_cast<uint32_t*>(GetTLSResolverAddress());
+
+    if (
+        // ld.d a0, a0, 8
+        (resolverAddress[0] == 0x28c02084) &&
+        // ret
+        (resolverAddress[1] == 0x4c000020)
+    )
+    {
+        return true;
+    }
+
+    return false;
+#endif
 }
 #endif // !TARGET_APPLE && TARGET_UNIX && !TARGET_ANDROID && (TARGET_ARM64 || TARGET_LOONGARCH64)
 
@@ -923,7 +1025,7 @@ bool CanJITOptimizeTLSAccess()
     // Optimization is disabled for FreeBSD/arm64
 #elif defined(TARGET_ANDROID)
     // Optimation is disabled for Android until emulated TLS is supported.
-#elif !defined(TARGET_APPLE) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
+#elif !defined(TARGET_APPLE) && defined(TARGET_UNIX) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     bool tlsResolverValid = IsValidTLSResolver();
     if (tlsResolverValid)
     {
@@ -934,28 +1036,6 @@ bool CanJITOptimizeTLSAccess()
             _ASSERTE(!"Detected static resolver in use when not expected");
         }
 #endif // _DEBUG
-    }
-#elif defined(TARGET_LOONGARCH64)
-    // Optimization is enabled for linux/loongarch64 only for static resolver.
-    // For static resolver, the TP offset is same for all threads.
-    // For dynamic resolver, TP offset returned is for the current thread and
-    // will be different for the other threads.
-    uint32_t* resolverAddress = reinterpret_cast<uint32_t*>(GetTLSResolverAddress());
-
-    if (
-        // ld.d a0, a0, 8
-        (resolverAddress[0] == 0x28c02084) &&
-        // ret
-        (resolverAddress[1] == 0x4c000020)
-    )
-    {
-        optimizeThreadStaticAccess = true;
-#ifdef _DEBUG
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AssertNotStaticTlsResolver) != 0)
-        {
-            _ASSERTE(!"Detected static resolver in use when not expected");
-        }
-#endif
     }
 #else
     optimizeThreadStaticAccess = true;

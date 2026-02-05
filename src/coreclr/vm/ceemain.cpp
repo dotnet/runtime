@@ -163,6 +163,7 @@
 #include "pendingload.h"
 #include "cdacplatformmetadata.hpp"
 #include "minipal/time.h"
+#include "minipal/random.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "callstubgenerator.h"
@@ -480,10 +481,10 @@ void InitGSCookie()
     void * pf = &__security_check_cookie;
     pf = NULL;
 
-    GSCookie val = (GSCookie)(__security_cookie ^ minipal_lowres_ticks());
+    GSCookie val = (GSCookie)(__security_cookie ^ minipal_hires_ticks());
 #else // !TARGET_UNIX
-    // REVIEW: Need something better for PAL...
-    GSCookie val = (GSCookie)minipal_lowres_ticks();
+    GSCookie val;
+    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&val, sizeof(val));
 #endif // !TARGET_UNIX
 
 #ifdef _DEBUG
@@ -705,6 +706,10 @@ void EEStartupHelper()
         }
 #endif
 
+#ifdef FEATURE_PERFMAP
+        PerfMap::Initialize();
+#endif
+
 #ifdef FEATURE_PERFTRACING
         DiagnosticServerAdapter::Initialize();
         DiagnosticServerAdapter::PauseForDiagnosticsMonitor();
@@ -730,7 +735,6 @@ void EEStartupHelper()
 #endif
 
 #ifdef FEATURE_PERFMAP
-        PerfMap::Initialize();
         InitThreadManagerPerfMapData();
 #endif
 
@@ -917,9 +921,6 @@ void EEStartupHelper()
         // On windows the finalizer thread is already partially created and is waiting
         // right before doing HasStarted(). We will release it now.
         FinalizerThread::EnableFinalization();
-#elif defined(TARGET_WASM)
-        // on wasm we need to run finalizers on main thread as we are single threaded
-        // active issue: https://github.com/dotnet/runtime/issues/114096
 #else
         // This isn't done as part of InitializeGarbageCollector() above because
         // debugger must be initialized before creating EE thread objects

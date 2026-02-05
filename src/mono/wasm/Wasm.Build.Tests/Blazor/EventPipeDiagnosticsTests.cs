@@ -18,6 +18,8 @@ namespace Wasm.Build.Tests.Blazor;
 
 public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 {
+    private static readonly string uploadPattern = "^[a-zA-Z0-9_]+\\.nettrace$";
+
     public EventPipeDiagnosticsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
@@ -63,7 +65,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             CheckCounter: false,
             ServerEnvironment: new Dictionary<string, string>
             {
-                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath,
+                ["DEVSERVER_UPLOAD_PATTERN"] = uploadPattern
             }
         ));
 
@@ -118,7 +121,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             CheckCounter: false,
             ServerEnvironment: new Dictionary<string, string>
             {
-                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath,
+                ["DEVSERVER_UPLOAD_PATTERN"] = uploadPattern
             }
         ));
 
@@ -144,7 +148,6 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             "System.Diagnostics.Metrics/instrumentName/dotnet.thread_pool.work_item.count",
             "System.Diagnostics.Metrics/instrumentName/dotnet.timer.count",
             "Microsoft-DotNETCore-EventPipe/ArchInformation/Unknown",
-            "Microsoft-DotNETCore-EventPipe/CommandLine//managed BlazorBasicTestApp",
             "Microsoft-DotNETCore-EventPipe/OSInformation/Unknown"
         };
 
@@ -191,7 +194,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             CheckCounter: false,
             ServerEnvironment: new Dictionary<string, string>
             {
-                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath,
+                ["DEVSERVER_UPLOAD_PATTERN"] = uploadPattern
             }
         ));
 

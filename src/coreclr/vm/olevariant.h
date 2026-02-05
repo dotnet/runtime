@@ -266,4 +266,6 @@ private:
 #endif // FEATURE_COMINTEROP
 };
 
+extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT* pOle);
+
 #endif

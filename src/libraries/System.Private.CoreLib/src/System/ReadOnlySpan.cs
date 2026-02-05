@@ -406,11 +406,13 @@ namespace System
         /// </summary>
         public T[] ToArray()
         {
-            if (_length == 0)
-                return Array.Empty<T>();
+            if (IsEmpty)
+            {
+                return [];
+            }
 
-            var destination = new T[_length];
-            Buffer.Memmove(ref MemoryMarshal.GetArrayDataReference(destination), ref _reference, (uint)_length);
+            var destination = new T[Length];
+            CopyTo(destination);
             return destination;
         }
     }

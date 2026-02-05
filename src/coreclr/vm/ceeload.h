@@ -1665,7 +1665,7 @@ private:
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
     // a.dll calls a method in b.dll and that method call a method in c.dll. When ngening
-    // a.dll it is possible then method in b.dll can be inlined. When that happens a.ni.dll stores
+    // a.dll it is possible then method in b.dll can be inlined. When that happens a.dll R2R image stores
     // an added native metadata which has information about assemblyRef to c.dll
     // Now due to facades, this scenario is very common. This led to lots of calls to
     // binder to get the module corresponding to assemblyRef in native metadata.

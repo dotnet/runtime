@@ -135,10 +135,8 @@ public:
                              size_t *hotSize,
                              size_t *coldSize);
 
-#if defined(FEATURE_EH_FUNCLETS)
     DWORD GetFuncletStartOffsets(const BYTE *pStart, DWORD* pStartOffsets, DWORD dwLength);
     StackFrame FindParentStackFrame(CrawlFrame* pCF);
-#endif // FEATURE_EH_FUNCLETS
 
     size_t GetFunctionSize(MethodDesc *pFD) DAC_UNEXPECTED();
 

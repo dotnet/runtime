@@ -62,6 +62,7 @@ enum SpecialCodeKind
     SCK_ARG_EXCPN,                  // target on ArgumentException (currently used only for SIMD intrinsics)
     SCK_ARG_RNG_EXCPN,              // target on ArgumentOutOfRangeException (currently used only for SIMD intrinsics)
     SCK_FAIL_FAST,                  // target for fail fast exception
+    SCK_NULL_CHECK,                 // target for NullReferenceException (Wasm)
     SCK_COUNT
 };
 
@@ -485,11 +486,16 @@ enum GenTreeFlags : unsigned
     GTF_IND_INITCLASS           = 0x00200000, // OperIsIndir() -- the indirection requires preceding static cctor
     GTF_IND_ALLOW_NON_ATOMIC    = 0x00100000, // GT_IND -- this memory access does not need to be atomic
 
-    GTF_IND_COPYABLE_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS,
+    // Represents flags that an indirection based on another indirection must preserve
+    GTF_IND_MUST_PRESERVE_FLAGS = GTF_IND_VOLATILE | GTF_IND_UNALIGNED | GTF_IND_INITCLASS,
+
+    // Represents flags that an indirection based on another indirection can and must preserve
+    GTF_IND_COPYABLE_FLAGS = GTF_IND_MUST_PRESERVE_FLAGS | GTF_IND_NONFAULTING,
+
     GTF_IND_FLAGS = GTF_IND_COPYABLE_FLAGS | GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP | GTF_IND_INVARIANT | GTF_IND_ALLOW_NON_ATOMIC,
 
-    GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
-                                              //                         addressing mode
+    GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH/GT_CAST -- Do not CSE this node only, forms complex
+                                              //                                 addressing mode
 
     GTF_MUL_64RSLT              = 0x40000000, // GT_MUL     -- produce 64-bit result
 
@@ -501,6 +507,8 @@ enum GenTreeFlags : unsigned
 
     GTF_BOX_CLONED              = 0x40000000, // GT_BOX -- this box and its operand has been cloned, cannot assume it to be single-use anymore
     GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
+
+    GTF_QMARK_EARLY_EXPAND      = 0x01000000, // GT_QMARK -- early expansion of the QMARK node is required
 
     GTF_ARR_ADDR_NONNULL        = 0x80000000, // GT_ARR_ADDR -- this array's address is not null
 
@@ -947,10 +955,10 @@ public:
         assert((gtRegTag == GT_REGTAG_REG) || (gtRegTag == GT_REGTAG_NONE)); // TODO-Cleanup: get rid of the NONE case,
                                                                              // and fix everyplace that reads undefined
                                                                              // values
+        // TODO-Cleanup: get rid of the NONE case, and fix everyplace that reads
+        // undefined values
         regNumber reg = (regNumber)_gtRegNum;
-        assert((gtRegTag == GT_REGTAG_NONE) || // TODO-Cleanup: get rid of the NONE case, and fix everyplace that reads
-                                               // undefined values
-               (reg >= REG_FIRST && reg <= REG_COUNT));
+        assert((gtRegTag == GT_REGTAG_NONE) || genIsValidReg(reg) || (reg == REG_COUNT));
         return reg;
     }
 
@@ -1507,10 +1515,10 @@ public:
 #if defined(TARGET_XARCH)
     bool isEvexCompatibleHWIntrinsic(Compiler* comp) const;
     bool isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const;
-    bool isEmbeddedMaskingCompatible(Compiler*    comp,
-                                     unsigned     tgtMaskSize,
-                                     CorInfoType& tgtSimdBaseJitType,
-                                     size_t*      broadcastOpIndex = nullptr) const;
+    bool isEmbeddedMaskingCompatible(Compiler*  comp,
+                                     unsigned   tgtMaskSize,
+                                     var_types& tgtSimdBaseType,
+                                     size_t*    broadcastOpIndex = nullptr) const;
 #endif // TARGET_XARCH
     bool isEmbeddedMaskingCompatible() const;
 #else
@@ -2061,7 +2069,7 @@ public:
 
     bool SupportsSettingZeroFlag();
 
-    bool SupportsSettingResultFlags();
+    bool SupportsSettingFlagsAsCompareToZero();
 
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily
@@ -2153,13 +2161,16 @@ public:
 
     void SetUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
+#if defined(TARGET_64BIT)
+        assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST));
+#else
+        assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST, GT_ADD_HI, GT_SUB_HI));
+#endif
         gtFlags |= GTF_UNSIGNED;
     }
 
     void ClearUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
         gtFlags &= ~GTF_UNSIGNED;
     }
 
@@ -2192,7 +2203,7 @@ public:
 
     bool IsPartOfAddressMode()
     {
-        return OperIs(GT_ADD, GT_MUL, GT_LSH) && ((gtFlags & GTF_ADDRMODE_NO_CSE) != 0);
+        return OperIs(GT_ADD, GT_MUL, GT_LSH, GT_CAST) && ((gtFlags & GTF_ADDRMODE_NO_CSE) != 0);
     }
 
     void SetAllEffectsFlags(GenTree* source)
@@ -3235,7 +3246,7 @@ struct GenTreeIntConCommon : public GenTree
     bool ImmedValNeedsReloc(Compiler* comp);
     bool ImmedValCanBeFolded(Compiler* comp, genTreeOps op);
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
     bool FitsInAddrBase(Compiler* comp);
     bool AddrNeedsReloc(Compiler* comp);
 #endif
@@ -4626,6 +4637,8 @@ enum class WellKnownArg : unsigned
     RuntimeMethodHandle,
     AsyncExecutionContext,
     AsyncSynchronizationContext,
+    WasmShadowStackPointer,
+    WasmPortableEntryPoint
 };
 
 #ifdef DEBUG
@@ -5260,6 +5273,16 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
     }
+    bool IsGenericVirtual(Compiler* compiler) const
+    {
+        return (gtCallType == CT_INDIRECT &&
+                (gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
+                 gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)
+#ifdef FEATURE_READYTORUN
+                 || gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
+#endif
+                     ));
+    }
 
     bool IsDevirtualizationCandidate(Compiler* compiler) const;
 
@@ -5611,7 +5634,7 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(TARGET_WASM)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
@@ -5937,6 +5960,16 @@ struct GenTreeQmark : public GenTreeOp
         gtThenLikelihood = thenLikelihood;
     }
 
+    bool IsEarlyExpandableQmark() const
+    {
+        return gtFlags & GTF_QMARK_EARLY_EXPAND;
+    }
+
+    void SetEarlyExpandableQmark()
+    {
+        gtFlags |= GTF_QMARK_EARLY_EXPAND;
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeQmark()
         : GenTreeOp()
@@ -6259,7 +6292,7 @@ protected:
     regNumberSmall     gtOtherReg;     // The second register for multi-reg intrinsics.
     MultiRegSpillFlags gtSpillFlags;   // Spill flags for multi-reg intrinsics.
     unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
-    unsigned char  gtSimdBaseJitType;  // SIMD vector base JIT type
+    unsigned char  gtSimdBaseType;     // SIMD vector base JIT type
     unsigned char  gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
     NamedIntrinsic gtHWIntrinsicId;
 
@@ -6365,46 +6398,17 @@ public:
 
     var_types GetAuxiliaryType() const;
 
-    CorInfoType GetSimdBaseJitType() const
+    // The invariant here is that simdBaseType is a converted
+    // CorInfoType using JitType2PreciseVarType.
+    void SetSimdBaseType(var_types simdBaseType)
     {
-        return (CorInfoType)gtSimdBaseJitType;
-    }
-
-    CorInfoType GetNormalizedSimdBaseJitType() const
-    {
-        CorInfoType simdBaseJitType = GetSimdBaseJitType();
-        switch (simdBaseJitType)
-        {
-            case CORINFO_TYPE_NATIVEINT:
-            {
-#ifdef TARGET_64BIT
-                return CORINFO_TYPE_LONG;
-#else
-                return CORINFO_TYPE_INT;
-#endif
-            }
-
-            case CORINFO_TYPE_NATIVEUINT:
-            {
-#ifdef TARGET_64BIT
-                return CORINFO_TYPE_ULONG;
-#else
-                return CORINFO_TYPE_UINT;
-#endif
-            }
-
-            default:
-                return simdBaseJitType;
-        }
-    }
-
-    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
-    {
-        gtSimdBaseJitType = (unsigned char)simdBaseJitType;
-        assert(gtSimdBaseJitType == simdBaseJitType);
+        gtSimdBaseType = (unsigned char)simdBaseType;
+        assert(gtSimdBaseType == simdBaseType);
     }
 
     var_types GetSimdBaseType() const;
+
+    var_types GetSimdBaseTypeAsVarType() const;
 
     unsigned char GetSimdSize() const
     {
@@ -6421,18 +6425,18 @@ public:
     GenTreeJitIntrinsic(genTreeOps    oper,
                         var_types     type,
                         CompAllocator allocator,
-                        CorInfoType   simdBaseJitType,
+                        var_types     simdBaseType,
                         unsigned      simdSize,
                         Operands... operands)
         : GenTreeMultiOp(oper, type, allocator, gtInlineOperands DEBUGARG(false), operands...)
         , gtOtherReg(REG_NA)
         , gtSpillFlags(0)
         , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
-        , gtSimdBaseJitType((unsigned char)simdBaseJitType)
+        , gtSimdBaseType((unsigned char)simdBaseType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
     {
-        assert(gtSimdBaseJitType == simdBaseJitType);
+        assert(gtSimdBaseType == simdBaseType);
         assert(gtSimdSize == simdSize);
     }
 
@@ -6444,11 +6448,8 @@ public:
 #endif
 
 protected:
-    GenTreeJitIntrinsic(genTreeOps             oper,
-                        var_types              type,
-                        IntrinsicNodeBuilder&& nodeBuilder,
-                        CorInfoType            simdBaseJitType,
-                        unsigned               simdSize)
+    GenTreeJitIntrinsic(
+        genTreeOps oper, var_types type, IntrinsicNodeBuilder&& nodeBuilder, var_types simdBaseType, unsigned simdSize)
         : GenTreeMultiOp(oper,
                          type,
                          nodeBuilder.GetBuiltOperands(),
@@ -6457,11 +6458,11 @@ protected:
         , gtOtherReg(REG_NA)
         , gtSpillFlags(0)
         , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
-        , gtSimdBaseJitType((unsigned char)simdBaseJitType)
+        , gtSimdBaseType((unsigned char)simdBaseType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
     {
-        assert(gtSimdBaseJitType == simdBaseJitType);
+        assert(gtSimdBaseType == simdBaseType);
         assert(gtSimdSize == simdSize);
     }
 
@@ -6479,9 +6480,9 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     GenTreeHWIntrinsic(var_types              type,
                        IntrinsicNodeBuilder&& nodeBuilder,
                        NamedIntrinsic         hwIntrinsicID,
-                       CorInfoType            simdBaseJitType,
+                       var_types              simdBaseType,
                        unsigned               simdSize)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, std::move(nodeBuilder), simdBaseJitType, simdSize)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, std::move(nodeBuilder), simdBaseType, simdSize)
     {
         Initialize(hwIntrinsicID);
     }
@@ -6490,10 +6491,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     GenTreeHWIntrinsic(var_types      type,
                        CompAllocator  allocator,
                        NamedIntrinsic hwIntrinsicID,
-                       CorInfoType    simdBaseJitType,
+                       var_types      simdBaseType,
                        unsigned       simdSize,
                        Operands... operands)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, allocator, simdBaseJitType, simdSize, operands...)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, allocator, simdBaseType, simdSize, operands...)
     {
         Initialize(hwIntrinsicID);
     }

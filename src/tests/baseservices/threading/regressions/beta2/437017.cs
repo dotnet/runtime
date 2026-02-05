@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public class Test
 {    
@@ -12,6 +13,7 @@ public class Test
     static ManualResetEvent _mre;
     static AutoResetEvent _are = new AutoResetEvent(false);
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/102544", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static int TestEntryPoint()
     {

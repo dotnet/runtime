@@ -367,8 +367,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
-    CORINFO_HELP_STRCNS,            // create a new string literal
-
     /* Object model */
 
     CORINFO_HELP_INITCLASS,         // Initialize class if not already initialized
@@ -481,6 +479,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2,
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT,
+    CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE,
 
     /* Debugger */
 
@@ -575,6 +574,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS, // Transition to preemptive mode and track transitions in reverse P/Invoke prolog.
 
     CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
+    CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT,  // Resolve a non-generic interface method from this pointer and dispatch cell
 
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
@@ -902,7 +902,9 @@ enum class CorInfoReloc
     LOONGARCH64_JIR,                       // LoongArch64: pcaddu18i+jirl
 
     // RISCV64 relocs
-    RISCV64_PC,                            // RiscV64: auipc
+    RISCV64_CALL_PLT,                      // RiscV64: auipc + jalr
+    RISCV64_PCREL_I,                       // RiscV64: auipc + I-type
+    RISCV64_PCREL_S,                       // RiscV64: auipc + S-type
 };
 
 enum CorInfoGCType
@@ -1540,7 +1542,7 @@ enum CORINFO_DEVIRTUALIZATION_DETAIL
 {
     CORINFO_DEVIRTUALIZATION_UNKNOWN,                              // no details available
     CORINFO_DEVIRTUALIZATION_SUCCESS,                              // devirtualization was successful
-    CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class was canonical
+    CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class or method was canonical
     CORINFO_DEVIRTUALIZATION_FAILED_COM,                           // object class was com
     CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
     CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found
@@ -1578,7 +1580,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
     //   use it as the parameter to getCallInfo
     // - isInstantiatingStub is set to TRUE if the devirtualized method is a generic method instantiating stub
-    // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
+    // - needsMethodContext is set TRUE if the devirtualized method may require a method context
     //     (in which case the method handle and context will be a generic method)
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
@@ -1587,7 +1589,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedMethod;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
     bool                            isInstantiatingStub;
-    bool                            wasArrayInterfaceDevirt;
+    bool                            needsMethodContext;
 };
 
 //----------------------------------------------------------------------------
@@ -1854,7 +1856,13 @@ enum { LCL_FINALLY_MARK = 0xFC }; // FC = "Finally Call"
  * when it generates code
  **********************************************************************************/
 
-typedef void* CORINFO_MethodPtr;            // a generic method pointer
+#ifdef TARGET_64BIT
+typedef uint64_t TARGET_SIZE_T;
+#else
+typedef uint32_t TARGET_SIZE_T;
+#endif
+
+typedef TARGET_SIZE_T CORINFO_MethodPtr;            // a generic method pointer
 
 struct CORINFO_Object
 {
@@ -1927,17 +1935,23 @@ struct CORINFO_RefArray : public CORINFO_Object
     CORINFO_Object*         refElems[1];    // actually of variable size;
 };
 
-struct CORINFO_RefAny
-{
-    void                      * dataPtr;
-    CORINFO_CLASS_HANDLE        type;
-};
-
 // The jit assumes the CORINFO_VARARGS_HANDLE is a pointer to a subclass of this
 struct CORINFO_VarArgInfo
 {
     unsigned                argBytes;       // number of bytes the arguments take up.
                                             // (The CORINFO_VARARGS_HANDLE counts as an arg)
+};
+
+// Note: Keep synchronized with AsyncHelpers.ResumeInfo
+// Any changes to this are an R2R breaking change. Update the R2R verion as needed
+struct CORINFO_AsyncResumeInfo
+{
+    // delegate*<Continuation, ref byte, Continuation>
+    TARGET_SIZE_T Resume;
+    // Pointer in main code for diagnostics. See comments on
+    // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and
+    // ResumeInfo.DiagnosticIP in SPC.
+    TARGET_SIZE_T DiagnosticIP;
 };
 
 struct CORINFO_TYPE_LAYOUT_NODE
@@ -2365,7 +2379,10 @@ public:
             CORINFO_RESOLVED_TOKEN *    pResolvedToken /* IN  */) = 0;
 
     // Returns (sub)string length and content (can be null for dynamic context)
-    // for given metaTOK and module, length `-1` means input is incorrect
+    // for given metaTOK and module, length `-1` means input is incorrect.
+    //
+    // Return value: The actual length of the (sub)string. Note that this may be larger
+    // than bufferSize, in which case only bufferSize characters are copied to buffer.
     virtual int getStringLiteral (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
@@ -3221,12 +3238,6 @@ public:
             CORINFO_METHOD_HANDLE   ftn,
             bool                    isUnsafeFunctionPointer,
             CORINFO_CONST_LOOKUP *  pResult
-            ) = 0;
-
-    // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).
-    // Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
-    virtual CorInfoHelpFunc getLazyStringLiteralHelper(
-            CORINFO_MODULE_HANDLE   handle
             ) = 0;
 
     virtual CORINFO_MODULE_HANDLE embedModuleHandle(

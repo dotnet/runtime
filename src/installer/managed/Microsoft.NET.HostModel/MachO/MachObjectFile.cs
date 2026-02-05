@@ -108,7 +108,7 @@ internal unsafe partial class MachObjectFile
     public bool HasSignature => !_codeSignatureLoadCommand.Command.IsDefault;
 
     /// <summary>
-    /// Adds or replaces the code signature load command and modifies the __LINKEDIT segment size to accomodate the signature.
+    /// Adds or replaces the code signature load command and modifies the __LINKEDIT segment size to accommodate the signature.
     /// Writes the EmbeddedSignature blob to the file.
     /// Returns the new size of the file (the end of the signature blob).
     /// </summary>
@@ -430,7 +430,7 @@ internal unsafe partial class MachObjectFile
 
         if (_codeSignatureLoadCommand.Command.IsDefault)
         {
-            // Update the header to accomodate the new code signature load command
+            // Update the header to accommodate the new code signature load command
             _header.NumberOfCommands += 1;
             _header.SizeOfCommands += (uint)sizeof(LinkEditLoadCommand);
             if (_header.SizeOfCommands > _lowestSectionOffset)

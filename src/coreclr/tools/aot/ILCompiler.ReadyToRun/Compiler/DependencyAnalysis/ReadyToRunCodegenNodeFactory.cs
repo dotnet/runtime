@@ -18,6 +18,7 @@ using Internal.Text;
 using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
+using ILCompiler.ReadyToRun.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -330,7 +331,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _debugDirectoryEntries = new NodeCache<ModuleAndIntValueKey, DebugDirectoryEntryNode>(key =>
             {
-                    return new CopiedDebugDirectoryEntryNode(key.Module, key.IntValue);
+                return new CopiedDebugDirectoryEntryNode(key.Module, key.IntValue);
             });
 
             _copiedMetadataBlobs = new NodeCache<EcmaModule, CopiedMetadataBlobNode>(module =>
@@ -477,7 +478,7 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc method = methodNode.Method;
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
 #if DEBUG
-                if (!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method))
+                if ((!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method)) && method.IsPrimaryMethodDesc())
                 {
                     EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
                     ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
@@ -1062,14 +1063,14 @@ namespace ILCompiler.DependencyAnalysis
             _genericCycleDetector?.DetectCycle(caller, callee);
         }
 
-        public string GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
+        public Utf8String GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
         {
             isHidden = false;
             if (node == Header)
             {
-                return "RTR_HEADER";
+                return new Utf8String("RTR_HEADER"u8);
             }
-            return null;
+            return default;
         }
     }
 }

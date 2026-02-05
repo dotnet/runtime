@@ -1020,6 +1020,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     builder.Append("[INST] ");
                 }
+                if ((flags & ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant) != 0)
+                {
+                    builder.Append("[ASYNC] ");
+                }
                 builder.Append(method);
                 return builder.ToString();
             }
@@ -1637,6 +1641,10 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunHelper.Rethrow:
                     builder.Append("RETHROW");
+                    break;
+
+                case ReadyToRunHelper.ThrowExact:
+                    builder.Append("THROW_EXACT");
                     break;
 
                 case ReadyToRunHelper.Overflow:

@@ -303,7 +303,6 @@ FUNCTIONS
     void getHelperFtn (CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE *pMethod);
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn, REF_CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags);
     void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, REF_CORINFO_CONST_LOOKUP pResult);
-    CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE   handle);
     CORINFO_MODULE_HANDLE embedModuleHandle(CORINFO_MODULE_HANDLE   handle, void                  **ppIndirection);
     CORINFO_CLASS_HANDLE embedClassHandle(CORINFO_CLASS_HANDLE    handle, void                  **ppIndirection);
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE   handle, void                  **ppIndirection);
