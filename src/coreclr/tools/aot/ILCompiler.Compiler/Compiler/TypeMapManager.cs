@@ -9,10 +9,7 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
-using Internal.IL;
-using Internal.IL.Stubs;
-using Internal.TypeSystem;
-using ReflectionMapBlob = Internal.Runtime.ReflectionMapBlob;
+using Internal.Runtime;
 
 namespace ILCompiler
 {
@@ -64,8 +61,8 @@ namespace ILCompiler
                 return; // No type maps to emit
             }
 
-            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.ExternalTypeMap), new ExternalTypeMapObjectNode(commonFixupsTableNode));
-            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.ProxyTypeMap), new ProxyTypeMapObjectNode(commonFixupsTableNode));
+            header.Add(ReadyToRunSectionType.ExternalTypeMaps, new ExternalTypeMapObjectNode(commonFixupsTableNode));
+            header.Add(ReadyToRunSectionType.ProxyTypeMaps, new ProxyTypeMapObjectNode(commonFixupsTableNode));
         }
     }
 }

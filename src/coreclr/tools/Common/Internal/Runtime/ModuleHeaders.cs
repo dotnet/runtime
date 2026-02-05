@@ -80,6 +80,10 @@ namespace Internal.Runtime
         EnclosingTypeMap = 122, // Added in V9.0
         TypeGenericInfoMap = 123, // Added in V9.0
 
+        // Shared ReadyToRun sections
+        ExternalTypeMaps            = 124, // Added to CoreCLR in V18.1
+        ProxyTypeMaps               = 125, // Added to CoreCLR in V18.1
+
         //
         // NativeAOT ReadyToRun sections
         //

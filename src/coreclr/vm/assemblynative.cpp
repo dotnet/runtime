@@ -1535,6 +1535,57 @@ namespace
         }
     }
 
+#ifdef FEATURE_READYTORUN
+    template<typename TExternalTypeMapCallback, typename TProxyTypeMapCallback>
+    void ProcessPrecachedTypeMaps(
+        TExternalTypeMapCallback onNewExternalTypeMap,
+        TProxyTypeMapCallback onNewProxyTypeMap,
+        MethodTable* groupTypeMT,
+        Assembly* pAssembly)
+    {
+        STANDARD_VM_CONTRACT;
+
+        PTR_Module pModule = pAssembly->GetModule();
+        if (!m_pModule->IsReadyToRun())
+        {
+            return;
+        }
+        PTR_ReadyToRunInfo pR2RInfo = pModule->GetReadyToRunInfo();
+
+        if (pR2RInfo->HasPrecachedExternalTypeMap(groupTypeMT))
+        {
+            GCX_COOP();
+            REFLECTIONMODULEBASEREF moduleRef = pModule->GetExposedObject();
+
+            GCPROTECT_BEGIN(&moduleRef);
+            {
+                GCX_PREEMP();
+                if (!onNewExternalTypeMap(&moduleRef))
+                {
+                    return;
+                }
+            }
+            GCPROTECT_END();
+        }
+
+        if (pR2RInfo->HasPrecachedProxyTypeMap(groupTypeMT))
+        {
+            GCX_COOP();
+            REFLECTIONMODULEBASEREF moduleRef = pModule->GetExposedObject();
+
+            GCPROTECT_BEGIN(&moduleRef);
+            {
+                GCX_PREEMP();
+                if (!onNewProxyTypeMap(&moduleRef))
+                {
+                    return;
+                }
+            }
+            GCPROTECT_END();
+        }
+    }
+#endif
+
     class AssemblyPtrCollectionTraits : public DefaultSHashTraits<Assembly*>
     {
     public:
@@ -1652,6 +1703,8 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     QCall::TypeHandle pGroupType,
     BOOL (*newExternalTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
     BOOL (*newProxyTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
+    BOOL (*newPrecachedExternalTypeMap)(CallbackContext* context, REFLECTMODULEBASEREF* module),
+    BOOL (*newPrecachedProxyTypeMap)(CallbackContext* context, REFLECTMODULEBASEREF* module),
     CallbackContext* context)
 {
     QCALL_CONTRACT;
@@ -1683,7 +1736,29 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
             groupTypeMT,
             currAssembly);
 
-        if (newExternalTypeEntry != NULL)
+        bool foundPrecachedExternalTypeMap = false;
+        bool foundPrecachedProxyTypeMap = false;
+        ProcessPrecachedTypeMaps(
+            [=, &foundPrecachedExternalTypeMap](REFLECTMODULEBASEREF* module) -> BOOL
+            {
+                STANDARD_VM_CONTRACT;
+                foundPrecachedExternalTypeMap = true;
+                ASSERT_PROTECTED(module);
+                return newPrecachedExternalTypeMap(context, module);
+            },
+            [=, &foundPrecachedProxyTypeMap](REFLECTMODULEBASEREF* module) -> BOOL
+            {
+                STANDARD_VM_CONTRACT;
+                foundPrecachedProxyTypeMap = true;
+                ASSERT_PROTECTED(module);
+                return newPrecachedProxyTypeMap(context, module);
+            },
+            groupTypeMT,
+            currAssembly);
+
+        // We will only process the specific type maps if we have a callback to process
+        // the entry and the precached map was not calculated for this module.
+        if (newExternalTypeEntry != NULL && !foundPrecachedExternalTypeMap)
         {
             MappingsProcessor onExternalType{ newExternalTypeEntry, context };
             ProcessTypeMapAttribute(
@@ -1693,7 +1768,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
                 currAssembly);
         }
 
-        if (newProxyTypeEntry != NULL)
+        if (newProxyTypeEntry != NULL && !foundPrecachedProxyTypeMap)
         {
             MappingsProcessor onProxyType{ newProxyTypeEntry, context };
             ProcessTypeMapAttribute(
@@ -1705,4 +1780,70 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     }
 
     END_QCALL;
+}
+
+extern "C" TypeHandle QCALLTYPE TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry(
+    QCall::ModuleHandle pModule,
+    QCall::TypeHandle pGroupType,
+    LPCUTF8 pKey)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(pModule != NULL);
+    _ASSERTE(!pGroupType.AsTypeHandle().IsNull());
+
+    TypeHandle resultTypeHnd;
+
+    BEGIN_QCALL;
+
+#ifdef FEATURE_READYTORUN
+    if (pModule->IsReadyToRun())
+    {
+        PTR_ReadyToRunInfo pR2RInfo = pModule->GetReadyToRunInfo();
+
+        TypeHandle groupTypeTH = pGroupType.AsTypeHandle();
+        _ASSERTE(!groupTypeTH.IsTypeDesc());
+        MethodTable* groupTypeMT = groupTypeTH.AsMethodTable();
+
+        resultTypeHnd = pR2RInfo->FindPrecachedExternalTypeMapEntry(
+            groupTypeMT,
+            pKey);
+    }
+#endif // FEATURE_READYTORUN
+
+    END_QCALL;
+
+    return resultTypeHnd;
+}
+
+extern "C" TypeHandle QCALLTYPE TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry(
+    QCall::ModuleHandle pModule,
+    QCall::TypeHandle pGroupType,
+    QCall::TypeHandle pType)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(pModule != NULL);
+    _ASSERTE(!pGroupType.AsTypeHandle().IsNull());
+
+    TypeHandle resultTypeHnd;
+
+    BEGIN_QCALL;
+
+#ifdef FEATURE_READYTORUN
+    if (pModule->IsReadyToRun())
+    {
+        PTR_ReadyToRunInfo pR2RInfo = pModule->GetReadyToRunInfo();
+
+        TypeHandle groupTypeTH = pGroupType.AsTypeHandle();
+        _ASSERTE(!groupTypeTH.IsTypeDesc());
+        MethodTable* groupTypeMT = groupTypeTH.AsMethodTable();
+
+        resultTypeHnd = pR2RInfo->FindPrecachedProxyTypeMapEntry(
+            groupTypeMT,
+            pType.AsTypeHandle());
+    }
+#endif // FEATURE_READYTORUN
+
+    END_QCALL;
+
+    return resultTypeHnd;
 }

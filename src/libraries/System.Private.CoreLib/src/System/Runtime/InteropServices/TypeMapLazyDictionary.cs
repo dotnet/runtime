@@ -78,6 +78,8 @@ namespace System.Runtime.InteropServices
             QCallTypeHandle groupType,
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newExternalTypeEntry,
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry,
+            delegate* unmanaged<CallbackContext*, RuntimeModule*, Interop.BOOL> newPrecachedExternalTypeMap,
+            delegate* unmanaged<CallbackContext*, RuntimeModule*, Interop.BOOL> newPrecachedProxyTypeMap,
             CallbackContext* context);
 
         public ref struct Utf16SharedBuffer
@@ -116,6 +118,44 @@ namespace System.Runtime.InteropServices
             char[] buffer = ArrayPool<char>.Shared.Rent(needed);
             int converted = Encoding.UTF8.GetChars(utf8TypeName, buffer);
             utf16Buffer = new Utf16SharedBuffer(buffer, converted);
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe Interop.BOOL NewPrecachedExternalTypeMap(CallbackContext* context, RuntimeModule* module)
+        {
+            Debug.Assert(context != null);
+            Debug.Assert(module != default);
+
+            try
+            {
+                context->ExternalTypeMap.AddPreCachedModule(*module);
+            }
+            catch (Exception ex)
+            {
+                context->CreationException = ExceptionDispatchInfo.Capture(ex);
+                return Interop.BOOL.FALSE; // Stop processing.
+            }
+
+            return Interop.BOOL.TRUE; // Continue processing.
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe Interop.BOOL NewPrecachedProxyTypeMap(CallbackContext* context, RuntimeModule* module)
+        {
+            Debug.Assert(context != null);
+            Debug.Assert(module != default);
+
+            try
+            {
+                context->ProxyTypeMap.AddPreCachedModule(*module);
+            }
+            catch (Exception ex)
+            {
+                context->CreationException = ExceptionDispatchInfo.Capture(ex);
+                return Interop.BOOL.FALSE; // Stop processing.
+            }
+
+            return Interop.BOOL.TRUE; // Continue processing.
         }
 
         [UnmanagedCallersOnly]
@@ -243,12 +283,24 @@ namespace System.Runtime.InteropServices
 
         private abstract class LazyTypeLoadDictionary<TKey> : IReadOnlyDictionary<TKey, Type> where TKey : notnull
         {
+            private readonly List<RuntimeModule> _preCachedModules = [];
+
             protected abstract bool TryGetOrLoadType(TKey key, [NotNullWhen(true)] out Type? type);
+
+            protected abstract bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, TKey key, [NotNullWhen(true)] out Type? type);
 
             public Type this[TKey key]
             {
                 get
                 {
+                    foreach (RuntimeModule module in _preCachedModules)
+                    {
+                        if (TryGetOrLoadTypeFromPreCachedDictionary(module, key, out Type? type))
+                        {
+                            return type;
+                        }
+                    }
+
                     if (!TryGetOrLoadType(key, out Type? type))
                     {
                         ThrowHelper.ThrowKeyNotFoundException(key);
@@ -256,6 +308,11 @@ namespace System.Runtime.InteropServices
 
                     return type;
                 }
+            }
+
+            public void AddPreCachedModule(RuntimeModule module)
+            {
+                _preCachedModules.Add(module);
             }
 
             public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out Type value) => TryGetOrLoadType(key, out value);
@@ -317,7 +374,7 @@ namespace System.Runtime.InteropServices
         [RequiresUnreferencedCode("Lazy TypeMap isn't supported for Trimmer scenarios")]
         private sealed class LazyExternalTypeDictionary : LazyTypeLoadDictionary<string>
         {
-            private readonly Dictionary<string, DelayedType> _lazyData = new();
+            private readonly Dictionary<string, DelayedType> _lazyData = [];
 
             protected override bool TryGetOrLoadType(string key, [NotNullWhen(true)] out Type? type)
             {

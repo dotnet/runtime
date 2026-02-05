@@ -930,6 +930,21 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     }
 #endif
 
+    if (IsImageVersionAtLeast(18, 1))
+    {
+        IMAGE_DATA_DIRECTORY* pExternalTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ExternalTypeMaps);
+        if (pExternalTypeMapsDir != NULL)
+        {
+            m_externalTypeMaps = NativeHashtable(NativeParser(&m_nativeReader, pExternalTypeMapsDir->VirtualAddress));
+        }
+
+        IMAGE_DATA_DIRECTORY* pProxyTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ProxyTypeMaps);
+        if (pProxyTypeMapsDir != NULL)
+        {
+            m_proxyTypeMaps = NativeHashtable(NativeParser(&m_nativeReader, pProxyTypeMapsDir->VirtualAddress));
+        }
+    }
+
     if (!m_isComponentAssembly)
     {
         // For component assemblies we don't initialize the reverse lookup map mapping entry points to MethodDescs;
@@ -1551,6 +1566,175 @@ bool ReadyToRunInfo::MayHaveCustomAttribute(WellKnownAttribute attribute, mdToke
 void ReadyToRunInfo::DisableCustomAttributeFilter()
 {
     m_attributesPresence.DisableFilter();
+}
+
+namespace
+{
+    TypeHandle GetTypeHandleForNativeFormatFixupReference(PTR_ReadyToRunInfo pR2RInfo, PTR_Module pModule, uint32_t importSection, uint32_t fixupIndex)
+    {
+        STANDARD_VM_CONTRACT;
+
+        COUNT_T countImportSections;
+        PTR_READYTORUN_IMPORT_SECTION pImportSections = pR2RInfo->GetImportSections(&countImportSections);
+
+        if (importSection >= countImportSections)
+        {
+            _ASSERTE(!"Malformed PGO type or method handle data");
+            return TypeHandle();
+        }
+
+        PTR_READYTORUN_IMPORT_SECTION pImportSection = &pImportSections[importSection];
+        COUNT_T cbData;
+        TADDR pData = pR2RInfo->GetImage()->GetDirectoryData(&pImportSection->Section, &cbData);
+        PTR_SIZE_T fixupAddress = dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR));
+        if (!pModule->FixupNativeEntry(pImportSections + importSection, fixupIndex, fixupAddress))
+        {
+            return TypeHandle();
+        }
+
+        return *(TypeHandle*)fixupAddress;
+    }
+}
+
+bool ReadyToRunInfo::HasPrecachedExternalTypeMap(MethodTable* pGroupTypeMT)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(pGroupTypeMT != nullptr);
+
+    if (m_externalTypeMaps.IsNull())
+    {
+        return false;
+    }
+
+    UINT32 hash = GetVersionResilientTypeHashCode(pGroupTypeMT);
+    NativeHashtable::Enumerator lookup = m_externalTypeMaps.Lookup(hash);
+    NativeParser entryParser;
+    while (lookup.GetNext(entryParser))
+    {
+        if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) == TypeHandle(pGroupTypeMT))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+TypeHandle ReadyToRunInfo::FindPrecachedExternalTypeMapEntry(MethodTable* pGroupType, LPCUTF8 pKey)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(pGroupType != nullptr);
+    if (m_externalTypeMaps.IsNull())
+    {
+        return TypeHandle();
+    }
+
+    UINT32 hash = GetVersionResilientTypeHashCode(pGroupType);
+    NativeHashtable::Enumerator lookup = m_externalTypeMaps.Lookup(hash);
+    NativeParser entryParser;
+    while (lookup.GetNext(entryParser))
+    {
+        if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) != TypeHandle(pGroupType))
+        {
+            continue;
+        }
+
+        if (entryParser.GetUnsigned() == 0)
+        {
+            // Table is not valid
+            return TypeHandle();
+        }
+
+        NativeHashtable typeMapTable = NativeHashtable(entryParser);
+
+        UINT32 typeArgHash = ComputeNameHashCode(pKey);
+        NativeHashtable::Enumerator typeMapLookup = typeMapTable.Lookup(typeArgHash);
+        NativeParser typeMapEntryParser;
+        while (typeMapLookup.GetNext(typeMapEntryParser))
+        {
+            if (typeMapEntryParser.StringEquals(pKey, (uint32_t)strlen(pKey)))
+            {
+                return GetTypeHandleForNativeFormatFixupReference(this, m_pModule, typeMapEntryParser.GetUnsigned(), typeMapEntryParser.GetUnsigned());
+            }
+        }
+
+        // No matching entry found in the table.
+        return TypeHandle();
+    }
+
+    // No table found for the group type.
+    return TypeHandle();
+}
+
+bool ReadyToRunInfo::HasPrecachedProxyTypeMap(MethodTable* pGroupType)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pGroupType != nullptr);
+    if (m_proxyTypeMaps.IsNull())
+    {
+        return false;
+    }
+    UINT32 hash = GetVersionResilientTypeHashCode(pGroupType);
+    NativeHashtable::Enumerator lookup = m_proxyTypeMaps.Lookup(hash);
+    NativeParser entryParser;
+    while (lookup.GetNext(entryParser))
+    {
+        if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) == TypeHandle(pGroupType))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+TypeHandle ReadyToRunInfo::FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(pGroupType != nullptr);
+    if (m_proxyTypeMaps.IsNull())
+    {
+        return TypeHandle();
+    }
+
+    UINT32 hash = GetVersionResilientTypeHashCode(pGroupType);
+    NativeHashtable::Enumerator lookup = m_proxyTypeMaps.Lookup(hash);
+    NativeParser entryParser;
+    while (lookup.GetNext(entryParser))
+    {
+        if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) != TypeHandle(pGroupType))
+        {
+            continue;
+        }
+
+        if (entryParser.GetUnsigned() == 0)
+        {
+            // Table is not valid
+            return TypeHandle();
+        }
+
+        NativeHashtable typeMapTable = NativeHashtable(entryParser);
+
+        UINT32 typeArgHash = GetVersionResilientTypeHashCode(key);
+        NativeHashtable::Enumerator typeMapLookup = typeMapTable.Lookup(typeArgHash);
+        NativeParser typeMapEntryParser;
+        while (typeMapLookup.GetNext(typeMapEntryParser))
+        {
+            if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) != TypeHandle(pGroupType))
+            {
+                continue;
+            }
+
+            return GetTypeHandleForNativeFormatFixupReference(this, m_pModule, typeMapEntryParser.GetUnsigned(), typeMapEntryParser.GetUnsigned());
+        }
+
+        // No matching entry found in the table.
+        return TypeHandle();
+    }
+
+    // No table found for the group type.
+    return TypeHandle();
 }
 
 class NativeManifestModule : public ModuleBase
