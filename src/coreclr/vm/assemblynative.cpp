@@ -146,7 +146,8 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
-    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly);
+    StackSString loadedAssemblyName;
+    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly, &loadedAssemblyName);
 
     if (hr != S_OK)
     {
@@ -157,7 +158,19 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
             // Give a more specific message for the case when we found the assembly with the same name already loaded.
             // Show the assembly name, since we know the error is about the assembly name.
             StackSString errorString;
-            errorString.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
+            if (!loadedAssemblyName.IsEmpty())
+            {
+                // We have the loaded assembly's name - include it in the error message
+                StackSString simpleName;
+                spec.GetName(simpleName);
+                SString format;
+                format.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION);
+                errorString.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, simpleName, loadedAssemblyName);
+            }
+            else
+            {
+                errorString.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
+            }
             COMPlusThrow(kFileLoadException, IDS_EE_FILELOAD_ERROR_GENERIC, name, errorString);
         }
         else
