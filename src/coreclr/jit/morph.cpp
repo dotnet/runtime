@@ -137,13 +137,13 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
 
 class SharedTempsScope
 {
-    Compiler*             m_comp;
+    Compiler*             m_compiler;
     ArrayStack<unsigned>  m_usedSharedTemps;
     ArrayStack<unsigned>* m_prevUsedSharedTemps;
 
 public:
     SharedTempsScope(Compiler* comp)
-        : m_comp(comp)
+        : m_compiler(comp)
         , m_usedSharedTemps(comp->getAllocator(CMK_CallArgs))
         , m_prevUsedSharedTemps(comp->fgUsedSharedTemps)
     {
@@ -152,11 +152,11 @@ public:
 
     ~SharedTempsScope()
     {
-        m_comp->fgUsedSharedTemps = m_prevUsedSharedTemps;
+        m_compiler->fgUsedSharedTemps = m_prevUsedSharedTemps;
 
         for (int i = 0; i < m_usedSharedTemps.Height(); i++)
         {
-            m_comp->fgAvailableOutgoingArgTemps->setBit((indexType)m_usedSharedTemps.Top(i));
+            m_compiler->fgAvailableOutgoingArgTemps->setBit((indexType)m_usedSharedTemps.Top(i));
         }
     }
 };
@@ -12619,13 +12619,14 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
             if (BitVecOps::IsMember(apTraits, killed, index - 1))
             {
                 const AssertionDsc& curAssertion = optGetAssertion(index);
-                noway_assert((curAssertion.op1.lclNum == lclNum) ||
-                             ((curAssertion.op2.kind == O2K_LCLVAR_COPY) && (curAssertion.op2.lclNum == lclNum)));
+                noway_assert(
+                    (curAssertion.GetOp1().GetLclNum() == lclNum) ||
+                    (curAssertion.GetOp2().KindIs(O2K_LCLVAR_COPY) && (curAssertion.GetOp2().GetLclNum() == lclNum)));
                 if (verbose)
                 {
                     printf("\nThe store ");
                     printTreeID(tree);
-                    printf(" using V%02u removes: ", curAssertion.op1.lclNum);
+                    printf(" using V%02u removes: ", curAssertion.GetOp1().GetLclNum());
                     optPrintAssertion(curAssertion, index);
                 }
             }
@@ -12740,19 +12741,20 @@ void Compiler::fgAssertionGen(GenTree* tree)
     //
     auto addImpliedAssertions = [=](AssertionIndex index, ASSERT_TP& assertions) {
         const AssertionDsc& assertion = optGetAssertion(index);
-        if ((assertion.assertionKind == OAK_EQUAL) && (assertion.op1.kind == O1K_LCLVAR) &&
-            (assertion.op2.kind == O2K_CONST_INT))
+        if (assertion.KindIs(OAK_EQUAL) && assertion.GetOp1().KindIs(O1K_LCLVAR) &&
+            assertion.GetOp2().KindIs(O2K_CONST_INT))
         {
-            LclVarDsc* const lclDsc = lvaGetDesc(assertion.op1.lclNum);
+            LclVarDsc* const lclDsc = lvaGetDesc(assertion.GetOp1().GetLclNum());
 
             if (varTypeIsIntegral(lclDsc->TypeGet()))
             {
-                ssize_t iconVal = assertion.op2.u1.iconVal;
+                ssize_t iconVal = assertion.GetOp2().GetIntConstant();
                 if ((iconVal == 0) || (iconVal == 1))
                 {
-                    auto           range = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
-                    AssertionDsc   extraAssertion = AssertionDsc::CreateSubrange(this, assertion.op1.lclNum, range);
-                    AssertionIndex extraIndex     = optAddAssertion(extraAssertion);
+                    auto         range = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
+                    AssertionDsc extraAssertion =
+                        AssertionDsc::CreateSubrange(this, assertion.GetOp1().GetLclNum(), range);
+                    AssertionIndex extraIndex = optAddAssertion(extraAssertion);
                     if (extraIndex != NO_ASSERTION_INDEX)
                     {
                         unsigned const bvIndex = extraIndex - 1;

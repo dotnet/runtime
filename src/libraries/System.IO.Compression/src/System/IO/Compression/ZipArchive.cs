@@ -4,6 +4,7 @@
 
 // Zip Spec here: http://www.pkware.com/documents/casestudies/APPNOTE.TXT
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -15,6 +16,8 @@ namespace System.IO.Compression
 {
     public partial class ZipArchive : IDisposable, IAsyncDisposable
     {
+        private const int ReadCentralDirectoryReadBufferSize = 4096;
+
         private readonly Stream _archiveStream;
         private ZipArchiveEntry? _archiveStreamOwner;
         private readonly ZipArchiveMode _mode;
@@ -475,12 +478,8 @@ namespace System.IO.Compression
             }
         }
 
-        private void ReadCentralDirectoryInitialize(out byte[] fileBuffer, out long numberOfEntries, out bool saveExtraFieldsAndComments, out bool continueReadingCentralDirectory, out int bytesRead, out int currPosition, out int bytesConsumed)
+        private void ReadCentralDirectoryInitialize(out long numberOfEntries, out bool saveExtraFieldsAndComments, out bool continueReadingCentralDirectory, out int bytesRead, out int currPosition, out int bytesConsumed)
         {
-            const int ReadCentralDirectoryReadBufferSize = 4096;
-
-            fileBuffer = new byte[ReadCentralDirectoryReadBufferSize];
-
             // assume ReadEndOfCentralDirectory has been called and has populated _centralDirectoryStart
 
             _archiveStream.Seek(_centralDirectoryStart, SeekOrigin.Begin);
@@ -550,19 +549,20 @@ namespace System.IO.Compression
 
         private void ReadCentralDirectory()
         {
+            byte[] arrayPoolArray = ArrayPool<byte>.Shared.Rent(ReadCentralDirectoryReadBufferSize);
             try
             {
-                ReadCentralDirectoryInitialize(out byte[] fileBuffer, out long numberOfEntries, out bool saveExtraFieldsAndComments, out bool continueReadingCentralDirectory, out int bytesRead, out int currPosition, out int bytesConsumed);
+                Span<byte> fileBuffer = arrayPoolArray.AsSpan();
 
-                Span<byte> fileBufferSpan = fileBuffer.AsSpan();
+                ReadCentralDirectoryInitialize(out long numberOfEntries, out bool saveExtraFieldsAndComments, out bool continueReadingCentralDirectory, out int bytesRead, out int currPosition, out int bytesConsumed);
 
                 // read the central directory
                 while (continueReadingCentralDirectory)
                 {
                     // the buffer read must always be large enough to fit the constant section size of at least one header
-                    int currBytesRead = _archiveStream.ReadAtLeast(fileBufferSpan, ZipCentralDirectoryFileHeader.BlockConstantSectionSize, throwOnEndOfStream: false);
+                    int currBytesRead = _archiveStream.ReadAtLeast(fileBuffer, ZipCentralDirectoryFileHeader.BlockConstantSectionSize, throwOnEndOfStream: false);
 
-                    ReadOnlySpan<byte> sizedFileBuffer = fileBufferSpan.Slice(0, currBytesRead);
+                    ReadOnlySpan<byte> sizedFileBuffer = fileBuffer.Slice(0, currBytesRead);
                     continueReadingCentralDirectory = currBytesRead >= ZipCentralDirectoryFileHeader.BlockConstantSectionSize;
 
                     while (currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize <= currBytesRead)
@@ -583,7 +583,11 @@ namespace System.IO.Compression
             }
             catch (EndOfStreamException ex)
             {
-                throw new InvalidDataException(SR.Format(SR.CentralDirectoryInvalid, ex));
+                throw new InvalidDataException(SR.CentralDirectoryInvalid, ex);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(arrayPoolArray);
             }
         }
 

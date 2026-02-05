@@ -13,11 +13,11 @@ let stringsInitialized = false;
 export function stringsInit(): void {
     if (!stringsInitialized) {
         // V8 does not provide TextDecoder
-        if (typeof TextDecoder !== "undefined") {
-            textDecoderUtf16 = new TextDecoder("utf-16le");
+        if (typeof globalThis.TextDecoder !== "undefined") {
+            textDecoderUtf16 = new globalThis.TextDecoder("utf-16le");
         }
-        if (typeof TextEncoder !== "undefined") {
-            textEncoderUtf8 = new TextEncoder();
+        if (typeof globalThis.TextEncoder !== "undefined") {
+            textEncoderUtf8 = new globalThis.TextEncoder();
         }
         stringsInitialized = true;
     }

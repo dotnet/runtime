@@ -1415,7 +1415,9 @@ bool DebuggerController::BindPatch(DebuggerControllerPatch *patch,
     _ASSERTE(!g_pEEInterface->IsStub((const BYTE *)startAddr));
 
     // If we've jitted, map to a native offset.
-    DebuggerJitInfo *info = g_pDebugger->GetJitInfo(pMD, (const BYTE *)startAddr);
+    // If the patch already has a DJI, use it to avoid calling GetJitInfo which can trigger
+    // a deadlock-prone code path through HashMap lookups that do GC mode transitions.
+    DebuggerJitInfo *info = patch->HasDJI() ? patch->GetDJI() : g_pDebugger->GetJitInfo(pMD, (const BYTE *)startAddr);
 
 #ifdef LOGGING
     if (info == NULL)
