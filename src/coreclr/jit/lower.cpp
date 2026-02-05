@@ -12043,7 +12043,7 @@ bool Lowering::TryLowerOrToBFI(GenTreeOp* tree, GenTree** next)
 {
     assert(tree->OperIs(GT_OR));
 
-    if (!comp->opts.OptimizationEnabled())
+    if (!m_compiler->opts.OptimizationEnabled())
     {
         return false;
     }
@@ -12135,8 +12135,8 @@ bool Lowering::TryLowerOrToBFI(GenTreeOp* tree, GenTree** next)
 
     var_types   ty = genActualType(tree->TypeGet());
     GenTreeBfm* bfm =
-        comp->gtNewBfiNode(ty, bfiPattern.base, bfiPattern.value, static_cast<unsigned>(bfiPattern.offset),
-                           static_cast<unsigned>(bfiPattern.width));
+        m_compiler->gtNewBfiNode(ty, bfiPattern.base, bfiPattern.value, static_cast<unsigned>(bfiPattern.offset),
+                                 static_cast<unsigned>(bfiPattern.width));
     bfm->CopyCosts(tree);
 
     ContainCheckNode(bfm);
@@ -12348,7 +12348,7 @@ bool Lowering::TryLowerOrToBFX(GenTreeOp* tree, GenTree** next)
 {
     assert(tree->OperIs(GT_AND));
 
-    if (!comp->opts.OptimizationEnabled())
+    if (!m_compiler->opts.OptimizationEnabled())
     {
         return false;
     }
@@ -12383,7 +12383,8 @@ bool Lowering::TryLowerOrToBFX(GenTreeOp* tree, GenTree** next)
         return false;
     }
 
-    GenTreeBfm* bfm = comp->gtNewBfxNode(ty, shiftVar, static_cast<unsigned>(offset), static_cast<unsigned>(width));
+    GenTreeBfm* bfm =
+        m_compiler->gtNewBfxNode(ty, shiftVar, static_cast<unsigned>(offset), static_cast<unsigned>(width));
     bfm->CopyCosts(tree);
 
     ContainCheckNode(bfm);
