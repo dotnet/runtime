@@ -438,7 +438,6 @@ CorUnix::InternalCreateThread(
     CPalThread *pNewThread = NULL;
     CObjectAttributes oa;
     bool fAttributesInitialized = FALSE;
-    bool fThreadDataAddedToProcessList = FALSE;
     HANDLE hNewThread = NULL;
 
     pthread_t pthread;
@@ -596,8 +595,6 @@ CorUnix::InternalCreateThread(
 
     PROCProcessLock();
     fHoldingProcessLock = TRUE;
-
-    fThreadDataAddedToProcessList = TRUE;
 
     //
     // Spawn the new pthread
@@ -783,10 +780,6 @@ CorUnix::InternalEndCurrentThread(
     //
 
     pThread->GetThreadObject()->ReleaseReference(pThread);
-
-    /* Remove thread from the thread list of the process
-        (don't do if this is the last thread -> gets handled by
-        TerminateProcess->PROCCleanupProcess->PROCTerminateOtherThreads) */
 
     // Ensure that EH is disabled on the current thread
     SEHDisable(pThread);
