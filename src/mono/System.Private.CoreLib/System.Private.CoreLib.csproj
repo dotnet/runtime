@@ -127,7 +127,7 @@
 
   <!-- ILLinker settings -->
   <PropertyGroup>
-    <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
+    <ILLinkTrimAssembly Condition="'$(RunILLinkInBuild)' == 'true'">true</ILLinkTrimAssembly>
     <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
   </PropertyGroup>
 
