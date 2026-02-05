@@ -328,7 +328,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             console.log(`Shutting down: ${new Date().toISOString()}`);
             console.log(`WASM EXIT 0`);
         };
-        console.log(`globalThis.uploadTrace method created ${new Date().toISOString()}`);
+        console.log(`globalThis.collectAndUpload method created ${new Date().toISOString()}`);
         """;
         up=up.Replace("${traceCommand}", traceCommand).Replace("${filename}", fileName);
         await page.EvaluateAsync(up);
