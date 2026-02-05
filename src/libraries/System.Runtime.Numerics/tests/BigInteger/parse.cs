@@ -1341,8 +1341,8 @@ namespace System.Numerics.Tests
             CultureInfo ci = new CultureInfo("en-US");
             ci.NumberFormat.NumberGroupSeparator = "\u00A0";
 
-            // Test that regular space is accepted as equivalent to NBSP
-            string testWithSpace = "1234567";
+            // Test that regular space is accepted as equivalent to NBSP when culture uses NBSP
+            string testWithSpace = "1 234 567";  // Regular spaces used as thousands separators
             BigInteger result = BigInteger.Parse(testWithSpace, NumberStyles.AllowThousands, ci);
             Assert.Equal(BigInteger.Parse("1234567"), result);
 
