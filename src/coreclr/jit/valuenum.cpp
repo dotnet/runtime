@@ -7050,51 +7050,6 @@ bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
     return false;
 }
 
-void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
-{
-    assert(IsVNConstantBound(vn) || IsVNConstantBoundUnsigned(vn));
-    assert(info);
-
-    VNFuncApp funcAttr;
-    GetVNFunc(vn, &funcAttr);
-
-    bool       isUnsigned = true;
-    genTreeOps op;
-    switch (funcAttr.m_func)
-    {
-        case VNF_GT_UN:
-            op = GT_GT;
-            break;
-        case VNF_GE_UN:
-            op = GT_GE;
-            break;
-        case VNF_LT_UN:
-            op = GT_LT;
-            break;
-        case VNF_LE_UN:
-            op = GT_LE;
-            break;
-        default:
-            op         = (genTreeOps)funcAttr.m_func;
-            isUnsigned = false;
-            break;
-    }
-
-    if (IsVNInt32Constant(funcAttr.m_args[1]))
-    {
-        info->cmpOper  = op;
-        info->cmpOpVN  = funcAttr.m_args[0];
-        info->constVal = GetConstantInt32(funcAttr.m_args[1]);
-    }
-    else
-    {
-        info->cmpOper  = GenTree::SwapRelop(op);
-        info->cmpOpVN  = funcAttr.m_args[1];
-        info->constVal = GetConstantInt32(funcAttr.m_args[0]);
-    }
-    info->isUnsigned = isUnsigned;
-}
-
 //------------------------------------------------------------------------
 // IsVNPositiveInt32Constant: returns true iff vn is a known Int32 constant that is greater then 0
 //
