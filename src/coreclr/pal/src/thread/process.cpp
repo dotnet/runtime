@@ -140,10 +140,6 @@ CAllowedObjectTypes aotProcess(otiProcess);
 IPalObject* CorUnix::g_pobjProcess;
 
 //
-// Critical section that protects process data
-//
-
-//
 // The command line and app name for the process
 //
 LPWSTR g_lpwstrCmdLine = NULL;
