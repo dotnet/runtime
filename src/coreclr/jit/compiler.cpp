@@ -1988,7 +1988,6 @@ void Compiler::compSetProcessor()
     // Add virtual vector ISAs. These are both supported as part of the required baseline.
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    instructionSetFlags.AddInstructionSet(InstructionSet_VectorT);
 #endif // TARGET_ARM64
 
     assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
