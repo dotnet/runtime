@@ -325,7 +325,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             });
             console.log(`File uploaded successfully: ${new Date().toISOString()}`);
             await new Promise(resolve => setTimeout(resolve, 1000));
-            console.log(`Shuting down: ${new Date().toISOString()}`);
+            console.log(`Shutting down: ${new Date().toISOString()}`);
             console.log(`WASM EXIT 0`);
         };
         console.log(`globalThis.uploadTrace method created ${new Date().toISOString()}`);
