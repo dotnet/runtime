@@ -696,6 +696,15 @@ private:
 
     TArray<InterpAsyncSuspendData*, MemPoolAllocator> m_asyncSuspendDataItems;
 
+    // Tracks which data items contain pointers to async suspend data
+    // First = data item index, Second = index into m_asyncSuspendDataItems
+    struct DataItemAsyncSuspendRef
+    {
+        int32_t dataItemIndex;
+        int32_t asyncSuspendDataIndex;
+    };
+    TArray<DataItemAsyncSuspendRef, MemPoolAllocator> m_dataItemAsyncSuspendRefs;
+
     // Prepared InterpMethod data (stored temporarily until finalization)
     bool m_initLocals;
     bool m_unmanagedCallersOnly;

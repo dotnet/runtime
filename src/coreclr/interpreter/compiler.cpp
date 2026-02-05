@@ -1989,6 +1989,21 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
         currentAsyncOffset += sizeof(InterpAsyncSuspendData);
     }
 
+    // Fix up data item pointers that reference async suspend data
+    // These pointers were recorded during compilation and now need to point to the final locations
+    if (numDataItems > 0)
+    {
+        void** pDataItemsRW = (void**)(rwBase + dataItemsOffset);
+        for (int32_t i = 0; i < m_dataItemAsyncSuspendRefs.GetSize(); i++)
+        {
+            DataItemAsyncSuspendRef ref = m_dataItemAsyncSuspendRefs.Get(i);
+            // Calculate the final address of this async suspend data in the RX allocation
+            InterpAsyncSuspendData* finalAddr = (InterpAsyncSuspendData*)(rxBase + asyncSuspendDataOffset + 
+                                                                          ref.asyncSuspendDataIndex * sizeof(InterpAsyncSuspendData));
+            pDataItemsRW[ref.dataItemIndex] = finalAddr;
+        }
+    }
+
     // Write the InterpMethod pointer to the header (InterpByteCodeStart)
     *(InterpMethod**)(rwBase + headerOffset) = pMethodRX;
 
@@ -2028,6 +2043,7 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     , m_leavesTable(GetMemPoolAllocator(IMK_EHClause))
     , m_dataItems(GetMemPoolAllocator(IMK_DataItem))
     , m_asyncSuspendDataItems(GetMemPoolAllocator(IMK_DataItem))
+    , m_dataItemAsyncSuspendRefs(GetMemPoolAllocator(IMK_DataItem))
     , m_initLocals(false)
     , m_unmanagedCallersOnly(false)
     , m_publishSecretStubParam(false)
@@ -6018,6 +6034,13 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
 
     AddIns(handleContinuationOpcode);
     int32_t suspendDataIndex = GetDataItemIndex(suspendData);
+    
+    // Track this data item -> async suspend data reference for fixup during finalization
+    DataItemAsyncSuspendRef ref;
+    ref.dataItemIndex = suspendDataIndex;
+    ref.asyncSuspendDataIndex = m_asyncSuspendDataItems.GetSize() - 1;  // suspendData was just added
+    m_dataItemAsyncSuspendRefs.Add(ref);
+    
     m_pLastNewIns->data[0] = suspendDataIndex;
     m_pLastNewIns->data[1] = GetDataForHelperFtn(helperFuncForAllocatingContinuation);
     PushInterpType(InterpTypeO, NULL);
