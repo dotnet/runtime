@@ -49,25 +49,19 @@ namespace CorUnix
         private:
             BOOL m_fPending; // TRUE if a suspension is pending on a thread (because the thread is in an unsafe region)
             BOOL m_fSelfsusp; // TRUE if thread is self suspending and while thread is self suspended
-            BOOL m_fSuspendedForShutdown; // TRUE once the thread is suspended during PAL cleanup
             int m_nBlockingPipe; // blocking pipe used for a process that was created suspended
 #ifdef _DEBUG
             Volatile<LONG> m_lNumThreadsSuspendedByThisThread; // number of threads that this thread has suspended; used for suspension diagnostics
 #endif
-#if DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-            int m_nSpinlock; // thread's suspension spinlock, which is used to synchronize suspension and resumption attempts
-#else // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
             pthread_mutex_t m_ptmSuspmutex; // thread's suspension mutex, which is used to synchronize suspension and resumption attempts
             BOOL m_fSuspmutexInitialized;
-#endif // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
 
             /* Most of the variables above are either accessed by a thread
             holding the appropriate suspension mutex(es) or are only
             accessed by their own threads (and thus don't require
             synchronization).
 
-            m_fPending, m_fSuspendedForShutdown,
-            m_fSuspendSignalSent, and m_fResumeSignalSent
+            m_fPending, m_fSuspendSignalSent, and m_fResumeSignalSent
             may be set by a different thread than the owner and thus
             require synchronization.
 
@@ -105,15 +99,6 @@ namespace CorUnix
                 CPalThread *pthrTarget
             );
 
-#if DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-            LONG*
-            GetSuspensionSpinlock(
-                void
-                )
-            {
-                return &m_nSpinlock;
-            }
-#else // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
             pthread_mutex_t*
             GetSuspensionMutex(
                 void
@@ -121,7 +106,6 @@ namespace CorUnix
             {
                 return &m_ptmSuspmutex;
             }
-#endif // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
 
             void
             SetSuspPending(
@@ -174,14 +158,11 @@ namespace CorUnix
             CThreadSuspensionInfo()
                 : m_fPending(FALSE)
                 , m_fSelfsusp(FALSE)
-                , m_fSuspendedForShutdown(FALSE)
                 , m_nBlockingPipe(-1)
 #ifdef _DEBUG
                 , m_lNumThreadsSuspendedByThisThread(0)
 #endif // _DEBUG
-#if !DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
                 , m_fSuspmutexInitialized(FALSE)
-#endif
             {
                 InitializeSuspensionLock();
             };
@@ -197,22 +178,6 @@ namespace CorUnix
                 return m_lNumThreadsSuspendedByThisThread;
             };
 #endif // _DEBUG
-
-            void
-            SetSuspendedForShutdown(
-                BOOL fSuspendedForShutdown
-                )
-            {
-                m_fSuspendedForShutdown = fSuspendedForShutdown;
-            };
-
-            BOOL
-            GetSuspendedForShutdown(
-                void
-                )
-            {
-                return m_fSuspendedForShutdown;
-            };
 
             void
             AcquireSuspensionLock(

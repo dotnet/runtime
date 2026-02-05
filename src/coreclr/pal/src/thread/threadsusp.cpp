@@ -46,7 +46,7 @@ CONST BYTE WAKEUPCODE=0x2A;
 
 // #define USE_GLOBAL_LOCK_FOR_SUSPENSION // Uncomment this define to use the global suspension lock.
 /* The global suspension lock can be used in place of each thread having its own
-suspension mutex or spinlock. The downside is that it restricts us to only
+suspension mutex. The downside is that it restricts us to only
 performing one suspension or resumption in the PAL at a time. */
 #ifdef USE_GLOBAL_LOCK_FOR_SUSPENSION
 
@@ -55,50 +55,6 @@ namespace
     LONG g_ssSuspensionLock = 0;
 }
 #endif
-
-#define SYNCSPINLOCK_F_ASYMMETRIC  1
-
-#define SPINLOCKInit(lock) (*(lock) = 0)
-
-namespace
-{
-    /* Basic spinlock implementation */
-    void SPINLOCKAcquire (LONG * lock, unsigned int flags)
-    {
-        size_t loop_seed = 1, loop_count = 0;
-
-        if (flags & SYNCSPINLOCK_F_ASYMMETRIC)
-        {
-            loop_seed = ((size_t)pthread_self() % 10) + 1;
-        }
-        while (InterlockedCompareExchange(lock, 1, 0))
-        {
-            if (!(flags & SYNCSPINLOCK_F_ASYMMETRIC) || (++loop_count % loop_seed))
-            {
-#if PAL_IGNORE_NORMAL_THREAD_PRIORITY
-                struct timespec tsSleepTime;
-                tsSleepTime.tv_sec = 0;
-                tsSleepTime.tv_nsec = 1;
-                nanosleep(&tsSleepTime, NULL);
-#else
-                sched_yield();
-#endif
-            }
-        }
-
-    }
-
-    void SPINLOCKRelease (LONG * lock)
-    {
-        VolatileStore(lock, 0);
-    }
-
-    DWORD SPINLOCKTryAcquire (LONG * lock)
-    {
-        return InterlockedCompareExchange(lock, 1, 0);
-        // only returns 0 or 1.
-    }
-}
 
 /*++
 Function:
@@ -382,7 +338,7 @@ Function:
   TryAcquireSuspensionLock
 
 TryAcquireSuspensionLock is a utility function that tries to acquire a thread's
-suspension mutex or spinlock. If it succeeds, the function returns TRUE.
+suspension mutex. If it succeeds, the function returns TRUE.
 Otherwise, it returns FALSE. This function is used in AcquireSuspensionLocks.
 Note that the global lock cannot be acquired in this function since it makes
 no sense to do so. A thread holding the global lock is the only thread that
@@ -394,17 +350,8 @@ CThreadSuspensionInfo::TryAcquireSuspensionLock(
     CPalThread* pthrTarget
     )
 {
-    int iPthreadRet = 0;
-#if DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-{
-    iPthreadRet = SPINLOCKTryAcquire(pthrTarget->suspensionInfo.GetSuspensionSpinlock());
-}
-#else // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-{
-    iPthreadRet = pthread_mutex_trylock(pthrTarget->suspensionInfo.GetSuspensionMutex());
+    int iPthreadRet = pthread_mutex_trylock(pthrTarget->suspensionInfo.GetSuspensionMutex());
     _ASSERT_MSG(iPthreadRet == 0 || iPthreadRet == EBUSY, "pthread_mutex_trylock returned %d\n", iPthreadRet);
-}
-#endif // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
 
     // If iPthreadRet is 0, lock acquisition was successful. Otherwise, it failed.
     return (iPthreadRet == 0);
@@ -430,17 +377,9 @@ CThreadSuspensionInfo::AcquireSuspensionLock(
 }
 #else // USE_GLOBAL_LOCK_FOR_SUSPENSION
 {
-    #if DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-    {
-        SPINLOCKAcquire(&pthrCurrent->suspensionInfo.m_nSpinlock, 0);
-    }
-    #else // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-    {
-        INDEBUG(int iPthreadError = )
-        pthread_mutex_lock(&pthrCurrent->suspensionInfo.m_ptmSuspmutex);
-        _ASSERT_MSG(iPthreadError == 0, "pthread_mutex_lock returned %d\n", iPthreadError);
-    }
-    #endif // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
+    INDEBUG(int iPthreadError = )
+    pthread_mutex_lock(&pthrCurrent->suspensionInfo.m_ptmSuspmutex);
+    _ASSERT_MSG(iPthreadError == 0, "pthread_mutex_lock returned %d\n", iPthreadError);
 }
 #endif // USE_GLOBAL_LOCK_FOR_SUSPENSION
 }
@@ -449,8 +388,8 @@ CThreadSuspensionInfo::AcquireSuspensionLock(
 Function:
   ReleaseSuspensionLock
 
-ReleaseSuspensionLock is a function that releases a thread's suspension mutex
-or spinlock. If USE_GLOBAL_LOCK_FOR_SUSPENSION is defined,
+ReleaseSuspensionLock is a function that releases a thread's suspension mutex.
+If USE_GLOBAL_LOCK_FOR_SUSPENSION is defined,
 it will release the global lock.
 --*/
 void
@@ -464,17 +403,9 @@ CThreadSuspensionInfo::ReleaseSuspensionLock(
 }
 #else // USE_GLOBAL_LOCK_FOR_SUSPENSION
 {
-    #if DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-    {
-        SPINLOCKRelease(&pthrCurrent->suspensionInfo.m_nSpinlock);
-    }
-    #else // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-    {
-        INDEBUG(int iPthreadError = )
-        pthread_mutex_unlock(&pthrCurrent->suspensionInfo.m_ptmSuspmutex);
-        _ASSERT_MSG(iPthreadError == 0, "pthread_mutex_unlock returned %d\n", iPthreadError);
-    }
-    #endif // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
+    INDEBUG(int iPthreadError = )
+    pthread_mutex_unlock(&pthrCurrent->suspensionInfo.m_ptmSuspmutex);
+    _ASSERT_MSG(iPthreadError == 0, "pthread_mutex_unlock returned %d\n", iPthreadError);
 }
 #endif // USE_GLOBAL_LOCK_FOR_SUSPENSION
 }
@@ -595,16 +526,12 @@ CThreadSuspensionInfo::ReleaseSuspensionLocks(
 Function:
   InitializeSuspensionLock
 
-InitializeSuspensionLock initializes a thread's suspension spinlock
-or suspension mutex. It is called from the CThreadSuspensionInfo
-constructor.
+InitializeSuspensionLock initializes a thread's suspension mutex.
+It is called from the CThreadSuspensionInfo constructor.
 --*/
 VOID
 CThreadSuspensionInfo::InitializeSuspensionLock()
 {
-#if DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-    SPINLOCKInit(&m_nSpinlock);
-#else
     int iError = pthread_mutex_init(&m_ptmSuspmutex, NULL);
     if (0 != iError )
     {
@@ -612,7 +539,6 @@ CThreadSuspensionInfo::InitializeSuspensionLock()
         return;
     }
     m_fSuspmutexInitialized = TRUE;
-#endif // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
 }
 
 /*++
@@ -629,12 +555,10 @@ CThreadSuspensionInfo::InitializePreCreate()
 
 CThreadSuspensionInfo::~CThreadSuspensionInfo()
 {
-#if !DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
     if (m_fSuspmutexInitialized)
     {
         INDEBUG(int iError = )
         pthread_mutex_destroy(&m_ptmSuspmutex);
         _ASSERT_MSG(0 == iError, "pthread_mutex_destroy returned %d (%s)\n", iError, strerror(iError));
     }
-#endif
 }
