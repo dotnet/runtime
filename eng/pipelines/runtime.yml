@@ -1638,7 +1638,6 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
-          extraBuildArgs: -os browser
           platforms:
           - browser_wasm
           helixQueueGroup: pr
@@ -1648,7 +1647,7 @@ extends:
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
-            extraBuildArgs: -os browser
+            extraBuildArgs: -os browser -p:HostConfiguration=Release
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
