@@ -33,10 +33,6 @@ Abstract:
 
 namespace CorUnix
 {
-#ifdef _DEBUG
-#define MAX_TRACKED_CRITSECS 8
-#endif
-
     PAL_ERROR
     InternalResumeThread(
         CPalThread *pthrResumer,
