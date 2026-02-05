@@ -28,48 +28,6 @@ Abstract:
 #if !HAVE_MACH_EXCEPTIONS
 #include <signal.h>
 #endif // !HAVE_MACH_EXCEPTIONS
-#include <semaphore.h>
-#include <sched.h>
-
-// We have a variety of options for synchronizing thread suspensions and resumptions between the requestor and
-// target threads. Analyze the various capabilities given to us by configure and define one of three macros
-// here for simplicity:
-//  USE_POSIX_SEMAPHORES
-//  USE_SYSV_SEMAPHORES
-//  USE_PTHREAD_CONDVARS
-#if HAS_POSIX_SEMAPHORES
-
-// Favor posix semaphores.
-#define USE_POSIX_SEMAPHORES 1
-
-#if HAVE_SYS_SEMAPHORE_H
-#include <sys/semaphore.h>
-#elif HAVE_SEMAPHORE_H
-#include <semaphore.h>
-#endif // HAVE_SYS_SEMAPHORE_H
-
-#elif HAS_PTHREAD_MUTEXES && (HAVE_MACH_EXCEPTIONS || defined(TARGET_TVOS))
-
-// Can only use the pthread solution if we're not using signals since pthread mutexes are not signal safe.
-
-// On tvOS, HAVE_MACH_EXCEPTIONS is 0 because thread_set_exception_ports is not available in the SDK.
-// However, System V IPC (semget) is also not available due to sandbox restrictions so we use pthread instead.
-#define USE_PTHREAD_CONDVARS 1
-
-#include <pthread.h>
-
-#elif HAS_SYSV_SEMAPHORES
-
-// SYSV semaphores are our last choice since they're shared across processes so it's possible to leak them
-// on abnormal process termination.
-#define USE_SYSV_SEMAPHORES 1
-
-#include <sys/sem.h>
-#include <sys/types.h>
-
-#else
-#error "Don't know how to synchronize thread suspends and resumes on this platform"
-#endif // HAS_POSIX_SEMAPHORES
 
 #include <stdarg.h>
 
@@ -102,27 +60,6 @@ namespace CorUnix
             pthread_mutex_t m_ptmSuspmutex; // thread's suspension mutex, which is used to synchronize suspension and resumption attempts
             BOOL m_fSuspmutexInitialized;
 #endif // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-#if USE_POSIX_SEMAPHORES
-            sem_t m_semSusp; // suspension semaphore
-            sem_t m_semResume; // resumption semaphore
-            BOOL m_fSemaphoresInitialized;
-#elif USE_SYSV_SEMAPHORES
-            // necessary id's and sembuf structures for SysV semaphores
-            int m_nSemsuspid; // id for the suspend semaphore
-            int m_nSemrespid; // id for the resume semaphore
-            struct sembuf m_sbSemwait; // struct representing a wait operation
-            struct sembuf m_sbSempost; // struct representing a post operation
-#elif USE_PTHREAD_CONDVARS
-            pthread_cond_t m_condSusp; // suspension condition variable
-            pthread_mutex_t m_mutexSusp; // mutex associated with the condition above
-            BOOL m_fSuspended; // set to true once the suspend has been acknowledged
-
-            pthread_cond_t m_condResume; // resumption condition variable
-            pthread_mutex_t m_mutexResume; // mutex associated with the condition above
-            BOOL m_fResumed; // set to true once the resume has been acknowledged
-
-            BOOL m_fSemaphoresInitialized;
-#endif // USE_POSIX_SEMAPHORES
 
             /* Most of the variables above are either accessed by a thread
             holding the appropriate suspension mutex(es) or are only
@@ -167,40 +104,6 @@ namespace CorUnix
                 CPalThread *pthrSuspender,
                 CPalThread *pthrTarget
             );
-
-#if USE_POSIX_SEMAPHORES
-            sem_t*
-            GetSuspendSemaphore(
-                void
-                )
-            {
-                return &m_semSusp;
-            };
-
-            sem_t*
-            GetResumeSemaphore(
-                void
-                )
-            {
-                return &m_semResume;
-            };
-#elif USE_SYSV_SEMAPHORES
-            int
-            GetSuspendSemaphoreId(
-                void
-                )
-            {
-                return m_nSemsuspid;
-            };
-
-            sembuf*
-            GetSemaphorePostBuffer(
-                void
-                )
-            {
-                return &m_sbSempost;
-            };
-#endif // USE_POSIX_SEMAPHORES
 
 #if DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
             LONG*
@@ -252,18 +155,6 @@ namespace CorUnix
                 return m_fSelfsusp;
             };
 
-            void
-            PostOnSuspendSemaphore();
-
-            void
-            WaitOnSuspendSemaphore();
-
-            void
-            PostOnResumeSemaphore();
-
-            void
-            WaitOnResumeSemaphore();
-
             static
             BOOL
             TryAcquireSuspensionLock(
@@ -291,9 +182,6 @@ namespace CorUnix
 #if !DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
                 , m_fSuspmutexInitialized(FALSE)
 #endif
-#if USE_POSIX_SEMAPHORES || USE_PTHREAD_CONDVARS
-                , m_fSemaphoresInitialized(FALSE)
-#endif
             {
                 InitializeSuspensionLock();
             };
@@ -310,12 +198,6 @@ namespace CorUnix
             };
 #endif // _DEBUG
 
-#if USE_SYSV_SEMAPHORES
-            void
-            DestroySemaphoreIds(
-                void
-            );
-#endif
             void
             SetSuspendedForShutdown(
                 BOOL fSuspendedForShutdown

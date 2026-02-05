@@ -592,21 +592,6 @@ int main(void) {
 }" HAVE_PROCFS_STAT)
 set(CMAKE_REQUIRED_LIBRARIES)
 
-set(CMAKE_REQUIRED_LIBRARIES ${PTHREAD_LIBRARY})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <errno.h>
-#include <semaphore.h>
-
-int main() {
-  sem_t sema;
-  if (sem_init(&sema, 0, 0) == -1){
-    exit(1);
-  }
-  exit(0);
-}" HAS_POSIX_SEMAPHORES)
-set(CMAKE_REQUIRED_LIBRARIES)
-
 set(SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING 1)
 set(ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS 1)
 

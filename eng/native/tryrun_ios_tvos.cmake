@@ -10,7 +10,6 @@ set_cache_value(HAVE_CLOCK_MONOTONIC_EXITCODE 0)
 
 # TODO: these are taken from macOS, check these whether they're correct for iOS
 # some of them are probably not used by what we use from NativeAOT so could be reduced
-set_cache_value(HAS_POSIX_SEMAPHORES_EXITCODE 1)
 set_cache_value(HAVE_BROKEN_FIFO_KEVENT_EXITCODE 1)
 set_cache_value(HAVE_BROKEN_FIFO_SELECT_EXITCODE 1)
 set_cache_value(HAVE_CLOCK_REALTIME_EXITCODE 0)

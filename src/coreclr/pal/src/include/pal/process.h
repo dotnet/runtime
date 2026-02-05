@@ -95,19 +95,6 @@ Return
 --*/
 VOID PROCCleanupInitialProcess(VOID);
 
-#if USE_SYSV_SEMAPHORES
-/*++
-Function:
-  PROCCleanupThreadSemIds(VOID);
-
-Abstract
-  Cleanup SysV semaphore ids for all threads.
-
-(no parameters, no return value)
---*/
-VOID PROCCleanupThreadSemIds(VOID);
-#endif
-
 /*++
 Function:
   PROCProcessLock
