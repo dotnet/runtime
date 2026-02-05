@@ -3155,32 +3155,6 @@ PROCCleanupInitialProcess(VOID)
 
 /*++
 Function:
-  PROCProcessLock
-
-Abstract
-  No-op function kept for compatibility
---*/
-VOID
-PROCProcessLock(
-    VOID)
-{
-}
-
-
-/*++
-Function:
-  PROCProcessUnlock
-
-Abstract
-  No-op function kept for compatibility
---*/
-VOID
-PROCProcessUnlock(
-    VOID)
-{
-}
-/*++
-Function:
   TerminateCurrentProcessNoExit
 
 Abstract:

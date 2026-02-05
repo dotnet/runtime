@@ -445,7 +445,6 @@ CorUnix::InternalCreateThread(
 #if PTHREAD_CREATE_MODIFIES_ERRNO
     int storedErrno;
 #endif  // PTHREAD_CREATE_MODIFIES_ERRNO
-    BOOL fHoldingProcessLock = FALSE;
     int iError = 0;
     size_t alignedStackSize;
 
@@ -586,17 +585,6 @@ CorUnix::InternalCreateThread(
     //
 
     //
-    // We use the process lock to ensure that we're not interrupted
-    // during the creation process. After adding the CPalThread reference
-    // to the process list, we want to make sure the actual thread has been
-    // started. Otherwise, there's a window where the thread can be found
-    // in the process list but doesn't yet exist in the system.
-    //
-
-    PROCProcessLock();
-    fHoldingProcessLock = TRUE;
-
-    //
     // Spawn the new pthread
     //
 
@@ -645,14 +633,6 @@ CorUnix::InternalCreateThread(
         goto EXIT;
     }
 
-    //
-    // If we're here, then we've locked the process list and both pthread_create
-    // and WaitForStartStatus succeeded. Thus, we can now unlock the process list.
-    // Since palError == NO_ERROR, we won't call this again in the exit block.
-    //
-    PROCProcessUnlock();
-    fHoldingProcessLock = FALSE;
-
 EXIT:
 
     if (fAttributesInitialized)
@@ -670,19 +650,7 @@ EXIT:
         // occurred in the new thread's entry routine. Free up the associated
         // resources here
         //
-
-        //
-        // Once we remove the thread from the process list, we can call
-        // PROCProcessUnlock.
-        //
-        if (fHoldingProcessLock)
-        {
-            PROCProcessUnlock();
-        }
-        fHoldingProcessLock = FALSE;
     }
-
-    _ASSERT_MSG(!fHoldingProcessLock, "Exiting InternalCreateThread while still holding the process critical section.\n");
 
     return palError;
 }

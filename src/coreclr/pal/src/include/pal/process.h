@@ -96,25 +96,6 @@ Return
 VOID PROCCleanupInitialProcess(VOID);
 
 /*++
-Function:
-  PROCProcessLock
-
-Abstract
-  Enter the critical section associated to the current process
---*/
-VOID PROCProcessLock(VOID);
-
-
-/*++
-Function:
-  PROCProcessUnlock
-
-Abstract
-  Leave the critical section associated to the current process
---*/
-VOID PROCProcessUnlock(VOID);
-
-/*++
 Function
   PROCAbortInitialize()
 
