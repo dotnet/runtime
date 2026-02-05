@@ -1028,6 +1028,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         // Current assertion asserts a bounds check does not throw
         else if (curAssertion.IsBoundsCheckNoThrow())
         {
+            // IsBoundsCheckNoThrow is "op1VN (Idx) LT_UN op2VN (Len)"
             ValueNum indexVN = curAssertion.GetOp1().GetVN();
             ValueNum lenVN   = curAssertion.GetOp2().GetVN();
             if (normalLclVN == indexVN)

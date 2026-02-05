@@ -3884,6 +3884,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         }
     }
 
+    // Check if we have an assertion that exactly matches the relop.
     ValueNum relopVN = optConservativeNormalVN(tree);
     if (!BitVecOps::IsEmpty(apTraits, assertions))
     {
