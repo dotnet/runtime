@@ -330,7 +330,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         };
         console.log(`globalThis.collectAndUpload method created ${new Date().toISOString()}`);
         """;
-        up=up.Replace("${traceCommand}", traceCommand).Replace("${filename}", fileName);
+        up = up.Replace("${traceCommand}", traceCommand).Replace("${filename}", fileName);
         await page.EvaluateAsync(up);
     }
 
