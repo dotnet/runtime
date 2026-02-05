@@ -1648,6 +1648,7 @@ extends:
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
+            extraBuildArgs: -os browser
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
