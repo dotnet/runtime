@@ -85,6 +85,13 @@ if [[ "$host_arch" == "armel" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
+# Use platform-specific tryrun cache to speed up CMake configure (opt-out via CLR_CMAKE_SKIP_PLATFORM_CACHE=1)
+if [[ "$CLR_CMAKE_SKIP_PLATFORM_CACHE" != "1" ]]; then
+    if [[ "$target_os" == "osx" && "$host_arch" == "arm64" && -f "$scriptroot/tryrun.osx-arm64.cmake" ]]; then
+        cmake_extra_defines="-C $scriptroot/tryrun.osx-arm64.cmake $cmake_extra_defines"
+    fi
+fi
+
 if ! cmake_command=$(command -v cmake); then
     echo "CMake was not found in PATH."
     exit 1
