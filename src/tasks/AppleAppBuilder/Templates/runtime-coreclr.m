@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <dlfcn.h>
-#include <pthread.h>
 
 #import "util.h"
 
@@ -104,8 +103,6 @@ size_t get_image_size(const struct mach_header_64* header)
     return image_size;
 }
 
-static pthread_mutex_t s_r2r_load_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 bool get_native_code_data(const struct host_runtime_contract_native_code_context* context, struct host_runtime_contract_native_code_data* data)
 {
     if (!context || !data || !context->assembly_path || !context->owner_composite_name)
@@ -123,9 +120,7 @@ bool get_native_code_data(const struct host_runtime_contract_native_code_context
     if (written <= 0 || (size_t)written >= sizeof(r2r_path) - dir_len)
         return false;
 
-    pthread_mutex_lock(&s_r2r_load_mutex);
     void* handle = dlopen(r2r_path, RTLD_LAZY | RTLD_LOCAL);
-    pthread_mutex_unlock(&s_r2r_load_mutex);
     if (handle == NULL)
         return false;
 
