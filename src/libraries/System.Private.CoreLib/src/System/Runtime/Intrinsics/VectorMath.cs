@@ -3053,8 +3053,8 @@ namespace System.Runtime.Intrinsics
         public static TVectorDouble AsinDouble<TVectorDouble>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
-            // This code is based on `vrs4_asinf` and `asinf` from amd/aocl-libm-ose
-            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            // This code is based on `vrd2_asin` and `asin` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2025 Advanced Micro Devices, Inc. All rights reserved.
             //
             // Licensed under the BSD 3-Clause "New" or "Revised" License
             // See THIRD-PARTY-NOTICES.TXT for the full license text
@@ -3183,7 +3183,7 @@ namespace System.Runtime.Intrinsics
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
             where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
         {
-            // This code is based on `asinhf` from amd/aocl-libm-ose
+            // This code is based on `asinh` from amd/aocl-libm-ose
             // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
             //
             // Licensed under the BSD 3-Clause "New" or "Revised" License
@@ -3266,7 +3266,7 @@ namespace System.Runtime.Intrinsics
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
             where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
         {
-            // This code is based on `acoshf` from amd/aocl-libm-ose
+            // This code is based on `acosh` from amd/aocl-libm-ose
             // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
             //
             // Licensed under the BSD 3-Clause "New" or "Revised" License
@@ -3351,7 +3351,7 @@ namespace System.Runtime.Intrinsics
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
             where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
         {
-            // This code is based on `atanhf` from amd/aocl-libm-ose
+            // This code is based on `atanh` from amd/aocl-libm-ose
             // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
             //
             // Licensed under the BSD 3-Clause "New" or "Revised" License
@@ -3434,8 +3434,8 @@ namespace System.Runtime.Intrinsics
         public static TVectorDouble AcosDouble<TVectorDouble>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
-            // This code is based on `vrs4_acosf` and `acosf` from amd/aocl-libm-ose
-            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            // This code is based on `vrd2_acos` and `acos` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2025 Advanced Micro Devices, Inc. All rights reserved.
             //
             // Licensed under the BSD 3-Clause "New" or "Revised" License
             // See THIRD-PARTY-NOTICES.TXT for the full license text
@@ -3720,8 +3720,8 @@ namespace System.Runtime.Intrinsics
         public static TVectorDouble Atan2Double<TVectorDouble>(TVectorDouble y, TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
-            // This code is based on `vrd2_atan2` from amd/aocl-libm-ose
-            // Copyright (C) 2008-2023 Advanced Micro Devices, Inc. All rights reserved.
+            // This code is based on `atan2` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
             //
             // Licensed under the BSD 3-Clause "New" or "Revised" License
             // See THIRD-PARTY-NOTICES.TXT for the full license text
@@ -3800,8 +3800,8 @@ namespace System.Runtime.Intrinsics
             where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
-            // This code is based on `vrs4_atan2f` from amd/aocl-libm-ose
-            // Copyright (C) 2008-2023 Advanced Micro Devices, Inc. All rights reserved.
+            // This code is based on `atan2` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
             //
             // Licensed under the BSD 3-Clause "New" or "Revised" License
             // See THIRD-PARTY-NOTICES.TXT for the full license text
