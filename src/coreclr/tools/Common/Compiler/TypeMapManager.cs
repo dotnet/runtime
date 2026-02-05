@@ -8,8 +8,12 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using ILCompiler.DependencyAnalysis;
+#if READYTORUN
+using ILCompiler.DependencyAnalysis.ReadyToRun;
+#endif
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Runtime;
+using Internal.TypeSystem;
 
 namespace ILCompiler
 {

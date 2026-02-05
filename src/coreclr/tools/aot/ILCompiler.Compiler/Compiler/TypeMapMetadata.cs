@@ -11,7 +11,6 @@ using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using static ILCompiler.TypeMapManager;
-using static ILCompiler.UsageBasedTypeMapManager;
 
 namespace ILCompiler
 {
@@ -36,7 +35,11 @@ namespace ILCompiler
                 public override ReadOnlySpan<byte> Name => _name;
                 public override MethodIL EmitIL()
                 {
+#if READYTORUN
+                    throw new UnreachableException();
+#else
                     return TypeSystemThrowingILEmitter.EmitIL(this, Exception);
+#endif
                 }
 
                 protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
