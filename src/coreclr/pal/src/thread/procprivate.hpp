@@ -47,15 +47,6 @@ namespace CorUnix
     --*/
     void PROCRemoveThread(CPalThread *pCurrentThread, CPalThread *pTargetThread);
 
-    /*++
-    Function:
-      PROCGetNumberOfThreads
-
-    Abstract
-      Return the number of threads in the thread list.
-    --*/
-    INT PROCGetNumberOfThreads(void);
-
 
     /*++
     Function:

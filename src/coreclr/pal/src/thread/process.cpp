@@ -3287,27 +3287,6 @@ EXIT:
 
 /*++
 Function:
-  PROCGetNumberOfThreads
-
-Abstract
-  Return the number of threads in the thread list.
-
-Parameter
-  void
-
-Return
-  the number of threads.
---*/
-INT
-CorUnix::PROCGetNumberOfThreads(
-    VOID)
-{
-    return g_dwThreadCount;
-}
-
-
-/*++
-Function:
   PROCProcessLock
 
 Abstract
