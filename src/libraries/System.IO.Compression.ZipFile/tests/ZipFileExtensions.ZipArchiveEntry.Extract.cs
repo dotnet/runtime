@@ -71,7 +71,9 @@ namespace System.IO.Compression.Tests
                     // Write some data
                     byte[] data = new byte[1024];
                     for (int i = 0; i < data.Length; i++)
+                    {
                         data[i] = (byte)(i % 256);
+                    }
                     entryStream.Write(data, 0, data.Length);
                 }
             }
