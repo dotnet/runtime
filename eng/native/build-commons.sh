@@ -271,7 +271,7 @@ usage()
     echo "        will use ROOTFS_DIR environment variable if set."
     echo "-gcc: optional argument to build using gcc in PATH."
     echo "-gccx.y: optional argument to build using gcc version x.y."
-    echo "-ninja: target ninja instead of GNU make"
+    echo "-ninja: target ninja instead of GNU make (default on macOS, use -ninja false to disable)"
     echo "-numproc: set the number of build processes."
     echo "-targetrid: optional argument that overrides the target rid name."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
@@ -309,6 +309,11 @@ elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
   __NumProc="$(getconf _NPROCESSORS_ONLN)"
 else
   __NumProc=1
+fi
+
+# Default to using Ninja on macOS for faster builds
+if [[ "$os" == "osx" ]]; then
+  __UseNinja=1
 fi
 
 while :; do
@@ -412,7 +417,20 @@ while :; do
             ;;
 
         ninja|-ninja)
-            __UseNinja=1
+            if [[ -n "$2" ]]; then
+              ninja_arg="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+              if [[ "$ninja_arg" == "false" ]]; then
+                __UseNinja=0
+                shift
+              elif [[ "$ninja_arg" == "true" ]]; then
+                __UseNinja=1
+                shift
+              else
+                __UseNinja=1
+              fi
+            else
+              __UseNinja=1
+            fi
             ;;
 
         numproc|-numproc)

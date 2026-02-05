@@ -84,7 +84,7 @@ usage()
   echo "  --gccx.y                   Optional argument to build using gcc version x.y."
   echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
   echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
-  echo "  --ninja                    Optional argument: set to true to use Ninja instead of Make to run the native build."
+  echo "  --ninja                    Optional argument: use Ninja instead of Make (default: true on macOS, use --ninja false to disable)."
   echo "  --pgoinstrument            Optional argument: build PGO-instrumented runtime"
   echo "  --fsanitize                Optional argument: Specify native sanitizers to instrument the native build with. Supported values are: 'address'."
   echo ""
@@ -165,6 +165,14 @@ bootstrapConfig='Debug'
 source $scriptroot/common/native/init-os-and-arch.sh
 
 hostArch=$arch
+
+# Default to using Ninja on macOS for faster builds (can be overridden with --ninja false)
+if [[ "$os" == "osx" ]]; then
+  useNinjaDefault=true
+else
+  useNinjaDefault=false
+fi
+ninjaExplicitlySet=false
 
 # Check if an action is passed in
 declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
@@ -496,6 +504,7 @@ while [[ $# -gt 0 ]]; do
 
 
       -ninja)
+      ninjaExplicitlySet=true
       if [ -z ${2+x} ]; then
         arguments+=("/p:Ninja=true")
         shift 1
@@ -581,6 +590,11 @@ fi
 arguments+=("-tl:false")
 # disable line wrapping so that C&P from the console works well
 arguments+=("-clp:ForceNoAlign")
+
+# Apply default ninja setting on macOS if not explicitly set by user
+if [[ "$useNinjaDefault" == true && "$ninjaExplicitlySet" != true ]]; then
+  arguments+=("/p:Ninja=true")
+fi
 
 initDistroRid "$os" "$arch" "$crossBuild"
 
