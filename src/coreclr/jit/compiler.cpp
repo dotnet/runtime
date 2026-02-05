@@ -4857,6 +4857,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             opts.optRepeatActive = false;
         }
     }
+    else if (opts.Tier0OptimizationEnabled())
+    {
+        fgTier0Liveness();
+    }
 
     optLoopsCanonical = false;
 

@@ -2829,6 +2829,55 @@ void Compiler::fgSsaLiveness()
 }
 
 //------------------------------------------------------------------------
+// fgSsaLiveness: Run SSA liveness.
+//
+void Compiler::fgTier0Liveness()
+{
+    struct Tier0Liveness : public Liveness<Tier0Liveness>
+    {
+        enum
+        {
+            SsaLiveness           = false,
+            ComputeMemoryLiveness = false,
+            IsLIR                 = false,
+            IsEarly               = false,
+        };
+
+        Tier0Liveness(Compiler* comp)
+            : Liveness(comp)
+        {
+        }
+    };
+
+    if (m_dfsTree == nullptr)
+    {
+        m_dfsTree = fgComputeDfs();
+    }
+
+    Tier0Liveness liveness(this);
+    liveness.Run();
+
+    // Rest of the compiler does not expect that we started tracking locals, so reset that state.
+    for (unsigned i = 0; i < lvaTrackedCount; i++)
+    {
+        lvaGetDesc(lvaTrackedToVarNum[i])->lvTracked = false;
+    }
+
+    lvaCurEpoch++;
+    lvaTrackedCount             = 0;
+    lvaTrackedCountInSizeTUnits = 0;
+
+    for (BasicBlock* block : Blocks())
+    {
+        block->bbLiveIn  = VarSetOps::UninitVal();
+        block->bbLiveOut = VarSetOps::UninitVal();
+        block->bbVarUse  = VarSetOps::UninitVal();
+        block->bbVarDef  = VarSetOps::UninitVal();
+    }
+    fgBBVarSetsInited = false;
+}
+
+//------------------------------------------------------------------------
 // fgAsyncLiveness: Run async liveness.
 //
 void Compiler::fgAsyncLiveness()

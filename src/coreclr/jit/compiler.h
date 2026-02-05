@@ -6698,6 +6698,7 @@ public:
     }
 
     void fgSsaLiveness();
+    void fgTier0Liveness();
     void fgAsyncLiveness();
     void fgPostLowerLiveness();
     PhaseStatus fgEarlyLiveness();
