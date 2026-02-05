@@ -146,11 +146,6 @@ IPalObject* CorUnix::g_pobjProcess;
 minipal_mutex g_csProcess;
 
 //
-// The count of active threads
-//
-DWORD g_dwThreadCount;
-
-//
 // The command line and app name for the process
 //
 LPWSTR g_lpwstrCmdLine = NULL;
@@ -2940,8 +2935,6 @@ CorUnix::InitializeProcessData(
 {
     PAL_ERROR palError = NO_ERROR;
     bool fLockInitialized = FALSE;
-
-    g_dwThreadCount = 0;
 
     minipal_mutex_init(&g_csProcess);
     fLockInitialized = TRUE;
