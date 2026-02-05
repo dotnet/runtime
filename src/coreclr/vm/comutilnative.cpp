@@ -187,7 +187,7 @@ static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD 
     GCPROTECT_BEGIN(objException)
     {
         UnmanagedCallersOnlyCaller getHelpContextBstr(METHOD__EXCEPTION__GET_HELP_CONTEXT_BSTR);
-        getHelpContextBstr.InvokeThrowing(&objException, &pbstrHelpFile, &pdwHelpContext);
+        getHelpContextBstr.InvokeThrowing(&objException, pbstrHelpFile, pdwHelpContext);
     }
     GCPROTECT_END();
 }
