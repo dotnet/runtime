@@ -10,8 +10,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
-    <!-- When building tests for Helix (BuildTestsOnHelix=true), skip R2R on build host and defer to Helix.
-         This makes local builds faster. R2R will run on Helix via ProxyProjectForAOTOnHelix.proj -->
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(BuildTestsOnHelix)' != 'true'">true</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(BuildTestsOnHelix)' == 'true'">false</PublishReadyToRun>
     <!-- Track that we want R2R on Helix even though we skip it locally -->
