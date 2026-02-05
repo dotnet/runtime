@@ -724,7 +724,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
         //
         optLocalAssertionProp           = false;
         optCrossBlockLocalAssertionProp = false;
-        optMaxAssertionCount            = 256;
+        optMaxAssertionCount            = 128;
 
         optComplementaryAssertionMap = new (this, CMK_AssertionProp)
             AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
