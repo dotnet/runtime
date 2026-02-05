@@ -44,18 +44,6 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD);
    in suspended state in order to resume it. */
 CONST BYTE WAKEUPCODE=0x2A;
 
-// #define USE_GLOBAL_LOCK_FOR_SUSPENSION // Uncomment this define to use the global suspension lock.
-/* The global suspension lock can be used in place of each thread having its own
-suspension mutex. The downside is that it restricts us to only
-performing one suspension or resumption in the PAL at a time. */
-#ifdef USE_GLOBAL_LOCK_FOR_SUSPENSION
-
-namespace
-{
-    LONG g_ssSuspensionLock = 0;
-}
-#endif
-
 /*++
 Function:
   InternalSuspendNewThreadFromData
@@ -361,8 +349,7 @@ CThreadSuspensionInfo::TryAcquireSuspensionLock(
 Function:
   AcquireSuspensionLock
 
-AcquireSuspensionLock acquires a thread's suspension mutex or spinlock.
-If USE_GLOBAL_LOCK_FOR_SUSPENSION is defined, it will acquire the global lock.
+AcquireSuspensionLock acquires a thread's suspension mutex.
 A thread in this function blocks until it acquires
 its lock, unlike in TryAcquireSuspensionLock.
 --*/
@@ -371,17 +358,9 @@ CThreadSuspensionInfo::AcquireSuspensionLock(
     CPalThread* pthrCurrent
     )
 {
-#ifdef USE_GLOBAL_LOCK_FOR_SUSPENSION
-{
-    SPINLOCKAcquire(&g_ssSuspensionLock, 0);
-}
-#else // USE_GLOBAL_LOCK_FOR_SUSPENSION
-{
     INDEBUG(int iPthreadError = )
     pthread_mutex_lock(&pthrCurrent->suspensionInfo.m_ptmSuspmutex);
     _ASSERT_MSG(iPthreadError == 0, "pthread_mutex_lock returned %d\n", iPthreadError);
-}
-#endif // USE_GLOBAL_LOCK_FOR_SUSPENSION
 }
 
 /*++
@@ -389,25 +368,15 @@ Function:
   ReleaseSuspensionLock
 
 ReleaseSuspensionLock is a function that releases a thread's suspension mutex.
-If USE_GLOBAL_LOCK_FOR_SUSPENSION is defined,
-it will release the global lock.
 --*/
 void
 CThreadSuspensionInfo::ReleaseSuspensionLock(
     CPalThread* pthrCurrent
     )
 {
-#ifdef USE_GLOBAL_LOCK_FOR_SUSPENSION
-{
-    SPINLOCKRelease(&g_ssSuspensionLock);
-}
-#else // USE_GLOBAL_LOCK_FOR_SUSPENSION
-{
     INDEBUG(int iPthreadError = )
     pthread_mutex_unlock(&pthrCurrent->suspensionInfo.m_ptmSuspmutex);
     _ASSERT_MSG(iPthreadError == 0, "pthread_mutex_unlock returned %d\n", iPthreadError);
-}
-#endif // USE_GLOBAL_LOCK_FOR_SUSPENSION
 }
 
 /*++
@@ -440,9 +409,6 @@ mutex first. This prevents you from being suspended while holding the
 target's mutex. Then, attempt to acquire the target's mutex. If the mutex
 cannot be acquired, release your own and try again. This all or nothing
 approach is the safest and avoids nasty race conditions.
-
-If USE_GLOBAL_LOCK_FOR_SUSPENSION is defined, the calling thread
-will acquire the global lock when possible.
 --*/
 VOID
 CThreadSuspensionInfo::AcquireSuspensionLocks(
@@ -452,9 +418,6 @@ CThreadSuspensionInfo::AcquireSuspensionLocks(
 {
     BOOL fReacquire = FALSE;
 
-#ifdef USE_GLOBAL_LOCK_FOR_SUSPENSION
-    AcquireSuspensionLock(pthrSuspender);
-#else // USE_GLOBAL_LOCK_FOR_SUSPENSION
     do
     {
         fReacquire = FALSE;
@@ -467,7 +430,6 @@ CThreadSuspensionInfo::AcquireSuspensionLocks(
             sched_yield();
         }
     } while (fReacquire);
-#endif // USE_GLOBAL_LOCK_FOR_SUSPENSION
 
     // Whenever the native implementation for the wait subsystem's thread
     // blocking requires a lock as protection (as pthread conditions do with
@@ -503,7 +465,6 @@ ReleaseSuspensionLocks releases both thread's suspension mutexes.
 Note that the locks are released in the opposite order they're acquired.
 This prevents a suspending or resuming thread from being suspended
 while holding the target's lock.
-If USE_GLOBAL_LOCK_FOR_SUSPENSION is defined, it simply releases the global lock.
 --*/
 VOID
 CThreadSuspensionInfo::ReleaseSuspensionLocks(
@@ -514,12 +475,8 @@ CThreadSuspensionInfo::ReleaseSuspensionLocks(
     // See comment in AcquireSuspensionLocks
     pthrTarget->ReleaseNativeWaitLock();
 
-#ifdef USE_GLOBAL_LOCK_FOR_SUSPENSION
-    ReleaseSuspensionLock(pthrSuspender);
-#else // USE_GLOBAL_LOCK_FOR_SUSPENSION
     ReleaseSuspensionLock(pthrTarget);
     ReleaseSuspensionLock(pthrSuspender);
-#endif // USE_GLOBAL_LOCK_FOR_SUSPENSION
 }
 
 /*++

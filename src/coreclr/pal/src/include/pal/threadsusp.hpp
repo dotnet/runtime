@@ -43,12 +43,8 @@ namespace CorUnix
     class CThreadSuspensionInfo : public CThreadInfoInitializer
     {
         private:
-            BOOL m_fPending; // TRUE if a suspension is pending on a thread (because the thread is in an unsafe region)
             BOOL m_fSelfsusp; // TRUE if thread is self suspending and while thread is self suspended
             int m_nBlockingPipe; // blocking pipe used for a process that was created suspended
-#ifdef _DEBUG
-            Volatile<LONG> m_lNumThreadsSuspendedByThisThread; // number of threads that this thread has suspended; used for suspension diagnostics
-#endif
             pthread_mutex_t m_ptmSuspmutex; // thread's suspension mutex, which is used to synchronize suspension and resumption attempts
             BOOL m_fSuspmutexInitialized;
 
@@ -57,31 +53,8 @@ namespace CorUnix
             accessed by their own threads (and thus don't require
             synchronization).
 
-            m_fPending, m_fSuspendSignalSent, and m_fResumeSignalSent
-            may be set by a different thread than the owner and thus
-            require synchronization.
-
             m_fSelfsusp is set to TRUE only by its own thread but may be later
-            accessed by other threads.
-
-            m_lNumThreadsSuspendedByThisThread is accessed by its owning
-            thread and therefore does not require synchronization. */
-
-#ifdef _DEBUG
-            VOID
-            IncrNumThreadsSuspendedByThisThread(
-                )
-            {
-                InterlockedIncrement(&m_lNumThreadsSuspendedByThisThread);
-            };
-
-            VOID
-            DecrNumThreadsSuspendedByThisThread(
-                )
-            {
-                InterlockedDecrement(&m_lNumThreadsSuspendedByThisThread);
-            };
-#endif
+            accessed by other threads. */
 
             VOID
             AcquireSuspensionLocks(
@@ -102,22 +75,6 @@ namespace CorUnix
             {
                 return &m_ptmSuspmutex;
             }
-
-            void
-            SetSuspPending(
-                BOOL fPending
-                )
-            {
-                m_fPending = fPending;
-            };
-
-            BOOL
-            GetSuspPending(
-                void
-                )
-            {
-                return m_fPending;
-            };
 
             void
             SetSelfSusp(
@@ -152,28 +109,14 @@ namespace CorUnix
             virtual PAL_ERROR InitializePreCreate();
 
             CThreadSuspensionInfo()
-                : m_fPending(FALSE)
-                , m_fSelfsusp(FALSE)
+                : m_fSelfsusp(FALSE)
                 , m_nBlockingPipe(-1)
-#ifdef _DEBUG
-                , m_lNumThreadsSuspendedByThisThread(0)
-#endif // _DEBUG
                 , m_fSuspmutexInitialized(FALSE)
             {
                 InitializeSuspensionLock();
             };
 
             virtual ~CThreadSuspensionInfo();
-
-#ifdef _DEBUG
-            LONG
-            GetNumThreadsSuspendedByThisThread(
-                void
-                )
-            {
-                return m_lNumThreadsSuspendedByThisThread;
-            };
-#endif // _DEBUG
 
             void
             AcquireSuspensionLock(
@@ -210,10 +153,6 @@ namespace CorUnix
 
 extern const BYTE WAKEUPCODE; // use for pipe reads during self suspend.
 #endif // __cplusplus
-
-#ifdef USE_GLOBAL_LOCK_FOR_SUSPENSION
-extern LONG g_ssSuspensionLock;
-#endif
 
 #endif // _PAL_THREADSUSP_HPP
 
