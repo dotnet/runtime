@@ -1682,10 +1682,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("THROW");
                     break;
 
-                case ReadyToRunHelper.ThrowExact:
-                    builder.Append("THROW_EXACT");
-                    break;
-
                 case ReadyToRunHelper.Rethrow:
                     builder.Append("RETHROW");
                     break;

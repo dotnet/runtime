@@ -994,9 +994,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_THROW:
                     id = ReadyToRunHelper.Throw;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_THROWEXACT:
-                    id = ReadyToRunHelper.ThrowExact;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_RETHROW:
                     id = ReadyToRunHelper.Rethrow;
                     break;
