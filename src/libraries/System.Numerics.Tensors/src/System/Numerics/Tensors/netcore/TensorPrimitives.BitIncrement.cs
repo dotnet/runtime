@@ -196,35 +196,13 @@ namespace System.Numerics.Tensors
         private readonly struct HalfBitIncrementOperator : IUnaryOperator<short, short>
         {
             // Half constants
-            private const ushort SignMask = 0x8000;
             private const ushort PositiveInfinityBits = 0x7C00;
-            private const ushort NegativeInfinityBits = 0xFC00;
             private const ushort NegativeZeroBits = 0x8000;
             private const ushort EpsilonBits = 0x0001;
-            private const ushort MinValueBits = 0xFBFF;
 
             public static bool Vectorizable => true;
 
-            public static short Invoke(short x)
-            {
-                ushort bits = (ushort)x;
-
-                // Check if not finite: NaN or Infinity
-                if ((~bits & PositiveInfinityBits) == 0)
-                {
-                    // NaN returns NaN, -Infinity returns MinValue, +Infinity returns +Infinity
-                    return bits == NegativeInfinityBits ? unchecked((short)MinValueBits) : x;
-                }
-
-                // -0.0 returns Epsilon
-                if (bits == NegativeZeroBits)
-                {
-                    return (short)EpsilonBits;
-                }
-
-                // Negative values need to be decremented, positive values need to be incremented
-                return (short)(bits < SignMask ? bits + 1 : bits - 1);
-            }
+            public static short Invoke(short x) => BitConverter.HalfToInt16Bits(Half.BitIncrement(BitConverter.Int16BitsToHalf(x)));
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<short> Invoke(Vector128<short> x)
@@ -232,7 +210,7 @@ namespace System.Numerics.Tensors
                 Vector128<ushort> bits = x.AsUInt16();
 
                 // General case: negative -> decrement, positive -> increment
-                Vector128<ushort> isNegative = Vector128.ShiftRightArithmetic(x, 15).AsUInt16();
+                Vector128<ushort> isNegative = Vector128.IsNegative(x).AsUInt16();
                 Vector128<ushort> result = Vector128.ConditionalSelect(
                     isNegative,
                     bits - Vector128<ushort>.One,
@@ -260,7 +238,7 @@ namespace System.Numerics.Tensors
                 Vector256<ushort> bits = x.AsUInt16();
 
                 // General case: negative -> decrement, positive -> increment
-                Vector256<ushort> isNegative = Vector256.ShiftRightArithmetic(x, 15).AsUInt16();
+                Vector256<ushort> isNegative = Vector256.IsNegative(x).AsUInt16();
                 Vector256<ushort> result = Vector256.ConditionalSelect(
                     isNegative,
                     bits - Vector256<ushort>.One,
@@ -288,7 +266,7 @@ namespace System.Numerics.Tensors
                 Vector512<ushort> bits = x.AsUInt16();
 
                 // General case: negative -> decrement, positive -> increment
-                Vector512<ushort> isNegative = Vector512.ShiftRightArithmetic(x, 15).AsUInt16();
+                Vector512<ushort> isNegative = Vector512.IsNegative(x).AsUInt16();
                 Vector512<ushort> result = Vector512.ConditionalSelect(
                     isNegative,
                     bits - Vector512<ushort>.One,

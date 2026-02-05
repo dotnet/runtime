@@ -196,35 +196,13 @@ namespace System.Numerics.Tensors
         private readonly struct HalfBitDecrementOperator : IUnaryOperator<short, short>
         {
             // Half constants
-            private const ushort SignMask = 0x8000;
             private const ushort PositiveInfinityBits = 0x7C00;
             private const ushort NegativeInfinityBits = 0xFC00;
-            private const ushort PositiveZeroBits = 0x0000;
             private const ushort NegativeEpsilonBits = 0x8001;
-            private const ushort MaxValueBits = 0x7BFF;
 
             public static bool Vectorizable => true;
 
-            public static short Invoke(short x)
-            {
-                ushort bits = (ushort)x;
-
-                // Check if not finite: NaN or Infinity
-                if ((~bits & PositiveInfinityBits) == 0)
-                {
-                    // NaN returns NaN, -Infinity returns -Infinity, +Infinity returns MaxValue
-                    return bits == PositiveInfinityBits ? (short)MaxValueBits : x;
-                }
-
-                // +0.0 returns -Epsilon
-                if (bits == PositiveZeroBits)
-                {
-                    return unchecked((short)NegativeEpsilonBits);
-                }
-
-                // Negative values need to be incremented, positive values need to be decremented
-                return (short)(bits < SignMask ? bits - 1 : bits + 1);
-            }
+            public static short Invoke(short x) => BitConverter.HalfToInt16Bits(Half.BitDecrement(BitConverter.Int16BitsToHalf(x)));
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<short> Invoke(Vector128<short> x)
@@ -232,14 +210,14 @@ namespace System.Numerics.Tensors
                 Vector128<ushort> bits = x.AsUInt16();
 
                 // General case: negative -> increment, positive -> decrement
-                Vector128<ushort> isNegative = Vector128.ShiftRightArithmetic(x, 15).AsUInt16();
+                Vector128<ushort> isNegative = Vector128.IsNegative(x).AsUInt16();
                 Vector128<ushort> result = Vector128.ConditionalSelect(
                     isNegative,
                     bits + Vector128<ushort>.One,
                     bits - Vector128<ushort>.One);
 
                 // Handle special cases with a single conditional select
-                Vector128<ushort> isPositiveZero = Vector128.Equals(bits, Vector128<ushort>.Zero);
+                Vector128<ushort> isPositiveZero = Vector128.IsZero(bits);
                 Vector128<ushort> specialValue = Vector128.Create(NegativeEpsilonBits) & isPositiveZero;
 
                 // NaN: (bits & 0x7FFF) > 0x7C00 (both positive and negative NaN)
@@ -260,14 +238,14 @@ namespace System.Numerics.Tensors
                 Vector256<ushort> bits = x.AsUInt16();
 
                 // General case: negative -> increment, positive -> decrement
-                Vector256<ushort> isNegative = Vector256.ShiftRightArithmetic(x, 15).AsUInt16();
+                Vector256<ushort> isNegative = Vector256.IsNegative(x).AsUInt16();
                 Vector256<ushort> result = Vector256.ConditionalSelect(
                     isNegative,
                     bits + Vector256<ushort>.One,
                     bits - Vector256<ushort>.One);
 
                 // Handle special cases with a single conditional select
-                Vector256<ushort> isPositiveZero = Vector256.Equals(bits, Vector256<ushort>.Zero);
+                Vector256<ushort> isPositiveZero = Vector256.IsZero(bits);
                 Vector256<ushort> specialValue = Vector256.Create(NegativeEpsilonBits) & isPositiveZero;
 
                 // NaN: (bits & 0x7FFF) > 0x7C00 (both positive and negative NaN)
@@ -288,14 +266,14 @@ namespace System.Numerics.Tensors
                 Vector512<ushort> bits = x.AsUInt16();
 
                 // General case: negative -> increment, positive -> decrement
-                Vector512<ushort> isNegative = Vector512.ShiftRightArithmetic(x, 15).AsUInt16();
+                Vector512<ushort> isNegative = Vector512.IsNegative(x).AsUInt16();
                 Vector512<ushort> result = Vector512.ConditionalSelect(
                     isNegative,
                     bits + Vector512<ushort>.One,
                     bits - Vector512<ushort>.One);
 
                 // Handle special cases with a single conditional select
-                Vector512<ushort> isPositiveZero = Vector512.Equals(bits, Vector512<ushort>.Zero);
+                Vector512<ushort> isPositiveZero = Vector512.IsZero(bits);
                 Vector512<ushort> specialValue = Vector512.Create(NegativeEpsilonBits) & isPositiveZero;
 
                 // NaN: (bits & 0x7FFF) > 0x7C00 (both positive and negative NaN)
