@@ -427,10 +427,15 @@ namespace System.Formats.Tar.Tests
             byte[] nameBytes = System.Text.Encoding.UTF8.GetBytes("unsupported_entry");
             nameBytes.CopyTo(header.AsSpan(0, nameBytes.Length));
 
+            // Set mode field (octal 644 = rw-r--r--)
             System.Text.Encoding.UTF8.GetBytes("0000644 ").CopyTo(header.AsSpan(100, 8));
+            // Set uid field
             System.Text.Encoding.UTF8.GetBytes("0000000 ").CopyTo(header.AsSpan(108, 8));
+            // Set gid field
             System.Text.Encoding.UTF8.GetBytes("0000000 ").CopyTo(header.AsSpan(116, 8));
+            // Set size field
             System.Text.Encoding.UTF8.GetBytes("00000000000 ").CopyTo(header.AsSpan(124, 12));
+            // Set mtime field
             System.Text.Encoding.UTF8.GetBytes("00000000000 ").CopyTo(header.AsSpan(136, 12));
 
             header[156] = (byte)unsupportedType;
