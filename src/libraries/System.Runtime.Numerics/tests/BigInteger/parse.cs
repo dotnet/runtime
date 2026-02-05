@@ -1407,5 +1407,91 @@ namespace System.Numerics.Tests
                 parseTest.RegressionIssueRuntime94610(text);
             }));
         }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        {
+            // Basic BigInteger parsing with trailing invalid characters
+            yield return new object[] { "123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(123), 3 };
+            yield return new object[] { "456789xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(456789), 6 };
+            yield return new object[] { "0abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Zero, 1 };
+            
+            // With leading whitespace
+            yield return new object[] { "  123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(123), 5 };
+            
+            // With signs
+            yield return new object[] { "+123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(123), 4 };
+            yield return new object[] { "-456xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(-456), 4 };
+            
+            // HexNumber with trailing invalid characters
+            yield return new object[] { "ABCDEFxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("ABCDEF", NumberStyles.HexNumber), 6 };
+            yield return new object[] { "FFGHxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(0xFF), 2 };
+            
+            // BinaryNumber with trailing invalid characters
+            yield return new object[] { "101010abc", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("101010", NumberStyles.BinaryNumber), 6 };
+            yield return new object[] { "1112", NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("111", NumberStyles.BinaryNumber), 3 };
+            
+            // Large numbers with trailing characters
+            yield return new object[] { "123456789012345678901234567890abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, BigInteger.Parse("123456789012345678901234567890"), 30 };
+            
+            // Valid number without trailing characters
+            yield return new object[] { "123456", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, new BigInteger(123456), 6 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, BigInteger expectedValue, int expectedCharsConsumed)
+        {
+            BigInteger result;
+            int charsConsumed;
+            
+            // Test string overload with charsConsumed
+            Assert.True(BigInteger.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+            
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.True(BigInteger.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+            
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.True(BigInteger.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(expectedValue, result);
+            // For ASCII characters, bytes consumed should equal chars consumed
+            if (value.All(c => c < 128))
+            {
+                Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        {
+            // Empty string
+            yield return new object[] { "", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            
+            // Only invalid characters (no valid number)
+            yield return new object[] { "abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+            yield return new object[] { "xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        {
+            BigInteger result;
+            int charsConsumed;
+            
+            // Test string overload with charsConsumed
+            Assert.False(BigInteger.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(BigInteger.Zero, result);
+            Assert.Equal(0, charsConsumed);
+            
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.False(BigInteger.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(BigInteger.Zero, result);
+            Assert.Equal(0, charsConsumed);
+        }
     }
 }
