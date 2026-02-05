@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
+    [UnsupportedOSPlatform("browser")]
     internal sealed class WinZipAesStream : Stream
     {
         private const int BlockSize = 16; // AES block size in bytes
@@ -217,9 +219,7 @@ namespace System.IO.Compression
             _totalStreamSize = totalStreamSize;
             _leaveOpen = leaveOpen;
 
-#pragma warning disable CA1416 // HMACSHA1 is available on all platforms
             _aes = Aes.Create();
-#pragma warning restore CA1416
             _aes.Mode = CipherMode.ECB;
             _aes.Padding = PaddingMode.None;
 
@@ -249,9 +249,7 @@ namespace System.IO.Compression
                 }
             }
 
-#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms - required by WinZip AES spec
             _hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, _hmacKey!);
-#pragma warning restore CA5350
             InitCipher();
         }
 

@@ -476,6 +476,11 @@ public partial class ZipArchiveEntry
         }
         else if (isAesEncrypted)
         {
+            if (OperatingSystem.IsBrowser())
+            {
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            }
+
             int keySizeBits = GetAesKeySizeBits(Encryption);
 
             // Read salt from stream to derive keys
@@ -681,6 +686,11 @@ public partial class ZipArchiveEntry
                 }
                 else if (UseAesEncryption() && _derivedEncryptionKeyMaterial != null)
                 {
+
+                    if (OperatingSystem.IsBrowser())
+                    {
+                        throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                    }
                     // For AES, we need to:
                     // 1. Write header with CompressionMethod = Aes (99)
                     // 2. Compress data with actual compression (Deflate/Stored)

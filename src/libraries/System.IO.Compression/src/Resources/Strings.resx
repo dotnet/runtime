@@ -345,4 +345,7 @@
   <data name="EncryptionUpdateMode" xml:space="preserve">
     <value>Encryption Method should not be specified in Update Mode</value>
   </data>
+  <data name="WinZipEncryptionNotSupportedOnBrowser" xml:space="preserve">
+    <value>WinZip encryption is not supported on browser</value>
+  </data>
 </root>

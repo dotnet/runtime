@@ -1050,6 +1050,11 @@ namespace System.IO.Compression
             }
             else if (isAesEncrypted)
             {
+                if (OperatingSystem.IsBrowser())
+                {
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                }
+
                 int keySizeBits = GetAesKeySizeBits(Encryption);
 
                 // Read salt from stream to derive keys
@@ -1168,6 +1173,11 @@ namespace System.IO.Compression
             }
             else if (encryptionMethod is EncryptionMethod.Aes256 or EncryptionMethod.Aes192 or EncryptionMethod.Aes128)
             {
+                if (OperatingSystem.IsBrowser())
+                {
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                }
+
                 if (string.IsNullOrEmpty(password))
                     throw new InvalidOperationException(SR.NoPasswordProvided);
 
@@ -1261,6 +1271,10 @@ namespace System.IO.Compression
             }
             else if (UseAesEncryption())
             {
+                if (OperatingSystem.IsBrowser())
+                {
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                }
                 // Generate new salt and derive key material for AES
                 // This ensures each write uses a fresh random salt for security
                 int keySizeBits = GetAesKeySizeBits(Encryption);
@@ -1673,6 +1687,11 @@ namespace System.IO.Compression
                     }
                     else if (UseAesEncryption() && _derivedEncryptionKeyMaterial != null)
                     {
+                        if (OperatingSystem.IsBrowser())
+                        {
+                            throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                        }
+
                         // For AES, we need to:
                         // 1. Write header with CompressionMethod = Aes (99)
                         // 2. Compress data with actual compression (Deflate/Stored)

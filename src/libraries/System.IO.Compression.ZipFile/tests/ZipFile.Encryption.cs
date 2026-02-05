@@ -27,6 +27,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task Encryption_SingleEntry_RoundTrip(EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -49,6 +50,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task Encryption_MultipleEntries_SamePassword_RoundTrip(EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -74,6 +76,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task Encryption_MixedPlainAndEncrypted_RoundTrip(EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -101,6 +104,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task Encryption_Combinations_RoundTrip(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -126,6 +130,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task Encryption_LargeFile_RoundTrip(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -169,6 +174,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public void WrongPassword_Throws_InvalidDataException()
         {
             string archivePath = GetTempArchivePath();
@@ -184,11 +190,11 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public void Negative_MissingPassword_Throws_InvalidDataException()
+        public void MissingPassword_Throws_InvalidDataException()
         {
             string archivePath = GetTempArchivePath();
             string password = "correct";
-            var entries = new[] { ("test.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256) };
+            var entries = new[] { ("test.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.ZipCrypto) };
             CreateArchiveWithEntries(archivePath, entries, async: false).GetAwaiter().GetResult();
 
             using (ZipArchive archive = ZipFile.OpenRead(archivePath))
@@ -200,7 +206,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
-        public async Task Negative_OpeningPlainEntryWithPassword_Throws(bool async)
+        public async Task OpeningPlainEntryWithPassword_Throws(bool async)
         {
             string archivePath = GetTempArchivePath();
             var entries = new[] { ("plain.txt", "content", (string?)null, (EncryptionMethod?)null) };
@@ -216,6 +222,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task ExtractToFile_Encrypted_Success(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -301,6 +308,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task UpdateMode_ModifyEncryptedEntry_RoundTrip(EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -354,6 +362,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task UpdateMode_ReadOnlyEncryptedEntry_NoModification(EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -391,6 +400,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task UpdateMode_MultipleEncryptedEntries_ModifyOne(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -434,6 +444,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task UpdateMode_MixedEncryption_ModifyEncrypted(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -484,6 +495,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task UpdateMode_LargeEncryptedEntry_Modify(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -548,6 +560,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task UpdateMode_EncryptedEntry_EmptyAfterModification(EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -582,6 +595,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public void UpdateMode_EncryptedEntry_WrongPassword_Throws()
         {
             string archivePath = GetTempArchivePath();
@@ -602,7 +616,7 @@ namespace System.IO.Compression.Tests
         {
             string archivePath = GetTempArchivePath();
             string password = "correct";
-            var entries = new[] { ("test.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256) };
+            var entries = new[] { ("test.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.ZipCrypto) };
             CreateArchiveWithEntries(archivePath, entries, async: false).GetAwaiter().GetResult();
 
             using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Update))
@@ -616,6 +630,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task UpdateMode_DeleteEntryAndModifyAnother(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -682,6 +697,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task UpdateMode_DeleteEncryptedAndModifyPlain(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -732,6 +748,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task UpdateMode_DeletePlainAndModifyEncrypted(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -782,6 +799,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task UpdateMode_DeleteMultipleEntriesAndModifyRemaining(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -833,6 +851,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task UpdateMode_AllEncryptionTypes_EditAllEntries(EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -888,6 +907,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task CompressionMethod_AesEncryptedEntries_ReturnsActualCompressionMethod(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -1082,6 +1102,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task ExtractToFile_EncryptedEntry_Success(EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -1113,6 +1134,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task ExtractToFile_EncryptedEntry_Overwrite_Success(EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -1145,6 +1167,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task ExtractToFile_EncryptedEntry_WrongPassword_Throws(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -1175,6 +1198,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task ExtractToDirectory_MultipleEncryptedEntries_SamePassword_Success(EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -1213,6 +1237,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task ExtractToDirectory_MultipleEntries_DifferentPasswords_Throws(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -1245,6 +1270,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task ExtractToDirectory_EncryptedWithOverwrite_Success(EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -1281,6 +1307,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task ExtractToDirectory_EncryptedWithoutOverwrite_ExistingFile_Throws(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -1324,7 +1351,7 @@ namespace System.IO.Compression.Tests
         {
             string archivePath = GetTempArchivePath();
             string password = "secret";
-            var entries = new[] { ("test.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256) };
+            var entries = new[] { ("test.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.ZipCrypto) };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
             using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
@@ -1347,6 +1374,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task Open_FileAccess_CreateMode_InvalidAccess_Throws(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -1374,6 +1402,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task Open_FileAccess_UpdateMode_EncryptedEntry_NoPassword_Throws(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -1422,6 +1451,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(CreateEntryFromFile_Encrypted_TestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task CreateEntryFromFile_Encrypted_RoundTrip(EncryptionMethod encryptionMethod, bool useCompression, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -1465,6 +1495,71 @@ namespace System.IO.Compression.Tests
 
         #endregion
 
+        #region Browser Platform Tests
+
+        public static IEnumerable<object[]> AesEncryptionMethodAndBoolTestData()
+        {
+            foreach (var method in new[]
+            {
+                EncryptionMethod.Aes128,
+                EncryptionMethod.Aes192,
+                EncryptionMethod.Aes256
+            })
+            {
+                yield return new object[] { method, false };
+                yield return new object[] { method, true };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        [PlatformSpecific(TestPlatforms.Browser)]
+        public async Task Browser_ZipCrypto_Encryption_Works(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string entryName = "test.txt";
+            string content = "ZipCrypto Content on Browser";
+            string password = "password123";
+
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
+            {
+                ZipArchiveEntry entry = archive.CreateEntry(entryName);
+                using (Stream s = entry.Open(password, EncryptionMethod.ZipCrypto))
+                using (StreamWriter w = new StreamWriter(s, Encoding.UTF8))
+                {
+                    if (async)
+                        await w.WriteAsync(content);
+                    else
+                        w.Write(content);
+                }
+            }
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                ZipArchiveEntry entry = archive.GetEntry(entryName);
+                Assert.NotNull(entry);
+                Assert.True(entry.IsEncrypted);
+                await AssertEntryTextEquals(entry, content, password, async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AesEncryptionMethodAndBoolTestData))]
+        [PlatformSpecific(TestPlatforms.Browser)]
+        public async Task Browser_AesEncryption_Throws_PlatformNotSupportedException(EncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string entryName = "test.txt";
+            string password = "password123";
+
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
+            {
+                ZipArchiveEntry entry = archive.CreateEntry(entryName);
+                Assert.Throws<PlatformNotSupportedException>(() => entry.Open(password, encryptionMethod));
+            }
+        }
+
+        #endregion
 
     }
 }
