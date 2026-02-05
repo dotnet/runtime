@@ -1405,7 +1405,7 @@ struct CursorInfo
 
 class StrengthReductionContext
 {
-    Compiler*               m_comp;
+    Compiler*               m_compiler;
     ScalarEvolutionContext& m_scevContext;
     FlowGraphNaturalLoop*   m_loop;
     PerLoopInfo&            m_loopInfo;
@@ -1442,7 +1442,7 @@ class StrengthReductionContext
 
     bool StressProfitability()
     {
-        return m_comp->compStressCompile(Compiler::STRESS_STRENGTH_REDUCTION_PROFITABILITY, 50);
+        return m_compiler->compStressCompile(Compiler::STRESS_STRENGTH_REDUCTION_PROFITABILITY, 50);
     }
 
 public:
@@ -1450,7 +1450,7 @@ public:
                              ScalarEvolutionContext& scevContext,
                              FlowGraphNaturalLoop*   loop,
                              PerLoopInfo&            loopInfo)
-        : m_comp(comp)
+        : m_compiler(comp)
         , m_scevContext(scevContext)
         , m_loop(loop)
         , m_loopInfo(loopInfo)
@@ -1476,7 +1476,7 @@ bool StrengthReductionContext::TryStrengthReduce()
     JITDUMP("Considering " FMT_LP " for strength reduction...\n", m_loop->GetIndex());
 
     if ((JitConfig.JitEnableStrengthReduction() == 0) &&
-        !m_comp->compStressCompile(Compiler::STRESS_STRENGTH_REDUCTION, 50))
+        !m_compiler->compStressCompile(Compiler::STRESS_STRENGTH_REDUCTION, 50))
     {
         JITDUMP("  Disabled: no stress mode\n");
         return false;
@@ -1521,7 +1521,7 @@ bool StrengthReductionContext::TryStrengthReduce()
         candidate = m_scevContext.Simplify(candidate, m_simplAssumptions);
 
         JITDUMP("  => ");
-        DBEXEC(m_comp->verbose, candidate->Dump(m_comp));
+        DBEXEC(m_compiler->verbose, candidate->Dump(m_compiler));
 
         JITDUMP("\n");
         if (!candidate->OperIs(ScevOper::AddRec))
@@ -1530,7 +1530,7 @@ bool StrengthReductionContext::TryStrengthReduce()
             continue;
         }
 
-        if (m_comp->optLocalHasNonLoopUses(primaryIVLcl->GetLclNum(), m_loop, &m_loopInfo))
+        if (m_compiler->optLocalHasNonLoopUses(primaryIVLcl->GetLclNum(), m_loop, &m_loopInfo))
         {
             // We won't be able to remove this primary IV
             JITDUMP("  Has non-loop uses\n");
@@ -1565,7 +1565,7 @@ bool StrengthReductionContext::TryStrengthReduce()
             }
 
             JITDUMP("  Next IV is: ");
-            DBEXEC(VERBOSE, nextIV->Dump(m_comp));
+            DBEXEC(VERBOSE, nextIV->Dump(m_compiler));
             JITDUMP("\n");
 
             assert(nextIV != nullptr);
@@ -1600,7 +1600,7 @@ bool StrengthReductionContext::TryStrengthReduce()
 
         JITDUMP("  All uses of primary IV V%02u are used to compute a %d-derived IV ", primaryIVLcl->GetLclNum(),
                 derivedLevel);
-        DBEXEC(VERBOSE, currentIV->Dump(m_comp));
+        DBEXEC(VERBOSE, currentIV->Dump(m_compiler));
         JITDUMP("\n");
 
         if (!StressProfitability())
@@ -1615,8 +1615,8 @@ bool StrengthReductionContext::TryStrengthReduce()
             int64_t newIVStep;
             int64_t primaryIVStep;
             if (currentIV->Step->TypeIs(TYP_LONG) && primaryIV->Step->TypeIs(TYP_INT) &&
-                currentIV->Step->GetConstantValue(m_comp, &newIVStep) &&
-                primaryIV->Step->GetConstantValue(m_comp, &primaryIVStep) &&
+                currentIV->Step->GetConstantValue(m_compiler, &newIVStep) &&
+                primaryIV->Step->GetConstantValue(m_compiler, &primaryIVStep) &&
                 (int32_t)newIVStep == (int32_t)primaryIVStep)
             {
                 JITDUMP("    Skipping: Candidate has same widened step as primary IV\n");
@@ -1640,7 +1640,7 @@ bool StrengthReductionContext::TryStrengthReduce()
 //
 void StrengthReductionContext::InitializeSimplificationAssumptions()
 {
-    m_comp->optVisitBoundingExitingCondBlocks(m_loop, [=](BasicBlock* exiting) {
+    m_compiler->optVisitBoundingExitingCondBlocks(m_loop, [=](BasicBlock* exiting) {
         Scev* exitNotTakenCount = m_scevContext.ComputeExitNotTakenCount(exiting);
         if (exitNotTakenCount != nullptr)
         {
@@ -1652,7 +1652,7 @@ void StrengthReductionContext::InitializeSimplificationAssumptions()
     m_simplAssumptions.NumBackEdgeTakenBound = static_cast<unsigned>(m_backEdgeBounds.Height());
 
 #ifdef DEBUG
-    if (m_comp->verbose)
+    if (m_compiler->verbose)
     {
         printf("  Bound on backedge taken count is ");
         if (m_simplAssumptions.NumBackEdgeTakenBound == 0)
@@ -1664,7 +1664,7 @@ void StrengthReductionContext::InitializeSimplificationAssumptions()
         for (unsigned i = 0; i < m_simplAssumptions.NumBackEdgeTakenBound; i++)
         {
             printf("%s", pref);
-            m_simplAssumptions.BackEdgeTakenBound[i]->Dump(m_comp);
+            m_simplAssumptions.BackEdgeTakenBound[i]->Dump(m_compiler);
         }
 
         printf("%s\n", m_simplAssumptions.NumBackEdgeTakenBound > 1 ? ")" : "");
@@ -1751,13 +1751,13 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
     JITDUMP("  Found %d cursors using primary IV V%02u\n", m_cursors1.Height(), primaryIVLcl->GetLclNum());
 
 #ifdef DEBUG
-    if (m_comp->verbose)
+    if (m_compiler->verbose)
     {
         for (int i = 0; i < m_cursors1.Height(); i++)
         {
             CursorInfo& cursor = m_cursors1.BottomRef(i);
             printf("    [%d] [%06u]: ", i, Compiler::dspTreeID(cursor.Tree));
-            cursor.IV->Dump(m_comp);
+            cursor.IV->Dump(m_compiler);
             printf("\n");
         }
     }
@@ -1781,7 +1781,7 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
 bool StrengthReductionContext::IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree)
 {
     unsigned primaryIVLclNum = tree->GetLclNum();
-    if (m_comp->optIsUpdateOfIVWithoutSideEffects(stmt->GetRootNode(), tree->GetLclNum()))
+    if (m_compiler->optIsUpdateOfIVWithoutSideEffects(stmt->GetRootNode(), tree->GetLclNum()))
     {
         // Removal of unused IVs will get rid of this.
         return true;
@@ -1800,7 +1800,7 @@ bool StrengthReductionContext::IsUseExpectedToBeRemoved(BasicBlock* block, State
         GenTree* cond  = jtrue->gtGetOp1();
 
         // Is the exit test changeable?
-        if (!m_comp->optCanAndShouldChangeExitTest(cond, /* dump */ false))
+        if (!m_compiler->optCanAndShouldChangeExitTest(cond, /* dump */ false))
         {
             return false;
         }
@@ -1809,7 +1809,7 @@ bool StrengthReductionContext::IsUseExpectedToBeRemoved(BasicBlock* block, State
         // updates before it?
         for (FlowEdge* edge : m_loop->BackEdges())
         {
-            if (!m_comp->m_domTree->Dominates(block, edge->getSourceBlock()))
+            if (!m_compiler->m_domTree->Dominates(block, edge->getSourceBlock()))
             {
                 return false;
             }
@@ -1887,7 +1887,7 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
     }
 
 #ifdef DEBUG
-    if (m_comp->verbose)
+    if (m_compiler->verbose)
     {
         for (int i = 0; i < nextCursors->Height(); i++)
         {
@@ -1899,7 +1899,7 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
             }
             else
             {
-                nextCursor.IV->Dump(m_comp);
+                nextCursor.IV->Dump(m_compiler);
             }
             printf("\n");
         }
@@ -1936,7 +1936,7 @@ void StrengthReductionContext::ExpandStoredCursors(ArrayStack<CursorInfo>* curso
                 GenTreeLclVarCommon* storedLcl = parent->AsLclVarCommon();
                 if ((storedLcl->Data() == cur) && ((cur->gtFlags & GTF_SIDE_EFFECT) == 0) &&
                     storedLcl->HasSsaIdentity() &&
-                    !m_comp->optLocalHasNonLoopUses(storedLcl->GetLclNum(), m_loop, &m_loopInfo))
+                    !m_compiler->optLocalHasNonLoopUses(storedLcl->GetLclNum(), m_loop, &m_loopInfo))
                 {
                     int         numCreated  = 0;
                     ScevAddRec* cursorIV    = cursor->IV;
@@ -2116,15 +2116,15 @@ ScevAddRec* StrengthReductionContext::ComputeRephrasableIVByScaling(ScevAddRec* 
     // To rephrase the IVs we will need to scale them up. This requires the
     // start value to be 0 since that starting value will be scaled too.
     int64_t start;
-    if (!iv1->Start->GetConstantValue(m_comp, &start) || ((T)start != 0) ||
-        !iv2->Start->GetConstantValue(m_comp, &start) || ((T)start != 0))
+    if (!iv1->Start->GetConstantValue(m_compiler, &start) || ((T)start != 0) ||
+        !iv2->Start->GetConstantValue(m_compiler, &start) || ((T)start != 0))
     {
         return nullptr;
     }
 
     int64_t iv1Step;
     int64_t iv2Step;
-    if (!iv1->Step->GetConstantValue(m_comp, &iv1Step) || !iv2->Step->GetConstantValue(m_comp, &iv2Step))
+    if (!iv1->Step->GetConstantValue(m_compiler, &iv1Step) || !iv2->Step->GetConstantValue(m_compiler, &iv2Step))
     {
         return nullptr;
     }
@@ -2223,7 +2223,8 @@ GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* source
 
     int64_t ivStep       = 0;
     int64_t sourceIVStep = 0;
-    if (!iv->Step->GetConstantValue(m_comp, &ivStep) || !sourceIV->Step->GetConstantValue(m_comp, &sourceIVStep))
+    if (!iv->Step->GetConstantValue(m_compiler, &ivStep) ||
+        !sourceIV->Step->GetConstantValue(m_compiler, &sourceIVStep))
     {
         unreached();
     }
@@ -2236,12 +2237,12 @@ GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* source
         int32_t scale = (int32_t)ivStep / (int32_t)sourceIVStep;
         if (isPow2(scale))
         {
-            return m_comp->gtNewOperNode(GT_LSH, TYP_INT, sourceTree,
-                                         m_comp->gtNewIconNode(BitOperations::Log2((uint32_t)scale)));
+            return m_compiler->gtNewOperNode(GT_LSH, TYP_INT, sourceTree,
+                                             m_compiler->gtNewIconNode(BitOperations::Log2((uint32_t)scale)));
         }
         else
         {
-            return m_comp->gtNewOperNode(GT_MUL, TYP_INT, sourceTree, m_comp->gtNewIconNode(scale));
+            return m_compiler->gtNewOperNode(GT_MUL, TYP_INT, sourceTree, m_compiler->gtNewIconNode(scale));
         }
     }
 
@@ -2251,12 +2252,12 @@ GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* source
         int64_t scale = ivStep / sourceIVStep;
         if (isPow2(scale))
         {
-            return m_comp->gtNewOperNode(GT_LSH, TYP_LONG, sourceTree,
-                                         m_comp->gtNewLconNode(BitOperations::Log2((uint64_t)scale)));
+            return m_compiler->gtNewOperNode(GT_LSH, TYP_LONG, sourceTree,
+                                             m_compiler->gtNewLconNode(BitOperations::Log2((uint64_t)scale)));
         }
         else
         {
-            return m_comp->gtNewOperNode(GT_MUL, TYP_LONG, sourceTree, m_comp->gtNewLconNode(scale));
+            return m_compiler->gtNewOperNode(GT_MUL, TYP_LONG, sourceTree, m_compiler->gtNewLconNode(scale));
         }
     }
 
@@ -2285,8 +2286,8 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     ValueNumPair   addRecStartBase    = addRecStartVNP;
     target_ssize_t offsetLiberal      = 0;
     target_ssize_t offsetConservative = 0;
-    m_comp->vnStore->PeelOffsets(addRecStartBase.GetLiberalAddr(), &offsetLiberal);
-    m_comp->vnStore->PeelOffsets(addRecStartBase.GetConservativeAddr(), &offsetConservative);
+    m_compiler->vnStore->PeelOffsets(addRecStartBase.GetLiberalAddr(), &offsetLiberal);
+    m_compiler->vnStore->PeelOffsets(addRecStartBase.GetConservativeAddr(), &offsetConservative);
 
     if (offsetLiberal != offsetConservative)
     {
@@ -2300,8 +2301,8 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     // designated by a Span<T> that we currently do not specify, or we need to
     // prove that the byref we may form in the IV update would have been formed
     // anyway by the loop.
-    if ((m_comp->vnStore->TypeOfVN(addRecStartBase.GetConservative()) != TYP_REF) ||
-        (m_comp->vnStore->TypeOfVN(addRecStartBase.GetLiberal()) != TYP_REF))
+    if ((m_compiler->vnStore->TypeOfVN(addRecStartBase.GetConservative()) != TYP_REF) ||
+        (m_compiler->vnStore->TypeOfVN(addRecStartBase.GetLiberal()) != TYP_REF))
     {
         return false;
     }
@@ -2331,17 +2332,17 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     }
 
     unsigned arrElemSize = arrAddr->GetElemType() == TYP_STRUCT
-                               ? m_comp->typGetObjLayout(arrAddr->GetElemClassHandle())->GetSize()
+                               ? m_compiler->typGetObjLayout(arrAddr->GetElemClassHandle())->GetSize()
                                : genTypeSize(arrAddr->GetElemType());
 
     int64_t stepCns;
-    if (!addRec->Step->GetConstantValue(m_comp, &stepCns) || ((unsigned)stepCns > arrElemSize))
+    if (!addRec->Step->GetConstantValue(m_compiler, &stepCns) || ((unsigned)stepCns > arrElemSize))
     {
         return false;
     }
 
     BasicBlock* preheader = m_loop->EntryEdge(0)->getSourceBlock();
-    if (!m_comp->optAssertionVNIsNonNull(addRecStartBase.GetConservative(), preheader->bbAssertionOut))
+    if (!m_compiler->optAssertionVNIsNonNull(addRecStartBase.GetConservative(), preheader->bbAssertionOut))
     {
         return false;
     }
@@ -2358,7 +2359,7 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
 
     // Now see if we have a bound that guarantees that we iterate fewer times
     // than the array/string's length.
-    ValueNum arrLengthVN = m_comp->vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, addRecStartBase.GetLiberal());
+    ValueNum arrLengthVN = m_compiler->vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, addRecStartBase.GetLiberal());
 
     for (int i = 0; i < m_backEdgeBounds.Height(); i++)
     {
@@ -2374,7 +2375,7 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
         ValueNumPair boundVN = m_scevContext.MaterializeVN(bound);
         if (boundVN.GetLiberal() != ValueNumStore::NoVN)
         {
-            ValueNum relop = m_comp->vnStore->VNForFunc(TYP_INT, VNF_LT_UN, boundVN.GetLiberal(), arrLengthVN);
+            ValueNum relop = m_compiler->vnStore->VNForFunc(TYP_INT, VNF_LT_UN, boundVN.GetLiberal(), arrLengthVN);
             if (m_scevContext.EvaluateRelop(relop) == RelopEvaluationResult::True)
             {
                 return true;
@@ -2402,7 +2403,7 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
         ValueNumPair boundBaseVN = m_scevContext.MaterializeVN(boundBase);
         if (boundBaseVN.GetLiberal() != ValueNumStore::NoVN)
         {
-            ValueNum relop = m_comp->vnStore->VNForFunc(TYP_INT, VNF_LE, boundBaseVN.GetLiberal(), arrLengthVN);
+            ValueNum relop = m_compiler->vnStore->VNForFunc(TYP_INT, VNF_LE, boundBaseVN.GetLiberal(), arrLengthVN);
             if (m_scevContext.EvaluateRelop(relop) == RelopEvaluationResult::True)
             {
                 return true;
@@ -2428,7 +2429,7 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
 bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv)
 {
     int64_t stepCns;
-    if (!iv->Step->GetConstantValue(m_comp, &stepCns))
+    if (!iv->Step->GetConstantValue(m_compiler, &stepCns))
     {
         // For other cases it's non-trivial to know if we can materialize
         // the value as IR in the step block.
@@ -2457,25 +2458,25 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
     GenTree* stepValue = m_scevContext.Materialize(iv->Step);
     assert(stepValue != nullptr);
 
-    unsigned   newPrimaryIV = m_comp->lvaGrabTemp(false DEBUGARG("Strength reduced derived IV"));
-    GenTree*   initStore    = m_comp->gtNewTempStore(newPrimaryIV, initValue);
-    Statement* initStmt     = m_comp->fgNewStmtFromTree(initStore);
-    m_comp->fgInsertStmtNearEnd(preheader, initStmt);
+    unsigned   newPrimaryIV = m_compiler->lvaGrabTemp(false DEBUGARG("Strength reduced derived IV"));
+    GenTree*   initStore    = m_compiler->gtNewTempStore(newPrimaryIV, initValue);
+    Statement* initStmt     = m_compiler->fgNewStmtFromTree(initStore);
+    m_compiler->fgInsertStmtNearEnd(preheader, initStmt);
 
     JITDUMP("    Inserting init statement in preheader " FMT_BB "\n", preheader->bbNum);
     DISPSTMT(initStmt);
 
     GenTree* nextValue =
-        m_comp->gtNewOperNode(GT_ADD, iv->Type, m_comp->gtNewLclVarNode(newPrimaryIV, iv->Type), stepValue);
-    GenTree*   stepStore = m_comp->gtNewTempStore(newPrimaryIV, nextValue);
-    Statement* stepStmt  = m_comp->fgNewStmtFromTree(stepStore);
+        m_compiler->gtNewOperNode(GT_ADD, iv->Type, m_compiler->gtNewLclVarNode(newPrimaryIV, iv->Type), stepValue);
+    GenTree*   stepStore = m_compiler->gtNewTempStore(newPrimaryIV, nextValue);
+    Statement* stepStmt  = m_compiler->fgNewStmtFromTree(stepStore);
     if (afterStmt != nullptr)
     {
-        m_comp->fgInsertStmtAfter(insertionPoint, afterStmt, stepStmt);
+        m_compiler->fgInsertStmtAfter(insertionPoint, afterStmt, stepStmt);
     }
     else
     {
-        m_comp->fgInsertStmtNearEnd(insertionPoint, stepStmt);
+        m_compiler->fgInsertStmtNearEnd(insertionPoint, stepStmt);
     }
 
     JITDUMP("    Inserting step statement in " FMT_BB "\n", insertionPoint->bbNum);
@@ -2485,7 +2486,7 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
     for (int i = 0; i < cursors->Height(); i++)
     {
         CursorInfo& cursor = cursors->BottomRef(i);
-        GenTree*    newUse = m_comp->gtNewLclVarNode(newPrimaryIV, iv->Type);
+        GenTree*    newUse = m_compiler->gtNewLclVarNode(newPrimaryIV, iv->Type);
         newUse             = RephraseIV(cursor.IV, iv, newUse);
 
         JITDUMP("    Replacing use [%06u] with [%06u]. Before:\n", Compiler::dspTreeID(cursor.Tree),
@@ -2504,10 +2505,10 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
         }
 
         GenTree* sideEffects = nullptr;
-        m_comp->gtExtractSideEffList(cursor.Tree, &sideEffects);
+        m_compiler->gtExtractSideEffList(cursor.Tree, &sideEffects);
         if (sideEffects != nullptr)
         {
-            *use = m_comp->gtNewOperNode(GT_COMMA, newUse->TypeGet(), sideEffects, newUse);
+            *use = m_compiler->gtNewOperNode(GT_COMMA, newUse->TypeGet(), sideEffects, newUse);
         }
         else
         {
@@ -2516,9 +2517,9 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
         JITDUMP("\n      After:\n\n");
         DISPSTMT(cursor.Stmt);
 
-        m_comp->gtSetStmtInfo(cursor.Stmt);
-        m_comp->fgSetStmtSeq(cursor.Stmt);
-        m_comp->gtUpdateStmtSideEffects(cursor.Stmt);
+        m_compiler->gtSetStmtInfo(cursor.Stmt);
+        m_compiler->fgSetStmtSeq(cursor.Stmt);
+        m_compiler->gtUpdateStmtSideEffects(cursor.Stmt);
     }
 
     if (m_intermediateIVStores.Height() > 0)
@@ -2533,10 +2534,10 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
             // downstream phases looking for SSA defs.. instead just replace
             // the data with a zero and leave it up to backend liveness to
             // remove that.
-            store->Data() = m_comp->gtNewZeroConNode(genActualType(store->Data()));
-            m_comp->gtSetStmtInfo(cursor.Stmt);
-            m_comp->fgSetStmtSeq(cursor.Stmt);
-            m_comp->gtUpdateStmtSideEffects(cursor.Stmt);
+            store->Data() = m_compiler->gtNewZeroConNode(genActualType(store->Data()));
+            m_compiler->gtSetStmtInfo(cursor.Stmt);
+            m_compiler->fgSetStmtSeq(cursor.Stmt);
+            m_compiler->gtUpdateStmtSideEffects(cursor.Stmt);
         }
     }
 
@@ -2577,7 +2578,7 @@ BasicBlock* StrengthReductionContext::FindUpdateInsertionPoint(ArrayStack<Cursor
         }
         else
         {
-            insertionPoint = m_comp->m_domTree->Intersect(insertionPoint, backEdge->getSourceBlock());
+            insertionPoint = m_compiler->m_domTree->Intersect(insertionPoint, backEdge->getSourceBlock());
         }
     }
 
@@ -2668,7 +2669,7 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
             }
             else
             {
-                latestStmt = m_comp->gtLatestStatement(latestStmt, cursor.Stmt);
+                latestStmt = m_compiler->gtLatestStatement(latestStmt, cursor.Stmt);
             }
         }
 
