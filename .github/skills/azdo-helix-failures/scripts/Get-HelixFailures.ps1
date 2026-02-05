@@ -59,6 +59,11 @@
     Search MihuBot's semantic database for related issues and discussions.
     Uses https://mihubot.xyz/mcp to find conceptually related issues across dotnet repositories.
 
+.PARAMETER FindBinlogs
+    Scan work items in a Helix job to find which ones contain MSBuild binlog files.
+    Useful when the failed work item doesn't have binlogs (e.g., unit tests) but you need
+    to find related build tests that do have binlogs for deeper analysis.
+
 .EXAMPLE
     .\Get-HelixFailures.ps1 -BuildId 1276327
 
@@ -73,6 +78,10 @@
 
 .EXAMPLE
     .\Get-HelixFailures.ps1 -BuildId 1276327 -SearchMihuBot
+
+.EXAMPLE
+    .\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -FindBinlogs
+    # Scans work items to find which ones contain MSBuild binlog files
 
 .EXAMPLE
     .\Get-HelixFailures.ps1 -ClearCache
@@ -106,7 +115,8 @@ param(
     [switch]$NoCache,
     [int]$CacheTTLSeconds = 30,
     [switch]$ContinueOnError,
-    [switch]$SearchMihuBot
+    [switch]$SearchMihuBot,
+    [switch]$FindBinlogs
 )
 
 $ErrorActionPreference = "Stop"
@@ -1364,6 +1374,61 @@ function Get-HelixConsoleLog {
     }
 }
 
+function Find-WorkItemsWithBinlogs {
+    <#
+    .SYNOPSIS
+        Scans work items in a Helix job to find which ones contain binlog files.
+    .DESCRIPTION
+        Not all work items produce binlogs - only build/publish tests do.
+        This function helps locate work items that have binlogs for deeper analysis.
+    #>
+    param(
+        [Parameter(Mandatory)]
+        [string]$JobId,
+        [int]$MaxItems = 30,
+        [switch]$IncludeDetails
+    )
+
+    $workItems = Get-HelixWorkItems -JobId $JobId
+    if (-not $workItems) {
+        Write-Warning "No work items found for job $JobId"
+        return @()
+    }
+
+    Write-Host "Scanning up to $MaxItems work items for binlogs..." -ForegroundColor Gray
+
+    $results = @()
+    $scanned = 0
+
+    foreach ($wi in $workItems | Select-Object -First $MaxItems) {
+        $scanned++
+        $details = Get-HelixWorkItemDetails -JobId $JobId -WorkItemName $wi.Name
+        if ($details -and $details.Files) {
+            $binlogs = @($details.Files | Where-Object { $_.FileName -like "*.binlog" })
+            if ($binlogs.Count -gt 0) {
+                $result = @{
+                    Name = $wi.Name
+                    BinlogCount = $binlogs.Count
+                    Binlogs = $binlogs | ForEach-Object { $_.FileName }
+                    ExitCode = $details.ExitCode
+                    State = $details.State
+                }
+                if ($IncludeDetails) {
+                    $result.BinlogUris = $binlogs | ForEach-Object { $_.Uri }
+                }
+                $results += $result
+            }
+        }
+
+        # Progress indicator every 10 items
+        if ($scanned % 10 -eq 0) {
+            Write-Host "  Scanned $scanned/$MaxItems..." -ForegroundColor DarkGray
+        }
+    }
+
+    return $results
+}
+
 #endregion Helix API Functions
 
 #region Output Formatting
@@ -1589,6 +1654,32 @@ try {
                 }
                 if ($workItems.Count -gt 10) {
                     Write-Host "    ... and $($workItems.Count - 10) more" -ForegroundColor Gray
+                }
+
+                # Find work items with binlogs if requested
+                if ($FindBinlogs) {
+                    Write-Host "`n  === Binlog Search ===" -ForegroundColor Yellow
+                    $binlogResults = Find-WorkItemsWithBinlogs -JobId $HelixJob -MaxItems 30 -IncludeDetails
+
+                    if ($binlogResults.Count -gt 0) {
+                        Write-Host "`n  Work items with binlogs:" -ForegroundColor Cyan
+                        foreach ($result in $binlogResults) {
+                            $stateColor = if ($result.ExitCode -eq 0) { 'Green' } else { 'Red' }
+                            Write-Host "    $($result.Name)" -ForegroundColor $stateColor
+                            Write-Host "      Binlogs ($($result.BinlogCount)):" -ForegroundColor Gray
+                            foreach ($binlog in $result.Binlogs | Select-Object -First 5) {
+                                Write-Host "        - $binlog" -ForegroundColor White
+                            }
+                            if ($result.Binlogs.Count -gt 5) {
+                                Write-Host "        ... and $($result.Binlogs.Count - 5) more" -ForegroundColor DarkGray
+                            }
+                        }
+                        Write-Host "`n  Tip: Use -WorkItem '<name>' to get full binlog URIs" -ForegroundColor DarkGray
+                    }
+                    else {
+                        Write-Host "  No binlogs found in scanned work items." -ForegroundColor Yellow
+                        Write-Host "  This job may contain only unit tests (which don't produce binlogs)." -ForegroundColor Gray
+                    }
                 }
             }
         }

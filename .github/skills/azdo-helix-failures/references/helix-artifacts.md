@@ -105,6 +105,80 @@ Mobile device tests typically include XHarness orchestration logs:
    ```
 3. Query that specific work item for full artifact list
 
+## AzDO Build Artifacts (Pre-Helix)
+
+Helix work items contain artifacts from **test execution**. But there's another source of binlogs: **AzDO build artifacts** from the build phase before tests are sent to Helix.
+
+### When to Use Build Artifacts
+
+- Failed work item has no binlogs (unit tests don't produce them)
+- You need to see how tests were **built**, not how they **executed**
+- Investigating build/restore issues that happen before Helix
+
+### Listing Build Artifacts
+
+```powershell
+# List all artifacts for a build
+$org = "dnceng-public"
+$project = "public"
+$buildId = 1280125
+
+$url = "https://dev.azure.com/$org/$project/_apis/build/builds/$buildId/artifacts?api-version=5.0"
+$artifacts = (Invoke-RestMethod -Uri $url).value
+
+# Show artifacts with sizes
+$artifacts | ForEach-Object {
+    $sizeMB = [math]::Round($_.resource.properties.artifactsize / 1MB, 2)
+    Write-Host "$($_.name) - $sizeMB MB"
+}
+```
+
+### Common Build Artifacts
+
+| Artifact Pattern | Contents | Size |
+|------------------|----------|------|
+| `TestBuild_*` | Test build outputs + binlogs | 30-100 MB |
+| `BuildConfiguration` | Build config metadata | <1 MB |
+| `TemplateEngine_*` | Template engine outputs | ~40 MB |
+| `AoT_*` | AOT compilation outputs | ~3 MB |
+| `FullFramework_*` | .NET Framework test outputs | ~40 MB |
+
+### Downloading and Finding Binlogs
+
+```powershell
+# Download a specific artifact
+$artifactName = "TestBuild_linux_x64"
+$downloadUrl = "https://dev.azure.com/$org/$project/_apis/build/builds/$buildId/artifacts?artifactName=$artifactName&api-version=5.0&`$format=zip"
+$zipPath = "$env:TEMP\$artifactName.zip"
+$extractPath = "$env:TEMP\$artifactName"
+
+Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath
+Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+
+# Find binlogs
+Get-ChildItem -Path $extractPath -Filter "*.binlog" -Recurse | ForEach-Object {
+    $sizeMB = [math]::Round($_.Length / 1MB, 2)
+    Write-Host "$($_.Name) ($sizeMB MB) - $($_.FullName)"
+}
+```
+
+### Typical Binlogs in Build Artifacts
+
+| File | Description |
+|------|-------------|
+| `log/Release/Build.binlog` | Main build log |
+| `log/Release/TestBuildTests.binlog` | Test build verification |
+| `log/Release/ToolsetRestore.binlog` | Toolset restore |
+
+### Build vs Helix Binlogs
+
+| Source | When Generated | What It Shows |
+|--------|----------------|---------------|
+| AzDO build artifacts | During CI build phase | How tests were compiled/packaged |
+| Helix work item artifacts | During test execution | What happened when tests ran `dotnet build` etc. |
+
+If a test runs `dotnet build` internally (like SDK end-to-end tests), both sources may have relevant binlogs.
+
 ## Artifact Retention
 
 Helix artifacts are retained for a limited time (typically 30 days). Download important artifacts promptly if needed for long-term analysis.
