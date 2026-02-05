@@ -411,8 +411,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public ImportSectionNode PrecodeImports;
 
-        public ImportSectionNode CodeDataImports;
-
         public ImportSectionNode ILBodyPrecodeImports;
 
         private NodeCache<ReadyToRunHelper, Import> _constructedHelpers;
@@ -479,8 +477,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 MethodDesc method = methodNode.Method;
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
-                //if (methodCodeNode.Method is AsyncResumptionStub)
-                //    continue;
 #if DEBUG
                 if ((!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method)) && method.IsPrimaryMethodDesc())
                 {
@@ -901,15 +897,6 @@ namespace ILCompiler.DependencyAnalysis
                 emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(PrecodeImports);
 
-            CodeDataImports = new ImportSectionNode(
-                "CodeDataImports",
-                ReadyToRunImportSectionType.Unknown,
-                ReadyToRunImportSectionFlags.PCode,
-                (byte)Target.PointerSize,
-                emitPrecode: true,
-                emitGCRefMap: false);
-            ImportSectionsTable.AddEmbeddedObject(CodeDataImports);
-
             StringImports = new ImportSectionNode(
                 "StringImports",
                 ReadyToRunImportSectionType.StringHandle,
@@ -926,7 +913,6 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(DispatchImports, "Dispatch imports are always generated");
             graph.AddRoot(HelperImports, "Helper imports are always generated");
             graph.AddRoot(PrecodeImports, "Precode helper imports are always generated");
-            graph.AddRoot(CodeDataImports, "Code data imports are always generated");
             graph.AddRoot(ILBodyPrecodeImports, "IL body precode imports are always generated");
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");

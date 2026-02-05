@@ -110,7 +110,7 @@ namespace ILCompiler
                 }
             }
 
-            if (callee.IsAsyncThunk() || callee.IsAsyncCall() || caller.IsAsyncThunk() || caller.IsAsyncCall())
+            if (callee.IsAsyncThunk() || callee.IsAsyncCall())
             {
                 return false;
             }

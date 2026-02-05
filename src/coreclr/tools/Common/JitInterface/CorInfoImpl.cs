@@ -116,7 +116,7 @@ namespace Internal.JitInterface
         }
 
         [DllImport(JitLibrary)]
-        private static extern uint getLikelyClasses(LikelyClassMethodRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte* pInstrumentationData, int ilOffset);
+        private static extern uint getLikelyClasses(LikelyClassMethodRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
 
         [DllImport(JitLibrary)]
         private static extern uint getLikelyMethods(LikelyClassMethodRecord* pLikelyMethods, uint maxLikelyMethods, PgoInstrumentationSchema* schema, uint countSchemaItems, byte* pInstrumentationData, int ilOffset);
@@ -140,7 +140,7 @@ namespace Internal.JitInterface
             ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
 
         [DllImport(JitSupportLibrary)]
-        private static extern IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)] string message, int messageLength);
+        private static extern IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
 
         [DllImport(JitSupportLibrary)]
         private static extern void JitSetOs(IntPtr jit, CORINFO_OS os);
@@ -839,12 +839,12 @@ namespace Internal.JitInterface
         private Dictionary<Instantiation, IntPtr[]> _instantiationToJitVisibleInstantiation;
         private CORINFO_CLASS_STRUCT_** GetJitInstantiation(Instantiation inst)
         {
-            IntPtr[] jitVisibleInstantiation;
+            IntPtr [] jitVisibleInstantiation;
             _instantiationToJitVisibleInstantiation ??= new Dictionary<Instantiation, IntPtr[]>();
 
             if (!_instantiationToJitVisibleInstantiation.TryGetValue(inst, out jitVisibleInstantiation))
             {
-                jitVisibleInstantiation = new IntPtr[inst.Length];
+                jitVisibleInstantiation =  new IntPtr[inst.Length];
                 for (int i = 0; i < inst.Length; i++)
                     jitVisibleInstantiation[i] = (IntPtr)ObjectToHandle(inst[i]);
                 _instantiationToJitVisibleInstantiation.Add(inst, jitVisibleInstantiation);
@@ -1067,7 +1067,7 @@ namespace Internal.JitInterface
         {
             if (contextStruct == contextFromMethodBeingCompiled())
             {
-                return MethodBeingCompiled.HasInstantiation ? (TypeSystemEntity)MethodBeingCompiled : (TypeSystemEntity)MethodBeingCompiled.OwningType;
+                return MethodBeingCompiled.HasInstantiation ? (TypeSystemEntity)MethodBeingCompiled: (TypeSystemEntity)MethodBeingCompiled.OwningType;
             }
 
             return (TypeSystemEntity)HandleToObject((void*)((nuint)contextStruct & ~(nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
@@ -1838,14 +1838,14 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
-            bool recordToken = owningType is EcmaType;
+            bool recordToken;
             if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(methodIL.OwningMethod.GetTypicalMethodDefinition()))
             {
-                recordToken &= (methodIL.GetMethodILScopeDefinition() is IMethodTokensAreUseableInCompilation);
+                recordToken = (methodIL.GetMethodILScopeDefinition() is IMethodTokensAreUseableInCompilation) && owningType is EcmaType;
             }
             else
             {
-                recordToken &= _compilation.CompilationModuleGroup.VersionsWithType(owningType) || _compilation.CompilationModuleGroup.CrossModuleInlineableType(owningType);
+                recordToken = (_compilation.CompilationModuleGroup.VersionsWithType(owningType) || _compilation.CompilationModuleGroup.CrossModuleInlineableType(owningType)) && owningType is EcmaType;
             }
 #endif
 
@@ -1893,7 +1893,8 @@ namespace Internal.JitInterface
                     pResolvedToken.hClass = null;
                 }
             }
-            else if (result is FieldDesc)
+            else
+            if (result is FieldDesc)
             {
                 FieldDesc field = result as FieldDesc;
 
@@ -1980,7 +1981,8 @@ namespace Internal.JitInterface
             {
                 result = WellKnownType.RuntimeMethodHandle;
             }
-            else if (pResolvedToken.hField != null)
+            else
+            if (pResolvedToken.hField != null)
             {
                 result = WellKnownType.RuntimeFieldHandle;
             }
@@ -2309,7 +2311,7 @@ namespace Internal.JitInterface
         //
         private static bool ShouldAlign8(int dwR8Fields, int dwTotalFields)
         {
-            return dwR8Fields * 2 > dwTotalFields && dwR8Fields >= 2;
+            return dwR8Fields*2>dwTotalFields && dwR8Fields>=2;
         }
 
         private static bool ShouldAlign8(DefType type)
@@ -3641,7 +3643,7 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getThreadTLSIndex"); }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
-        private void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethod)
+        private void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethod)
         {
             // We never return a method handle from the managed implementation of this method today
             if (pMethod != null)
@@ -3807,7 +3809,6 @@ namespace Internal.JitInterface
             // CompiledMethodNode instead of MethodEntrypoint for the pointer to the code instead of a fixup
             entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.CompiledMethodNode(resumptionStub));
             return ObjectToHandle(resumptionStub);
-
 #else
             _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
 
@@ -3821,6 +3822,7 @@ namespace Internal.JitInterface
         private int _codeAlignment;
 
         private byte[] _roData;
+
         private MethodReadOnlyDataNode _roDataBlob;
         private int _roDataAlignment;
 
