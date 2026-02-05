@@ -95,7 +95,7 @@ static void OpenLibraryOnce(void)
         // Android OpenSSL has no soname
         DlOpen(LIBNAME);
     }
-#elif defined __FreeBSD__
+#elif defined(__FreeBSD__)
     // The ports version of OpenSSL is used over base where possible
     if (libssl == NULL)
     {
