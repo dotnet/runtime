@@ -6392,9 +6392,13 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
         unsigned delegateInvokeTmp = comp->lvaGrabTemp(true DEBUGARG("delegate invoke call"));
         base                       = comp->gtNewLclvNode(delegateInvokeTmp, thisExpr->TypeGet());
 
+#if HAS_FIXED_REGISTGER_SET
         LIR::Use thisExprUse(BlockRange(), &thisArgNode->AsOp()->gtOp1, thisArgNode);
         ReplaceWithLclVar(thisExprUse, delegateInvokeTmp);
-
+#else
+        LIR::Use thisExprUse(BlockRange(), &thisArgNode, call);
+        ReplaceWithLclVar(thisExprUse, delegateInvokeTmp);
+#endif
         thisExpr = thisExprUse.Def(); // it's changed; reload it.
     }
 
