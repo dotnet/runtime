@@ -82,25 +82,6 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build native assets on Alpine. This exercises more modern musl libc changes that have a tendendy to break source-build.
-      # We don't add this as a source-build job as the repo source-build infrastructure isn't set up to run on alpine effectively.
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: debug
-          platforms:
-          - linux_musl_x64_dev_innerloop
-          jobParameters:
-            nameSuffix: Musl_Validation
-            buildArgs: -subset clr.native+libs.native+host.native -c $(_BuildConfig)
-            timeoutInMinutes: 120
-            condition:
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
       # Build Libraries with all configurations including analyzers and linker
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -139,6 +120,25 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdac.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
+      # Build native assets on Alpine. This exercises more modern musl libc changes that have a tendendy to break source-build.
+      # We don't add this as a source-build job as the repo source-build infrastructure isn't set up to run on alpine effectively.
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: debug
+          platforms:
+          - linux_musl_x64_dev_innerloop
+          jobParameters:
+            nameSuffix: Musl_Validation
+            buildArgs: -subset clr.native+libs.native+host.native -c $(_BuildConfig)
+            timeoutInMinutes: 120
+            condition:
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
