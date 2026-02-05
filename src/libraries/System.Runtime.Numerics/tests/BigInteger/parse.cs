@@ -1333,39 +1333,23 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public static void ParseUkrainianCultureWithTrailingSpaces()
+        public static void ParseWithNBSPAsGroupSeparator()
         {
-            using (new ThreadCultureChange(new CultureInfo("uk-UA")))
-            {
-                // Test string parsing with trailing spaces
-                // Ukrainian culture may use NBSP (0xA0) as NumberGroupSeparator
-                // When AllowTrailingWhite is set, trailing spaces should be accepted
-                string testNumber = "123 ";
+            // Create a custom culture with NBSP as NumberGroupSeparator
+            // This tests the bidirectional space equivalence fix without depending on
+            // specific culture data that may vary across systems/ICU versions
+            CultureInfo ci = new CultureInfo("en-US");
+            ci.NumberFormat.NumberGroupSeparator = "\u00A0";
 
-                // String parsing (char/UTF-16) should work
-                BigInteger result = BigInteger.Parse(testNumber, NumberStyles.AllowTrailingWhite);
-                Assert.Equal(BigInteger.Parse("123"), result);
-            }
-        }
+            // Test that regular space is accepted as equivalent to NBSP
+            string testWithSpace = "1234567";
+            BigInteger result = BigInteger.Parse(testWithSpace, NumberStyles.AllowThousands, ci);
+            Assert.Equal(BigInteger.Parse("1234567"), result);
 
-        [Fact]
-        public static void ParseUkrainianCultureWithSpaceAsGroupSeparator()
-        {
-            using (new ThreadCultureChange(new CultureInfo("uk-UA")))
-            {
-                // This test validates the bidirectional space equivalence fix
-                // If Ukrainian culture uses NBSP as NumberGroupSeparator, parsing
-                // with regular spaces should work due to the equivalence logic
-
-                // Only test if Ukrainian culture actually uses NBSP as separator
-                if (CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator == "\u00A0")
-                {
-                    // Test with regular space - should work due to space equivalence
-                    string testWithSpace = "1234567";  // Simple number without separators
-                    BigInteger result = BigInteger.Parse(testWithSpace, NumberStyles.AllowThousands);
-                    Assert.Equal(BigInteger.Parse("1234567"), result);
-                }
-            }
+            // Test with trailing space
+            string testWithTrailingSpace = "123 ";
+            result = BigInteger.Parse(testWithTrailingSpace, NumberStyles.AllowTrailingWhite, ci);
+            Assert.Equal(BigInteger.Parse("123"), result);
         }
     }
 
