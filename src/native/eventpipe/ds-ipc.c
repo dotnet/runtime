@@ -504,23 +504,23 @@ ds_ipc_stream_factory_resume_current_port (void)
 bool
 ds_ipc_stream_factory_any_listen_ports (void)
 {
-	bool any_listen_ports = false;
 	DN_VECTOR_PTR_FOREACH_BEGIN (DiagnosticsPort *, port, _ds_port_array) {
-		any_listen_ports |= (port->type == DS_PORT_TYPE_LISTEN);
+		if (port->type == DS_PORT_TYPE_LISTEN)
+			return true;
 	} DN_VECTOR_PTR_FOREACH_END;
 
-	return any_listen_ports;
+	return false;
 }
 
 bool
 ds_ipc_stream_factory_any_suspended_ports (void)
 {
-	bool any_suspended_ports = false;
 	DN_VECTOR_PTR_FOREACH_BEGIN (DiagnosticsPort *, port, _ds_port_array) {
-		any_suspended_ports |= !(port->suspend_mode == DS_PORT_SUSPEND_MODE_NOSUSPEND || port->has_resumed_runtime);
+		if (port->suspend_mode == DS_PORT_SUSPEND_MODE_SUSPEND && !port->has_resumed_runtime)
+			return true;
 	} DN_VECTOR_PTR_FOREACH_END;
 
-	return any_suspended_ports;
+	return false;
 }
 
 bool
