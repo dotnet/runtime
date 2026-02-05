@@ -438,15 +438,18 @@ namespace System.Formats.Tar.Tests
             System.Text.Encoding.UTF8.GetBytes("ustar ").CopyTo(header.AsSpan(257, 6));
             System.Text.Encoding.UTF8.GetBytes(" \0").CopyTo(header.AsSpan(263, 2));
 
-            for (int i = 148; i < 156; i++)
-            {
-                header[i] = (byte)' ';
-            }
-
+            // Calculate checksum - the checksum field itself should be treated as spaces
             int checksum = 0;
-            foreach (byte b in header)
+            for (int i = 0; i < header.Length; i++)
             {
-                checksum += b;
+                if (i >= 148 && i < 156)
+                {
+                    checksum += (byte)' ';
+                }
+                else
+                {
+                    checksum += header[i];
+                }
             }
 
             string checksumStr = Convert.ToString(checksum, 8).PadLeft(6, '0') + "\0 ";
