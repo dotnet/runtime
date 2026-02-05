@@ -205,9 +205,6 @@
   <data name="TarExtAttrDisallowedValueChar" xml:space="preserve">
     <value>The value of the extended attribute key '{0}' contains a disallowed '{1}' character.</value>
   </data>
-  <data name="TarExtendedAttributeConflict" xml:space="preserve">
-    <value>The extended attribute '{0}' with value '{1}' conflicts with the corresponding property value '{2}'.</value>
-  </data>
   <data name="TarStreamSeekabilityUnsupportedCombination" xml:space="preserve">
     <value>Cannot write the unseekable data stream of entry '{0}' into an unseekable archive stream.</value>
   </data>

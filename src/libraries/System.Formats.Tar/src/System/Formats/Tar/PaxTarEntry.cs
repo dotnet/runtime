@@ -69,7 +69,6 @@ namespace System.Formats.Tar
 
             _header._prefix = string.Empty;
             _header.AddExtendedAttributes(extendedAttributes);
-            _header.ValidateExtendedAttributesAgainstProperties();
         }
 
         /// <summary>
@@ -92,7 +91,6 @@ namespace System.Formats.Tar
             if (other is PaxTarEntry paxOther)
             {
                 _header.AddExtendedAttributes(paxOther.ExtendedAttributes);
-                _header.ValidateExtendedAttributesAgainstProperties();
             }
             else if (other is GnuTarEntry gnuOther)
             {

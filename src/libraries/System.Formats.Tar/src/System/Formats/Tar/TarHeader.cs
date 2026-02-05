@@ -198,28 +198,5 @@ namespace System.Formats.Tar
                 }
             }
         }
-
-        // Validates that extended attributes don't conflict with property values.
-        // This is called after AddExtendedAttributes to ensure consistency.
-        internal void ValidateExtendedAttributesAgainstProperties()
-        {
-            if (_format != TarEntryFormat.Pax || _ea is null)
-            {
-                return;
-            }
-
-            // Validate path - must match entryName if provided
-            if (_ea.TryGetValue(PaxEaName, out string? eaPath) && eaPath != _name)
-            {
-                throw new ArgumentException(SR.Format(SR.TarExtendedAttributeConflict, PaxEaName, eaPath, _name));
-            }
-
-            // Skip mtime validation - it's auto-set to UtcNow and extended attribute may intentionally override it
-
-            // Skip other property validations since:
-            // 1. Properties may have default values that conflict with intentional extended attributes
-            // 2. The synchronization mechanism ensures properties take precedence when writing
-            // 3. Extended attributes for non-default properties will be validated when properties are set
-        }
     }
 }

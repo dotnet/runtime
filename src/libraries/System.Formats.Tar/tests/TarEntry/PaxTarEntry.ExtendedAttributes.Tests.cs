@@ -235,32 +235,49 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public void Constructor_WithConflictingPathExtendedAttribute_ShouldThrow()
+        public void Constructor_WithConflictingPathExtendedAttribute_PropertyTakesPrecedence()
         {
-            // Extended attribute path conflicts with entryName parameter
+            // Extended attribute path differs from entryName parameter
+            // When written, the property value (entryName) should take precedence
             Dictionary<string, string> extendedAttributes = new Dictionary<string, string>
             {
                 { "path", "different.txt" }
             };
 
-            ArgumentException ex = Assert.Throws<ArgumentException>(() =>
-                new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes));
+            // This should not throw - extended attributes can differ from properties
+            // The synchronization mechanism ensures properties take precedence when writing
+            PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes);
             
-            Assert.Contains("path", ex.Message);
-            Assert.Contains("different.txt", ex.Message);
-            Assert.Contains("test.txt", ex.Message);
+            // The extended attribute was added as-is initially
+            Assert.True(entry.ExtendedAttributes.ContainsKey("path"));
+            Assert.Equal("different.txt", entry.ExtendedAttributes["path"]);
+            
+            // Write and read back to verify property takes precedence
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, leaveOpen: true))
+            {
+                writer.WriteEntry(entry);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PaxTarEntry readEntry = reader.GetNextEntry() as PaxTarEntry;
+                Assert.NotNull(readEntry);
+                // The name from the property (test.txt) should be used, not the extended attribute
+                Assert.Equal("test.txt", readEntry.Name);
+            }
         }
 
         [Fact]
         public void Constructor_WithMatchingExtendedAttributes_ShouldSucceed()
         {
-            // Extended attributes that match entryName should not throw
+            // Extended attributes that match entryName should work fine
             Dictionary<string, string> extendedAttributes = new Dictionary<string, string>
             {
                 { "path", "test.txt" }
             };
 
-            // This should not throw because path matches entryName
             PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes);
             
             Assert.True(entry.ExtendedAttributes.ContainsKey("path"));
