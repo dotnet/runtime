@@ -168,11 +168,10 @@ hostArch=$arch
 
 # Default to using Ninja on macOS for faster builds (can be overridden with --ninja false)
 if [[ "$os" == "osx" ]]; then
-  useNinjaDefault=true
+  useNinja=true
 else
-  useNinjaDefault=false
+  useNinja=false
 fi
-ninjaExplicitlySet=false
 
 # Check if an action is passed in
 declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
@@ -504,20 +503,19 @@ while [[ $# -gt 0 ]]; do
 
 
       -ninja)
-      ninjaExplicitlySet=true
       if [ -z ${2+x} ]; then
-        arguments+=("/p:Ninja=true")
+        useNinja=true
         shift 1
       else
         ninja="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
         if [ "$ninja" = true ]; then
-          arguments+=("/p:Ninja=true")
+          useNinja=true
           shift 2
         elif [ "$ninja" = false ]; then
-          arguments+=("/p:Ninja=false")
+          useNinja=false
           shift 2
         else
-          arguments+=("/p:Ninja=true")
+          useNinja=true
           shift 1
         fi
       fi
@@ -591,8 +589,8 @@ arguments+=("-tl:false")
 # disable line wrapping so that C&P from the console works well
 arguments+=("-clp:ForceNoAlign")
 
-# Apply default ninja setting on macOS if not explicitly set by user
-if [[ "$useNinjaDefault" == true && "$ninjaExplicitlySet" != true ]]; then
+# Apply ninja setting
+if [[ "$useNinja" == true ]]; then
   arguments+=("/p:Ninja=true")
 fi
 

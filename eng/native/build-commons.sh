@@ -312,6 +312,7 @@ else
 fi
 
 # Default to using Ninja on macOS for faster builds
+__UseNinja=0
 if [[ "$os" == "osx" ]]; then
   __UseNinja=1
 fi
