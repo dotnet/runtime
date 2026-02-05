@@ -140,10 +140,8 @@ CAllowedObjectTypes aotProcess(otiProcess);
 IPalObject* CorUnix::g_pobjProcess;
 
 //
-// Critical section that protects process data (e.g., the
-// list of active threads)/
+// Critical section that protects process data
 //
-minipal_mutex g_csProcess;
 
 //
 // The command line and app name for the process
@@ -2933,21 +2931,7 @@ CorUnix::InitializeProcessData(
     void
     )
 {
-    PAL_ERROR palError = NO_ERROR;
-    bool fLockInitialized = FALSE;
-
-    minipal_mutex_init(&g_csProcess);
-    fLockInitialized = TRUE;
-
-    if (NO_ERROR != palError)
-    {
-        if (fLockInitialized)
-        {
-            minipal_mutex_destroy(&g_csProcess);
-        }
-    }
-
-    return palError;
+    return NO_ERROR;
 }
 
 /*++
@@ -3160,15 +3144,11 @@ PROCCleanupInitialProcess(VOID)
 {
     CPalThread *pThread = InternalGetCurrentThread();
 
-    minipal_mutex_enter(&g_csProcess);
-
     /* Free the application directory */
     free(g_lpwstrAppDir);
 
     /* Free the stored command line */
     free(g_lpwstrCmdLine);
-
-    minipal_mutex_leave(&g_csProcess);
 
     //
     // Object manager shutdown will handle freeing the underlying
@@ -3182,22 +3162,12 @@ Function:
   PROCProcessLock
 
 Abstract
-  Enter the critical section associated to the current process
-
-Parameter
-  void
-
-Return
-  void
+  No-op function kept for compatibility
 --*/
 VOID
 PROCProcessLock(
     VOID)
 {
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
-
-    minipal_mutex_enter(&g_csProcess);
 }
 
 
@@ -3206,22 +3176,12 @@ Function:
   PROCProcessUnlock
 
 Abstract
-  Leave the critical section associated to the current process
-
-Parameter
-  void
-
-Return
-  void
+  No-op function kept for compatibility
 --*/
 VOID
 PROCProcessUnlock(
     VOID)
 {
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
-
-    minipal_mutex_leave(&g_csProcess);
 }
 /*++
 Function:
