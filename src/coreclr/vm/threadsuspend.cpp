@@ -2655,11 +2655,6 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
                     reason == RedirectReason_DebugSuspension ||
                     reason == RedirectReason_UserSuspension);
 
-#ifdef FEATURE_PERFTRACING
-        // Save the GC mode so the sample profiler can determine this thread was in managed code.
-        pThread->SaveGCModeOnSuspension();
-#endif // FEATURE_PERFTRACING
-
         // Actual self-suspension.
         // Leave and reenter COOP mode to be trapped on the way back.
         GCX_PREEMP_NO_DTOR();
