@@ -14,6 +14,6 @@
     private async Task IncrementCount()
     {
         currentCount++;
-        await Task.Delay(1);
+        await JS.InvokeVoidAsync("console.log", $"Button clicked at {DateTime.Now}");
     }
 }

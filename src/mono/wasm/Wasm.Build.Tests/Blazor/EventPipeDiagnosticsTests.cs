@@ -47,13 +47,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         async Task CpuProfileTest(IPage page)
         {
-            await SetupCounterPage(page);
-
-            await page.EvaluateAsync(@"
-                    globalThis.upload = () => globalThis.uploadTrace(`cpuprofile.nettrace`, globalThis.getDotnetRuntime(0).collectCpuSamples({ durationSeconds: 5.0, skipDownload: true }))
-                        .then(() => console.log(`Metrics collected: ${new Date().toISOString()}`));
-                ");
-
+            await SetupCounterPage(page, "cpuprofile.nettrace", "globalThis.getDotnetRuntime(0).collectCpuSamples({ durationSeconds: 5.0, skipDownload: true })");
             await ClickAndCollect(page);
         }
 
@@ -103,13 +97,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         async Task CpuProfileTest(IPage page)
         {
-            await SetupCounterPage(page);
-
-            await page.EvaluateAsync(@"
-                    globalThis.upload = () => globalThis.uploadTrace(`metrics.nettrace`, globalThis.getDotnetRuntime(0).collectMetrics({ durationSeconds: 5.0, skipDownload: true }))
-                        .then(() => console.log(`Metrics collected: ${new Date().toISOString()}`));
-                ");
-
+            await SetupCounterPage(page, "metrics.nettrace", "globalThis.getDotnetRuntime(0).collectMetrics({ durationSeconds: 5.0, skipDownload: true })");
             await ClickAndCollect(page);
         }
 
@@ -176,13 +164,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         // click the button, and upload the trace
         async Task CpuProfileTest(IPage page)
         {
-            await SetupCounterPage(page);
-
-            await page.EvaluateAsync(@"
-                    globalThis.upload = () => globalThis.uploadTrace(`gcdump.nettrace`, globalThis.getDotnetRuntime(0).collectGcDump({ durationSeconds: 5.0, skipDownload: true }))
-                        .then(() => console.log(`Metrics collected: ${new Date().toISOString()}`));
-                ");
-
+            await SetupCounterPage(page, "gcdump.nettrace", "globalThis.getDotnetRuntime(0).collectGcDump({ durationSeconds: 5.0, skipDownload: true })");
             await ClickAndCollect(page);
         }
 
@@ -302,17 +284,12 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                         }
                     }
                     currentCount++;
-                    if (currentCount > 4)
-                    {
-                        await Task.Delay(500); // Ensure the upload has time to start before we exit
-                        Console.WriteLine("WASM EXIT 0");
-                    }
                     """
                 }
             });
     }
 
-    private async Task SetupCounterPage(IPage page)
+    private async Task SetupCounterPage(IPage page, string fileName, string traceCommand)
     {
         await Task.Delay(500);
         // Navigate to the Counter page
@@ -323,12 +300,12 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         Assert.Equal("Current count: 0", txt);
 
         var up = """
-        globalThis.uploadTrace = async (filename, tracesPromise) => {
-            console.log(`${filename} typeof  ${typeof tracesPromise} ${new Date().toISOString()}`);
+        globalThis.collectAndUpload = async () => {
+            console.log(`Tracing ${filename} started ${new Date().toISOString()}`);
+            
+            const traces = await ${traceCommand};
 
-            const traces = await tracesPromise;
-
-            console.log(`${filename} typeof  ${typeof traces} ${new Date().toISOString()}`);
+            console.log(`Tracing done ${new Date().toISOString()}`);
                     
             // concatenate the buffers into a single Uint8Array
             const concatenated = new Uint8Array(traces.reduce((acc, curr) => acc + curr.byteLength, 0));
@@ -346,16 +323,21 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 method: 'POST',
                 body: concatenated
             });
-            console.log(`File uploaded successfully`);
+            console.log(`File uploaded successfully: ${new Date().toISOString()}`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log(`Shuting down: ${new Date().toISOString()}`);
+            console.log(`WASM EXIT 0`);
         };
         console.log(`globalThis.uploadTrace method created ${new Date().toISOString()}`);
         """;
+        up=up.Replace("${traceCommand}", traceCommand).Replace("${filename}", fileName);
         await page.EvaluateAsync(up);
     }
 
     private async Task ClickAndCollect(IPage page)
     {
-        await page.EvaluateAsync(@"var ignoredPromise = globalThis.upload();");
+        await page.EvaluateAsync(@"globalThis.donePromise = globalThis.collectAndUpload();");
+        _testOutput.WriteLine($"Installed script: {DateTime.Now.ToString("O")}");
 
         // Click the button a few times
         for (int i = 0; i < 5; i++)
@@ -363,7 +345,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             await page.Locator("text=\"Click me\"").ClickAsync();
             await Task.Delay(10);
         }
-        await Task.Delay(1000);
+        _testOutput.WriteLine($"Done clicking: {DateTime.Now.ToString("O")}");
 
         var txt2 = await page.Locator("p[role='status']").InnerHTMLAsync();
         Assert.NotEqual("Current count: 0", txt2);
