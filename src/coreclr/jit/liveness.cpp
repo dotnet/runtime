@@ -1977,7 +1977,7 @@ bool Liveness<TLiveness>::ComputeLifeTrackedLocalDef(VARSET_TP&           life,
             // stores to these sorts of variables to be removed at the cost of compile
             // time.
             return !varDsc.IsAddressExposed() &&
-                !(varDsc.lvIsStructField && m_compiler->lvaTable[varDsc.lvParentLcl].IsAddressExposed());
+                   !(varDsc.lvIsStructField && m_compiler->lvaTable[varDsc.lvParentLcl].IsAddressExposed());
         }
     }
 
