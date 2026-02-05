@@ -6374,23 +6374,28 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     assert((m_compiler->info.compCompHnd->getMethodAttribs(call->gtCallMethHnd) &
             (CORINFO_FLG_DELEGATE_INVOKE | CORINFO_FLG_FINAL)) == (CORINFO_FLG_DELEGATE_INVOKE | CORINFO_FLG_FINAL));
 
-    GenTree* thisArgNode;
+    CallArg* thisArg = nullptr;
+
     if (call->IsTailCallViaJitHelper())
     {
-        thisArgNode = call->gtArgs.GetArgByIndex(0)->GetNode();
+        thisArg = call->gtArgs.GetArgByIndex(0);
     }
     else
     {
-        thisArgNode = call->gtArgs.GetThisArg()->GetNode();
+        thisArg = call->gtArgs.GetThisArg();
     }
 
+    assert(thisArg != nullptr);
+    GenTree* thisArgNode = thisArg->GetNode();
     assert(thisArgNode != nullptr);
 
 #if HAS_FIXED_REGISTER_SET
     assert(thisArgNode->OperIs(GT_PUTARG_REG));
     GenTree* thisExpr = thisArgNode->AsOp()->gtOp1;
+    LIR::Use thisExprUse(BlockRange(), &thisArgNode->AsOp()->gtOp1, thisArgNode);
 #else
     GenTree* thisExpr = thisArgNode;
+    LIR::Use thisExprUse(BlockRange(), &thisArg->NodeRef(), call);
 #endif
 
     // We're going to use the 'this' expression multiple times, so make a local to copy it.
@@ -6410,13 +6415,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
         unsigned delegateInvokeTmp = m_compiler->lvaGrabTemp(true DEBUGARG("delegate invoke call"));
         base                       = m_compiler->gtNewLclvNode(delegateInvokeTmp, thisExpr->TypeGet());
 
-#if HAS_FIXED_REGISTER_SET
-        LIR::Use thisExprUse(BlockRange(), &thisArgNode->AsOp()->gtOp1, thisArgNode);
         ReplaceWithLclVar(thisExprUse, delegateInvokeTmp);
-#else
-        LIR::Use thisExprUse(BlockRange(), &thisArgNode, call);
-        ReplaceWithLclVar(thisExprUse, delegateInvokeTmp);
-#endif
         thisExpr = thisExprUse.Def(); // it's changed; reload it.
     }
 

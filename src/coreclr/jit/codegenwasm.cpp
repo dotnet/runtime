@@ -522,7 +522,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_KEEPALIVE:
-            // TODO-WASM-CQ: avoid generating anything here?
+            // TODO-WASM-RA: remove KEEPALIVE after we've produced the GC info.
             genConsumeRegs(treeNode->AsOp()->gtOp1);
             GetEmitter()->emitIns(INS_drop);
             break;
@@ -1208,19 +1208,16 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 }
 
 //---------------------------------------------------------------------
-// genCodeForNullCheck - generate code for a GT_NULLCHECK node
+// genJumpToThrowHlpBlk - generate code to invoke a throw helper call
 //
 // Arguments:
-//    tree - the GT_NULLCHECK node
+//    codeKind -- kind of throw helper call needed
 //
-void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
+void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
 {
-    genConsumeAddress(tree->Addr());
-
-    // TODO-WASM: refactor once we have implemented other cases invoking throw helpers
     if (m_compiler->fgUseThrowHelperBlocks())
     {
-        Compiler::AddCodeDsc* const add = m_compiler->fgGetExcptnTarget(SCK_NULL_CHECK, m_compiler->compCurBB);
+        Compiler::AddCodeDsc* const add = m_compiler->fgGetExcptnTarget(codeKind, m_compiler->compCurBB);
         assert(add != nullptr);
         assert(add->acdUsed);
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compMaxUncheckedOffsetForNullObject);
@@ -1232,10 +1229,23 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compMaxUncheckedOffsetForNullObject);
         GetEmitter()->emitIns(INS_I_le_u);
         GetEmitter()->emitIns(INS_if);
-        genEmitHelperCall(m_compiler->acdHelper(SCK_NULL_CHECK), 0, EA_UNKNOWN);
-        GetEmitter()->emitIns(INS_unreachable);
+        genEmitHelperCall(m_compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
         GetEmitter()->emitIns(INS_end);
     }
+}
+
+//---------------------------------------------------------------------
+// genCodeForNullCheck - generate code for a GT_NULLCHECK node
+//
+// Arguments:
+//    tree - the GT_NULLCHECK node
+//
+void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
+{
+    genConsumeAddress(tree->Addr());
+    GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compMaxUncheckedOffsetForNullObject);
+    GetEmitter()->emitIns(INS_I_le_u);
+    genJumpToThrowHlpBlk(SCK_NULL_CHECK);
 }
 
 //------------------------------------------------------------------------
@@ -1248,24 +1258,8 @@ void CodeGen::genRangeCheck(GenTree* tree)
 {
     assert(tree->OperIs(GT_BOUNDS_CHECK));
     genConsumeOperands(tree->AsOp());
-
-    if (m_compiler->fgUseThrowHelperBlocks())
-    {
-        Compiler::AddCodeDsc* const add = m_compiler->fgGetExcptnTarget(SCK_RNGCHK_FAIL, m_compiler->compCurBB);
-        assert(add != nullptr);
-        assert(add->acdUsed);
-
-        GetEmitter()->emitIns(INS_I_ge_u);
-        inst_JMP(EJ_jmpif, add->acdDstBlk);
-    }
-    else
-    {
-        GetEmitter()->emitIns(INS_I_ge_u);
-        GetEmitter()->emitIns(INS_if);
-        genEmitHelperCall(m_compiler->acdHelper(SCK_RNGCHK_FAIL), 0, EA_UNKNOWN);
-        GetEmitter()->emitIns(INS_unreachable);
-        GetEmitter()->emitIns(INS_end);
-    }
+    GetEmitter()->emitIns(INS_I_ge_u);
+    genJumpToThrowHlpBlk(SCK_RNGCHK_FAIL);
 }
 
 //------------------------------------------------------------------------
