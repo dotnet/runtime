@@ -13,12 +13,5 @@
                      TargetOS="$(TargetOS)"
                      PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
     </ItemGroup>
-
-    <!-- Crossgen2 requires references to all runtime pack assemblies including System.Private.CoreLib.
-         Add managed assemblies from the local runtime pack as references for Crossgen2. -->
-    <ItemGroup>
-      <_ReadyToRunImplementationAssemblies Include="@(RuntimeFiles)" Condition="'%(RuntimeFiles.Extension)' == '.dll'" ReferenceOnly="true" />
-      <_ReadyToRunImplementationAssemblies Include="@(LibrariesRuntimeFiles)" Condition="'%(LibrariesRuntimeFiles.Extension)' == '.dll'" ReferenceOnly="true" />
-    </ItemGroup>
   </Target>
 </Project>
