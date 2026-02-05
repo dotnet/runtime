@@ -271,7 +271,7 @@ usage()
     echo "        will use ROOTFS_DIR environment variable if set."
     echo "-gcc: optional argument to build using gcc in PATH."
     echo "-gccx.y: optional argument to build using gcc version x.y."
-    echo "-ninja: target ninja instead of GNU make (default on macOS, use -ninja false to disable)"
+    echo "-ninja: target ninja instead of GNU make (default: true, use -ninja false to disable)"
     echo "-numproc: set the number of build processes."
     echo "-targetrid: optional argument that overrides the target rid name."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
@@ -311,11 +311,8 @@ else
   __NumProc=1
 fi
 
-# Default to using Ninja on macOS for faster builds
-__UseNinja=0
-if [[ "$os" == "osx" ]]; then
-  __UseNinja=1
-fi
+# Default to using Ninja for faster builds
+__UseNinja=1
 
 while :; do
     if [[ "$#" -le 0 ]]; then
