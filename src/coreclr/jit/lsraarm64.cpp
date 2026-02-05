@@ -36,7 +36,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 {
-    assert(compiler->info.compNeedsConsecutiveRegisters);
+    assert(m_compiler->info.compNeedsConsecutiveRegisters);
     RefPosition* nextRefPosition = nullptr;
     assert(refPosition->needsConsecutive);
     nextConsecutiveRefPositionMap->Lookup(refPosition, &nextRefPosition);
@@ -63,7 +63,7 @@ RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 //
 void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned)
 {
-    assert(compiler->info.compNeedsConsecutiveRegisters);
+    assert(m_compiler->info.compNeedsConsecutiveRegisters);
     assert(firstRefPosition->assignedReg() == firstRegAssigned);
     assert(firstRefPosition->isFirstRefPositionOfConsecutiveRegisters());
     assert(emitter::isVectorRegister(firstRegAssigned));
@@ -128,7 +128,7 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
     int          registersCount  = firstRefPosition->regCount;
     RefPosition* nextRefPosition = firstRefPosition;
     regNumber    regToAssign     = firstRegAssigned;
-    assert(compiler->info.compNeedsConsecutiveRegisters);
+    assert(m_compiler->info.compNeedsConsecutiveRegisters);
     assert(registersCount > 1);
     assert(emitter::isVectorRegister(firstRegAssigned));
 
@@ -421,7 +421,7 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
                                                       RefPosition*      refPosition,
                                                       SingleTypeRegSet* busyCandidates)
 {
-    assert(compiler->info.compNeedsConsecutiveRegisters);
+    assert(m_compiler->info.compNeedsConsecutiveRegisters);
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
     SingleTypeRegSet floatFreeCandidates = allCandidates & m_AvailableRegs.GetFloatRegSet();
 
@@ -657,7 +657,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_STORE_LCL_VAR:
             if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
             {
-                dstCount = compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
+                dstCount = m_compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
             }
             FALLTHROUGH;
 
@@ -901,7 +901,7 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(tree->gtGetOp1());
             srcCount = 1;
             assert(dstCount == 0);
-            killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             BuildKills(tree, killMask);
             break;
 
@@ -1014,7 +1014,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount                    = cmpXchgNode->Comparand()->isContained() ? 2 : 3;
             assert(dstCount == 1);
 
-            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+            if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
             {
                 // For ARMv8 exclusives requires a single internal register
                 buildInternalIntRegisterDefForNode(tree);
@@ -1036,7 +1036,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
                 // For ARMv8 exclusives the lifetime of the comparand must be extended because
                 // it may be used used multiple during retries
-                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+                if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
                 {
                     setDelayFree(comparandUse);
                 }
@@ -1058,7 +1058,7 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == (tree->TypeIs(TYP_VOID) ? 0 : 1));
             srcCount = tree->gtGetOp2()->isContained() ? 1 : 2;
 
-            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+            if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
             {
                 // GT_XCHG requires a single internal register; the others require two.
                 buildInternalIntRegisterDefForNode(tree);
@@ -1083,7 +1083,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
             // For ARMv8 exclusives the lifetime of the addr and data must be extended because
             // it may be used used multiple during retries
-            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+            if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
             {
                 // Internals may not collide with target
                 if (dstCount == 1)
@@ -1157,7 +1157,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 // do stack-probing for large allocations.
                 //
                 size_t sizeVal = size->AsIntCon()->gtIconVal;
-                if (AlignUp(sizeVal, STACK_ALIGN) >= compiler->eeGetPageSize())
+                if (AlignUp(sizeVal, STACK_ALIGN) >= m_compiler->eeGetPageSize())
                 {
                     // We need two registers: regCnt and RegTmp
                     buildInternalIntRegisterDefForNode(tree);
@@ -1167,7 +1167,7 @@ int LinearScan::BuildNode(GenTree* tree)
             else
             {
                 srcCount = 1;
-                if (!compiler->info.compInitMem)
+                if (!m_compiler->info.compInitMem)
                 {
                     buildInternalIntRegisterDefForNode(tree);
                     buildInternalIntRegisterDefForNode(tree);
@@ -1258,7 +1258,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 0);
 
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
+            if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
             {
                 srcCount = BuildGCWriteBarrier(tree);
                 break;
@@ -1337,7 +1337,7 @@ int LinearScan::BuildNode(GenTree* tree)
     assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsValue() || (dstCount != 0));
-    assert(dstCount == tree->GetRegisterDstCount(compiler));
+    assert(dstCount == tree->GetRegisterDstCount(m_compiler));
     return srcCount;
 }
 
@@ -1499,7 +1499,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     if (HWIntrinsicInfo::IsMultiReg(intrin.id))
     {
-        dstCount = intrinsicTree->GetMultiRegCount(compiler);
+        dstCount = intrinsicTree->GetMultiRegCount(m_compiler);
     }
     else if (intrinsicTree->IsValue())
     {
@@ -1899,7 +1899,7 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
     }
     if (treeNode->OperIsFieldList())
     {
-        assert(compiler->info.compNeedsConsecutiveRegisters);
+        assert(m_compiler->info.compNeedsConsecutiveRegisters);
 
         unsigned     regCount    = 0;
         RefPosition* firstRefPos = nullptr;
@@ -2044,7 +2044,7 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
 void LinearScan::BuildConsecutiveRegistersForDef(GenTree* treeNode, int registerCount)
 {
     assert(registerCount > 1);
-    assert(compiler->info.compNeedsConsecutiveRegisters);
+    assert(m_compiler->info.compNeedsConsecutiveRegisters);
 
     RefPosition* currRefPos = nullptr;
     RefPosition* lastRefPos = nullptr;
@@ -2255,7 +2255,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
 //
 GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool embedded)
 {
-    bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
+    bool isRMW = intrinsicTree->isRMWHWIntrinsic(m_compiler);
 
     const NamedIntrinsic intrinsicId = intrinsicTree->GetHWIntrinsicId();
     GenTree*             delayFreeOp = nullptr;

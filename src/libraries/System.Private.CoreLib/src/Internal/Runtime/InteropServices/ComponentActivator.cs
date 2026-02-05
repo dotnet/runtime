@@ -30,9 +30,7 @@ namespace Internal.Runtime.InteropServices
         private const int HostFeatureDisabled = unchecked((int)0x800080a7);
 
         [FeatureSwitchDefinition("System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting")]
-        private static bool IsSupported { get; } = InitializeIsSupported();
-
-        private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting", out bool isSupported) ? isSupported : true;
+        private static bool IsSupported { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting", out bool isSupported) ? isSupported : true;
 
         public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
 

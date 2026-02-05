@@ -42,7 +42,7 @@ namespace Internal.ReadyToRunConstants
     /// Constants for method and field encoding
     /// </summary>
     [Flags]
-    public enum ReadyToRunMethodSigFlags : byte
+    public enum ReadyToRunMethodSigFlags : uint
     {
         READYTORUN_METHOD_SIG_None = 0x00,
         READYTORUN_METHOD_SIG_UnboxingStub = 0x01,
@@ -53,6 +53,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_METHOD_SIG_Constrained = 0x20,
         READYTORUN_METHOD_SIG_OwnerType = 0x40,
         READYTORUN_METHOD_SIG_UpdateContext = 0x80,
+        READYTORUN_METHOD_SIG_AsyncVariant = 0x100,
     }
 
     [Flags]
@@ -229,6 +230,7 @@ namespace Internal.ReadyToRunConstants
         FailFast                    = 0x24,
         ThrowNullRef                = 0x25,
         ThrowDivZero                = 0x26,
+        ThrowExact                  = 0x27,
 
         // Write barriers
         WriteBarrier                = 0x30,

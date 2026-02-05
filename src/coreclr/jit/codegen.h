@@ -58,14 +58,14 @@ private:
         // We use movaps when non-VEX because it is a smaller instruction;
         // however the VEX version vmovaps would be used which is the same size as vmovdqa;
         // also vmovdqa has more available CPU ports on older processors so we switch to that
-        return compiler->canUseVexEncoding() ? INS_movdqa32 : INS_movaps;
+        return m_compiler->canUseVexEncoding() ? INS_movdqa32 : INS_movaps;
     }
     instruction simdUnalignedMovIns()
     {
         // We use movups when non-VEX because it is a smaller instruction;
         // however the VEX version vmovups would be used which is the same size as vmovdqu;
         // but vmovdqu has more available CPU ports on older processors so we switch to that
-        return compiler->canUseVexEncoding() ? INS_movdqu32 : INS_movups;
+        return m_compiler->canUseVexEncoding() ? INS_movdqu32 : INS_movups;
     }
 #endif // defined(TARGET_XARCH)
 
@@ -195,8 +195,6 @@ protected:
     unsigned  codeSize;
     void*     coldCodePtr;
     void*     coldCodePtrRW;
-    void*     consPtr;
-    void*     consPtrRW;
 
     // Last instr we have displayed for dspInstrs
     unsigned genCurDispOffset;
@@ -252,7 +250,7 @@ protected:
     // genEmitInlineThrow: Generate code for an inline exception.
     void genEmitInlineThrow(SpecialCodeKind codeKind)
     {
-        genEmitHelperCall(compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
+        genEmitHelperCall(m_compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
     }
 
     // throwCodeFn callback follows concept -> void(*)(BasicBlock* target, bool isInline)
@@ -814,7 +812,7 @@ public:
             CHECK_NONE,
             CHECK_SMALL_INT_RANGE,
             CHECK_POSITIVE,
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             CHECK_UINT_RANGE,
             CHECK_POSITIVE_INT_RANGE,
             CHECK_INT_RANGE,
@@ -826,13 +824,13 @@ public:
             COPY,
             ZERO_EXTEND_SMALL_INT,
             SIGN_EXTEND_SMALL_INT,
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             ZERO_EXTEND_INT,
             SIGN_EXTEND_INT,
 #endif
             LOAD_ZERO_EXTEND_SMALL_INT,
             LOAD_SIGN_EXTEND_SMALL_INT,
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             LOAD_ZERO_EXTEND_INT,
             LOAD_SIGN_EXTEND_INT,
 #endif
@@ -1313,7 +1311,7 @@ protected:
         {
             return false;
         }
-        return compiler->lvaGetDesc(tree->AsLclVarCommon())->lvIsRegCandidate();
+        return m_compiler->lvaGetDesc(tree->AsLclVarCommon())->lvIsRegCandidate();
     }
 
 #ifdef TARGET_X86

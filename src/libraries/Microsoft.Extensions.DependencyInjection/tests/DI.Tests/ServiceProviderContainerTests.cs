@@ -1312,6 +1312,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Contains("Microsoft.Extensions.DependencyInjection.Specification.KeyedDependencyInjectionSpecificationTests+IService", ex.ToString());
         }
 
+        [Fact]
+        public void InvalidConstrainedOpenGenericIsSkippedInEnumerableButThrowsInSingleResolution()
+        {
+            var sc = new ServiceCollection();
+            sc.AddSingleton(typeof(IBB<>), typeof(GenericBB<>));
+            sc.AddSingleton(typeof(IBB<>), typeof(ConstrainedGenericBB<>));
+            var sp = CreateServiceProvider(sc);
+
+            Assert.Single(sp.GetServices<IBB<IBB<string>>>());
+            Assert.Throws<ArgumentException>(() => sp.GetService<IBB<IBB<string>>>());
+        }
+
         private async Task<bool> ResolveUniqueServicesConcurrently()
         {
             var types = new Type[]

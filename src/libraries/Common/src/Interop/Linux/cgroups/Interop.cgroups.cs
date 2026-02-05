@@ -324,7 +324,7 @@ internal static partial class Interop
                             {
                                 if (cgroupVersion == CGroupVersion.CGroup1)
                                 {
-                                    bool validCGroup1Entry = mount.FileSystemType.SequenceEqual("cgroup") && mount.SuperOptions.IndexOf(subsystem) >= 0;
+                                    bool validCGroup1Entry = mount.FileSystemType.SequenceEqual("cgroup") && mount.SuperOptions.Contains(subsystem, StringComparison.Ordinal);
                                     if (!validCGroup1Entry)
                                     {
                                         continue;
