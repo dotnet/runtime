@@ -1213,6 +1213,10 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 // Arguments:
 //    codeKind -- kind of throw helper call needed
 //
+// Notes:
+//    On entry the predicate for the throw helper is the only item on the Wasm stack.
+//    An exception is thrown if the predicate is true.
+//
 void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
 {
     if (m_compiler->fgUseThrowHelperBlocks())
@@ -1220,14 +1224,10 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
         Compiler::AddCodeDsc* const add = m_compiler->fgGetExcptnTarget(codeKind, m_compiler->compCurBB);
         assert(add != nullptr);
         assert(add->acdUsed);
-        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compMaxUncheckedOffsetForNullObject);
-        GetEmitter()->emitIns(INS_I_le_u);
         inst_JMP(EJ_jmpif, add->acdDstBlk);
     }
     else
     {
-        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compMaxUncheckedOffsetForNullObject);
-        GetEmitter()->emitIns(INS_I_le_u);
         GetEmitter()->emitIns(INS_if);
         genEmitHelperCall(m_compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
         GetEmitter()->emitIns(INS_end);
@@ -1253,6 +1253,9 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 //
 // Arguments:
 //    tree - the GT_BOUNDS_CHECK node
+//
+// Notes:
+//    Incoming stack args are index; length (tos).
 //
 void CodeGen::genRangeCheck(GenTree* tree)
 {
