@@ -5,6 +5,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(FeatureNoDynamicCodeGen)' == 'true'">$(DefineConstants);FEATURE_NO_DYNAMIC_CODEGEN</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86;arm;arm64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>

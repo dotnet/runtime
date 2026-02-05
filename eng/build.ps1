@@ -27,6 +27,7 @@ Param(
   [switch]$bootstrap,
   [switch]$useBoostrap,
   [switch]$clrinterpreter,
+  [switch]$clrnodynamiccodegen,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -59,6 +60,7 @@ function Get-Help() {
   Write-Host "                                 [Default: Builds the entire repo.]"
   Write-Host "  -usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   Write-Host "  -clrinterpreter                Enables CoreCLR interpreter for Release builds of targets where it is a Debug only feature."
+  Write-Host "  -clrnodynamiccodegen           Build CoreCLR/crossgen2 in a mode that simulates iOS-like configuration (interpreter enabled, no dynamic code generation)."
   Write-Host "  -verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   Write-Host "                                 [Default: Minimal]"
   Write-Host "  --useBootstrap                 Use the results of building the bootstrap subset to build published tools on the target machine."
@@ -345,6 +347,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "fsanitize"              { $arguments += " /p:EnableNativeSanitizers=$($PSBoundParameters[$argument])"}
     "useBootstrap"           { $arguments += " /p:UseBootstrap=$($PSBoundParameters[$argument])" }
     "clrinterpreter"         { $arguments += " /p:FeatureInterpreter=true" }
+    "clrnodynamiccodegen"    { $arguments += " /p:FeatureInterpreter=true /p:FeatureNoDynamicCodeGen=true" }
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }

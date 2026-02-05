@@ -498,7 +498,7 @@ void* ExecutableAllocator::Commit(void* pStart, size_t size, bool isExecutable)
     }
     else
     {
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST) || defined(FEATURE_NO_DYNAMIC_CODEGEN)
         return ClrVirtualAlloc(pStart, size, MEM_COMMIT, PAGE_READWRITE);
 #else
         return ClrVirtualAlloc(pStart, size, MEM_COMMIT, isExecutable ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
@@ -714,7 +714,7 @@ void* ExecutableAllocator::ReserveWithinRange(size_t size, const void* loAddress
     else
     {
         DWORD allocationType = MEM_RESERVE;
-#if defined(HOST_UNIX) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+#if defined(HOST_UNIX) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST) && !defined(FEATURE_NO_DYNAMIC_CODEGEN)
         // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
         // This will allow us to place JIT'ed code close to the coreclr library
         // and thus improve performance by avoiding jump stubs in managed code.
@@ -804,7 +804,7 @@ void* ExecutableAllocator::Reserve(size_t size)
         else
         {
             DWORD allocationType = MEM_RESERVE;
-#if defined(HOST_UNIX) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+#if defined(HOST_UNIX) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST) && !defined(FEATURE_NO_DYNAMIC_CODEGEN)
             // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
             // This will allow us to place JIT'ed code close to the coreclr library
             // and thus improve performance by avoiding jump stubs in managed code.

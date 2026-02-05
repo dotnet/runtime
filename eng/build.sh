@@ -47,6 +47,7 @@ usage()
   echo "                                  [Default: Builds the entire repo.]"
   echo "  --usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   echo "  --clrinterpreter                Enables CoreCLR interpreter for Release builds of targets where it is a Debug only feature."
+  echo "  --clrnodynamiccodegen           Build CoreCLR/crossgen2 in a mode that simulates iOS-like configuration (interpreter enabled, no dynamic code generation)."
   echo "  --verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   echo "                                  [Default: Minimal]"
   echo "  --use-bootstrap                 Use the results of building the bootstrap subset to build published tools on the target machine."
@@ -387,6 +388,12 @@ while [[ $# -gt 0 ]]; do
 
      -clrinterpreter)
       arguments+=("/p:FeatureInterpreter=true")
+      shift 1
+      ;;
+
+     -clrnodynamiccodegen)
+      arguments+=("/p:FeatureInterpreter=true")
+      arguments+=("/p:FeatureNoDynamicCodeGen=true")
       shift 1
       ;;
 
