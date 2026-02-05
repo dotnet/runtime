@@ -2188,7 +2188,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumb
     id->idInsOpt(INS_OPTS_RL);
     id->idAddr()->iiaIGlabel = dst;
 
-    if (emitComp->opts.compReloc)
+    if (m_compiler->opts.compReloc)
     {
         id->idSetIsDspReloc();
         id->idCodeSize(8);
