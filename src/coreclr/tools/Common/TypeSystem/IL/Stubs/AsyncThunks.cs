@@ -38,15 +38,15 @@ namespace Internal.IL.Stubs
 
             ILLocalVariable returnTaskLocal = emitter.NewLocal(returnType);
 
-            TypeDesc executionContextSnapshotType = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "ExecutionContextSnapshot"u8);
-            ILLocalVariable executionContextSnapshotLocal = emitter.NewLocal(executionContextSnapshotType);
+            TypeDesc asyncContextsSnapshotType = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncContextsSnapshot"u8);
+            ILLocalVariable asyncContextsSnapshotLocal = emitter.NewLocal(asyncContextsSnapshotType);
 
             ILCodeLabel returnTaskLabel = emitter.NewCodeLabel();
             ILCodeLabel suspendedLabel = emitter.NewCodeLabel();
             ILCodeLabel finishedLabel = emitter.NewCodeLabel();
 
-            codestream.EmitLdLoca(executionContextSnapshotLocal);
-            codestream.Emit(ILOpcode.call, emitter.NewToken(executionContextSnapshotType.GetKnownMethod("Push"u8, null)));
+            codestream.EmitLdLoca(asyncContextsSnapshotLocal);
+            codestream.Emit(ILOpcode.call, emitter.NewToken(asyncContextsSnapshotType.GetKnownMethod("Push"u8, null)));
 
             ILExceptionRegionBuilder tryFinallyRegion = emitter.NewFinallyRegion();
             {
@@ -227,8 +227,8 @@ namespace Internal.IL.Stubs
             {
                 codestream.BeginHandler(tryFinallyRegion);
 
-                codestream.EmitLdLoca(executionContextSnapshotLocal);
-                codestream.Emit(ILOpcode.call, emitter.NewToken(executionContextSnapshotType.GetKnownMethod("Pop"u8, null)));
+                codestream.EmitLdLoca(asyncContextsSnapshotLocal);
+                codestream.Emit(ILOpcode.call, emitter.NewToken(asyncContextsSnapshotType.GetKnownMethod("Pop"u8, null)));
                 codestream.Emit(ILOpcode.endfinally);
                 codestream.EndHandler(tryFinallyRegion);
             }

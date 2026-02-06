@@ -673,9 +673,9 @@ DEFINE_CLASS(RESOURCE_MANAGER,      Resources,              ResourceManager)
 DEFINE_CLASS(RTFIELD,               Reflection,             RtFieldInfo)
 DEFINE_METHOD(RTFIELD,              GET_FIELDESC,           GetFieldDesc,            IM_RetIntPtr)
 
-DEFINE_CLASS(EXECUTIONCONTEXTSNAPSHOT, CompilerServices, ExecutionContextSnapshot)
-DEFINE_METHOD(EXECUTIONCONTEXTSNAPSHOT, PUSH, Push, NoSig)
-DEFINE_METHOD(EXECUTIONCONTEXTSNAPSHOT, POP, Pop, NoSig)
+DEFINE_CLASS(ASYNCCONTEXTSSNAPSHOT, CompilerServices, AsyncContextsSnapshot)
+DEFINE_METHOD(ASYNCCONTEXTSSNAPSHOT, PUSH, Push, NoSig)
+DEFINE_METHOD(ASYNCCONTEXTSSNAPSHOT, POP, Pop, NoSig)
 
 DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)

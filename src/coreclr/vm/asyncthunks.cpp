@@ -66,7 +66,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
 
     // Emits roughly the following code:
     //
-    // ExecutionContextSnapshot store = default;
+    // AsyncContextsSnapshot store = default;
     // store.Push();
     // try
     // {
@@ -105,15 +105,15 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
 
     LocalDesc returnLocalDesc(thTaskRet);
     DWORD returnTaskLocal = pCode->NewLocal(returnLocalDesc);
-    LocalDesc executionContextSnapshotLocalDesc(CoreLibBinder::GetClass(CLASS__EXECUTIONCONTEXTSNAPSHOT));
-    DWORD executionContextSnapshotLocal = pCode->NewLocal(executionContextSnapshotLocalDesc);
+    LocalDesc asyncContextsSnapshotLocalDesc(CoreLibBinder::GetClass(CLASS__ASYNCCONTEXTSSNAPSHOT));
+    DWORD asyncContextsSnapshotLocal = pCode->NewLocal(asyncContextsSnapshotLocalDesc);
 
     ILCodeLabel* returnTaskLabel = pCode->NewCodeLabel();
     ILCodeLabel* suspendedLabel = pCode->NewCodeLabel();
     ILCodeLabel* finishedLabel = pCode->NewCodeLabel();
 
-    pCode->EmitLDLOCA(executionContextSnapshotLocal);
-    pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(METHOD__EXECUTIONCONTEXTSNAPSHOT__PUSH)), 1, 0);
+    pCode->EmitLDLOCA(asyncContextsSnapshotLocal);
+    pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(METHOD__ASYNCCONTEXTSSNAPSHOT__PUSH)), 1, 0);
 
     {
         pCode->BeginTryBlock();
@@ -287,8 +287,8 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
     //
     {
         pCode->BeginFinallyBlock();
-        pCode->EmitLDLOCA(executionContextSnapshotLocal);
-        pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(METHOD__EXECUTIONCONTEXTSNAPSHOT__POP)), 1, 0);
+        pCode->EmitLDLOCA(asyncContextsSnapshotLocal);
+        pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(METHOD__ASYNCCONTEXTSSNAPSHOT__POP)), 1, 0);
         pCode->EmitENDFINALLY();
         pCode->EndFinallyBlock();
     }

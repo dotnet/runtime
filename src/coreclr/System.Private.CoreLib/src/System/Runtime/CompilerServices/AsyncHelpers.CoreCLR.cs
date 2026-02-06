@@ -20,7 +20,7 @@ using Internal.Runtime;
 
 namespace System.Runtime.CompilerServices
 {
-    internal struct ExecutionContextSnapshot
+    internal struct AsyncContextsSnapshot
     {
         // Store current ExecutionContext and SynchronizationContext as "previousXxx".
         // This allows us to restore them and undo any Context changes made in stateMachine.MoveNext
@@ -447,7 +447,7 @@ namespace System.Runtime.CompilerServices
             [StackTraceHidden]
             private unsafe void DispatchContinuations()
             {
-                ExecutionContextSnapshot contexts = default;
+                AsyncContextsSnapshot contexts = default;
                 contexts.Push();
 
                 AsyncDispatcherInfo asyncDispatcherInfo;
