@@ -693,6 +693,20 @@ void emitter::emitDispIns(
         }
     };
 
+    auto dispTargetOfCallIfAny = [this, id]() {
+        if (m_debugInfoSize > 0)
+        {
+            const void* const methodToken = (const void*)id->idDebugOnlyInfo()->idMemCookie;
+            if (methodToken != nullptr)
+            {
+                printf(" ;; ");
+                const char* const methodName =
+                    m_compiler->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
+                printf("%s", methodName);
+            }
+        }
+    };
+
     // The reference for the following style of display is wasm-objdump output.
     //
     switch (fmt)
@@ -707,6 +721,7 @@ void emitter::emitDispIns(
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
             dispJumpTargetIfAny();
+            dispTargetOfCallIfAny();
         }
         break;
 
@@ -714,6 +729,7 @@ void emitter::emitDispIns(
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu 0", (uint64_t)imm);
+            dispTargetOfCallIfAny();
         }
         break;
 
