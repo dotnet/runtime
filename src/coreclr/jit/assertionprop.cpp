@@ -1601,23 +1601,24 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
 
     ValueNum relopVN = vnStore->VNConservativeNormalValue(relop->gtVNPair);
 
-    // Cases where op1 holds the lhs of the condition and op2 holds the bound arithmetic.
-    // Loop condition like: "i < bnd +/-k"
-    // Assertion: "i < bnd +/- k != 0"
-    if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
-    {
-        AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBoundArith(this, relopVN, /*withArith*/ true);
-        AssertionIndex index = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(index);
-        return index;
-    }
 
     // Cases where op1 holds the lhs of the condition op2 holds the bound.
     // Loop condition like "i < bnd"
     // Assertion: "i < bnd != 0"
     if (vnStore->IsVNCompareCheckedBound(relopVN))
     {
-        AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBoundArith(this, relopVN, /*withArith*/ false);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBoundArith(this, relopVN, /*withArith*/ false);
+        AssertionIndex index = optAddAssertion(dsc);
+        optCreateComplementaryAssertion(index);
+        return index;
+    }
+
+    // Cases where op1 holds the lhs of the condition and op2 holds the bound arithmetic.
+    // Loop condition like: "i < bnd +/-k"
+    // Assertion: "i < bnd +/- k != 0"
+    if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
+    {
+        AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBoundArith(this, relopVN, /*withArith*/ true);
         AssertionIndex index = optAddAssertion(dsc);
         optCreateComplementaryAssertion(index);
         return index;
@@ -3892,7 +3893,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // Example: currentTree is "X >= Y" and we have an assertion "X >= Y" (or its inverse "X < Y").
             //
             if (curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == op1VN) &&
-                (curAssertion.GetOp2().GetVN() == op2VN))
+                (curAssertion.GetOp2().GetVN() == op2VN) && !curAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_BINOP))
             {
                 bool       isUnsigned;
                 genTreeOps assertionOper = AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);

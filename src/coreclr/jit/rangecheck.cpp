@@ -909,14 +909,11 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         genTreeOps cmpOper    = GT_NONE;
         bool       isUnsigned = false;
 
-        ValueNum checkedBndVN;
-        int      checkedBndCns;
         // Current assertion is of the form (i < len - cns) != 0
         if (canUseCheckedBounds && curAssertion.IsCheckedBoundArithBound() &&
-            (normalLclVN == curAssertion.GetOp1().GetVN() &&
-             comp->vnStore->IsVNCheckedBoundArith(curAssertion.GetOp2().GetVN(), &checkedBndVN, &checkedBndCns)))
+            (normalLclVN == curAssertion.GetOp1().GetVN()))
         {
-            limit   = Limit(Limit::keBinOpArray, checkedBndVN, checkedBndCns);
+            limit   = Limit(Limit::keBinOpArray, curAssertion.GetOp2().GetVN(), curAssertion.GetOp2().GetCheckedBoundConstant());
             cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
         }
         // Current assertion is of the form (i < len) != 0
