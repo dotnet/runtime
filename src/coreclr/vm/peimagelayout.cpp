@@ -13,10 +13,7 @@
 #endif
 
 #if defined(CORECLR_EMBEDDED)
-extern "C"
-{
-#include "pal_zlib.h"
-}
+#include <zstd.h>
 #endif
 
 static bool AllowR2RForImage(PEImage* pOwner)
@@ -725,31 +722,28 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             if (anonView == NULL)
                 ThrowLastError();
 
+            ZSTD_DCtx* dctx = ZSTD_createDCtx();
+
+            ZSTD_inBuffer_s input;
+            input.src = (const void*)addr;
+            input.size = (size_t)size;
+            input.pos = 0;
+
             //NB: PE cannot be larger than 4GB and we are decompressing a managed assembly, which is a PE image,
             //    thus converting sizes to uint32 is ok.
-            PAL_ZStream zStream;
-            zStream.nextIn = (uint8_t*)addr;
-            zStream.availIn = (uint32_t)size;
-            zStream.nextOut = (uint8_t*)(void*)anonView;
-            zStream.availOut = (uint32_t)uncompressedSize;
+            ZSTD_outBuffer_s output;
+            output.dst = (void*)(anonView);
+            output.size = (size_t)uncompressedSize;
+            output.pos = 0;
 
-            // we match the compression side here. 15 is the window sise, negative means no zlib header.
-            const int Deflate_DefaultWindowBits = -15;
-            if (CompressionNative_InflateInit2_(&zStream, Deflate_DefaultWindowBits) != PAL_Z_OK)
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-
-            int ret = CompressionNative_Inflate(&zStream, PAL_Z_NOFLUSH);
-
-            // decompression should have consumed the entire input
-            // and the entire output budgets
-            if ((ret < 0) ||
-                !(zStream.availIn == 0 && zStream.availOut == 0))
+            size_t ret = ZSTD_decompressStream(dctx, &output, &input);
+            if (ZSTD_isError(ret) || input.pos != input.size || output.pos != output.size)
             {
-                CompressionNative_InflateEnd(&zStream);
+                ZSTD_freeDCtx(dctx);
                 ThrowHR(COR_E_BADIMAGEFORMAT);
             }
 
-            CompressionNative_InflateEnd(&zStream);
+            ZSTD_freeDCtx(dctx);
 
             addr = anonView;
             size = uncompressedSize;
