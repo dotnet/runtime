@@ -1614,28 +1614,27 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     ValueNum op1VN     = relopFuncApp.m_args[0];
     ValueNum op2VN     = relopFuncApp.m_args[1];
 
-    // Comparisons involving checked bounds
-    if ((relopFunc == VNF_LE) || (relopFunc == VNF_LT) || (relopFunc == VNF_GE) || (relopFunc == VNF_GT) ||
-        (relopFunc == VNF_GT))
+    // Signed comparisons involving checked bounds
+    if ((relopFunc == VNF_LE) || (relopFunc == VNF_LT) || (relopFunc == VNF_GE) || (relopFunc == VNF_GT))
     {
         // "CheckedBnd <relop> X"
         if (vnStore->IsVNCheckedBound(op1VN))
         {
             // Move the checked bound to the right side for simplicity
-            relopFunc            = ValueNumStore::SwapRelop(relopFunc);
-            AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, op1VN, 0);
-            AssertionIndex index = optAddAssertion(dsc);
-            optCreateComplementaryAssertion(index);
-            return index;
+            relopFunc          = ValueNumStore::SwapRelop(relopFunc);
+            AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, op1VN, 0);
+            AssertionIndex idx = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(idx);
+            return idx;
         }
 
         // "X <relop> CheckedBnd"
         if (vnStore->IsVNCheckedBound(op2VN))
         {
-            AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, op2VN, 0);
-            AssertionIndex index = optAddAssertion(dsc);
-            optCreateComplementaryAssertion(index);
-            return index;
+            AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, op2VN, 0);
+            AssertionIndex idx = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(idx);
+            return idx;
         }
 
         ValueNum checkedBnd;
@@ -1645,20 +1644,20 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         if (vnStore->IsVNCheckedBoundAddConst(op1VN, &checkedBnd, &cns))
         {
             // Move the (CheckedBnd + CNS) part to the right side for simplicity
-            relopFunc            = ValueNumStore::SwapRelop(relopFunc);
-            AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, checkedBnd, cns);
-            AssertionIndex index = optAddAssertion(dsc);
-            optCreateComplementaryAssertion(index);
-            return index;
+            relopFunc          = ValueNumStore::SwapRelop(relopFunc);
+            AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, checkedBnd, cns);
+            AssertionIndex idx = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(idx);
+            return idx;
         }
 
         // "X <relop> (CheckedBnd + CNS)"
         if (vnStore->IsVNCheckedBoundAddConst(op2VN, &checkedBnd, &cns))
         {
             AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, checkedBnd, cns);
-            AssertionIndex index = optAddAssertion(dsc);
-            optCreateComplementaryAssertion(index);
-            return index;
+            AssertionIndex idx = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(idx);
+            return idx;
         }
     }
 
@@ -3932,7 +3931,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             //
             if (curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == op1VN) &&
                 (curAssertion.GetOp2().GetVN() == op2VN) &&
-                // O2K_CHECKED_BOUND_ADD_CNS means op2 is decomposed into op2.vn being checked bound
+                // O2K_CHECKED_BOUND_ADD_CNS means op2 is decomposed into op2.vn being checked bound 
                 // and op2.cns being the constant offset. We assemble the original relop VN if we want.
                 // For now, just skip such assertions here.
                 !curAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
