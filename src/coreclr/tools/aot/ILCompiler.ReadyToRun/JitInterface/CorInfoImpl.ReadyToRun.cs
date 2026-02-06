@@ -141,16 +141,6 @@ namespace Internal.JitInterface
             ConstrainedType = constrainedType;
             Unboxing = unboxing;
             OwningType = GetMethodTokenOwningType(this, constrainedType, context, devirtualizedMethodOwner, out OwningTypeNotDerivedFromToken);
-            if (method.IsAsync && method.IsAsyncVariant() && token.Module is MutableModule)
-            {
-                var ecmaMethod = (EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
-                var newToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
-                Token = newToken;
-                if (Token.Module.GetObject((EntityHandle)Token.Handle) != newToken.Module.GetObject((EntityHandle)newToken.Handle))
-                {
-                    OwningTypeNotDerivedFromToken = true;
-                }
-            }
         }
 
         private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, TypeDesc constrainedType, TypeSystemEntity context, TypeDesc devirtualizedMethodOwner, out bool owningTypeNotDerivedFromToken)
@@ -334,7 +324,7 @@ namespace Internal.JitInterface
                 && Unboxing == methodWithToken.Unboxing;
             if (equals)
             {
-                //Debug.Assert(OwningTypeNotDerivedFromToken == methodWithToken.OwningTypeNotDerivedFromToken);
+                Debug.Assert(OwningTypeNotDerivedFromToken == methodWithToken.OwningTypeNotDerivedFromToken);
                 Debug.Assert(OwningType == methodWithToken.OwningType);
             }
 

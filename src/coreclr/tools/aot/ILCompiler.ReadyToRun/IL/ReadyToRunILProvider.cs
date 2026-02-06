@@ -335,7 +335,7 @@ namespace Internal.IL
                 try
                 {
                     Debug.Assert(mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences == null);
-                    mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)owningMethod.GetPrimaryMethodDesc()).Module;
+                    mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)owningMethod.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
                     var owningMethodHandle = mutableModule.TryGetEntityHandle(owningMethod);
                     if (!owningMethodHandle.HasValue)
                         return false;
@@ -364,7 +364,7 @@ namespace Internal.IL
                     ILTokenReplacer.Replace(_ilBytes, GetMutableModuleToken);
 #if DEBUG
                     if (validateStandaloneMetadata)
-                        Debug.Assert(ReadyToRunStandaloneMethodMetadata.Compute((EcmaMethod)_owningMethod.GetPrimaryMethodDesc()) != null);
+                        Debug.Assert(ReadyToRunStandaloneMethodMetadata.Compute((EcmaMethod)_owningMethod.GetPrimaryMethodDesc().GetTypicalMethodDefinition()) != null);
 #endif // DEBUG
                 }
                 finally
