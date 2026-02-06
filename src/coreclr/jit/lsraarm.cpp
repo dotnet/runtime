@@ -68,10 +68,10 @@ int LinearScan::BuildLclHeap(GenTree* tree)
             {
                 internalIntCount = 0;
             }
-            else if (!compiler->info.compInitMem)
+            else if (!m_compiler->info.compInitMem)
             {
                 // No need to initialize allocated stack space.
-                if (sizeVal < compiler->eeGetPageSize())
+                if (sizeVal < m_compiler->eeGetPageSize())
                 {
                     internalIntCount = 0;
                 }
@@ -98,7 +98,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     // a temporary register for doing the probe. Note also that if the outgoing argument space is
     // large enough that it can't be directly encoded in SUB/ADD instructions, we also need a temp
     // register to load the large sized constant into a register.
-    if (compiler->lvaOutgoingArgSpaceSize > 0)
+    if (m_compiler->lvaOutgoingArgSpaceSize > 0)
     {
         internalIntCount = 1;
     }
@@ -249,7 +249,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_STORE_LCL_VAR:
             if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
             {
-                dstCount = compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
+                dstCount = m_compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
             }
             FALLTHROUGH;
 
@@ -372,7 +372,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 1;
             assert(dstCount == 0);
             BuildUse(tree->gtGetOp1());
-            killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             BuildKills(tree, killMask);
             break;
 
@@ -597,7 +597,7 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             GenTree* src = tree->gtGetOp2();
 
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
+            if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
             {
                 srcCount = BuildGCWriteBarrier(tree);
                 break;
@@ -728,7 +728,7 @@ int LinearScan::BuildNode(GenTree* tree)
     assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsValue() || (dstCount != 0));
-    assert(dstCount == tree->GetRegisterDstCount(compiler));
+    assert(dstCount == tree->GetRegisterDstCount(m_compiler));
     return srcCount;
 }
 

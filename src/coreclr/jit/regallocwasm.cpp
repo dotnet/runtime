@@ -53,19 +53,6 @@ bool WasmRegAlloc::isContainableMemoryOp(GenTree* node)
 }
 
 //------------------------------------------------------------------------
-// GetCompiler: Get the compiler field.
-//
-// Bridges the field naming difference for common RA code.
-//
-// Return Value:
-//    The 'this->m_compiler' field.
-//
-Compiler* WasmRegAlloc::GetCompiler() const
-{
-    return m_compiler;
-}
-
-//------------------------------------------------------------------------
 // CurrentRange: Get the LIR range under current processing.
 //
 // Return Value:

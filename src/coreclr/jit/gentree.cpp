@@ -28802,10 +28802,12 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
             case NI_Sve_GetFfrByte:
+            case NI_Sve_GetFfrDouble:
             case NI_Sve_GetFfrInt16:
             case NI_Sve_GetFfrInt32:
             case NI_Sve_GetFfrInt64:
             case NI_Sve_GetFfrSByte:
+            case NI_Sve_GetFfrSingle:
             case NI_Sve_GetFfrUInt16:
             case NI_Sve_GetFfrUInt32:
             case NI_Sve_GetFfrUInt64:
@@ -29020,10 +29022,12 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
             case NI_Sve_Prefetch64Bit:
             case NI_Sve_Prefetch8Bit:
             case NI_Sve_GetFfrByte:
+            case NI_Sve_GetFfrDouble:
             case NI_Sve_GetFfrInt16:
             case NI_Sve_GetFfrInt32:
             case NI_Sve_GetFfrInt64:
             case NI_Sve_GetFfrSByte:
+            case NI_Sve_GetFfrSingle:
             case NI_Sve_GetFfrUInt16:
             case NI_Sve_GetFfrUInt32:
             case NI_Sve_GetFfrUInt64:
@@ -32728,7 +32732,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             assert(tree->TypeIs(TYP_SIMD16));
 
                             simd16_t result = {};
-                            NarrowSimdLong<simd16_t>(simdBaseType, &result, otherNode->AsVecCon()->gtSimd16Val);
+                            NarrowAndDuplicateSimdLong<simd16_t>(simdBaseType, &result,
+                                                                 otherNode->AsVecCon()->gtSimd16Val);
                             otherNode->AsVecCon()->gtSimd16Val = result;
                         }
 #endif // TARGET_XARCH

@@ -4103,7 +4103,7 @@ do                                                                      \
 
                     if (returnValueSize > 0)
                     {
-                        if (returnValueSize > INTERP_STACK_SLOT_SIZE)
+                        if (returnValueSize > (int32_t)INTERP_STACK_SLOT_SIZE)
                         {
                             memset(pFrame->pRetVal, 0, returnValueSize);
                         }
@@ -4146,9 +4146,8 @@ do                                                                      \
 
                         if (exception != NULL)
                         {
-                            GetThread()->GetExceptionState()->SetRaisingForeignException();
                             pInterpreterFrame->SetIsFaulting(true);
-                            DispatchManagedException(exception);
+                            DispatchManagedException(exception, ExKind::RethrowFlag);
                             UNREACHABLE();
                         }
                     }
