@@ -85,41 +85,32 @@ namespace Microsoft.Extensions.Logging.Generators
                 return;
             }
 
-            // Group by semantic model to reuse it
-            var groupedBySemanticModel = infos
-                .Where(i => i != null)
-                .Cast<LoggerClassInfo>()
-                .GroupBy(i => i.SemanticModel);
-
-            var allLogClasses = new List<LoggerClass>();
-            bool hasStringCreate = false;
-
-            foreach (var group in groupedBySemanticModel)
+            var validInfos = infos.Where(i => i != null).Cast<LoggerClassInfo>().ToList();
+            if (validInfos.Count == 0)
             {
-                var distinctClasses = group.Select(i => i.ClassDeclaration).Distinct().ToImmutableHashSet();
-
-                // All infos in the group have the same symbols, so we can use the first one
-                var firstInfo = group.First();
-                hasStringCreate = firstInfo.HasStringCreate;
-
-                var p = new Parser(
-                    firstInfo.LoggerMessageAttribute,
-                    firstInfo.LoggerSymbol,
-                    firstInfo.LogLevelSymbol,
-                    firstInfo.ExceptionSymbol,
-                    firstInfo.EnumerableSymbol,
-                    firstInfo.StringSymbol,
-                    context.ReportDiagnostic,
-                    context.CancellationToken);
-
-                IReadOnlyList<LoggerClass> logClasses = p.GetLogClasses(distinctClasses, firstInfo.SemanticModel);
-                allLogClasses.AddRange(logClasses);
+                return;
             }
 
-            if (allLogClasses.Count > 0)
+            // All infos should come from the same compilation, so we can use the first one for symbols
+            var firstInfo = validInfos[0];
+            var distinctClasses = validInfos.Select(i => i.ClassDeclaration).Distinct().ToImmutableHashSet();
+
+            var p = new Parser(
+                firstInfo.LoggerMessageAttribute,
+                firstInfo.LoggerSymbol,
+                firstInfo.LogLevelSymbol,
+                firstInfo.ExceptionSymbol,
+                firstInfo.EnumerableSymbol,
+                firstInfo.StringSymbol,
+                context.ReportDiagnostic,
+                context.CancellationToken);
+
+            IReadOnlyList<LoggerClass> logClasses = p.GetLogClasses(distinctClasses, firstInfo.SemanticModel);
+
+            if (logClasses.Count > 0)
             {
-                var e = new Emitter(hasStringCreate);
-                string result = e.Emit(allLogClasses, context.CancellationToken);
+                var e = new Emitter(firstInfo.HasStringCreate);
+                string result = e.Emit(logClasses, context.CancellationToken);
 
                 context.AddSource("LoggerMessage.g.cs", SourceText.From(result, Encoding.UTF8));
             }

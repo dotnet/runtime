@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Logging.Generators
                           m.Parameters[0].Type.Name == "IFormatProvider" &&
                           m.Parameters[1].RefKind == RefKind.Ref);
 
-            // Get a semantic model to pass to Parser
+            // Get a semantic model to pass to Parser (used to access compilation)
             var firstClass = receiver.ClassDeclarations.FirstOrDefault();
             if (firstClass == null)
             {

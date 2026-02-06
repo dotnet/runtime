@@ -373,10 +373,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                             Type = typeName,
                                             Qualifier = qualifier,
                                             CodeName = needsAtSign ? "@" + paramName : paramName,
-                                            IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol, _loggerSymbol, sm),
-                                            IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol, _exceptionSymbol, sm),
-                                            IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol, _logLevelSymbol, sm),
-                                            IsEnumerable = IsBaseOrIdentity(paramTypeSymbol, _enumerableSymbol, sm) && !IsBaseOrIdentity(paramTypeSymbol, _stringSymbol, sm),
+                                            IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol, _loggerSymbol, sm.Compilation),
+                                            IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol, _exceptionSymbol, sm.Compilation),
+                                            IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol, _logLevelSymbol, sm.Compilation),
+                                            IsEnumerable = IsBaseOrIdentity(paramTypeSymbol, _enumerableSymbol, sm.Compilation) && !IsBaseOrIdentity(paramTypeSymbol, _stringSymbol, sm.Compilation),
                                         };
 
                                         foundLogger |= lp.IsLogger;
@@ -648,7 +648,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         {
                             continue;
                         }
-                        if (IsBaseOrIdentity(fs.Type, loggerSymbol, sm))
+                        if (IsBaseOrIdentity(fs.Type, loggerSymbol, sm.Compilation))
                         {
                             if (loggerField == null)
                             {
@@ -683,7 +683,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     foreach (IParameterSymbol parameter in primaryConstructor.Parameters)
                     {
-                        if (IsBaseOrIdentity(parameter.Type, loggerSymbol, sm))
+                        if (IsBaseOrIdentity(parameter.Type, loggerSymbol, sm.Compilation))
                         {
                             if (shadowedNames.Contains(parameter.Name))
                             {
@@ -715,9 +715,9 @@ namespace Microsoft.Extensions.Logging.Generators
                 _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
             }
 
-            private static bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest, SemanticModel semanticModel)
+            private static bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest, Compilation compilation)
             {
-                Conversion conversion = semanticModel.Compilation.ClassifyConversion(source, dest);
+                Conversion conversion = compilation.ClassifyConversion(source, dest);
                 return conversion.IsIdentity || (conversion.IsReference && conversion.IsImplicit);
             }
 
