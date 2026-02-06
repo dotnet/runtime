@@ -70,8 +70,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
                 """;
 
-            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview));
             Compilation comp1 = CompilationHelper.CreateCompilation(source);
+            SyntaxTree originalTree = comp1.SyntaxTrees.First(); // Get the REAL tree in the compilation
 
             LoggerMessageGenerator generator = new();
             GeneratorDriver driver = CSharpGeneratorDriver.Create(
@@ -81,11 +81,11 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             driver = driver.RunGenerators(comp1);
 
             // Append an unrelated struct to the same file
-            SyntaxTree newTree = syntaxTree.WithRootAndOptions(
-                syntaxTree.GetCompilationUnitRoot().AddMembers(SyntaxFactory.ParseMemberDeclaration("struct Foo {}")!),
-                syntaxTree.Options);
+            SyntaxTree newTree = originalTree.WithRootAndOptions(
+                originalTree.GetCompilationUnitRoot().AddMembers(SyntaxFactory.ParseMemberDeclaration("struct Foo {}")!),
+                originalTree.Options);
 
-            Compilation comp2 = comp1.ReplaceSyntaxTree(comp1.SyntaxTrees.First(), newTree);
+            Compilation comp2 = comp1.ReplaceSyntaxTree(originalTree, newTree);
             GeneratorDriver driver2 = driver.RunGenerators(comp2);
             GeneratorRunResult runResult = driver2.GetRunResult().Results[0];
 
@@ -169,8 +169,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
                 """;
 
-            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source1, new CSharpParseOptions(LanguageVersion.Preview));
             Compilation comp1 = CompilationHelper.CreateCompilation(source1);
+            SyntaxTree originalTree = comp1.SyntaxTrees.First(); // Get the REAL tree in the compilation
 
             LoggerMessageGenerator generator = new();
             GeneratorDriver driver = CSharpGeneratorDriver.Create(
@@ -189,8 +189,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
                 """;
 
-            SyntaxTree newTree = CSharpSyntaxTree.ParseText(source2, new CSharpParseOptions(LanguageVersion.Preview));
-            Compilation comp2 = comp1.ReplaceSyntaxTree(comp1.SyntaxTrees.First(), newTree);
+            SyntaxTree newTree = CSharpSyntaxTree.ParseText(source2, originalTree.Options);
+            Compilation comp2 = comp1.ReplaceSyntaxTree(originalTree, newTree);
 
             GeneratorDriver driver2 = driver.RunGenerators(comp2);
             GeneratorRunResult runResult = driver2.GetRunResult().Results[0];
@@ -222,8 +222,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
                 """;
 
-            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source1, new CSharpParseOptions(LanguageVersion.Preview));
             Compilation comp1 = CompilationHelper.CreateCompilation(source1);
+            SyntaxTree originalTree = comp1.SyntaxTrees.First(); // Get the REAL tree in the compilation
 
             LoggerMessageGenerator generator = new();
             GeneratorDriver driver = CSharpGeneratorDriver.Create(
@@ -244,8 +244,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
                 """;
 
-            SyntaxTree newTree = CSharpSyntaxTree.ParseText(source2, new CSharpParseOptions(LanguageVersion.Preview));
-            Compilation comp2 = comp1.ReplaceSyntaxTree(comp1.SyntaxTrees.First(), newTree);
+            SyntaxTree newTree = CSharpSyntaxTree.ParseText(source2, originalTree.Options);
+            Compilation comp2 = comp1.ReplaceSyntaxTree(originalTree, newTree);
 
             GeneratorDriver driver2 = driver.RunGenerators(comp2);
             GeneratorRunResult runResult = driver2.GetRunResult().Results[0];
