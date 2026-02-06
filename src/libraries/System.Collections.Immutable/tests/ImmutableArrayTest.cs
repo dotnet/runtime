@@ -1469,6 +1469,7 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(RemoveData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Remove<T>(IEnumerable<T> source, T item, IEqualityComparer<T> comparer)
         {
             ImmutableArray<T> array = source.ToImmutableArray();
