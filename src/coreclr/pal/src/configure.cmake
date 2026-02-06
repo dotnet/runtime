@@ -497,52 +497,6 @@ int main(void)
   exit(ret != 1);
 }" ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS)
 
-set(CMAKE_REQUIRED_LIBRARIES pthread)
-check_cxx_source_runs("
-#include <errno.h>
-#include <pthread.h>
-#include <stdlib.h>
-
-void *start_routine(void *param) { return NULL; }
-
-int main() {
-  int result;
-  pthread_t tid;
-
-  errno = 0;
-  result = pthread_create(&tid, NULL, start_routine, NULL);
-  if (result != 0) {
-    exit(1);
-  }
-  if (errno != 0) {
-    exit(0);
-  }
-  exit(1);
-}" PTHREAD_CREATE_MODIFIES_ERRNO)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES pthread)
-check_cxx_source_runs("
-#include <errno.h>
-#include <semaphore.h>
-#include <stdlib.h>
-
-int main() {
-  int result;
-  sem_t sema;
-
-  errno = 50;
-  result = sem_init(&sema, 0, 0);
-  if (result != 0)
-  {
-    exit(1);
-  }
-  if (errno != 50)
-  {
-    exit(0);
-  }
-  exit(1);
-}" SEM_INIT_MODIFIES_ERRNO)
-set(CMAKE_REQUIRED_LIBRARIES)
 check_cxx_source_runs("
 #include <fcntl.h>
 #include <stdlib.h>
@@ -566,7 +520,7 @@ int main(void) {
   }
   exit(0);
 }" HAVE_PROCFS_CTL)
-set(CMAKE_REQUIRED_LIBRARIES)
+
 check_cxx_source_runs("
 #include <fcntl.h>
 #include <stdlib.h>

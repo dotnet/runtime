@@ -442,9 +442,6 @@ CorUnix::InternalCreateThread(
 
     pthread_t pthread;
     pthread_attr_t pthreadAttr;
-#if PTHREAD_CREATE_MODIFIES_ERRNO
-    int storedErrno;
-#endif  // PTHREAD_CREATE_MODIFIES_ERRNO
     int iError = 0;
     size_t alignedStackSize;
 
@@ -588,19 +585,7 @@ CorUnix::InternalCreateThread(
     // Spawn the new pthread
     //
 
-#if PTHREAD_CREATE_MODIFIES_ERRNO
-    storedErrno = errno;
-#endif  // PTHREAD_CREATE_MODIFIES_ERRNO
-
     iError = pthread_create(&pthread, &pthreadAttr, CPalThread::ThreadEntry, pNewThread);
-
-#if PTHREAD_CREATE_MODIFIES_ERRNO
-    if (iError == 0)
-    {
-        // Restore errno if pthread_create succeeded.
-        errno = storedErrno;
-    }
-#endif  // PTHREAD_CREATE_MODIFIES_ERRNO
 
     if (0 != iError)
     {
@@ -641,15 +626,6 @@ EXIT:
         {
             WARN("pthread_attr_destroy() failed\n");
         }
-    }
-
-    if (NO_ERROR != palError)
-    {
-        //
-        // We either were not able to create the new thread, or a failure
-        // occurred in the new thread's entry routine. Free up the associated
-        // resources here
-        //
     }
 
     return palError;
