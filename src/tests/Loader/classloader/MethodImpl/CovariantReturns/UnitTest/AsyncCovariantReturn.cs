@@ -10,7 +10,7 @@ namespace AsyncCovariantReturnTest;
 public static class Program
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         // This test validates that async methods with covariant-like return type signatures
         // do not trigger TypeLoadException during type loading.
@@ -27,7 +27,6 @@ public static class Program
         // This test ensures that such valid code can be loaded without throwing.
         
         var derived = new Derived();
-        return 100;
     }
 }
 
