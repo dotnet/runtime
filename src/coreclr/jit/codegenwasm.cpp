@@ -7,6 +7,7 @@
 #endif
 
 #include "codegen.h"
+#include "regallocwasm.h"
 #include "fgwasm.h"
 
 #ifdef TARGET_64BIT
@@ -32,11 +33,15 @@ void CodeGen::genMarkLabelsForCodegen()
 //------------------------------------------------------------------------
 // genBeginFnProlog: generate wasm local declarations
 //
-// TODO-WASM: pre-declare all "register" locals
 void CodeGen::genBeginFnProlog()
 {
-    // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
-    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, 0);
+    unsigned localsCount = 0;
+    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, WasmLocalsDecls.size());
+    for (WasmLocalsDecl& decl : WasmLocalsDecls)
+    {
+        GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
+        localsCount += decl.Count;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -67,7 +72,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
     // TODO-WASM: reverse pinvoke frame allocation
     //
-    if (m_compiler->lvaWasmSpArg == BAD_VAR_NUM)
+    if (!m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg)->lvIsParam)
     {
         NYI_WASM("alloc local frame for reverse pinvoke");
     }

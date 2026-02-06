@@ -339,14 +339,14 @@ bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
         return false;
     }
 
-#if !defined(TARGET_64BIT)
+#if LOWER_DECOMPOSE_LONGS
     if (varDsc->lvType == TYP_LONG)
     {
         // Long variables should not be register candidates.
         // Lowering will have split any candidate lclVars into lo/hi vars.
         return false;
     }
-#endif // !defined(TARGET_64BIT)
+#endif // LOWER_DECOMPOSE_LONGS
 
     // If we have JMP, reg args must be put on the stack
 
