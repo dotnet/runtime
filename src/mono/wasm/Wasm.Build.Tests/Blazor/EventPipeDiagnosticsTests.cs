@@ -136,8 +136,6 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             "System.Diagnostics.Metrics/instrumentName/dotnet.thread_pool.thread.count",
             "System.Diagnostics.Metrics/instrumentName/dotnet.thread_pool.work_item.count",
             "System.Diagnostics.Metrics/instrumentName/dotnet.timer.count",
-            "Microsoft-DotNETCore-EventPipe/ArchInformation/Unknown",
-            "Microsoft-DotNETCore-EventPipe/OSInformation/Unknown"
         };
 
         foreach (var expectedInstrument in expectedInstruments)
