@@ -897,12 +897,16 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
             IntegralRange::Print(curAssertion.GetOp2().GetIntegralRange());
             break;
 
-        case O2K_CHECKED_BOUND:
-            printf("Checked_Bnd " FMT_VN "", curAssertion.GetOp2().GetVN());
-            break;
-
-        case O2K_CHECKED_BOUND_BINOP:
-            printf("Checked_Bnd_BinOp " FMT_VN "", curAssertion.GetOp2().GetVN());
+        case O2K_CHECKED_BOUND_ADD_CNS:
+            if (curAssertion.GetOp2().GetCheckedBoundConstant() != 0)
+            {
+                printf("(Checked_Bnd_BinOp " FMT_VN " + %d)", curAssertion.GetOp2().GetVN(),
+                       curAssertion.GetOp2().GetCheckedBoundConstant());
+            }
+            else
+            {
+                printf("Checked_Bnd_BinOp " FMT_VN "", curAssertion.GetOp2().GetVN());
+            }
             break;
 
         default:
@@ -1599,33 +1603,67 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
-    ValueNum relopVN = vnStore->VNConservativeNormalValue(relop->gtVNPair);
-
-
-    // Cases where op1 holds the lhs of the condition op2 holds the bound.
-    // Loop condition like "i < bnd"
-    // Assertion: "i < bnd != 0"
-    if (vnStore->IsVNCompareCheckedBound(relopVN))
+    ValueNum  relopVN = optConservativeNormalVN(relop);
+    VNFuncApp relopFuncApp;
+    if (!vnStore->GetVNFunc(relopVN, &relopFuncApp))
     {
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBoundArith(this, relopVN, /*withArith*/ false);
-        AssertionIndex index = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(index);
-        return index;
+        return NO_ASSERTION_INDEX;
     }
 
-    // Cases where op1 holds the lhs of the condition and op2 holds the bound arithmetic.
-    // Loop condition like: "i < bnd +/-k"
-    // Assertion: "i < bnd +/- k != 0"
-    if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
+    VNFunc   relopFunc = relopFuncApp.m_func;
+    ValueNum op1VN     = relopFuncApp.m_args[0];
+    ValueNum op2VN     = relopFuncApp.m_args[1];
+
+    // Comparisons involving checked bounds
+    if ((relopFunc == VNF_LE) || (relopFunc == VNF_LT) || (relopFunc == VNF_GE) || (relopFunc == VNF_GT) ||
+        (relopFunc == VNF_GT))
     {
-        AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBoundArith(this, relopVN, /*withArith*/ true);
-        AssertionIndex index = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(index);
-        return index;
+        // "CheckedBnd <relop> X"
+        if (vnStore->IsVNCheckedBound(op1VN))
+        {
+            // Move the checked bound to the right side for simplicity
+            relopFunc            = ValueNumStore::SwapRelop(relopFunc);
+            AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, op1VN, 0);
+            AssertionIndex index = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(index);
+            return index;
+        }
+
+        // "X <relop> CheckedBnd"
+        if (vnStore->IsVNCheckedBound(op2VN))
+        {
+            AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, op2VN, 0);
+            AssertionIndex index = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(index);
+            return index;
+        }
+
+        ValueNum checkedBnd;
+        int      cns;
+
+        // "(CheckedBnd + CNS) <relop> X"
+        if (vnStore->IsVNCheckedBoundAddConst(op1VN, &checkedBnd, &cns))
+        {
+            // Move the (CheckedBnd + CNS) part to the right side for simplicity
+            relopFunc            = ValueNumStore::SwapRelop(relopFunc);
+            AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, checkedBnd, cns);
+            AssertionIndex index = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(index);
+            return index;
+        }
+
+        // "X <relop> (CheckedBnd + CNS)"
+        if (vnStore->IsVNCheckedBoundAddConst(op2VN, &checkedBnd, &cns))
+        {
+            AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, checkedBnd, cns);
+            AssertionIndex index = optAddAssertion(dsc);
+            optCreateComplementaryAssertion(index);
+            return index;
+        }
     }
 
-    // Loop condition like "(uint)i < (uint)bnd" or equivalent
-    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
+    // Pretty much the same as above but for unsigned comparisons.
+    // We're only interested in "X u< CheckedBnd" or it's inverse "CheckedBnd u>= X".
     ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
     if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
     {
@@ -3893,7 +3931,11 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // Example: currentTree is "X >= Y" and we have an assertion "X >= Y" (or its inverse "X < Y").
             //
             if (curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == op1VN) &&
-                (curAssertion.GetOp2().GetVN() == op2VN) && !curAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_BINOP))
+                (curAssertion.GetOp2().GetVN() == op2VN) &&
+                // O2K_CHECKED_BOUND_ADD_CNS means op2 is decomposed into op2.vn being checked bound
+                // and op2.cns being the constant offset. We assemble the original relop VN if we want.
+                // For now, just skip such assertions here.
+                !curAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
             {
                 bool       isUnsigned;
                 genTreeOps assertionOper = AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);

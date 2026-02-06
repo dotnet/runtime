@@ -7710,10 +7710,7 @@ public:
         O2K_CONST_INT,
         O2K_CONST_DOUBLE,
 
-        // These two are just hints that Op2.GetVN() is either a checked bound
-        // or a binary operation on top of a checked bound and a constant.
-        O2K_CHECKED_BOUND,
-        O2K_CHECKED_BOUND_BINOP,
+        O2K_CHECKED_BOUND_ADD_CNS,
 
         O2K_ZEROOBJ,
         O2K_SUBRANGE
@@ -7817,8 +7814,8 @@ public:
 
             int GetCheckedBoundConstant() const
             {
-                assert(KindIs(O2K_CHECKED_BOUND_BINOP, O2K_CHECKED_BOUND));
-                assert(m_icon.m_iconVal == 0 || KindIs(O2K_CHECKED_BOUND_BINOP));
+                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
+                assert(FitsIn<int>(m_icon.m_iconVal));
                 return (int)m_icon.m_iconVal;
             }
 
@@ -7837,8 +7834,7 @@ public:
 
             ValueNum GetVN() const
             {
-                assert(
-                    KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CHECKED_BOUND, O2K_CHECKED_BOUND_BINOP));
+                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CHECKED_BOUND_ADD_CNS));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
@@ -7917,15 +7913,11 @@ public:
             return m_op2;
         }
 
-        bool IsCheckedBoundArithBound() const
+        // Is it "X relop (len + cns)" form?
+        // NOTE: the cns can be zero, so this implies "X relop len" form.
+        bool IsCheckedBoundWithConst() const
         {
-            return KindIs(OAK_GE, OAK_GT, OAK_LE, OAK_LT) && GetOp2().KindIs(O2K_CHECKED_BOUND_BINOP);
-        }
-        bool IsCheckedBoundBound() const
-        {
-            return KindIs(OAK_GE, OAK_GT, OAK_LE, OAK_LT) &&
-                (GetOp2().KindIs(O2K_CHECKED_BOUND) ||
-                 (GetOp2().KindIs(O2K_CHECKED_BOUND_BINOP) && GetOp2().GetCheckedBoundConstant() == 0));
+            return KindIs(OAK_GE, OAK_GT, OAK_LE, OAK_LT) && GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS);
         }
 
         bool IsCopyAssertion() const
@@ -7972,12 +7964,11 @@ public:
         {
             // O1K_VN (idx) u< O2K_VN (len)
             return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) &&
-                (GetOp2().KindIs(O2K_CHECKED_BOUND) ||
-                    (GetOp2().KindIs(O2K_CHECKED_BOUND_BINOP) && GetOp2().GetCheckedBoundConstant() == 0));
+                   (GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS) && GetOp2().GetCheckedBoundConstant() == 0);
         }
 
         // Convert VNFunc to optAssertionKind
-        static optAssertionKind FromVMFunc(VNFunc func)
+        static optAssertionKind FromVNFunc(VNFunc func)
         {
             switch (func)
             {
@@ -8146,12 +8137,9 @@ public:
                 case O2K_ZEROOBJ:
                     return true;
 
-                case O2K_CHECKED_BOUND:
-                    return GetOp2().GetVN() == that.GetOp2().GetVN();
-
-                case O2K_CHECKED_BOUND_BINOP:
+                case O2K_CHECKED_BOUND_ADD_CNS:
                     return GetOp2().GetVN() == that.GetOp2().GetVN() &&
-                        GetOp2().GetCheckedBoundConstant() == that.GetOp2().GetCheckedBoundConstant();
+                           GetOp2().GetCheckedBoundConstant() == that.GetOp2().GetCheckedBoundConstant();
 
                 case O2K_LCLVAR_COPY:
                     return GetOp2().GetLclNum() == that.GetOp2().GetLclNum();
@@ -8347,54 +8335,26 @@ public:
             dsc.m_assertionKind = OAK_LT_UN;
             dsc.m_op1.m_kind    = O1K_VN;
             dsc.m_op1.m_vn      = idxVN;
-            dsc.m_op2.m_kind    = O2K_CHECKED_BOUND;
+            dsc.m_op2.m_kind    = O2K_CHECKED_BOUND_ADD_CNS;
             dsc.m_op2.m_vn      = lenVN;
+
+            dsc.m_op2.m_icon.m_iconVal = 0;
             return dsc;
         }
 
-        // Create "i < bnd +/- k != 0" or just "i < bnd != 0" assertion
-        static AssertionDsc CreateCompareCheckedBoundArith(const Compiler* comp, ValueNum relopVN, bool withArith)
+        // Create "i <relop> (bnd + cns)" assertion
+        static AssertionDsc CreateCompareCheckedBound(VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
         {
-            assert(relopVN != ValueNumStore::NoVN);
+            assert(op1VN != ValueNumStore::NoVN);
+            assert(checkedBndVN != ValueNumStore::NoVN);
 
-            VNFuncApp funcApp;
-            comp->vnStore->GetVNFunc(relopVN, &funcApp);
-
-            VNFunc   oper  = funcApp.m_func;
-            ValueNum op1VN = funcApp.m_args[0];
-            ValueNum op2VN = funcApp.m_args[1];
-
-            AssertionDsc dsc = {};
-            if (withArith)
-            {
-                if (comp->vnStore->IsVNCheckedBoundArith(op1VN) && !comp->vnStore->IsVNCheckedBoundArith(op2VN))
-                {
-                    std::swap(op1VN, op2VN);
-                    oper = comp->vnStore->SwapRelop(oper);
-                }
-
-                int cns;
-                bool found = comp->vnStore->IsVNCheckedBoundArith(op2VN, &dsc.m_op2.m_vn, &cns);
-                assert(found);
-                dsc.m_op2.m_kind = O2K_CHECKED_BOUND_BINOP;
-                dsc.m_op2.m_icon.m_iconVal = cns;
-            }
-            else
-            {
-                if (comp->vnStore->IsVNCheckedBound(op1VN) && !comp->vnStore->IsVNCheckedBound(op2VN))
-                {
-                    std::swap(op1VN, op2VN);
-                    oper = comp->vnStore->SwapRelop(oper);
-                }
-                assert(comp->vnStore->IsVNCheckedBound(op2VN));
-                dsc.m_op2.m_kind = O2K_CHECKED_BOUND;
-                dsc.m_op2.m_vn = op2VN;
-            }
-
-            dsc.m_assertionKind = FromVMFunc(oper);
-            dsc.m_op1.m_kind    = O1K_VN;
-            dsc.m_op1.m_vn      = op1VN;
-
+            AssertionDsc dsc           = {};
+            dsc.m_assertionKind        = FromVNFunc(relop);
+            dsc.m_op1.m_kind           = O1K_VN;
+            dsc.m_op1.m_vn             = op1VN;
+            dsc.m_op2.m_kind           = O2K_CHECKED_BOUND_ADD_CNS;
+            dsc.m_op2.m_vn             = checkedBndVN;
+            dsc.m_op2.m_icon.m_iconVal = cns;
             return dsc;
         }
 
@@ -8424,7 +8384,7 @@ public:
             }
 
             AssertionDsc dsc           = {};
-            dsc.m_assertionKind        = FromVMFunc(func);
+            dsc.m_assertionKind        = FromVNFunc(func);
             dsc.m_op1.m_kind           = O1K_VN;
             dsc.m_op1.m_vn             = op1;
             dsc.m_op2.m_kind           = O2K_CONST_INT;
