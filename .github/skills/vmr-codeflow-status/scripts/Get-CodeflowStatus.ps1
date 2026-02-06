@@ -109,12 +109,23 @@ Write-Status "Created" $pr.createdAt
 Write-Status "Updated" $pr.updatedAt
 Write-Host "  URL: $($pr.url)"
 
-# Check if this is actually a codeflow PR
+# Check if this is actually a codeflow PR and detect flow direction
 $isMaestroPR = $pr.author.login -eq "dotnet-maestro[bot]"
-$isCodeflowPR = $pr.title -match "Source code updates from dotnet/dotnet"
-if (-not $isMaestroPR -and -not $isCodeflowPR) {
+$isBackflow = $pr.title -match "Source code updates from dotnet/dotnet"
+$isForwardFlow = $pr.title -match "Source code updates from (dotnet/\S+)" -and -not $isBackflow
+$flowDirection = if ($isBackflow) { "backflow" } elseif ($isForwardFlow) { "forward" } else { "unknown" }
+
+if (-not $isMaestroPR -and -not $isBackflow -and -not $isForwardFlow) {
     Write-Warning "This does not appear to be a codeflow PR (author: $($pr.author.login), title: $($pr.title))"
-    Write-Warning "Expected author 'dotnet-maestro[bot]' and title containing 'Source code updates from dotnet/dotnet'"
+    Write-Warning "Expected author 'dotnet-maestro[bot]' and title containing 'Source code updates from'"
+}
+
+if ($isForwardFlow) {
+    $sourceRepo = $Matches[1]
+    Write-Status "Flow" "Forward ($sourceRepo → $Repository)" "Cyan"
+}
+elseif ($isBackflow) {
+    Write-Status "Flow" "Backflow (dotnet/dotnet → $Repository)" "Cyan"
 }
 
 # --- Step 2: Parse PR body metadata ---
@@ -129,12 +140,15 @@ if ($body -match '\(Begin:([a-f0-9-]+)\)') {
     Write-Status "Subscription" $subscriptionId
 }
 
-# Extract VMR commit
-$vmrCommit = $null
+# Extract source commit (VMR commit for backflow, repo commit for forward flow)
+$sourceCommit = $null
 if ($body -match '\*\*Commit\*\*:\s*\[([a-f0-9]+)\]') {
-    $vmrCommit = $Matches[1]
-    Write-Status "VMR Commit" $vmrCommit
+    $sourceCommit = $Matches[1]
+    $commitLabel = if ($isForwardFlow) { "Source Commit" } else { "VMR Commit" }
+    Write-Status $commitLabel $sourceCommit
 }
+# Keep $vmrCommit alias for backflow compatibility
+$vmrCommit = $sourceCommit
 
 # Extract build info
 if ($body -match '\*\*Build\*\*:\s*\[([^\]]+)\]\(([^\)]+)\)') {
@@ -147,11 +161,12 @@ if ($body -match '\*\*Date Produced\*\*:\s*(.+)') {
     Write-Status "Date Produced" $Matches[1].Trim()
 }
 
-# Extract VMR branch
+# Extract source branch
 $vmrBranch = $null
 if ($body -match '\*\*Branch\*\*:\s*\[([^\]]+)\]') {
     $vmrBranch = $Matches[1]
-    Write-Status "VMR Branch" $vmrBranch
+    $branchLabel = if ($isForwardFlow) { "Source Branch" } else { "VMR Branch" }
+    Write-Status $branchLabel $vmrBranch
 }
 
 # Extract commit diff
@@ -183,30 +198,36 @@ if (-not $vmrCommit -or -not $vmrBranch) {
     }
 }
 
-# --- Step 3: Check VMR freshness ---
-Write-Section "VMR Freshness"
+# --- Step 3: Check source freshness ---
+$freshnessLabel = if ($isForwardFlow) { "Source Freshness" } else { "VMR Freshness" }
+Write-Section $freshnessLabel
 
-$vmrHeadSha = $null
+$sourceHeadSha = $null
 $aheadBy = 0
 $behindBy = 0
 $compareStatus = $null
 
-if ($vmrCommit -and $vmrBranch) {
-    # Get current VMR branch HEAD (URL-encode branch name for path segments with /)
-    $encodedBranch = [uri]::EscapeDataString($vmrBranch)
-    $vmrHead = Invoke-GitHubApi "/repos/dotnet/dotnet/commits/$encodedBranch"
-    if ($vmrHead) {
-        $vmrHeadSha = $vmrHead.sha
-        $vmrHeadDate = $vmrHead.commit.committer.date
-        Write-Status "PR snapshot" "$(Get-ShortSha $vmrCommit) (from PR body)"
-        Write-Status "VMR HEAD" "$(Get-ShortSha $vmrHeadSha) ($vmrHeadDate)"
+# For backflow: compare against VMR (dotnet/dotnet) branch HEAD
+# For forward flow: compare against product repo branch HEAD
+$freshnessRepo = if ($isForwardFlow) { $sourceRepo } else { "dotnet/dotnet" }
+$freshnessRepoLabel = if ($isForwardFlow) { $sourceRepo } else { "VMR" }
 
-        if ($vmrCommit -eq $vmrHeadSha) {
-            Write-Host "  ✅ PR is up to date with VMR branch" -ForegroundColor Green
+if ($vmrCommit -and $vmrBranch) {
+    # Get current branch HEAD (URL-encode branch name for path segments with /)
+    $encodedBranch = [uri]::EscapeDataString($vmrBranch)
+    $branchHead = Invoke-GitHubApi "/repos/$freshnessRepo/commits/$encodedBranch"
+    if ($branchHead) {
+        $sourceHeadSha = $branchHead.sha
+        $sourceHeadDate = $branchHead.commit.committer.date
+        Write-Status "PR snapshot" "$(Get-ShortSha $vmrCommit) (from PR body)"
+        Write-Status "$freshnessRepoLabel HEAD" "$(Get-ShortSha $sourceHeadSha) ($sourceHeadDate)"
+
+        if ($vmrCommit -eq $sourceHeadSha) {
+            Write-Host "  ✅ PR is up to date with $freshnessRepoLabel branch" -ForegroundColor Green
         }
         else {
-            # Compare to find how many commits differ between the PR snapshot and the VMR
-            $compare = Invoke-GitHubApi "/repos/dotnet/dotnet/compare/$vmrCommit...$vmrHeadSha"
+            # Compare to find how many commits differ
+            $compare = Invoke-GitHubApi "/repos/$freshnessRepo/compare/$vmrCommit...$sourceHeadSha"
             if ($compare) {
                 $aheadBy = $compare.ahead_by
                 $behindBy = $compare.behind_by
@@ -214,16 +235,16 @@ if ($vmrCommit -and $vmrBranch) {
 
                 switch ($compareStatus) {
                     'ahead' {
-                        Write-Host "  ⚠️  VMR is $aheadBy commit(s) ahead of the PR snapshot" -ForegroundColor Yellow
+                        Write-Host "  ⚠️  $freshnessRepoLabel is $aheadBy commit(s) ahead of the PR snapshot" -ForegroundColor Yellow
                     }
                     'behind' {
-                        Write-Host "  ⚠️  VMR is $behindBy commit(s) behind the PR snapshot" -ForegroundColor Yellow
+                        Write-Host "  ⚠️  $freshnessRepoLabel is $behindBy commit(s) behind the PR snapshot" -ForegroundColor Yellow
                     }
                     'diverged' {
-                        Write-Host "  ⚠️  VMR and PR snapshot have diverged: VMR is $aheadBy commit(s) ahead and $behindBy commit(s) behind" -ForegroundColor Yellow
+                        Write-Host "  ⚠️  $freshnessRepoLabel and PR snapshot have diverged: $aheadBy commit(s) ahead and $behindBy commit(s) behind" -ForegroundColor Yellow
                     }
                     default {
-                        Write-Host "  ⚠️  VMR and PR snapshot differ (status: $compareStatus)" -ForegroundColor Yellow
+                        Write-Host "  ⚠️  $freshnessRepoLabel and PR snapshot differ (status: $compareStatus)" -ForegroundColor Yellow
                     }
                 }
 
@@ -231,8 +252,8 @@ if ($vmrCommit -and $vmrBranch) {
                     Write-Host ""
                     $commitLabel = switch ($compareStatus) {
                         'ahead'  { "Commits since PR snapshot:" }
-                        'behind' { "Commits in PR snapshot but not in VMR:" }
-                        default  { "Commits differing between VMR and PR snapshot:" }
+                        'behind' { "Commits in PR snapshot but not in $freshnessRepoLabel`:" }
+                        default  { "Commits differing:" }
                     }
                     Write-Host "  $commitLabel" -ForegroundColor Yellow
                     foreach ($c in $compare.commits) {
@@ -263,7 +284,7 @@ if ($vmrCommit -and $vmrBranch) {
     }
 }
 else {
-    Write-Warning "Cannot check VMR freshness without VMR commit and branch info"
+    Write-Warning "Cannot check freshness without source commit and branch info"
 }
 
 # --- Step 4: Check staleness warnings (using comments from gh pr view) ---
@@ -287,7 +308,8 @@ if ($pr.comments) {
 if ($stalenessWarnings.Count -gt 0) {
     Write-Host "  ⚠️  Staleness warning detected ($($stalenessWarnings.Count) warning(s))" -ForegroundColor Yellow
     Write-Status "Latest warning" $lastStalenessComment.createdAt
-    Write-Host "  The VMR received opposite codeflow (forward flow merged) while this PR was open." -ForegroundColor Yellow
+    $oppositeFlow = if ($isForwardFlow) { "backflow from VMR merged into $sourceRepo" } else { "forward flow merged into VMR" }
+    Write-Host "  Opposite codeflow ($oppositeFlow) while this PR was open." -ForegroundColor Yellow
     Write-Host "  Maestro has blocked further codeflow updates to this PR." -ForegroundColor Yellow
 
     # Extract darc commands from the warning
@@ -473,12 +495,12 @@ if ($stalenessWarnings.Count -gt 0) {
     $issues += "Staleness warning active — codeflow is blocked"
 }
 
-if ($vmrCommit -and $vmrHeadSha -and $vmrCommit -ne $vmrHeadSha) {
+if ($vmrCommit -and $sourceHeadSha -and $vmrCommit -ne $sourceHeadSha) {
     switch ($compareStatus) {
-        'ahead'    { $issues += "VMR is $aheadBy commit(s) ahead of PR snapshot" }
-        'behind'   { $issues += "VMR is $behindBy commit(s) behind PR snapshot" }
-        'diverged' { $issues += "VMR and PR snapshot diverged ($aheadBy ahead, $behindBy behind)" }
-        default    { $issues += "VMR and PR snapshot differ" }
+        'ahead'    { $issues += "$freshnessRepoLabel is $aheadBy commit(s) ahead of PR snapshot" }
+        'behind'   { $issues += "$freshnessRepoLabel is $behindBy commit(s) behind PR snapshot" }
+        'diverged' { $issues += "$freshnessRepoLabel and PR snapshot diverged ($aheadBy ahead, $behindBy behind)" }
+        default    { $issues += "$freshnessRepoLabel and PR snapshot differ" }
     }
 }
 
