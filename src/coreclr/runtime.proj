@@ -4,8 +4,8 @@
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
     <HasCdacBuildTool Condition="'$(ClrFullNativeBuild)' == 'true' or '$(ClrRuntimeSubset)' == 'true' or '$(ClrDebugSubset)' == 'true' or '$(ClrCrossComponentsSubset)' == 'true'">true</HasCdacBuildTool>
-    <BuildRuntimeDependsOnTargets>GetPgoDataPackagePath;GenerateEmccExports</BuildRuntimeDependsOnTargets>
-    <BuildRuntimeDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildRuntimeDependsOnTargets)</BuildRuntimeDependsOnTargets>
+    <BuildRuntimeDependsOnTargets>GetPgoDataPackagePath</BuildRuntimeDependsOnTargets>
+    <BuildRuntimeDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildRuntimeDependsOnTargets);GenerateEmccExports</BuildRuntimeDependsOnTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,7 +13,7 @@
     <ProjectReference Condition="'$(HasCdacBuildTool)' == 'true'" Include="tools\cdac-build-tool\cdac-build-tool.csproj" ReferenceOutputAssembly="false" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" />
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm'" />
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
   
   <Target Name="BuildRuntime"
