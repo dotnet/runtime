@@ -6,11 +6,13 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics.Hashing;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Logging.Generators
 {
@@ -856,6 +858,48 @@ namespace Microsoft.Extensions.Logging.Generators
             public string Namespace = string.Empty;
             public string Name = string.Empty;
             public LoggerClass? ParentClass;
+
+            public LoggerClassSpec ToSpec() => new LoggerClassSpec
+            {
+                Methods = Methods.Select(m => m.ToSpec()).ToImmutableEquatableArray(),
+                Keyword = Keyword,
+                Namespace = Namespace,
+                Name = Name,
+                ParentClass = ParentClass?.ToSpec()
+            };
+        }
+
+        /// <summary>
+        /// Immutable specification of a logger class for incremental caching.
+        /// </summary>
+        internal sealed record LoggerClassSpec : IEquatable<LoggerClassSpec>
+        {
+            public required ImmutableEquatableArray<LoggerMethodSpec> Methods { get; init; }
+            public required string Keyword { get; init; }
+            public required string Namespace { get; init; }
+            public required string Name { get; init; }
+            public required LoggerClassSpec? ParentClass { get; init; }
+
+            public bool Equals(LoggerClassSpec? other)
+            {
+                if (other is null) return false;
+                if (ReferenceEquals(this, other)) return true;
+                return Methods.Equals(other.Methods) &&
+                       Keyword == other.Keyword &&
+                       Namespace == other.Namespace &&
+                       Name == other.Name &&
+                       Equals(ParentClass, other.ParentClass);
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = Methods.GetHashCode();
+                hash = HashHelpers.Combine(hash, Keyword.GetHashCode());
+                hash = HashHelpers.Combine(hash, Namespace.GetHashCode());
+                hash = HashHelpers.Combine(hash, Name.GetHashCode());
+                hash = HashHelpers.Combine(hash, ParentClass?.GetHashCode() ?? 0);
+                return hash;
+            }
         }
 
         /// <summary>
@@ -877,6 +921,84 @@ namespace Microsoft.Extensions.Logging.Generators
             public string Modifiers = string.Empty;
             public string LoggerField = string.Empty;
             public bool SkipEnabledCheck;
+
+            public LoggerMethodSpec ToSpec() => new LoggerMethodSpec
+            {
+                AllParameters = AllParameters.Select(p => p.ToSpec()).ToImmutableEquatableArray(),
+                TemplateParameters = TemplateParameters.Select(p => p.ToSpec()).ToImmutableEquatableArray(),
+                TemplateMap = TemplateMap.Select(kvp => new KeyValuePairEquatable<string, string>(kvp.Key, kvp.Value)).ToImmutableEquatableArray(),
+                TemplateList = TemplateList.ToImmutableEquatableArray(),
+                Name = Name,
+                UniqueName = UniqueName,
+                Message = Message,
+                Level = Level,
+                EventId = EventId,
+                EventName = EventName,
+                IsExtensionMethod = IsExtensionMethod,
+                Modifiers = Modifiers,
+                LoggerField = LoggerField,
+                SkipEnabledCheck = SkipEnabledCheck
+            };
+        }
+
+        /// <summary>
+        /// Immutable specification of a logger method for incremental caching.
+        /// </summary>
+        internal sealed record LoggerMethodSpec : IEquatable<LoggerMethodSpec>
+        {
+            public required ImmutableEquatableArray<LoggerParameterSpec> AllParameters { get; init; }
+            public required ImmutableEquatableArray<LoggerParameterSpec> TemplateParameters { get; init; }
+            public required ImmutableEquatableArray<KeyValuePairEquatable<string, string>> TemplateMap { get; init; }
+            public required ImmutableEquatableArray<string> TemplateList { get; init; }
+            public required string Name { get; init; }
+            public required string UniqueName { get; init; }
+            public required string Message { get; init; }
+            public required int? Level { get; init; }
+            public required int EventId { get; init; }
+            public required string? EventName { get; init; }
+            public required bool IsExtensionMethod { get; init; }
+            public required string Modifiers { get; init; }
+            public required string LoggerField { get; init; }
+            public required bool SkipEnabledCheck { get; init; }
+
+            public bool Equals(LoggerMethodSpec? other)
+            {
+                if (other is null) return false;
+                if (ReferenceEquals(this, other)) return true;
+                return AllParameters.Equals(other.AllParameters) &&
+                       TemplateParameters.Equals(other.TemplateParameters) &&
+                       TemplateMap.Equals(other.TemplateMap) &&
+                       TemplateList.Equals(other.TemplateList) &&
+                       Name == other.Name &&
+                       UniqueName == other.UniqueName &&
+                       Message == other.Message &&
+                       Level == other.Level &&
+                       EventId == other.EventId &&
+                       EventName == other.EventName &&
+                       IsExtensionMethod == other.IsExtensionMethod &&
+                       Modifiers == other.Modifiers &&
+                       LoggerField == other.LoggerField &&
+                       SkipEnabledCheck == other.SkipEnabledCheck;
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = AllParameters.GetHashCode();
+                hash = HashHelpers.Combine(hash, TemplateParameters.GetHashCode());
+                hash = HashHelpers.Combine(hash, TemplateMap.GetHashCode());
+                hash = HashHelpers.Combine(hash, TemplateList.GetHashCode());
+                hash = HashHelpers.Combine(hash, Name.GetHashCode());
+                hash = HashHelpers.Combine(hash, UniqueName.GetHashCode());
+                hash = HashHelpers.Combine(hash, Message.GetHashCode());
+                hash = HashHelpers.Combine(hash, Level?.GetHashCode() ?? 0);
+                hash = HashHelpers.Combine(hash, EventId.GetHashCode());
+                hash = HashHelpers.Combine(hash, EventName?.GetHashCode() ?? 0);
+                hash = HashHelpers.Combine(hash, IsExtensionMethod.GetHashCode());
+                hash = HashHelpers.Combine(hash, Modifiers.GetHashCode());
+                hash = HashHelpers.Combine(hash, LoggerField.GetHashCode());
+                hash = HashHelpers.Combine(hash, SkipEnabledCheck.GetHashCode());
+                return hash;
+            }
         }
 
         /// <summary>
@@ -895,6 +1017,83 @@ namespace Microsoft.Extensions.Logging.Generators
             // A parameter flagged as IsTemplateParameter is not going to be taken care of specially as an argument to ILogger.Log
             // but instead is supposed to be taken as a parameter for the template.
             public bool IsTemplateParameter => !IsLogger && !IsException && !IsLogLevel;
+
+            public LoggerParameterSpec ToSpec() => new LoggerParameterSpec
+            {
+                Name = Name,
+                Type = Type,
+                CodeName = CodeName,
+                Qualifier = Qualifier,
+                IsLogger = IsLogger,
+                IsException = IsException,
+                IsLogLevel = IsLogLevel,
+                IsEnumerable = IsEnumerable
+            };
+        }
+
+        /// <summary>
+        /// Immutable specification of a logger parameter for incremental caching.
+        /// </summary>
+        internal sealed record LoggerParameterSpec : IEquatable<LoggerParameterSpec>
+        {
+            public required string Name { get; init; }
+            public required string Type { get; init; }
+            public required string CodeName { get; init; }
+            public required string? Qualifier { get; init; }
+            public required bool IsLogger { get; init; }
+            public required bool IsException { get; init; }
+            public required bool IsLogLevel { get; init; }
+            public required bool IsEnumerable { get; init; }
+
+            // A parameter flagged as IsTemplateParameter is not going to be taken care of specially as an argument to ILogger.Log
+            // but instead is supposed to be taken as a parameter for the template.
+            public bool IsTemplateParameter => !IsLogger && !IsException && !IsLogLevel;
+
+            public bool Equals(LoggerParameterSpec? other)
+            {
+                if (other is null) return false;
+                if (ReferenceEquals(this, other)) return true;
+                return Name == other.Name &&
+                       Type == other.Type &&
+                       CodeName == other.CodeName &&
+                       Qualifier == other.Qualifier &&
+                       IsLogger == other.IsLogger &&
+                       IsException == other.IsException &&
+                       IsLogLevel == other.IsLogLevel &&
+                       IsEnumerable == other.IsEnumerable;
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = Name.GetHashCode();
+                hash = HashHelpers.Combine(hash, Type.GetHashCode());
+                hash = HashHelpers.Combine(hash, CodeName.GetHashCode());
+                hash = HashHelpers.Combine(hash, Qualifier?.GetHashCode() ?? 0);
+                hash = HashHelpers.Combine(hash, IsLogger.GetHashCode());
+                hash = HashHelpers.Combine(hash, IsException.GetHashCode());
+                hash = HashHelpers.Combine(hash, IsLogLevel.GetHashCode());
+                hash = HashHelpers.Combine(hash, IsEnumerable.GetHashCode());
+                return hash;
+            }
+        }
+
+        /// <summary>
+        /// Equatable KeyValuePair wrapper for use in ImmutableEquatableArray.
+        /// </summary>
+        internal readonly record struct KeyValuePairEquatable<TKey, TValue>(TKey Key, TValue Value) : IEquatable<KeyValuePairEquatable<TKey, TValue>>
+            where TKey : IEquatable<TKey>
+            where TValue : IEquatable<TValue>
+        {
+            public bool Equals(KeyValuePairEquatable<TKey, TValue> other)
+            {
+                return EqualityComparer<TKey>.Default.Equals(Key, other.Key) &&
+                       EqualityComparer<TValue>.Default.Equals(Value, other.Value);
+            }
+
+            public override int GetHashCode()
+            {
+                return HashHelpers.Combine(Key?.GetHashCode() ?? 0, Value?.GetHashCode() ?? 0);
+            }
         }
 
         /// <summary>

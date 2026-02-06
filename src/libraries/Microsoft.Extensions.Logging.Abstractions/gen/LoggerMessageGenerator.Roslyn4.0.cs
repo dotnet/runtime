@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Logging.Generators
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            IncrementalValuesProvider<(LoggerClass? LoggerClass, bool HasStringCreate)> loggerClasses = context.SyntaxProvider
+            IncrementalValuesProvider<(LoggerClassSpec? LoggerClassSpec, bool HasStringCreate)> loggerClasses = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
 #if !ROSLYN4_4_OR_GREATER
                     context,
@@ -60,8 +60,6 @@ namespace Microsoft.Extensions.Logging.Generators
                         }
 
                         // Parse the logger class immediately to extract value-based data
-                        // Note: We can't report diagnostics here, so we'll need to store them somehow
-                        // For now, we'll use a no-op diagnostic reporter
                         var parser = new Parser(
                             loggerMessageAttribute,
                             loggerSymbol,
@@ -69,21 +67,21 @@ namespace Microsoft.Extensions.Logging.Generators
                             exceptionSymbol,
                             enumerableSymbol,
                             stringSymbol,
-                            _ => { }, // Diagnostics will be reported during the second parse in Execute
+                            _ => { }, // Diagnostics are reported during parsing but not here
                             cancellationToken);
 
                         IReadOnlyList<LoggerClass> logClasses = parser.GetLogClasses(new[] { classDeclaration }, semanticModel);
 
-                        // Return the first (and should be only) logger class for this attributed method's containing class
-                        LoggerClass? loggerClass = logClasses.Count > 0 ? logClasses[0] : null;
+                        // Convert to immutable spec for incremental caching
+                        LoggerClassSpec? loggerClassSpec = logClasses.Count > 0 ? logClasses[0].ToSpec() : null;
 
-                        return (loggerClass, hasStringCreate);
+                        return (loggerClassSpec, hasStringCreate);
                     });
 
             context.RegisterSourceOutput(loggerClasses.Collect(), static (spc, items) => Execute(items, spc));
         }
 
-        private static void Execute(ImmutableArray<(LoggerClass? LoggerClass, bool HasStringCreate)> items, SourceProductionContext context)
+        private static void Execute(ImmutableArray<(LoggerClassSpec? LoggerClassSpec, bool HasStringCreate)> items, SourceProductionContext context)
         {
             if (items.IsDefaultOrEmpty)
             {
@@ -95,20 +93,23 @@ namespace Microsoft.Extensions.Logging.Generators
 
             foreach (var item in items)
             {
-                if (item.LoggerClass != null)
+                if (item.LoggerClassSpec != null)
                 {
                     hasStringCreate = item.HasStringCreate;
 
+                    // Convert spec back to mutable class for emission
+                    var loggerClass = FromSpec(item.LoggerClassSpec);
+
                     // Merge classes with the same full name (namespace + name)
-                    string classKey = item.LoggerClass.Namespace + "." + item.LoggerClass.Name;
+                    string classKey = loggerClass.Namespace + "." + loggerClass.Name;
                     if (allLogClasses.TryGetValue(classKey, out var existingClass))
                     {
                         // Merge methods from multiple attributed methods in the same class
-                        existingClass.Methods.AddRange(item.LoggerClass.Methods);
+                        existingClass.Methods.AddRange(loggerClass.Methods);
                     }
                     else
                     {
-                        allLogClasses[classKey] = item.LoggerClass;
+                        allLogClasses[classKey] = loggerClass;
                     }
                 }
             }
@@ -120,6 +121,78 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 context.AddSource("LoggerMessage.g.cs", SourceText.From(result, Encoding.UTF8));
             }
+        }
+
+        private static LoggerClass FromSpec(LoggerClassSpec spec)
+        {
+            var lc = new LoggerClass
+            {
+                Keyword = spec.Keyword,
+                Namespace = spec.Namespace,
+                Name = spec.Name,
+                ParentClass = spec.ParentClass != null ? FromSpec(spec.ParentClass) : null
+            };
+
+            foreach (var methodSpec in spec.Methods)
+            {
+                var lm = new LoggerMethod
+                {
+                    Name = methodSpec.Name,
+                    UniqueName = methodSpec.UniqueName,
+                    Message = methodSpec.Message,
+                    Level = methodSpec.Level,
+                    EventId = methodSpec.EventId,
+                    EventName = methodSpec.EventName,
+                    IsExtensionMethod = methodSpec.IsExtensionMethod,
+                    Modifiers = methodSpec.Modifiers,
+                    LoggerField = methodSpec.LoggerField,
+                    SkipEnabledCheck = methodSpec.SkipEnabledCheck
+                };
+
+                foreach (var paramSpec in methodSpec.AllParameters)
+                {
+                    lm.AllParameters.Add(new LoggerParameter
+                    {
+                        Name = paramSpec.Name,
+                        Type = paramSpec.Type,
+                        CodeName = paramSpec.CodeName,
+                        Qualifier = paramSpec.Qualifier,
+                        IsLogger = paramSpec.IsLogger,
+                        IsException = paramSpec.IsException,
+                        IsLogLevel = paramSpec.IsLogLevel,
+                        IsEnumerable = paramSpec.IsEnumerable
+                    });
+                }
+
+                foreach (var paramSpec in methodSpec.TemplateParameters)
+                {
+                    lm.TemplateParameters.Add(new LoggerParameter
+                    {
+                        Name = paramSpec.Name,
+                        Type = paramSpec.Type,
+                        CodeName = paramSpec.CodeName,
+                        Qualifier = paramSpec.Qualifier,
+                        IsLogger = paramSpec.IsLogger,
+                        IsException = paramSpec.IsException,
+                        IsLogLevel = paramSpec.IsLogLevel,
+                        IsEnumerable = paramSpec.IsEnumerable
+                    });
+                }
+
+                foreach (var kvp in methodSpec.TemplateMap)
+                {
+                    lm.TemplateMap[kvp.Key] = kvp.Value;
+                }
+
+                foreach (var template in methodSpec.TemplateList)
+                {
+                    lm.TemplateList.Add(template);
+                }
+
+                lc.Methods.Add(lm);
+            }
+
+            return lc;
         }
     }
 }
