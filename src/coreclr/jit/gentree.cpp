@@ -32732,7 +32732,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             assert(tree->TypeIs(TYP_SIMD16));
 
                             simd16_t result = {};
-                            NarrowSimdLong<simd16_t>(simdBaseType, &result, otherNode->AsVecCon()->gtSimd16Val);
+                            NarrowAndDuplicateSimdLong<simd16_t>(simdBaseType, &result,
+                                                                 otherNode->AsVecCon()->gtSimd16Val);
                             otherNode->AsVecCon()->gtSimd16Val = result;
                         }
 #endif // TARGET_XARCH
