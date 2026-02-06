@@ -337,10 +337,12 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
     private async Task ClickAndCollect(IPage page)
     {
-        await page.EvaluateAsync(@"globalThis.donePromise = globalThis.collectAndUpload();");
+        // Use void to prevent Playwright from awaiting the returned Promise,
+        // so tracing runs in parallel with button clicks below.
+        await page.EvaluateAsync(@"void (globalThis.donePromise = globalThis.collectAndUpload())");
         _testOutput.WriteLine($"Installed script: {DateTime.Now.ToString("O")}");
 
-        // Click the button a few times
+        // Click the button a few times while tracing is running
         for (int i = 0; i < 5; i++)
         {
             await page.Locator("text=\"Click me\"").ClickAsync();
@@ -350,5 +352,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         var txt2 = await page.Locator("p[role='status']").InnerHTMLAsync();
         Assert.NotEqual("Current count: 0", txt2);
+
+        // Wait for trace collection and upload to complete
+        await page.EvaluateAsync(@"globalThis.donePromise");
     }
 }
