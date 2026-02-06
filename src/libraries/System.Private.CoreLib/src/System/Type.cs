@@ -655,6 +655,7 @@ namespace System
         /// <returns>A <see cref="Type"/> object representing the constructed function pointer signature.</returns>
         public static Type MakeFunctionPointerSignatureType(Type returnType, Type[]? parameterTypes, bool isUnmanaged = false, Type[]? callingConventions = null)
         {
+            ArgumentNullException.ThrowIfNull(returnType);
             parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
             callingConventions = (callingConventions != null) ? (Type[])callingConventions.Clone() : [];
 

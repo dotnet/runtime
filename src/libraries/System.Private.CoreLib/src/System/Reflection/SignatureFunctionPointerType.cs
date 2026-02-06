@@ -66,8 +66,8 @@ namespace System.Reflection
         protected override bool IsArrayImpl() => false;
         protected override bool IsByRefImpl() => false;
         protected override bool IsPointerImpl() => false;
-        public override int GetArrayRank() => 0;
-        public override Type GetGenericTypeDefinition() => this;
+        public sealed override int GetArrayRank() => throw new ArgumentException(SR.Argument_HasToBeArrayClass);
+        public sealed override Type GetGenericTypeDefinition() => throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
         public override Type[] GetGenericArguments() => [];
         protected override bool IsValueTypeImpl() => false;
 
