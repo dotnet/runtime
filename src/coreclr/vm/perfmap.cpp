@@ -121,6 +121,9 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
     if (sendExisting)
     {
+        // When Enable is called very early in startup (e.g., via DiagnosticServer IPC before
+        // SystemDomain::Attach), the AppDomain may not exist yet. In this case, skip assembly
+        // iteration since no assemblies are loaded anyway. Future JIT'd methods will still be logged.
         AppDomain *pAppDomain = GetAppDomain();
         if (pAppDomain != nullptr)
         {
@@ -151,11 +154,15 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
             }
         }
 
+        // Similarly, the EEJitManager may not exist yet if called before ExecutionManager::Init().
+        // In this case, there's no JIT'd code to log anyway.
+        EEJitManager *pJitManager = ExecutionManager::GetEEJitManager();
+        if (pJitManager != nullptr)
         {
 #ifdef FEATURE_CODE_VERSIONING
             CodeVersionManager::LockHolder codeVersioningLockHolder;
 #endif // FEATURE_CODE_VERSIONING
-            CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator();
+            CodeHeapIterator heapIterator = pJitManager->GetCodeHeapIterator();
             while (heapIterator.Next())
             {
                 MethodDesc * pMethod = heapIterator.GetMethod();
