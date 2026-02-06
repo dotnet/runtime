@@ -504,15 +504,16 @@ while [[ $# -gt 0 ]]; do
         shift 1
       else
         ninja="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+        shift 2
         if [ "$ninja" = true ]; then
+          arguments+=("/p:Ninja=true")
           useNinja=true
-          shift 2
         elif [ "$ninja" = false ]; then
+          arguments+=("/p:Ninja=false")
           useNinja=false
-          shift 2
         else
+          arguments+=("/p:Ninja=true")
           useNinja=true
-          shift 1
         fi
       fi
       ;;
