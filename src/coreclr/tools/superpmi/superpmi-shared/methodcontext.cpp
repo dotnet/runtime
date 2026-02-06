@@ -7365,7 +7365,7 @@ CORINFO_WASM_TYPE_SYMBOL_HANDLE MethodContext::repGetWasmTypeSymbol(CorInfoWasmT
     key.types = (DWORD)GetWasmTypeSymbol->Contains((unsigned char*)types, (unsigned)(sizeof(CorInfoWasmType) * typesSize));
     key.typesSize = (DWORD)typesSize;
 
-    DWORDLONG value = LookupByKeyOrMiss(GetWasmTypeSymbol, key, "WASM-FIXME: Key message");
+    DWORDLONG value = LookupByKeyOrMiss(GetWasmTypeSymbol, key, ": types %u, typesSize %u", key.types, key.typesSize);
     DEBUG_REP(dmpGetWasmTypeSymbol(key, value));
     return (CORINFO_WASM_TYPE_SYMBOL_HANDLE)value;
 }
