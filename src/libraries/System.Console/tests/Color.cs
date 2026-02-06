@@ -78,16 +78,25 @@ public class Color
     [ConditionalTheory(nameof(TermIsSetAndRemoteExecutorIsSupported))]
     [PlatformSpecific(TestPlatforms.AnyUnix)]
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
-    [InlineData(null)]
-    [InlineData("1")]
-    [InlineData("true")]
-    [InlineData("tRuE")]
-    [InlineData("0")]
-    [InlineData("false")]
-    public static void RedirectedOutput_EnvVarSet_EmitsAnsiCodes(string? envVar)
+    [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", null, false)]
+    [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "1", true)]
+    [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "true", true)]
+    [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "tRuE", true)]
+    [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "0", false)]
+    [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "false", false)]
+    [InlineData("FORCE_COLOR", "1", true)]
+    [InlineData("FORCE_COLOR", "true", true)]
+    [InlineData("FORCE_COLOR", "any-value", true)]
+    [InlineData("NO_COLOR", "1", false)]
+    [InlineData("NO_COLOR", "true", false)]
+    [InlineData("NO_COLOR", "any-value", false)]
+    public static void RedirectedOutput_EnvironmentVariableSet_RespectColorPreference(string envVarName, string? envVarValue, bool shouldEmitEscapes)
     {
         var psi = new ProcessStartInfo { RedirectStandardOutput = true };
-        psi.Environment["DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION"] = envVar;
+        if (envVarValue is not null)
+        {
+            psi.Environment[envVarName] = envVarValue;
+        }
 
         for (int i = 0; i < 3; i++)
         {
@@ -113,13 +122,11 @@ public class Color
 
             using RemoteInvokeHandle remote = RemoteExecutor.Invoke(main, i.ToString(CultureInfo.InvariantCulture), new RemoteInvokeOptions() { StartInfo = psi });
 
-            bool expectedEscapes = envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
-
             string stdout = remote.Process.StandardOutput.ReadToEnd();
             string[] parts = stdout.Split("SEPARATOR");
             Assert.Equal(3, parts.Length);
 
-            Assert.Equal(expectedEscapes, parts[1].Contains(Esc));
+            Assert.Equal(shouldEmitEscapes, parts[1].Contains(Esc));
         }
     }
 }
