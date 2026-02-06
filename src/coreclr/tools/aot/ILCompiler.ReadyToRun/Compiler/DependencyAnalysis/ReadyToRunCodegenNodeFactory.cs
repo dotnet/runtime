@@ -359,6 +359,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new CopiedManagedResourcesNode(module);
             });
+
+            _wasmTypeNodes = new(key =>
+            {
+                return new WasmTypeNode(key.Types);
+            });
         }
 
         public int CompilationCurrentPhase { get; private set; }
@@ -1089,7 +1094,7 @@ namespace ILCompiler.DependencyAnalysis
                 => Types.Length; // TODO-WASM: Hash all the types
         }
 
-        private NodeCache<WasmTypeNodeKey, WasmTypeNode> _wasmTypeNodes = new((key) => new WasmTypeNode(key.Types));
+        private NodeCache<WasmTypeNodeKey, WasmTypeNode> _wasmTypeNodes;
 
         public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
         {
