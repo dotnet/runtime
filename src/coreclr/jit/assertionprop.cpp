@@ -1543,7 +1543,7 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex)
         AssertionDsc reversed = candidateAssertion.Reverse();
         optMapComplementary(optAddAssertion(reversed), assertionIndex);
     }
-    else if (candidateAssertion.KindIs(OAK_LT, OAK_LT_UN, OAK_LE, OAK_LE_UN) &&
+    else if (candidateAssertion.KindIs(OAK_LT_UN, OAK_LE_UN) &&
              candidateAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
     {
         // Assertions such as "X > checkedBndVN" aren't very useful.
