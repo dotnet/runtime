@@ -46,7 +46,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
 
-        async Task CpuProfileTest(IPage page)
+        async Task CollectCpuSamplesTest(IPage page)
         {
             await SetupCounterPage(page, "cpuprofile.nettrace", "globalThis.getDotnetRuntime(0).collectCpuSamples({ durationSeconds: 5.0, skipDownload: true })");
             await ClickAndCollect(page);
@@ -55,7 +55,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         // Run the test using the custom handler
         await RunForBuildWithDotnetRun(new BlazorRunOptions(
             Configuration: config,
-            Test: CpuProfileTest,
+            Test: CollectCpuSamplesTest,
             TimeoutSeconds: 60,
             CheckCounter: false,
             ServerEnvironment: new Dictionary<string, string>
@@ -96,7 +96,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         UpdateCounterPage();
         BuildProject(info, Configuration.Release, new BuildOptions(AssertAppBundle: false));
 
-        async Task CpuProfileTest(IPage page)
+        async Task CollectMetricsTest(IPage page)
         {
             await SetupCounterPage(page, "metrics.nettrace", "globalThis.getDotnetRuntime(0).collectMetrics({ durationSeconds: 5.0, skipDownload: true })");
             await ClickAndCollect(page);
@@ -105,7 +105,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         // Run the test using the custom handler
         await RunForBuildWithDotnetRun(new BlazorRunOptions(
             Configuration: Configuration.Release,
-            Test: CpuProfileTest,
+            Test: CollectMetricsTest,
             TimeoutSeconds: 60,
             CheckCounter: false,
             ServerEnvironment: new Dictionary<string, string>
@@ -161,7 +161,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         // Create a custom test handler that will navigate to Counter page, collect CPU samples,
         // click the button, and upload the trace
-        async Task CpuProfileTest(IPage page)
+        async Task CollectGcDumpTest(IPage page)
         {
             await SetupCounterPage(page, "gcdump.nettrace", "globalThis.getDotnetRuntime(0).collectGcDump({ durationSeconds: 5.0, skipDownload: true })");
             await ClickAndCollect(page);
@@ -170,7 +170,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         // Run the test using the custom handler
         await RunForBuildWithDotnetRun(new BlazorRunOptions(
             Configuration: Configuration.Release,
-            Test: CpuProfileTest,
+            Test: CollectGcDumpTest,
             TimeoutSeconds: 60,
             CheckCounter: false,
             ServerEnvironment: new Dictionary<string, string>
