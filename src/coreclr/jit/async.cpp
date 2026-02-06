@@ -397,14 +397,12 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
 class AsyncLiveness
 {
     Compiler*              m_compiler;
-    bool                   m_hasLiveness;
     TreeLifeUpdater<false> m_updater;
     unsigned               m_numVars;
 
 public:
-    AsyncLiveness(Compiler* comp, bool hasLiveness)
+    AsyncLiveness(Compiler* comp)
         : m_compiler(comp)
-        , m_hasLiveness(hasLiveness)
         , m_updater(comp)
         , m_numVars(comp->lvaCount)
     {
@@ -430,9 +428,6 @@ private:
 //
 void AsyncLiveness::StartBlock(BasicBlock* block)
 {
-    if (!m_hasLiveness)
-        return;
-
     VarSetOps::Assign(m_compiler, m_compiler->compCurLife, block->bbLiveIn);
 }
 
@@ -446,9 +441,6 @@ void AsyncLiveness::StartBlock(BasicBlock* block)
 //
 void AsyncLiveness::Update(GenTree* node)
 {
-    if (!m_hasLiveness)
-        return;
-
     m_updater.UpdateLife(node);
 }
 
@@ -539,8 +531,9 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
         return false;
     }
 
-    if (!m_hasLiveness)
+    if (m_compiler->opts.compDbgCode && (lclNum < m_compiler->info.compLocalsCount))
     {
+        // Keep all IL locals in debug codegen
         return true;
     }
 
@@ -701,21 +694,18 @@ PhaseStatus AsyncTransformation::Run()
 #endif
 
     // Compute liveness to be used for determining what must be captured on
-    // suspension. In unoptimized codegen we capture everything.
-    if (m_compiler->opts.OptimizationEnabled())
+    // suspension.
+    if (m_compiler->m_dfsTree == nullptr)
     {
-        if (m_compiler->m_dfsTree == nullptr)
-        {
-            m_compiler->m_dfsTree = m_compiler->fgComputeDfs<false>();
-        }
-
-        m_compiler->lvaComputeRefCounts(true, false);
-        m_compiler->fgAsyncLiveness();
-        INDEBUG(m_compiler->mostRecentlyActivePhase = PHASE_ASYNC);
-        VarSetOps::AssignNoCopy(m_compiler, m_compiler->compCurLife, VarSetOps::MakeEmpty(m_compiler));
+        m_compiler->m_dfsTree = m_compiler->fgComputeDfs<false>();
     }
 
-    AsyncLiveness liveness(m_compiler, m_compiler->opts.OptimizationEnabled());
+    m_compiler->lvaComputePreciseRefCounts(/* isRecompute */ true, /* setSlotNumbers */ false);
+    m_compiler->fgAsyncLiveness();
+    INDEBUG(m_compiler->mostRecentlyActivePhase = PHASE_ASYNC);
+    VarSetOps::AssignNoCopy(m_compiler, m_compiler->compCurLife, VarSetOps::MakeEmpty(m_compiler));
+
+    AsyncLiveness liveness(m_compiler);
 
     // Now walk the IR for all the blocks that contain async calls. Keep track
     // of liveness and outstanding LIR edges as we go; the LIR edges that cross
@@ -782,6 +772,28 @@ PhaseStatus AsyncTransformation::Run()
     CreateResumptionSwitch();
 
     m_compiler->fgInvalidateDfsTree();
+
+    if (m_compiler->opts.OptimizationDisabled())
+    {
+        // Rest of the compiler does not expect that we started tracking locals, so reset that state.
+        for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
+        {
+            m_compiler->lvaGetDesc(m_compiler->lvaTrackedToVarNum[i])->lvTracked = false;
+        }
+
+        m_compiler->lvaCurEpoch++;
+        m_compiler->lvaTrackedCount             = 0;
+        m_compiler->lvaTrackedCountInSizeTUnits = 0;
+
+        for (BasicBlock* block : m_compiler->Blocks())
+        {
+            block->bbLiveIn  = VarSetOps::UninitVal();
+            block->bbLiveOut = VarSetOps::UninitVal();
+            block->bbVarUse  = VarSetOps::UninitVal();
+            block->bbVarDef  = VarSetOps::UninitVal();
+        }
+        m_compiler->fgBBVarSetsInited = false;
+    }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
