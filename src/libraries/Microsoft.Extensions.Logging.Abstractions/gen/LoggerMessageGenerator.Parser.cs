@@ -21,12 +21,30 @@ namespace Microsoft.Extensions.Logging.Generators
             internal const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
 
             private readonly CancellationToken _cancellationToken;
-            private readonly Compilation _compilation;
+            private readonly INamedTypeSymbol _loggerMessageAttribute;
+            private readonly INamedTypeSymbol _loggerSymbol;
+            private readonly INamedTypeSymbol _logLevelSymbol;
+            private readonly INamedTypeSymbol _exceptionSymbol;
+            private readonly INamedTypeSymbol _enumerableSymbol;
+            private readonly INamedTypeSymbol _stringSymbol;
             private readonly Action<Diagnostic> _reportDiagnostic;
 
-            public Parser(Compilation compilation, Action<Diagnostic> reportDiagnostic, CancellationToken cancellationToken)
+            public Parser(
+                INamedTypeSymbol loggerMessageAttribute,
+                INamedTypeSymbol loggerSymbol,
+                INamedTypeSymbol logLevelSymbol,
+                INamedTypeSymbol exceptionSymbol,
+                INamedTypeSymbol enumerableSymbol,
+                INamedTypeSymbol stringSymbol,
+                Action<Diagnostic> reportDiagnostic,
+                CancellationToken cancellationToken)
             {
-                _compilation = compilation;
+                _loggerMessageAttribute = loggerMessageAttribute;
+                _loggerSymbol = loggerSymbol;
+                _logLevelSymbol = logLevelSymbol;
+                _exceptionSymbol = exceptionSymbol;
+                _enumerableSymbol = enumerableSymbol;
+                _stringSymbol = stringSymbol;
                 _cancellationToken = cancellationToken;
                 _reportDiagnostic = reportDiagnostic;
             }
@@ -34,39 +52,8 @@ namespace Microsoft.Extensions.Logging.Generators
             /// <summary>
             /// Gets the set of logging classes containing methods to output.
             /// </summary>
-            public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
+            public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes, SemanticModel semanticModel)
             {
-                INamedTypeSymbol? loggerMessageAttribute = _compilation.GetBestTypeByMetadataName(LoggerMessageAttribute);
-                if (loggerMessageAttribute == null)
-                {
-                    // nothing to do if this type isn't available
-                    return Array.Empty<LoggerClass>();
-                }
-
-                INamedTypeSymbol? loggerSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
-                if (loggerSymbol == null)
-                {
-                    // nothing to do if this type isn't available
-                    return Array.Empty<LoggerClass>();
-                }
-
-                INamedTypeSymbol? logLevelSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.LogLevel");
-                if (logLevelSymbol == null)
-                {
-                    // nothing to do if this type isn't available
-                    return Array.Empty<LoggerClass>();
-                }
-
-                INamedTypeSymbol? exceptionSymbol = _compilation.GetBestTypeByMetadataName("System.Exception");
-                if (exceptionSymbol == null)
-                {
-                    Diag(DiagnosticDescriptors.MissingRequiredType, null, "System.Exception");
-                    return Array.Empty<LoggerClass>();
-                }
-
-                INamedTypeSymbol enumerableSymbol = _compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);
-                INamedTypeSymbol stringSymbol = _compilation.GetSpecialType(SpecialType.System_String);
-
                 var results = new List<LoggerClass>();
                 var eventIds = new HashSet<int>();
                 var eventNames = new HashSet<string>();
@@ -75,7 +62,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 foreach (IGrouping<SyntaxTree, ClassDeclarationSyntax> group in classes.GroupBy(x => x.SyntaxTree))
                 {
                     SyntaxTree syntaxTree = group.Key;
-                    SemanticModel sm = _compilation.GetSemanticModel(syntaxTree);
+                    SemanticModel sm = semanticModel.Compilation.GetSemanticModel(syntaxTree);
 
                     foreach (ClassDeclarationSyntax classDec in group)
                     {
@@ -110,7 +97,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                 foreach (AttributeSyntax ma in mal.Attributes)
                                 {
                                     IMethodSymbol attrCtorSymbol = sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol;
-                                    if (attrCtorSymbol == null || !loggerMessageAttribute.Equals(attrCtorSymbol.ContainingType, SymbolEqualityComparer.Default))
+                                    if (attrCtorSymbol == null || !_loggerMessageAttribute.Equals(attrCtorSymbol.ContainingType, SymbolEqualityComparer.Default))
                                     {
                                         // badly formed attribute definition, or not the right attribute
                                         continue;
@@ -126,7 +113,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                     foreach (AttributeData attributeData in boundAttributes)
                                     {
-                                        if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, loggerMessageAttribute))
+                                        if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _loggerMessageAttribute))
                                         {
                                             continue;
                                         }
@@ -386,10 +373,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                             Type = typeName,
                                             Qualifier = qualifier,
                                             CodeName = needsAtSign ? "@" + paramName : paramName,
-                                            IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol, loggerSymbol),
-                                            IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol, exceptionSymbol),
-                                            IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol, logLevelSymbol),
-                                            IsEnumerable = IsBaseOrIdentity(paramTypeSymbol, enumerableSymbol) && !IsBaseOrIdentity(paramTypeSymbol, stringSymbol),
+                                            IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol, _loggerSymbol, sm),
+                                            IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol, _exceptionSymbol, sm),
+                                            IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol, _logLevelSymbol, sm),
+                                            IsEnumerable = IsBaseOrIdentity(paramTypeSymbol, _enumerableSymbol, sm) && !IsBaseOrIdentity(paramTypeSymbol, _stringSymbol, sm),
                                         };
 
                                         foundLogger |= lp.IsLogger;
@@ -450,7 +437,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             if (loggerField == null)
                                             {
-                                                (loggerField, multipleLoggerFields) = FindLoggerField(sm, classDec, loggerSymbol);
+                                                (loggerField, multipleLoggerFields) = FindLoggerField(sm, classDec, _loggerSymbol);
                                             }
 
                                             if (multipleLoggerFields)
@@ -591,7 +578,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                 }
 
-                if (results.Count > 0 && _compilation is CSharpCompilation { LanguageVersion : LanguageVersion version and < LanguageVersion.CSharp8 })
+                if (results.Count > 0 && semanticModel.Compilation is CSharpCompilation { LanguageVersion : LanguageVersion version and < LanguageVersion.CSharp8 })
                 {
                     // we only support C# 8.0 and above
                     Diag(DiagnosticDescriptors.LoggingUnsupportedLanguageVersion, null, version.ToDisplayString(), LanguageVersion.CSharp8.ToDisplayString());
@@ -661,7 +648,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         {
                             continue;
                         }
-                        if (IsBaseOrIdentity(fs.Type, loggerSymbol))
+                        if (IsBaseOrIdentity(fs.Type, loggerSymbol, sm))
                         {
                             if (loggerField == null)
                             {
@@ -696,7 +683,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     foreach (IParameterSymbol parameter in primaryConstructor.Parameters)
                     {
-                        if (IsBaseOrIdentity(parameter.Type, loggerSymbol))
+                        if (IsBaseOrIdentity(parameter.Type, loggerSymbol, sm))
                         {
                             if (shadowedNames.Contains(parameter.Name))
                             {
@@ -728,9 +715,9 @@ namespace Microsoft.Extensions.Logging.Generators
                 _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
             }
 
-            private bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest)
+            private static bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest, SemanticModel semanticModel)
             {
-                Conversion conversion = _compilation.ClassifyConversion(source, dest);
+                Conversion conversion = semanticModel.Compilation.ClassifyConversion(source, dest);
                 return conversion.IsIdentity || (conversion.IsReference && conversion.IsImplicit);
             }
 
