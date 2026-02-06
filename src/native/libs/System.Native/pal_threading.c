@@ -85,7 +85,11 @@ LowLevelMonitor* SystemNative_LowLevelMonitor_Create(void)
     int condAttrDestroyError;
     condAttrDestroyError = pthread_condattr_destroy(&conditionAttributes);
     assert(condAttrDestroyError == 0);
+    (void)condAttrDestroyError; // unused in release build
 #else
+#ifdef __linux__
+    #error not expected to be here on Linux
+#endif
     error = pthread_cond_init(&monitor->Condition, NULL);
 #endif
     if (error != 0)
