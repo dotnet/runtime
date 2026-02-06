@@ -586,11 +586,15 @@ initDistroRid "$os" "$arch" "$crossBuild"
 
 # Enable sccache for linux-x64 builds if the binary is present in the repo root.
 if [[ "$os" == "linux" && "$arch" == "x64" && -f "$scriptroot/../sccache" ]]; then
-    export PATH="$scriptroot/..:$PATH"
-    export USE_SCCACHE=true
-    export SCCACHE_AZURE_BLOB_CONTAINER=runtime-cache
-    # SCCACHE_AZURE_CONNECTION_STRING must be set as a CI secret/environment variable.
-    echo "sccache enabled for linux-x64 build"
+    if [[ -z "${SCCACHE_AZURE_CONNECTION_STRING:-}" ]]; then
+        echo "Warning: SCCACHE_AZURE_CONNECTION_STRING not set; sccache will not be enabled for linux-x64 build"
+    else
+        export PATH="$scriptroot/..:$PATH"
+        export USE_SCCACHE=true
+        export SCCACHE_AZURE_BLOB_CONTAINER=runtime-cache
+        # SCCACHE_AZURE_CONNECTION_STRING must be set as a CI secret/environment variable.
+        echo "sccache enabled for linux-x64 build"
+    fi
     sccache -s
 fi
 
