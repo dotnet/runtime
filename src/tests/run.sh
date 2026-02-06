@@ -193,7 +193,7 @@ do
             export RunInterpreter=1
             ;;
         --node)
-            export RunWithNode=1
+            export RunWithNodeJS=1
             ;;
         *)
             echo "Unknown switch: $i"
@@ -205,7 +205,7 @@ done
 
 # Set default for RunWithNode when using wasm architecture
 if [ "$buildArch" = "wasm" ] && [ -z "$RunWithNode" ]; then
-    export RunWithNode=1
+    export RunWithNodeJS=1
 fi
 
 ################################################################################

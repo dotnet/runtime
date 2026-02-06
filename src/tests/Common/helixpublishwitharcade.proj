@@ -184,7 +184,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' Or '$(TargetsAndroid)' == 'true'">
-    <DotNetCliPackageType>sdk</DotNetCliPackageType>
+    <DotNetCliPackageType Condition="'$(TargetsMonoBrowser)' == 'true'">sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
     <!-- wasm and Android need to use the host OS DotnetCliRuntime -->
