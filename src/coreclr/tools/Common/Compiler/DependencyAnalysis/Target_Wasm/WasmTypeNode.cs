@@ -36,6 +36,10 @@ namespace ILCompiler.DependencyAnalysis.Wasm
                 Array.Empty<ISymbolDefinitionNode>());
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
-            => 0 /* FIXME-WASM */;
+        {
+            var wtm = (WasmTypeNode)other;
+            ReadOnlySpan<CorInfoWasmType> lhs = _types, rhs = wtm._types;
+            return MemoryExtensions.SequenceCompareTo(lhs, rhs);
+        }
     }
 }
