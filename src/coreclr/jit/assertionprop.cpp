@@ -902,10 +902,6 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
                    curAssertion.GetOp2().GetCheckedBoundConstant());
             break;
 
-        case O2K_NEVER_NEGATIVE:
-            printf("(Never_Negative " FMT_VN ")", curAssertion.GetOp2().GetVN());
-            break;
-
         default:
             unreached();
             break;
@@ -1548,7 +1544,7 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex)
         optMapComplementary(optAddAssertion(reversed), assertionIndex);
     }
     else if (candidateAssertion.KindIs(OAK_LT, OAK_LT_UN, OAK_LE, OAK_LE_UN) &&
-             candidateAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS, O2K_NEVER_NEGATIVE))
+             candidateAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
     {
         // Assertions such as "X > checkedBndVN" aren't very useful.
         return;
@@ -3593,7 +3589,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         //  array[idx] = 42;
         //  array.Length is known to be non-negative and non-zero here
         //
-        if (curAssertion.IsBoundsCheckNoThrow() && (curAssertion.GetOp2().GetVN() == treeVN))
+        if (curAssertion.IsBoundsCheckNoThrow() && (curAssertion.GetOp2().GetCheckedBound() == treeVN))
         {
             *isKnownNonNegative = true;
             *isKnownNonZero     = true;
@@ -4978,8 +4974,12 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             continue;
         }
 
+        assert(curAssertion.GetOp2().GetCheckedBoundConstant() == 0);
+        assert(curAssertion.GetOp2().IsCheckedBoundNeverNegative());
+
         // Do we have a previous range check involving the same 'vnLen' upper bound?
-        if (curAssertion.GetOp2().GetVN() == vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair))
+        if (curAssertion.GetOp2().GetCheckedBound() ==
+            vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair))
         {
             // Do we have the exact same lower bound 'vnIdx'?
             //       a[i] followed by a[i]

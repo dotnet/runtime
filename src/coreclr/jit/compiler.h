@@ -7710,7 +7710,6 @@ public:
         O2K_CONST_INT,
         O2K_CONST_DOUBLE,
 
-        O2K_NEVER_NEGATIVE,        // Something that is known to be never negative, e.g., array or span length
         O2K_CHECKED_BOUND_ADD_CNS, // "checkedBndVN + cns" where op2.vn holds the "checkedBndVN"
                                    // and op2.iconVal holds the "cns".
                                    // "Checked bound" alone doesn't mean anything,
@@ -7771,7 +7770,8 @@ public:
 
         private:
             optOp2Kind m_kind;
-            uint16_t   m_encodedIconFlags; // encoded icon gtFlags
+            bool       m_checkedBoundIsNeverNegative; // only meaningful for O2K_CHECKED_BOUND_ADD_CNS kind
+            uint16_t   m_encodedIconFlags;            // encoded icon gtFlags
             ValueNum   m_vn;
             union
             {
@@ -7830,7 +7830,7 @@ public:
 
             ValueNum GetVN() const
             {
-                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_NEVER_NEGATIVE));
+                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
@@ -7850,6 +7850,12 @@ public:
                 assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
+            }
+
+            bool IsCheckedBoundNeverNegative() const
+            {
+                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
+                return m_checkedBoundIsNeverNegative;
             }
 
             optOp2Kind GetKind() const
@@ -7970,7 +7976,8 @@ public:
         {
             // O1K_VN (idx) u< O2K_VN (len) where len is never negative.
             // Effectively, it's "idx >= 0 && idx < len"
-            return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) && (GetOp2().KindIs(O2K_NEVER_NEGATIVE));
+            return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) && GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS) &&
+                   (GetOp2().GetCheckedBoundConstant() == 0) && GetOp2().IsCheckedBoundNeverNegative();
         }
 
         // Convert VNFunc to optAssertionKind
@@ -8142,9 +8149,6 @@ public:
 
                 case O2K_ZEROOBJ:
                     return true;
-
-                case O2K_NEVER_NEGATIVE:
-                    return GetOp2().GetVN() == that.GetOp2().GetVN();
 
                 case O2K_CHECKED_BOUND_ADD_CNS:
                     return GetOp2().GetCheckedBound() == that.GetOp2().GetCheckedBound() &&
@@ -8345,16 +8349,17 @@ public:
             dsc.m_assertionKind = OAK_LT_UN;
             dsc.m_op1.m_kind    = O1K_VN;
             dsc.m_op1.m_vn      = idxVN;
-            dsc.m_op2.m_kind    = O2K_NEVER_NEGATIVE;
+            dsc.m_op2.m_kind    = O2K_CHECKED_BOUND_ADD_CNS;
             dsc.m_op2.m_vn      = lenVN;
 
-            dsc.m_op2.m_icon.m_iconVal = 0;
+            // Normally, "Checked bound" doesn't mean it's never negative, but in this particular case we know it is.
+            dsc.m_op2.m_checkedBoundIsNeverNegative = true;
+            dsc.m_op2.m_icon.m_iconVal              = 0;
             return dsc;
         }
 
         // Create "i <relop> (bnd + cns)" assertion
-        static AssertionDsc CreateCompareCheckedBound(
-            VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
+        static AssertionDsc CreateCompareCheckedBound(VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
         {
             assert(op1VN != ValueNumStore::NoVN);
             assert(checkedBndVN != ValueNumStore::NoVN);

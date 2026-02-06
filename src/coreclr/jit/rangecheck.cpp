@@ -999,7 +999,11 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         {
             // IsBoundsCheckNoThrow is "op1VN (Idx) LT_UN op2VN (Len)"
             ValueNum indexVN = curAssertion.GetOp1().GetVN();
-            ValueNum lenVN   = curAssertion.GetOp2().GetVN();
+            ValueNum lenVN   = curAssertion.GetOp2().GetCheckedBound();
+
+            assert(curAssertion.GetOp2().GetCheckedBoundConstant() == 0);
+            assert(curAssertion.GetOp2().IsCheckedBoundNeverNegative());
+
             if (normalLclVN == indexVN)
             {
                 if (canUseCheckedBounds)
