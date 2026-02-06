@@ -1086,13 +1086,12 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             public bool Equals(KeyValuePairEquatable<TKey, TValue> other)
             {
-                return EqualityComparer<TKey>.Default.Equals(Key, other.Key) &&
-                       EqualityComparer<TValue>.Default.Equals(Value, other.Value);
+                return Key.Equals(other.Key) && Value.Equals(other.Value);
             }
 
             public override int GetHashCode()
             {
-                return HashHelpers.Combine(Key?.GetHashCode() ?? 0, Value?.GetHashCode() ?? 0);
+                return HashHelpers.Combine(Key.GetHashCode(), Value.GetHashCode());
             }
         }
 
