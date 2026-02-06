@@ -217,8 +217,8 @@ build_native()
         pushd "$intermediatesDir"
 
         buildTool="$SCAN_BUILD_COMMAND -o $__BinDir/scan-build-log $buildTool"
-        echo "Executing $buildTool $target -j $__NumProc"
-        "$buildTool" $target -j "$__NumProc"
+        echo "Executing $buildTool -j $__NumProc $target"
+        "$buildTool" -j "$__NumProc" $target
         exit_code="$?"
 
         popd
@@ -234,8 +234,8 @@ build_native()
             # multiple targets. Instead, directly invoke the build tool to build multiple targets in one invocation.
             pushd "$intermediatesDir"
 
-            echo "Executing $buildTool $target -j $__NumProc"
-            "$buildTool" $target -j "$__NumProc"
+            echo "Executing $buildTool -j $__NumProc $target"
+            "$buildTool" -j "$__NumProc" $target
             exit_code="$?"
 
             popd
