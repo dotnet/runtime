@@ -1279,6 +1279,18 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.ReversePInvokeExit;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION:
+                    id = ReadyToRunHelper.AllocContinuation;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_METHOD:
+                    id = ReadyToRunHelper.AllocContinuationMethod;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_CLASS:
+                    id = ReadyToRunHelper.AllocContinuationClass;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
@@ -3253,7 +3265,7 @@ namespace Internal.JitInterface
                     // Disable async methods in cross module inlines for now, we need to trigger the CheckILBodyFixupSignature in the right situations, and that hasn't been implemented
                     // yet. Currently, we'll correctly trigger the _ilBodiesNeeded logic below, but we also need to avoid triggering the ILBodyFixupSignature for the async thunks, but we ALSO need to make
                     // sure we generate the CheckILBodyFixupSignature for the actual runtime-async body in which case I think the typicalMethod will be an AsyncVariantMethod, which doesn't appear
-                    // to be handled here. This check is here in the place where I believe we actually would behave incorrectly, but we also have a check in CrossModuleInlineable which disallows 
+                    // to be handled here. This check is here in the place where I believe we actually would behave incorrectly, but we also have a check in CrossModuleInlineable which disallows
                     // the cross module inline of async methods currently.
                     throw new Exception("Inlining async methods is not supported in ReadyToRun compilation.");
                 }
@@ -3287,7 +3299,7 @@ namespace Internal.JitInterface
                     // 2. If at any time, the set of methods that are inlined includes a method which has an IL body without
                     //    tokens that are useable in compilation, record that information, and once the multi-threaded portion
                     //    of the build finishes, it will then compute the IL bodies for those methods, then run the compilation again.
-                    
+
                     if (needsTokenTranslation && !(methodIL is IMethodTokensAreUseableInCompilation) && methodIL is EcmaMethodIL)
                     {
                         // We may have already acquired the right type of MethodIL here, or be working with a method that is an IL Intrinsic
