@@ -26,17 +26,8 @@ public static class Program
         //
         // This test ensures that such valid code can be loaded without throwing.
         
-        try
-        {
-            var derived = new Derived();
-            return 100;
-        }
-        catch (TypeLoadException ex)
-        {
-            Console.WriteLine("FAIL: TypeLoadException thrown when loading type with async override");
-            Console.WriteLine($"Exception: {ex.Message}");
-            return 101;
-        }
+        var derived = new Derived();
+        return 100;
     }
 }
 
