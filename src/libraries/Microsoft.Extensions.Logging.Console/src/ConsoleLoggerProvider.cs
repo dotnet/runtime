@@ -68,6 +68,20 @@ namespace Microsoft.Extensions.Logging.Console
         [UnsupportedOSPlatformGuard("windows")]
         private static bool DoesConsoleSupportAnsi()
         {
+            // We subscribe to the informal standard from https://no-color.org/. If the NO_COLOR environment
+            // variable is set, disable ANSI color support.
+            if (Environment.GetEnvironmentVariable("NO_COLOR") is not null)
+            {
+                return false;
+            }
+
+            // Check FORCE_COLOR (per https://force-color.org/)
+            string? forceColor = Environment.GetEnvironmentVariable("FORCE_COLOR");
+            if (forceColor is not null && forceColor.Length > 0)
+            {
+                return true;
+            }
+
             string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION");
             if (envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)))
             {
