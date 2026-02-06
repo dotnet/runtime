@@ -7709,9 +7709,8 @@ public:
         O2K_LCLVAR_COPY,
         O2K_CONST_INT,
         O2K_CONST_DOUBLE,
-
-        O2K_CHECKED_BOUND_ADD_CNS,
-
+        O2K_CHECKED_BOUND_ADD_CNS, // "checkedBndVN + cns" where op2.vn holds the "checkedBndVN"
+                                   // and op2.iconVal holds the "cns".
         O2K_ZEROOBJ,
         O2K_SUBRANGE
     };
@@ -7812,6 +7811,7 @@ public:
                 return m_icon.m_iconVal;
             }
 
+            // For "checkedBndVN + cns" form, return the "cns" part.
             int GetCheckedBoundConstant() const
             {
                 assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
@@ -7964,7 +7964,9 @@ public:
         {
             // O1K_VN (idx) u< O2K_VN (len)
             return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) &&
-                   (GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS) && GetOp2().GetCheckedBoundConstant() == 0);
+                   (GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS) &&
+                    // We really only want to cover "idx < len" form here, which is represented as "idx < (len + 0)".
+                    GetOp2().GetCheckedBoundConstant() == 0);
         }
 
         // Convert VNFunc to optAssertionKind
@@ -8359,7 +8361,6 @@ public:
         }
 
         // Create "i < constant" or "i u< constant" assertion
-        // TODO-Cleanup: Rename it as it's not necessarily a loop bound
         static AssertionDsc CreateConstantBound(const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum cnsVN)
         {
             assert(op1VN != ValueNumStore::NoVN);
