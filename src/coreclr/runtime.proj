@@ -13,7 +13,7 @@
     <ProjectReference Condition="'$(HasCdacBuildTool)' == 'true'" Include="tools\cdac-build-tool\cdac-build-tool.csproj" ReferenceOutputAssembly="false" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm'" />
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
   
   <Target Name="BuildRuntime"
