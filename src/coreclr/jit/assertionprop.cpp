@@ -781,14 +781,6 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
             printf("VN " FMT_VN "", curAssertion.GetOp1().GetVN());
             break;
 
-        case O1K_BOUND_OPER_BND:
-            printf("Oper_Bnd " FMT_VN "", curAssertion.GetOp1().GetVN());
-            break;
-
-        case O1K_BOUND_LOOP_BND:
-            printf("Loop_Bnd " FMT_VN "", curAssertion.GetOp1().GetVN());
-            break;
-
         case O1K_EXACT_TYPE:
             printf("ExactType " FMT_VN "", curAssertion.GetOp1().GetVN());
             break;
@@ -872,10 +864,6 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
                     printf("MT(%s)", eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(iconVal)));
                 }
             }
-            else if (curAssertion.GetOp1().KindIs(O1K_BOUND_OPER_BND, O1K_BOUND_LOOP_BND))
-            {
-                vnStore->vnDump(this, curAssertion.GetOp2().GetVN());
-            }
             else if (curAssertion.GetOp2().IsNullConstant())
             {
                 printf("null");
@@ -910,7 +898,11 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
             break;
 
         case O2K_CHECKED_BOUND:
-            printf("VN " FMT_VN "", curAssertion.GetOp2().GetVN());
+            printf("Checked_Bnd " FMT_VN "", curAssertion.GetOp2().GetVN());
+            break;
+
+        case O2K_CHECKED_BOUND_BINOP:
+            printf("Checked_Bnd_BinOp " FMT_VN "", curAssertion.GetOp2().GetVN());
             break;
 
         default:
@@ -1458,8 +1450,6 @@ void Compiler::optDebugCheckAssertion(const AssertionDsc& assertion) const
         case O1K_EXACT_TYPE:
         case O1K_SUBTYPE:
         case O1K_VN:
-        case O1K_BOUND_OPER_BND:
-        case O1K_BOUND_LOOP_BND:
             assert(!optLocalAssertionProp);
             break;
         default:

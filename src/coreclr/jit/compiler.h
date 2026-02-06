@@ -7697,8 +7697,6 @@ public:
     {
         O1K_LCLVAR,
         O1K_VN,
-        O1K_BOUND_OPER_BND,
-        O1K_BOUND_LOOP_BND,
         O1K_EXACT_TYPE,
         O1K_SUBTYPE
         // NOTE: as of today, only LCLVAR is used by both Local and Global assertion prop
@@ -7711,9 +7709,14 @@ public:
         O2K_LCLVAR_COPY,
         O2K_CONST_INT,
         O2K_CONST_DOUBLE,
-        O2K_CHECKED_BOUND, // Array/Span length (or similar)
-        O2K_ZEROOBJ,       // zeroed struct
-        O2K_SUBRANGE       // IntegralRange
+
+        // These two are just hints that Op2.GetVN() is either a checked bound
+        // or a binary operation on top of a checked bound and a constant.
+        O2K_CHECKED_BOUND,
+        O2K_CHECKED_BOUND_BINOP,
+
+        O2K_ZEROOBJ,
+        O2K_SUBRANGE
     };
 
     struct AssertionDsc
@@ -7827,7 +7830,8 @@ public:
 
             ValueNum GetVN() const
             {
-                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CHECKED_BOUND));
+                assert(
+                    KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CHECKED_BOUND, O2K_CHECKED_BOUND_BINOP));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
@@ -7908,11 +7912,11 @@ public:
 
         bool IsCheckedBoundArithBound() const
         {
-            return (CanPropEqualOrNotEqual() && GetOp1().KindIs(O1K_BOUND_OPER_BND));
+            return KindIs(OAK_GE, OAK_GT, OAK_LE, OAK_LT) && GetOp2().KindIs(O2K_CHECKED_BOUND_BINOP);
         }
         bool IsCheckedBoundBound() const
         {
-            return (CanPropEqualOrNotEqual() && GetOp1().KindIs(O1K_BOUND_LOOP_BND));
+            return KindIs(OAK_GE, OAK_GT, OAK_LE, OAK_LT) && GetOp2().KindIs(O2K_CHECKED_BOUND);
         }
 
         bool IsCopyAssertion() const
@@ -8132,6 +8136,7 @@ public:
                     return true;
 
                 case O2K_CHECKED_BOUND:
+                case O2K_CHECKED_BOUND_BINOP:
                     return GetOp2().GetVN() == that.GetOp2().GetVN();
 
                 case O2K_LCLVAR_COPY:
@@ -8338,25 +8343,40 @@ public:
         {
             assert(relopVN != ValueNumStore::NoVN);
 
+            VNFuncApp funcApp;
+            comp->vnStore->GetVNFunc(relopVN, &funcApp);
+
+            VNFunc   oper  = funcApp.m_func;
+            ValueNum op1VN = funcApp.m_args[0];
+            ValueNum op2VN = funcApp.m_args[1];
+
+            AssertionDsc dsc = {};
             if (withArith)
             {
-                assert(comp->vnStore->IsVNCompareCheckedBoundArith(relopVN));
+                if (comp->vnStore->IsVNCheckedBoundArith(op1VN) && !comp->vnStore->IsVNCheckedBoundArith(op2VN))
+                {
+                    std::swap(op1VN, op2VN);
+                    oper = comp->vnStore->SwapRelop(oper);
+                }
+                assert(comp->vnStore->IsVNCheckedBoundArith(op2VN));
+                dsc.m_op2.m_kind = O2K_CHECKED_BOUND_BINOP;
             }
             else
             {
-                assert(comp->vnStore->IsVNCompareCheckedBound(relopVN));
+                if (comp->vnStore->IsVNCheckedBound(op1VN) && !comp->vnStore->IsVNCheckedBound(op2VN))
+                {
+                    std::swap(op1VN, op2VN);
+                    oper = comp->vnStore->SwapRelop(oper);
+                }
+                assert(comp->vnStore->IsVNCheckedBound(op2VN));
+                dsc.m_op2.m_kind = O2K_CHECKED_BOUND;
             }
 
-            AssertionDsc dsc    = {};
-            dsc.m_assertionKind = OAK_NOT_EQUAL;
-            // TODO-Cleanup: Rename O1K_BOUND_OPER_BND and O1K_BOUND_LOOP_BND to something more meaningful
-            // Also, consider removing O1K_BOUND_LOOP_BND entirely and use O1K_BOUND_OPER_BND for both cases.
-            // O1K_BOUND_LOOP_BND is basically "i < bnd +/- 0 != 0". Unless it regresses TP.
-            dsc.m_op1.m_kind           = withArith ? O1K_BOUND_OPER_BND : O1K_BOUND_LOOP_BND;
-            dsc.m_op1.m_vn             = relopVN;
-            dsc.m_op2.m_kind           = O2K_CONST_INT;
-            dsc.m_op2.m_vn             = comp->vnStore->VNZeroForType(TYP_INT);
-            dsc.m_op2.m_icon.m_iconVal = 0;
+            dsc.m_assertionKind = FromVMFunc(oper);
+            dsc.m_op1.m_kind    = O1K_VN;
+            dsc.m_op1.m_vn      = op1VN;
+            dsc.m_op2.m_vn      = op2VN;
+
             return dsc;
         }
 

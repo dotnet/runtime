@@ -7173,66 +7173,54 @@ bool ValueNumStore::IsVNCompareCheckedBound(ValueNum vn)
     return true;
 }
 
-void ValueNumStore::GetCompareCheckedBound(ValueNum vn, CompareCheckedBoundArithInfo* info)
+bool ValueNumStore::IsVNCheckedBoundArith(ValueNum vn, ValueNum* pCheckedBndVN, int* addCns)
 {
-    assert(IsVNCompareCheckedBound(vn));
-
-    // Do we have var < a.len?
-    VNFuncApp funcAttr;
-    GetVNFunc(vn, &funcAttr);
-
-    bool isOp1CheckedBound = IsVNCheckedBound(funcAttr.m_args[1]);
-    if (isOp1CheckedBound)
+    int       cns;
+    VNFuncApp funcApp;
+    if (GetVNFunc(vn, &funcApp) && ((funcApp.m_func == VNF_ADD) || (funcApp.m_func == VNF_SUB)))
     {
-        info->cmpOper = funcAttr.m_func;
-        info->cmpOp   = funcAttr.m_args[0];
-        info->vnBound = funcAttr.m_args[1];
-    }
-    else
-    {
-        info->cmpOper = GenTree::SwapRelop((genTreeOps)funcAttr.m_func);
-        info->cmpOp   = funcAttr.m_args[1];
-        info->vnBound = funcAttr.m_args[0];
-    }
-}
+        // ADD is commutative, so check if "cns + checkedBndVN" first
+        if ((funcApp.m_func == VNF_ADD) && IsVNCheckedBound(funcApp.m_args[1]) &&
+            IsVNIntegralConstant(funcApp.m_args[0], &cns))
+        {
+            if (pCheckedBndVN != nullptr)
+            {
+                *pCheckedBndVN = funcApp.m_args[1];
+            }
+            if (addCns != nullptr)
+            {
+                *addCns = cns;
+            }
+            return true;
+        }
 
-bool ValueNumStore::IsVNCheckedBoundArith(ValueNum vn)
-{
-    // Do we have "a.len +or- var"
-    if (vn == NoVN)
-    {
-        return false;
+        // Otherwise, check if we have "checkedBndVN -/+ cns"
+        if (IsVNCheckedBound(funcApp.m_args[0]) && IsVNIntegralConstant(funcApp.m_args[1], &cns))
+        {
+            // Normalize "checkedBndVN - cns" into "checkedBndVN + (-cns)" to make it easier for the caller to handle
+            // both cases.
+            if (funcApp.m_func == VNF_SUB)
+            {
+                if (cns == INT32_MIN)
+                {
+                    // Avoid possible overflow from negating cns.
+                    return false;
+                }
+                cns = -cns;
+            }
+
+            if (pCheckedBndVN != nullptr)
+            {
+                *pCheckedBndVN = funcApp.m_args[0];
+            }
+            if (addCns != nullptr)
+            {
+                *addCns = cns;
+            }
+            return true;
+        }
     }
-
-    VNFuncApp funcAttr;
-
-    return GetVNFunc(vn, &funcAttr) &&                                                     // vn is a func.
-           (funcAttr.m_func == (VNFunc)GT_ADD || funcAttr.m_func == (VNFunc)GT_SUB) &&     // the func is +/-
-           (IsVNCheckedBound(funcAttr.m_args[0]) || IsVNCheckedBound(funcAttr.m_args[1])); // either op1 or op2 is a.len
-}
-
-void ValueNumStore::GetCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info)
-{
-    // Do we have a.len +/- var?
-    assert(IsVNCheckedBoundArith(vn));
-    VNFuncApp funcArith;
-    GetVNFunc(vn, &funcArith);
-
-    bool isOp1CheckedBound = IsVNCheckedBound(funcArith.m_args[1]);
-    if (isOp1CheckedBound)
-    {
-        info->arrOper  = funcArith.m_func;
-        info->arrOp    = funcArith.m_args[0];
-        info->vnBound  = funcArith.m_args[1];
-        info->arrOpLHS = true;
-    }
-    else
-    {
-        info->arrOper  = funcArith.m_func;
-        info->arrOp    = funcArith.m_args[1];
-        info->vnBound  = funcArith.m_args[0];
-        info->arrOpLHS = false;
-    }
+    return false;
 }
 
 bool ValueNumStore::IsVNCompareCheckedBoundArith(ValueNum vn)
@@ -7263,29 +7251,6 @@ bool ValueNumStore::IsVNCompareCheckedBoundArith(ValueNum vn)
     }
 
     return true;
-}
-
-void ValueNumStore::GetCompareCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info)
-{
-    assert(IsVNCompareCheckedBoundArith(vn));
-
-    VNFuncApp funcAttr;
-    GetVNFunc(vn, &funcAttr);
-
-    // Check whether op0 or op1 is checked bound arithmetic.
-    bool isOp1CheckedBoundArith = IsVNCheckedBoundArith(funcAttr.m_args[1]);
-    if (isOp1CheckedBoundArith)
-    {
-        info->cmpOper = funcAttr.m_func;
-        info->cmpOp   = funcAttr.m_args[0];
-        GetCheckedBoundArithInfo(funcAttr.m_args[1], info);
-    }
-    else
-    {
-        info->cmpOper = GenTree::SwapRelop((genTreeOps)funcAttr.m_func);
-        info->cmpOp   = funcAttr.m_args[1];
-        GetCheckedBoundArithInfo(funcAttr.m_args[0], info);
-    }
 }
 
 ValueNum ValueNumStore::GetArrForLenVn(ValueNum vn)
@@ -10330,18 +10295,6 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             default:
                 unreached();
         }
-    }
-    else if (IsVNCompareCheckedBound(vn))
-    {
-        CompareCheckedBoundArithInfo info;
-        GetCompareCheckedBound(vn, &info);
-        info.dump(this);
-    }
-    else if (IsVNCompareCheckedBoundArith(vn))
-    {
-        CompareCheckedBoundArithInfo info;
-        GetCompareCheckedBoundArithInfo(vn, &info);
-        info.dump(this);
     }
     else if (IsVNFunc(vn))
     {

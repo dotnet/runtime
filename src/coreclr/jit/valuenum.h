@@ -1088,42 +1088,6 @@ public:
         }
     };
 
-    struct CompareCheckedBoundArithInfo
-    {
-        // (vnBound - 1) > vnOp
-        // (vnBound arrOper arrOp) cmpOper cmpOp
-        ValueNum vnBound;
-        unsigned arrOper;
-        ValueNum arrOp;
-        bool     arrOpLHS; // arrOp is on the left side of cmpOp expression
-        unsigned cmpOper;
-        ValueNum cmpOp;
-        CompareCheckedBoundArithInfo()
-            : vnBound(NoVN)
-            , arrOper(GT_NONE)
-            , arrOp(NoVN)
-            , arrOpLHS(false)
-            , cmpOper(GT_NONE)
-            , cmpOp(NoVN)
-        {
-        }
-#ifdef DEBUG
-        void dump(ValueNumStore* vnStore)
-        {
-            vnStore->vnDump(vnStore->m_compiler, cmpOp);
-            printf(" ");
-            printf(vnStore->VNFuncName((VNFunc)cmpOper));
-            printf(" ");
-            vnStore->vnDump(vnStore->m_compiler, vnBound);
-            if (arrOper != GT_NONE)
-            {
-                printf(vnStore->VNFuncName((VNFunc)arrOper));
-                vnStore->vnDump(vnStore->m_compiler, arrOp);
-            }
-        }
-#endif
-    };
-
     // Check if "vn" is "new [] (type handle, size)"
     bool IsVNNewArr(ValueNum vn, VNFuncApp* funcApp);
 
@@ -1151,20 +1115,11 @@ public:
     // If "vn" is of the form "var < len" or "len <= var" return true.
     bool IsVNCompareCheckedBound(ValueNum vn);
 
-    // If "vn" is checked bound, then populate the "info" fields for the boundVn, cmpOp, cmpOper.
-    void GetCompareCheckedBound(ValueNum vn, CompareCheckedBoundArithInfo* info);
-
-    // If "vn" is of the form "len +/- var" return true.
-    bool IsVNCheckedBoundArith(ValueNum vn);
-
-    // If "vn" is checked bound arith, then populate the "info" fields for arrOper, arrVn, arrOp.
-    void GetCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info);
+    // If "vn" is of the form "len + cns" return true.
+    bool IsVNCheckedBoundArith(ValueNum vn, ValueNum* pCheckedBndVN = nullptr, int* addCns = nullptr);
 
     // If "vn" is of the form "var < len +/- k" return true.
     bool IsVNCompareCheckedBoundArith(ValueNum vn);
-
-    // If "vn" is checked bound arith, then populate the "info" fields for cmpOp, cmpOper.
-    void GetCompareCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info);
 
     // Returns the flags on the current handle. GTF_ICON_SCOPE_HDL for example.
     GenTreeFlags GetHandleFlags(ValueNum vn);

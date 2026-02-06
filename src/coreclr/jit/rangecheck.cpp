@@ -909,57 +909,32 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         genTreeOps cmpOper    = GT_NONE;
         bool       isUnsigned = false;
 
+        ValueNum checkedBndVN;
+        int      checkedBndCns;
         // Current assertion is of the form (i < len - cns) != 0
-        if (canUseCheckedBounds && curAssertion.IsCheckedBoundArithBound())
+        if (canUseCheckedBounds && curAssertion.IsCheckedBoundArithBound() &&
+            (normalLclVN == curAssertion.GetOp1().GetVN() &&
+             comp->vnStore->IsVNCheckedBoundArith(curAssertion.GetOp2().GetVN(), &checkedBndVN, &checkedBndCns)))
         {
-            ValueNumStore::CompareCheckedBoundArithInfo info;
-
-            // Get i, len, cns and < as "info."
-            comp->vnStore->GetCompareCheckedBoundArithInfo(curAssertion.GetOp1().GetVN(), &info);
-
-            // If we don't have the same variable we are comparing against, bail.
-            if (normalLclVN != info.cmpOp)
-            {
-                continue;
-            }
-
-            if ((info.arrOper != GT_ADD) && (info.arrOper != GT_SUB))
-            {
-                continue;
-            }
-
-            // If the operand that operates on the bound is not constant, then done.
-            if (!comp->vnStore->IsVNInt32Constant(info.arrOp))
-            {
-                continue;
-            }
-
-            int cons = comp->vnStore->ConstantValue<int>(info.arrOp);
-            limit    = Limit(Limit::keBinOpArray, info.vnBound, info.arrOper == GT_SUB ? -cons : cons);
-            cmpOper  = (genTreeOps)info.cmpOper;
+            limit   = Limit(Limit::keBinOpArray, checkedBndVN, checkedBndCns);
+            cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
         }
         // Current assertion is of the form (i < len) != 0
-        else if (canUseCheckedBounds && curAssertion.IsCheckedBoundBound())
+        else if (canUseCheckedBounds && curAssertion.IsCheckedBoundBound() &&
+                 (normalLclVN == curAssertion.GetOp1().GetVN() || normalLclVN == curAssertion.GetOp2().GetVN()))
         {
-            ValueNumStore::CompareCheckedBoundArithInfo info;
-
-            // Get the info as "i", "<" and "len"
-            comp->vnStore->GetCompareCheckedBound(curAssertion.GetOp1().GetVN(), &info);
-
             // If we don't have the same variable we are comparing against, bail.
-            if (normalLclVN == info.cmpOp)
+            if (normalLclVN == curAssertion.GetOp1().GetVN())
             {
-                cmpOper = (genTreeOps)info.cmpOper;
-                limit   = Limit(Limit::keBinOpArray, info.vnBound, 0);
-            }
-            else if (normalLclVN == info.vnBound)
-            {
-                cmpOper = GenTree::SwapRelop((genTreeOps)info.cmpOper);
-                limit   = Limit(Limit::keBinOpArray, info.cmpOp, 0);
+                cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+                limit   = Limit(Limit::keBinOpArray, curAssertion.GetOp2().GetVN(), 0);
             }
             else
             {
-                continue;
+                assert(normalLclVN == curAssertion.GetOp2().GetVN());
+                cmpOper =
+                    GenTree::SwapRelop(Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned));
+                limit = Limit(Limit::keBinOpArray, curAssertion.GetOp1().GetVN(), 0);
             }
         }
         // Current assertion is of the form (i < 100) != 0
@@ -1085,17 +1060,6 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         }
 
         assert(limit.IsBinOpArray() || limit.IsConstant());
-
-        // TODO-Cleanup: remove this once these assertions are no longer existed.
-        // All relop-related assertions should be "op1VN relop op2VN" instead of "relopVN ==/!= 0"
-        bool legacyAssertionKind =
-            curAssertion.GetOp1().KindIs(Compiler::O1K_BOUND_LOOP_BND, Compiler::O1K_BOUND_OPER_BND);
-
-        // Make sure the assertion is of the form != 0 or == 0 if it isn't a constant assertion.
-        if (legacyAssertionKind && (curAssertion.GetOp2().GetVN() != comp->vnStore->VNZeroForType(TYP_INT)))
-        {
-            continue;
-        }
 #ifdef DEBUG
         if (comp->verbose)
         {
@@ -1122,28 +1086,6 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             // constant limits (where we explicitly track the constant and don't
             // redundantly store its VN in the "vn" field).
             arrLenVN = ValueNumStore::NoVN;
-        }
-
-        // During assertion prop we add assertions of the form:
-        //
-        //      (i < length) == 0
-        //      (i < length) != 0
-        //      (i < 100) == 0
-        //      (i < 100) != 0
-        //      i == 100
-        //
-        // At this point, we have detected that either op1.vn is (i < length) or (i < length + cns) or
-        // (i < 100) and the op2.vn is 0 or that op1.vn is i and op2.vn is a known constant.
-        //
-        // Now, let us check if we are == 0 (i.e., op1 assertion is false) or != 0 (op1 assertion
-        // is true.).
-        //
-        // If we have a non-constant assertion of the form == 0 (i.e., equals false), then reverse relop.
-        // The relop has to be reversed because we have: (i < length) is false which is the same
-        // as (i >= length).
-        if (curAssertion.KindIs(Compiler::OAK_EQUAL) && legacyAssertionKind)
-        {
-            cmpOper = GenTree::ReverseRelop(cmpOper);
         }
 
         assert(cmpOper != GT_NONE);
