@@ -584,6 +584,15 @@ arguments+=("-clp:ForceNoAlign")
 
 initDistroRid "$os" "$arch" "$crossBuild"
 
+# Enable sccache for linux-x64 builds if the binary is present in the repo root.
+if [[ "$os" == "linux" && "$arch" == "x64" && -f "$scriptroot/../sccache" ]]; then
+    export PATH="$scriptroot/..:$PATH"
+    export USE_SCCACHE=true
+    export SCCACHE_AZURE_BLOB_CONTAINER=runtime-cache
+    # SCCACHE_AZURE_CONNECTION_STRING must be set as a CI secret/environment variable.
+    echo "sccache enabled for linux-x64 build"
+fi
+
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.
 export DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
