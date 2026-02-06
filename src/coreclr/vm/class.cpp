@@ -1374,6 +1374,11 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
             if (!pMD->RequiresCovariantReturnTypeChecking() && !pParentMD->RequiresCovariantReturnTypeChecking())
                 continue;
 
+            // Skip validation for async variant methods, as they have different signatures by design
+            // to support the async calling convention
+            if (pMD->IsAsyncVariantMethod() || pParentMD->IsAsyncVariantMethod())
+                continue;
+
             // Locate the MethodTable defining the pParentMD.
             MethodTable* pDefinitionParentMT = pParentMT;
             while (pDefinitionParentMT->GetCanonicalMethodTable() != pParentMD->GetMethodTable())
