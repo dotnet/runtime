@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
-  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets"  Condition="'$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm'" />
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm'" />
 
   <PropertyGroup>
     <!-- Hardcode version paths in a global location. -->
