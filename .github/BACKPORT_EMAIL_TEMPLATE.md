@@ -2,11 +2,16 @@
 
 Use this template when emailing Tactics to request approval for a backport to a release branch.
 
-> **Note:** Most email clients (Outlook, Gmail, etc.) don't render Markdown. Copy the template below and the section headers will display as bold text. If your email client supports rich text, you can manually increase the header font size.
+> **Important:** The email content should come directly from your backport PR description
+> (see `servicing_pull_request_template.md`). Do not write different text for the email —
+> copy the sections verbatim from the PR to ensure consistency.
+
+> **Note:** Most email clients (Outlook, Gmail, etc.) don't render Markdown. The section
+> headers use `**bold**` syntax which appears with asterisks in plain-text emails.
 
 ---
 
-**Subject:** [release/X.0] Backport request: <Brief description> (#<PR number>)
+**Subject:** [release/X.0] Backport request: <BRIEF_DESCRIPTION> (#<PR_NUMBER>)
 
 ---
 
@@ -14,28 +19,34 @@ Hello Tactics,
 
 Please consider https://github.com/dotnet/runtime/pull/<PR_NUMBER> for backporting into release/X.0.
 
+Fixes https://github.com/dotnet/runtime/issues/<ISSUE_NUMBER>
+
+main PR: <MAIN_PR_LINK>
+
+<!-- Copy the following sections verbatim from your backport PR description -->
+
+**DESCRIPTION**
+
+<Copy from PR: Description section>
+
 **CUSTOMER IMPACT**
 
 - [ ] Customer reported
 - [ ] Found internally
 
-<Describe the impact to customers. What functionality is broken? What scenarios are affected?>
-
-Fixes https://github.com/dotnet/runtime/issues/<ISSUE_NUMBER>
+<Copy from PR: Customer Impact section>
 
 **REGRESSION**
 
 - [ ] Yes
 - [ ] No
 
-<If yes, specify when the regression was introduced. Provide the PR or commit if known.>
+<Copy from PR: Regression section>
 
 **TESTING**
 
-<How was the fix verified? How was the issue missed previously? What tests were added?>
+<Copy from PR: Testing section>
 
 **RISK**
 
-<High/Medium/Low>
-
-<Justify the indication by mentioning how risks were measured and addressed.>
+<Copy from PR: Risk section>
