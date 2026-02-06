@@ -26,7 +26,7 @@ public static class Program
         //
         // This test ensures that such valid code can be loaded without throwing.
         
-        var derived = new Derived();
+        GC.KeepAlive(new Derived());
     }
 }
 
