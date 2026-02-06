@@ -95,9 +95,14 @@ if ($repoParts.Count -ne 2) {
 # --- Step 1: Get PR details (single call for PR + comments + commits) ---
 Write-Section "Codeflow PR #$PRNumber in $Repository"
 
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    Write-Error "GitHub CLI (gh) is not installed or not in PATH. Install from https://cli.github.com/"
+    return
+}
+
 $prJson = gh pr view $PRNumber -R $Repository --json body,title,state,author,headRefName,baseRefName,createdAt,updatedAt,url,comments,commits 2>&1
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Could not fetch PR #$PRNumber from $Repository"
+    Write-Error "Could not fetch PR #$PRNumber from $Repository. Ensure you are authenticated (gh auth login)."
     return
 }
 $pr = ($prJson -join "`n") | ConvertFrom-Json
@@ -113,8 +118,6 @@ Write-Host "  URL: $($pr.url)"
 $isMaestroPR = $pr.author.login -eq "dotnet-maestro[bot]"
 $isBackflow = $pr.title -match "Source code updates from dotnet/dotnet"
 $isForwardFlow = $pr.title -match "Source code updates from (dotnet/\S+)" -and -not $isBackflow
-$flowDirection = if ($isBackflow) { "backflow" } elseif ($isForwardFlow) { "forward" } else { "unknown" }
-
 if (-not $isMaestroPR -and -not $isBackflow -and -not $isForwardFlow) {
     Write-Warning "This does not appear to be a codeflow PR (author: $($pr.author.login), title: $($pr.title))"
     Write-Warning "Expected author 'dotnet-maestro[bot]' and title containing 'Source code updates from'"
@@ -245,6 +248,13 @@ if ($vmrCommit -and $vmrBranch) {
                     }
                     default {
                         Write-Host "  ⚠️  $freshnessRepoLabel and PR snapshot differ (status: $compareStatus)" -ForegroundColor Yellow
+                    }
+                }
+
+                if ($compare.total_commits -and $compare.commits) {
+                    $returnedCommits = @($compare.commits).Count
+                    if ($returnedCommits -lt $compare.total_commits) {
+                        Write-Host "  ⚠️  Compare API returned $returnedCommits of $($compare.total_commits) commits; listing may be incomplete." -ForegroundColor Yellow
                     }
                 }
 
@@ -401,11 +411,14 @@ if ($TraceFix) {
         }
 
         # Check if the fix is in the VMR source-manifest.json on the target branch
-        if ($fixIsMerged -and $vmrBranch) {
+        # For forward flow, the VMR target is the PR base branch; for backflow, use $vmrBranch
+        $vmrManifestBranch = if ($isForwardFlow -and $pr.baseRefName) { $pr.baseRefName } else { $vmrBranch }
+        if ($fixIsMerged -and $vmrManifestBranch) {
             Write-Host ""
-            Write-Host "  Checking VMR source-manifest.json on $vmrBranch..." -ForegroundColor White
+            Write-Host "  Checking VMR source-manifest.json on $vmrManifestBranch..." -ForegroundColor White
 
-            $manifestUrl = "/repos/dotnet/dotnet/contents/src/source-manifest.json?ref=$vmrBranch"
+            $encodedManifestBranch = [uri]::EscapeDataString($vmrManifestBranch)
+            $manifestUrl = "/repos/dotnet/dotnet/contents/src/source-manifest.json?ref=$encodedManifestBranch"
             $manifestJson = Invoke-GitHubApi $manifestUrl -Raw
             if ($manifestJson) {
                 $manifest = $manifestJson | ConvertFrom-Json
