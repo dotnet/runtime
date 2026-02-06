@@ -230,6 +230,7 @@ namespace Internal.ReadyToRunConstants
         FailFast                    = 0x24,
         ThrowNullRef                = 0x25,
         ThrowDivZero                = 0x26,
+        ThrowExact                  = 0x27,
 
         // Write barriers
         WriteBarrier                = 0x30,
