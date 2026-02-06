@@ -298,6 +298,8 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
     _ASSERTE(pException != NULL);
     // populate exception with information from the continuation object
     EECodeInfo codeInfo((PCODE)diagnosticIP);
+    // Interpreter diagnostic IP is not recognized by codeInfo, so this does not work with interpreted code.
+    // Tracking issue: https://github.com/dotnet/runtime/issues/124044
     if (codeInfo.IsValid())
     {
         MethodDesc* methodDesc = codeInfo.GetMethodDesc();
