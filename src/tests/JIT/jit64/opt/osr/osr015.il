@@ -8,6 +8,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly 'osr015' {}
 
 
@@ -20,9 +21,13 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('Doesn\'t pass after LLVM AOT compilation.')
+        int32(2) // Mono
+    }
     .entrypoint
     .locals init (int32)
-	
+
 	.try
 	{
 		call void test::test_001()
@@ -1518,7 +1523,7 @@ TRY_END_c001:
 ldloc 0
 ldc.i4 100
 add
-		
+
 	ret
   }
 
@@ -1531,7 +1536,7 @@ add
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -1557,8 +1562,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -1574,7 +1579,7 @@ FOR_END:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -1604,8 +1609,8 @@ FOR_TEST:
 
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -1619,7 +1624,7 @@ FOR_TEST:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -1645,8 +1650,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -1660,7 +1665,7 @@ FOR_END:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -1684,8 +1689,8 @@ FOR_TEST:
 	ldloc 1
 	ldc.i4 100
 	ble FOR_CODE
-	ret   
-		
+	ret
+
   }
 
   .method public static void test_003() cil managed
@@ -1697,7 +1702,7 @@ FOR_TEST:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -1726,8 +1731,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -1741,7 +1746,7 @@ FOR_END:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -1768,8 +1773,8 @@ FOR_TEST:
 
 
 
-	ret   
-		
+	ret
+
   }
 
   .method public static void test_004() cil managed
@@ -1781,7 +1786,7 @@ FOR_TEST:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -1809,8 +1814,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -1826,7 +1831,7 @@ FOR_END:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -1853,8 +1858,8 @@ FOR_TEST:
 	bge FOR_CODE
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -1867,7 +1872,7 @@ FOR_TEST:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -1893,8 +1898,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
   .method public static void test_005b() cil managed
@@ -1907,7 +1912,7 @@ FOR_END:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -1933,8 +1938,8 @@ FOR_TEST:
 	ldc.i4 101
 	blt FOR_CODE
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -1950,7 +1955,7 @@ FOR_TEST:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -1976,8 +1981,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -1995,7 +2000,7 @@ FOR_END:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -2021,7 +2026,7 @@ FOR_TEST:
 	ldc.i4 100
 	ble FOR_CODE
 
-	ret	
+	ret
   }
 
 
@@ -2036,7 +2041,7 @@ FOR_TEST:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -2065,8 +2070,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2081,7 +2086,7 @@ FOR_END:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -2107,8 +2112,8 @@ FOR_TEST:
 	bgt FOR_CODE
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2122,7 +2127,7 @@ FOR_TEST:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -2150,8 +2155,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2168,7 +2173,7 @@ FOR_END:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -2193,8 +2198,8 @@ FOR_TEST:
 	ldc.i4 -1
 	bge FOR_CODE
 
-	ret   
-		
+	ret
+
   }
 
   .method public static void test_009() cil managed
@@ -2204,7 +2209,7 @@ FOR_TEST:
 // take address of local
 
 	.locals init (int32[], int32, int32*)
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -2222,7 +2227,7 @@ FOR_START:
 	ldloc 2
 	ldc.i4 100
 	stind.i4
-	
+
 
 	ldloc 0
 	ldloc 1
@@ -2238,8 +2243,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2251,7 +2256,7 @@ FOR_END:
 // take address of local
 
 	.locals init (int32[], int32, int32*)
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -2284,8 +2289,8 @@ FOR_TEST:
 	blt FOR_CODE
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2299,7 +2304,7 @@ FOR_TEST:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -2330,8 +2335,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2347,7 +2352,7 @@ FOR_END:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -2381,8 +2386,8 @@ FOR_TEST:
 	blt FOR_CODE
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2400,7 +2405,7 @@ FOR_TEST:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -2428,8 +2433,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2445,7 +2450,7 @@ FOR_END:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -2477,8 +2482,8 @@ FOR_TEST:
 
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2492,7 +2497,7 @@ FOR_TEST:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -2520,8 +2525,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2535,7 +2540,7 @@ FOR_END:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -2561,8 +2566,8 @@ FOR_TEST:
 	ldloc 1
 	ldc.i8 100
 	ble FOR_CODE
-	ret   
-		
+	ret
+
   }
 
   .method public static void test_013() cil managed
@@ -2574,7 +2579,7 @@ FOR_TEST:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -2605,8 +2610,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2620,7 +2625,7 @@ FOR_END:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -2649,8 +2654,8 @@ FOR_TEST:
 
 
 
-	ret   
-		
+	ret
+
   }
 
   .method public static void test_014() cil managed
@@ -2662,7 +2667,7 @@ FOR_TEST:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -2692,8 +2697,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2709,7 +2714,7 @@ FOR_END:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -2738,8 +2743,8 @@ FOR_TEST:
 	bge FOR_CODE
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2752,7 +2757,7 @@ FOR_TEST:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -2780,8 +2785,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
   .method public static void test_015b() cil managed
@@ -2794,7 +2799,7 @@ FOR_END:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -2822,8 +2827,8 @@ FOR_TEST:
 	ldc.i8 101
 	blt FOR_CODE
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2839,7 +2844,7 @@ FOR_TEST:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -2867,8 +2872,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2886,7 +2891,7 @@ FOR_END:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -2914,7 +2919,7 @@ FOR_TEST:
 	ldc.i8 100
 	ble FOR_CODE
 
-	ret	
+	ret
   }
 
 
@@ -2929,7 +2934,7 @@ FOR_TEST:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -2960,8 +2965,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -2976,7 +2981,7 @@ FOR_END:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -3004,8 +3009,8 @@ FOR_TEST:
 	bgt FOR_CODE
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3019,7 +3024,7 @@ FOR_TEST:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -3049,8 +3054,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3067,7 +3072,7 @@ FOR_END:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -3094,8 +3099,8 @@ FOR_TEST:
 	ldc.i8 -1
 	bge FOR_CODE
 
-	ret   
-		
+	ret
+
   }
 
   .method public static void test_019() cil managed
@@ -3105,7 +3110,7 @@ FOR_TEST:
 // take address of local
 
 	.locals init (int64[], int64, int64*)
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -3124,7 +3129,7 @@ FOR_START:
 	ldloc 2
 	ldc.i8 100
 	stind.i8
-	
+
 
 	ldloc 0
 	ldloc 1
@@ -3141,8 +3146,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3154,7 +3159,7 @@ FOR_END:
 // take address of local
 
 	.locals init (int64[], int64, int64*)
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -3189,8 +3194,8 @@ FOR_TEST:
 	blt FOR_CODE
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3204,7 +3209,7 @@ FOR_TEST:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -3238,8 +3243,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3255,7 +3260,7 @@ FOR_END:
 
 	.locals init (int64[], int64)
 
-	
+
 	ldc.i8 100
 	conv.i
 	newarr int64
@@ -3292,8 +3297,8 @@ FOR_TEST:
 	blt FOR_CODE
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3307,7 +3312,7 @@ FOR_TEST:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3333,8 +3338,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3350,7 +3355,7 @@ FOR_END:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3380,8 +3385,8 @@ FOR_TEST:
 
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3395,7 +3400,7 @@ FOR_TEST:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3421,8 +3426,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3436,7 +3441,7 @@ FOR_END:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3460,8 +3465,8 @@ FOR_TEST:
 	ldloc 1
 	ldc.i4 100
 	ble FOR_CODE
-	ret   
-		
+	ret
+
   }
 
   .method public static void test_023() cil managed
@@ -3473,7 +3478,7 @@ FOR_TEST:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3502,8 +3507,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3517,7 +3522,7 @@ FOR_END:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3544,8 +3549,8 @@ FOR_TEST:
 
 
 
-	ret   
-		
+	ret
+
   }
 
   .method public static void test_024() cil managed
@@ -3557,7 +3562,7 @@ FOR_TEST:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3585,8 +3590,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3602,7 +3607,7 @@ FOR_END:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3629,8 +3634,8 @@ FOR_TEST:
 	bge FOR_CODE
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3643,7 +3648,7 @@ FOR_TEST:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3669,8 +3674,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
   .method public static void test_025b() cil managed
@@ -3683,7 +3688,7 @@ FOR_END:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3709,8 +3714,8 @@ FOR_TEST:
 	ldc.i4 101
 	blt FOR_CODE
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3726,7 +3731,7 @@ FOR_TEST:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3752,8 +3757,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3771,7 +3776,7 @@ FOR_END:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3797,7 +3802,7 @@ FOR_TEST:
 	ldc.i4 100
 	ble FOR_CODE
 
-	ret	
+	ret
   }
 
 
@@ -3812,7 +3817,7 @@ FOR_TEST:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3841,8 +3846,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3857,7 +3862,7 @@ FOR_END:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3883,8 +3888,8 @@ FOR_TEST:
 	bgt FOR_CODE
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3898,7 +3903,7 @@ FOR_TEST:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3926,8 +3931,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -3944,7 +3949,7 @@ FOR_END:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3969,8 +3974,8 @@ FOR_TEST:
 	ldc.i4 -1
 	bge FOR_CODE
 
-	ret   
-		
+	ret
+
   }
 
   .method public static void test_029() cil managed
@@ -3980,7 +3985,7 @@ FOR_TEST:
 // take address of local
 
 	.locals init (uint32[], uint32, uint32*)
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -3998,7 +4003,7 @@ FOR_START:
 	ldloc 2
 	ldc.i4 100
 	stind.i4
-	
+
 
 	ldloc 0
 	ldloc 1
@@ -4014,8 +4019,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -4027,7 +4032,7 @@ FOR_END:
 // take address of local
 
 	.locals init (uint32[], uint32, uint32*)
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -4060,8 +4065,8 @@ FOR_TEST:
 	blt FOR_CODE
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -4075,7 +4080,7 @@ FOR_TEST:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -4106,8 +4111,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -4123,7 +4128,7 @@ FOR_END:
 
 	.locals init (uint32[], uint32)
 
-	
+
 	ldc.i4 100
 	newarr uint32
 	stloc 0
@@ -4157,8 +4162,8 @@ FOR_TEST:
 	blt FOR_CODE
 
 
-	ret   
-		
+	ret
+
   }
 
 
@@ -4176,7 +4181,7 @@ FOR_TEST:
 
 	.locals init (int32[], int32)
 
-	
+
 	ldc.i4 100
 	newarr int32
 	stloc 0
@@ -4209,8 +4214,8 @@ FOR_START:
 
 FOR_END:
 
-	ret   
-		
+	ret
+
   }
 
 
