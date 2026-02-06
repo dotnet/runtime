@@ -7,8 +7,10 @@
     detects staleness warnings, traces specific fixes through the pipeline, and
     provides actionable recommendations.
 
+    Can also check if a backflow PR is expected but missing for a given repo/branch.
+
 .PARAMETER PRNumber
-    GitHub PR number to analyze.
+    GitHub PR number to analyze. Required unless -CheckMissing is used.
 
 .PARAMETER Repository
     Target repository (default: dotnet/sdk). Format: owner/repo.
@@ -20,22 +22,39 @@
 .PARAMETER ShowCommits
     Show individual VMR commits between the PR snapshot and current branch HEAD.
 
+.PARAMETER CheckMissing
+    Check if backflow PRs are expected but missing for a repository. When used,
+    PRNumber is not required. Finds the most recent merged backflow PR for each branch,
+    extracts its VMR commit, and compares against current VMR branch HEAD.
+
+.PARAMETER Branch
+    Optional. When used with -CheckMissing, only check a specific branch instead of all.
+
 .EXAMPLE
     ./Get-CodeflowStatus.ps1 -PRNumber 52727 -Repository "dotnet/sdk"
 
 .EXAMPLE
     ./Get-CodeflowStatus.ps1 -PRNumber 52727 -Repository "dotnet/sdk" -TraceFix "dotnet/runtime#123974"
+
+.EXAMPLE
+    ./Get-CodeflowStatus.ps1 -Repository "dotnet/roslyn" -CheckMissing
+
+.EXAMPLE
+    ./Get-CodeflowStatus.ps1 -Repository "dotnet/roslyn" -CheckMissing -Branch "main"
 #>
 
 param(
-    [Parameter(Mandatory = $true)]
     [int]$PRNumber,
 
     [string]$Repository = "dotnet/sdk",
 
     [string]$TraceFix,
 
-    [switch]$ShowCommits
+    [switch]$ShowCommits,
+
+    [switch]$CheckMissing,
+
+    [string]$Branch
 )
 
 $ErrorActionPreference = "Stop"
@@ -89,6 +108,174 @@ function Write-Status {
 $repoParts = $Repository -split '/'
 if ($repoParts.Count -ne 2) {
     Write-Error "Repository must be in format 'owner/repo' (e.g., 'dotnet/sdk')"
+    return
+}
+
+# --- CheckMissing mode: find expected but missing backflow PRs ---
+if ($CheckMissing) {
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+        Write-Error "GitHub CLI (gh) is not installed or not in PATH. Install from https://cli.github.com/"
+        return
+    }
+
+    Write-Section "Checking for missing backflow PRs in $Repository"
+
+    # Find open backflow PRs (to know which branches are already covered)
+    $openPRsJson = gh search prs --repo $Repository --author "dotnet-maestro[bot]" --state open "Source code updates from dotnet/dotnet" --json number,title --limit 50 2>&1
+    $openPRs = @()
+    if ($LASTEXITCODE -eq 0 -and $openPRsJson) {
+        $openPRs = ($openPRsJson -join "`n") | ConvertFrom-Json
+    }
+    $openBranches = @{}
+    foreach ($opr in $openPRs) {
+        if ($opr.title -match '^\[([^\]]+)\]') {
+            $openBranches[$Matches[1]] = $opr.number
+        }
+    }
+
+    if ($openPRs.Count -gt 0) {
+        Write-Host "  Open backflow PRs already exist:" -ForegroundColor White
+        foreach ($opr in $openPRs) {
+            Write-Host "    #$($opr.number): $($opr.title)" -ForegroundColor Green
+        }
+        Write-Host ""
+    }
+
+    # Find recently merged backflow PRs to discover branches and VMR commit mapping
+    $mergedPRsJson = gh search prs --repo $Repository --author "dotnet-maestro[bot]" --state closed --merged "Source code updates from dotnet/dotnet" --limit 30 --sort updated --json number,title,closedAt 2>&1
+    $mergedPRs = @()
+    if ($LASTEXITCODE -eq 0 -and $mergedPRsJson) {
+        $mergedPRs = ($mergedPRsJson -join "`n") | ConvertFrom-Json
+    }
+
+    if ($mergedPRs.Count -eq 0 -and $openPRs.Count -eq 0) {
+        Write-Host "  No backflow PRs found (open or recently merged). This repo may not have backflow subscriptions." -ForegroundColor Yellow
+        return
+    }
+
+    # Group merged PRs by branch, keeping only the most recent per branch
+    $branchLastMerged = @{}
+    foreach ($mpr in $mergedPRs) {
+        if ($mpr.title -match '^\[([^\]]+)\]') {
+            $branchName = $Matches[1]
+            if ($Branch -and $branchName -ne $Branch) { continue }
+            if (-not $branchLastMerged.ContainsKey($branchName)) {
+                $branchLastMerged[$branchName] = $mpr
+            }
+        }
+    }
+
+    if ($Branch -and -not $branchLastMerged.ContainsKey($Branch) -and -not $openBranches.ContainsKey($Branch)) {
+        Write-Host "  No backflow PRs found for branch '$Branch'." -ForegroundColor Yellow
+        return
+    }
+
+    # For each branch without an open PR, check if VMR has moved past the last merged commit
+    $missingCount = 0
+    $coveredCount = 0
+    $upToDateCount = 0
+
+    foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
+        $lastPR = $branchLastMerged[$branchName]
+        Write-Host ""
+        Write-Host "  Branch: $branchName" -ForegroundColor White
+
+        if ($openBranches.ContainsKey($branchName)) {
+            Write-Host "    ✅ Open backflow PR #$($openBranches[$branchName]) exists" -ForegroundColor Green
+            $coveredCount++
+            continue
+        }
+
+        # Get the PR body to extract VMR commit and VMR branch
+        $prDetailJson = gh pr view $lastPR.number -R $Repository --json body 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "    ⚠️  Could not fetch PR #$($lastPR.number) details" -ForegroundColor Yellow
+            continue
+        }
+        $prDetail = ($prDetailJson -join "`n") | ConvertFrom-Json
+
+        $vmrCommitFromPR = $null
+        $vmrBranchFromPR = $null
+        if ($prDetail.body -match '\*\*Commit\*\*:\s*\[([a-f0-9]+)\]') {
+            $vmrCommitFromPR = $Matches[1]
+        }
+        if ($prDetail.body -match '\*\*Branch\*\*:\s*\[([^\]]+)\]') {
+            $vmrBranchFromPR = $Matches[1]
+        }
+
+        if (-not $vmrCommitFromPR -or -not $vmrBranchFromPR) {
+            Write-Host "    ⚠️  Could not parse VMR metadata from last merged PR #$($lastPR.number)" -ForegroundColor Yellow
+            continue
+        }
+
+        Write-Host "    Last merged: PR #$($lastPR.number) on $($lastPR.closedAt)" -ForegroundColor DarkGray
+        Write-Host "    VMR branch: $vmrBranchFromPR" -ForegroundColor DarkGray
+        Write-Host "    VMR commit: $(Get-ShortSha $vmrCommitFromPR)" -ForegroundColor DarkGray
+
+        # Get current VMR branch HEAD
+        $encodedVmrBranch = [uri]::EscapeDataString($vmrBranchFromPR)
+        $vmrHead = Invoke-GitHubApi "/repos/dotnet/dotnet/commits/$encodedVmrBranch"
+        if (-not $vmrHead) {
+            Write-Host "    ⚠️  Could not fetch VMR branch HEAD for $vmrBranchFromPR" -ForegroundColor Yellow
+            continue
+        }
+
+        $vmrHeadSha = $vmrHead.sha
+        $vmrHeadDate = $vmrHead.commit.committer.date
+
+        if ($vmrCommitFromPR -eq $vmrHeadSha) {
+            Write-Host "    ✅ VMR branch is at same commit — no backflow needed" -ForegroundColor Green
+            $upToDateCount++
+        }
+        else {
+            # Check how far ahead
+            $compare = Invoke-GitHubApi "/repos/dotnet/dotnet/compare/$vmrCommitFromPR...$vmrHeadSha"
+            $ahead = if ($compare) { $compare.ahead_by } else { "?" }
+
+            Write-Host "    🔴 MISSING BACKFLOW PR" -ForegroundColor Red
+            Write-Host "    VMR is $ahead commit(s) ahead since last merged PR" -ForegroundColor Yellow
+            Write-Host "    VMR HEAD: $(Get-ShortSha $vmrHeadSha) ($vmrHeadDate)" -ForegroundColor DarkGray
+            Write-Host "    Last merged VMR commit: $(Get-ShortSha $vmrCommitFromPR)" -ForegroundColor DarkGray
+
+            # Check how long ago the last PR merged
+            $mergedTime = [DateTime]::Parse($lastPR.closedAt)
+            $elapsed = [DateTime]::UtcNow - $mergedTime
+            if ($elapsed.TotalHours -gt 6) {
+                Write-Host "    ⚠️  Last PR merged $([math]::Round($elapsed.TotalHours, 1)) hours ago — Maestro may be stuck" -ForegroundColor Yellow
+            }
+            else {
+                Write-Host "    ℹ️  Last PR merged $([math]::Round($elapsed.TotalHours, 1)) hours ago — Maestro may still be processing" -ForegroundColor DarkGray
+            }
+            $missingCount++
+        }
+    }
+
+    # Also check open-only branches (that weren't in merged list)
+    foreach ($branchName in ($openBranches.Keys | Sort-Object)) {
+        if (-not $branchLastMerged.ContainsKey($branchName)) {
+            if ($Branch -and $branchName -ne $Branch) { continue }
+            Write-Host ""
+            Write-Host "  Branch: $branchName" -ForegroundColor White
+            Write-Host "    ✅ Open backflow PR #$($openBranches[$branchName]) exists" -ForegroundColor Green
+            $coveredCount++
+        }
+    }
+
+    Write-Section "Summary"
+    Write-Host "  Branches with open backflow PRs: $coveredCount" -ForegroundColor Green
+    Write-Host "  Branches up to date (no PR needed): $upToDateCount" -ForegroundColor Green
+    if ($missingCount -gt 0) {
+        Write-Host "  Branches MISSING backflow PRs: $missingCount" -ForegroundColor Red
+    }
+    else {
+        Write-Host "  No missing backflow PRs detected ✅" -ForegroundColor Green
+    }
+    return
+}
+
+# --- Validate PRNumber for non-CheckMissing mode ---
+if (-not $PRNumber) {
+    Write-Error "PRNumber is required unless -CheckMissing is used."
     return
 }
 

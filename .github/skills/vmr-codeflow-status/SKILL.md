@@ -27,16 +27,24 @@ Use this skill when:
 
 # Show individual VMR commits that are missing
 ./scripts/Get-CodeflowStatus.ps1 -PRNumber 52727 -Repository "dotnet/sdk" -ShowCommits
+
+# Check if any backflow PRs are missing for a repo
+./scripts/Get-CodeflowStatus.ps1 -Repository "dotnet/roslyn" -CheckMissing
+
+# Check a specific branch only
+./scripts/Get-CodeflowStatus.ps1 -Repository "dotnet/sdk" -CheckMissing -Branch "main"
 ```
 
 ## Key Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `-PRNumber` | GitHub PR number to analyze (required) |
+| `-PRNumber` | GitHub PR number to analyze (required unless `-CheckMissing`) |
 | `-Repository` | Target repo in `owner/repo` format (default: `dotnet/sdk`) |
 | `-TraceFix` | Trace a repo PR through the pipeline (e.g., `dotnet/runtime#123974`) |
 | `-ShowCommits` | Show individual VMR commits between PR snapshot and branch HEAD |
+| `-CheckMissing` | Check if backflow PRs are expected but missing for a repository |
+| `-Branch` | With `-CheckMissing`, only check a specific branch |
 
 ## What the Script Does
 
@@ -46,6 +54,7 @@ Use this skill when:
 4. **Analyzes PR commits** — Categorizes as auto-updates vs manual commits
 5. **Traces fixes** (optional) — Checks if a specific fix has flowed through VMR → codeflow PR
 6. **Recommends actions** — Suggests force trigger, close/reopen, merge as-is, or wait
+7. **Checks for missing backflow** (optional) — Finds branches where a backflow PR should exist but doesn't
 
 ## Interpreting Results
 
