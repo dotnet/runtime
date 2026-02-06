@@ -372,6 +372,7 @@ else
     echo CORE_ROOT: ${CORE_ROOT}
     echo ExePath: ${PWD}/${ExePath}
     echo CLRTestExecutionArguments: ${CLRTestExecutionArguments[@]}
+    echo node version: `node -v`
     cmd="node ${CORE_ROOT}/corerun.js -c ${CORE_ROOT} ${PWD}/${ExePath} ${CLRTestExecutionArguments[@]}"
     echo Running: $cmd
     run_with_timeout 300 $cmd
