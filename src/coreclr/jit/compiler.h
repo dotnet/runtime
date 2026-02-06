@@ -7713,8 +7713,8 @@ public:
         O2K_NEVER_NEGATIVE,        // Something that is known to be never negative, e.g., array or span length
         O2K_CHECKED_BOUND_ADD_CNS, // "checkedBndVN + cns" where op2.vn holds the "checkedBndVN"
                                    // and op2.iconVal holds the "cns".
-                                   // "Checked bound" alone doesn't mean anything (nor it implies that it's never
-                                   // negative)
+                                   // "Checked bound" alone doesn't mean anything,
+                                   // nor it implies that it's never negative.
         O2K_ZEROOBJ,
         O2K_SUBRANGE
     };
@@ -7926,13 +7926,6 @@ public:
             return m_op2;
         }
 
-        // Is it "X relop (len + cns)" form?
-        // NOTE: the cns can be zero, so this implies "X relop len" form.
-        bool IsCheckedBoundWithConst() const
-        {
-            return KindIs(OAK_GE, OAK_GT, OAK_LE, OAK_LT) && GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS);
-        }
-
         bool IsCopyAssertion() const
         {
             return (KindIs(OAK_EQUAL) && GetOp1().KindIs(O1K_LCLVAR) && GetOp2().KindIs(O2K_LCLVAR_COPY));
@@ -7975,7 +7968,8 @@ public:
 
         bool IsBoundsCheckNoThrow() const
         {
-            // O1K_VN (idx) u< O2K_VN (len)
+            // O1K_VN (idx) u< O2K_VN (len) where len is never negative.
+            // Effectively, it's "idx >= 0 && idx < len"
             return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) && (GetOp2().KindIs(O2K_NEVER_NEGATIVE));
         }
 

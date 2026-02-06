@@ -910,7 +910,9 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         bool       isUnsigned = false;
 
         // Current assertion is of the form "i <relop> (checkedBndVN + cns)"
-        if (canUseCheckedBounds && curAssertion.IsCheckedBoundWithConst())
+        if (canUseCheckedBounds &&
+            curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) &&
+            curAssertion.GetOp2().KindIs(Compiler::O2K_CHECKED_BOUND_ADD_CNS))
         {
             if (normalLclVN == curAssertion.GetOp1().GetVN())
             {
