@@ -3,13 +3,88 @@
 
 using System.ComponentModel;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 
 namespace System.DirectoryServices.Protocols
 {
     public partial class LdapSessionOptions
     {
+        private LDAP_TLS_CONNECT_CB _serverCertificateRoutine;
+        private Interop.OpenSsl.VerifyCallback? _openSslVerifyRoutine;
+
+        private void InitializeServerCertificateDelegate()
+        {
+            _serverCertificateRoutine = new LDAP_TLS_CONNECT_CB(SetOpenSslCallback);
+        }
+
         static partial void PALCertFreeCRLContext(IntPtr certPtr);
+
+        private int SetOpenSslCallback(IntPtr ld, IntPtr ssl, IntPtr ctx, IntPtr arg)
+        {
+            _openSslVerifyRoutine ??= new Interop.OpenSsl.VerifyCallback(ProcessServerCertificate);
+            Interop.OpenSsl.SSL_set_verify(ssl, Interop.OpenSsl.SSL_VERIFY_PEER, _openSslVerifyRoutine);
+
+            return 1; // continue the handshake
+        }
+
+        private int ProcessServerCertificate(int preverify_ok, IntPtr x509StoreCtx)
+        {
+            if (_serverCertificateDelegate == null)
+            {
+                return preverify_ok;
+            }
+
+            int depth = Interop.OpenSsl.X509_STORE_CTX_get_error_depth(x509StoreCtx);
+            if (depth != 0)
+            {
+                return 1;
+            }
+
+            X509Certificate? cert = TryGetX509Certificate2FromStoreCtx(x509StoreCtx);
+            if (cert == null)
+                return 0;
+
+            try
+            {
+                Console.WriteLine($"Cert: {cert.Subject}, Depth: {depth}");
+                return _serverCertificateDelegate(_connection, cert) ? 1 : 0;
+            }
+            catch
+            {
+                return 0;
+            }
+            finally
+            {
+                cert.Dispose();
+            }
+        }
+
+        private static X509Certificate2? TryGetX509Certificate2FromStoreCtx(IntPtr x509StoreCtx)
+        {
+            IntPtr x509 = Interop.OpenSsl.X509_STORE_CTX_get_current_cert(x509StoreCtx);
+            if (x509 == IntPtr.Zero)
+                return null;
+
+            // OpenSSL will allocate a buffer and write its address into pp if pp starts as NULL.
+            IntPtr pDer = IntPtr.Zero;
+            int len = Interop.OpenSsl.i2d_X509(x509, ref pDer);
+            if (len <= 0 || pDer == IntPtr.Zero)
+                return null;
+
+            try
+            {
+                byte[] der = new byte[len];
+                Marshal.Copy(pDer, der, 0, len);
+                return X509CertificateLoader.LoadCertificate(der);
+            }
+            finally
+            {
+                Interop.OpenSsl.CRYPTO_free(pDer, IntPtr.Zero, 0);
+            }
+        }
 
         private bool _secureSocketLayer;
 
@@ -73,6 +148,50 @@ namespace System.DirectoryServices.Protocols
                 }
 
                 SetBoolValueHelper(LdapOption.LDAP_OPT_REFERRALS, value == ReferralChasingOptions.All);
+            }
+        }
+
+        public VerifyServerCertificateCallback? VerifyServerCertificate
+        {
+            get
+            {
+                if (_connection._disposed)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
+
+                return _serverCertificateDelegate;
+            }
+            set
+            {
+                if (_connection._disposed)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
+
+                if (value != null)
+                {
+                    IntPtr functionPointer = Marshal.GetFunctionPointerForDelegate(_serverCertificateRoutine);
+                    //int error = LdapPal.SetServerCertOption(_connection._ldapHandle, LdapOption.LDAP_OPT_X_TLS_CONNECT_CB, functionPointer);
+                    int error = Interop.Ldap.ldap_set_option_ptr_value(_connection._ldapHandle, LdapOption.LDAP_OPT_X_TLS_CONNECT_CB, functionPointer);
+
+                    ErrorChecking.CheckAndSetLdapError(error);
+
+                    IntPtr expected = Marshal.GetFunctionPointerForDelegate(_serverCertificateRoutine);
+
+                    IntPtr actual = IntPtr.Zero;
+                    int getErr = Interop.Ldap.ldap_get_option_ptr(_connection._ldapHandle, LdapOption.LDAP_OPT_X_TLS_CONNECT_CB, ref actual);
+
+                    // If you have ErrorChecking/CheckAndSetLdapError, use it
+                    ErrorChecking.CheckAndSetLdapError(getErr);
+
+                    if (actual != expected)
+                    {
+                        throw new Exception($"TLS connect cb mismatch. expected={expected}, actual={actual}");
+                    }
+                }
+
+                _serverCertificateDelegate = value;
             }
         }
 
