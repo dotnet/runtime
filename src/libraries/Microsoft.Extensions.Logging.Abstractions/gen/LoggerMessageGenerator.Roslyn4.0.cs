@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Logging.Generators
             }
 
             bool hasStringCreate = false;
-            var allLogClasses = new Dictionary<string, LoggerClass>(); // Use dictionary to deduplicate by class name
+            var allLogClasses = new Dictionary<string, LoggerClass>(); // Use dictionary to deduplicate by class key
 
             foreach (var item in items)
             {
@@ -104,19 +104,14 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     hasStringCreate = item.HasStringCreate;
 
-                    // Convert spec back to mutable class for emission
-                    var loggerClass = FromSpec(item.LoggerClassSpec);
+                    // Build unique key including parent class chain to handle nested classes
+                    string classKey = BuildClassKey(item.LoggerClassSpec);
 
-                    // Merge classes with the same full name (namespace + name)
-                    string classKey = loggerClass.Namespace + "." + loggerClass.Name;
-                    if (allLogClasses.TryGetValue(classKey, out var existingClass))
+                    // Each attributed method in a class produces the same LoggerClassSpec with all methods
+                    // Only add the first occurrence to avoid duplicates
+                    if (!allLogClasses.ContainsKey(classKey))
                     {
-                        // Merge methods from multiple attributed methods in the same class
-                        existingClass.Methods.AddRange(loggerClass.Methods);
-                    }
-                    else
-                    {
-                        allLogClasses[classKey] = loggerClass;
+                        allLogClasses[classKey] = FromSpec(item.LoggerClassSpec);
                     }
                 }
             }
@@ -128,6 +123,20 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 context.AddSource("LoggerMessage.g.cs", SourceText.From(result, Encoding.UTF8));
             }
+        }
+
+        private static string BuildClassKey(LoggerClassSpec classSpec)
+        {
+            // Build key with full namespace and parent class chain to handle nested classes
+            var parts = new List<string>();
+            var current = classSpec;
+            while (current != null)
+            {
+                parts.Add(current.Name);
+                current = current.ParentClass;
+            }
+            parts.Reverse();
+            return classSpec.Namespace + "." + string.Join(".", parts);
         }
 
         private static LoggerClass FromSpec(LoggerClassSpec spec)
