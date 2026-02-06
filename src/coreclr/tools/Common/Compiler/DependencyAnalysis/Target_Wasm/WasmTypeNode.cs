@@ -28,7 +28,12 @@ namespace ILCompiler.DependencyAnalysis.Wasm
         protected override string GetName(NodeFactory factory)
             => $"Wasm Type ({string.Join(",", _types.Skip(1))}) -> {_types.FirstOrDefault()}";
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false) => null;
+        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+            => new ObjectData(
+                Array.Empty<byte>(),
+                Array.Empty<Relocation>(),
+                1,
+                Array.Empty<ISymbolDefinitionNode>());
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
             => 0 /* FIXME-WASM */;
