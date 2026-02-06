@@ -45,4 +45,6 @@ namespace System.Security.Cryptography.Rsa.Tests
     public class RSACryptoServiceProviderSignatureFormatterTests : RSASignatureFormatterTests<RSACryptoServiceProviderProvider> { }
     public class RSACryptoServiceProviderKeyExchangeFormatterTests : RSAKeyExchangeFormatterTests<RSACryptoServiceProviderProvider> { }
     public class RSACryptoServiceProviderFactoryTests : RSAFactoryTests<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderKeyPemTests : RSAKeyPemTests<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderKeyFileTests : RSAKeyFileTests<RSACryptoServiceProviderProvider> { }
 }

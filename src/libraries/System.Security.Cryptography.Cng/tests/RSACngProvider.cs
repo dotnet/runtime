@@ -42,4 +42,6 @@ namespace System.Security.Cryptography.Rsa.Tests
     public class RSACngSignatureFormatterTests : RSASignatureFormatterTests<RSACngProvider> { }
     public class RSACngKeyExchangeFormatterTests : RSAKeyExchangeFormatterTests<RSACngProvider> { }
     public class RSACngFactoryTests : RSAFactoryTests<RSACngProvider> { }
+    public class RSACngKeyPemTests : RSAKeyPemTests<RSACngProvider> { }
+    public class RSACngKeyFileTests : RSAKeyFileTests<RSACngProvider> { }
 }

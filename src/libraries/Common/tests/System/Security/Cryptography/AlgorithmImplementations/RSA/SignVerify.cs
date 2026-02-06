@@ -11,7 +11,7 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public sealed class SignVerify_Array : SignVerify
+    public sealed class SignVerify_Array<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             rsa.SignData(data, hashAlgorithm, padding);
@@ -160,7 +160,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha1Signatures))]
+        [ConditionalFact(nameof(SupportsSha1Signatures))]
         public void ExpectedSignature_SHA1_384()
         {
             byte[] expectedSignature =
@@ -191,7 +191,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha1Signatures))]
+        [ConditionalFact(nameof(SupportsSha1Signatures))]
         public void ExpectedSignature_SHA1_1032()
         {
             byte[] expectedSignature =
@@ -218,7 +218,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             ExpectSignature(expectedSignature, TestData.HelloBytes, "SHA1", TestData.RSA1032Parameters);
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha1Signatures))]
+        [ConditionalFact(nameof(SupportsSha1Signatures))]
         public void ExpectedSignature_SHA1_2048()
         {
             byte[] expectedSignature = new byte[]
@@ -363,7 +363,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(expectedSignature, signature);
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha1Signatures))]
+        [ConditionalFact(nameof(SupportsSha1Signatures))]
         public void VerifySignature_SHA1_384()
         {
             byte[] signature =
@@ -379,7 +379,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifySignature(signature, TestData.HelloBytes, "SHA1", TestData.RSA384Parameters);
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha1Signatures))]
+        [ConditionalFact(nameof(SupportsSha1Signatures))]
         public void VerifySignature_SHA1_1032()
         {
             byte[] signature =
@@ -406,7 +406,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifySignature(signature, TestData.HelloBytes, "SHA1", TestData.RSA1032Parameters);
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha1Signatures))]
+        [ConditionalFact(nameof(SupportsSha1Signatures))]
         public void VerifySignature_SHA1_2048()
         {
             byte[] signature = new byte[]
@@ -516,7 +516,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifySignature(signature, TestData.HelloBytes, "SHA256", TestData.RSA2048Params);
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha3))]
+        [ConditionalFact(nameof(SupportsSha3))]
         public void VerifySignature_SHA3_256_RSA2048()
         {
             byte[] signature = new byte[]
@@ -542,7 +542,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifySignature(signature, TestData.HelloBytes, HashAlgorithmName.SHA3_256.Name, TestData.RSA2048Params);
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha3))]
+        [ConditionalFact(nameof(SupportsSha3))]
         public void VerifySignature_SHA3_384_RSA2048()
         {
             byte[] signature = new byte[]
@@ -568,7 +568,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifySignature(signature, TestData.HelloBytes, HashAlgorithmName.SHA3_384.Name, TestData.RSA2048Params);
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha3))]
+        [ConditionalFact(nameof(SupportsSha3))]
         public void VerifySignature_SHA3_512_RSA2048()
         {
             byte[] signature = new byte[]
@@ -709,7 +709,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha1Signatures))]
+        [ConditionalFact(nameof(SupportsSha1Signatures))]
         public void ExpectedHashSignature_SHA1_2048()
         {
             byte[] expectedHashSignature = new byte[]
@@ -840,7 +840,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             ExpectHashSignature(expectedHashSignature, dataHash, "SHA256", TestData.RSA2048Params);
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha1Signatures))]
+        [ConditionalFact(nameof(SupportsSha1Signatures))]
         public void VerifyHashSignature_SHA1_2048()
         {
             byte[] hashSignature = new byte[]
@@ -1147,7 +1147,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 helloSignature);
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha3))]
+        [ConditionalFact(nameof(SupportsSha3))]
         public void VerifyExpectedSignature_PssSha3_256()
         {
             // Signature independently created with
@@ -1179,7 +1179,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 helloSignature);
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha3))]
+        [ConditionalFact(nameof(SupportsSha3))]
         public void VerifyExpectedSignature_PssSha3_384()
         {
             // Signature independently created with
@@ -1211,7 +1211,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 helloSignature);
         }
 
-        [ConditionalFact(typeof(SignVerify<TProvider>), nameof(SupportsSha3))]
+        [ConditionalFact(nameof(SupportsSha3))]
         public void VerifyExpectedSignature_PssSha3_512()
         {
             // Signature independently created with
@@ -1243,7 +1243,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 helloSignature);
         }
 
-        [ConditionalTheory(typeof(SignVerify<TProvider>), nameof(NoSupportsSha3))]
+        [ConditionalTheory(nameof(NoSupportsSha3))]
         [InlineData("SHA3-256")]
         [InlineData("SHA3-384")]
         [InlineData("SHA3-512")]
@@ -1267,7 +1267,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalTheory(typeof(SignVerify<TProvider>), nameof(NoSupportsSha3))]
+        [ConditionalTheory(nameof(NoSupportsSha3))]
         [InlineData("SHA3-256")]
         [InlineData("SHA3-384")]
         [InlineData("SHA3-512")]

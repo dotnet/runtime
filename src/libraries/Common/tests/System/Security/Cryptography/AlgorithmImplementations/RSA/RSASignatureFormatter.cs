@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             return rsa;
         }
 
-        [ConditionalFact(typeof(RSASignatureFormatterTests<TProvider>), nameof(SupportsSha1Signatures))]
+        [ConditionalFact(nameof(SupportsSha1Signatures))]
         public static void VerifySignature_SHA1()
         {
             using (RSA rsa = s_provider.Create())
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(RSASignatureFormatterTests<TProvider>), nameof(SupportsSha1Signatures))]
+        [ConditionalFact(nameof(SupportsSha1Signatures))]
         public static void VerifyKnownSignature()
         {
             byte[] hash = "012d161304fa0c6321221516415813022320620c".HexToByteArray();

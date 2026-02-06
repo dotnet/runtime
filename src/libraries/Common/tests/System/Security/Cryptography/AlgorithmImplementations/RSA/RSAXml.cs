@@ -8,7 +8,7 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class RSAXml<TProvider> where TProvider : IRSAProvider, new()
+    public abstract class RSAXml<TProvider> where TProvider : IRSAProvider, new()
     {
         private static readonly TProvider s_provider = new TProvider();
 
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA1032Parameters);
         }
 
-        [ConditionalFact(typeof(RSAXml<TProvider>), nameof(Supports16384))]
+        [ConditionalFact(nameof(Supports16384))]
         public static void TestRead16384Parameters_Public()
         {
             RSAParameters expectedParameters = ImportExport.MakePublic(TestData.RSA16384Params);
@@ -167,7 +167,7 @@ zM=
                 expectedParameters);
         }
 
-        [ConditionalFact(typeof(RSAXml<TProvider>), nameof(Supports16384))]
+        [ConditionalFact(nameof(Supports16384))]
         public static void TestRead16384Parameters_Private()
         {
             // Bonus trait of this XML: the D parameter is not in
@@ -644,7 +644,7 @@ zM=
                 ));
         }
 
-        [ConditionalTheory(typeof(RSAXml<TProvider>), nameof(Supports16384))]
+        [ConditionalTheory(nameof(Supports16384))]
         [InlineData(true)]
         [InlineData(false)]
         public static void TestWrite16384Parameters(bool includePrivateParameters)

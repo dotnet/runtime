@@ -6,7 +6,7 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class RSAFactoryTests<TProvider> where TProvider : IRSAProvider, new()
+    public abstract class RSAFactoryTests<TProvider> where TProvider : IRSAProvider, new()
     {
         private static readonly TProvider s_provider = new TProvider();
 
