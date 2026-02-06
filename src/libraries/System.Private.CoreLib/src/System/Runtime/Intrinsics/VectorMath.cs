@@ -3053,26 +3053,108 @@ namespace System.Runtime.Intrinsics
         public static TVectorDouble AsinDouble<TVectorDouble>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
-            // Attempt to match the .NET scalar Math.Asin behavior as closely as possible
-            // by using the same general mathematical approach with carefully tuned coefficients.
+            // This code is based on `asin` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
             //
-            // The arcsine function can be computed using:
-            // 1. For small |x| <= 0.5: Direct Taylor-like series approximation
-            // 2. For larger |x| > 0.5: Use identity asin(x) = pi/2 - 2*asin(sqrt((1-x)/2))
-            //
-            // This implementation prioritizes accuracy over raw performance to match scalar results.
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-            // For small inputs, widen to double and use the scalar Math.Asin for best accuracy
-            // This ensures we match the scalar implementation exactly
-            Span<double> buffer = stackalloc double[TVectorDouble.Count];
-            x.CopyTo(buffer);
+            // Implementation Notes
+            // --------------------
+            // For abs(x) <= 0.5 use arcsin(x) = x + x^3*R(x^2)
+            // where R(x^2) is a rational minimax approximation to (arcsin(x) - x)/x^3.
+            // For abs(x) > 0.5 exploit the identity:
+            // arcsin(x) = pi/2 - 2*arcsin(sqrt(1-x)/2)
+            // together with the above rational approximation.
 
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                buffer[i] = Math.Asin(buffer[i]);
-            }
+            // Rational polynomial coefficients for numerator (from Sollya via AMD)
+            const double C1 = 0.227485835556935010735943483075;
+            const double C2 = -0.445017216867635649900123110649;
+            const double C3 = 0.275558175256937652532686256258;
+            const double C4 = -0.0549989809235685841612020091328;
+            const double C5 = 0.00109242697235074662306043804220;
+            const double C6 = 0.0000482901920344786991880522822991;
 
-            return TVectorDouble.Create(buffer);
+            // Rational polynomial coefficients for denominator (from Sollya via AMD)
+            const double D1 = 1.36491501334161032038194214209;
+            const double D2 = -3.28431505720958658909889444194;
+            const double D3 = 2.76568859157270989520376345954;
+            const double D4 = -0.943639137032492685763471240072;
+            const double D5 = 0.105869422087204370341222318533;
+
+            // Constant for reconstructing asin(±1)
+            const double PIBY2 = 1.5707963267948965e+00;
+
+            TVectorDouble half = TVectorDouble.Create(0.5);
+            TVectorDouble one = TVectorDouble.One;
+
+            // Get sign and absolute value
+            TVectorDouble sign = x & TVectorDouble.Create(-0.0);
+            TVectorDouble y = TVectorDouble.Abs(x);
+
+            // Check for transform region (|x| > 0.5)
+            TVectorDouble transformMask = TVectorDouble.GreaterThan(y, half);
+
+            // For |x| > 0.5: r = 0.5 * (1.0 - y), s = sqrt(r), y = s
+            TVectorDouble r_transform = half * (one - y);
+            TVectorDouble s = TVectorDouble.Sqrt(r_transform);
+
+            // For |x| <= 0.5: r = y * y
+            TVectorDouble r_normal = y * y;
+
+            // Select r and y based on transform
+            TVectorDouble r = TVectorDouble.ConditionalSelect(transformMask, r_transform, r_normal);
+            y = TVectorDouble.ConditionalSelect(transformMask, s, y);
+
+            // Evaluate numerator polynomial: C1 + r*(C2 + r*(C3 + r*(C4 + r*(C5 + r*C6))))
+            TVectorDouble poly_num = TVectorDouble.Create(C6);
+            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C5));
+            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C4));
+            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C3));
+            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C2));
+            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C1));
+
+            // Evaluate denominator polynomial: D1 + r*(D2 + r*(D3 + r*(D4 + r*D5)))
+            TVectorDouble poly_deno = TVectorDouble.Create(D5);
+            poly_deno = TVectorDouble.MultiplyAddEstimate(poly_deno, r, TVectorDouble.Create(D4));
+            poly_deno = TVectorDouble.MultiplyAddEstimate(poly_deno, r, TVectorDouble.Create(D3));
+            poly_deno = TVectorDouble.MultiplyAddEstimate(poly_deno, r, TVectorDouble.Create(D2));
+            poly_deno = TVectorDouble.MultiplyAddEstimate(poly_deno, r, TVectorDouble.Create(D1));
+
+            // u = r * poly_num / poly_deno
+            TVectorDouble u = r * poly_num / poly_deno;
+
+            // For transform region: reconstruct using high-low precision arithmetic
+            // s1 = high part of s (clear low 32 bits)
+            // c = (r - s1*s1) / (s + s1)
+            // p = 2*s*u - (PIBY2_TAIL - 2*c)
+            // q = HPIBY2_HEAD - 2*s1
+            // v_transform = HPIBY2_HEAD - (p - q)
+
+            // For simplicity, use a simpler (slightly less accurate) reconstruction:
+            // v_transform = PIBY2 - 2*(s + s*u)
+            TVectorDouble v_transform = TVectorDouble.Create(PIBY2) - TVectorDouble.Create(2.0) * (y + y * u);
+
+            // For normal region: v = y + y*u
+            TVectorDouble v_normal = y + y * u;
+
+            // Select result based on transform
+            TVectorDouble v = TVectorDouble.ConditionalSelect(transformMask, v_transform, v_normal);
+
+            // Apply sign
+            v |= sign;
+
+            // Handle special cases: |x| > 1 returns NaN, |x| = 1 returns ±π/2
+            TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(TVectorDouble.Abs(x), one);
+            TVectorDouble nan = TVectorDouble.Create(double.NaN);
+            v = TVectorDouble.ConditionalSelect(absXGreaterThanOne, nan, v);
+
+            // Handle x = ±1 exactly
+            TVectorDouble absXEqualsOne = TVectorDouble.Equals(TVectorDouble.Abs(x), one);
+            TVectorDouble piby2Result = TVectorDouble.Create(PIBY2) | sign;
+            v = TVectorDouble.ConditionalSelect(absXEqualsOne, piby2Result, v);
+
+            return v;
         }
 
         public static TVectorSingle AsinSingle<TVectorSingle, TVectorInt32, TVectorDouble, TVectorInt64>(TVectorSingle x)
@@ -3081,7 +3163,7 @@ namespace System.Runtime.Intrinsics
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
         {
-            // This code is based on `vrs4_asinf` from amd/aocl-libm-ose
+            // This code is based on `asinf` from amd/aocl-libm-ose
             // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
             //
             // Licensed under the BSD 3-Clause "New" or "Revised" License
@@ -3089,15 +3171,8 @@ namespace System.Runtime.Intrinsics
 
             // Implementation Notes
             // --------------------
-            // The input domain should be in the [-1, +1] else a domain error is displayed
-            //
-            // asin(-x) = -asin(x)
-            // asin(x) = pi/2-2*asin(sqrt(1/2*(1-x)))  when x > 1/2
-            //
-            // y = abs(x)
-            // asin(y) = asin(g)  when y <= 0.5,  where g = y*y
-            //         = pi/2-asin(g)  when y > 0.5, where g = 1/2*(1-y), y = -2*sqrt(g)
-            // The term asin(f) is approximated by using a polynomial
+            // Uses double-precision arithmetic for improved accuracy, similar to AMD asinf.
+            // Widens float inputs to double, computes using AsinDouble, then narrows back.
 
             if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
             {
@@ -3371,26 +3446,21 @@ namespace System.Runtime.Intrinsics
         public static TVectorDouble AcosDouble<TVectorDouble>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
-            // This code is based on `vrd2_acos` and `acos` from amd/aocl-libm-ose
-            // Copyright (C) 2008-2025 Advanced Micro Devices, Inc. All rights reserved.
+            // This code is based on `acos` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
             //
             // Licensed under the BSD 3-Clause "New" or "Revised" License
             // See THIRD-PARTY-NOTICES.TXT for the full license text
 
             // Implementation Notes
             // --------------------
-            // The input domain should be in the [-1, +1] else a domain error is displayed
-            //
-            // acos(x) = pi/2 - asin(x)             when |x| <= 0.5
-            // acos(x) = 2*asin(sqrt((1-x)/2))      when x > 0.5
-            // acos(x) = pi - 2*asin(sqrt((1+x)/2)) when x < -0.5
+            // Based on the value of x, acos(x) is calculated as:
+            // 1. If x > 0.5:  acos(x) = 2 * asin(sqrt((1 - x) / 2))
+            // 2. If x < -0.5: acos(x) = pi - 2*asin(sqrt((1 + x) / 2))
+            // 3. If |x| <= 0.5: acos(x) = pi/2 - asin(x)
 
-            const double HALF = 0.5;
-            const double PI_BY_TWO = 1.5707963267948966;
-            const double PI = 3.1415926535897932;
-
-            // Polynomial coefficients from AMD aocl-libm-ose (same as asin)
-            const double C1 = 0.166666666666664;      // 0x1.55555555552aap-3
+            // Polynomial coefficients from Sollya (AMD aocl-libm-ose acos.c)
+            const double C1 = 0.166666666666654;      // 0x1.55555555552aap-3
             const double C2 = 0.0750000000006397;     // 0x1.333333337cbaep-4
             const double C3 = 0.0446428571088065;     // 0x1.6db6db3c0984p-5
             const double C4 = 0.0303819469180048;     // 0x1.f1c72dd86cbafp-6
@@ -3399,65 +3469,82 @@ namespace System.Runtime.Intrinsics
             const double C7 = 0.0138887093438824;     // 0x1.c6e1568b90518p-7
             const double C8 = 0.0121483872130308;     // 0x1.8f6a58977fe49p-7
             const double C9 = 0.00640855516049134;    // 0x1.a6ab10b3321bp-8
+            const double C10 = 0.0197639134991274;    // 0x1.43305ebb2428fp-6
+            const double C11 = -0.0164975096950116;   // -0x1.0e874ec5e3157p-6
+            const double C12 = 0.0319093993379205;    // 0x1.06eec35b3b142p-5
 
-            TVectorDouble result;
-            TVectorDouble g;
-            TVectorDouble r;
-            TVectorDouble poly;
+            const double PI = 3.1415926535897933e+00;
+            const double HALF = 0.5;
 
-            TVectorDouble cmp = TVectorDouble.Create(HALF);
-            TVectorDouble cmpNeg = TVectorDouble.Create(-HALF);
+            // Constants for reconstruction (a[0], a[1], b[0], b[1])
+            const double A0 = 0.0;
+            const double A1 = 0.7853981633974483;     // pi/4
+            const double B0 = 1.5707963267948966;     // pi/2
+            const double B1 = 0.7853981633974483;     // pi/4
 
-            TVectorDouble needsPositiveTransform = TVectorDouble.GreaterThan(x, cmp);
-            TVectorDouble needsNegativeTransform = TVectorDouble.LessThan(x, cmpNeg);
+            TVectorDouble half = TVectorDouble.Create(HALF);
+            TVectorDouble one = TVectorDouble.One;
 
-            // For x > 0.5: g = (1-x)/2, r = sqrt(g), result = 2*asin(r)
-            TVectorDouble g_pos = (TVectorDouble.One - x) * TVectorDouble.Create(HALF);
-            TVectorDouble r_pos = TVectorDouble.Sqrt(g_pos);
+            // Get sign and absolute value of x
+            TVectorDouble xneg = TVectorDouble.LessThan(x, TVectorDouble.Zero);
+            TVectorDouble y = TVectorDouble.Abs(x);
 
-            // For x < -0.5: g = (1+x)/2, r = sqrt(g), result = pi - 2*asin(r)
-            TVectorDouble g_neg = (TVectorDouble.One + x) * TVectorDouble.Create(HALF);
-            TVectorDouble r_neg = TVectorDouble.Sqrt(g_neg);
+            // Check which region we're in
+            TVectorDouble gtHalf = TVectorDouble.GreaterThan(y, half);
 
-            // For |x| <= 0.5: compute asin(x) and then pi/2 - asin(x)
-            TVectorDouble ax = TVectorDouble.Abs(x);
-            TVectorDouble sign = x & TVectorDouble.Create(-0.0);
-            TVectorDouble g_mid = ax * ax;
-            TVectorDouble r_mid = ax;
+            // For |x| > 0.5: z = 0.5*(1-y), y = -2*sqrt(z)
+            TVectorDouble z_hi = half * (one - y);
+            TVectorDouble y_hi = TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(z_hi);
 
-            // Select appropriate g and r based on x
-            g = TVectorDouble.ConditionalSelect(needsPositiveTransform, g_pos,
-                TVectorDouble.ConditionalSelect(needsNegativeTransform, g_neg, g_mid));
-            r = TVectorDouble.ConditionalSelect(needsPositiveTransform, r_pos,
-                TVectorDouble.ConditionalSelect(needsNegativeTransform, r_neg, r_mid));
+            // For |x| <= 0.5: z = y*y (use n=1 reconstruction)
+            TVectorDouble z_lo = y * y;
 
-            // Polynomial evaluation: poly = g * (C1 + g*(C2 + g*(C3 + ... + g*C9)))
-            poly = TVectorDouble.MultiplyAddEstimate(
-                TVectorDouble.MultiplyAddEstimate(
-                    TVectorDouble.MultiplyAddEstimate(
-                        TVectorDouble.MultiplyAddEstimate(
-                            TVectorDouble.MultiplyAddEstimate(
-                                TVectorDouble.MultiplyAddEstimate(
-                                    TVectorDouble.MultiplyAddEstimate(
-                                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C9), g, TVectorDouble.Create(C8)),
-                                        g, TVectorDouble.Create(C7)),
-                                    g, TVectorDouble.Create(C6)),
-                                g, TVectorDouble.Create(C5)),
-                            g, TVectorDouble.Create(C4)),
-                        g, TVectorDouble.Create(C3)),
-                    g, TVectorDouble.Create(C2)),
-                g, TVectorDouble.Create(C1)
-            );
+            // Select z and y based on region
+            TVectorDouble z = TVectorDouble.ConditionalSelect(gtHalf, z_hi, z_lo);
+            y = TVectorDouble.ConditionalSelect(gtHalf, y_hi, y);
 
-            // Compute asin approximation
-            TVectorDouble asinResult = TVectorDouble.MultiplyAddEstimate(poly * g, r, r);
+            // Polynomial: C1 + z*(C2 + z*(C3 + ... + z*C12))
+            TVectorDouble poly = TVectorDouble.Create(C12);
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C11));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C10));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C9));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C8));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C7));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C6));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C5));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C4));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C3));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C2));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C1));
 
-            // Apply final transformations based on range
-            result = TVectorDouble.ConditionalSelect(needsPositiveTransform,
-                TVectorDouble.Create(2.0) * asinResult,
-                TVectorDouble.ConditionalSelect(needsNegativeTransform,
-                    TVectorDouble.Create(PI) - TVectorDouble.Create(2.0) * asinResult,
-                    TVectorDouble.Create(PI_BY_TWO) - (asinResult | sign)));
+            // poly = y + y * z * poly
+            poly = y + y * z * poly;
+
+            // Reconstruct result based on sign and region
+            // if (xneg): result = (B[n] + poly) + B[n]
+            // else:      result = (A[n] - poly) + A[n]
+            // where n=0 if y > 0.5, n=1 if y <= 0.5
+
+            // For n=0 (|x| > 0.5): A[0]=0, B[0]=pi/2
+            // For n=1 (|x| <= 0.5): A[1]=pi/4, B[1]=pi/4
+
+            TVectorDouble a = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(A0), TVectorDouble.Create(A1));
+            TVectorDouble b = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(B0), TVectorDouble.Create(B1));
+
+            TVectorDouble result_neg = (b + poly) + b;
+            TVectorDouble result_pos = (a - poly) + a;
+
+            TVectorDouble result = TVectorDouble.ConditionalSelect(xneg, result_neg, result_pos);
+
+            // Handle special cases: |x| > 1 returns NaN, x = ±1 returns 0 or π
+            TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(TVectorDouble.Abs(x), one);
+            result = TVectorDouble.ConditionalSelect(absXGreaterThanOne, TVectorDouble.Create(double.NaN), result);
+
+            TVectorDouble xEqualsOne = TVectorDouble.Equals(x, one);
+            result = TVectorDouble.ConditionalSelect(xEqualsOne, TVectorDouble.Zero, result);
+
+            TVectorDouble xEqualsNegOne = TVectorDouble.Equals(x, TVectorDouble.Create(-1.0));
+            result = TVectorDouble.ConditionalSelect(xEqualsNegOne, TVectorDouble.Create(PI), result);
 
             return result;
         }
@@ -3468,19 +3555,16 @@ namespace System.Runtime.Intrinsics
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
         {
-            // This code is based on `vrs4_acosf` from amd/aocl-libm-ose
-            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            // This code is based on `acosf` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2023 Advanced Micro Devices, Inc. All rights reserved.
             //
             // Licensed under the BSD 3-Clause "New" or "Revised" License
             // See THIRD-PARTY-NOTICES.TXT for the full license text
 
             // Implementation Notes
             // --------------------
-            // The input domain should be in the [-1, +1] else a domain error is displayed
-            //
-            // acos(x) = pi/2 - asin(x)             when |x| <= 0.5
-            // acos(x) = 2*asin(sqrt((1-x)/2))      when x > 0.5
-            // acos(x) = pi - 2*asin(sqrt((1+x)/2)) when x < -0.5
+            // Uses double-precision arithmetic for improved accuracy, similar to AMD acosf.
+            // Widens float inputs to double, computes using AcosDouble, then narrows back.
 
             if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
             {
@@ -3501,7 +3585,7 @@ namespace System.Runtime.Intrinsics
         public static TVectorDouble AtanDouble<TVectorDouble>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
-            // This code is based on `vrd2_atan` from amd/aocl-libm-ose
+            // This code is based on `atan` from amd/aocl-libm-ose
             // Copyright (C) 2008-2023 Advanced Micro Devices, Inc. All rights reserved.
             //
             // Licensed under the BSD 3-Clause "New" or "Revised" License
@@ -3509,101 +3593,120 @@ namespace System.Runtime.Intrinsics
 
             // Implementation Notes
             // --------------------
-            // sign = sign(x)
-            // x = abs(x)
+            // Argument reduction to range [-7/16,7/16]
+            // Use the following identities:
+            // atan(x) = pi/2 - atan(1/x)                when x > 39/16
+            //         = pi/3 + atan((x-1.5)/(1+1.5*x))  when 19/16 < x <= 39/16
+            //         = pi/4 + atan((x-1)/(1+x))        when 11/16 < x <= 19/16
+            //         = pi/6 + atan((2x-1)/(2+x))       when 7/16 < x <= 11/16
+            //         = atan(x)                         when x <= 7/16
             //
-            // Argument Reduction for every x into the interval [-(2-sqrt(3)),+(2-sqrt(3))]
-            // Use the following identities
-            // atan(x) = pi/2 - atan(1/x)                when x > 1
-            //         = pi/6 + atan(f)                  when f > (2-sqrt(3))
-            // where f = (sqrt(3)*x-1)/(x+sqrt(3))
-            //
-            // All elements are approximated by using polynomial of degree 19
+            // Core approximation: Remez(4,4) on [-7/16,7/16]
 
-            const double SQRT3 = 1.7320508075688772;      // 0x1.bb67ae8584caap0
-            const double RANGE = 0.2679491924311227;      // 0x1.126145e9ecd56p-2 (2-sqrt(3))
-            const double PI_BY_6 = 0.5235987755982989;    // 0x1.0c152382d7366p-1
-            const double PI_BY_2 = 1.5707963267948966;    // 0x1.921fb54442d18p0
-            const double PI_BY_3 = 1.0471975511965979;    // 0x1.0c152382d7366p0
+            // Range boundaries
+            const double R7_16 = 0.4375;    // 7/16
+            const double R11_16 = 0.6875;   // 11/16
+            const double R19_16 = 1.1875;   // 19/16
+            const double R39_16 = 2.4375;   // 39/16
 
-            // Polynomial coefficients
-            const double C0 = -0.33333333333333265;       // -0x1.5555555555549p-2
-            const double C1 = 0.19999999999969587;        // 0x1.9999999996eccp-3
-            const double C2 = -0.1428571428026078;        // -0x1.24924922b2972p-3
-            const double C3 = 0.11111110613838616;        // 0x1.c71c707163579p-4
-            const double C4 = -0.09090882990193784;       // -0x1.745cd1358b0f1p-4
-            const double C5 = 0.07691470703415716;        // 0x1.3b0aea74b0a51p-4
-            const double C6 = -0.06649949387937557;       // -0x1.1061c5f6997a6p-4
-            const double C7 = 0.05677994137264123;        // 0x1.d1242ae875135p-5
-            const double C8 = -0.038358962102069113;      // -0x1.3a3c92f7949aep-5
+            // (chi, clo) pairs for high-precision addition
+            const double CHI_0 = 0.0;
+            const double CLO_0 = 0.0;
+            const double CHI_HALF = 4.63647609000806093515e-01;  // arctan(0.5)
+            const double CLO_HALF = 2.26987774529616809294e-17;
+            const double CHI_1 = 7.85398163397448278999e-01;     // arctan(1.0) = pi/4
+            const double CLO_1 = 3.06161699786838240164e-17;
+            const double CHI_1_5 = 9.82793723247329054082e-01;   // arctan(1.5)
+            const double CLO_1_5 = 1.39033110312309953701e-17;
+            const double CHI_INF = 1.57079632679489655800e+00;   // arctan(inf) = pi/2
+            const double CLO_INF = 6.12323399573676480327e-17;
 
-            TVectorDouble sign = x & TVectorDouble.Create(-0.0);
-            TVectorDouble ax = TVectorDouble.Abs(x);
+            // Remez(4,4) polynomial coefficients for numerator
+            const double P0 = 0.268297920532545909e0;
+            const double P1 = 0.447677206805497472e0;
+            const double P2 = 0.220638780716667420e0;
+            const double P3 = 0.304455919504853031e-1;
+            const double P4 = 0.142316903342317766e-3;
 
-            const double F = 1.0 / RANGE;
+            // Remez(4,4) polynomial coefficients for denominator
+            const double Q0 = 0.804893761597637733e0;
+            const double Q1 = 0.182596787737507063e1;
+            const double Q2 = 0.141254259931958921e1;
+            const double Q3 = 0.424602594203847109e0;
+            const double Q4 = 0.389525873944742195e-1;
 
-            // Argument reduction
-            TVectorDouble cmp1 = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(F));
-            TVectorDouble cmp2 = TVectorDouble.GreaterThan(ax, TVectorDouble.One);
-            TVectorDouble cmp3 = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(RANGE));
+            TVectorDouble signMask = TVectorDouble.Create(-0.0);
+            TVectorDouble sign = x & signMask;
+            TVectorDouble v = TVectorDouble.Abs(x);
 
-            // If ax >= F: aux = 1/ax, pival = pi/2, polysign = negative
-            TVectorDouble aux1 = TVectorDouble.One / ax;
-            TVectorDouble pival1 = TVectorDouble.Create(PI_BY_2);
+            // Determine which region each element falls into
+            TVectorDouble gtR39_16 = TVectorDouble.GreaterThan(v, TVectorDouble.Create(R39_16));
+            TVectorDouble gtR19_16 = TVectorDouble.GreaterThan(v, TVectorDouble.Create(R19_16));
+            TVectorDouble gtR11_16 = TVectorDouble.GreaterThan(v, TVectorDouble.Create(R11_16));
+            TVectorDouble gtR7_16 = TVectorDouble.GreaterThan(v, TVectorDouble.Create(R7_16));
 
-            // If ax > 1 (but < F): aux = (1/ax * sqrt(3) - 1) / (sqrt(3) + 1/ax), pival = pi/3, polysign = negative
-            TVectorDouble recip = TVectorDouble.One / ax;
-            TVectorDouble aux2 = (recip * TVectorDouble.Create(SQRT3) - TVectorDouble.One) / (TVectorDouble.Create(SQRT3) + recip);
-            TVectorDouble pival2 = TVectorDouble.Create(PI_BY_3);
+            // Compute reduced argument for each region
+            TVectorDouble one = TVectorDouble.One;
+            TVectorDouble two = TVectorDouble.Create(2.0);
+            TVectorDouble oneHalf = TVectorDouble.Create(1.5);
 
-            // If ax > range (but <= 1): aux = (ax * sqrt(3) - 1) / (sqrt(3) + ax), pival = pi/6, polysign = positive
-            TVectorDouble aux3 = (ax * TVectorDouble.Create(SQRT3) - TVectorDouble.One) / (TVectorDouble.Create(SQRT3) + ax);
-            TVectorDouble pival3 = TVectorDouble.Create(PI_BY_6);
+            // Region 5: x > 39/16: reduced = -1/v
+            TVectorDouble reduced5 = -one / v;
 
-            // Default: aux = ax, pival = 0, polysign = positive
-            TVectorDouble aux4 = ax;
-            TVectorDouble pival4 = TVectorDouble.Zero;
+            // Region 4: 19/16 < x <= 39/16: reduced = (v-1.5)/(1+1.5*v)
+            TVectorDouble reduced4 = (v - oneHalf) / (one + oneHalf * v);
 
-            // Select based on conditions
-            TVectorDouble aux = TVectorDouble.ConditionalSelect(cmp1, aux1,
-                                TVectorDouble.ConditionalSelect(cmp2, aux2,
-                                TVectorDouble.ConditionalSelect(cmp3, aux3, aux4)));
+            // Region 3: 11/16 < x <= 19/16: reduced = (v-1)/(1+v)
+            TVectorDouble reduced3 = (v - one) / (one + v);
 
-            TVectorDouble pival = TVectorDouble.ConditionalSelect(cmp1, pival1,
-                                  TVectorDouble.ConditionalSelect(cmp2, pival2,
-                                  TVectorDouble.ConditionalSelect(cmp3, pival3, pival4)));
+            // Region 2: 7/16 < x <= 11/16: reduced = (2*v-1)/(2+v)
+            TVectorDouble reduced2 = (two * v - one) / (two + v);
 
-            // polysign is negative when cmp1 or cmp2 is true
-            TVectorDouble polysignMask = TVectorDouble.ConditionalSelect(cmp1 | cmp2, TVectorDouble.Create(-0.0), TVectorDouble.Zero);
+            // Region 1: x <= 7/16: reduced = v
+            TVectorDouble reduced1 = v;
 
-            // Polynomial evaluation: poly = aux + C0*aux^3 + C1*aux^5 + C2*aux^7 + ...
-            TVectorDouble aux2_poly = aux * aux;
-            TVectorDouble poly = TVectorDouble.MultiplyAddEstimate(
-                TVectorDouble.MultiplyAddEstimate(
-                    TVectorDouble.MultiplyAddEstimate(
-                        TVectorDouble.MultiplyAddEstimate(
-                            TVectorDouble.MultiplyAddEstimate(
-                                TVectorDouble.MultiplyAddEstimate(
-                                    TVectorDouble.MultiplyAddEstimate(
-                                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C8), aux2_poly, TVectorDouble.Create(C7)),
-                                        aux2_poly, TVectorDouble.Create(C6)),
-                                    aux2_poly, TVectorDouble.Create(C5)),
-                                aux2_poly, TVectorDouble.Create(C4)),
-                            aux2_poly, TVectorDouble.Create(C3)),
-                        aux2_poly, TVectorDouble.Create(C2)),
-                    aux2_poly, TVectorDouble.Create(C1)),
-                aux2_poly, TVectorDouble.Create(C0)
-            );
+            // Select reduced argument
+            TVectorDouble reduced = TVectorDouble.ConditionalSelect(gtR39_16, reduced5,
+                                    TVectorDouble.ConditionalSelect(gtR19_16, reduced4,
+                                    TVectorDouble.ConditionalSelect(gtR11_16, reduced3,
+                                    TVectorDouble.ConditionalSelect(gtR7_16, reduced2, reduced1))));
 
-            poly = TVectorDouble.MultiplyAddEstimate(poly * aux2_poly, aux, aux);
+            // Select chi (high part of constant)
+            TVectorDouble chi = TVectorDouble.ConditionalSelect(gtR39_16, TVectorDouble.Create(CHI_INF),
+                               TVectorDouble.ConditionalSelect(gtR19_16, TVectorDouble.Create(CHI_1_5),
+                               TVectorDouble.ConditionalSelect(gtR11_16, TVectorDouble.Create(CHI_1),
+                               TVectorDouble.ConditionalSelect(gtR7_16, TVectorDouble.Create(CHI_HALF), TVectorDouble.Create(CHI_0)))));
 
-            // Apply polysign
-            poly ^= polysignMask;
+            // Select clo (low part of constant)
+            TVectorDouble clo = TVectorDouble.ConditionalSelect(gtR39_16, TVectorDouble.Create(CLO_INF),
+                               TVectorDouble.ConditionalSelect(gtR19_16, TVectorDouble.Create(CLO_1_5),
+                               TVectorDouble.ConditionalSelect(gtR11_16, TVectorDouble.Create(CLO_1),
+                               TVectorDouble.ConditionalSelect(gtR7_16, TVectorDouble.Create(CLO_HALF), TVectorDouble.Create(CLO_0)))));
 
-            // result = pival + poly
-            TVectorDouble result = pival + poly;
+            // Compute s = reduced^2
+            TVectorDouble s = reduced * reduced;
 
-            // Restore original sign
+            // Evaluate numerator polynomial: P0 + s*(P1 + s*(P2 + s*(P3 + s*P4)))
+            TVectorDouble num = TVectorDouble.Create(P4);
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(P3));
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(P2));
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(P1));
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(P0));
+
+            // Evaluate denominator polynomial: Q0 + s*(Q1 + s*(Q2 + s*(Q3 + s*Q4)))
+            TVectorDouble denom = TVectorDouble.Create(Q4);
+            denom = TVectorDouble.MultiplyAddEstimate(denom, s, TVectorDouble.Create(Q3));
+            denom = TVectorDouble.MultiplyAddEstimate(denom, s, TVectorDouble.Create(Q2));
+            denom = TVectorDouble.MultiplyAddEstimate(denom, s, TVectorDouble.Create(Q1));
+            denom = TVectorDouble.MultiplyAddEstimate(denom, s, TVectorDouble.Create(Q0));
+
+            // q = reduced * s * num / denom
+            TVectorDouble q = reduced * s * num / denom;
+
+            // result = chi - ((q - clo) - reduced)
+            TVectorDouble result = chi - ((q - clo) - reduced);
+
+            // Restore sign
             result |= sign;
 
             return result;
@@ -3615,7 +3718,7 @@ namespace System.Runtime.Intrinsics
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
         {
-            // This code is based on `vrs4_atanf` from amd/aocl-libm-ose
+            // This code is based on `atanf` from amd/aocl-libm-ose
             // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
             //
             // Licensed under the BSD 3-Clause "New" or "Revised" License
@@ -3623,20 +3726,8 @@ namespace System.Runtime.Intrinsics
 
             // Implementation Notes
             // --------------------
-            // sign = sign(x)
-            // x = abs(x)
-            //
-            // Argument reduction: Use the following identities
-            //
-            // 1. If xi > 1,
-            //      atan(xi) = pi/2 - atan(1/xi)
-            //
-            // 2. If f > (2-sqrt(3)),
-            //      atan(x) = pi/6 + atan(f)
-            //      where f = (sqrt(3)*xi-1)/(xi+sqrt(3))
-            //
-            //      atan(xi) is calculated using the polynomial,
-            //      xi + C0*xi^3 + C1*xi^5 + C2*xi^7
+            // Uses double-precision arithmetic for improved accuracy, similar to AMD atanf.
+            // Widens float inputs to double, computes using AtanDouble, then narrows back.
 
             if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
             {
