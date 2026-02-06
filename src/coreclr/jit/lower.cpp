@@ -6368,13 +6368,13 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerDelegateInvoke: lower a delegate invoke, accessing fields of the delgate
+// LowerDelegateInvoke: lower a delegate invoke, accessing fields of the delegate
 //
 // Arguments:
 //     call - call representing a delegate invoke.
 //
 // Return Value:
-//    Control expr for the delegate invoke call, for futher lowering.
+//    Control expr for the delegate invoke call, for further lowering.
 //
 GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 {
