@@ -44,9 +44,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             // Verify the tracked steps show the generator didn't re-run
             var trackedSteps = runResult.TrackedSteps;
-            if (trackedSteps.ContainsKey("ForAttributeWithMetadataName"))
+            if (trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform))
             {
-                Assert.Collection(trackedSteps["ForAttributeWithMetadataName"],
+                Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
                     step =>
                     {
                         Assert.Collection(step.Outputs,
@@ -91,9 +91,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             // Verify the generator didn't re-run
             var trackedSteps = runResult.TrackedSteps;
-            if (trackedSteps.ContainsKey("ForAttributeWithMetadataName"))
+            if (trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform))
             {
-                Assert.Collection(trackedSteps["ForAttributeWithMetadataName"],
+                Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
                     step =>
                     {
                         Assert.Collection(step.Outputs,
@@ -139,9 +139,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             // Verify the original method wasn't regenerated
             var trackedSteps = runResult.TrackedSteps;
-            if (trackedSteps.ContainsKey("ForAttributeWithMetadataName"))
+            if (trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform))
             {
-                Assert.Collection(trackedSteps["ForAttributeWithMetadataName"],
+                Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
                     step =>
                     {
                         // First method should be unchanged
@@ -197,9 +197,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             // Verify the method was regenerated
             var trackedSteps = runResult.TrackedSteps;
-            if (trackedSteps.ContainsKey("ForAttributeWithMetadataName"))
+            if (trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform))
             {
-                Assert.Collection(trackedSteps["ForAttributeWithMetadataName"],
+                Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
                     step =>
                     {
                         Assert.Collection(step.Outputs,
@@ -252,9 +252,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             // Verify the logger message wasn't regenerated
             var trackedSteps = runResult.TrackedSteps;
-            if (trackedSteps.ContainsKey("ForAttributeWithMetadataName"))
+            if (trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform))
             {
-                Assert.Collection(trackedSteps["ForAttributeWithMetadataName"],
+                Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
                     step =>
                     {
                         Assert.Collection(step.Outputs,

@@ -18,6 +18,11 @@ namespace Microsoft.Extensions.Logging.Generators
     [Generator]
     public partial class LoggerMessageGenerator : IIncrementalGenerator
     {
+        public static class StepNames
+        {
+            public const string LoggerMessageTransform = nameof(LoggerMessageTransform);
+        }
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             IncrementalValuesProvider<(LoggerClassSpec? LoggerClassSpec, ImmutableEquatableArray<DiagnosticInfo> Diagnostics, bool HasStringCreate)> loggerClasses = context.SyntaxProvider
@@ -77,7 +82,11 @@ namespace Microsoft.Extensions.Logging.Generators
                         LoggerClassSpec? loggerClassSpec = logClasses.Count > 0 ? logClasses[0].ToSpec() : null;
 
                         return (loggerClassSpec, parser.Diagnostics.ToImmutableEquatableArray(), hasStringCreate);
-                    });
+                    })
+#if ROSLYN4_4_OR_GREATER
+                .WithTrackingName(StepNames.LoggerMessageTransform)
+#endif
+                ;
 
             context.RegisterSourceOutput(loggerClasses.Collect(), static (spc, items) => Execute(items, spc));
         }
