@@ -428,9 +428,11 @@
       <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.MergedTestAssembly(ForStress)?(\.\d+\.\d+)?$', ''))</_MergedWrapperName>
       <!-- Android package names can't have hyphens, so we replace them with underscores -->
       <_MergedApkName>$(_MergedWrapperName.Replace('-', '_'))</_MergedApkName>
+      <_ExpectedApkPath>$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/bin/$(_MergedApkName).apk</_ExpectedApkPath>
     </PropertyGroup>
 
-    <ItemGroup>
+    <!-- Skip markers that don't have a corresponding APK (e.g., SharedLibrary projects) -->
+    <ItemGroup Condition="Exists('$(_ExpectedApkPath)')">
       <_MergedPayloadGroups Include="$(_MergedWrapperName)">
         <ApkPackageName>$(_MergedApkName)</ApkPackageName>
       </_MergedPayloadGroups>
@@ -439,10 +441,11 @@
       <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)ExpectedExitCode.txt" Condition="Exists('$(_MergedWrapperDirectory)ExpectedExitCode.txt')" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')" />
+    <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')" Condition="'@(_MergedPayloadFiles)' != ''" />
     <PatchExclusionListInApks
       ApkPaths="@(_MergedPayloadApkFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')"
-      ExcludedTests="@(FilteredTestExclusionList)" />
+      ExcludedTests="@(FilteredTestExclusionList)"
+      Condition="'@(_MergedPayloadApkFiles)' != ''" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForWasm"
