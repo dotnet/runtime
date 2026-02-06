@@ -584,6 +584,7 @@ namespace System.Diagnostics.Tests
         }
 
         // On Android, stack traces do not include file names and line numbers
+        // Tracking issue: https://github.com/dotnet/runtime/issues/124087
         private static string FileInfoPattern(string fileLinePattern) =>
             PlatformDetection.IsAndroid ? "" : fileLinePattern;
 
