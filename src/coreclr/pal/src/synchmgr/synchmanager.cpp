@@ -140,7 +140,7 @@ namespace CorUnix
     IPalSynchronizationManager * g_pSynchronizationManager = NULL;
 
     CPalSynchronizationManager * CPalSynchronizationManager::s_pObjSynchMgr = NULL;
-    Volatile<LONG> CPalSynchronizationManager::s_lInitStatus = SynchMgrStatusIdle;
+    Volatile<LONG> CPalSynchronizationManager::s_lInitStatus((LONG)SynchMgrStatusIdle);
     minipal_mutex CPalSynchronizationManager::s_csSynchProcessLock;
     minipal_mutex CPalSynchronizationManager::s_csMonitoredProcessesLock;
 

@@ -523,7 +523,7 @@ public:
         STATIC_CONTRACT_SUPPORTS_DAC;
     }
 
-    inline explicit VolatilePtr(nullptr_t val) : Volatile<P>((P)val)
+    inline explicit VolatilePtr(std::nullptr_t val) : Volatile<P>((P)val)
     {
         STATIC_CONTRACT_SUPPORTS_DAC;
     }
@@ -543,11 +543,11 @@ public:
     //
     // Assignment from P
     //
-    inline VolatilePtr<T, P>& operator=(P val) {Store(val); return *this;}
-    inline VolatilePtr<T, P>& operator=(const VolatilePtr<T, P>& val) {Store(val.Load()); return *this;}
+    inline VolatilePtr<T, P>& operator=(P val) {this->Store(val); return *this;}
+    inline VolatilePtr<T, P>& operator=(const VolatilePtr<T, P>& val) {this->Store(val.Load()); return *this;}
     inline VolatilePtr<T, P>& operator=(VolatilePtr<T, P>&& val) = delete;
     // nullptr is assigned via nullptr_t
-    inline VolatilePtr<T, P>& operator=(nullptr_t val) {Store((P)nullptr); return *this;}
+    inline VolatilePtr<T, P>& operator=(std::nullptr_t val) {this->Store((P)nullptr); return *this;}
 
     //
     // Member access

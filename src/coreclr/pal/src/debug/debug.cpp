@@ -273,7 +273,7 @@ int
 run_debug_command (const char *command)
 {
     int pid;
-    Volatile<int> spin = 1;
+    Volatile<int> spin(1);
 
     if (!command) {
         return 1;

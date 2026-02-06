@@ -27,7 +27,7 @@
 #define TEMP_DIRECTORY_PATH "/data/local/tmp"
 #endif
 
-Volatile<bool> PerfMap::s_enabled = false;
+Volatile<bool> PerfMap::s_enabled(false);
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
 bool PerfMap::s_GroupStubsOfSameType = false;
