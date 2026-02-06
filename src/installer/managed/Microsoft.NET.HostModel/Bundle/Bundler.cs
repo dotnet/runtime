@@ -126,7 +126,6 @@ namespace Microsoft.NET.HostModel.Bundle
                 long compressedSize = bundle.Position - startOffset;
                 if (compressedSize < fileLength * 0.75)
                 {
-                    System.Console.WriteLine($"Compressed {file.Name} from {fileLength} bytes to {compressedSize} bytes");
                     return (startOffset, compressedSize);
                 }
 
