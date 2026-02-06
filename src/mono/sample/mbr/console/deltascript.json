@@ -1,5 +1,8 @@
 {
-    "changes": [
-	{"document": "TestClass.cs", "update": "TestClass_v1.cs"},
-    ]
+  "changes": [
+    {
+      "document": "TestClass.cs",
+      "update": "TestClass_v1.cs"
+    }
+  ]
 }

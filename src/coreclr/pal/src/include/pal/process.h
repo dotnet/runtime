@@ -95,38 +95,6 @@ Return
 --*/
 VOID PROCCleanupInitialProcess(VOID);
 
-#if USE_SYSV_SEMAPHORES
-/*++
-Function:
-  PROCCleanupThreadSemIds(VOID);
-
-Abstract
-  Cleanup SysV semaphore ids for all threads.
-
-(no parameters, no return value)
---*/
-VOID PROCCleanupThreadSemIds(VOID);
-#endif
-
-/*++
-Function:
-  PROCProcessLock
-
-Abstract
-  Enter the critical section associated to the current process
---*/
-VOID PROCProcessLock(VOID);
-
-
-/*++
-Function:
-  PROCProcessUnlock
-
-Abstract
-  Leave the critical section associated to the current process
---*/
-VOID PROCProcessUnlock(VOID);
-
 /*++
 Function
   PROCAbortInitialize()

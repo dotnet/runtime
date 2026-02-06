@@ -400,7 +400,8 @@ void deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, co
                     continue;
                 }
 
-                version_t assembly_version, file_version;
+                version_t assembly_version = version_t::empty();
+                version_t file_version = version_t::empty();
 
                 pal::string_t assembly_version_str = get_optional_property(file.value, _X("assemblyVersion"));
                 if (!assembly_version_str.empty())
@@ -462,7 +463,8 @@ void deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
             asset_files.reserve(files.MemberCount());
             for (const auto& file : files)
             {
-                version_t assembly_version, file_version;
+                version_t assembly_version = version_t::empty();
+                version_t file_version = version_t::empty();
 
                 pal::string_t assembly_version_str = get_optional_property(file.value, _X("assemblyVersion"));
                 if (assembly_version_str.length() > 0)

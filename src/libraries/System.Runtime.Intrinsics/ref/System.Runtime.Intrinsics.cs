@@ -6721,6 +6721,12 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<int> ShiftRightLogicalNarrowingEven(System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<sbyte> ShiftRightLogicalNarrowingEven(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<ushort> ShiftRightLogicalNarrowingEven(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogicalNarrowingSaturateEven(System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogicalNarrowingSaturateEven(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogicalNarrowingSaturateEven(System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftRightLogicalNarrowingSaturateOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftRightLogicalNarrowingSaturateOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftRightLogicalNarrowingSaturateOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<uint> ShiftRightLogicalNarrowingEven(System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<byte> ShiftRightLogicalNarrowingOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<short> ShiftRightLogicalNarrowingOdd(System.Numerics.Vector<short> even, System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }

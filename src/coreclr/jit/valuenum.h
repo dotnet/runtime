@@ -1124,34 +1124,6 @@ public:
 #endif
     };
 
-    struct ConstantBoundInfo
-    {
-        // 100 > vnOp
-        int      constVal;
-        unsigned cmpOper;
-        ValueNum cmpOpVN;
-        bool     isUnsigned;
-
-        ConstantBoundInfo()
-            : constVal(0)
-            , cmpOper(GT_NONE)
-            , cmpOpVN(NoVN)
-            , isUnsigned(false)
-        {
-        }
-
-#ifdef DEBUG
-        void dump(ValueNumStore* vnStore)
-        {
-            vnStore->vnDump(vnStore->m_compiler, cmpOpVN);
-            printf(" ");
-            printf(vnStore->VNFuncName((VNFunc)cmpOper));
-            printf(" ");
-            printf("%d", constVal);
-        }
-#endif
-    };
-
     // Check if "vn" is "new [] (type handle, size)"
     bool IsVNNewArr(ValueNum vn, VNFuncApp* funcApp);
 
@@ -1172,9 +1144,6 @@ public:
 
     // If "vn" is of the form "(uint)var relop cns" for any relop except for == and !=
     bool IsVNConstantBoundUnsigned(ValueNum vn);
-
-    // If "vn" is constant bound, then populate the "info" fields for constVal, cmpOp, cmpOper.
-    void GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info);
 
     // If "vn" is of the form "(uint)var < (uint)len" (or equivalent) return true.
     bool IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompareCheckedBoundInfo* info);

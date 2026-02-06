@@ -3415,8 +3415,6 @@ PhaseStatus Compiler::lvaMarkLocalVars()
 void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 {
     JITDUMP("\n*** lvaComputeRefCounts ***\n");
-    unsigned   lclNum = 0;
-    LclVarDsc* varDsc = nullptr;
 
     // Fast path for minopts and debug codegen.
     //
@@ -3430,8 +3428,9 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 #if defined(DEBUG)
             // All local vars should be marked as implicitly referenced
             // and not tracked.
-            for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+            for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
             {
+                LclVarDsc* varDsc                = lvaGetDesc(lclNum);
                 const bool isSpecialVarargsParam = varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum);
 
                 if (isSpecialVarargsParam)
@@ -3451,8 +3450,9 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         }
 
         // First compute.
-        for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+        for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
         {
+            LclVarDsc* varDsc = lvaGetDesc(lclNum);
             // Using lvImplicitlyReferenced here ensures that we can't
             // accidentally make locals be unreferenced later by decrementing
             // the ref count to zero.
@@ -3488,11 +3488,28 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         return;
     }
 
-    // Slower path we take when optimizing, to get accurate counts.
-    //
+    lvaComputePreciseRefCounts(isRecompute, setSlotNumbers);
+}
+
+//------------------------------------------------------------------------
+// lvaComputePreciseRefCounts: compute precise ref counts for locals by IR traversal
+//
+// Arguments:
+//    isRecompute -- true if we just want ref counts and no other side effects;
+//                   false means to also look for true boolean locals, lay
+//                   groundwork for assertion prop, check type consistency, etc.
+//                   See lvaMarkLclRefs for details on what else goes on.
+//    setSlotNumbers -- true if local slot numbers should be assigned.
+//
+// Notes:
+//   See notes on lvaComputeRefCounts.
+//
+void Compiler::lvaComputePreciseRefCounts(bool isRecompute, bool setSlotNumbers)
+{
     // First, reset all explicit ref counts and weights.
-    for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
         varDsc->setLvRefCnt(0);
         varDsc->setLvRefCntWtd(BB_ZERO_WEIGHT);
 
@@ -3519,7 +3536,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
     const bool oldLvaGenericsContextInUse = lvaGenericsContextInUse;
     lvaGenericsContextInUse               = false;
 
-    JITDUMP("\n*** lvaComputeRefCounts -- explicit counts ***\n");
+    JITDUMP("\n*** lvaComputePreciseRefCounts -- explicit counts ***\n");
 
     // Second, account for all explicit local variable references
     for (BasicBlock* const block : Blocks())
@@ -3577,11 +3594,12 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         assert(!"unexpected new use of generics context");
     }
 
-    JITDUMP("\n*** lvaComputeRefCounts -- implicit counts ***\n");
+    JITDUMP("\n*** lvaComputePreciseRefCounts -- implicit counts ***\n");
 
     // Third, bump ref counts for some implicit prolog references
-    for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
         // Todo: review justification for these count bumps.
         if (varDsc->lvIsRegArg)
         {
