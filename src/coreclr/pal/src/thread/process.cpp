@@ -2922,14 +2922,6 @@ PROCGetProcessIDFromHandleExit:
     return dwProcessId;
 }
 
-PAL_ERROR
-CorUnix::InitializeProcessData(
-    void
-    )
-{
-    return NO_ERROR;
-}
-
 /*++
 Function
     InitializeProcessCommandLine
@@ -3138,8 +3130,6 @@ Return
 VOID
 PROCCleanupInitialProcess(VOID)
 {
-    CPalThread *pThread = InternalGetCurrentThread();
-
     /* Free the application directory */
     free(g_lpwstrAppDir);
 
@@ -3150,7 +3140,6 @@ PROCCleanupInitialProcess(VOID)
     // Object manager shutdown will handle freeing the underlying
     // thread and process data
     //
-
 }
 
 /*++

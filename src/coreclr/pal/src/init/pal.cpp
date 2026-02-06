@@ -388,17 +388,6 @@ Initialize(
             // we use large numbers of threads or have many open files.
         }
 
-        //
-        // Initialize global process data
-        //
-
-        palError = InitializeProcessData();
-        if (NO_ERROR != palError)
-        {
-            ERROR("Unable to initialize process data\n");
-            goto CLEANUP1;
-        }
-
 #if HAVE_MACH_EXCEPTIONS
         // Mach exception port needs to be set up before the thread
         // data or threads are set up.
