@@ -59,7 +59,7 @@ function Invoke-GitHubApi {
             return $null
         }
         if ($Raw) { return $result -join "`n" }
-        return $result | ConvertFrom-Json
+        return ($result -join "`n") | ConvertFrom-Json
     }
     catch {
         Write-Warning "Error calling GitHub API: $_"
@@ -100,7 +100,7 @@ if ($LASTEXITCODE -ne 0) {
     Write-Error "Could not fetch PR #$PRNumber from $Repository"
     return
 }
-$pr = $prJson | ConvertFrom-Json
+$pr = ($prJson -join "`n") | ConvertFrom-Json
 
 Write-Status "Title" $pr.title
 Write-Status "State" $pr.state
@@ -375,7 +375,6 @@ if ($TraceFix) {
                 Write-Status "Merged at" $fixPR.merged_at
                 Write-Status "Merge commit" $fixPR.merge_commit_sha
                 $fixMergeCommit = $fixPR.merge_commit_sha
-                $fixTargetBranch = $fixPR.base.ref
             }
         }
 
@@ -468,7 +467,6 @@ if ($TraceFix) {
 Write-Section "Recommendations"
 
 $issues = @()
-$recommendations = @()
 
 # Summarize issues
 if ($stalenessWarnings.Count -gt 0) {
