@@ -483,6 +483,54 @@ if ($vmrCommit -and $vmrBranch) {
                     Write-Host ""
                     Write-Host "  Missing updates from: $($uniqueRepos -join ', ')" -ForegroundColor Yellow
                 }
+
+                # --- For backflow PRs that are behind: check pending forward flow PRs ---
+                if ($isBackflow -and $compareStatus -eq 'ahead' -and $aheadBy -gt 0 -and $vmrBranch) {
+                    $encodedVmrBranch = [uri]::EscapeDataString($vmrBranch)
+                    $forwardPRsJson = gh search prs --repo dotnet/dotnet --author "dotnet-maestro[bot]" --state open "Source code updates from" --base $vmrBranch --json number,title --limit 20 2>&1
+                    $pendingForwardPRs = @()
+                    if ($LASTEXITCODE -eq 0 -and $forwardPRsJson) {
+                        $allForward = ($forwardPRsJson -join "`n") | ConvertFrom-Json
+                        # Filter to forward flow PRs (not backflow) targeting this VMR branch
+                        $pendingForwardPRs = $allForward | Where-Object {
+                            $_.title -match "Source code updates from (dotnet/\S+)" -and
+                            $Matches[1] -ne "dotnet/dotnet"
+                        }
+                    }
+
+                    if ($pendingForwardPRs.Count -gt 0) {
+                        Write-Host ""
+                        Write-Host "  Pending forward flow PRs into VMR ($vmrBranch):" -ForegroundColor Cyan
+
+                        $coveredRepos = @()
+                        foreach ($fpr in $pendingForwardPRs) {
+                            $fprSourceRepo = $null
+                            if ($fpr.title -match "Source code updates from (dotnet/\S+)") {
+                                $fprSourceRepo = $Matches[1]
+                            }
+                            $coveredLabel = ""
+                            if ($fprSourceRepo -and $uniqueRepos -contains $fprSourceRepo) {
+                                $coveredRepos += $fprSourceRepo
+                                $coveredLabel = " ← covers missing updates"
+                            }
+                            Write-Host "    dotnet/dotnet#$($fpr.number): $($fpr.title)$coveredLabel" -ForegroundColor DarkGray
+                        }
+
+                        if ($coveredRepos.Count -gt 0) {
+                            $uncoveredRepos = $uniqueRepos | Where-Object { $_ -notin $coveredRepos }
+                            $coveredCount = $coveredRepos.Count
+                            $totalMissing = $uniqueRepos.Count
+                            Write-Host ""
+                            Write-Host "  📊 Forward flow coverage: $coveredCount of $totalMissing missing repo(s) have pending forward flow PRs" -ForegroundColor Cyan
+                            if ($uncoveredRepos.Count -gt 0) {
+                                Write-Host "  Still waiting on: $($uncoveredRepos -join ', ')" -ForegroundColor Yellow
+                            }
+                            else {
+                                Write-Host "  ✅ All missing repos have pending forward flow — gap should close once they merge + new backflow triggers" -ForegroundColor Green
+                            }
+                        }
+                    }
+                }
             }
         }
     }
