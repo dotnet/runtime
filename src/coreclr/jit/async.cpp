@@ -710,7 +710,7 @@ PhaseStatus AsyncTransformation::Run()
         }
 
         m_compiler->lvaComputeRefCounts(true, false);
-        m_compiler->fgLocalVarLiveness();
+        m_compiler->fgAsyncLiveness();
         INDEBUG(m_compiler->mostRecentlyActivePhase = PHASE_ASYNC);
         VarSetOps::AssignNoCopy(m_compiler, m_compiler->compCurLife, VarSetOps::MakeEmpty(m_compiler));
     }
