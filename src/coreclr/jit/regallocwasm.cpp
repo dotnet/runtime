@@ -53,19 +53,6 @@ bool WasmRegAlloc::isContainableMemoryOp(GenTree* node)
 }
 
 //------------------------------------------------------------------------
-// GetCompiler: Get the compiler field.
-//
-// Bridges the field naming difference for common RA code.
-//
-// Return Value:
-//    The 'this->m_compiler' field.
-//
-Compiler* WasmRegAlloc::GetCompiler() const
-{
-    return m_compiler;
-}
-
-//------------------------------------------------------------------------
 // CurrentRange: Get the LIR range under current processing.
 //
 // Return Value:
@@ -99,6 +86,10 @@ void WasmRegAlloc::IdentifyCandidates()
         if (varDsc->lvLRACandidate)
         {
             JITDUMP("RA candidate: V%02u", lclNum);
+        }
+        else if ((m_fpReg == REG_NA) && (varDsc->lvRefCnt() != 0))
+        {
+            m_fpReg = AllocateFreeRegister(TYP_I_IMPL);
         }
     }
 }
@@ -146,11 +137,6 @@ void WasmRegAlloc::AllocateAndResolveNode(GenTree* node)
             if (node->OperIsLocalStore())
             {
                 RewriteLocalStackStore(node->AsLclVarCommon());
-            }
-
-            if (m_fpReg == REG_NA)
-            {
-                m_fpReg = AllocateFreeRegister(TYP_I_IMPL);
             }
         }
     }

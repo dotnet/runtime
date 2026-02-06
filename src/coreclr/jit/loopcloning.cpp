@@ -253,7 +253,7 @@ GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb, bool invert)
 
     if (compareUnsigned)
     {
-        result->gtFlags |= GTF_UNSIGNED;
+        result->SetUnsigned();
     }
 
     return result;
@@ -2912,7 +2912,7 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
 /* static */
 Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloningVisitor(GenTree** pTree, Compiler::fgWalkData* data)
 {
-    return data->compiler->optCanOptimizeByLoopCloning(*pTree, (LoopCloneVisitorInfo*)data->pCallbackData);
+    return data->m_compiler->optCanOptimizeByLoopCloning(*pTree, (LoopCloneVisitorInfo*)data->pCallbackData);
 }
 
 //------------------------------------------------------------------------

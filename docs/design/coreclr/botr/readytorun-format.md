@@ -858,6 +858,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_FailFast                  = 0x24,
     READYTORUN_HELPER_ThrowNullRef              = 0x25,
     READYTORUN_HELPER_ThrowDivZero              = 0x26,
+    READYTORUN_HELPER_ThrowExact                = 0x27,
 
     // Write barriers
     READYTORUN_HELPER_WriteBarrier              = 0x30,
