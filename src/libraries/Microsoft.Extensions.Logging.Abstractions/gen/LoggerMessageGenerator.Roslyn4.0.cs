@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Logging.Generators
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            IncrementalValuesProvider<LoggerClassInfo?> loggerClassInfos = context.SyntaxProvider
+            IncrementalValuesProvider<(LoggerClass? LoggerClass, bool HasStringCreate)> loggerClasses = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
 #if !ROSLYN4_4_OR_GREATER
                     context,
@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         var classDeclaration = context.TargetNode.Parent as ClassDeclarationSyntax;
                         if (classDeclaration == null)
                         {
-                            return null;
+                            return default;
                         }
 
                         SemanticModel semanticModel = context.SemanticModel;
@@ -56,99 +56,70 @@ namespace Microsoft.Extensions.Logging.Generators
                             exceptionSymbol == null || enumerableSymbol == null || stringSymbol == null)
                         {
                             // Required types aren't available
-                            return null;
+                            return default;
                         }
 
-                        return new LoggerClassInfo(
-                            classDeclaration,
-                            semanticModel,
+                        // Parse the logger class immediately to extract value-based data
+                        // Note: We can't report diagnostics here, so we'll need to store them somehow
+                        // For now, we'll use a no-op diagnostic reporter
+                        var parser = new Parser(
                             loggerMessageAttribute,
                             loggerSymbol,
                             logLevelSymbol,
                             exceptionSymbol,
                             enumerableSymbol,
                             stringSymbol,
-                            hasStringCreate);
-                    })
-                .Where(static info => info != null);
+                            _ => { }, // Diagnostics will be reported during the second parse in Execute
+                            cancellationToken);
 
-            IncrementalValueProvider<ImmutableArray<LoggerClassInfo?>> collectedInfos = loggerClassInfos.Collect();
+                        IReadOnlyList<LoggerClass> logClasses = parser.GetLogClasses(new[] { classDeclaration }, semanticModel);
 
-            context.RegisterSourceOutput(collectedInfos, static (spc, infos) => Execute(infos, spc));
+                        // Return the first (and should be only) logger class for this attributed method's containing class
+                        LoggerClass? loggerClass = logClasses.Count > 0 ? logClasses[0] : null;
+
+                        return (loggerClass, hasStringCreate);
+                    });
+
+            context.RegisterSourceOutput(loggerClasses.Collect(), static (spc, items) => Execute(items, spc));
         }
 
-        private static void Execute(ImmutableArray<LoggerClassInfo?> infos, SourceProductionContext context)
+        private static void Execute(ImmutableArray<(LoggerClass? LoggerClass, bool HasStringCreate)> items, SourceProductionContext context)
         {
-            if (infos.IsDefaultOrEmpty)
-            {
-                // nothing to do yet
-                return;
-            }
-
-            var validInfos = infos.Where(i => i != null).Cast<LoggerClassInfo>().ToList();
-            if (validInfos.Count == 0)
+            if (items.IsDefaultOrEmpty)
             {
                 return;
             }
 
-            // All infos should come from the same compilation, so we can use the first one for symbols
-            var firstInfo = validInfos[0];
-            var distinctClasses = validInfos.Select(i => i.ClassDeclaration).Distinct().ToImmutableHashSet();
+            bool hasStringCreate = false;
+            var allLogClasses = new Dictionary<string, LoggerClass>(); // Use dictionary to deduplicate by class name
 
-            var p = new Parser(
-                firstInfo.LoggerMessageAttribute,
-                firstInfo.LoggerSymbol,
-                firstInfo.LogLevelSymbol,
-                firstInfo.ExceptionSymbol,
-                firstInfo.EnumerableSymbol,
-                firstInfo.StringSymbol,
-                context.ReportDiagnostic,
-                context.CancellationToken);
-
-            IReadOnlyList<LoggerClass> logClasses = p.GetLogClasses(distinctClasses, firstInfo.SemanticModel);
-
-            if (logClasses.Count > 0)
+            foreach (var item in items)
             {
-                var e = new Emitter(firstInfo.HasStringCreate);
-                string result = e.Emit(logClasses, context.CancellationToken);
+                if (item.LoggerClass != null)
+                {
+                    hasStringCreate = item.HasStringCreate;
+
+                    // Merge classes with the same full name (namespace + name)
+                    string classKey = item.LoggerClass.Namespace + "." + item.LoggerClass.Name;
+                    if (allLogClasses.TryGetValue(classKey, out var existingClass))
+                    {
+                        // Merge methods from multiple attributed methods in the same class
+                        existingClass.Methods.AddRange(item.LoggerClass.Methods);
+                    }
+                    else
+                    {
+                        allLogClasses[classKey] = item.LoggerClass;
+                    }
+                }
+            }
+
+            if (allLogClasses.Count > 0)
+            {
+                var e = new Emitter(hasStringCreate);
+                string result = e.Emit(allLogClasses.Values.ToList(), context.CancellationToken);
 
                 context.AddSource("LoggerMessage.g.cs", SourceText.From(result, Encoding.UTF8));
             }
-        }
-
-        private sealed class LoggerClassInfo
-        {
-            public LoggerClassInfo(
-                ClassDeclarationSyntax classDeclaration,
-                SemanticModel semanticModel,
-                INamedTypeSymbol loggerMessageAttribute,
-                INamedTypeSymbol loggerSymbol,
-                INamedTypeSymbol logLevelSymbol,
-                INamedTypeSymbol exceptionSymbol,
-                INamedTypeSymbol enumerableSymbol,
-                INamedTypeSymbol stringSymbol,
-                bool hasStringCreate)
-            {
-                ClassDeclaration = classDeclaration;
-                SemanticModel = semanticModel;
-                LoggerMessageAttribute = loggerMessageAttribute;
-                LoggerSymbol = loggerSymbol;
-                LogLevelSymbol = logLevelSymbol;
-                ExceptionSymbol = exceptionSymbol;
-                EnumerableSymbol = enumerableSymbol;
-                StringSymbol = stringSymbol;
-                HasStringCreate = hasStringCreate;
-            }
-
-            public ClassDeclarationSyntax ClassDeclaration { get; }
-            public SemanticModel SemanticModel { get; }
-            public INamedTypeSymbol LoggerMessageAttribute { get; }
-            public INamedTypeSymbol LoggerSymbol { get; }
-            public INamedTypeSymbol LogLevelSymbol { get; }
-            public INamedTypeSymbol ExceptionSymbol { get; }
-            public INamedTypeSymbol EnumerableSymbol { get; }
-            public INamedTypeSymbol StringSymbol { get; }
-            public bool HasStringCreate { get; }
         }
     }
 }
