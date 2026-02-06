@@ -3195,18 +3195,11 @@ namespace System.Runtime.Intrinsics
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
             where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
         {
-            // This code is based on `asinh` from amd/aocl-libm-ose
-            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
-            //
-            // Licensed under the BSD 3-Clause "New" or "Revised" License
-            // See THIRD-PARTY-NOTICES.TXT for the full license text
-
-            // Implementation Notes
-            // --------------------
-            // asinh(x) = sign(x) * log(|x| + sqrt(x^2 + 1))
-            //
-            // For very small |x|: asinh(x) ≈ x
-            // For large |x|: asinh(x) ≈ sign(x) * (log(2) + log(|x|))
+            // The AMD AOCL-LibM scalar asinh implementation (asinh.c) uses range-based
+            // polynomial lookup tables which cannot be trivially vectorized due to the cost
+            // of gather instructions. Instead, this uses the mathematical identity:
+            //   asinh(x) = sign(x) * log(|x| + sqrt(x^2 + 1))
+            // with special handling for tiny and large values for improved accuracy.
 
             const double LN2 = 0.693147180559945309417;
             const double TINY_THRESHOLD = 2.98023223876953125e-08; // 2^-25
@@ -3247,15 +3240,7 @@ namespace System.Runtime.Intrinsics
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
             where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
         {
-            // This code is based on `asinhf` from amd/aocl-libm-ose
-            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
-            //
-            // Licensed under the BSD 3-Clause "New" or "Revised" License
-            // See THIRD-PARTY-NOTICES.TXT for the full license text
-
-            // Implementation Notes
-            // --------------------
-            // asinh(x) = sign(x) * log(|x| + sqrt(x^2 + 1))
+            // Widens to double and calls AsinhDouble for improved accuracy.
 
             if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
             {
@@ -3278,19 +3263,11 @@ namespace System.Runtime.Intrinsics
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
             where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
         {
-            // This code is based on `acosh` from amd/aocl-libm-ose
-            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
-            //
-            // Licensed under the BSD 3-Clause "New" or "Revised" License
-            // See THIRD-PARTY-NOTICES.TXT for the full license text
-
-            // Implementation Notes
-            // --------------------
-            // acosh(x) = log(x + sqrt(x^2 - 1))
-            // Domain: x >= 1, returns NaN for x < 1
-            //
-            // For x close to 1: acosh(x) ≈ sqrt(2 * (x - 1))
-            // For large x: acosh(x) ≈ log(2) + log(x)
+            // The AMD AOCL-LibM scalar acosh implementation (acosh.c) uses range-based
+            // polynomial lookup tables which cannot be trivially vectorized due to the cost
+            // of gather instructions. Instead, this uses the mathematical identity:
+            //   acosh(x) = log(x + sqrt(x^2 - 1))
+            // with special handling for x near 1 and large x for improved accuracy.
 
             const double LN2 = 0.693147180559945309417;
             const double NEAR_ONE_THRESHOLD = 1.0 + 2.98023223876953125e-08; // 1 + 2^-25
@@ -3332,15 +3309,7 @@ namespace System.Runtime.Intrinsics
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
             where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
         {
-            // This code is based on `acoshf` from amd/aocl-libm-ose
-            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
-            //
-            // Licensed under the BSD 3-Clause "New" or "Revised" License
-            // See THIRD-PARTY-NOTICES.TXT for the full license text
-
-            // Implementation Notes
-            // --------------------
-            // acosh(x) = log(x + sqrt(x^2 - 1))
+            // Widens to double and calls AcoshDouble for improved accuracy.
 
             if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
             {
@@ -3369,42 +3338,76 @@ namespace System.Runtime.Intrinsics
             // Licensed under the BSD 3-Clause "New" or "Revised" License
             // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-            // Implementation Notes
-            // --------------------
-            // atanh(x) = 0.5 * log((1 + x) / (1 - x))
-            // Domain: -1 <= x <= 1
-            // - atanh(±1) = ±∞
-            // - atanh(x) = NaN for |x| > 1
-            //
-            // For very small |x|: atanh(x) ≈ x
+            // Implementation Notes (from atanh.c)
+            // ------------------------------------
+            // For |x| < 3.72e-9: atanh(x) = x (tiny approximation)
+            // For |x| < 0.5: atanh(x) = x + x^3 * P(x^2)/Q(x^2) using [5,5] minimax rational polynomial
+            // For |x| >= 0.5: atanh(x) = sign(x) * 0.5 * log1p(2|x|/(1-|x|))
+            // Special cases: atanh(±1) = ±∞, atanh(x) = NaN for |x| > 1
 
-            const double TINY_THRESHOLD = 2.98023223876953125e-08; // 2^-25
+            // [5,5] minimax rational polynomial coefficients from Sollya (atanh.c)
+            // Numerator: evaluated as A0 + A1*r + A2*r^2 + A3*r^3 + A4*r^4 + A5*r^5 where r = x^2
+            const double A0 = 4.74825735897473566460e-01;  // 0x1.e638b7bbea45ep-2
+            const double A1 = -1.10283567978463414860e+00; // -0x1.1a53706989746p0
+            const double A2 = 8.84681425365016482765e-01;  // 0x1.c4f4f6baa48ffp-1
+            const double A3 = -2.81802109617808160813e-01; // -0x1.2090bb7302592p-2
+            const double A4 = 2.87286386005485144812e-02;  // 0x1.d6b0a4cfde8fcp-6
+            const double A5 = -1.04681588927531371807e-04; // -0x1.b711000f5a53bp-14
+
+            // Denominator
+            const double B0 = 1.42447720769242058836e+00;  // 0x1.6caa89ccefb46p0
+            const double B1 = -4.16319336396935479883e+00; // -0x1.0a71c2944b0bfp2
+            const double B2 = 4.54147006260845120806e+00;  // 0x1.22a7720caaa5dp2
+            const double B3 = -2.26088837489884886267e+00; // -0x1.2164ca4f0c6f3p1
+            const double B4 = 4.95611965555031008801e-01;  // 0x1.fb81b3fe42b33p-2
+            const double B5 = -3.58615543701695377310e-02; // -0x1.25c7216683ecap-5
+
+            const double HALF = 0.5;
+            const double TINY_THRESHOLD = 3.72529029846191406250e-09; // 0x3e30000000000000 as double
 
             TVectorDouble sign = x & TVectorDouble.Create(-0.0);
             TVectorDouble ax = TVectorDouble.Abs(x);
 
-            // Return NaN for |x| > 1 (but not for |x| == 1)
+            // Special cases
             TVectorDouble nanMask = TVectorDouble.GreaterThan(ax, TVectorDouble.One);
-
-            // Return ±∞ for x == ±1
             TVectorDouble infMask = TVectorDouble.Equals(ax, TVectorDouble.One);
+            TVectorDouble tinyMask = TVectorDouble.LessThan(ax, TVectorDouble.Create(TINY_THRESHOLD));
+            TVectorDouble smallMask = TVectorDouble.LessThan(ax, TVectorDouble.Create(HALF));
 
-            // For very small values, return x
-            TVectorDouble tinyMask = TVectorDouble.LessThanOrEqual(ax, TVectorDouble.Create(TINY_THRESHOLD));
+            // For |x| < 0.5: use [5,5] minimax rational polynomial
+            // atanh(x) = x + x^3 * P(x^2)/Q(x^2)
+            TVectorDouble r = x * x; // r = x^2
 
-            // Normal case: 0.5 * log((1 + |x|) / (1 - |x|))
-            TVectorDouble onePlusX = TVectorDouble.One + ax;
-            TVectorDouble oneMinusX = TVectorDouble.One - ax;
-            TVectorDouble ratio = onePlusX / oneMinusX;
-            TVectorDouble normal = TVectorDouble.Create(0.5) * LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(ratio);
+            // Evaluate numerator: A0 + A1*r + A2*r^2 + A3*r^3 + A4*r^4 + A5*r^5
+            TVectorDouble num = TVectorDouble.Create(A5);
+            num = TVectorDouble.MultiplyAddEstimate(num, r, TVectorDouble.Create(A4));
+            num = TVectorDouble.MultiplyAddEstimate(num, r, TVectorDouble.Create(A3));
+            num = TVectorDouble.MultiplyAddEstimate(num, r, TVectorDouble.Create(A2));
+            num = TVectorDouble.MultiplyAddEstimate(num, r, TVectorDouble.Create(A1));
+            num = TVectorDouble.MultiplyAddEstimate(num, r, TVectorDouble.Create(A0));
 
-            // Select appropriate result based on magnitude
-            TVectorDouble result = TVectorDouble.ConditionalSelect(tinyMask, ax, normal);
-            result = TVectorDouble.ConditionalSelect(infMask, TVectorDouble.Create(double.PositiveInfinity), result);
+            // Evaluate denominator: B0 + B1*r + B2*r^2 + B3*r^3 + B4*r^4 + B5*r^5
+            TVectorDouble den = TVectorDouble.Create(B5);
+            den = TVectorDouble.MultiplyAddEstimate(den, r, TVectorDouble.Create(B4));
+            den = TVectorDouble.MultiplyAddEstimate(den, r, TVectorDouble.Create(B3));
+            den = TVectorDouble.MultiplyAddEstimate(den, r, TVectorDouble.Create(B2));
+            den = TVectorDouble.MultiplyAddEstimate(den, r, TVectorDouble.Create(B1));
+            den = TVectorDouble.MultiplyAddEstimate(den, r, TVectorDouble.Create(B0));
+
+            TVectorDouble poly = num / den;
+            TVectorDouble smallResult = x + (x * r) * poly;
+
+            // For |x| >= 0.5: atanh(x) = sign(x) * 0.5 * log((1 + |x|) / (1 - |x|))
+            TVectorDouble onePlusAx = TVectorDouble.One + ax;
+            TVectorDouble oneMinusAx = TVectorDouble.One - ax;
+            TVectorDouble largeResult = TVectorDouble.Create(HALF) * LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(onePlusAx / oneMinusAx);
+            largeResult |= sign; // restore sign
+
+            // Select based on magnitude
+            TVectorDouble result = TVectorDouble.ConditionalSelect(smallMask, smallResult, largeResult);
+            result = TVectorDouble.ConditionalSelect(tinyMask, x, result);
+            result = TVectorDouble.ConditionalSelect(infMask, TVectorDouble.Create(double.PositiveInfinity) | sign, result);
             result = TVectorDouble.ConditionalSelect(nanMask, TVectorDouble.Create(double.NaN), result);
-
-            // Restore sign
-            result |= sign;
 
             return result;
         }
@@ -3417,15 +3420,7 @@ namespace System.Runtime.Intrinsics
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
             where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
         {
-            // This code is based on `atanhf` from amd/aocl-libm-ose
-            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
-            //
-            // Licensed under the BSD 3-Clause "New" or "Revised" License
-            // See THIRD-PARTY-NOTICES.TXT for the full license text
-
-            // Implementation Notes
-            // --------------------
-            // atanh(x) = 0.5 * log((1 + x) / (1 - x))
+            // Widens to double and calls AtanhDouble for improved accuracy.
 
             if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
             {
@@ -3748,26 +3743,10 @@ namespace System.Runtime.Intrinsics
         public static TVectorDouble Atan2Double<TVectorDouble>(TVectorDouble y, TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
-            // This code is based on `atan2` from amd/aocl-libm-ose
-            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
-            //
-            // Licensed under the BSD 3-Clause "New" or "Revised" License
-            // See THIRD-PARTY-NOTICES.TXT for the full license text
-
-            // Implementation Notes
-            // --------------------
-            // atan2(y, x) has different definitions depending on the quadrant:
-            // - If x > 0: atan2(y, x) = atan(y/x)
-            // - If x < 0 and y >= 0: atan2(y, x) = atan(y/x) + pi
-            // - If x < 0 and y < 0: atan2(y, x) = atan(y/x) - pi
-            // - If x = 0 and y > 0: atan2(y, x) = pi/2
-            // - If x = 0 and y < 0: atan2(y, x) = -pi/2
-            //
-            // Special cases (IEEE 754 signed zero handling):
-            // - atan2(±0, +0) = ±0
-            // - atan2(±0, -0) = ±π
-            // - atan2(±y, +0) = ±pi/2 for y != 0
-            // - atan2(±y, -0) = ±pi/2 for y != 0
+            // The AMD AOCL-LibM scalar atan2 implementation (atan2.c) uses a lookup table
+            // (ATAN_TABLE with 241 entries) which cannot be trivially vectorized due to the
+            // cost of gather instructions. Instead, this computes atan2(y,x) using the
+            // already-vectorized AtanDouble implementation with quadrant adjustments.
             // - atan2(±∞, +∞) = ±pi/4
             // - atan2(±∞, -∞) = ±3pi/4
             // - atan2(±y, +∞) = ±0
@@ -3828,15 +3807,7 @@ namespace System.Runtime.Intrinsics
             where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
-            // This code is based on `atan2` from amd/aocl-libm-ose
-            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
-            //
-            // Licensed under the BSD 3-Clause "New" or "Revised" License
-            // See THIRD-PARTY-NOTICES.TXT for the full license text
-
-            // Implementation Notes
-            // --------------------
-            // Same as Atan2Double but using single precision
+            // Widens to double and calls Atan2Double for improved accuracy.
 
             if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
             {
