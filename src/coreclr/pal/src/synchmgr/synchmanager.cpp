@@ -2699,19 +2699,7 @@ namespace CorUnix
             pthread_condattr_destroy(&attrs);
             goto IPrC_exit;
         }
-#else // HAVE_CLOCK_MONOTONIC && HAVE_PTHREAD_CONDATTR_SETCLOCK
-#ifdef __linux__
-    #error not expected to be here on Linux
-
-#if !HAVE_CLOCK_MONOTONIC 
-#error HAVE_CLOCK_MONOTONIC missing
-#endif
-#if !HAVE_PTHREAD_CONDATTR_SETCLOCK
-#error HAVE_PTHREAD_CONDATTR_SETCLOCK missing
-#endif
-
-#endif
-#endif
+#endif // HAVE_CLOCK_MONOTONIC && HAVE_PTHREAD_CONDATTR_SETCLOCK
 
         iEagains = 0;
     Mutex_retry:
