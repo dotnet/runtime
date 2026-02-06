@@ -15,7 +15,7 @@
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 
-    <ILLinkTrimAssembly Condition="'$(RunILLinkInBuild)' == 'true'">true</ILLinkTrimAssembly>
+    <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
     <ILLinkDescriptorsXml>$(IntermediateOutputPath)ILLink.Descriptors.xml</ILLinkDescriptorsXml>
     <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
   </PropertyGroup>

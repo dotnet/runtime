@@ -9,7 +9,7 @@
   <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
     <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
-    <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true' and '$(ILLinkTrimAssembly)' == 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
+    <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
 
     <ILLinkDirectory Condition="'$(ILLinkDirectory)' == ''">$(MSBuildProjectDirectory)\ILLink\</ILLinkDirectory>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
@@ -104,7 +104,7 @@
              TaskFactory="TaskHostFactory"
              Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CombineILLinkDescriptorsXmls"
-          Condition="'$(ILLinkTasksAssembly)' != '' and '@(ILLinkDescriptorsXmls)' != ''"
+          Condition="'@(ILLinkDescriptorsXmls)' != ''"
           Inputs="@(ILLinkDescriptorsXmls)"
           Outputs="$(ILLinkDescriptorsXmlIntermediatePath)">
     <PropertyGroup>
@@ -144,7 +144,7 @@
 
   <Target Name="_CombineILLinkSubstitutionsXmls"
           DependsOnTargets="GenerateResourcesSubstitutionFile"
-          Condition="'$(ILLinkTasksAssembly)' != '' and '@(ILLinkSubstitutionsXmls)' != ''"
+          Condition="'@(ILLinkSubstitutionsXmls)' != ''"
           Inputs="@(ILLinkSubstitutionsXmls)"
           Outputs="$(ILLinkSubstitutionsXmlIntermediatePath)">
     <PropertyGroup>
@@ -160,7 +160,7 @@
   </Target>
 
   <Target Name="_CombineILLinkLinkAttributesXmls"
-          Condition="'$(ILLinkTasksAssembly)' != '' and '@(ILLinkLinkAttributesXmls)' != ''"
+          Condition="'@(ILLinkLinkAttributesXmls)' != ''"
           Inputs="@(ILLinkLinkAttributesXmls)"
           Outputs="$(ILLinkLinkAttributesXmlIntermediatePath)">
     <PropertyGroup>
