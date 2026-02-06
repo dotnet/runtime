@@ -526,7 +526,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(m_scope, callConv, retType, retTypeModReqs, retTypeModOpts);
+            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(callConv, retType, retTypeModReqs, retTypeModOpts);
             sig.AddArguments(m_scope, paramTypes, paramModReqs, paramModOpts);
             return sig;
         }

@@ -106,14 +106,13 @@ namespace System.Reflection.Emit
         }
 
         internal static SignatureHelper GetMethodSigHelper(
-            DynamicScope dynamicScope,
             MdSigCallingConvention callingConvention,
             Type returnType,
             Type[]? requiredCustomModifiers,
             Type[]? optionalCustomModifiers)
         {
             SignatureHelper sig = new SignatureHelper(null, callingConvention);
-            sig.AddDynamicArgument(dynamicScope, returnType, requiredCustomModifiers, optionalCustomModifiers, false);
+            sig.AddReturnType(returnType, requiredCustomModifiers, optionalCustomModifiers);
             return sig;
         }
 
@@ -550,11 +549,12 @@ namespace System.Reflection.Emit
             AddToken(clsToken);
         }
 
-        private unsafe void InternalAddRuntimeType(Type type)
+        private unsafe void InternalAddRuntimeType(Type type, bool skipElementType = false)
         {
             // Add a runtime type into the signature.
 
-            AddElementType(CorElementType.ELEMENT_TYPE_INTERNAL);
+            if (!skipElementType)
+                AddElementType(CorElementType.ELEMENT_TYPE_INTERNAL);
 
             IntPtr handle = type.TypeHandle.Value;
 
@@ -741,10 +741,58 @@ namespace System.Reflection.Emit
             return temp;
         }
 
-        internal void AddDynamicArgument(DynamicScope dynamicScope, Type clsArgument, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, bool incArgCount = true)
+        internal void AddReturnType(Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
         {
-            if (incArgCount)
-                IncrementArgCounts();
+            Debug.Assert(type != null);
+
+            if (optionalCustomModifiers != null)
+            {
+                for (int i = 0; i < optionalCustomModifiers.Length; i++)
+                {
+                    Type t = optionalCustomModifiers[i];
+
+                    if (t is not RuntimeType rtType)
+                        throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(optionalCustomModifiers));
+
+                    if (t.HasElementType)
+                        throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(optionalCustomModifiers));
+
+                    if (t.ContainsGenericParameters)
+                        throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(optionalCustomModifiers));
+
+                    AddElementType((CorElementType)0x22); // ELEMENT_TYPE_CMOD_INTERNAL
+                    AddData(0x00); // 0 = optional
+                    InternalAddRuntimeType(rtType, true);
+                }
+            }
+
+            if (requiredCustomModifiers != null)
+            {
+                for (int i = 0; i < requiredCustomModifiers.Length; i++)
+                {
+                    Type t = requiredCustomModifiers[i];
+
+                    if (t is not RuntimeType rtType)
+                        throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(requiredCustomModifiers));
+
+                    if (t.HasElementType)
+                        throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(requiredCustomModifiers));
+
+                    if (t.ContainsGenericParameters)
+                        throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(requiredCustomModifiers));
+
+                    AddElementType((CorElementType)0x22); // ELEMENT_TYPE_CMOD_INTERNAL
+                    AddData(0x01); // 1 = required
+                    InternalAddRuntimeType(rtType, true);
+                }
+            }
+
+            AddOneArgTypeHelper(type);
+        }
+
+        internal void AddDynamicArgument(DynamicScope dynamicScope, Type clsArgument, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
+        {
+            IncrementArgCounts();
 
             Debug.Assert(clsArgument != null);
 
