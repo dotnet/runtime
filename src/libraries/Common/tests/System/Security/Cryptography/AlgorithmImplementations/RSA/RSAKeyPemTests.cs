@@ -516,8 +516,11 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
                 Assert.Contains(NoPemExceptionMarker, ae.Message);
             }
         }
+    }
 
-        private static RSAParameters ToPublic(this RSAParameters rsaParams)
+    internal static class RSAParametersExtensions
+    {
+        internal static RSAParameters ToPublic(this RSAParameters rsaParams)
         {
             return new RSAParameters
             {
