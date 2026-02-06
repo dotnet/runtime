@@ -16,8 +16,6 @@ using Internal.TypeSystem.Interop;
 using Debug = System.Diagnostics.Debug;
 using Internal.ReadyToRunConstants;
 using Internal.JitInterface;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.Metadata;
 
 namespace ILCompiler
 {

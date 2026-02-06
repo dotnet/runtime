@@ -288,8 +288,7 @@ namespace Internal.IL
             {
                 if (_manifestModuleWrappedMethods.TryGetValue(ars, out var methodil))
                     return methodil;
-                CreateCrossModuleInlineableTokensForILBody(ars);
-                return _manifestModuleWrappedMethods[ars];
+                return ars.EmitIL();
             }
             else
             {

@@ -696,7 +696,7 @@ namespace ILCompiler
                     {
                         var method = methodCodeNodeNeedingCode.Method;
                         var typicalDef = method.GetTypicalMethodDefinition();
-                        if (typicalDef is EcmaMethod or AsyncMethodVariant)
+                        if (typicalDef is EcmaMethod or AsyncMethodVariant or AsyncResumptionStub)
                         {
                             if (ilProvider.NeedsCrossModuleInlineableTokens(typicalDef) &&
                                 !_methodsWhichNeedMutableILBodies.Contains(typicalDef) &&
@@ -705,42 +705,37 @@ namespace ILCompiler
                                 _methodsWhichNeedMutableILBodies.Add(typicalDef);
                             }
                         }
-                        if (method is AsyncResumptionStub)
-                        {
-                            GetMethodIL(method);
-                        }
                         if (!CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method)
-                            && (method.IsAsyncCall() || method is AsyncResumptionStub)
+                            && method.IsAsyncCall()
                             && !_hasAddedAsyncReferences)
                         {
                             // Keep in sync with CorInfoImpl.getAsyncInfo()
                             DefType continuation = TypeSystemContext.ContinuationType;
-                            var runtimeHelpers = TypeSystemContext.SystemModule.GetKnownType(
-                                "System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8);
-
+                            var runtimeHelpers = TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8);
                             var asyncHelpers = TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
                             // AsyncHelpers should already be referenced in the module for the call to Await()
                             Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(asyncHelpers, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
                             TypeDesc[] requiredTypes = [continuation];
                             FieldDesc[] requiredFields = [
+                                // For getAsyncInfo
                                 continuation.GetKnownField("Next"u8),
                                 continuation.GetKnownField("ResumeInfo"u8),
                                 continuation.GetKnownField("State"u8),
                                 continuation.GetKnownField("Flags"u8),
                             ];
                             MethodDesc[] requiredMethods = [
+                                // For getAsyncInfo
                                 asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null),
                                 asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null),
                                 asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null),
                                 asyncHelpers.GetKnownMethod("CaptureContexts"u8, null),
                                 asyncHelpers.GetKnownMethod("RestoreContexts"u8, null),
                                 asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null),
+
+                                // R2R Helpers
                                 asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),
                                 asyncHelpers.GetKnownMethod("AllocContinuationClass"u8, null),
                                 asyncHelpers.GetKnownMethod("AllocContinuationMethod"u8, null),
-                                //asyncHelpers.GetKnownMethod("AsyncCallContinuation"u8, null),
-                                //runtimeHelpers.GetKnownMethod("SetNextCallGenericContext"u8, null),
-                                //runtimeHelpers.GetKnownMethod("SetNextCallAsyncContinuation"u8, null),
                             ];
                             _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
                             try
