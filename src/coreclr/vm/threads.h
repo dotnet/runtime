@@ -522,7 +522,7 @@ public:
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
 
-        // unused                 = 0x00000002,
+        TS_SuspensionTrapped      = 0x00000002,    // Thread is trapped waiting for suspension to complete (was in managed code)
         TS_GCSuspendRedirected    = 0x00000004,    // ThreadSuspend::SuspendRuntime has redirected the thread to suspention routine.
 
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
@@ -3748,32 +3748,11 @@ public:
 #ifdef FEATURE_PERFTRACING
 private:
 
-    // SampleProfiler thread state.  This is set on suspension and cleared before restart.
-    // True if the thread was in cooperative mode.  False if it was in preemptive when the suspension started.
-    Volatile<ULONG> m_gcModeOnSuspension;
-
     // The activity ID for the current thread.
     // An activity ID of zero means the thread is not executing in the context of an activity.
     GUID m_activityId;
 
 public:
-    bool GetGCModeOnSuspension()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_gcModeOnSuspension != 0U;
-    }
-
-    void SaveGCModeOnSuspension()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_gcModeOnSuspension = m_fPreemptiveGCDisabled;
-    }
-
-    void ClearGCModeOnSuspension()
-    {
-        m_gcModeOnSuspension = 0;
-    }
-
     LPCGUID GetActivityId() const
     {
         LIMITED_METHOD_CONTRACT;
