@@ -9,6 +9,9 @@
     <Compile Include="runtest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="test_dd52.ilproj" />
   </ItemGroup>
 </Project>

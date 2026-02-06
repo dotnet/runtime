@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using Xunit;
+using TestLibrary;
 
 public class Test
 {
@@ -81,6 +82,7 @@ public class Test
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static unsafe int ShrxRef64bit(ushort* x, int y) => *x >> y;
 
+    [ActiveIssue("There is a known undefined behavior with shifts and 0xFFFFFFFF overflows, so skip the test for mono.", TestRuntimes.Mono)]
     [Fact]
     public static unsafe int TestEntryPoint()
     {

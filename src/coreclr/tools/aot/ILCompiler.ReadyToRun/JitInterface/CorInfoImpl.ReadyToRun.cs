@@ -993,6 +993,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_RETHROW:
                     id = ReadyToRunHelper.Rethrow;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROWEXACT:
+                    id = ReadyToRunHelper.ThrowExact;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_OVERFLOW:
                     id = ReadyToRunHelper.Overflow;
                     break;
@@ -1291,6 +1294,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
                 // For x86 tailcall where helper is required we need runtime JIT.
                 case CorInfoHelpFunc.CORINFO_HELP_TAILCALL:
+                // DirectOnThreadLocalData helper is used at runtime during R2R fixup resolution, not during R2R compilation
+                case CorInfoHelpFunc.CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE:
                     throw new RequiresRuntimeJitException(ftnNum.ToString());
 
                 default:
@@ -2769,6 +2774,17 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
         {
             TypeDesc type = HandleToObject(handle);
+            // Continuations require special handling to encode the layout of the type.
+            // The TypeSignature format used in TypeHandles is not sufficient for encoding specific continuation layouts
+            // PrecodeHelper(
+            //   TypeHandle(ReadyToRunFixupKind.ContinuationLayout)
+            // )
+            if (type is AsyncContinuationType act)
+            {
+                Import import = (Import)_compilation.SymbolNodeFactory.ContinuationTypeSymbol(act);
+                ppIndirection = (void*)ObjectToHandle(import);
+                return null;
+            }
             if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
                 throw new RequiresRuntimeJitException(type.ToString());
 

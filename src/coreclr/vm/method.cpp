@@ -1962,6 +1962,37 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
         FALSE /* no allowInstParam */ ));
 }
 
+PCODE MethodDesc::GetSingleCallableAddrOfCode()
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(!IsGenericMethodDefinition());
+    return GetMethodEntryPoint();
+}
+
+PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(HasUnmanagedCallersOnlyAttribute());
+    }
+    CONTRACTL_END;
+
+    PCODE entryPoint;
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    entryPoint = GetPortableEntryPoint();
+    (void)PortableEntryPoint::ToPortableEntryPoint(entryPoint)->EnsureCodeForUnmanagedCallersOnly();
+    entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+    entryPoint = GetSingleCallableAddrOfCode();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    return entryPoint;
+}
+
 //*******************************************************************************
 PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH)
 {
@@ -2142,7 +2173,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     PCODE entryPoint = GetPortableEntryPoint();
     if (accessFlags & CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE
-        && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->HasUnmanagedCallersOnlyAttribute())
+        && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->EnsureCodeForUnmanagedCallersOnly())
     {
         entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
     }

@@ -93,8 +93,7 @@
     <NetCoreAppToolCurrentVersion>11.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
-    <!-- TODO: Replace NetCoreAppToolCurrent with NetToolCurrent in this repo -->
-    <NetToolCurrent>$(NetCoreAppToolCurrent)</NetToolCurrent>
+    <!-- TODO: Replace NetCoreAppToolCurrent with BundledNETCoreAppTargetFramework in this repo -->
 
     <AspNetCoreAppCurrentVersion>11.0</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>

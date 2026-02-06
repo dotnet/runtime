@@ -5,6 +5,7 @@ using System;
 
 using System.Collections.Generic;
 using Xunit;
+using TestLibrary;
 
 //Repro from http://www.simple-talk.com/dotnet/.net-framework/the-dangers-of-the-large-object-heap/
 
@@ -115,6 +116,7 @@ namespace LOH_test
 
 
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/5933", TestRuntimes.CoreCLR)]
         [Fact]
         public static int TestEntryPoint()
         {

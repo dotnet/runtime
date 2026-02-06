@@ -149,7 +149,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
         // Now go to where the finally funclet needs to return to.
         BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
-        if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
+        if (nextBlock->NextIs(finallyContinuation) && !m_compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
         {
             // Fall-through.
             // TODO-ARM-CQ: Can we get rid of this instruction, and just have the call return directly
@@ -186,7 +186,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
 
-    if (!compiler->opts.compReloc)
+    if (!m_compiler->opts.compReloc)
     {
         size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs
     }
@@ -262,7 +262,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             // TODO-CQ: Currently we cannot do this for all handles because of
             // https://github.com/dotnet/runtime/issues/60712
-            if (con->ImmedValNeedsReloc(compiler))
+            if (con->ImmedValNeedsReloc(m_compiler))
             {
                 attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
             }
@@ -385,7 +385,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 void CodeGen::genLclHeap(GenTree* tree)
 {
     assert(tree->OperIs(GT_LCLHEAP));
-    assert(compiler->compLocallocUsed);
+    assert(m_compiler->compLocallocUsed);
 
     GenTree* size = tree->AsOp()->gtOp1;
     noway_assert((genActualType(size->gtType) == TYP_INT) || (genActualType(size->gtType) == TYP_I_IMPL));
@@ -438,15 +438,15 @@ void CodeGen::genLclHeap(GenTree* tree)
 
     // If we have an outgoing arg area then we must adjust the SP by popping off the
     // outgoing arg area. We will restore it right before we return from this method.
-    if (compiler->lvaOutgoingArgSpaceSize > 0)
+    if (m_compiler->lvaOutgoingArgSpaceSize > 0)
     {
         // This must be true for the stack to remain aligned
-        assert((compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0);
+        assert((m_compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0);
 
         // We're guaranteed (by LinearScan::BuildLclHeap()) to have a legal regTmp if we need one.
-        genStackPointerAdjustment(compiler->lvaOutgoingArgSpaceSize, regTmp);
+        genStackPointerAdjustment(m_compiler->lvaOutgoingArgSpaceSize, regTmp);
 
-        stackAdjustment += compiler->lvaOutgoingArgSpaceSize;
+        stackAdjustment += m_compiler->lvaOutgoingArgSpaceSize;
     }
 
     // Put aligned allocation size to regCnt
@@ -475,7 +475,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
             goto ALLOC_DONE;
         }
-        else if (!compiler->info.compInitMem && (amount < compiler->eeGetPageSize())) // must be < not <=
+        else if (!m_compiler->info.compInitMem && (amount < m_compiler->eeGetPageSize())) // must be < not <=
         {
             // Since the size is less than a page, simply adjust the SP value.
             // The SP might already be in the guard page, must touch it BEFORE
@@ -499,7 +499,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
 
     // Allocation
-    if (compiler->info.compInitMem)
+    if (m_compiler->info.compInitMem)
     {
         // At this point 'regCnt' is set to the total number of bytes to localloc.
         // Since we have to zero out the allocated memory AND ensure that the stack pointer is always valid
@@ -573,7 +573,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, regTmp, REG_SPBASE, 0);
 
         // decrement SP by eeGetPageSize()
-        GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, regTmp, REG_SPBASE, compiler->eeGetPageSize());
+        GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, regTmp, REG_SPBASE, m_compiler->eeGetPageSize());
 
         GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, regTmp, regCnt);
         inst_JMP(EJ_lo, done);
@@ -603,7 +603,7 @@ ALLOC_DONE:
 
         if ((lastTouchDelta == ILLEGAL_LAST_TOUCH_DELTA) ||
             (stackAdjustment + (unsigned)lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES >
-             compiler->eeGetPageSize()))
+             m_compiler->eeGetPageSize()))
         {
             genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)stackAdjustment, regTmp);
         }
@@ -662,8 +662,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 {
     CORINFO_FIELD_HANDLE fieldOffs = genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1);
-    assert(compiler->eeIsJitDataOffs(fieldOffs));
-    genMov32RelocatableDataLabel(compiler->eeGetJitDataOffs(fieldOffs), treeNode->GetRegNum());
+    assert(m_compiler->eeIsJitDataOffs(fieldOffs));
+    genMov32RelocatableDataLabel(m_compiler->eeGetJitDataOffs(fieldOffs), treeNode->GetRegNum());
 
     genProduceReg(treeNode);
 }
@@ -831,7 +831,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(compiler);
+    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(m_compiler);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -981,14 +981,14 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     // lcl_vars are not defs
     assert((tree->gtFlags & GTF_VAR_DEF) == 0);
 
-    bool isRegCandidate = compiler->lvaGetDesc(tree)->lvIsRegCandidate();
+    bool isRegCandidate = m_compiler->lvaGetDesc(tree)->lvIsRegCandidate();
 
     // If this is a register candidate that has been spilled, genConsumeReg() will
     // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
 
     if (!isRegCandidate && !tree->IsMultiReg() && !(tree->gtFlags & GTF_SPILLED))
     {
-        const LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
+        const LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree);
         var_types        type   = varDsc->GetRegisterType(tree);
 
         GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), tree->GetRegNum(), tree->GetLclNum(), 0);
@@ -1017,7 +1017,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     noway_assert(targetReg == REG_NA);
 
     unsigned   varNum = tree->GetLclNum();
-    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+    LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
 
     GenTree*  data    = tree->gtOp1;
     regNumber dataReg = REG_NA;
@@ -1089,7 +1089,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     else
     {
         unsigned   varNum     = tree->GetLclNum();
-        LclVarDsc* varDsc     = compiler->lvaGetDesc(varNum);
+        LclVarDsc* varDsc     = m_compiler->lvaGetDesc(varNum);
         var_types  targetType = varDsc->GetRegisterType(tree);
 
         emitter* emit = GetEmitter();
@@ -1304,16 +1304,16 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 //
 void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
 {
-    assert(compiler->compCurBB->KindIs(BBJ_COND));
+    assert(m_compiler->compCurBB->KindIs(BBJ_COND));
 
     GenTree*  op  = jtrue->gtGetOp1();
     regNumber reg = genConsumeReg(op);
     inst_RV_RV(INS_tst, reg, reg, genActualType(op));
-    inst_JMP(EJ_ne, compiler->compCurBB->GetTrueTarget());
+    inst_JMP(EJ_ne, m_compiler->compCurBB->GetTrueTarget());
 
     // If we cannot fall into the false target, emit a jump to it
-    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
-    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    BasicBlock* falseTarget = m_compiler->compCurBB->GetFalseTarget();
+    if (!m_compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, m_compiler))
     {
         inst_JMP(EJ_jmp, falseTarget);
     }
@@ -1627,16 +1627,16 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
 #if defined(DEBUG) && defined(PROFILING_SUPPORTED)
     // Don't ask VM if it hasn't requested ELT hooks
-    if (!compiler->compProfilerHookNeeded && compiler->opts.compJitELTHookEnabled &&
+    if (!m_compiler->compProfilerHookNeeded && m_compiler->opts.compJitELTHookEnabled &&
         (helper == CORINFO_HELP_PROF_FCN_ENTER || helper == CORINFO_HELP_PROF_FCN_LEAVE ||
          helper == CORINFO_HELP_PROF_FCN_TAILCALL))
     {
-        addr = compiler->compProfilerMethHnd;
+        addr = m_compiler->compProfilerMethHnd;
     }
     else
 #endif
     {
-        CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
+        CORINFO_CONST_LOOKUP helperFunction = m_compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
         if (helperFunction.accessType == IAT_VALUE)
         {
             addr = helperFunction.addr;
@@ -1650,7 +1650,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     EmitCallParams params;
 
-    params.methHnd = compiler->eeFindHelper(helper);
+    params.methHnd = m_compiler->eeFindHelper(helper);
     params.argSize = argSize;
     params.retSize = retSize;
 
@@ -1702,10 +1702,10 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 //
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(compiler->compGeneratingProlog);
+    assert(m_compiler->compGeneratingProlog);
 
     // Give profiler a chance to back out of hooking this method
-    if (!compiler->compIsProfilerHookNeeded())
+    if (!m_compiler->compIsProfilerHookNeeded())
     {
         return;
     }
@@ -1717,14 +1717,14 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     regMaskTP argRegMask = genRegMask(argReg);
     assert((regSet.rsMaskPreSpillRegArg & argRegMask) != 0);
 
-    if (compiler->compProfilerMethHndIndirected)
+    if (m_compiler->compProfilerMethHndIndirected)
     {
-        GetEmitter()->emitIns_R_AI(INS_ldr, EA_PTR_DSP_RELOC, argReg, (ssize_t)compiler->compProfilerMethHnd);
+        GetEmitter()->emitIns_R_AI(INS_ldr, EA_PTR_DSP_RELOC, argReg, (ssize_t)m_compiler->compProfilerMethHnd);
         regSet.verifyRegUsed(argReg);
     }
     else
     {
-        instGen_Set_Reg_To_Imm(EA_4BYTE, argReg, (ssize_t)compiler->compProfilerMethHnd);
+        instGen_Set_Reg_To_Imm(EA_4BYTE, argReg, (ssize_t)m_compiler->compProfilerMethHnd);
     }
 
     genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER,
@@ -1755,12 +1755,12 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     assert((helper == CORINFO_HELP_PROF_FCN_LEAVE) || (helper == CORINFO_HELP_PROF_FCN_TAILCALL));
 
     // Only hook if profiler says it's okay.
-    if (!compiler->compIsProfilerHookNeeded())
+    if (!m_compiler->compIsProfilerHookNeeded())
     {
         return;
     }
 
-    compiler->info.compProfilerCallback = true;
+    m_compiler->info.compProfilerCallback = true;
 
     //
     // Push the profilerHandle
@@ -1786,14 +1786,14 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
         // so R0 is likewise not in use.
         r0InUse = false;
     }
-    else if (compiler->info.compRetType == TYP_VOID)
+    else if (m_compiler->info.compRetType == TYP_VOID)
     {
         r0InUse = false;
     }
-    else if (varTypeIsFloating(compiler->info.compRetType) ||
-             compiler->IsHfa(compiler->info.compMethodInfo->args.retTypeClass))
+    else if (varTypeIsFloating(m_compiler->info.compRetType) ||
+             m_compiler->IsHfa(m_compiler->info.compMethodInfo->args.retTypeClass))
     {
-        r0InUse = compiler->info.compIsVarArgs || compiler->opts.compUseSoftFP;
+        r0InUse = m_compiler->info.compIsVarArgs || m_compiler->opts.compUseSoftFP;
     }
     else
     {
@@ -1802,11 +1802,11 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
     if (r0InUse)
     {
-        if (varTypeIsGC(compiler->info.compRetNativeType))
+        if (varTypeIsGC(m_compiler->info.compRetNativeType))
         {
-            attr = emitActualTypeSize(compiler->info.compRetNativeType);
+            attr = emitActualTypeSize(m_compiler->info.compRetNativeType);
         }
-        else if (compiler->compMethodReturnsRetBufAddr())
+        else if (m_compiler->compMethodReturnsRetBufAddr())
         {
             attr = EA_BYREF;
         }
@@ -1825,13 +1825,13 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
         regSet.verifyRegUsed(REG_PROFILER_RET_SCRATCH);
     }
 
-    if (compiler->compProfilerMethHndIndirected)
+    if (m_compiler->compProfilerMethHndIndirected)
     {
-        GetEmitter()->emitIns_R_AI(INS_ldr, EA_PTR_DSP_RELOC, REG_R0, (ssize_t)compiler->compProfilerMethHnd);
+        GetEmitter()->emitIns_R_AI(INS_ldr, EA_PTR_DSP_RELOC, REG_R0, (ssize_t)m_compiler->compProfilerMethHnd);
     }
     else
     {
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_R0, (ssize_t)compiler->compProfilerMethHnd);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_R0, (ssize_t)m_compiler->compProfilerMethHnd);
     }
 
     gcInfo.gcMarkRegSetNpt(RBM_R0);
@@ -1861,14 +1861,14 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 //
 void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 {
-    assert(compiler->compGeneratingProlog);
+    assert(m_compiler->compGeneratingProlog);
 
     assert(arm_Valid_Imm_For_Add_SP(delta));
     GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
 
     if (reportUnwindData)
     {
-        compiler->unwindPadding();
+        m_compiler->unwindPadding();
     }
 }
 
@@ -1895,16 +1895,16 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 //
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
-    assert(compiler->compGeneratingProlog);
+    assert(m_compiler->compGeneratingProlog);
 
     if (frameSize == 0)
     {
         return;
     }
 
-    const target_size_t pageSize = compiler->eeGetPageSize();
+    const target_size_t pageSize = m_compiler->eeGetPageSize();
 
-    assert(!compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
+    assert(!m_compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
 
     if (frameSize < pageSize)
     {
@@ -1932,7 +1932,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN, REG_STACK_PROBE_HELPER_CALL_TARGET);
         regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_CALL_TARGET);
-        compiler->unwindPadding();
+        m_compiler->unwindPadding();
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG, /* canSkip */ false);
 
         if ((genRegMask(initReg) & (RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET |
@@ -1942,7 +1942,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         }
     }
 
-    compiler->unwindAllocStack(frameSize);
+    m_compiler->unwindAllocStack(frameSize);
 }
 
 void CodeGen::genPushFltRegs(regMaskTP regMask)
@@ -1996,7 +1996,7 @@ void CodeGen::genPopFltRegs(regMaskTP regMask)
 //
 void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStarted)
 {
-    assert(compiler->compGeneratingEpilog);
+    assert(m_compiler->compGeneratingEpilog);
 
     if (frameSize == 0)
         return;
@@ -2016,7 +2016,7 @@ void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStar
     {
         if (!*pUnwindStarted)
         {
-            compiler->unwindBegEpilog();
+            m_compiler->unwindBegEpilog();
             *pUnwindStarted = true;
         }
 
@@ -2032,7 +2032,7 @@ void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStar
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, frameSize);
         if (*pUnwindStarted)
         {
-            compiler->unwindPadding();
+            m_compiler->unwindPadding();
         }
 
         // We're going to generate an unwindable instruction, so check again if
@@ -2040,14 +2040,14 @@ void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStar
 
         if (!*pUnwindStarted)
         {
-            compiler->unwindBegEpilog();
+            m_compiler->unwindBegEpilog();
             *pUnwindStarted = true;
         }
 
         GetEmitter()->emitIns_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, tmpReg, INS_FLAGS_DONT_CARE);
     }
 
-    compiler->unwindAllocStack(frameSize);
+    m_compiler->unwindAllocStack(frameSize);
 }
 
 /*-----------------------------------------------------------------------------
@@ -2059,7 +2059,7 @@ void CodeGen::genMov32RelocatableDisplacement(BasicBlock* block, regNumber reg)
     GetEmitter()->emitIns_R_L(INS_movw, EA_4BYTE_DSP_RELOC, block, reg);
     GetEmitter()->emitIns_R_L(INS_movt, EA_4BYTE_DSP_RELOC, block, reg);
 
-    if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
+    if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
     {
         GetEmitter()->emitIns_R_R_R(INS_add, EA_4BYTE_DSP_RELOC, reg, reg, REG_PC);
     }
@@ -2074,7 +2074,7 @@ void CodeGen::genMov32RelocatableDataLabel(unsigned value, regNumber reg)
     GetEmitter()->emitIns_R_D(INS_movw, EA_HANDLE_CNS_RELOC, value, reg);
     GetEmitter()->emitIns_R_D(INS_movt, EA_HANDLE_CNS_RELOC, value, reg);
 
-    if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
+    if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
     {
         GetEmitter()->emitIns_R_R_R(INS_add, EA_HANDLE_CNS_RELOC, reg, reg, REG_PC);
     }
@@ -2091,7 +2091,7 @@ void CodeGen::genMov32RelocatableImmediate(emitAttr size, BYTE* addr, regNumber 
     GetEmitter()->emitIns_MovRelocatableImmediate(INS_movw, size, reg, addr);
     GetEmitter()->emitIns_MovRelocatableImmediate(INS_movt, size, reg, addr);
 
-    if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
+    if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
     {
         GetEmitter()->emitIns_R_R_R(INS_add, size, reg, reg, REG_PC);
     }
@@ -2105,7 +2105,7 @@ void CodeGen::genMov32RelocatableImmediate(emitAttr size, BYTE* addr, regNumber 
  */
 regMaskTP CodeGen::genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskCalleeSavedFloat)
 {
-    assert(compiler->compGeneratingProlog || compiler->compGeneratingEpilog);
+    assert(m_compiler->compGeneratingProlog || m_compiler->compGeneratingEpilog);
 
     // We can't do this optimization with callee saved floating point registers because
     // the stack would be allocated in a wrong spot.
@@ -2116,7 +2116,7 @@ regMaskTP CodeGen::genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskC
 
     // We similarly skip it for async due to the extra async continuation
     // return that may be overridden by the pop.
-    if (compiler->compIsAsync())
+    if (m_compiler->compIsAsync())
     {
         return RBM_NONE;
     }
@@ -2149,11 +2149,11 @@ regMaskTP CodeGen::genPrespilledUnmappedRegs()
 {
     regMaskTP regs = regSet.rsMaskPreSpillRegs(false);
 
-    if (compiler->m_paramRegLocalMappings != nullptr)
+    if (m_compiler->m_paramRegLocalMappings != nullptr)
     {
-        for (int i = 0; i < compiler->m_paramRegLocalMappings->Height(); i++)
+        for (int i = 0; i < m_compiler->m_paramRegLocalMappings->Height(); i++)
         {
-            const ParameterRegisterLocalMapping& mapping = compiler->m_paramRegLocalMappings->BottomRef(i);
+            const ParameterRegisterLocalMapping& mapping = m_compiler->m_paramRegLocalMappings->BottomRef(i);
             regs &= ~mapping.RegisterSegment->GetRegisterMask();
         }
     }
@@ -2182,7 +2182,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 
     // Avoid emitting redundant memory barriers on arm32 if they belong to the same IG
     // and there were no memory accesses in-between them
-    if ((GetEmitter()->emitLastMemBarrier != nullptr) && compiler->opts.OptimizationEnabled())
+    if ((GetEmitter()->emitLastMemBarrier != nullptr) && m_compiler->opts.OptimizationEnabled())
     {
         assert(GetEmitter()->emitLastMemBarrier->idSmallCns() == INS_BARRIER_SY);
     }
@@ -2195,7 +2195,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 
 bool CodeGen::genCanUsePopToReturn(regMaskTP maskPopRegsInt, bool jmpEpilog)
 {
-    assert(compiler->compGeneratingEpilog);
+    assert(m_compiler->compGeneratingEpilog);
 
     if (!jmpEpilog && regSet.rsMaskPreSpillRegs(true) == RBM_NONE)
         return true;
@@ -2205,7 +2205,7 @@ bool CodeGen::genCanUsePopToReturn(regMaskTP maskPopRegsInt, bool jmpEpilog)
 
 void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
-    assert(compiler->compGeneratingEpilog);
+    assert(m_compiler->compGeneratingEpilog);
 
     regMaskTP maskPopRegs      = regSet.rsGetModifiedCalleeSavedRegsMask();
     regMaskTP maskPopRegsFloat = maskPopRegs & RBM_ALLFLOAT;
@@ -2216,14 +2216,14 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     if (maskPopRegsFloat != RBM_NONE)
     {
         genPopFltRegs(maskPopRegsFloat);
-        compiler->unwindPopMaskFloat(maskPopRegsFloat);
+        m_compiler->unwindPopMaskFloat(maskPopRegsFloat);
     }
 
     // Next, pop integer registers
 
     if (!jmpEpilog)
     {
-        regMaskTP maskStackAlloc = genStackAllocRegisterMask(compiler->compLclFrameSize, maskPopRegsFloat);
+        regMaskTP maskStackAlloc = genStackAllocRegisterMask(m_compiler->compLclFrameSize, maskPopRegsFloat);
         maskPopRegsInt |= maskStackAlloc;
     }
 
@@ -2248,7 +2248,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
     assert(FitsIn<int>(maskPopRegsInt.getLow()));
     inst_IV(INS_pop, (int)maskPopRegsInt);
-    compiler->unwindPopMaskInt(maskPopRegsInt);
+    m_compiler->unwindPopMaskInt(maskPopRegsInt);
 }
 
 /*****************************************************************************
@@ -2314,13 +2314,13 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #endif
 
     assert(block != NULL);
-    assert(compiler->bbIsFuncletBeg(block));
+    assert(m_compiler->bbIsFuncletBeg(block));
 
-    ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
+    ScopedSetVariable<bool> _setGeneratingProlog(&m_compiler->compGeneratingProlog, true);
 
     gcInfo.gcResetForBB();
 
-    compiler->unwindBegProlog();
+    m_compiler->unwindBegProlog();
 
     regMaskTP maskPushRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
     regMaskTP maskPushRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPushRegsFloat;
@@ -2330,12 +2330,12 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     assert(FitsIn<int>(maskPushRegsInt.getLow()));
     inst_IV(INS_push, (int)maskPushRegsInt);
-    compiler->unwindPushMaskInt(maskPushRegsInt);
+    m_compiler->unwindPushMaskInt(maskPushRegsInt);
 
     if (maskPushRegsFloat != RBM_NONE)
     {
         genPushFltRegs(maskPushRegsFloat);
-        compiler->unwindPushMaskFloat(maskPushRegsFloat);
+        m_compiler->unwindPushMaskFloat(maskPushRegsFloat);
     }
 
     bool isFilter = (block->bbCatchTyp == BBCT_FILTER);
@@ -2363,7 +2363,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     }
 
     // This is the end of the OS-reported prolog for purposes of unwinding
-    compiler->unwindEndProlog();
+    m_compiler->unwindEndProlog();
 }
 
 /*****************************************************************************
@@ -2378,7 +2378,7 @@ void CodeGen::genFuncletEpilog()
         printf("*************** In genFuncletEpilog()\n");
 #endif
 
-    ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
+    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     // Just as for the main function, we delay starting the unwind codes until we have
     // an instruction which we know needs an unwind code. This is to support code like
@@ -2407,7 +2407,7 @@ void CodeGen::genFuncletEpilog()
     if (!unwindStarted)
     {
         // We'll definitely generate an unwindable instruction next
-        compiler->unwindBegEpilog();
+        m_compiler->unwindBegEpilog();
         unwindStarted = true;
     }
 
@@ -2417,14 +2417,14 @@ void CodeGen::genFuncletEpilog()
     if (maskPopRegsFloat != RBM_NONE)
     {
         genPopFltRegs(maskPopRegsFloat);
-        compiler->unwindPopMaskFloat(maskPopRegsFloat);
+        m_compiler->unwindPopMaskFloat(maskPopRegsFloat);
     }
 
     assert(FitsIn<int>(maskPopRegsInt.getLow()));
     inst_IV(INS_pop, (int)maskPopRegsInt);
-    compiler->unwindPopMaskInt(maskPopRegsInt);
+    m_compiler->unwindPopMaskInt(maskPopRegsInt);
 
-    compiler->unwindEndEpilog();
+    m_compiler->unwindEndEpilog();
 }
 
 /*****************************************************************************
@@ -2439,11 +2439,11 @@ void CodeGen::genFuncletEpilog()
 
 void CodeGen::genCaptureFuncletPrologEpilogInfo()
 {
-    if (compiler->ehAnyFunclets())
+    if (m_compiler->ehAnyFunclets())
     {
         assert(isFramePointerUsed());
-        assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT); // The frame size and offsets must be
-                                                                              // finalized
+        assert(m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT); // The frame size and offsets must be
+                                                                                // finalized
 
         // Frame pointer doesn't point at the end, it points at the pushed r11. So, instead
         // of adding the number of callee-saved regs to CallerSP, we add 1 for lr and 1 for r11
@@ -2456,20 +2456,20 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         unsigned  saveRegsCount   = genCountBits(rsMaskSaveRegs);
         unsigned  saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
         unsigned  saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
-        if (compiler->lvaMonAcquired != BAD_VAR_NUM)
+        if (m_compiler->lvaMonAcquired != BAD_VAR_NUM)
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;
         }
-        if (compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+        if (m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;
         }
-        if (compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+        if (m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;
         }
-        assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
-        unsigned funcletFrameSize = preSpillRegArgSize + saveSizeWithPSP + compiler->lvaOutgoingArgSpaceSize;
+        assert(m_compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
+        unsigned funcletFrameSize = preSpillRegArgSize + saveSizeWithPSP + m_compiler->lvaOutgoingArgSpaceSize;
 
         unsigned funcletFrameSizeAligned  = roundUp(funcletFrameSize, STACK_ALIGN);
         unsigned funcletFrameAlignmentPad = funcletFrameSizeAligned - funcletFrameSize;
@@ -2509,7 +2509,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 //
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(compiler->compGeneratingProlog);
+    assert(m_compiler->compGeneratingProlog);
     assert(genUseBlockInit);
     assert(untrLclHi > untrLclLo);
 
@@ -2550,7 +2550,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     availMask &= ~genRegMask(initReg);    // Remove the pre-calculated initReg as we will zero it and maybe use it for
                                           // a large constant.
 
-    if (compiler->compLocallocUsed)
+    if (m_compiler->compLocallocUsed)
     {
         availMask &= ~RBM_SAVED_LOCALLOC_SP; // Remove the register reserved when we have a localloc frame
     }

@@ -29,7 +29,6 @@ public:
     bool isContainableMemoryOp(GenTree* node);
 
 private:
-    Compiler*   GetCompiler() const;
     LIR::Range& CurrentRange();
 
     void IdentifyCandidates();
