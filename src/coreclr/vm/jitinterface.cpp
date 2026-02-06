@@ -10143,21 +10143,8 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
 CORINFO_WASM_TYPE_SYMBOL_HANDLE CEEInfo::getWasmTypeSymbol(
     CorInfoWasmType* types, size_t typesSize)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_WASM_TYPE_SYMBOL_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    UNREACHABLE(); // To be implemented
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_RET();
 }
 
 CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
