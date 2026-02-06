@@ -915,11 +915,11 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             if (normalLclVN == curAssertion.GetOp1().GetVN())
             {
                 cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
-                limit   = Limit(Limit::keBinOpArray, curAssertion.GetOp2().GetVN(),
+                limit   = Limit(Limit::keBinOpArray, curAssertion.GetOp2().GetCheckedBound(),
                                 curAssertion.GetOp2().GetCheckedBoundConstant());
             }
             // Check if it's "checkedBndVN1 <relop> (checkedBndVN2 + 0)" and normalLclVN is checkedBndVN2
-            else if ((normalLclVN == curAssertion.GetOp2().GetVN()) &&
+            else if ((normalLclVN == curAssertion.GetOp2().GetCheckedBound()) &&
                      (curAssertion.GetOp2().GetCheckedBoundConstant() == 0))
             {
                 cmpOper =
@@ -997,7 +997,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         {
             // IsBoundsCheckNoThrow is "op1VN (Idx) LT_UN op2VN (Len)"
             ValueNum indexVN = curAssertion.GetOp1().GetVN();
-            ValueNum lenVN   = curAssertion.GetOp2().GetVN();
+            ValueNum lenVN   = curAssertion.GetOp2().GetCheckedBound();
             if (normalLclVN == indexVN)
             {
                 if (canUseCheckedBounds)

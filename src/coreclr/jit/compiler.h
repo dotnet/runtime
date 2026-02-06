@@ -7811,14 +7811,6 @@ public:
                 return m_icon.m_iconVal;
             }
 
-            // For "checkedBndVN + cns" form, return the "cns" part.
-            int GetCheckedBoundConstant() const
-            {
-                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
-                assert(FitsIn<int>(m_icon.m_iconVal));
-                return (int)m_icon.m_iconVal;
-            }
-
             IntegralRange GetIntegralRange() const
             {
                 assert(KindIs(O2K_SUBRANGE));
@@ -7834,7 +7826,24 @@ public:
 
             ValueNum GetVN() const
             {
-                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CHECKED_BOUND_ADD_CNS));
+                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ));
+                assert(m_vn != ValueNumStore::NoVN);
+                return m_vn;
+            }
+
+            // For "checkedBndVN + cns" form, return the "cns" part.
+            int GetCheckedBoundConstant() const
+            {
+                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
+                assert(FitsIn<int>(m_icon.m_iconVal));
+                return (int)m_icon.m_iconVal;
+            }
+
+            // For "checkedBndVN + cns" form, return the "checkedBndVN" part.
+            // We intentionally don't allow to use it via GetVN() to avoid confusion.
+            ValueNum GetCheckedBound() const
+            {
+                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
@@ -8140,7 +8149,7 @@ public:
                     return true;
 
                 case O2K_CHECKED_BOUND_ADD_CNS:
-                    return GetOp2().GetVN() == that.GetOp2().GetVN() &&
+                    return GetOp2().GetCheckedBound() == that.GetOp2().GetCheckedBound() &&
                            GetOp2().GetCheckedBoundConstant() == that.GetOp2().GetCheckedBoundConstant();
 
                 case O2K_LCLVAR_COPY:
