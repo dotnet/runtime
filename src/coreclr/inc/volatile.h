@@ -373,7 +373,7 @@ public:
     // Copy constructor
     //
     inline Volatile(const Volatile<T>& other) = delete;
-    inline Volatile(const Volatile<T>&& other) = delete;
+    inline Volatile(Volatile<T>&& other) = delete;
 
     //
     // Loads the value of the volatile variable.  See code:VolatileLoad for the semantics of this operation.
@@ -529,7 +529,7 @@ public:
     }
 
     VolatilePtr(const VolatilePtr& other) = delete;
-    VolatilePtr(const VolatilePtr&& other) = delete;
+    VolatilePtr(VolatilePtr&& other) = delete;
 
     //
     // Cast to the pointer type
@@ -547,7 +547,7 @@ public:
     inline VolatilePtr<T, P>& operator=(const VolatilePtr<T, P>& val) {this->Store(val.Load()); return *this;}
     inline VolatilePtr<T, P>& operator=(VolatilePtr<T, P>&& val) = delete;
     // nullptr is assigned via nullptr_t
-    inline VolatilePtr<T, P>& operator=(std::nullptr_t val) {this->Store((P)nullptr); return *this;}
+    inline VolatilePtr<T, P>& operator=(std::nullptr_t val) {this->Store((P)val); return *this;}
 
     //
     // Member access

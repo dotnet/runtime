@@ -488,7 +488,7 @@ public:
     inline VolatilePtr<T, P>& operator=(const VolatilePtr<T, P>& val) {this->Store(val.Load()); return *this;}
     inline VolatilePtr<T, P>& operator=(VolatilePtr<T, P>&& val) = delete;
     // nullptr is assigned via nullptr_t
-    inline VolatilePtr<T, P>& operator=(std::nullptr_t val) {this->Store((P)nullptr); return *this;}
+    inline VolatilePtr<T, P>& operator=(std::nullptr_t val) {this->Store((P)val); return *this;}
 
     //
     // Member access
