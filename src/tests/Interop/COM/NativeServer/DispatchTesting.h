@@ -250,6 +250,13 @@ public: // IDispatchTesting
             return S_FALSE; // Return a success case to indicate failure to trigger a failure.
         }
     }
+    virtual HRESULT STDMETHODCALLTYPE TriggerCustomMarshaler(
+        /*[in]*/ IUnknown* objIn,
+        /*[in,out]*/ IUnknown** objRef,
+        /*[out,retval]*/ IUnknown* pRetVal)
+    {
+        return E_NOTIMPL;
+    }
     virtual HRESULT STDMETHODCALLTYPE DoubleHVAValues (
         /*[in,out]*/ HFA_4 *input,
         /*[out,retval]*/ HFA_4 *pRetVal)

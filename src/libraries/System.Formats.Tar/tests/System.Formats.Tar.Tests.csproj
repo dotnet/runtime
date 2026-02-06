@@ -7,6 +7,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs" Link="Common\System\IO\ConnectedStreams.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="Common\System\Net\MultiArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="Common\System\Net\StreamBuffer.cs" />
     <Compile Include="CompressedTar.Async.Tests.cs" />
     <Compile Include="CompressedTar.Tests.cs" />
     <Compile Include="SimulatedDataStream.cs" />
@@ -52,6 +56,7 @@
     <Compile Include="TarTestsBase.Ustar.cs" />
     <Compile Include="TarTestsBase.V7.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Entry.Roundtrip.Tests.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntry.LargeFiles.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.File.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Base.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Tests.cs" />

@@ -1388,7 +1388,7 @@ namespace System.Net.Sockets
                 bool timeoutExpired = false;
                 while (true)
                 {
-                    DateTime waitStart = DateTime.UtcNow;
+                    long waitStart = Stopwatch.GetTimestamp();
 
                     if (!e.Wait(timeout))
                     {
@@ -1411,7 +1411,7 @@ namespace System.Net.Sockets
                     // Adjust timeout and try again.
                     if (timeout > 0)
                     {
-                        timeout -= (DateTime.UtcNow - waitStart).Milliseconds;
+                        timeout -= (int)Stopwatch.GetElapsedTime(waitStart).TotalMilliseconds;
 
                         if (timeout <= 0)
                         {

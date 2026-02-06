@@ -55,7 +55,6 @@ namespace Tracing.UserEvents.Tests.Basic
             return UserEventsTestRunner.Run(
                 args,
                 "basic",
-                typeof(Basic).Assembly.Location,
                 BasicTracee,
                 s_traceValidator);
         }

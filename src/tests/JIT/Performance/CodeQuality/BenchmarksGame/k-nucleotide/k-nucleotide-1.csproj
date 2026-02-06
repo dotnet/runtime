@@ -8,6 +8,9 @@
     <Compile Include="harness-helpers.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="knucleotide-input.txt" />
     <EmbeddedResource Include="knucleotide-input-big.txt" />
   </ItemGroup>

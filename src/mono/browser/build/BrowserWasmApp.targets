@@ -125,6 +125,7 @@
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier', $(RuntimeIdentifier)))</_MonoAotCrossCompilerPath>
       <_WasmDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-default.rsp'))</_WasmDefaultFlagsRsp>
       <_WasmDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-link.rsp'))</_WasmDefaultLinkFlagsRsp>
+      <_WasmLlvmSizeRsp>$(_WasmIntermediateOutputPath)emcc-llvmsize.rsp</_WasmLlvmSizeRsp>
       <!--<_WasmLLVMPathForAOT>$(EmscriptenUpstreamBinPath)</_WasmLLVMPathForAOT>-->
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
       <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == '' and '$(WasmNativeStrip)' == 'true'">true</WasmRunWasmOpt>
