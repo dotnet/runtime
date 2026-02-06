@@ -260,6 +260,9 @@
 /* Define to 1 if you have the `sigaction' function. */
 #cmakedefine HAVE_SIGACTION 1
 
+/* Define to 1 if you have the sys_signame array. */
+#cmakedefine HAVE_SYSSIGNAME 1
+
 /* CLOCK_MONOTONIC */
 #cmakedefine HAVE_CLOCK_MONOTONIC 1
 
