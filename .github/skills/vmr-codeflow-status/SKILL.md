@@ -1,10 +1,6 @@
 ---
 name: vmr-codeflow-status
 description: Analyze VMR codeflow PR status for dotnet repositories. Use when investigating stale codeflow PRs, checking if fixes have flowed through the VMR pipeline, or debugging dependency update issues in PRs authored by dotnet-maestro[bot].
-license: MIT
-metadata:
-  author: lewing
-  version: "1.0"
 ---
 
 # VMR Codeflow Status

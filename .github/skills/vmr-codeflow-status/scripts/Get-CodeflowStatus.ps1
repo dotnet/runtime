@@ -43,13 +43,22 @@ $ErrorActionPreference = "Stop"
 # --- Helpers ---
 
 function Invoke-GitHubApi {
-    param([string]$Endpoint)
+    param(
+        [string]$Endpoint,
+        [switch]$Raw
+    )
     try {
-        $result = gh api $Endpoint 2>&1
+        $args = @($Endpoint)
+        if ($Raw) {
+            $args += '-H'
+            $args += 'Accept: application/vnd.github.raw+json'
+        }
+        $result = gh api @args 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "GitHub API call failed: $Endpoint"
             return $null
         }
+        if ($Raw) { return $result -join "`n" }
         return $result | ConvertFrom-Json
     }
     catch {
@@ -62,18 +71,6 @@ function Get-ShortSha {
     param([string]$Sha, [int]$Length = 12)
     if (-not $Sha) { return "(unknown)" }
     return $Sha.Substring(0, [Math]::Min($Length, $Sha.Length))
-}
-
-function ConvertFrom-Base64Content {
-    param([string]$Content)
-    try {
-        $clean = $Content -replace '\s', ''
-        return [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($clean))
-    }
-    catch {
-        Write-Warning "Failed to decode Base64 content: $_"
-        return $null
-    }
 }
 
 function Write-Section {
@@ -94,30 +91,29 @@ if ($repoParts.Count -ne 2) {
     Write-Error "Repository must be in format 'owner/repo' (e.g., 'dotnet/sdk')"
     return
 }
-$repoOwner = $repoParts[0]
-$repoName = $repoParts[1]
 
-# --- Step 1: Get PR details ---
+# --- Step 1: Get PR details (single call for PR + comments + commits) ---
 Write-Section "Codeflow PR #$PRNumber in $Repository"
 
-$pr = Invoke-GitHubApi "/repos/$Repository/pulls/$PRNumber"
-if (-not $pr) {
+$prJson = gh pr view $PRNumber -R $Repository --json body,title,state,author,headRefName,baseRefName,createdAt,updatedAt,url,comments,commits 2>&1
+if ($LASTEXITCODE -ne 0) {
     Write-Error "Could not fetch PR #$PRNumber from $Repository"
     return
 }
+$pr = $prJson | ConvertFrom-Json
 
 Write-Status "Title" $pr.title
 Write-Status "State" $pr.state
-Write-Status "Branch" "$($pr.head.ref) -> $($pr.base.ref)"
-Write-Status "Created" $pr.created_at
-Write-Status "Updated" $pr.updated_at
-Write-Host "  URL: $($pr.html_url)"
+Write-Status "Branch" "$($pr.headRefName) -> $($pr.baseRefName)"
+Write-Status "Created" $pr.createdAt
+Write-Status "Updated" $pr.updatedAt
+Write-Host "  URL: $($pr.url)"
 
 # Check if this is actually a codeflow PR
-$isMaestroPR = $pr.user.login -eq "dotnet-maestro[bot]"
+$isMaestroPR = $pr.author.login -eq "dotnet-maestro[bot]"
 $isCodeflowPR = $pr.title -match "Source code updates from dotnet/dotnet"
 if (-not $isMaestroPR -and -not $isCodeflowPR) {
-    Write-Warning "This does not appear to be a codeflow PR (author: $($pr.user.login), title: $($pr.title))"
+    Write-Warning "This does not appear to be a codeflow PR (author: $($pr.author.login), title: $($pr.title))"
     Write-Warning "Expected author 'dotnet-maestro[bot]' and title containing 'Source code updates from dotnet/dotnet'"
 }
 
@@ -182,8 +178,8 @@ if (-not $vmrCommit -or -not $vmrBranch) {
     Write-Warning "Could not parse VMR metadata from PR body. This may not be a codeflow PR."
     if (-not $vmrBranch) {
         # Try to infer from the PR target branch
-        $vmrBranch = $pr.base.ref
-        Write-Status "Inferred VMR Branch" $vmrBranch "(from PR target)"
+        $vmrBranch = $pr.baseRefName
+        Write-Status "Inferred VMR Branch" "$vmrBranch (from PR target)"
     }
 }
 
@@ -202,20 +198,40 @@ if ($vmrCommit -and $vmrBranch) {
         Write-Status "PR snapshot" "$(Get-ShortSha $vmrCommit) (from PR body)"
         Write-Status "VMR HEAD" "$(Get-ShortSha $vmrHeadSha) ($vmrHeadDate)"
 
-        if ($vmrCommit -eq $vmrHeadSha -or $vmrHeadSha.StartsWith($vmrCommit)) {
+        if ($vmrCommit -eq $vmrHeadSha) {
             Write-Host "  ✅ PR is up to date with VMR branch" -ForegroundColor Green
         }
         else {
-            # Compare to find how many commits ahead the VMR is
-            $compare = Invoke-GitHubApi "/repos/dotnet/dotnet/compare/$(Get-ShortSha $vmrCommit)...$(Get-ShortSha $vmrHeadSha)"
+            # Compare to find how many commits differ between the PR snapshot and the VMR
+            $compare = Invoke-GitHubApi "/repos/dotnet/dotnet/compare/$vmrCommit...$vmrHeadSha"
             if ($compare) {
                 $aheadBy = $compare.ahead_by
                 $behindBy = $compare.behind_by
-                Write-Host "  ⚠️  VMR is $aheadBy commit(s) ahead of the PR snapshot" -ForegroundColor Yellow
+                $compareStatus = $compare.status
+
+                switch ($compareStatus) {
+                    'ahead' {
+                        Write-Host "  ⚠️  VMR is $aheadBy commit(s) ahead of the PR snapshot" -ForegroundColor Yellow
+                    }
+                    'behind' {
+                        Write-Host "  ⚠️  VMR is $behindBy commit(s) behind the PR snapshot" -ForegroundColor Yellow
+                    }
+                    'diverged' {
+                        Write-Host "  ⚠️  VMR and PR snapshot have diverged: VMR is $aheadBy commit(s) ahead and $behindBy commit(s) behind" -ForegroundColor Yellow
+                    }
+                    default {
+                        Write-Host "  ⚠️  VMR and PR snapshot differ (status: $compareStatus)" -ForegroundColor Yellow
+                    }
+                }
 
                 if ($ShowCommits -and $compare.commits) {
                     Write-Host ""
-                    Write-Host "  Commits since PR snapshot:" -ForegroundColor Yellow
+                    $commitLabel = switch ($compareStatus) {
+                        'ahead'  { "Commits since PR snapshot:" }
+                        'behind' { "Commits in PR snapshot but not in VMR:" }
+                        default  { "Commits differing between VMR and PR snapshot:" }
+                    }
+                    Write-Host "  $commitLabel" -ForegroundColor Yellow
                     foreach ($c in $compare.commits) {
                         $msg = ($c.commit.message -split "`n")[0]
                         if ($msg.Length -gt 100) { $msg = $msg.Substring(0, 97) + "..." }
@@ -247,29 +263,27 @@ else {
     Write-Warning "Cannot check VMR freshness without VMR commit and branch info"
 }
 
-# --- Step 4: Check staleness warnings ---
+# --- Step 4: Check staleness warnings (using comments from gh pr view) ---
 Write-Section "Staleness Check"
 
-$comments = Invoke-GitHubApi "/repos/$Repository/issues/$PRNumber/comments?per_page=100"
 $stalenessWarnings = @()
 $lastStalenessComment = $null
 
-if ($comments) {
-    if ($comments.Count -ge 100) {
-        Write-Warning "PR has 100+ comments — staleness warnings beyond the first page may be missed"
-    }
-    foreach ($comment in $comments) {
-        if ($comment.user.login -eq "dotnet-maestro[bot]" -and
-            ($comment.body -match "codeflow cannot continue" -or $comment.body -match "darc trigger-subscriptions")) {
-            $stalenessWarnings += $comment
-            $lastStalenessComment = $comment
+if ($pr.comments) {
+    foreach ($comment in $pr.comments) {
+        $commentAuthor = $comment.author.login
+        if ($commentAuthor -eq "dotnet-maestro[bot]" -or $commentAuthor -eq "dotnet-maestro") {
+            if ($comment.body -match "codeflow cannot continue" -or $comment.body -match "darc trigger-subscriptions") {
+                $stalenessWarnings += $comment
+                $lastStalenessComment = $comment
+            }
         }
     }
 }
 
 if ($stalenessWarnings.Count -gt 0) {
     Write-Host "  ⚠️  Staleness warning detected ($($stalenessWarnings.Count) warning(s))" -ForegroundColor Yellow
-    Write-Status "Latest warning" $lastStalenessComment.created_at
+    Write-Status "Latest warning" $lastStalenessComment.createdAt
     Write-Host "  The VMR received opposite codeflow (forward flow merged) while this PR was open." -ForegroundColor Yellow
     Write-Host "  Maestro has blocked further codeflow updates to this PR." -ForegroundColor Yellow
 
@@ -289,22 +303,19 @@ else {
     Write-Host "  ✅ No staleness warnings found" -ForegroundColor Green
 }
 
-# --- Step 5: Analyze PR branch commits ---
+# --- Step 5: Analyze PR branch commits (using commits from gh pr view) ---
 Write-Section "PR Branch Analysis"
 
 $manualCommits = @()
-$prCommits = Invoke-GitHubApi "/repos/$Repository/pulls/$PRNumber/commits?per_page=100"
+$prCommits = $pr.commits
 if ($prCommits) {
-    if ($prCommits.Count -ge 100) {
-        Write-Warning "PR has 100+ commits — commits beyond the first page may be missed"
-    }
     $maestroCommits = @()
     $manualCommits = @()
     $mergeCommits = @()
 
     foreach ($c in $prCommits) {
-        $msg = ($c.commit.message -split "`n")[0]
-        $author = $c.commit.author.name
+        $msg = $c.messageHeadline
+        $author = if ($c.authors -and $c.authors.Count -gt 0) { $c.authors[0].name } else { "unknown" }
 
         if ($msg -match "^Merge branch") {
             $mergeCommits += $c
@@ -326,9 +337,10 @@ if ($prCommits) {
         Write-Host ""
         Write-Host "  Manual commits (at risk if PR is closed/force-triggered):" -ForegroundColor Yellow
         foreach ($c in $manualCommits) {
-            $msg = ($c.commit.message -split "`n")[0]
+            $msg = $c.messageHeadline
             if ($msg.Length -gt 80) { $msg = $msg.Substring(0, 77) + "..." }
-            Write-Host "    $($c.sha.Substring(0,8)) [$($c.commit.author.name)] $msg"
+            $authorName = if ($c.authors -and $c.authors.Count -gt 0) { $c.authors[0].name } else { "unknown" }
+            Write-Host "    $(Get-ShortSha $c.oid 8) [$authorName] $msg"
         }
     }
 }
@@ -368,13 +380,8 @@ if ($TraceFix) {
             Write-Host "  Checking VMR source-manifest.json on $vmrBranch..." -ForegroundColor White
 
             $manifestUrl = "/repos/dotnet/dotnet/contents/src/source-manifest.json?ref=$vmrBranch"
-            $manifestResponse = Invoke-GitHubApi $manifestUrl
-            if ($manifestResponse -and $manifestResponse.content) {
-                $manifestJson = ConvertFrom-Base64Content $manifestResponse.content
-                if (-not $manifestJson) {
-                    Write-Warning "Failed to decode source-manifest.json from VMR branch"
-                }
-                else {
+            $manifestJson = Invoke-GitHubApi $manifestUrl -Raw
+            if ($manifestJson) {
                 $manifest = $manifestJson | ConvertFrom-Json
 
                 # Find the repo in the manifest
@@ -393,7 +400,7 @@ if ($TraceFix) {
                     }
                     else {
                         # Check if fix is an ancestor of the manifest commit
-                        $ancestorCheck = Invoke-GitHubApi "/repos/$traceFullRepo/compare/$(Get-ShortSha $fixMergeCommit)...$(Get-ShortSha $manifestCommit)"
+                        $ancestorCheck = Invoke-GitHubApi "/repos/$traceFullRepo/compare/$fixMergeCommit...$manifestCommit"
                         if ($ancestorCheck) {
                             if ($ancestorCheck.status -eq "ahead" -or $ancestorCheck.status -eq "identical") {
                                 Write-Host "  ✅ Fix is included in VMR manifest (manifest is ahead or identical)" -ForegroundColor Green
@@ -413,10 +420,8 @@ if ($TraceFix) {
                         Write-Host "  Checking if fix is in the PR's VMR snapshot..." -ForegroundColor White
 
                         $snapshotManifestUrl = "/repos/dotnet/dotnet/contents/src/source-manifest.json?ref=$vmrCommit"
-                        $snapshotManifest = Invoke-GitHubApi $snapshotManifestUrl
-                        if ($snapshotManifest -and $snapshotManifest.content) {
-                            $snapshotJson = ConvertFrom-Base64Content $snapshotManifest.content
-                            if ($snapshotJson) {
+                        $snapshotJson = Invoke-GitHubApi $snapshotManifestUrl -Raw
+                        if ($snapshotJson) {
                             $snapshotData = $snapshotJson | ConvertFrom-Json
 
                             $snapshotEntry = $snapshotData.repositories | Where-Object {
@@ -431,7 +436,7 @@ if ($TraceFix) {
                                     Write-Host "  ✅ Fix IS in the PR's VMR snapshot" -ForegroundColor Green
                                 }
                                 else {
-                                    $snapshotCheck = Invoke-GitHubApi "/repos/$traceFullRepo/compare/$(Get-ShortSha $fixMergeCommit)...$(Get-ShortSha $snapshotCommit)"
+                                    $snapshotCheck = Invoke-GitHubApi "/repos/$traceFullRepo/compare/$fixMergeCommit...$snapshotCommit"
                                     if ($snapshotCheck) {
                                         if ($snapshotCheck.status -eq "ahead" -or $snapshotCheck.status -eq "identical") {
                                             Write-Host "  ✅ Fix is included in PR snapshot" -ForegroundColor Green
@@ -443,13 +448,11 @@ if ($TraceFix) {
                                     }
                                 }
                             }
-                            }
                         }
                     }
                 }
                 else {
                     Write-Warning "Could not find $traceRepo in VMR source-manifest.json"
-                }
                 }
             }
         }
@@ -467,7 +470,7 @@ if ($stalenessWarnings.Count -gt 0) {
     $issues += "Staleness warning active — codeflow is blocked"
 }
 
-if ($vmrCommit -and $vmrHead -and $vmrCommit -ne $vmrHeadSha -and -not $vmrHeadSha.StartsWith($vmrCommit)) {
+if ($vmrCommit -and $vmrHeadSha -and $vmrCommit -ne $vmrHeadSha) {
     $issues += "VMR branch is ahead of PR snapshot ($aheadBy commits behind)"
 }
 
