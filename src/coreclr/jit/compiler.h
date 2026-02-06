@@ -8360,36 +8360,21 @@ public:
 
         // Create "i < constant" or "i u< constant" assertion
         // TODO-Cleanup: Rename it as it's not necessarily a loop bound
-        static AssertionDsc CreateConstantLoopBound(const Compiler* comp, ValueNum relopVN)
+        static AssertionDsc CreateConstantBound(const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum cnsVN)
         {
-            assert(comp->vnStore->IsVNConstantBound(relopVN) || comp->vnStore->IsVNConstantBoundUnsigned(relopVN));
+            assert(op1VN != ValueNumStore::NoVN);
 
-            VNFuncApp funcApp;
-            comp->vnStore->GetVNFunc(relopVN, &funcApp);
-
-            VNFunc   func = funcApp.m_func;
-            ValueNum op1  = funcApp.m_args[0];
-            ValueNum op2  = funcApp.m_args[1];
-
-            // if op1 is a constant, then swap the operands and the operator
-            if (comp->vnStore->IsVNInt32Constant(op1) && !comp->vnStore->IsVNInt32Constant(op2))
-            {
-                std::swap(op1, op2);
-                func = comp->vnStore->SwapRelop(func);
-            }
-            else
-            {
-                bool op2IsCns = comp->vnStore->IsVNInt32Constant(op2);
-                assert(op2IsCns);
-            }
+            ssize_t cns;
+            bool    op2IsCns = comp->vnStore->IsVNIntegralConstant(cnsVN, &cns);
+            assert(op2IsCns);
 
             AssertionDsc dsc           = {};
-            dsc.m_assertionKind        = FromVNFunc(func);
+            dsc.m_assertionKind        = FromVNFunc(relop);
             dsc.m_op1.m_kind           = O1K_VN;
-            dsc.m_op1.m_vn             = op1;
+            dsc.m_op1.m_vn             = op1VN;
             dsc.m_op2.m_kind           = O2K_CONST_INT;
-            dsc.m_op2.m_vn             = op2;
-            dsc.m_op2.m_icon.m_iconVal = comp->vnStore->CoercedConstantValue<ssize_t>(op2);
+            dsc.m_op2.m_vn             = cnsVN;
+            dsc.m_op2.m_icon.m_iconVal = cns;
             return dsc;
         }
     };

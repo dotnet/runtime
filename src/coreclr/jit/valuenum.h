@@ -186,6 +186,17 @@ struct VNFuncApp
     unsigned  m_arity;
     ValueNum* m_args;
 
+    bool FuncIs(VNFunc func) const
+    {
+        return m_func == func;
+    }
+
+    template <typename... T>
+    bool FuncIs(VNFunc func, T... rest) const
+    {
+        return FuncIs(func) || FuncIs(rest...);
+    }
+
     bool Equals(const VNFuncApp& funcApp)
     {
         if (m_func != funcApp.m_func)
@@ -1102,12 +1113,6 @@ public:
 
     // If "vn" is VN(a.Length) or VN(a.GetLength(n)) then return VN(a); NoVN if VN(a) can't be determined.
     ValueNum GetArrForLenVn(ValueNum vn);
-
-    // Return true with any Relop except for == and !=  and one operand has to be a 32-bit integer constant.
-    bool IsVNConstantBound(ValueNum vn);
-
-    // If "vn" is of the form "(uint)var relop cns" for any relop except for == and !=
-    bool IsVNConstantBoundUnsigned(ValueNum vn);
 
     // If "vn" is of the form "(uint)var < (uint)len" (or equivalent) return true.
     bool IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompareCheckedBoundInfo* info);

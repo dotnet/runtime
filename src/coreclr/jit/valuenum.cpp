@@ -7010,46 +7010,6 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
     }
 }
 
-bool ValueNumStore::IsVNConstantBound(ValueNum vn)
-{
-    VNFuncApp funcApp;
-    if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
-    {
-        if ((funcApp.m_func == (VNFunc)GT_LE) || (funcApp.m_func == (VNFunc)GT_GE) ||
-            (funcApp.m_func == (VNFunc)GT_LT) || (funcApp.m_func == (VNFunc)GT_GT))
-        {
-            const bool op1IsConst = IsVNInt32Constant(funcApp.m_args[0]);
-            const bool op2IsConst = IsVNInt32Constant(funcApp.m_args[1]);
-
-            // Technically, we can allow both to be constants,
-            // but such relops are expected to be constant folded anyway.
-            return op1IsConst != op2IsConst;
-        }
-    }
-    return false;
-}
-
-bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
-{
-    VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp))
-    {
-        switch (funcApp.m_func)
-        {
-            case VNF_LT_UN:
-            case VNF_LE_UN:
-            case VNF_GE_UN:
-            case VNF_GT_UN:
-                // Technically, we can allow both to be constants,
-                // but such relops are expected to be constant folded anyway.
-                return IsVNPositiveInt32Constant(funcApp.m_args[0]) != IsVNPositiveInt32Constant(funcApp.m_args[1]);
-            default:
-                break;
-        }
-    }
-    return false;
-}
-
 //------------------------------------------------------------------------
 // IsVNPositiveInt32Constant: returns true iff vn is a known Int32 constant that is greater then 0
 //

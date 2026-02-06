@@ -936,9 +936,11 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         else if (curAssertion.IsRelop() && curAssertion.GetOp2().KindIs(Compiler::O2K_CONST_INT) &&
                  (curAssertion.GetOp1().GetVN() == normalLclVN) && FitsIn<int>(curAssertion.GetOp2().GetIntConstant()))
         {
-            isUnsigned = false;
-            cmpOper    = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
-            limit      = Limit(Limit::keConstant, static_cast<int>(curAssertion.GetOp2().GetIntConstant()));
+            cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+            limit   = Limit(Limit::keConstant, static_cast<int>(curAssertion.GetOp2().GetIntConstant()));
+
+            // Make sure we don't deal with negative constants for unsigned comparisons
+            assert((curAssertion.GetOp2().GetIntConstant() > 0) || !isUnsigned);
         }
         // Current assertion is of the form "i == cns" or "i != cns"
         else if (curAssertion.IsConstantInt32Assertion() && (curAssertion.GetOp1().GetVN() == normalLclVN))

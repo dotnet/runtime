@@ -1550,6 +1550,12 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex)
         AssertionDsc reversed = candidateAssertion.Reverse();
         optMapComplementary(optAddAssertion(reversed), assertionIndex);
     }
+    else if (candidateAssertion.KindIs(OAK_LT, OAK_LT_UN, OAK_LE, OAK_LE_UN) &&
+             candidateAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
+    {
+        // Assertions such as "X > checkedBndVN" aren't very useful.
+        return;
+    }
     else if (AssertionDsc::IsReversible(candidateAssertion.GetKind()))
     {
         AssertionDsc reversed = candidateAssertion.Reverse();
@@ -1610,55 +1616,69 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
+    bool isUnsignedRelop;
+    if (relopFuncApp.FuncIs(VNF_LE, VNF_LT, VNF_GE, VNF_GT))
+    {
+        isUnsignedRelop = false;
+    }
+    else if (relopFuncApp.FuncIs(VNF_LE_UN, VNF_LT_UN, VNF_GE_UN, VNF_GT_UN))
+    {
+        isUnsignedRelop = true;
+    }
+    else
+    {
+        // Not a relop we're interested in.
+        return NO_ASSERTION_INDEX;
+    }
+
     VNFunc   relopFunc = relopFuncApp.m_func;
     ValueNum op1VN     = relopFuncApp.m_args[0];
     ValueNum op2VN     = relopFuncApp.m_args[1];
 
-    // Signed comparisons involving checked bounds
-    if ((relopFunc == VNF_LE) || (relopFunc == VNF_LT) || (relopFunc == VNF_GE) || (relopFunc == VNF_GT))
+    // For now, we don't have consumers for assertions derived from non-int32 comparisons
+    if ((genActualType(vnStore->TypeOfVN(op1VN)) != TYP_INT) || (genActualType(vnStore->TypeOfVN(op2VN)) != TYP_INT))
     {
-        // "CheckedBnd <relop> X"
-        if (vnStore->IsVNCheckedBound(op1VN))
-        {
-            // Move the checked bound to the right side for simplicity
-            relopFunc          = ValueNumStore::SwapRelop(relopFunc);
-            AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, op1VN, 0);
-            AssertionIndex idx = optAddAssertion(dsc);
-            optCreateComplementaryAssertion(idx);
-            return idx;
-        }
+        return NO_ASSERTION_INDEX;
+    }
 
-        // "X <relop> CheckedBnd"
-        if (vnStore->IsVNCheckedBound(op2VN))
-        {
-            AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, op2VN, 0);
-            AssertionIndex idx = optAddAssertion(dsc);
-            optCreateComplementaryAssertion(idx);
-            return idx;
-        }
+    // "CheckedBnd <relop> X"
+    if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op1VN))
+    {
+        // Move the checked bound to the right side for simplicity
+        relopFunc          = ValueNumStore::SwapRelop(relopFunc);
+        AssertionIndex idx = optAddAssertion(AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, op1VN, 0));
+        optCreateComplementaryAssertion(idx);
+        return idx;
+    }
 
-        ValueNum checkedBnd;
-        int      cns;
+    // "X <relop> CheckedBnd"
+    if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op2VN))
+    {
+        AssertionIndex idx = optAddAssertion(AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, op2VN, 0));
+        optCreateComplementaryAssertion(idx);
+        return idx;
+    }
 
-        // "(CheckedBnd + CNS) <relop> X"
-        if (vnStore->IsVNCheckedBoundAddConst(op1VN, &checkedBnd, &cns))
-        {
-            // Move the (CheckedBnd + CNS) part to the right side for simplicity
-            relopFunc          = ValueNumStore::SwapRelop(relopFunc);
-            AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, checkedBnd, cns);
-            AssertionIndex idx = optAddAssertion(dsc);
-            optCreateComplementaryAssertion(idx);
-            return idx;
-        }
+    // "(CheckedBnd + CNS) <relop> X"
+    ValueNum checkedBnd;
+    int      checkedBndCns;
+    if (!isUnsignedRelop && vnStore->IsVNCheckedBoundAddConst(op1VN, &checkedBnd, &checkedBndCns))
+    {
+        // Move the (CheckedBnd + CNS) part to the right side for simplicity
+        relopFunc = ValueNumStore::SwapRelop(relopFunc);
+        AssertionIndex idx =
+            optAddAssertion(AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, checkedBnd, checkedBndCns));
+        optCreateComplementaryAssertion(idx);
+        return idx;
+    }
 
-        // "X <relop> (CheckedBnd + CNS)"
-        if (vnStore->IsVNCheckedBoundAddConst(op2VN, &checkedBnd, &cns))
-        {
-            AssertionDsc   dsc   = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, checkedBnd, cns);
-            AssertionIndex idx = optAddAssertion(dsc);
-            optCreateComplementaryAssertion(idx);
-            return idx;
-        }
+    // "X <relop> (CheckedBnd + CNS)"
+    if (!isUnsignedRelop && vnStore->IsVNCheckedBoundAddConst(op2VN, &checkedBnd, &checkedBndCns))
+    {
+        AssertionIndex idx =
+            optAddAssertion(AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, checkedBnd, checkedBndCns));
+        optCreateComplementaryAssertion(idx);
+        return idx;
     }
 
     // Pretty much the same as above but for unsigned comparisons.
@@ -1681,12 +1701,21 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     }
 
     // Create "X relop CNS" assertion (both signed and unsigned relops)
-    if (vnStore->IsVNConstantBound(relopVN) || vnStore->IsVNConstantBoundUnsigned(relopVN))
+    // Ignore non-positive constants for unsigned relops as they don't add any useful information.
+    ssize_t cns;
+    if (vnStore->IsVNIntegralConstant(op1VN, &cns) && (!isUnsignedRelop || (cns > 0)))
     {
-        AssertionDsc   dsc   = AssertionDsc::CreateConstantLoopBound(this, relopVN);
-        AssertionIndex index = optAddAssertion(dsc);
-        optCreateComplementaryAssertion(index);
-        return index;
+        relopFunc          = ValueNumStore::SwapRelop(relopFunc);
+        AssertionIndex idx = optAddAssertion(AssertionDsc::CreateConstantBound(this, relopFunc, op2VN, op1VN));
+        optCreateComplementaryAssertion(idx);
+        return idx;
+    }
+
+    if (vnStore->IsVNIntegralConstant(op2VN, &cns) && (!isUnsignedRelop || (cns > 0)))
+    {
+        AssertionIndex idx = optAddAssertion(AssertionDsc::CreateConstantBound(this, relopFunc, op1VN, op2VN));
+        optCreateComplementaryAssertion(idx);
+        return idx;
     }
 
     return NO_ASSERTION_INDEX;
@@ -3931,7 +3960,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             //
             if (curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == op1VN) &&
                 (curAssertion.GetOp2().GetVN() == op2VN) &&
-                // O2K_CHECKED_BOUND_ADD_CNS means op2 is decomposed into op2.vn being checked bound 
+                // O2K_CHECKED_BOUND_ADD_CNS means op2 is decomposed into op2.vn being checked bound
                 // and op2.cns being the constant offset. We assemble the original relop VN if we want.
                 // For now, just skip such assertions here.
                 !curAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
@@ -5259,16 +5288,16 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
                 if (vnStore->IsVNNeverNegative(opVN))
                 {
                     // Create "X >= value" assertion (both operands are never negative)
-                    ValueNum     relop = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
-                    AssertionDsc dsc   = AssertionDsc::CreateConstantLoopBound(this, relop);
-                    newAssertIdx       = optAddAssertion(dsc);
+                    AssertionDsc dsc =
+                        AssertionDsc::CreateConstantBound(this, VNF_GE, opVN, vnStore->VNForIntCon(value));
+                    newAssertIdx = optAddAssertion(dsc);
                 }
                 else
                 {
                     // Create "X u>= value" assertion
-                    ValueNum     relop = vnStore->VNForFunc(TYP_INT, VNF_GE_UN, opVN, vnStore->VNForIntCon(value));
-                    AssertionDsc dsc   = AssertionDsc::CreateConstantLoopBound(this, relop);
-                    newAssertIdx       = optAddAssertion(dsc);
+                    AssertionDsc dsc =
+                        AssertionDsc::CreateConstantBound(this, VNF_GE_UN, opVN, vnStore->VNForIntCon(value));
+                    newAssertIdx = optAddAssertion(dsc);
                 }
             }
             else
