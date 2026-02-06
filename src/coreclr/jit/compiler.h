@@ -8152,7 +8152,8 @@ public:
 
                 case O2K_CHECKED_BOUND_ADD_CNS:
                     return GetOp2().GetCheckedBound() == that.GetOp2().GetCheckedBound() &&
-                           GetOp2().GetCheckedBoundConstant() == that.GetOp2().GetCheckedBoundConstant();
+                           GetOp2().GetCheckedBoundConstant() == that.GetOp2().GetCheckedBoundConstant() &&
+                           GetOp2().IsCheckedBoundNeverNegative() == that.GetOp2().IsCheckedBoundNeverNegative();
 
                 case O2K_LCLVAR_COPY:
                     return GetOp2().GetLclNum() == that.GetOp2().GetLclNum();
