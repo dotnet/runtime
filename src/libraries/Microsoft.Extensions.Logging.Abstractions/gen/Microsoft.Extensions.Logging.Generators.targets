@@ -25,6 +25,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" Link="Common\System\Numerics\Hashing\HashHelpers.cs" />
     <Compile Include="$(CommonPath)\Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />
     <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\DiagnosticInfo.cs" Link="Common\SourceGenerators\DiagnosticInfo.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\ImmutableEquatableArray.cs" Link="Common\SourceGenerators\ImmutableEquatableArray.cs" />
   </ItemGroup>
 

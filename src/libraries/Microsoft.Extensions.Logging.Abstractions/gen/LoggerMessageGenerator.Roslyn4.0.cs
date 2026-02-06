@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Text;
+using SourceGenerators;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
 
@@ -19,7 +20,7 @@ namespace Microsoft.Extensions.Logging.Generators
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            IncrementalValuesProvider<(LoggerClassSpec? LoggerClassSpec, bool HasStringCreate)> loggerClasses = context.SyntaxProvider
+            IncrementalValuesProvider<(LoggerClassSpec? LoggerClassSpec, ImmutableEquatableArray<DiagnosticInfo> Diagnostics, bool HasStringCreate)> loggerClasses = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
 #if !ROSLYN4_4_OR_GREATER
                     context,
@@ -67,7 +68,7 @@ namespace Microsoft.Extensions.Logging.Generators
                             exceptionSymbol,
                             enumerableSymbol,
                             stringSymbol,
-                            _ => { }, // Diagnostics are reported during parsing but not here
+                            null, // Don't report diagnostics immediately; collect them instead
                             cancellationToken);
 
                         IReadOnlyList<LoggerClass> logClasses = parser.GetLogClasses(new[] { classDeclaration }, semanticModel);
@@ -75,13 +76,13 @@ namespace Microsoft.Extensions.Logging.Generators
                         // Convert to immutable spec for incremental caching
                         LoggerClassSpec? loggerClassSpec = logClasses.Count > 0 ? logClasses[0].ToSpec() : null;
 
-                        return (loggerClassSpec, hasStringCreate);
+                        return (loggerClassSpec, parser.Diagnostics.ToImmutableEquatableArray(), hasStringCreate);
                     });
 
             context.RegisterSourceOutput(loggerClasses.Collect(), static (spc, items) => Execute(items, spc));
         }
 
-        private static void Execute(ImmutableArray<(LoggerClassSpec? LoggerClassSpec, bool HasStringCreate)> items, SourceProductionContext context)
+        private static void Execute(ImmutableArray<(LoggerClassSpec? LoggerClassSpec, ImmutableEquatableArray<DiagnosticInfo> Diagnostics, bool HasStringCreate)> items, SourceProductionContext context)
         {
             if (items.IsDefaultOrEmpty)
             {
@@ -93,6 +94,12 @@ namespace Microsoft.Extensions.Logging.Generators
 
             foreach (var item in items)
             {
+                // Report diagnostics
+                foreach (var diagnostic in item.Diagnostics)
+                {
+                    context.ReportDiagnostic(diagnostic.CreateDiagnostic());
+                }
+
                 if (item.LoggerClassSpec != null)
                 {
                     hasStringCreate = item.HasStringCreate;

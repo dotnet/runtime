@@ -29,7 +29,9 @@ namespace Microsoft.Extensions.Logging.Generators
             private readonly INamedTypeSymbol _exceptionSymbol;
             private readonly INamedTypeSymbol _enumerableSymbol;
             private readonly INamedTypeSymbol _stringSymbol;
-            private readonly Action<Diagnostic> _reportDiagnostic;
+            private readonly Action<Diagnostic>? _reportDiagnostic;
+
+            public List<DiagnosticInfo> Diagnostics { get; } = new();
 
             public Parser(
                 INamedTypeSymbol loggerMessageAttribute,
@@ -38,7 +40,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 INamedTypeSymbol exceptionSymbol,
                 INamedTypeSymbol enumerableSymbol,
                 INamedTypeSymbol stringSymbol,
-                Action<Diagnostic> reportDiagnostic,
+                Action<Diagnostic>? reportDiagnostic,
                 CancellationToken cancellationToken)
             {
                 _loggerMessageAttribute = loggerMessageAttribute;
@@ -714,7 +716,11 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
             {
-                _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
+                // Collect for incremental caching
+                Diagnostics.Add(DiagnosticInfo.Create(desc, location, messageArgs));
+
+                // Also report immediately if callback is provided (for Roslyn 3.11 compatibility)
+                _reportDiagnostic?.Invoke(Diagnostic.Create(desc, location, messageArgs));
             }
 
             private static bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest, Compilation compilation)
