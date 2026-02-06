@@ -51,7 +51,7 @@ function Invoke-GitHubApi {
         $args = @($Endpoint)
         if ($Raw) {
             $args += '-H'
-            $args += 'Accept: application/vnd.github.raw+json'
+            $args += 'Accept: application/vnd.github.raw'
         }
         $result = gh api @args 2>&1
         if ($LASTEXITCODE -ne 0) {
@@ -188,10 +188,13 @@ Write-Section "VMR Freshness"
 
 $vmrHeadSha = $null
 $aheadBy = 0
+$behindBy = 0
+$compareStatus = $null
 
 if ($vmrCommit -and $vmrBranch) {
-    # Get current VMR branch HEAD
-    $vmrHead = Invoke-GitHubApi "/repos/dotnet/dotnet/commits/$vmrBranch"
+    # Get current VMR branch HEAD (URL-encode branch name for path segments with /)
+    $encodedBranch = [uri]::EscapeDataString($vmrBranch)
+    $vmrHead = Invoke-GitHubApi "/repos/dotnet/dotnet/commits/$encodedBranch"
     if ($vmrHead) {
         $vmrHeadSha = $vmrHead.sha
         $vmrHeadDate = $vmrHead.commit.committer.date
@@ -360,13 +363,15 @@ if ($TraceFix) {
         $traceNumber = $traceMatch.Groups[3].Value
         $traceFullRepo = "$traceOwner/$traceRepo"
 
-        # Check if the fix PR is merged
+        # Check if the fix PR is merged (use merged_at since REST may not include merged boolean)
         $fixPR = Invoke-GitHubApi "/repos/$traceFullRepo/pulls/$traceNumber"
+        $fixIsMerged = $false
         if ($fixPR) {
+            $fixIsMerged = $null -ne $fixPR.merged_at
             Write-Status "Fix PR" "${traceFullRepo}#${traceNumber}: $($fixPR.title)"
             Write-Status "State" $fixPR.state
-            Write-Status "Merged" "$(if ($fixPR.merged) { '✅ Yes' } else { '❌ No' })" "$(if ($fixPR.merged) { 'Green' } else { 'Red' })"
-            if ($fixPR.merged) {
+            Write-Status "Merged" "$(if ($fixIsMerged) { '✅ Yes' } else { '❌ No' })" "$(if ($fixIsMerged) { 'Green' } else { 'Red' })"
+            if ($fixIsMerged) {
                 Write-Status "Merged at" $fixPR.merged_at
                 Write-Status "Merge commit" $fixPR.merge_commit_sha
                 $fixMergeCommit = $fixPR.merge_commit_sha
@@ -375,7 +380,7 @@ if ($TraceFix) {
         }
 
         # Check if the fix is in the VMR source-manifest.json on the target branch
-        if ($fixPR.merged -and $vmrBranch) {
+        if ($fixIsMerged -and $vmrBranch) {
             Write-Host ""
             Write-Host "  Checking VMR source-manifest.json on $vmrBranch..." -ForegroundColor White
 
@@ -471,7 +476,12 @@ if ($stalenessWarnings.Count -gt 0) {
 }
 
 if ($vmrCommit -and $vmrHeadSha -and $vmrCommit -ne $vmrHeadSha) {
-    $issues += "VMR branch is ahead of PR snapshot ($aheadBy commits behind)"
+    switch ($compareStatus) {
+        'ahead'    { $issues += "VMR is $aheadBy commit(s) ahead of PR snapshot" }
+        'behind'   { $issues += "VMR is $behindBy commit(s) behind PR snapshot" }
+        'diverged' { $issues += "VMR and PR snapshot diverged ($aheadBy ahead, $behindBy behind)" }
+        default    { $issues += "VMR and PR snapshot differ" }
+    }
 }
 
 if ($manualCommits -and $manualCommits.Count -gt 0) {
