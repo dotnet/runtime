@@ -591,6 +591,7 @@ if [[ "$os" == "linux" && "$arch" == "x64" && -f "$scriptroot/../sccache" ]]; th
     export SCCACHE_AZURE_BLOB_CONTAINER=runtime-cache
     # SCCACHE_AZURE_CONNECTION_STRING must be set as a CI secret/environment variable.
     echo "sccache enabled for linux-x64 build"
+    sccache -s
 fi
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
