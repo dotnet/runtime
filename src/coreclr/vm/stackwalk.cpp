@@ -2155,6 +2155,14 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             goto Cleanup;
         }
 
+        if (GetIP(m_crawl.pRD->pCurrentContext) == InterpreterFrame::DummyCallerIP)
+        {
+            PTR_InterpreterFrame pInterpreterFrame = dac_cast<PTR_InterpreterFrame>(GetSP(m_crawl.pRD->pCurrentContext));
+            _ASSERTE(pInterpreterFrame == m_crawl.pFrame);
+            pInterpreterFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
+            m_crawl.GotoNextFrame();
+        }
+
 #define FAIL_IF_SPECULATIVE_WALK(condition)             \
         if (m_flags & PROFILER_DO_STACK_SNAPSHOT)       \
         {                                               \
@@ -2410,57 +2418,21 @@ void StackFrameIterator::ProcessCurrentFrame(void)
 
             if (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
             {
-                if (GetIP(pRD->pCurrentContext) != (PCODE)InterpreterFrame::DummyCallerIP)
+                _ASSERTE(GetIP(pRD->pCurrentContext) != (PCODE)InterpreterFrame::DummyCallerIP);
+                // We have hit the InterpreterFrame while we were not processing the interpreter frames.
+                // Switch to walking the underlying interpreted frames.
+                // Save the registers the interpreter frames walking reuses so that we can restore them
+                // after we are done with the interpreter frames.
+                LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Switching to interpreted frames for InterpreterFrame %p, saving SP=%p, IP=%p\n", m_crawl.pFrame, GetIP(pRD->pCurrentContext), GetSP(pRD->pCurrentContext)));
+                ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
+                if (pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
                 {
-                    // We have hit the InterpreterFrame while we were not processing the interpreter frames.
-                    // Switch to walking the underlying interpreted frames.
-                    // Save the registers the interpreter frames walking reuses so that we can restore them
-                    // after we are done with the interpreter frames.
-                    LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Switching to interpreted frames for InterpreterFrame %p, saving SP=%p, IP=%p\n", m_crawl.pFrame, GetIP(pRD->pCurrentContext), GetSP(pRD->pCurrentContext)));
-                    m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
-                    m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
-                    m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
-                    m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-                    m_interpExecMethodSSP = pRD->SSP;
-#endif
-                    ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
-                    if (pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
-                    {
-                        m_crawl.isInterrupted = true;
-                        m_crawl.hasFaulted = true;
-                    }
+                    m_crawl.isInterrupted = true;
+                    m_crawl.hasFaulted = true;
+                }
 
-                    SyncRegDisplayToCurrentContext(pRD);
-                    ProcessIp(GetControlPC(pRD));
-                }
-                else
-                {
-                    // We have finished walking the interpreted frames. Process the InterpreterFrame itself.
-                    // Restore the registers to the values they had before we started walking the interpreter frames.
-                    LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Completed walking of interpreted frames for InterpreterFrame %p, restoring SP=%p, IP=%p\n", m_crawl.pFrame, m_interpExecMethodSP, m_interpExecMethodIP));
-                    _ASSERTE(dac_cast<TADDR>(m_crawl.pFrame) == GetFirstArgReg(pRD->pCurrentContext));
-                    SetIP(pRD->pCurrentContext, m_interpExecMethodIP);
-                    SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
-                    SetFP(pRD->pCurrentContext, m_interpExecMethodFP);
-                    SetFirstArgReg(pRD->pCurrentContext, m_interpExecMethodFirstArgReg);
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-                    pRD->SSP = m_interpExecMethodSSP;
-#endif
-                    SyncRegDisplayToCurrentContext(pRD);
-                }
-            }
-            else if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) && ((PTR_InlinedCallFrame)m_crawl.pFrame)->IsInInterpreter())
-            {
-                // There is an active inlined call frame localed in the interpreter code. This is a special case where we need
-                // to save the current context registers that the interpreter frames walking reuses.
-                m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
-                m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
-                m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
-                m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-                m_interpExecMethodSSP = pRD->SSP;
-#endif
+                SyncRegDisplayToCurrentContext(pRD);
+                ProcessIp(GetControlPC(pRD));
             }
         }
 #endif // FEATURE_INTERPRETER
@@ -2657,47 +2629,6 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
     // if we have unwound to a native stack frame, stop and set the frame state accordingly
     if (!m_crawl.isFrameless)
     {
-#ifdef FEATURE_INTERPRETER
-        // DummyCallerIP is a synthetic marker indicating we've finished walking all
-        // InterpMethodContextFrames belonging to an InterpreterFrame. This is NOT necessarily
-        // a real native transition - the actual caller could be managed or native code.
-        // Check the InterpreterFrame to determine if the real caller is managed or native.
-        if (GetControlPC(m_crawl.pRD) == (PCODE)InterpreterFrame::DummyCallerIP)
-        {
-            _ASSERTE(m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
-            PTR_InterpreterFrame pInterpreterFrame = (PTR_InterpreterFrame)m_crawl.pFrame;
-            PCODE returnAddress = pInterpreterFrame->GetReturnAddress();
-
-            if (returnAddress != 0)
-            {
-                // If returnAddress is non-zero and points to managed code, the real caller is managed.
-                // Don't report NATIVE_MARKER - let ProcessCurrentFrame() handle the interpreter-to-managed
-                // transition by processing the InterpreterFrame and unwinding to its managed caller.
-                if (ExecutionManager::IsManagedCode(returnAddress))
-                {
-                    return;
-                }
-
-                // Interpreted code was called by a native caller, e.g. CallDescrWorker
-                _ASSERTE(dac_cast<TADDR>(m_crawl.pFrame) == GetFirstArgReg(m_crawl.pRD->pCurrentContext));
-                SetIP(m_crawl.pRD->pCurrentContext, m_interpExecMethodIP);
-                SetSP(m_crawl.pRD->pCurrentContext, m_interpExecMethodSP);
-                SetFP(m_crawl.pRD->pCurrentContext, m_interpExecMethodFP);
-                SetFirstArgReg(m_crawl.pRD->pCurrentContext, m_interpExecMethodFirstArgReg);
-    #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-                m_crawl.pRD->SSP = m_interpExecMethodSSP;
-    #endif
-                SyncRegDisplayToCurrentContext(m_crawl.pRD);
-
-                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
-                m_crawl.GotoNextFrame();
-            }
-            // Else: returnAddress == 0 (interpreted code was called by InterpreterCodeManager::CallFunclet)
-
-            // Fall through to set NATIVE_MARKER for real native transition
-        }
-#endif // FEATURE_INTERPRETER
-
         m_frameState = SFITER_NATIVE_MARKER_FRAME;
         m_crawl.isNativeMarker = true;
     }

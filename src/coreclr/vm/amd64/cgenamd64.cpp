@@ -138,6 +138,23 @@ void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updat
 }
 #endif // FEATURE_RESOLVE_HELPER_DISPATCH
 
+#ifndef DACCESS_COMPILE
+void InterpreterFrame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // The interpreter frame saves the floating point registers in the TransitionBlock, so we need to update them in the REGDISPLAY when we update the REGDISPLAY for an interpreter frame.
+    TADDR pTransitionBlock = GetTransitionBlock();
+    M128A *pCalleeSavedFloats = (M128A*)((BYTE*)pTransitionBlock - 232);
+//    M128A *pCalleeSavedFloats = (M128A *)(pTransitionBlock + TransitionBlock::GetOffsetOfFloatArgumentRegisters() - 0xa0);
+    for (int i = 0; i < 10; i++)
+    {
+        (&pRD->pCurrentContext->Xmm6)[i] = pCalleeSavedFloats[i];
+        (&pRD->pCurrentContextPointers->Xmm6)[i] = &pCalleeSavedFloats[i];
+    }
+}
+#endif // DACCESS_COMPILE
+
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL

@@ -2511,6 +2511,12 @@ public:
     void ExceptionUnwind_Impl();
 #endif
 
+#ifndef DACCESS_COMPILE
+#if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
+    void UpdateFloatingPointRegisters(const PREGDISPLAY pRD);
+#endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
+#endif // DACCESS_COMPILE
+
     PTR_InterpMethodContextFrame GetTopInterpMethodContextFrame();
 
     void SetContextToInterpMethodContextFrame(T_CONTEXT * pContext);

@@ -1963,7 +1963,14 @@ void InterpreterFrame::SetContextToInterpMethodContextFrame(T_CONTEXT * pContext
 void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     SyncRegDisplayToCurrentContext(pRD);
-    TransitionFrame::UpdateRegDisplay_Impl(pRD, updateFloats);
+    TransitionFrame::UpdateRegDisplay_Impl(pRD, FALSE /* updateFloats */);
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD);
+    }
+#endif //!DACCESS_COMPILE
+
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE)
     // Update the SSP to match the updated regdisplay
     size_t *targetSSP = (size_t *)GetInterpExecMethodSSP();

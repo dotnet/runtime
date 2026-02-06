@@ -560,7 +560,18 @@ ifdef FEATURE_INTERPRETER
 
 NESTED_ENTRY InterpreterStub, _TEXT
 
-        PROLOG_WITH_TRANSITION_BLOCK
+;        PROLOG_WITH_TRANSITION_BLOCK
+        PROLOG_WITH_TRANSITION_BLOCK 0a0h
+        movdqa  [rsp + 20h], xmm6
+        movdqa  [rsp + 30h], xmm7
+        movdqa  [rsp + 40h], xmm8
+        movdqa  [rsp + 50h], xmm9
+        movdqa  [rsp + 60h], xmm10
+        movdqa  [rsp + 70h], xmm11
+        movdqa  [rsp + 80h], xmm12
+        movdqa  [rsp + 90h], xmm13
+        movdqa  [rsp + 0a0h], xmm14
+        movdqa  [rsp + 0b0h], xmm15
 
         __InterpreterStubArgumentRegistersOffset = __PWTB_ArgumentRegisters
         ; IR bytecode address
@@ -1303,7 +1314,18 @@ extern CallInterpreterFuncletWorker:proc
 
 NESTED_ENTRY CallInterpreterFunclet, _TEXT
 
-        PROLOG_WITH_TRANSITION_BLOCK
+;        PROLOG_WITH_TRANSITION_BLOCK 010h
+        PROLOG_WITH_TRANSITION_BLOCK 0b0h
+        movdqa  [rsp + 30h], xmm6
+        movdqa  [rsp + 40h], xmm7
+        movdqa  [rsp + 50h], xmm8
+        movdqa  [rsp + 60h], xmm9
+        movdqa  [rsp + 70h], xmm10
+        movdqa  [rsp + 80h], xmm11
+        movdqa  [rsp + 90h], xmm12
+        movdqa  [rsp + 0a0h], xmm13
+        movdqa  [rsp + 0b0h], xmm14
+        movdqa  [rsp + 0c0h], xmm15
 
         ; Pass TransitionBlock* as last (6th) argument on stack
         ; Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)

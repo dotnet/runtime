@@ -1019,6 +1019,8 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
     }
     frames(NULL);
 
+    _ASSERTE_MSG(false, "NULL transition block!!!");
+
     CONTINUATIONREF contRef = (CONTINUATIONREF)ObjectToOBJECTREF(cont.Get());
     NULL_CHECK(contRef);
 
