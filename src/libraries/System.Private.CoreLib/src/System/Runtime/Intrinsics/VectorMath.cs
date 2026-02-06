@@ -4212,28 +4212,30 @@ namespace System.Runtime.Intrinsics
             c = TVectorDouble.ConditionalSelect(r1, TVectorDouble.Create(VALUE0), c);
 
             // Core: Remez(2,2) rational polynomial
-            // p1 = POLY_EVAL_ODD_7(x, C0, C1, C2) = (C0 + C1*x^2 + C2*x^4) * x
-            // p2 = POLY_EVAL_ODD_7(x, C3, C4, C5) = (C3 + C4*x^2 + C5*x^4) * x
+            // POLY_EVAL_ODD_7(x, C0, C1, C2) = x*(1 + C0*x^2 + (C1+C2*x^2)*x^4)
+            // p1 = POLY_EVAL_ODD_7(x, C0, C1, C2)
+            // p2 = POLY_EVAL_ODD_7(x, C3, C4, C5)
             // s = x*x
             // p = x * s * (p1 - x) / (p2 - x)
-            // result = c - (p - x)  [or c + x - p for positive sign]
+            // result = c - (p - x)
+            //
+            // Since p1-x = x*s*(C0 + C1*s + C2*s^2) and similarly for p2-x,
+            // we can simplify: (p1-x)/(p2-x) = (C0+C1*s+C2*s^2)/(C3+C4*s+C5*s^2)
 
             TVectorDouble s = reduced * reduced;
 
-            // p1 = C0 + s*C1 + s^2*C2
-            TVectorDouble p1 = TVectorDouble.Create(C2);
-            p1 = TVectorDouble.MultiplyAddEstimate(p1, s, TVectorDouble.Create(C1));
-            p1 = TVectorDouble.MultiplyAddEstimate(p1, s, TVectorDouble.Create(C0));
-            p1 *= reduced; // p1 = x*(C0 + s*C1 + s^2*C2)
+            // num = C0 + C1*s + C2*s^2
+            TVectorDouble num = TVectorDouble.Create(C2);
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(C1));
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(C0));
 
-            // p2 = C3 + s*C4 + s^2*C5
-            TVectorDouble p2 = TVectorDouble.Create(C5);
-            p2 = TVectorDouble.MultiplyAddEstimate(p2, s, TVectorDouble.Create(C4));
-            p2 = TVectorDouble.MultiplyAddEstimate(p2, s, TVectorDouble.Create(C3));
-            p2 *= reduced; // p2 = x*(C3 + s*C4 + s^2*C5)
+            // den = C3 + C4*s + C5*s^2
+            TVectorDouble den = TVectorDouble.Create(C5);
+            den = TVectorDouble.MultiplyAddEstimate(den, s, TVectorDouble.Create(C4));
+            den = TVectorDouble.MultiplyAddEstimate(den, s, TVectorDouble.Create(C3));
 
-            // p = x * s * (p1 - x) / (p2 - x)
-            TVectorDouble p = reduced * s * (p1 - reduced) / (p2 - reduced);
+            // p = x * s * num / den
+            TVectorDouble p = reduced * s * num / den;
 
             // result = c - (p - reduced) for positive, -(c - (p - reduced)) for negative
             TVectorDouble result = c - (p - reduced);
